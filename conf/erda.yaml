@@ -1,0 +1,7 @@
+http-server:
+    addr: ":8080"
+health:
+
+i18n:
+    files:
+        - ${CONFIG_PATH}/i18n/apis.yml
