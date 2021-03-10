@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf", "example")
+	modcom.RunWithCfgDir("conf/example", "example")
 }

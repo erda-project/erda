@@ -29,6 +29,20 @@ print the dependency graph of the configured providers
 make run-g MODULE_PATH=example
 ```
 
+build docker image only
+```sh
+make build-image MODULE_PATH=example
+```
+
+build docker image, and push to registry
+```sh
+# set Environment Variables:
+# DOCKER_REGISTRY format like "registry.example.org/username" .
+# DOCKER_REGISTRY_USERNAME set username for login registry if need.
+# DOCKER_REGISTRY_PASSWORD set password for login registry if need.
+make build-push-image MODULE_PATH=example
+```
+
 ## build erda
 build only:
 ```sh
