@@ -78,3 +78,10 @@ run-g: build
 # print the compiled providers and help information
 run-ps: build
 	./bin/${APP_NAME} --providers
+
+# docker image
+build-image:
+	./build/scripts/docker_image.sh ${MODULE_PATH} build
+push-image:
+	./build/scripts/docker_image.sh ${MODULE_PATH} push
+build-push-image: build-image push-image

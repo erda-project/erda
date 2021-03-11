@@ -12,5 +12,5 @@ import (
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf", "erda")
+	modcom.RunWithCfgDir("conf/erda", "erda")
 }
