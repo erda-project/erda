@@ -1,6 +1,6 @@
 ---
 name: Feature Tracking Issue
-about: Provide supporting details for a feature in development
+about: Provide supporting details for a feature in development and used
 labels: kind/feature
 
 ---

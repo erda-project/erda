@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug encountered while operating Kubernetes
+about: Report a bug encountered while operating Erda
 labels: kind/bug
 
 ---
