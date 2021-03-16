@@ -1,50 +1,28 @@
-# erda
+# Erda
+## Overview
 
-# Develop
-## build example
-Here are some build commands.
+## Feature list
 
-build only:
-```sh
-make build MODULE_PATH=example
-```
+# Architecture
 
-run after build:
-```sh
-make exec MODULE_PATH=example
-```
+## Related repositories
+- [erda-proto](https://github.com/erda-project/erda-proto)
+- [erda-infra](https://github.com/erda-project/erda-infra)
+- [erda-ui](https://github.com/erda-project/erda-ui)
 
-build and run:
-```sh
-make run MODULE_PATH=example
-```
+# Quick start
+## To start using erda
 
-print the compiled providers and help information
-```sh
-make run-ps MODULE_PATH=example
-```
+## To start developing erda
 
-print the dependency graph of the configured providers
-```sh
-make run-g MODULE_PATH=example
-```
+# Documentation
+- [Official documentation](https://dice-docs.app.terminus.io)
 
-build docker image only
-```sh
-make build-image MODULE_PATH=example
-```
+# Contributing
 
-build docker image, and push to registry
-```sh
-# set Environment Variables:
-# DOCKER_REGISTRY format like "registry.example.org/username" .
-# DOCKER_REGISTRY_USERNAME set username for login registry if need.
-# DOCKER_REGISTRY_PASSWORD set password for login registry if need.
-make build-push-image MODULE_PATH=example
-```
+This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
 
-## build erda
-build only:
-```sh
-make build MODULE_PATH=erda
-```
+# Contact Us
+
+# License
+Erda is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.
