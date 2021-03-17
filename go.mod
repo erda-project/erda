@@ -3,15 +3,32 @@ module github.com/erda-project/erda
 go 1.14
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	bou.ke/monkey v1.0.2
+	github.com/Masterminds/semver v1.5.0
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.983
+	github.com/davecgh/go-spew v1.1.1
 	github.com/erda-project/erda-infra v0.0.0-20210310022010-dfb20478842b
+	github.com/getkin/kin-openapi v0.49.0
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
+	github.com/gorilla/mux v1.8.0
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/magiconair/properties v1.8.4
+	github.com/otiai10/copy v1.5.0
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.9.0
+	github.com/satori/go.uuid v1.2.0
+	github.com/sirupsen/logrus v1.8.0
+	github.com/sony/sonyflake v1.0.0
+	github.com/stretchr/testify v1.6.1
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/stretchr/testify.v1 v1.2.2
+	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gotest.tools v2.2.0+incompatible
+	k8s.io/api v0.20.4
 )
