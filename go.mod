@@ -5,7 +5,7 @@ go 1.14
 require (
 	bou.ke/monkey v1.0.2
 	github.com/Masterminds/semver v1.5.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.983
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/davecgh/go-spew v1.1.1
 	github.com/erda-project/erda-infra v0.0.0-20210310022010-dfb20478842b
 	github.com/getkin/kin-openapi v0.49.0
