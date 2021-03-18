@@ -26,7 +26,7 @@ type LogPushRequest struct {
 
 // LogPushLine 推日志请求行
 type LogPushLine struct {
-	ID        uint64      `json:"id,string"`
+	ID        string      `json:"id"`
 	Source    string      `json:"source"`
 	Timestamp int64       `json:"timestamp"`
 	Content   string      `json:"content"`
@@ -34,3 +34,8 @@ type LogPushLine struct {
 	Offset    *int        `json:"offset,omitempty"`
 	Tags      interface{} `json:"tags,omitempty"`
 }
+
+var (
+	CollectorLogPushStreamStdout = "stdout"
+	CollectorLogPushStreamStderr = "stderr"
+)
