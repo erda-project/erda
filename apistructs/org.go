@@ -40,6 +40,8 @@ type OrgSearchRequest struct {
 	// 分页参数
 	PageNo   int `query:"pageNo"`
 	PageSize int `query:"pageSize"`
+
+	IdentityInfo
 }
 
 // OrgSearchResponse GET /api/orgs 组织查询响应结构
@@ -100,6 +102,7 @@ type OrgUpdateRequestBody struct {
 	PublisherName  string          `json:"publisherName"`
 	Config         *OrgConfig      `json:"config"`
 	BlockoutConfig *BlockoutConfig `json:"blockoutConfig"`
+	IsPublic       bool            `json:"isPublic"`
 }
 
 type BlockoutConfig struct {
@@ -119,6 +122,7 @@ type OrgDTO struct {
 	DisplayName string     `json:"displayName"`
 	Locale      string     `json:"locale"`
 	Config      *OrgConfig `json:"config"`
+	IsPublic    bool       `json:"isPublic"`
 
 	BlockoutConfig BlockoutConfig `json:"blockoutConfig"`
 
