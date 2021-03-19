@@ -97,7 +97,7 @@ func (b *Bundle) DeleteMember(req apistructs.MemberRemoveRequest) error {
 	hc := b.hc
 
 	var buf bytes.Buffer
-	resp, err := hc.Post(host).Path("/api/members/actions/remove").
+	resp, err := hc.Post(host).Path("/api/members/actions/remove").Header("User-ID", req.UserID).
 		Header(httputil.InternalHeader, "bundle").JSONBody(&req).Do().Body(&buf)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
