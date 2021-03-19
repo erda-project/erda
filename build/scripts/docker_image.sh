@@ -8,7 +8,7 @@ set -o errexit -o pipefail
 usage() {
     echo "docker_build.sh MODULE [ACTION]"
     echo "MODULE: "
-    echo "    module path in relative to cmd/"
+    echo "    module path relative to cmd/"
     echo "ACTION: "
     echo "    build       build docker image. this is default action."
     echo "    push        push docker image, and build image if image not exist."
