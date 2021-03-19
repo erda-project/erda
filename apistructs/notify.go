@@ -143,3 +143,227 @@ type FuzzyQueryNotifiesBySourceRequest struct {
 	ItemName    string
 	Channel     string
 }
+
+//消息通知对接组件化
+type NotifyPageRequest struct {
+	Scope   string `json:"scope"`
+	ScopeId string `json:"scopeId"`
+	UserId  string `json:"userId"`
+	OrgId   string `json:"orgId"`
+}
+
+type NotifyListResponse struct {
+	Header
+	Data NotifyList `json:"data"`
+}
+
+type NotifyList struct {
+	List []DataItem `json:"list"`
+}
+
+type DataItem struct {
+	UserId       []string  `json:"userId"`
+	CreatedAt    time.Time `json:"createdAt"`
+	Id           int64     `json:"id"`
+	NotifyID     string    `json:"notifyId"`
+	NotifyName   string    `json:"notifyName"`
+	Target       string    `json:"target"`
+	NotifyTarget []Value   `json:"groupInfo"`
+	Enable       bool      `json:"enable"`
+	Items        []string  `json:"items"`
+}
+
+type Value struct {
+	Type   string       `json:"type"`
+	Values []ValueValue `json:"values"`
+}
+
+type ValueValue struct {
+	Receiver string `json:"receiver"`
+	Secret   string `json:"secret"`
+}
+
+type TargetMemberInfo struct {
+	RenderType string       `json:"renderType"`
+	Total      int64        `json:"total"`
+	Member     []MemberInfo `json:"member"`
+}
+
+type MemberInfo struct {
+	Avatar string `json:"avatar"`
+	Id     int64  `json:"id"`
+	Name   string `json:"name"`
+	Nick   string `json:"nick"`
+	Info   interface{}
+}
+
+type TargetInfo struct {
+	Channels []string `json:"channels"`
+	GroupId  int64    `json:"group_id"`
+}
+
+type ProNotifyResponse struct {
+	Header
+}
+
+type NotifyDetailResponse struct {
+	Header
+	Data DetailResponse `json:"data"`
+}
+
+type DetailResponse struct {
+	Id         int64  `json:"id"`
+	NotifyID   string `json:"notifyId"`
+	NotifyName string `json:"notifyName"`
+	Target     string `json:"target"`
+	GroupType  string `json:"groupType"`
+}
+
+type AllTemplatesResponse struct {
+	Header
+	Data []*TemplateRes `json:"data"`
+}
+
+type TemplateRes struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type AllGroupResponse struct {
+	Header
+	Data []AllGroups `json:"data"`
+}
+
+type AllGroups struct {
+	Name  string `json:"name"`
+	Value int64  `json:"value"`
+	Type  string `json:"type"`
+}
+
+type SwitchOperation struct {
+	Meta SwitchOperationData `json:"meta"`
+}
+
+type SwitchOperationData struct {
+	Id     uint64 `json:"id"`
+	Enable bool   `json:"enable"`
+}
+
+type Field struct {
+	Key            string         `json:"key"`
+	Label          string         `json:"label"`
+	Component      string         `json:"component"`
+	Required       bool           `json:"required"`
+	ComponentProps ComponentProps `json:"componentProps"`
+	RemoveWhen     [][]RemoveWhen `json:"removeWhen"`
+	Disabled       bool           `json:"disabled"`
+}
+type RemoveWhen struct {
+	Field    string `json:"field"`
+	Operator string `json:"operator"`
+	Value    string `json:"value"`
+}
+type ComponentProps struct {
+	Mode        string   `json:"mode"`
+	PlaceHolder string   `json:"placeHolder"`
+	Options     []Option `json:"options"`
+	MaxLength   int64    `json:"maxLength"`
+}
+type Option struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type EditOrCreateModalData struct {
+	Name     string   `json:"name"`   //通知名称
+	Target   int      `json:"target"` //选中的通知群组id
+	Items    []string `json:"items"`  //选中的通知模版id
+	Id       int      `json:"id"`
+	Channels []string `json:"channels"` //通知方式
+}
+
+type InParams struct {
+	ScopeType string `json:"scopeType"`
+	ScopeId   string `json:"scopeId"`
+}
+
+type ModalOperation struct {
+	Submit Submit `json:"submit"`
+}
+
+type Submit struct {
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
+}
+
+//table
+type CommonTable struct {
+	State      State                      `json:"state"`
+	Type       string                     `json:"type"`
+	Operations map[OperationKey]Operation `json:"operations"`
+	Props      Props                      `json:"props"`
+	Data       Data                       `json:"data"`
+}
+
+type Data struct {
+	List []NotifyTableList `json:"list"`
+}
+
+type NotifyTableList struct {
+	Id        int64       `json:"id"`
+	Name      string      `json:"name"`
+	Targets   TableTarget `json:"targets"`
+	CreatedAt string      `json:"createdAt"`
+	Operate   Operate     `json:"operate"`
+	Enable    bool        `json:"enable"`
+}
+
+type TableTarget struct {
+	Value      []Value           `json:"value"`
+	RoleMap    map[string]string `json:"roleMap"`
+	RenderType string            `json:"renderType"`
+}
+
+type Operate struct {
+	RenderType string                `json:"renderType"`
+	Value      string                `json:"value"`
+	Operations map[string]Operations `json:"operations"`
+}
+
+type Operations struct {
+	Key     string `json:"key"`
+	Text    string `json:"text"`
+	Reload  bool   `json:"reload"`
+	Confirm string `json:"confirm"`
+	Meta    Meta   `json:"meta"`
+}
+
+type Meta struct {
+	Id int64 `json:"id"`
+}
+
+type FormData struct {
+	Id       int64    `json:"id"`
+	Name     string   `json:"name"`
+	Items    []string `json:"items"`
+	Target   string   `json:"target"`
+	Channels []string `json:"channels"`
+}
+
+type State struct {
+	EditId    uint64 `json:"editId"`
+	Operation string `json:"operation"`
+	Visible   bool   `json:"visible"`
+}
+
+type Props struct {
+	RowKey     string       `json:"rowKey"`
+	Columns    []PropColumn `json:"columns"`
+	Pagination bool         `json:"pagination"`
+}
+
+type PropColumn struct {
+	Title     string `json:"title"`
+	DataIndex string `json:"dataIndex"`
+	Width     uint64 `json:"width"`
+}
