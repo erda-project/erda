@@ -8,10 +8,11 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210310022010-dfb20478842b
+	github.com/erda-project/erda-infra v0.0.0-20210316032357-e712e2cbbe8b
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/labstack/echo v3.3.10+incompatible // indirect

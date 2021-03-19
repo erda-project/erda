@@ -27,6 +27,21 @@ GOPROXY ?= https://goproxy.cn/
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 
 .PHONY: build-version clean tidy
+build-all:
+	@set -o errexit; \
+	MODULES=$$(find "cmd" -maxdepth 10 -type d); \
+	for path in $${MODULES}; \
+    do \
+		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
+		if [ $${HAS_GO_FILE} -gt 0 ]; then \
+			MODULE_PATH=$${path#cmd/}; \
+			echo "build module: $$MODULE_PATH"; \
+			MODULE_PATH=$${MODULE_PATH} make build; \
+			echo ""; \
+		fi; \
+    done; \
+	echo "build all modules successfully !"
+
 build: build-version summodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${APP_NAME}"
