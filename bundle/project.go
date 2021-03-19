@@ -51,7 +51,72 @@ func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (
 		Param("joined", strconv.FormatBool(req.Joined)).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("isPublic", strconv.FormatBool(req.IsPublic)).
 		Header("User-ID", userID).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+	if rsp.Data.Total == 0 {
+		return nil, nil
+	}
+	return &rsp.Data, nil
+}
+
+// ListMyProject 获取用户加入的项目
+func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp apistructs.ProjectListResponse
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/projects/actions/list-my-projects")).
+		Param("orgId", strconv.FormatUint(req.OrgID, 10)).
+		Param("q", req.Query).
+		Param("name", req.Name).
+		Param("joined", strconv.FormatBool(req.Joined)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("isPublic", strconv.FormatBool(req.IsPublic)).
+		Param("orderBy", req.OrderBy).
+		Header("User-ID", userID).
+		Header("Org-ID", strconv.FormatUint(req.OrgID, 10)).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+	if rsp.Data.Total == 0 {
+		return nil, nil
+	}
+	return &rsp.Data, nil
+}
+
+// 获取公开项目列表
+func (b *Bundle) ListPublicProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp apistructs.ProjectListResponse
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/projects/actions/list-public-projects")).
+		Param("q", req.Query).
+		Param("name", req.Name).
+		Param("joined", strconv.FormatBool(req.Joined)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("isPublic", strconv.FormatBool(req.IsPublic)).
+		Header("User-ID", userID).
+		Header("Org-ID", strconv.FormatUint(req.OrgID, 10)).
 		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
