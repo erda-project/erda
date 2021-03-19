@@ -72,6 +72,7 @@ type ProjectUpdateBody struct {
 	Logo        string `json:"logo"`
 	Desc        string `json:"desc"`
 	DdHook      string `json:"ddHook"`
+	IsPublic    bool   `json:"isPublic"` // 是否公开项目
 
 	// 项目各环境集群配置
 	ClusterConfig map[string]string `json:"clusterConfig"`
@@ -137,6 +138,8 @@ type ProjectListRequest struct {
 	Joined   bool `query:"joined"` // TODO refactor
 	PageNo   int  `query:"pageNo"`
 	PageSize int  `query:"pageSize"`
+	// 是否只显示公开项目
+	IsPublic bool `query:"isPublic"`
 }
 
 // ProjectListResponse GET /api/projects 查询项目响应
@@ -173,6 +176,10 @@ type ProjectDTO struct {
 	CanUnblock *bool `json:"canUnblock"`
 	// 解封状态: unblocking | unblocked (目前只有 /api/projects/actions/list-my-projects api 有这个值)
 	BlockStatus string `json:"blockStatus"`
+
+	// 当前用户是否可以管理该 project (目前只有 /api/projects/actions/list-my-projects api 有这个值)
+	CanManage bool `json:"CanManage"`
+	IsPublic  bool `json:"isPublic"`
 
 	// 项目统计信息
 	Stats ProjectStats `json:"stats"`

@@ -97,14 +97,16 @@ const (
 	// 用于替换掉DefaultOperation，前端触发某组件，在协议Rending中定义了关联渲染组件，传递的事件是RendingOperation
 	RenderingOperation OperationKey = "__Rendering__"
 	// Action
-	DefaultOperation    OperationKey = "default"
-	ChangeOperation     OperationKey = "change"
-	ClickOperation      OperationKey = "click"
-	OnSearchOperation   OperationKey = "onSearch"
-	OnChangeOperation   OperationKey = "onChange"
-	OnLoadDataOperation OperationKey = "onLoadData"
-	OnSubmit            OperationKey = "submit"
-	OnCancel            OperationKey = "cancel"
+	DefaultOperation          OperationKey = "default"
+	ChangeOperation           OperationKey = "change"
+	ClickOperation            OperationKey = "click"
+	OnSearchOperation         OperationKey = "onSearch"
+	OnChangeOperation         OperationKey = "onChange"
+	OnLoadDataOperation       OperationKey = "onLoadData"
+	OnSubmit                  OperationKey = "submit"
+	OnCancel                  OperationKey = "cancel"
+	OnChangePageNoOperation   OperationKey = "changePageNo"
+	OnChangePageSizeOperation OperationKey = "changePageSize"
 	// Issue
 	MoveOutOperation        OperationKey = "MoveOut"
 	DragOperation           OperationKey = "drag"
@@ -178,6 +180,19 @@ const (
 	ExecuteClickRowNoOperationKey   OperationKey = "clickRow"
 	ExecuteAddApiOperationKey       OperationKey = "addApi"
 	ExecuteTaskBreadcrumbSelectItem OperationKey = "selectItem"
+
+	//org-list
+	FilterOrgsOperationKey         OperationKey = "filter"
+	ChangeOrgsPageNoOperationKey   OperationKey = "changePageNo"
+	ChangeOrgsPageSizeOperationKey OperationKey = "changePageSize"
+	ExitOrgOperationKey            OperationKey = "exit"
+	RedirectPublicOperationKey     OperationKey = "toPublicOrg"
+
+	// list-project
+	ListProjectToManageOperationKey   OperationKey = "toManage"
+	ListProjectExistOperationKey      OperationKey = "exist"
+	ListProjectFilterOperation        OperationKey = "filter"
+	ApplyDeployProjectFilterOperation OperationKey = "applyDeploy"
 )
 
 type ComponentProtocolParams interface{}

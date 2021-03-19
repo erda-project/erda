@@ -66,6 +66,9 @@ type ApplicationUpdateRequestBody struct {
 	Config map[string]interface{} `json:"config"`
 
 	RepoConfig *GitRepoConfig `json:"repoConfig"`
+
+	// 是否公开
+	IsPublic bool `json:"isPublic"`
 }
 
 // ApplicationUpdateResponse 应用更新响应结构
@@ -110,6 +113,7 @@ type ApplicationListRequest struct {
 	Name     string `query:"name"` // 根据 name 精确匹配
 	PageNo   int    `query:"pageNo"`
 	PageSize int    `query:"pageSize"`
+	Public   string `query:"public"`
 
 	// 是否只返回简单信息(应用级流水线打开列表使用)
 	IsSimple bool `query:"isSimple"`
@@ -134,11 +138,12 @@ type ApplicationDTO struct {
 	DisplayName string `json:"displayName"`
 
 	// 模式 LIBRARY, SERVICE, BIGDATA
-	Mode   string                 `json:"mode,omitempty"`
-	Pined  bool                   `json:"pined"`
-	Desc   string                 `json:"desc"`
-	Logo   string                 `json:"logo"`
-	Config map[string]interface{} `json:"config"`
+	Mode     string                 `json:"mode,omitempty"`
+	Pined    bool                   `json:"pined"`
+	Desc     string                 `json:"desc"`
+	Logo     string                 `json:"logo"`
+	Config   map[string]interface{} `json:"config"`
+	IsPublic bool                   `json:"isPublic"`
 
 	// 创建者的userId
 	Creator string `json:"creator"`
