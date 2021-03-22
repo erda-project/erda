@@ -28,6 +28,8 @@ type RuntimeServiceRequest struct {
 	ServiceGroupNamespace string `json:"serviceGroupNamespace"`
 	// ServiceGroupName
 	ServiceGroupName string `json:"serviceGroupName"`
+	// ProjectNamespace 项目级命名空间
+	ProjectNamespace string `json:"projectNamespace"`
 }
 
 // ServiceItem service信息
