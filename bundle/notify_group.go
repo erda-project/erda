@@ -32,7 +32,7 @@ func (b *Bundle) GetNotifyGroupDetail(id int64, orgID int64, userID string) (*ap
 	return &getResp.Data, nil
 }
 
-func (b *Bundle) QueryNotifiesBySource(orgID string, sourceType, sourceID, itemName string, clusterNames ...string) ([]*apistructs.NotifyDetail, error) {
+func (b *Bundle) QueryNotifiesBySource(orgID string, sourceType, sourceID, itemName, label string, clusterNames ...string) ([]*apistructs.NotifyDetail, error) {
 	host, err := b.urls.CMDB()
 	if err != nil {
 		return nil, err
@@ -49,6 +49,7 @@ func (b *Bundle) QueryNotifiesBySource(orgID string, sourceType, sourceID, itemN
 		Param("itemName", itemName).
 		Param("orgId", orgID).
 		Param("clusterName", clusterName).
+		Param("label", label).
 		Do().JSON(&getResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

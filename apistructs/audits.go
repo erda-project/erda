@@ -295,7 +295,7 @@ type AuditsListRequest struct {
 	// +required 事件结束事件
 	EndAt string `schema:"endAt"`
 	// +optional fdp项目id
-	FDPProjectID string `json:"fdpProjectId"`
+	FDPProjectID string `schema:"fdpProjectId"`
 	// +optional 通过用户id过滤事件
 	UserID []string `schema:"userId"`
 	// default 1
