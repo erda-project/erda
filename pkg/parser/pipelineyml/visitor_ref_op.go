@@ -1,14 +1,12 @@
 package pipelineyml
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/apitestsv2"
-
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -322,16 +320,6 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 		}
 	}
 
-	actions := v.allActions
-	if actions != nil {
-		action, ok := actions[ActionAlias(refOp.Ref)]
-		// 假如 action 是 snippet 类型，走下面的校验
-		if ok && IsSnippetType(action.Type) {
-			v.handleSnippetOneRefOutput(refOp, action)
-			return
-		}
-	}
-
 	// not found
 	if refOp.RefStageIndex < refOp.CurrentStageIndex {
 		if v.allowMissingCustomScriptOutputs {
@@ -346,39 +334,6 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	}
 
 	return
-}
-
-// 校验 snippet 的 outputs
-func (v *RefOpVisitor) handleSnippetOneRefOutput(refOp RefOp, action *indexedAction) {
-
-	snippetConfig := HandleSnippetConfigLabel(action.SnippetConfig, v.globalSnippetConfigLabels)
-
-	graph, err := SnippetToPipelineGraph(snippetConfig)
-	if err != nil {
-		v.result.AppendError(errors.New(fmt.Sprintf(" handleSnippetOneRefOutput get local snippet error %v", err)))
-		return
-	}
-	outputs := graph.Outputs
-
-	if outputs == nil {
-		v.result.AppendError(fmt.Errorf("%q, snippet %q doesn't have output %q", refOp.Ori, refOp.Ref, refOp.Key))
-		return
-	}
-
-	var find = false
-	for _, v := range outputs {
-		if v.Name == refOp.Key {
-			find = true
-		}
-	}
-
-	if !find {
-		v.result.AppendError(fmt.Errorf("%q, snippet %q doesn't have output %q", refOp.Ori, refOp.Ref, refOp.Key))
-		return
-	}
-
-	return
-
 }
 
 func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias bool, isNamespace bool) {
