@@ -24,7 +24,6 @@ type PipelineYml struct {
 
 	// snippet
 	globalSnippetConfigLabels map[string]string         // 当前 pipeline 的提交信息, 用作 snippet 的 local 模式查询 gitta 中的文件
-	flatSnippet               bool                      // 是否展平 snippet
 	SnippetCaches             []SnippetPipelineYmlCache // snippet 缓存
 
 	// secrets
@@ -117,13 +116,6 @@ func New(b []byte, ops ...Option) (_ *PipelineYml, err error) {
 	// 不做 flatParams，JSON 序列化在最后进行，防止简单 render 后 JSON 无效
 	y.s.Accept(NewStageVisitor(false))
 
-	if y.flatSnippet {
-		y.s.Accept(NewSnippetVisitor(y.globalSnippetConfigLabels, y.SnippetCaches))
-		if y.s.errs != nil && len(y.s.errs) > 0 {
-			return nil, y.s.mergeErrors()
-		}
-	}
-
 	y.s.Accept(NewCronVisitor())
 	y.s.Accept(NewTimeoutVisitor())
 
@@ -171,14 +163,6 @@ func WithRefs(refs Refs) Option {
 func WithRefOpOutputs(outputs Outputs) Option {
 	return func(y *PipelineYml) {
 		y.outputs = outputs
-	}
-}
-
-func WithRenderSnippet(globalSnippetConfigLabels map[string]string, caches []SnippetPipelineYmlCache) Option {
-	return func(y *PipelineYml) {
-		y.globalSnippetConfigLabels = globalSnippetConfigLabels
-		y.SnippetCaches = caches
-		y.flatSnippet = true
 	}
 }
 
