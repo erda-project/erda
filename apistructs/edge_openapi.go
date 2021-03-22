@@ -7,11 +7,13 @@ const (
 	EdgeOperationChangeRadio = "changeViewType"
 	EdgeOperationClick       = "click"
 	EdgeOperationSubmit      = "submit"
+	EdgeOperationCgCluster   = "clusterChange"
 	EdgeOperationDelete      = "delete"
 	EdgeOperationAdd         = "add"
 	EdgeOperationUpdate      = "update"
 	EdgeOperationViewDetail  = "viewDetail"
 	EdgeOperationOffline     = "offline"
+	EdgeOperationRestart     = "restart"
 	EdgeOperationFilter      = "filter"
 	EdgeOperationAddSite     = "addSite"
 	EdgeOperationAddCluster  = "addCluster"
@@ -27,6 +29,7 @@ const (
 	EdgeDefaultRegexpError    = "可输入小写字母、数字或中划线"
 	EdgeDefaultNameMaxLength  = 50
 	EdgeDefaultValueMaxLength = 100
+	EdgeDefaultLagerLength    = 2048
 )
 
 var (
@@ -39,10 +42,28 @@ type EdgeTableProps struct {
 	Columns         []EdgeColumns `json:"columns"`
 }
 
+type EdgeKVListProps struct {
+	Visible    bool                `json:"visible"`
+	Pagination bool                `json:"pagination"`
+	RowKey     string              `json:"rowKey"`
+	Columns    []EdgeKVListColumns `json:"columns"`
+}
+
+type EdgeKVListTitleProps struct {
+	Visible bool   `json:"visible"`
+	Title   string `json:"title"`
+	Level   int    `json:"level"`
+}
+
 type EdgeColumns struct {
 	Title     string `json:"title"`
 	DataIndex string `json:"dataIndex"`
 	Width     int    `json:"width"`
+}
+
+type EdgeKVListColumns struct {
+	EdgeColumns
+	ColSpan int `json:"colSpan"`
 }
 
 type EdgeDrawerProps struct {
@@ -92,15 +113,18 @@ type EdgePageState struct {
 }
 
 type EdgeFormModalProps struct {
-	Title  string               `json:"title,omitempty"`
-	Name   string               `json:"name,omitempty"`
-	Fields []EdgeFormModalField `json:"fields"`
+	Title       string               `json:"title,omitempty"`
+	Name        string               `json:"name,omitempty"`
+	Fields      []EdgeFormModalField `json:"fields"`
+	FooterAlign string               `json:"footerAlign,omitempty"`
 }
 
 type EdgeFormModalPointProps struct {
-	Title  string                `json:"title,omitempty"`
-	Name   string                `json:"name,omitempty"`
-	Fields []*EdgeFormModalField `json:"fields"`
+	Title       string                `json:"title,omitempty"`
+	Name        string                `json:"name,omitempty"`
+	Fields      []*EdgeFormModalField `json:"fields"`
+	ReadOnly    bool                  `json:"readOnly,omitempty"`
+	FooterAlign string                `json:"footerAlign,omitempty"`
 }
 
 type EdgeFormModalField struct {
@@ -116,6 +140,8 @@ type EdgeFormModalField struct {
 	DefaultValue   string                     `json:"defaultValue,omitempty"`
 	RemoveWhen     [][]map[string]interface{} `json:"removeWhen,omitempty"`
 	ComponentProps map[string]interface{}     `json:"componentProps,omitempty"`
+	Operations     EdgeOperations             `json:"operations,omitempty"`
+	IsPassword     bool                       `json:"isPassword,omitempty"`
 }
 
 type EdgeFormModalFieldRule struct {
@@ -157,11 +183,12 @@ type EdgeEventMeta struct {
 }
 
 type EdgeSiteState struct {
-	SiteID    int64 `json:"siteID"`
-	PageNo    int   `json:"pageNo,omitempty"`
-	PageSize  int   `json:"pageSize,omitempty"`
-	Visible   bool  `json:"visible,omitempty"`
-	FormClear bool  `json:"formClear,omitempty"`
+	SiteID          int64  `json:"siteID"`
+	PageNo          int    `json:"pageNo,omitempty"`
+	PageSize        int    `json:"pageSize,omitempty"`
+	Visible         bool   `json:"visible,omitempty"`
+	FormClear       bool   `json:"formClear,omitempty"`
+	SearchCondition string `json:"searchCondition"`
 }
 
 type EdgeCfgSetState struct {
@@ -187,14 +214,10 @@ type EdgeRenderingID struct {
 
 type EdgeViewGroupSelectState struct {
 	ViewGroupSelected string `json:"viewGroupSelected"`
-	PageNo            int    `json:"pageNo"`
-	PageSize          int    `json:"pageSize"`
 }
 
 type EdgeSearchState struct {
 	SearchCondition string `json:"searchCondition"`
-	PageNo          int    `json:"pageNo"`
-	PageSize        int    `json:"pageSize"`
 }
 
 type EdgeJumpCommand struct {
@@ -207,7 +230,13 @@ type EdgeJumpCommand struct {
 type EdgeJumpCommandState struct {
 	Params   map[string]interface{} `json:"params,omitempty"`
 	Query    map[string]interface{} `json:"query,omitempty"`
-	Visible  bool                   `json:"visible,omitempty"`
+	Visible  bool                   `json:"visible"`
 	FormData map[string]interface{} `json:"formData,omitempty"`
 	ReadOnly bool                   `json:"readOnly,omitempty"`
+}
+
+type EdgeSearchCondition struct {
+	Values struct {
+		Condition string `json:"condition"`
+	} `json:"values"`
 }

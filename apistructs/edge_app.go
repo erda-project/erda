@@ -18,7 +18,7 @@ type EdgeAppInfo struct {
 	RegistryUser        string            `json:"registryUser"`
 	RegistryPassword    string            `json:"registryPassword"`
 	HealthCheckType     string            `json:"healthCheckType"`
-	HealthCheckHttpPort int               `json:"pealthCheckHttpPort"`
+	HealthCheckHttpPort int               `json:"healthCheckHttpPort"`
 	HealthCheckHttpPath string            `json:"healthCheckHttpPath"`
 	HealthCheckExec     string            `json:"healthCheckExec"`
 	ProductID           int64             `json:"productID"`
@@ -28,7 +28,7 @@ type EdgeAppInfo struct {
 	Replicas            int32             `json:"replicas"`
 	Description         string            `json:"description"`
 	EdgeSites           []string          `json:"edgeSites"`
-	DependApp           []string          `json:"dependApp"`
+	DependApp           []string          `json:"dependApp,omitempty"`
 	LimitCpu            float64           `json:"limitCpu"`
 	RequestCpu          float64           `json:"requestCpu"`
 	LimitMem            float64           `json:"limitMem"`
@@ -127,7 +127,7 @@ type EdgeAppUpdateRequest struct {
 	RegistryUser        string    `json:"registryUser"`
 	RegistryPassword    string    `json:"registryPassword"`
 	HealthCheckType     string    `json:"healthCheckType"`
-	HealthCheckHttpPort int       `json:"pealthCheckHttpPort"`
+	HealthCheckHttpPort int       `json:"healthCheckHttpPort"`
 	HealthCheckHttpPath string    `json:"healthCheckHttpPath"`
 	HealthCheckExec     string    `json:"healthCheckExec"`
 	ConfigSetName       string    `json:"configSetName"`
@@ -173,4 +173,8 @@ type EdgeAppStatusListRequest struct {
 type EdgeAppSiteStatus struct {
 	SITE   string `json:"site"`
 	STATUS string `json:"status"`
+}
+
+type EdgeAppSiteRequest struct {
+	SiteName string `json:"siteName"`
 }
