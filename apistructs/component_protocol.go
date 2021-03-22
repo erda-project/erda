@@ -178,6 +178,12 @@ const (
 	ExecuteClickRowNoOperationKey   OperationKey = "clickRow"
 	ExecuteAddApiOperationKey       OperationKey = "addApi"
 	ExecuteTaskBreadcrumbSelectItem OperationKey = "selectItem"
+
+	//notify_list
+	NotifySubmit OperationKey = "submit"
+	NotifyDelete OperationKey = "delete"
+	NotifySwitch OperationKey = "switch"
+	NotifyEdit   OperationKey = "edit"
 )
 
 type ComponentProtocolParams interface{}
