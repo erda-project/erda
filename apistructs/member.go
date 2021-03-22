@@ -239,7 +239,7 @@ type GetAllOrganizationalData struct {
 
 // IsInPrj 判断用户是否在某个Prj下
 func (od *GetAllOrganizationalData) IsInPrj(scopeNames map[string][]string, scopeType, userID string) bool {
-	for name, _ := range scopeNames {
+	for name := range scopeNames {
 		if _, ok := od.Members[userID][scopeType][name]; ok {
 			return true
 		}
