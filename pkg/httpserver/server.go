@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -22,8 +21,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/uuid"
 )
-
-var RequestHistogram prometheus.Histogram
 
 const (
 	readTimeout       = 60 * time.Second
@@ -121,7 +118,6 @@ func (s *Server) internal(handler func(context.Context, *http.Request, map[strin
 		ctx, cancel := context.WithCancel(pctx)
 		defer func() {
 			cancel()
-			RequestHistogram.Observe(time.Since(start).Seconds())
 			logrus.Debugf("finished handle request %s %s (took %v)", r.Method, r.URL.String(), time.Since(start))
 		}()
 		ctx = context.WithValue(ctx, ResponseWriter, w)
@@ -191,7 +187,6 @@ func (s *Server) internalWriterHandler(handler func(context.Context, http.Respon
 		ctx, cancel := context.WithCancel(pctx)
 		defer func() {
 			cancel()
-			RequestHistogram.Observe(time.Since(start).Seconds())
 			logrus.Debugf("finished handle request %s %s (took %v)", r.Method, r.URL.String(), time.Since(start))
 		}()
 
