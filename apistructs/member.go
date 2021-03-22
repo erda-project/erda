@@ -129,6 +129,7 @@ type MemberRemoveRequest struct {
 	Scope Scope `json:"scope"`
 	// 要添加的用户id列表
 	UserIDs []string `json:"userIds"`
+	IdentityInfo
 }
 
 // MemberRemoveResponse 删除成员 POST /api/members/actions/remove

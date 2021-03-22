@@ -17,10 +17,12 @@ const (
 	edgeAppURL           = "/api/edge/app"
 	edgeSiteURL          = "/api/edge/site"
 	edgeConfigsetURL     = "/api/edge/configset"
-	edgeCfgSetItemURL    = "/api/edge/configset/item"
+	edgeCfgSetItemURL    = "/api/edge/configset-item"
 	schedulerClusterInfo = "/api/clusterinfo/%s"
 	edgeInstanceInfo     = "/api/instanceinfo"
 	edgeSiteInitURL      = "/api/edge/site/init"
+	edgeAppSiteRestart   = "/api/edge/app/site/restart/%d"
+	edgeAppSiteOffline   = "/api/edge/app/site/offline/%d"
 )
 
 func (b *Bundle) ListEdgeApp(req *apistructs.EdgeAppListPageRequest) (*apistructs.EdgeAppListResponse, error) {
@@ -44,6 +46,11 @@ func (b *Bundle) ListEdgeApp(req *apistructs.EdgeAppListPageRequest) (*apistruct
 	if req.PageNo == 0 && req.PageSize == 0 {
 		reqParam = map[string]string{
 			"orgID": strconv.Itoa(int(req.OrgID)),
+		}
+	} else if req.ClusterID != 0 {
+		reqParam = map[string]string{
+			"orgID":     strconv.Itoa(int(req.OrgID)),
+			"clusterID": strconv.Itoa(int(req.ClusterID)),
 		}
 	} else {
 		reqParam = map[string]string{
@@ -87,7 +94,7 @@ func (b *Bundle) ListEdgeApp(req *apistructs.EdgeAppListPageRequest) (*apistruct
 	return &res, nil
 }
 
-func (b *Bundle) GetEdgeApp(appID int64) (*apistructs.EdgeAppInfo, error) {
+func (b *Bundle) GetEdgeApp(appID uint64) (*apistructs.EdgeAppInfo, error) {
 	var (
 		res        apistructs.EdgeAppInfo
 		buffer     bytes.Buffer
@@ -144,6 +151,33 @@ func (b *Bundle) CreateEdgeApp(req *apistructs.EdgeAppCreateRequest) error {
 	httpResp, err := b.hc.
 		Post(host).
 		Path(edgeAppURL).
+		JSONBody(req).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !httpResp.IsOK() || !resp.Success {
+		return toAPIError(httpResp.StatusCode(), resp.Err)
+	}
+
+	return nil
+}
+
+func (b *Bundle) UpdateEdgeApp(req *apistructs.EdgeAppUpdateRequest, appID uint64) error {
+	var (
+		resp httpserver.Resp
+	)
+
+	host, err := b.urls.Ops()
+	if err != nil {
+		return err
+	}
+
+	httpResp, err := b.hc.
+		Put(host).
+		Path(fmt.Sprintf(edgeAppURL+"/%d", appID)).
 		JSONBody(req).
 		Do().
 		JSON(&resp)
@@ -270,6 +304,14 @@ func (b *Bundle) ListEdgeSite(req *apistructs.EdgeSiteListPageRequest) (*apistru
 			"pageSize": strconv.Itoa(req.PageSize),
 			"orgID":    strconv.Itoa(int(req.OrgID)),
 		}
+	}
+
+	if req.Search != "" {
+		reqParam["search"] = req.Search
+	}
+
+	if req.ClusterID > 0 {
+		reqParam["clusterID"] = strconv.Itoa(int(req.ClusterID))
 	}
 
 	for key, value := range reqParam {
@@ -476,6 +518,50 @@ func (b *Bundle) ListEdgeConfigset(req *apistructs.EdgeConfigSetListPageRequest)
 
 	if httpResp.IsNotfound() {
 		return nil, fmt.Errorf("request ops api (list config set) not found")
+	}
+
+	if err = json.Unmarshal(buffer.Bytes(), &httpReqRes); err != nil {
+		return nil, err
+	}
+
+	if !httpReqRes.Success {
+		return nil, fmt.Errorf(httpReqRes.Err.Msg)
+	}
+
+	resJson, err := json.Marshal(httpReqRes.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(resJson, &res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (b *Bundle) GetEdgeConfigSet(itemID int64) (*apistructs.EdgeConfigSetInfo, error) {
+	var (
+		res        apistructs.EdgeConfigSetInfo
+		buffer     bytes.Buffer
+		httpReqRes httpserver.Resp
+	)
+
+	host, err := b.urls.Ops()
+	if err != nil {
+		return nil, err
+	}
+
+	httpResp, err := b.hc.
+		Get(host).
+		Path(fmt.Sprintf(edgeConfigsetURL+"/%d", itemID)).Do().Body(&buffer)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if httpResp.IsNotfound() {
+		return nil, fmt.Errorf("request ops api (get configset item) not found")
 	}
 
 	if err = json.Unmarshal(buffer.Bytes(), &httpReqRes); err != nil {
@@ -762,7 +848,7 @@ func (b *Bundle) DeleteEdgeCfgSetItem(siteID int64) error {
 	return nil
 }
 
-func (b *Bundle) ListEdgeCluster(orgID uint64) ([]map[string]interface{}, error) {
+func (b *Bundle) ListEdgeCluster(orgID uint64, valueType string) ([]map[string]interface{}, error) {
 	var (
 		edgeClusters = make([]map[string]interface{}, 0)
 		edgeCloudKey = "IS_EDGE_CLOUD"
@@ -773,28 +859,47 @@ func (b *Bundle) ListEdgeCluster(orgID uint64) ([]map[string]interface{}, error)
 		return edgeClusters, err
 	}
 
-	for _, value := range res {
-		res, err := b.GetClusterInfo(value.Name)
-		if err != nil {
-			logrus.Errorf("get cluster %s info error: %v", value.Name, err)
-			continue
+	if valueType == apistructs.EdgeListValueTypeName {
+		for _, value := range res {
+			res, err := b.GetClusterInfo(value.Name)
+			if err != nil {
+				logrus.Errorf("get cluster %s info error: %v", value.Name, err)
+				continue
+			}
+			if _, ok := res[edgeCloudKey]; ok {
+				edgeClusters = append(edgeClusters, map[string]interface{}{
+					"name":  value.Name,
+					"value": value.Name,
+				})
+			}
 		}
-		if _, ok := res[edgeCloudKey]; ok {
-			edgeClusters = append(edgeClusters, map[string]interface{}{
-				"name":  value.Name,
-				"value": value.ID,
-			})
+	} else if valueType == apistructs.EdgeListValueTypeID {
+		for _, value := range res {
+			res, err := b.GetClusterInfo(value.Name)
+			if err != nil {
+				logrus.Errorf("get cluster %s info error: %v", value.Name, err)
+				continue
+			}
+			if _, ok := res[edgeCloudKey]; ok {
+				edgeClusters = append(edgeClusters, map[string]interface{}{
+					"name":  value.Name,
+					"value": value.ID,
+				})
+			}
 		}
 	}
 
 	return edgeClusters, nil
 }
 
-func (b *Bundle) ListEdgeSelectSite(orgID int64, valueType string) ([]map[string]interface{}, error) {
-	sites := make([]map[string]interface{}, 0)
+func (b *Bundle) ListEdgeSelectSite(orgID, clusterID int64, valueType string) ([]map[string]interface{}, error) {
+	var (
+		sites = make([]map[string]interface{}, 0)
+	)
 
 	res, err := b.ListEdgeSite(&apistructs.EdgeSiteListPageRequest{
 		OrgID:     orgID,
+		ClusterID: clusterID,
 		NotPaging: true,
 	})
 
@@ -821,11 +926,12 @@ func (b *Bundle) ListEdgeSelectSite(orgID int64, valueType string) ([]map[string
 	return sites, nil
 }
 
-func (b *Bundle) ListEdgeSelectConfigSet(orgID int64, valueType string) ([]map[string]interface{}, error) {
+func (b *Bundle) ListEdgeSelectConfigSet(orgID, clusterID int64, valueType string) ([]map[string]interface{}, error) {
 	configSets := make([]map[string]interface{}, 0)
 
 	res, err := b.ListEdgeConfigset(&apistructs.EdgeConfigSetListPageRequest{
 		OrgID:     orgID,
+		ClusterID: clusterID,
 		NotPaging: true,
 	})
 
@@ -850,6 +956,43 @@ func (b *Bundle) ListEdgeSelectConfigSet(orgID int64, valueType string) ([]map[s
 	}
 
 	return configSets, nil
+}
+
+func (b *Bundle) ListEdgeSelectApps(orgID, clusterID int64, exceptName string, valueType string) ([]map[string]interface{}, error) {
+	edgeApps := make([]map[string]interface{}, 0)
+
+	res, err := b.ListEdgeApp(&apistructs.EdgeAppListPageRequest{
+		OrgID:     orgID,
+		ClusterID: clusterID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if valueType == apistructs.EdgeListValueTypeID {
+		for _, value := range res.List {
+			if value.Name == exceptName {
+				continue
+			}
+			edgeApps = append(edgeApps, map[string]interface{}{
+				"name":  value.Name,
+				"value": value.ID,
+			})
+		}
+	} else if valueType == apistructs.EdgeListValueTypeName {
+		for _, value := range res.List {
+			if value.Name == exceptName {
+				continue
+			}
+			edgeApps = append(edgeApps, map[string]interface{}{
+				"name":  value.Name,
+				"value": value.Name,
+			})
+		}
+	}
+
+	return edgeApps, nil
 }
 
 func (b *Bundle) GetEdgeSiteInitShell(siteID int64) (map[string]interface{}, error) {
@@ -978,4 +1121,58 @@ func (b *Bundle) GetEdgeInstanceInfo(orgID int64, appName, site string) ([]apist
 	}
 
 	return infosData, nil
+}
+
+func (b *Bundle) RestartEdgeAppSite(appID uint64, req *apistructs.EdgeAppSiteRequest) error {
+	var (
+		resp httpserver.Resp
+	)
+
+	host, err := b.urls.Ops()
+	if err != nil {
+		return err
+	}
+
+	httpResp, err := b.hc.
+		Post(host).
+		Path(fmt.Sprintf(edgeAppSiteRestart, appID)).
+		JSONBody(req).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !httpResp.IsOK() || !resp.Success {
+		return toAPIError(httpResp.StatusCode(), resp.Err)
+	}
+
+	return nil
+}
+
+func (b *Bundle) OfflineEdgeAppSite(appID uint64, req *apistructs.EdgeAppSiteRequest) error {
+	var (
+		resp httpserver.Resp
+	)
+
+	host, err := b.urls.Ops()
+	if err != nil {
+		return err
+	}
+
+	httpResp, err := b.hc.
+		Post(host).
+		Path(fmt.Sprintf(edgeAppSiteOffline, appID)).
+		JSONBody(req).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !httpResp.IsOK() || !resp.Success {
+		return toAPIError(httpResp.StatusCode(), resp.Err)
+	}
+
+	return nil
 }

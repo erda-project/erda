@@ -143,3 +143,62 @@ type FuzzyQueryNotifiesBySourceRequest struct {
 	ItemName    string
 	Channel     string
 }
+
+//消息通知对接组件化
+type NotifyPageRequest struct {
+	Scope   string `json:"scope"`
+	ScopeId string `json:"scopeId"`
+	UserId  string `json:"userId"`
+	OrgId   string `json:"orgId"`
+}
+
+type NotifyListResponse struct {
+	Header
+	Data NotifyListBody `json:"data"`
+}
+
+type NotifyListBody struct {
+	List []DataItem `json:"list"`
+}
+
+type DataItem struct {
+	UserId       []string  `json:"userId"`
+	CreatedAt    time.Time `json:"createdAt"`
+	Id           int64     `json:"id"`
+	NotifyID     string    `json:"notifyId"`
+	NotifyName   string    `json:"notifyName"`
+	Target       string    `json:"target"`
+	NotifyTarget []Value   `json:"groupInfo"`
+	Enable       bool      `json:"enable"`
+	Items        []string  `json:"items"`
+}
+
+type Value struct {
+	Type   string       `json:"type"`
+	Values []ValueValue `json:"values"`
+}
+
+type ValueValue struct {
+	Receiver string `json:"receiver"`
+	Secret   string `json:"secret"`
+}
+
+type SwitchOperation struct {
+	Meta SwitchOperationData `json:"meta"`
+}
+
+type SwitchOperationData struct {
+	Id     uint64 `json:"id"`
+	Enable bool   `json:"enable"`
+}
+
+type AllGroupResponse struct {
+	Header
+	Data []AllGroups `json:"data"`
+}
+
+type AllGroups struct {
+	Name  string `json:"name"`
+	Value int64  `json:"value"`
+	Type  string `json:"type"`
+}

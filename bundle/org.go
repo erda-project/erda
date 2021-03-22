@@ -40,6 +40,33 @@ func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingO
 	var resp apistructs.OrgSearchResponse
 	r, err := hc.Get(host).Path("/api/orgs").
 		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", req.UserID).
+		Param("q", req.Q).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Do().
+		JSON(&resp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return nil, toAPIError(r.StatusCode(), resp.Error)
+	}
+	return &resp.Data, nil
+}
+
+// get list of public orgs
+func (b *Bundle) ListPublicOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var resp apistructs.OrgSearchResponse
+	r, err := hc.Get(host).Path("/api/orgs/actions/list-public").
+		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", req.UserID).
 		Param("q", req.Q).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
