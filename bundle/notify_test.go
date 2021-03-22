@@ -2,10 +2,11 @@ package bundle
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBundle_GetNotifyConfigMS(t *testing.T) {
