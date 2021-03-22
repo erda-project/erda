@@ -31,9 +31,6 @@
 # Files for vscode
 .vscode/*
 
-# go mod file
-go.sum
-
 # Files for macos
 *.DS_Store
 ._*
