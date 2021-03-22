@@ -193,6 +193,12 @@ const (
 	ListProjectExistOperationKey      OperationKey = "exist"
 	ListProjectFilterOperation        OperationKey = "filter"
 	ApplyDeployProjectFilterOperation OperationKey = "applyDeploy"
+
+	//notify_list
+	NotifySubmit OperationKey = "submit"
+	NotifyDelete OperationKey = "delete"
+	NotifySwitch OperationKey = "switch"
+	NotifyEdit   OperationKey = "edit"
 )
 
 type ComponentProtocolParams interface{}
