@@ -41,6 +41,7 @@ type EdgeSiteListPageRequest struct {
 	OrgID     int64
 	ClusterID int64
 	NotPaging bool
+	Search    string
 	PageNo    int `query:"pageNo"`
 	PageSize  int `query:"pageSize"`
 }
