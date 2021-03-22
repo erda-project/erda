@@ -35,13 +35,12 @@ stages:
             url: test?a=${params.a}
 `
 	y, err := New([]byte(s),
-		WithRunParams([]apistructs.PipelineRunParam{
-			{
-				Name:  "a",
-				Value: 13245555555555,
-			},
-		}),
-		WithRenderSnippet(nil, nil),
+		//WithRunParams([]apistructs.PipelineRunParam{
+		//	{
+		//		Name:  "a",
+		//		Value: 13245555555555,
+		//	},
+		//}),
 		WithFlatParams(true),
 	)
 	assert.NoError(t, err)
