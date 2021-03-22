@@ -5,8 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestBundle_GetNotifyConfigMS(t *testing.T) {
