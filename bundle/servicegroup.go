@@ -404,7 +404,7 @@ func callScheduler(b *Bundle, req, resp interface{}, path string,
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 	if !r.IsOK() {
-		return apierrors.ErrInvoke.InternalError(fmt.Errorf("statuscode: %d", r.StatusCode()))
+		return apierrors.ErrInvoke.InternalError(fmt.Errorf("statuscode: %d, %v", r.StatusCode(), string(r.Body())))
 	}
 	return nil
 }
