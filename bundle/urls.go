@@ -77,7 +77,8 @@ func (u urls) Collector() (string, error) {
 }
 
 func (u urls) Monitor() (string, error) {
-	return u.getURL(discover.EnvMonitor, discover.SvcMonitor)
+	//return u.getURL(discover.EnvMonitor, discover.SvcMonitor)
+	return "localhost:7096", nil
 }
 
 func (u urls) Pipeline() (string, error) {
