@@ -30,6 +30,7 @@ type ActionExecutor interface {
 	Remove(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
+	BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error)
 }
 
 const kindNameFormat = `^[A-Z0-9]+$`
