@@ -1,0 +1,219 @@
+package dbclient
+
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
+	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/retry"
+)
+
+func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err = session.InsertOne(pt)
+	return err
+}
+
+// FindCauseFailedPipelineTasks 寻找导致失败的节点
+func (client *Client) FindCauseFailedPipelineTasks(pipelineID uint64) (spec.RerunFailedDetail, error) {
+	var failedStageIndex int
+	failedTasks := make(map[string]uint64, 0)
+	successTasks := make(map[string]uint64, 0)
+	notExecuteTasks := make(map[string]uint64, 0)
+	stages, err := client.ListPipelineStageByPipelineID(pipelineID)
+	if err != nil {
+		return spec.RerunFailedDetail{}, err
+	}
+	var foundFailedStage bool
+	for si, stage := range stages {
+		tasks, err := client.ListPipelineTasksByStageID(stage.ID)
+		if err != nil {
+			return spec.RerunFailedDetail{}, err
+		}
+		if !foundFailedStage {
+			// 存在 stage 状态与 task 状态不一致的情况，比如：
+			//   stage 下有一个 repo 任务，repo 执行成功，此时被 pipeline 被取消，stage 状态为 stopByUser，
+			//   repo 为 success，stage 真实状态应该为 success；
+			// 因此需要根据 task 计算 stage 的真实状态
+			stageStatus, err := statusutil.CalculatePipelineStageStatus(&spec.PipelineStageWithTask{
+				PipelineStage: stage,
+				PipelineTasks: tasks,
+			})
+			if err != nil {
+				return spec.RerunFailedDetail{}, err
+			}
+			if stageStatus.IsFailedStatus() {
+				failedStageIndex = si
+				foundFailedStage = true
+			}
+		}
+		for _, task := range tasks {
+			if !foundFailedStage { // 如果还没找到 failed stage，则说明当前 stage 下的 task 都是成功的
+				successTasks[task.Name] = task.ID
+			} else {
+				if si > failedStageIndex { // 如果已经找到 failed stage，并且当前 stage 比 failedStage 大，则都为未执行的
+					notExecuteTasks[task.Name] = task.ID
+				}
+				if si < failedStageIndex { // 当前 stage 小于 failedStage，则都为成功
+					successTasks[task.Name] = task.ID
+				}
+				if si == failedStageIndex { // failedStage，需要注意 task 的执行情况
+					if task.Status.IsFailedStatus() {
+						failedTasks[task.Name] = task.ID
+					} else {
+						successTasks[task.Name] = task.ID
+					}
+				}
+			}
+		}
+	}
+	if len(failedTasks) == 0 {
+		return spec.RerunFailedDetail{}, errors.New("no failed-tasks need to rerun-failed, please check")
+	}
+	return spec.RerunFailedDetail{
+		RerunPipelineID: pipelineID,
+		StageIndex:      failedStageIndex,
+		SuccessTasks:    successTasks,
+		FailedTasks:     failedTasks,
+		NotExecuteTasks: notExecuteTasks,
+	}, nil
+}
+
+func (client *Client) GetPipelineTask(id interface{}) (spec.PipelineTask, error) {
+	var pa spec.PipelineTask
+	exist, err := client.ID(id).Get(&pa)
+	if err != nil {
+		return spec.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task by id [%v]", id)
+	}
+	if !exist {
+		return spec.PipelineTask{}, errors.Errorf("not found pipeline task by id [%v]", id)
+	}
+	return pa, nil
+}
+
+func (client *Client) FindPipelineTaskByName(pipelineID uint64, name string) (spec.PipelineTask, error) {
+	var pa = spec.PipelineTask{
+		PipelineID: pipelineID,
+		Name:       name,
+	}
+	exist, err := client.Get(&pa)
+	if err != nil {
+		return spec.PipelineTask{}, errors.Wrapf(err, "failed to get pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
+	}
+	if !exist {
+		return spec.PipelineTask{}, errors.Errorf("not found pipeline task, pipelineID [%d], name [%s]", pipelineID, name)
+	}
+	return pa, nil
+}
+
+func (client *Client) ListPipelineTasksByStageID(stageID uint64) ([]*spec.PipelineTask, error) {
+	var actions []*spec.PipelineTask
+	if err := client.Find(&actions, spec.PipelineTask{StageID: stageID}); err != nil {
+		return nil, errors.Wrapf(err, "failed to list pipeline tasks by stageID [%d]", stageID)
+	}
+	return actions, nil
+}
+
+func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...SessionOption) ([]spec.PipelineTask, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var tasks []spec.PipelineTask
+	if err := session.Find(&tasks, spec.PipelineTask{PipelineID: pipelineID}); err != nil {
+		return nil, errors.Wrapf(err, "failed to list pipeline tasks by pipelineID [%d]", pipelineID)
+	}
+	return tasks, nil
+}
+
+func (client *Client) UpdatePipelineTaskResult(id uint64, result apistructs.PipelineTaskResult) error {
+	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
+	if err != nil {
+		b, _ := json.Marshal(&result)
+		return errors.Errorf("failed to update pipeline task result, taskID: %d, result: %s, err: %v", id, string(b), err)
+	}
+	return nil
+}
+
+func (client *Client) UpdatePipelineTask(id uint64, task *spec.PipelineTask, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	const maxRetryNum = 3
+	retryNum := 0
+
+	for {
+		affectedRows, err := client.ID(id).AllCols().Update(task)
+		if err != nil {
+			return err
+		}
+		if affectedRows == 0 && !session.AllowZeroAffectedRows {
+			if retryNum < maxRetryNum {
+				time.Sleep(time.Second * 2)
+				retryNum++
+				continue
+			}
+			logrus.Errorf("failed to update pipeline task, pipelineID: %d, taskID: %d, err: %v",
+				task.PipelineID, task.ID, ErrZeroAffectedRows)
+			return nil
+		}
+		return nil
+	}
+}
+
+func (client *Client) UpdatePipelineTaskStatus(id uint64, status apistructs.PipelineStatus, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Cols("status").Update(&spec.PipelineTask{Status: status})
+	return err
+}
+
+func (client *Client) UpdatePipelineTaskContext(id uint64, ctx spec.PipelineTaskContext, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Cols("context").Update(&spec.PipelineTask{Context: ctx})
+	return err
+}
+
+func (client *Client) UpdatePipelineTaskExtra(id uint64, extra spec.PipelineTaskExtra, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Cols("extra").Update(&spec.PipelineTask{Extra: extra})
+	return err
+}
+
+func (client *Client) RefreshPipelineTask(task *spec.PipelineTask) error {
+	r, err := client.GetPipelineTask(task.ID)
+	if err != nil {
+		return err
+	}
+	*task = r
+	return nil
+}
+
+func (client *Client) ListPipelineTasksByTypeStatuses(typ string, statuses ...apistructs.PipelineStatus) ([]spec.PipelineTask, error) {
+	var actionList []spec.PipelineTask
+	if err := client.Where("type = ?", typ).In("status", statuses).Find(&actionList); err != nil {
+		return nil, err
+	}
+	return actionList, nil
+}
+
+func (client *Client) DeletePipelineTasksByPipelineID(pipelineID uint64, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	return retry.DoWithInterval(func() error {
+		_, err := session.Delete(&spec.PipelineTask{PipelineID: pipelineID})
+		return err
+	}, 3, time.Second)
+}
