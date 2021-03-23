@@ -68,7 +68,6 @@ func CreateQueryRequest(metricName string) *MetricQueryRequest {
 	return req
 }
 
-
 func (req *MetricQueryRequest) StartFrom(start time.Time) *MetricQueryRequest {
 	req.start = start
 	return req
@@ -203,4 +202,3 @@ func (req *MetricQueryRequest) ConstructParam() *url.Values {
 
 	return &param
 }
-

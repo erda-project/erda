@@ -31,4 +31,3 @@ func NewServerError(body []byte) error {
 func (e ServerError) Error() string {
 	return fmt.Sprintf("SDK.ServerError:\nErrorCode: %s\nContext: %s\nMessage: %s", e.errorCode, e.context, e.message)
 }
-

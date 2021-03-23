@@ -24,7 +24,7 @@ func (d *define) Types() []reflect.Type {
 		clientType,
 	}
 }
-func (d *define) Summary() string     { return "metricq-client" }
+func (d *define) Summary() string { return "metricq-client" }
 
 func (d *define) Description() string { return d.Summary() }
 

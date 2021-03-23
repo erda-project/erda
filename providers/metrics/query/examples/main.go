@@ -40,9 +40,9 @@ func (p *provider) Run(ctx context.Context) error {
 	}
 	// 获取单值数据对象
 	point, err := resp.ReturnAsPoint()
-	p.Log.Infof("metric_name : %s",point.Name)
+	p.Log.Infof("metric_name : %s", point.Name)
 	for _, data := range point.Data {
-		p.Log.Infof("cpu_usage_percent : %f",data.Data)
+		p.Log.Infof("cpu_usage_percent : %f", data.Data)
 	}
 	return nil
 }
