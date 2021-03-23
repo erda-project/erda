@@ -19,24 +19,24 @@ type MetricQuery interface {
 	SetTimeout(duration time.Duration)
 }
 
-type QueryAction struct {
+type queryClient struct {
 	endpoint string
 	timeout  time.Duration
 
 	httpClient *http.Client
 }
 
-func (client *QueryAction) SetTimeout(duration time.Duration) {
+func (client *queryClient) SetTimeout(duration time.Duration) {
 	client.httpClient.Timeout = duration
 }
 
-func (client *QueryAction) QueryMetric(req *MetricQueryRequest) (*MetricQueryResponse, error) {
+func (client *queryClient) QueryMetric(req *MetricQueryRequest) (*MetricQueryResponse, error) {
 	response := &MetricQueryResponse{}
 	err := client.doAction(req, response)
 	return response, err
 }
 
-func (client *QueryAction) doAction(req *MetricQueryRequest, resp *MetricQueryResponse) error {
+func (client *queryClient) doAction(req *MetricQueryRequest, resp *MetricQueryResponse) error {
 	if req.diagram == "histogram" && req.point == 0 {
 		return errors.New("point must be limit when diagram is histogram")
 	}

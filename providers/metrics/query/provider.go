@@ -39,12 +39,12 @@ func (d *define) Creator() servicehub.Creator {
 type provider struct {
 	Cfg    *config
 	Log    logs.Logger
-	Client *QueryAction
+	Client *queryClient
 }
 
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
-	client := &QueryAction{
+	client := &queryClient{
 		endpoint:   p.Cfg.Endpoint,
 		timeout:    p.Cfg.Timeout,
 		httpClient: &http.Client{},
