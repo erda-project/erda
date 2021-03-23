@@ -69,10 +69,10 @@ type PipelineExtraInfo struct {
 	CopyFromPipelineID *uint64            `json:"copyFromPipelineID,omitempty"` // 是否是从其他节点拷贝过来
 	RerunFailedDetail  *RerunFailedDetail `json:"rerunFailedDetail,omitempty"`
 
-	IsAutoRun      bool     `json:"isAutoRun,omitempty"` // 创建后是否自动开始执行
-	ShareVolumeID  string   `json:"shareVolumeId,omitempty"`
-	TaskWorkspaces []string `json:"taskWorkspaces,omitempty"` //工作目录,例如git
-	IsShareVolume  bool     `json:"isShareVolume,omitempty"`
+	IsAutoRun      bool                     `json:"isAutoRun,omitempty"` // 创建后是否自动开始执行
+	ShareVolumeID  string                   `json:"shareVolumeId,omitempty"`
+	TaskWorkspaces []string                 `json:"taskWorkspaces,omitempty"` //工作目录,例如git
+	StorageConfig  apistructs.StorageConfig `json:"storageConfig,omitempty"`  // 挂载设置
 
 	CallbackURLs []string `json:"callbackURLs,omitempty"`
 

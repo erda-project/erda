@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -157,10 +158,16 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
 
-	// 共享 workdir
+	// 挂载配置
+	p.Extra.StorageConfig.EnableNFS = true
 	storageConfig := pipelineYml.Spec().Storage
 	if storageConfig != nil && storageConfig.Context == "local" {
-		p.Extra.IsShareVolume = true
+		p.Extra.StorageConfig.EnableLocal = true
+	}
+	// 是否全局配置开启流水线挂载
+	if conf.DisablePipelineVolume() {
+		p.Extra.StorageConfig.EnableNFS = false
+		p.Extra.StorageConfig.EnableLocal = false
 	}
 
 	// auto run
