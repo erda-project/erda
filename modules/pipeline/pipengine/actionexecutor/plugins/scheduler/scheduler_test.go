@@ -87,3 +87,8 @@ func TestSched_DeleteNamespace(t *testing.T) {
 func TestSched_Status(t *testing.T) {
 	fmt.Println(s.Status(context.Background(), action))
 }
+
+func TestSched_BatchDelete(t *testing.T) {
+	actions := []*spec.PipelineTask{action, action}
+	fmt.Println(s.BatchDelete(context.Background(), actions))
+}
