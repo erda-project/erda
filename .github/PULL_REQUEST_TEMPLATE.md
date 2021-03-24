@@ -33,8 +33,8 @@ Fixes #
 #### Special notes for your reviewer:
 
 
-#### Reivewers List:
-@your-reviewer
+#### Specified Reivewers:
+/assgin @your-reviewer
 
 #### Does this PR introduce a user-facing change?
 <!--
