@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/Knetic/govaluate.v3"
 
-	"github.com/erda-project/erda/modules/pipeline/pexpr"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 )
 
 // 匹配 ${{ xxx }}

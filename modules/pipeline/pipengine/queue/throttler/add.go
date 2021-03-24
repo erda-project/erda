@@ -1,0 +1,46 @@
+package throttler
+
+import (
+	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/enhancedqueue"
+)
+
+const defaultQueueWindow = 100
+
+func (t *throttler) addKeyToQueue(key string, req AddKeyToQueueRequest) {
+	eq, ok := t.queueByName[req.QueueName]
+	if !ok {
+		var queueWindow int64 = defaultQueueWindow
+		if req.QueueWindow != nil {
+			queueWindow = *req.QueueWindow
+		}
+		eq = t.addQueue(req.QueueName, queueWindow)
+	} else {
+		// 队列已存在，且 queueWindow 改变
+		if req.QueueWindow != nil && *req.QueueWindow != eq.ProcessingWindow() {
+			eq.SetProcessingWindow(*req.QueueWindow)
+		}
+	}
+
+	// 队列增加 key
+	eq.Add(key, req.Priority, req.CreationTime)
+
+	// key 关联的队列
+	keyQueueByName, ok := t.keyRelatedQueues[key]
+	if !ok {
+		keyQueueByName = make(map[string]*enhancedqueue.EnhancedQueue)
+	}
+	// 关联队列
+	keyQueueByName[req.QueueName] = eq
+	t.keyRelatedQueues[key] = keyQueueByName
+}
+
+func (t *throttler) addQueue(name string, window int64) *enhancedqueue.EnhancedQueue {
+	eq := t.queueByName[name]
+	if eq != nil {
+		eq.SetProcessingWindow(window)
+	} else {
+		eq = enhancedqueue.NewEnhancedQueue(window)
+	}
+	t.queueByName[name] = eq
+	return eq
+}
