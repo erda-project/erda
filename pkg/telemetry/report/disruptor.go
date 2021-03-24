@@ -1,0 +1,78 @@
+package report
+
+import (
+	"time"
+
+	"github.com/erda-project/erda/pkg/telemetry/common"
+	"github.com/erda-project/erda/pkg/telemetry/config"
+)
+
+var (
+	DefaultDisruptor = NewDisruptor(nil)
+)
+
+type Disruptor interface {
+	In(metrics ...*common.Metric) error
+}
+
+type disruptor struct {
+	metrics chan *common.Metric
+	labels  common.GlobalLabel
+
+	reporter Reporter
+}
+
+func (d *disruptor) In(metrics ...*common.Metric) error {
+	if len(metrics) > 0 {
+		for _, metric := range metrics {
+			for k, v := range d.labels {
+				if _, ok := metric.Tags[k]; !ok {
+					metric.Tags[k] = v
+				}
+			}
+			d.metrics <- metric
+		}
+	}
+	return nil
+}
+
+func (d *disruptor) push() {
+	go func(queue chan *common.Metric, reporter Reporter, queueSize int) {
+		buf := newBuffer(queueSize)
+		ticker := time.NewTicker(time.Second * time.Duration(5))
+		for {
+			select {
+			case metric, ok := <-queue:
+				if !ok {
+					if metrics := buf.Flush(); len(metrics) != 0 {
+						_ = reporter.Send(metrics)
+					}
+					break
+				}
+				buf.Add(metric)
+				if buf.IsOverFlow() {
+					_ = reporter.Send(buf.Flush())
+				}
+			case <-ticker.C:
+				if !buf.IsEmpty() {
+					if metrics := buf.Flush(); len(metrics) != 0 {
+						_ = reporter.Send(metrics)
+					}
+				}
+			}
+		}
+	}(d.metrics, d.reporter, config.GlobalConfig().ReportConfig.BufferSize)
+}
+
+func NewDisruptor(cfg *config.ReportConfig) Disruptor {
+	if cfg == nil {
+		cfg = config.GlobalConfig().ReportConfig
+	}
+	d := &disruptor{
+		metrics:  make(chan *common.Metric, cfg.BufferSize+64),
+		labels:   common.GetGlobalLabels(),
+		reporter: createReporter(cfg),
+	}
+	d.push()
+	return d
+}
