@@ -26,6 +26,7 @@ const (
 	IssueTypeResource          string = "issue-type"
 	IssueStateResource         string = "issue-state"
 	IssueImportResource        string = "issue-import"
+	IssuePanelResource         string = "issue-panel"
 	PublisherResource          string = "publisher"
 	PmpResource                string = "pmp"
 	NoticeResource             string = "notice"

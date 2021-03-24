@@ -220,28 +220,25 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	}
 
 	// 获取其中一个 task 的 executor，删除 ns
-	var oneTask *spec.PipelineTask
+	var tasks []*spec.PipelineTask
 	for _, affectedPipelineID := range affectedPipelineIDs {
-		tasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
+		dbTasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
 		if err != nil {
 			return err
 		}
-		for _, t := range tasks {
-			if t.Extra.UUID != "" {
-				oneTask = &t
-				break
-			}
-		}
-		if oneTask != nil {
-			break
+
+		for _, task := range dbTasks {
+			var taskValue = task
+			tasks = append(tasks, &taskValue)
 		}
 	}
-	if oneTask != nil {
-		executor, err := actionexecutor.GetManager().Get(types.Name(oneTask.Extra.ExecutorName))
+
+	if len(tasks) > 0 {
+		executor, err := actionexecutor.GetManager().Get(types.Name(tasks[0].Extra.ExecutorName))
 		if err != nil {
 			return err
 		}
-		if _, err := executor.DeleteNamespace(context.Background(), oneTask); err != nil {
+		if _, err := executor.BatchDelete(context.Background(), tasks); err != nil {
 			return err
 		}
 	}

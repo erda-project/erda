@@ -22,9 +22,10 @@ VERSION_OPS := -ldflags "\
         -X '${VERSION_PKG}.GoVersion=${GO_VERSION}' \
 		-X '${VERSION_PKG}.DockerImage=${DOCKER_IMAGE}'"
 # build env
-GOPROXY ?= https://goproxy.cn/
+# GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
-GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
+# GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
+GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
 
 .PHONY: build-version clean tidy
 build-all:
@@ -42,11 +43,11 @@ build-all:
     done; \
 	echo "build all modules successfully !"
 
-build: build-version summodule tidy
+build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 
-build-cross: build-version summodule
+build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
 	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
 
@@ -73,7 +74,7 @@ generate:
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go generate -v -x
 
-summodule:
+submodule:
 	git submodule update --init
 
 clean:
