@@ -130,7 +130,6 @@ type CronCompensator struct {
 type PipelineYmlParseGraphRequest struct {
 	PipelineYmlContent        string            `json:"pipelineYmlContent"`
 	GlobalSnippetConfigLabels map[string]string `json:"globalSnippetConfigLabels"`
-	NeedFlatSnippet           bool              `json:"needFlatSnippet"`
 	SnippetConfig             *SnippetConfig    `json:"snippetConfig"`
 }
 
