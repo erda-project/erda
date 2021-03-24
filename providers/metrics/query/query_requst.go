@@ -25,14 +25,14 @@ type FieldCondition struct {
 }
 
 type RangeCondition struct {
-	Name   string // 区间聚合名
+	Name   string
 	Ranges []struct {
 		From int
 		To   int
 	}
-	// 下述参数需配合使用
-	Split     int     // 区间个数
-	RangeSize float64 // 区间范围
+
+	Split     int
+	RangeSize float64
 }
 
 type MetricQueryRequest struct {
@@ -78,38 +78,29 @@ func (req *MetricQueryRequest) EndWith(end time.Time) *MetricQueryRequest {
 	return req
 }
 
-// 设置数据返回的格式
-// raw: 原始数据格式
-// chart: 图表格式(默认)
-// chartv2: 图表格式v2
+
+// chart:
+// chartv2:
 func (req *MetricQueryRequest) FormatAs(format string) *MetricQueryRequest {
 	req.format = format
 	return req
 }
 
-// 设置查询数据类型
-// histogram: 查询折线图类型的数据
-// 若未设置(默认)：查询单个点的数据，如统计集群中所有的机器数量
 func (req *MetricQueryRequest) SetDiagram(diagram string) *MetricQueryRequest {
 	req.diagram = diagram
 	return req
 }
 
-// 条件过滤
-// 等同于SQL中的 WHERE id=1
 func (req *MetricQueryRequest) Filter(key, val string) *MetricQueryRequest {
 	req.filters = append(req.filters, FilterCondition{key, "filter", val})
 	return req
 }
 
-// 前缀模糊匹配
-// 等同于SQL中的 name LIKE an%
 func (req *MetricQueryRequest) Match(key, val string) *MetricQueryRequest {
 	req.filters = append(req.filters, FilterCondition{key, "match", val})
 	return req
 }
 
-// 设置映射条件条件
 func (req *MetricQueryRequest) Field(key string) *FieldCondition {
 	return &FieldCondition{
 		req: req,
@@ -117,8 +108,7 @@ func (req *MetricQueryRequest) Field(key string) *FieldCondition {
 	}
 }
 
-// in条件
-// 等同于SQL中的 id IN (1,2,5)
+
 func (req *MetricQueryRequest) In(key string, values []string) *MetricQueryRequest {
 	for _, val := range values {
 		req.filters = append(req.filters, FilterCondition{key, "in", val})
@@ -126,21 +116,17 @@ func (req *MetricQueryRequest) In(key string, values []string) *MetricQueryReque
 	return req
 }
 
-// 限制返回的数据点数量
-// 注意：当diagram为histogram时，必须设置该属性
 func (req *MetricQueryRequest) LimitPoint(point int) *MetricQueryRequest {
 	req.point = point
 	return req
 }
 
-// 设置聚合函数
-// 具体函数请参考：https://yuque.antfin.com/spot/develop-docs/hr2c1y#f14b2b31
+// see：https://yuque.antfin.com/spot/develop-docs/hr2c1y#f14b2b31
 func (req *MetricQueryRequest) Apply(funcName, field string) *MetricQueryRequest {
 	req.functions = append(req.functions, FuncCondition{funcName, field})
 	return req
 }
 
-// 设置聚合条件
 func (req *MetricQueryRequest) GroupBy(groups []string) *MetricQueryRequest {
 	for _, g := range groups {
 		req.groups = append(req.groups, GroupCondition(g))
@@ -148,20 +134,16 @@ func (req *MetricQueryRequest) GroupBy(groups []string) *MetricQueryRequest {
 	return req
 }
 
-// 设置group聚合后的结果数量
 func (req *MetricQueryRequest) LimitGroup(limit int) *MetricQueryRequest {
 	req.limits = append(req.limits, limit)
 	return req
 }
 
-// 设置排序条件
 func (req *MetricQueryRequest) Sort(field string) *MetricQueryRequest {
 	req.sorts = append(req.sorts, field)
 	return req
 }
 
-// 设置时间对齐
-// 类似于整数取整
 func (req *MetricQueryRequest) Align(align TimeAlignCondition) *MetricQueryRequest {
 	req.align = align
 	return req
