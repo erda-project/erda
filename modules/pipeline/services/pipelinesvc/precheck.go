@@ -69,7 +69,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
 		}
 	}
 
-	if p.Extra.IsShareVolume {
+	if p.Extra.StorageConfig.EnableShareVolume() {
 		for _, task := range tasks {
 			typeVersion := task.Extra.Action.GetActionTypeVersion()
 			value, exist := actionSpecs[typeVersion].Labels["new_workspace"]

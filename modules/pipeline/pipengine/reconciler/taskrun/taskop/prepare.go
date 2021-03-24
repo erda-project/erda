@@ -318,43 +318,46 @@ func (pre *prepare) makeTaskRun() error {
 		return nil
 	}
 
-	// --- cmd ---
-	// task.Context.InStorages
-continueContextVolumes:
-	for _, out := range pvolumes.GetAvailableTaskOutStorages(tasks) {
-		name := out.Name
-		// 如果在 task 的 output 中存在，则不需要注入上次结果
-		for _, output := range task.Extra.Action.Namespaces {
-			if name == output {
-				continue continueContextVolumes
-			}
-		}
-		// 如果 stageOrder >= 当前 order，不注入，只注入前置 stage 的 volume
-		if len(out.Labels) == 0 {
-			continue
-		}
-		stageOrderStr, ok := out.Labels["stageOrder"]
-		if !ok {
-			continue
-		}
-		stageOrder, err := strconv.Atoi(stageOrderStr)
-		if err != nil {
-			return apierrors.ErrParsePipelineContext.InternalError(err)
-		}
-		if stageOrder >= task.Extra.StageOrder {
-			// 如果说 action 的 need 中有对应的挂载的名称，对应的就是 snippet 的状态，各个 task 的 stageOrder 相等会导致的问题
-			// 这时候还是给对应的 inStorage 挂载上
-			for _, need := range task.Extra.Action.Needs {
-				if need.String() == out.Name {
-					task.Context.InStorages = append(task.Context.InStorages, out)
+	if p.Extra.StorageConfig.EnablePipelineVolume() {
+		// --- cmd ---
+		// task.Context.InStorages
+	continueContextVolumes:
+		for _, out := range pvolumes.GetAvailableTaskOutStorages(tasks) {
+			name := out.Name
+			// 如果在 task 的 output 中存在，则不需要注入上次结果
+			for _, output := range task.Extra.Action.Namespaces {
+				if name == output {
 					continue continueContextVolumes
 				}
 			}
-			continue
-		}
+			// 如果 stageOrder >= 当前 order，不注入，只注入前置 stage 的 volume
+			if len(out.Labels) == 0 {
+				continue
+			}
+			stageOrderStr, ok := out.Labels["stageOrder"]
+			if !ok {
+				continue
+			}
+			stageOrder, err := strconv.Atoi(stageOrderStr)
+			if err != nil {
+				return apierrors.ErrParsePipelineContext.InternalError(err)
+			}
+			if stageOrder >= task.Extra.StageOrder {
+				// 如果说 action 的 need 中有对应的挂载的名称，对应的就是 snippet 的状态，各个 task 的 stageOrder 相等会导致的问题
+				// 这时候还是给对应的 inStorage 挂载上
+				for _, need := range task.Extra.Action.Needs {
+					if need.String() == out.Name {
+						task.Context.InStorages = append(task.Context.InStorages, out)
+						continue continueContextVolumes
+					}
+				}
+				continue
+			}
 
-		task.Context.InStorages = append(task.Context.InStorages, out)
+			task.Context.InStorages = append(task.Context.InStorages, out)
+		}
 	}
+
 	// for get action callback openapi oauth2 token
 	specYmlJob, ok := actionSpecYmlJobMap[taskrun.GetActionTypeVersion(action)]
 	if !ok || specYmlJob == nil {
@@ -381,7 +384,7 @@ continueContextVolumes:
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.IsShareVolume {
+	if p.Extra.StorageConfig.EnableShareVolume() {
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
@@ -394,7 +397,7 @@ continueContextVolumes:
 				Kind:        "",
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("error create createJobVolume: %v", err)
 			}
 			p.Extra.ShareVolumeID = volumeID
 			err = pre.DBClient.UpdatePipelineExtraByPipelineID(p.ID, &p.PipelineExtra)
@@ -432,7 +435,8 @@ continueContextVolumes:
 				&p.Extra.ShareVolumeID))
 		}
 
-	} else {
+	}
+	if p.Extra.StorageConfig.EnablePipelineVolume() {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -458,8 +462,10 @@ continueContextVolumes:
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	// 处理 task caches
-	pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
+	if p.Extra.StorageConfig.EnablePipelineVolume() {
+		// 处理 task caches
+		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
+	}
 
 	// --- binds ---
 	task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
