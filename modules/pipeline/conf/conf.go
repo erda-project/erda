@@ -79,6 +79,9 @@ type Conf struct {
 	// openapi oauth2 token client
 	OpenapiOAuth2TokenClientID     string `env:"OPENAPI_OAUTH2_TOKEN_CLIENT_ID" default:"pipeline"`
 	OpenapiOAuth2TokenClientSecret string `env:"OPENAPI_OAUTH2_TOKEN_CLIENT_SECRET" default:"devops/pipeline"`
+
+	// DisablePipelineVolume default is false, means enable context volumes
+	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
 }
 
 var cfg Conf
@@ -255,4 +258,9 @@ func OpenapiOAuth2TokenClientID() string {
 // OpenapiOAuth2TokenClientID 返回 用于申请 openapi oauth2 token 的客户端 secret.
 func OpenapiOAuth2TokenClientSecret() string {
 	return cfg.OpenapiOAuth2TokenClientSecret
+}
+
+// DisablePipelineVolume 返回 是否关闭 pipeline volume，只有值引用.
+func DisablePipelineVolume() bool {
+	return cfg.DisablePipelineVolume
 }
