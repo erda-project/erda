@@ -78,7 +78,6 @@ func (req *MetricQueryRequest) EndWith(end time.Time) *MetricQueryRequest {
 	return req
 }
 
-
 // chart:
 // chartv2:
 func (req *MetricQueryRequest) FormatAs(format string) *MetricQueryRequest {
@@ -107,7 +106,6 @@ func (req *MetricQueryRequest) Field(key string) *FieldCondition {
 		key: key,
 	}
 }
-
 
 func (req *MetricQueryRequest) In(key string, values []string) *MetricQueryRequest {
 	for _, val := range values {
