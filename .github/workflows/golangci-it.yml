@@ -7,7 +7,7 @@ on:
       - develop
   pull_request:
 jobs:
-  build:
+  ci-it:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
