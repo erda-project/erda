@@ -362,6 +362,51 @@ func (s *Sched) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) 
 	return result.Name, nil
 }
 
+func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (data interface{}, err error) {
+	if len(actions) == 0 {
+		return nil, nil
+	}
+	action := actions[0]
+	defer wrapError(&err, "batch delete jobs", action)
+	if err = validateAction(action); err != nil {
+		return nil, err
+	}
+	var req []apistructs.JobFromUser
+	for _, action := range actions {
+		if len(action.Extra.UUID) <= 0 {
+			continue
+		}
+		req = append(req, apistructs.JobFromUser{Name: action.Extra.UUID, Namespace: action.Extra.Namespace})
+	}
+	var body bytes.Buffer
+	resp, err := httpclient.New().Delete(s.addr).
+		Path("/v1/jobs").
+		JSONBody(&req).
+		Do().Body(&body)
+	if err != nil {
+		return nil, httpInvokeErr(err)
+	}
+	statusCode := resp.StatusCode()
+	respBody := body.String()
+	var result apistructs.JobDeleteResponse
+	if err := json.NewDecoder(&body).Decode(&result); err != nil {
+		return nil, respBodyDecodeErr(statusCode, respBody, err)
+	}
+	if result.Error != "" {
+		var actionIDs []uint64
+		for _, action := range actions {
+			actionIDs = append(actionIDs, action.ID)
+		}
+		if strings.Contains(result.Error, notFoundError) {
+			logrus.Infof("skip resp.Error(not found) when invoke scheduler.batchDelete, pipelineID: %d, namespace: %s, actions: %v, resp.Error: %s",
+				action.PipelineID, action.Extra.Namespace, actionIDs, result.Error)
+			return result.Name, nil
+		}
+		return nil, errors.Errorf("statusCode: %d, resp.error: %s", resp.StatusCode(), result.Error)
+	}
+	return result.Name, nil
+}
+
 func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
 	defer func() {
 		if r := recover(); r != nil {

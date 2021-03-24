@@ -92,3 +92,9 @@ func (d *Demo) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (
 	time.Sleep(time.Second * 5)
 	return nil, nil
 }
+
+func (d *Demo) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error) {
+	logrus.Info("demo batch delete ...")
+	time.Sleep(time.Second * 5)
+	return nil, nil
+}
