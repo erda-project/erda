@@ -6,10 +6,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pkg/etcdclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 var s *ActionAgentSvc
@@ -25,7 +26,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	etcdClient, err := etcdclient.NewEtcdClient()
+	etcdClient, err := etcd.New()
 	if err != nil {
 		panic(err)
 	}
@@ -42,8 +43,9 @@ func init() {
 func TestActionAgentSvc_Ensure(t *testing.T) {
 	agentImage := "registry.cn-hangzhou.aliyuncs.com/dice/action-agent:3.4.0-20190715-78211b9c4c"
 	agentMD5 := "771821eb0aeab82dc963446a3da381aa"
-	cluster, err := s.bdl.GetCluster("terminus-test")
-	assert.NoError(t, err)
-	err = s.Ensure(cluster, agentImage, agentMD5)
+	var cluster = apistructs.ClusterInfoData{
+		"DICE_CLUSTER_TYPE": "k8s",
+	}
+	err := s.Ensure(cluster, agentImage, agentMD5)
 	assert.NoError(t, err)
 }
