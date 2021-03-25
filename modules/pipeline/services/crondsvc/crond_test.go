@@ -21,5 +21,5 @@ func TestReloadSpeed(t *testing.T) {
 			panic(err)
 		}
 	}
-	time.Sleep(time.Hour)
+	time.Sleep(time.Second*2)
 }

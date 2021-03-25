@@ -40,5 +40,5 @@ jobs:
         run: make
       - name: Run Test
         run: |
-          go test -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
+          go test -v -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
           bash <(curl -s https://codecov.io/bash)
