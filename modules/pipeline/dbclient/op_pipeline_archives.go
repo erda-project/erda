@@ -5,8 +5,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/version"
 )
 
 func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...SessionOption) error {
@@ -152,7 +152,7 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 		PipelineSource:  p.PipelineSource,
 		PipelineYmlName: p.PipelineYmlName,
 		Status:          p.Status,
-		DiceVersion:     version.DiceVersion,
+		DiceVersion:     version.Version,
 		Content: spec.PipelineArchiveContent{
 			Pipeline:        p,
 			PipelineLabels:  labels,
