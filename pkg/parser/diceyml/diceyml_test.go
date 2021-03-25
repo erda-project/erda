@@ -107,15 +107,15 @@ func TestDiceYmlInsertJobImage(t *testing.T) {
 
 }
 
-func TestDiceYmlMergeValues(t *testing.T) {
-	d, err := NewDeployable([]byte(yml), "test", true)
-	assert.Nil(t, err)
-	assert.Equal(t, 0.5, d.Obj().Services["web"].Resources.CPU)
-	assert.Equal(t, 1, d.Obj().Services["web"].Deployments.Replicas)
-	assert.Equal(t, "mysql:basic", d.Obj().AddOns["xxx"].Plan)
-	d, err = NewDeployable([]byte(yml), "prod", true)
-	assert.Nil(t, err)
-	assert.Equal(t, float64(1), d.Obj().Services["web"].Resources.CPU)
-	assert.Equal(t, 2, d.Obj().Services["web"].Deployments.Replicas)
-	assert.Equal(t, "rds:basic", d.Obj().AddOns["xxx"].Plan)
-}
+//func TestDiceYmlMergeValues(t *testing.T) {
+//	d, err := NewDeployable([]byte(yml), "test", true)
+//	assert.Nil(t, err)
+//	assert.Equal(t, 0.5, d.Obj().Services["web"].Resources.CPU)
+//	assert.Equal(t, 1, d.Obj().Services["web"].Deployments.Replicas)
+//	assert.Equal(t, "mysql:basic", d.Obj().AddOns["xxx"].Plan)
+//	d, err = NewDeployable([]byte(yml), "prod", true)
+//	assert.Nil(t, err)
+//	assert.Equal(t, float64(1), d.Obj().Services["web"].Resources.CPU)
+//	assert.Equal(t, 2, d.Obj().Services["web"].Deployments.Replicas)
+//	assert.Equal(t, "rds:basic", d.Obj().AddOns["xxx"].Plan)
+//}

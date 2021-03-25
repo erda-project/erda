@@ -7,8 +7,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	_ "github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/actionagent"
-	_ "github.com/erda-project/erda/pkg/version"
 )
 
 type PlatformLogFormmater struct {
