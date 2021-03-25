@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -32,21 +31,21 @@ func TestLogger(t *testing.T) {
 	logger.Println("hello world")
 }
 
-func Test_realMain(t *testing.T) {
-	os.Setenv("DICE_OPENAPI_PUBLIC_URL", "http://openapi.dev.terminus.io")
-	os.Setenv("DICE_OPENAPI_ADDR", "openapi.default.svc.cluster.local:9529")
-	os.Setenv("DICE_IS_EDGE", "true")
-	os.Setenv("DICE_OPENAPI_TOKEN_FOR_ACTION_BOOTSTRAP", "")
-	os.Setenv("UPLOADDIR", "/tmp/uploaddir")
-	os.Setenv("CONTEXTDIR", "/tmp/actionagent")
-	os.Setenv("WORKDIR", "/tmp/actionagent/wd")
-	os.Setenv("METAFILE", "/tmp/actionagent/metafile")
-	os.Setenv("DICE_OPENAPI_TOKEN", "1234")
-
-	agentArg := actionagent.NewAgentArgForPull(10006527, 55534)
-	reqByte, err := json.Marshal(agentArg)
-	assert.NoError(t, err)
-	args := base64.StdEncoding.EncodeToString(reqByte)
-
-	realMain(args)
-}
+//func Test_realMain(t *testing.T) {
+//	os.Setenv("DICE_OPENAPI_PUBLIC_URL", "http://openapi.dev.terminus.io")
+//	os.Setenv("DICE_OPENAPI_ADDR", "openapi.default.svc.cluster.local:9529")
+//	os.Setenv("DICE_IS_EDGE", "true")
+//	os.Setenv("DICE_OPENAPI_TOKEN_FOR_ACTION_BOOTSTRAP", "")
+//	os.Setenv("UPLOADDIR", "/tmp/uploaddir")
+//	os.Setenv("CONTEXTDIR", "/tmp/actionagent")
+//	os.Setenv("WORKDIR", "/tmp/actionagent/wd")
+//	os.Setenv("METAFILE", "/tmp/actionagent/metafile")
+//	os.Setenv("DICE_OPENAPI_TOKEN", "1234")
+//
+//	agentArg := actionagent.NewAgentArgForPull(10006527, 55534)
+//	reqByte, err := json.Marshal(agentArg)
+//	assert.NoError(t, err)
+//	args := base64.StdEncoding.EncodeToString(reqByte)
+//
+//	realMain(args)
+//}

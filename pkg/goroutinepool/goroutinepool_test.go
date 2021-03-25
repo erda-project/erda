@@ -53,17 +53,17 @@ func restart(p *GoroutinePool, r_ int) int {
 	return r
 }
 
-func TestRestart(t *testing.T) {
-	p := New(5)
-	r := restart(p, 0)
-	assert.Equal(t, r, 2)
-	r = restart(p, r)
-	assert.Equal(t, r, 4)
-	r = restart(p, r)
-	assert.Equal(t, r, 6)
-	r = restart(p, r)
-	assert.Equal(t, r, 8)
-}
+//func TestRestart(t *testing.T) {
+//	p := New(5)
+//	r := restart(p, 0)
+//	assert.Equal(t, r, 2)
+//	r = restart(p, r)
+//	assert.Equal(t, r, 4)
+//	r = restart(p, r)
+//	assert.Equal(t, r, 6)
+//	r = restart(p, r)
+//	assert.Equal(t, r, 8)
+//}
 
 func TestStat(t *testing.T) {
 	p := New(10)
@@ -85,16 +85,16 @@ func TestStat(t *testing.T) {
 	p.Stop()
 }
 
-func TestJobPanic(t *testing.T) {
-	job := func() {
-		panic("panic")
-	}
-	p := New(1)
-	p.Start()
-	p.MustGo(job)
-	time.Sleep(500 * time.Millisecond)
-	stat := p.Statistics()
-	assert.Equal(t, 1, stat[0])
-	assert.Equal(t, 1, stat[1])
-	p.Stop()
-}
+//func TestJobPanic(t *testing.T) {
+//	job := func() {
+//		panic("panic")
+//	}
+//	p := New(1)
+//	p.Start()
+//	p.MustGo(job)
+//	time.Sleep(500 * time.Millisecond)
+//	stat := p.Statistics()
+//	assert.Equal(t, 1, stat[0])
+//	assert.Equal(t, 1, stat[1])
+//	p.Stop()
+//}
