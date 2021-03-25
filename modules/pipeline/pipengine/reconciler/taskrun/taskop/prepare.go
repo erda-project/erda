@@ -183,6 +183,7 @@ func (pre *prepare) makeTaskRun() error {
 		PipelineTaskLogID = "PIPELINE_TASK_LOG_ID"
 		PipelineDebugMode = "PIPELINE_DEBUG_MODE"
 		AgentEnvPrefix    = "ACTIONAGENT_"
+		PipelineTimeBegin = "PIPELINE_TIME_BEGIN_TIMESTAMP"
 	)
 
 	// --- envs ---
@@ -233,6 +234,10 @@ func (pre *prepare) makeTaskRun() error {
 	task.Extra.PrivateEnvs[actionagent.METAFILE] = pvolumes.MakeTaskContainerMetafilePath(task.Name)
 	task.Extra.PrivateEnvs[actionagent.UPLOADDIR] = pvolumes.ContainerUploadDir
 	task.Extra.PublicEnvs[pvolumes.EnvKeyMesosFetcherURI] = pvolumes.MakeMesosFetcherURI4AliyunRegistrySecret(mountPoint)
+	task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(time.Now().Unix(), 10)
+	if p.TimeBegin != nil {
+		task.Extra.PublicEnvs[PipelineTimeBegin] = strconv.FormatInt(p.TimeBegin.Unix(), 10)
+	}
 	// handle dice openapi
 	for k, v := range task.Extra.PrivateEnvs {
 		if strings.HasPrefix(k, "DICE_OPENAPI_") {
