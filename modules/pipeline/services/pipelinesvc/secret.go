@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -18,7 +19,6 @@ import (
 	"github.com/erda-project/erda/pkg/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/version"
 )
 
 const (
@@ -75,7 +75,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 
 	r = map[string]string{
 		// dice version
-		"dice.version": version.DiceVersion,
+		"dice.version": version.Version,
 		// dice
 		"dice.org.id":              p.Labels[apistructs.LabelOrgID],
 		"dice.org.name":            p.GetOrgName(),
