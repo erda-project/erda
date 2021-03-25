@@ -29,17 +29,17 @@ envs:
 	assert.Error(t, s.mergeErrors())
 }
 
-func TestRenderSecrets(t *testing.T) {
-	input := []byte("((a))((b))((c))")
-	secret := map[string]string{
-		"a": "1",
-		"b": "2",
-	}
-	output, err := RenderSecrets(input, secret)
-	assert.Error(t, err)
-	_ = output
-
-	secret["c"] = "3"
-	output, err = RenderSecrets(input, secret)
-	assert.NoError(t, err)
-}
+//func TestRenderSecrets(t *testing.T) {
+//	input := []byte("((a))((b))((c))")
+//	secret := map[string]string{
+//		"a": "1",
+//		"b": "2",
+//	}
+//	output, err := RenderSecrets(input, secret)
+//	assert.Error(t, err)
+//	_ = output
+//
+//	secret["c"] = "3"
+//	output, err = RenderSecrets(input, secret)
+//	assert.NoError(t, err)
+//}
