@@ -31,7 +31,7 @@ We split the codes of erda into multiple repositories according to different fun
 
 ## User Documentation
 - [中文](https://dice-docs.app.terminus.io)
-- [English]()
+- English
 
 ## Contributing
 
