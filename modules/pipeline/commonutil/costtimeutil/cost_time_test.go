@@ -19,10 +19,11 @@ func TestCalculateTaskCostTimeSec(t *testing.T) {
 }
 
 func TestCalculatePipelineCostTimeSec(t *testing.T) {
-	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{CostTimeSec: 100}) == 100)
-	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{CostTimeSec: -1, TimeBegin: time.Time{}}) == -1)
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: 100}}) == 100)
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase: spec.PipelineBase{CostTimeSec: -1, TimeBegin: &time.Time{}}}) == -1)
 	begin := time.Now()
 	time.Sleep(time.Second * 1)
-	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{CostTimeSec: -1, TimeBegin: begin}) > 0)
-	require.Equal(t, int64(time.Minute*2/time.Second), CalculatePipelineCostTimeSec(&spec.Pipeline{CostTimeSec: -1, TimeBegin: begin, TimeEnd: begin.Add(time.Minute * 2)}))
+	require.True(t, CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase:spec.PipelineBase{CostTimeSec: -1, TimeBegin: &begin}}) > 0)
+	end := begin.Add(time.Minute * 2)
+	require.Equal(t, int64(time.Minute*2/time.Second), CalculatePipelineCostTimeSec(&spec.Pipeline{PipelineBase:spec.PipelineBase{CostTimeSec: -1, TimeBegin: &begin, TimeEnd: &end}}))
 }
