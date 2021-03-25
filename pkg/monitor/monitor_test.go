@@ -17,5 +17,5 @@ var _ = func() int {
 func TestInitMonitor(t *testing.T) {
 	logrus.Errorf("[alert] hello [alert]")
 	logrus.Errorf("[pipeline] hello [pipeline]")
-	time.Sleep(time.Hour)
+	time.Sleep(time.Second*1)
 }
