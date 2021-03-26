@@ -1,6 +1,7 @@
 # Erda - An enterprise-grade microservice application development platform
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
 ![](./docs/files/logo.jpg)
 
@@ -16,7 +17,9 @@ We will gradually open source the entire function according to the workload. The
 
 ## Architecture
 
-We split the codes of erda into multiple repositories according to different functional properties. The key repositories are erda-proto, erda-infra, erda-ui.
+We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
+
+**erda** It is the main repository.
 
 [erda-proto](https://github.com/erda-project/erda-proto) Store the communication protocol definitions between erda internal services, and the componentized protocol definitions between the web front-end and back-end services.
 
