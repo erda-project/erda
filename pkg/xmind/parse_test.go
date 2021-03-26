@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseByXMindparser(t *testing.T) {
-	f, err := os.Open("./examples/content.json")
-	assert.NoError(t, err)
-	content, err := Parse(f)
-	assert.NoError(t, err)
-	b, _ := json.MarshalIndent(content, "", "  ")
-	fmt.Println(string(b))
-}
+//func TestParseByXMindparser(t *testing.T) {
+//	f, err := os.Open("./examples/content.json")
+//	assert.NoError(t, err)
+//	content, err := Parse(f)
+//	assert.NoError(t, err)
+//	b, _ := json.MarshalIndent(content, "", "  ")
+//	fmt.Println(string(b))
+//}
 
 func TestParseByJSON(t *testing.T) {
 	f, err := os.Open("./examples/content.json")
