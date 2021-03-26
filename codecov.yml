@@ -1,5 +1,5 @@
 codecov:
-  require_ci_to_pass: yes
+  require_ci_to_pass: no
 
 comment:                  # this is a top-level key
   layout: "reach, diff, flags, files"
@@ -14,23 +14,7 @@ coverage:
   round: down
   range: "60...100"
   status:
-    project:
-      default:
-        # basic
-        target: 20%
-        threshold: 0%
-        base: auto
-        flags:
-          - unit
-        # paths:
-        #   - "."
-        # advanced settings
-        branches:
-          - master
-          - develop
-        if_ci_failed: error #success, failure, error, ignore
-        informational: false
-        only_pulls: false
+    project: on
 
 github_checks:
   annotations: true
