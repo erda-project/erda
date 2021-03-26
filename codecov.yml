@@ -15,6 +15,7 @@ coverage:
   range: "60...100"
   status:
     project: on
+    patch: true
 
 github_checks:
   annotations: true
