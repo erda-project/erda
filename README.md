@@ -1,6 +1,7 @@
 # Erda - An enterprise-grade microservice application development platform
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
 ![](./docs/files/logo.jpg)
 
@@ -16,18 +17,24 @@ We will gradually open source the entire function according to the workload. The
 
 ## Architecture
 
-## Related repositories
-- [erda-proto](https://github.com/erda-project/erda-proto)
-- [erda-infra](https://github.com/erda-project/erda-infra)
-- [erda-ui](https://github.com/erda-project/erda-ui)
+We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
+
+**erda** It is the main repository.
+
+[erda-proto](https://github.com/erda-project/erda-proto) Store the communication protocol definitions between erda internal services, and the componentized protocol definitions between the web front-end and back-end services.
+
+[erda-infra](https://github.com/erda-project/erda-infra) It is a basic repository, which stores some common and basic module codes, including the wrappers of middleware SDK, etc.
+
+[erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
 ## Quick start
 ### To start using erda
 
 ### To start developing erda
 
-## Documentation
-- [Official documentation](https://dice-docs.app.terminus.io)
+## User Documentation
+- [中文](https://dice-docs.app.terminus.io)
+- English
 
 ## Contributing
 

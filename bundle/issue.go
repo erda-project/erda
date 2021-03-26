@@ -195,7 +195,7 @@ func (b *Bundle) GetIssueStatesByID(req []int64) ([]apistructs.IssueStatus, erro
 }
 
 // UpdateIssuePanelIssue 更新事件所属看板
-func (b *Bundle) UpdateIssuePanelIssue(panelID int64, issueID int64) error {
+func (b *Bundle) UpdateIssuePanelIssue(userID string, panelID, issueID, projectID int64) error {
 	host, err := b.urls.CMDB()
 	if err != nil {
 		return err
@@ -205,8 +205,10 @@ func (b *Bundle) UpdateIssuePanelIssue(panelID int64, issueID int64) error {
 	var panel apistructs.IssuePanelIssuesCreateResponse
 	resp, err := hc.Put(host).Path("/api/issues/actions/update-panel-issue").
 		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", userID).
 		Param("panelID", strconv.FormatInt(panelID, 10)).
 		Param("issueID", strconv.FormatInt(issueID, 10)).
+		Param("projectID", strconv.FormatInt(projectID, 10)).
 		Do().JSON(&panel)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
@@ -227,6 +229,7 @@ func (b *Bundle) GetIssuePanel(req apistructs.IssuePanelRequest) ([]apistructs.I
 	var isp apistructs.IssuePanelGetResponse
 	resp, err := hc.Get(host).Path("/api/issues/actions/get-panel").
 		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
+		Header("User-ID", req.UserID).
 		Header(httputil.InternalHeader, "bundle").
 		Do().JSON(&isp)
 	if err != nil {
@@ -251,6 +254,7 @@ func (b *Bundle) GetIssuePanelIssue(req apistructs.IssuePanelRequest) (*apistruc
 		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
 		Params(req.UrlQueryString()).
 		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", req.UserID).
 		Do().JSON(&isp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -271,6 +275,7 @@ func (b *Bundle) CreateIssuePanel(req apistructs.IssuePanelRequest) (int64, erro
 
 	var isp apistructs.IssuePanelIssuesCreateResponse
 	resp, err := hc.Post(host).Path("/api/issues/actions/create-panel").
+		Header("User-ID", req.UserID).
 		Header(httputil.InternalHeader, "bundle").JSONBody(&req).
 		Do().JSON(&isp)
 	if err != nil {
@@ -293,7 +298,9 @@ func (b *Bundle) DeleteIssuePanel(req apistructs.IssuePanelRequest) (*apistructs
 	var isp apistructs.IssuePanelDeleteResponse
 	resp, err := hc.Delete(host).Path("/api/issues/actions/delete-panel").
 		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", req.UserID).
 		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
+		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
 		Do().JSON(&isp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -315,8 +322,10 @@ func (b *Bundle) UpdateIssuePanel(req apistructs.IssuePanelRequest) (int64, erro
 	var isp apistructs.IssuePanelIssuesCreateResponse
 	resp, err := hc.Put(host).Path("/api/issues/actions/update-panel").
 		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", req.UserID).
 		Param("panelID", strconv.FormatInt(req.PanelID, 10)).
 		Param("PanelName", req.PanelName).
+		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
 		Do().JSON(&isp)
 	if err != nil {
 		return 0, apierrors.ErrInvoke.InternalError(err)
