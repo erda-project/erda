@@ -23,6 +23,10 @@ linters:
     - goimports
     - gosec
     - gofmt
+    - govet
+    - typecheck
+    - errcheck
+    - staticcheck
 
 issues:
   exclude-rules:
