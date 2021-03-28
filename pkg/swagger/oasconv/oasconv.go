@@ -1,6 +1,9 @@
 package oasconv
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -38,14 +41,6 @@ func OAS2ConvTo3(v2 *openapi2.Swagger) (v3 *openapi3.Swagger, err error) {
 		return nil, err
 	}
 
-	if v2.BasePath != "" {
-		v3.Servers = append(v3.Servers, &openapi3.Server{
-			URL:         v2.BasePath,
-			Description: "",
-			Variables:   nil,
-		})
-	}
-
 	if v2.Host != "" {
 		v3.Servers = append(v3.Servers, &openapi3.Server{
 			URL:         v2.Host,
@@ -62,5 +57,13 @@ func OAS2ConvTo3(v2 *openapi2.Swagger) (v3 *openapi3.Swagger, err error) {
 		})
 	}
 
-	return
+	if strings.HasPrefix(v2.BasePath, "/") {
+		paths := make(openapi3.Paths, len(v3.Paths))
+		for k := range v3.Paths {
+			paths[filepath.Join(v2.BasePath, k)] = v3.Paths[k]
+		}
+		v3.Paths = paths
+	}
+
+	return v3, nil
 }
