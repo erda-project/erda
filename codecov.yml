@@ -1,5 +1,5 @@
 codecov:
-  require_ci_to_pass: no
+  require_ci_to_pass: yes
 
 comment:                  # this is a top-level key
   layout: "reach, diff, flags, files"
@@ -17,8 +17,8 @@ coverage:
     project:
       default:
         # basic
-        target: 15%
-        threshold: 0%
+        target: 20%
+        threshold: 2%
         base: auto
         if_ci_failed: error
         informational: false
