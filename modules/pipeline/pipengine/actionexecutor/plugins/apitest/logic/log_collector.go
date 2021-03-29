@@ -3,9 +3,8 @@ package logic
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"sync"
 	"time"
 
@@ -53,7 +52,7 @@ func newLogger() *logrus.Logger {
 			DisableLevelTruncation: true,
 		},
 	})
-	l.SetOutput(os.Stdout)
+	l.SetOutput(ioutil.Discard)
 	l.AddHook(&CollectorHook{})
 	return l
 }
@@ -108,8 +107,6 @@ func asyncPushCollectorLog() {
 
 func pushCollectorLog(logLines *[]apistructs.LogPushLine) error {
 	var respBody bytes.Buffer
-	b, _ := json.Marshal(logLines)
-	fmt.Printf("push collector log data: %s\n", string(b))
 	resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Post(conf.CollectorAddr()).
 		Path("/collect/logs/job").
