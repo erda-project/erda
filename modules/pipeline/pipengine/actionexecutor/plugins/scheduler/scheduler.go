@@ -325,43 +325,6 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 	return result.Name, nil
 }
 
-func (s *Sched) Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	return s.Remove(ctx, action)
-}
-
-func (s *Sched) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
-	defer wrapError(&err, "delete pipeline namespace", action)
-
-	if err = validateAction(action); err != nil {
-		return nil, err
-	}
-
-	var body bytes.Buffer
-	resp, err := httpclient.New().Delete(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/deletealljobs", action.Extra.Namespace)).
-		Do().Body(&body)
-	if err != nil {
-		return nil, httpInvokeErr(err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobDeleteResponse
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return nil, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	if result.Error != "" {
-		if strings.Contains(result.Error, notFoundError) {
-			logrus.Infof("skip resp.Error(not found) when invoke scheduler.deletealljobs, pipelineID: %d, namespace: %s, resp.Error: %s",
-				action.PipelineID, action.Extra.Namespace, result.Error)
-			return result.Name, nil
-		}
-		return nil, errors.Errorf("statusCode: %d, resp.error: %s", resp.StatusCode(), result.Error)
-	}
-	return result.Name, nil
-}
-
 func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (data interface{}, err error) {
 	if len(actions) == 0 {
 		return nil, nil

@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -15,7 +16,7 @@ type ActionExecutor interface {
 	Name() Name
 
 	// Exist 返回 created, started, error
-	Exist(ctx context.Context, action *spec.PipelineTask) (bool, bool, error)
+	Exist(ctx context.Context, action *spec.PipelineTask) (created bool, started bool, err error)
 	// Create 保证幂等
 	Create(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	// Start 保证幂等
@@ -28,8 +29,6 @@ type ActionExecutor interface {
 
 	Cancel(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	Remove(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
-	Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
-	DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error)
 }
 
@@ -74,4 +73,12 @@ func Register(kind Kind, create CreateFn) error {
 	}
 	Factory[kind] = create
 	return nil
+}
+
+// MustRegister panic if register failed.
+func MustRegister(kind Kind, create CreateFn) {
+	err := Register(kind, create)
+	if err != nil {
+		panic(fmt.Errorf("failed to register action executor, kind: %s, err: %v", kind, err))
+	}
 }
