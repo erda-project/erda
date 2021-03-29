@@ -119,7 +119,3 @@ loop:
 		break
 	}
 }
-
-func GetGlobalLabels() GlobalLabel {
-	return globalLabels
-}
