@@ -165,6 +165,10 @@ func (b *Bundle) CreateGroupNotifyEvent(groupNotifyRequest apistructs.EventBoxGr
 	channels := strings.Split(groupNotifyRequest.Channels, ",")
 	for _, channel := range channels {
 		if channel == "sms" {
+			p, ok := params["failedDetail"]
+			if ok && len(p) > 900 {
+				delete(params, "failedDetail")
+			}
 			eventboxReqContent.Channels = append(eventboxReqContent.Channels, apistructs.GroupNotifyChannel{
 				Name:     channel,
 				Template: notifyItem.MobileTemplate,

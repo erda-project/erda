@@ -83,7 +83,30 @@ type (
 		Stacks   []string `json:"stacks"`
 		AbortRun bool     `json:"abortRun"` // if false, canManualRun should be false
 	}
+
+	StorageConfig struct {
+		EnableNFS   bool `json:"enableNfs"`
+		EnableLocal bool `json:"enableLocal"`
+	}
 )
+
+// original mount mode
+// will open network storage mounting, and close share storage
+func (conf StorageConfig) EnablePipelineVolume() bool {
+	return conf.EnableNFSVolume() && !conf.EnableShareVolume()
+}
+
+// whether to close the mounting of the network storage
+// after closing, some special pipeline syntax ( ${{ dirs.xxx }} or old ${xxx} ) will not be available
+func (conf StorageConfig) EnableNFSVolume() bool {
+	return conf.EnableNFS
+}
+
+// whether to open shared storage
+// after open, the context directory in the pipeline will be shared
+func (conf *StorageConfig) EnableShareVolume() bool {
+	return conf.EnableLocal
+}
 
 // PipelineDetailDTO contains pipeline, stages, tasks and others
 type PipelineDetailDTO struct {

@@ -82,13 +82,13 @@ func TestAssignWithoutEmpty(t *testing.T) {
 	}
 }
 
-func TestCopyObj(t *testing.T) {
-	src := new(Object)
-	src.Services = map[string]*Service{
-		"aa": {
-			Image: "bb",
-		},
-	}
-	dst := CopyObj(src)
-	assert.True(t, dst.Services["aa"].Image == "bb")
-}
+//func TestCopyObj(t *testing.T) {
+//	src := new(Object)
+//	src.Services = map[string]*Service{
+//		"aa": {
+//			Image: "bb",
+//		},
+//	}
+//	dst := CopyObj(src)
+//	assert.True(t, dst.Services["aa"].Image == "bb")
+//}
