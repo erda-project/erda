@@ -330,7 +330,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, nil
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
@@ -396,7 +396,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.StorageConfig.EnableShareVolume() {
+	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
@@ -448,7 +448,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		}
 
 	}
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -474,7 +474,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 	}
