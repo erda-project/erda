@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/httpclient"
 )
-
 const (
 	ResultSuccess = "success"
 	ResultFailed  = "failed"
@@ -54,7 +54,9 @@ func (kvs *KVs) add(k, v string) {
 	*kvs = append(*kvs, kv{k, v})
 }
 
-func writeMetaFile(task *spec.PipelineTask, meta *Meta) {
+func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
+	log := clog(ctx)
+
 	var content string
 
 	// kvs 保证顺序
@@ -66,10 +68,10 @@ func writeMetaFile(task *spec.PipelineTask, meta *Meta) {
 		kvs.add(metaKeyAPIAssertDetail, meta.AssertDetail)
 	}
 	if meta.Req != nil {
-		kvs.add(metaKeyAPIRequest, jsonOneLine(meta.Req))
+		kvs.add(metaKeyAPIRequest, jsonOneLine(ctx, meta.Req))
 	}
 	if meta.Resp != nil {
-		kvs.add(metaKeyAPIResponse, jsonOneLine(meta.Resp))
+		kvs.add(metaKeyAPIResponse, jsonOneLine(ctx, meta.Resp))
 	}
 	if meta.CookieJar != nil {
 		if meta.Resp != nil && meta.Resp.Headers != nil && meta.Resp.Headers["Set-Cookie"] != nil {
@@ -83,7 +85,7 @@ func writeMetaFile(task *spec.PipelineTask, meta *Meta) {
 			if !ok {
 				continue
 			}
-			kvs.add(define.Key, jsonOneLine(v))
+			kvs.add(define.Key, jsonOneLine(ctx, v))
 		}
 	}
 

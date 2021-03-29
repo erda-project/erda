@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/apitest/logic/cookiejar"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/apitest/logic/cookiejar"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/envconf"
@@ -44,20 +44,23 @@ func parseConfFromTask(task *spec.PipelineTask) (EnvConfig, error) {
 //   push log to collector
 //   save metadata
 func Do(ctx context.Context, task *spec.PipelineTask) {
+	logger := newLogger().WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID))
+	ctx = context.WithValue(ctx, CtxKeyLogger, logger)
+
 	// print logo
-	printLogo()
+	printLogo(ctx)
 
 	// parse conf from task
 	cfg, err := parseConfFromTask(task)
 	if err != nil {
-		log.Errorf("failed to parse config from task, err: %v", err)
+		clog(ctx).Errorf("failed to parse config from task, err: %v", err)
 		return
 	}
 
 	// get api info and pretty print
 	apiInfo := generateAPIInfoFromEnv(cfg)
 
-	printOriginalAPIInfo(apiInfo)
+	printOriginalAPIInfo(ctx, apiInfo)
 
 	// success
 	var success = true
@@ -70,7 +73,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	// defer create metafile
 	meta := NewMeta()
 	meta.OutParamsDefine = apiInfo.OutParams
-	defer writeMetaFile(task, meta)
+	defer writeMetaFile(ctx, task, meta)
 
 	// global config
 	var apiTestEnvData *apistructs.APITestEnvData
@@ -100,44 +103,44 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 		err := json.Unmarshal([]byte(apiTestEnvData.Header[CookieJar]), &cookies)
 		if err != nil {
 			success = false
-			log.Errorf("failed to unmarshal cookieJar from header, err: %v\n", err)
+			clog(ctx).Errorf("failed to unmarshal cookieJar from header, err: %v\n", err)
 			return
 		}
 		cookieJar.SetEntries(cookies)
 	}
 	hc := http.Client{Jar: cookieJar}
-	printGlobalAPIConfig(apiTestEnvData)
+	printGlobalAPIConfig(ctx, apiTestEnvData)
 
 	// do apiTest
 	apiTest := apitestsv2.New(apiInfo)
 	apiReq, apiResp, err := apiTest.Invoke(&hc, apiTestEnvData, caseParams)
-	printRenderedHTTPReq(apiReq)
+	printRenderedHTTPReq(ctx, apiReq)
 	meta.Req = apiReq
 	meta.Resp = apiResp
 	meta.CookieJar = cookieJar.GetEntries()
 	if apiResp != nil {
-		printHTTPResp(apiResp)
+		printHTTPResp(ctx, apiResp)
 	}
 	if err != nil {
 		meta.Result = ResultFailed
-		log.Errorf("failed to do api test, err: %v", err)
+		clog(ctx).Errorf("failed to do api test, err: %v", err)
 		success = false
 		return
 	}
 
 	// outParams store in metafile for latter use
 	outParams := apiTest.ParseOutParams(apiTest.API.OutParams, apiResp, caseParams)
-	printOutParams(outParams, meta)
+	printOutParams(ctx, outParams, meta)
 
 	// judge asserts
 	if len(apiTest.API.Asserts) > 0 {
 		// 目前有且只有一组 asserts
 		for _, group := range apiTest.API.Asserts {
 			succ, assertResults := apiTest.JudgeAsserts(outParams, group)
-			printAssertResults(succ, assertResults)
+			printAssertResults(ctx, succ, assertResults)
 			if !succ {
-				addNewLine()
-				log.Errorf("API Test Success, but asserts failed")
+				addNewLine(ctx)
+				clog(ctx).Errorf("API Test Success, but asserts failed")
 				success = false
 				return
 			}
@@ -146,6 +149,6 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 
 	meta.Result = ResultSuccess
 
-	addNewLine(2)
-	log.Println("API Test Success")
+	addNewLine(ctx, 2)
+	clog(ctx).Println("API Test Success")
 }

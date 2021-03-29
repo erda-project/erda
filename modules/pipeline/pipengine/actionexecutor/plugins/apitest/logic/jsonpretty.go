@@ -2,12 +2,14 @@ package logic
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"strings"
 )
-
 // jsonOneLine remove newline added by json encoder.Encode
-func jsonOneLine(o interface{}) string {
+func jsonOneLine(ctx context.Context, o interface{}) string {
+	log := clog(ctx)
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("recover from jsonOneLine: %v", r)

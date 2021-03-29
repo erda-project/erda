@@ -1,43 +1,15 @@
 package logic
 
 import (
-	"os"
+	"context"
 	"reflect"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 )
 
-var log = newLogger()
+func addLineDelimiter(ctx context.Context, prefix ...string) {
+	log := clog(ctx)
 
-type actionLogFormatter struct {
-	logrus.TextFormatter
-}
-
-func (f *actionLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	_bytes, err := f.TextFormatter.Format(entry)
-	if err != nil {
-		return nil, err
-	}
-	return append([]byte("[Action Log] "), _bytes...), nil
-}
-
-func newLogger() *logrus.Logger {
-	// set logrus
-	l := logrus.New()
-	l.SetFormatter(&actionLogFormatter{
-		logrus.TextFormatter{
-			ForceColors:            true,
-			DisableTimestamp:       true,
-			DisableLevelTruncation: true,
-		},
-	})
-	l.SetOutput(os.Stdout)
-	return l
-}
-
-func addLineDelimiter(prefix ...string) {
 	var _prefix string
 	if len(prefix) > 0 {
 		_prefix = prefix[0]
@@ -45,7 +17,9 @@ func addLineDelimiter(prefix ...string) {
 	log.Printf("%s==========", _prefix)
 }
 
-func addNewLine(num ...int) {
+func addNewLine(ctx context.Context, num ...int) {
+	log := clog(ctx)
+
 	_num := 1
 	if len(num) > 0 {
 		_num = num[0]
@@ -58,12 +32,14 @@ func addNewLine(num ...int) {
 	}
 }
 
-func printOriginalAPIInfo(api *apistructs.APIInfo) {
+func printOriginalAPIInfo(ctx context.Context, api *apistructs.APIInfo) {
+	log := clog(ctx)
+
 	if api == nil {
 		return
 	}
 	log.Printf("Original API Info:")
-	defer addNewLine()
+	defer addNewLine(ctx)
 	// name
 	if api.Name != "" {
 		log.Printf("name: %s", api.Name)
@@ -81,7 +57,7 @@ func printOriginalAPIInfo(api *apistructs.APIInfo) {
 			if h.Desc != "" {
 				log.Printf("  desc: %s", h.Desc)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// params
@@ -93,14 +69,14 @@ func printOriginalAPIInfo(api *apistructs.APIInfo) {
 			if p.Desc != "" {
 				log.Printf("  desc: %s", p.Desc)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// request body
 	if api.Body.Type != "" {
 		log.Printf("request body:")
 		log.Printf("  type: %s", api.Body.Type.String())
-		log.Printf("  content: %s", jsonOneLine(api.Body.Content))
+		log.Printf("  content: %s", jsonOneLine(ctx, api.Body.Content))
 	}
 	// out params
 	if len(api.OutParams) > 0 {
@@ -111,7 +87,7 @@ func printOriginalAPIInfo(api *apistructs.APIInfo) {
 			if out.Expression != "" {
 				log.Printf("  expr: %s", out.Expression)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// asserts
@@ -122,18 +98,20 @@ func printOriginalAPIInfo(api *apistructs.APIInfo) {
 				log.Printf("  key: %s", assert.Arg)
 				log.Printf("  operator: %s", assert.Operator)
 				log.Printf("  value: %s", assert.Value)
-				addLineDelimiter("  ")
+				addLineDelimiter(ctx, "  ")
 			}
 		}
 	}
 }
 
-func printGlobalAPIConfig(cfg *apistructs.APITestEnvData) {
+func printGlobalAPIConfig(ctx context.Context, cfg *apistructs.APITestEnvData) {
+	log := clog(ctx)
+
 	if cfg == nil {
 		return
 	}
 	log.Printf("Global API Config:")
-	defer addNewLine()
+	defer addNewLine(ctx)
 
 	// name
 	if cfg.Name != "" {
@@ -147,7 +125,7 @@ func printGlobalAPIConfig(cfg *apistructs.APITestEnvData) {
 		for k, v := range cfg.Header {
 			log.Printf("  key: %s", k)
 			log.Printf("  value: %s", v)
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// global
@@ -160,17 +138,19 @@ func printGlobalAPIConfig(cfg *apistructs.APITestEnvData) {
 			if item.Desc != "" {
 				log.Printf("  desc: %s", item.Desc)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 }
 
-func printRenderedHTTPReq(req *apistructs.APIRequestInfo) {
+func printRenderedHTTPReq(ctx context.Context, req *apistructs.APIRequestInfo) {
+	log := clog(ctx)
+
 	if req == nil {
 		return
 	}
 	log.Printf("Rendered HTTP Request:")
-	defer addNewLine()
+	defer addNewLine(ctx)
 
 	// url
 	log.Printf("url: %s", req.URL)
@@ -186,7 +166,7 @@ func printRenderedHTTPReq(req *apistructs.APIRequestInfo) {
 			} else {
 				log.Printf("  values: %v", values)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// params
@@ -199,7 +179,7 @@ func printRenderedHTTPReq(req *apistructs.APIRequestInfo) {
 			} else {
 				log.Printf("  values: %v", values)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// body
@@ -210,12 +190,14 @@ func printRenderedHTTPReq(req *apistructs.APIRequestInfo) {
 	}
 }
 
-func printHTTPResp(resp *apistructs.APIResp) {
+func printHTTPResp(ctx context.Context, resp *apistructs.APIResp) {
+	log := clog(ctx)
+
 	if resp == nil {
 		return
 	}
 	log.Printf("HTTP Response:")
-	defer addNewLine()
+	defer addNewLine(ctx)
 
 	// status
 	log.Printf("http status: %d", resp.Status)
@@ -229,7 +211,7 @@ func printHTTPResp(resp *apistructs.APIResp) {
 			} else {
 				log.Printf("  values: %v", values)
 			}
-			addLineDelimiter("  ")
+			addLineDelimiter(ctx, "  ")
 		}
 	}
 	// response body
@@ -238,12 +220,14 @@ func printHTTPResp(resp *apistructs.APIResp) {
 	}
 }
 
-func printOutParams(outParams map[string]interface{}, meta *Meta) {
+func printOutParams(ctx context.Context, outParams map[string]interface{}, meta *Meta) {
+	log := clog(ctx)
+
 	if len(outParams) == 0 {
 		return
 	}
 	log.Printf("Out Params:")
-	defer addNewLine()
+	defer addNewLine(ctx)
 
 	// 按定义顺序返回
 	for _, define := range meta.OutParamsDefine {
@@ -258,7 +242,7 @@ func printOutParams(outParams map[string]interface{}, meta *Meta) {
 		if define.Expression != "" {
 			log.Printf("  expr: %s", define.Expression)
 		}
-		log.Printf("  value: %s", jsonOneLine(v))
+		log.Printf("  value: %s", jsonOneLine(ctx, v))
 		var vtype string
 		if v == nil {
 			vtype = "nil"
@@ -266,24 +250,26 @@ func printOutParams(outParams map[string]interface{}, meta *Meta) {
 			vtype = reflect.TypeOf(v).String()
 		}
 		log.Printf("  type: %s", vtype)
-		addLineDelimiter("  ")
+		addLineDelimiter(ctx, "  ")
 	}
 }
 
-func printAssertResults(success bool, results []*apistructs.APITestsAssertData) {
+func printAssertResults(ctx context.Context, success bool, results []*apistructs.APITestsAssertData) {
+	log := clog(ctx)
+
 	log.Printf("Assert Result: %t", success)
-	defer addNewLine()
+	defer addNewLine(ctx)
 
 	log.Printf("Assert Detail:")
 	for _, result := range results {
 		log.Printf("  arg: %s", result.Arg)
 		log.Printf("  operator: %s", result.Operator)
 		log.Printf("  value: %s", result.Value)
-		log.Printf("  actualValue: %s", jsonOneLine(result.ActualValue))
+		log.Printf("  actualValue: %s", jsonOneLine(ctx, result.ActualValue))
 		log.Printf("  success: %t", result.Success)
 		if result.ErrorInfo != "" {
 			log.Printf("  errorInfo: %s", result.ErrorInfo)
 		}
-		addLineDelimiter("  ")
+		addLineDelimiter(ctx, "  ")
 	}
 }
