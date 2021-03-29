@@ -5,11 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/providers/metrics/common"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/providers/metrics/common"
 )
 
 type reportClient struct {
@@ -17,21 +19,14 @@ type reportClient struct {
 	httpClient *http.Client
 }
 
-type Metric struct {
-	Name      string                 `json:"name"`
-	Timestamp int64                  `json:"timestamp"`
-	Tags      map[string]string      `json:"tags"`
-	Fields    map[string]interface{} `json:"fields"`
-}
-
 type NamedMetrics struct {
 	Name    string
 	Metrics Metrics
 }
 
-type Metrics []*Metric
+type Metrics []*common.Metric
 
-func (c *reportClient) Send(in []*Metric) error {
+func (c *reportClient) Send(in []*common.Metric) error {
 	groups := c.group(in)
 	for _, group := range groups {
 		if len(group.Metrics) == 0 {
@@ -61,18 +56,18 @@ func (c *reportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	return common.CompressWithGzip(bytes.NewBuffer(base64Content))
 }
 
-func (c *reportClient) group(in []*Metric) []*NamedMetrics {
+func (c *reportClient) group(in []*common.Metric) []*NamedMetrics {
 	metrics := &NamedMetrics{
 		Name:    "metrics",
-		Metrics: make([]*Metric, 0),
+		Metrics: make([]*common.Metric, 0),
 	}
 	trace := &NamedMetrics{
 		Name:    "trace",
-		Metrics: make([]*Metric, 0),
+		Metrics: make([]*common.Metric, 0),
 	}
 	errorG := &NamedMetrics{
 		Name:    "error",
-		Metrics: make([]*Metric, 0),
+		Metrics: make([]*common.Metric, 0),
 	}
 	for _, m := range in {
 		switch m.Name {

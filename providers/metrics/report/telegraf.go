@@ -2,8 +2,9 @@ package report
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/providers/metrics/common"
 	"net"
+
+	"github.com/erda-project/erda/providers/metrics/common"
 )
 
 var DEFAULT_BUCKET = 10

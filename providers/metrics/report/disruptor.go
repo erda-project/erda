@@ -1,9 +1,10 @@
 package report
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/providers/metrics/common"
 	report_config "github.com/erda-project/erda/providers/metrics/config"
-	"time"
 )
 
 type Disruptor interface {

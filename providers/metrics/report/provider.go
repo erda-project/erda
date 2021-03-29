@@ -1,8 +1,9 @@
 package report
 
 import (
-	"github.com/recallsong/go-utils/logs"
 	"net/http"
+
+	"github.com/recallsong/go-utils/logs"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
@@ -38,7 +39,7 @@ func (d *define) Config() interface{} {
 	return &config{}
 }
 
-func (d *define) Creator() servicehub.Provider {
+func (d *define) Creator() servicehub.Creator {
 	return func() servicehub.Provider {
 		return &provider{}
 	}
@@ -56,4 +57,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.httpClient = client
 	return nil
+}
+
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	return p.httpClient
+}
+
+func init() {
+	servicehub.RegisterProvider("metric-report-client", &define{})
 }
