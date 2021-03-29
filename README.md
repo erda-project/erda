@@ -42,5 +42,10 @@ This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
 
 ## Contact Us
 
+We look forward to your connecting with us, you can ask us all questions.
+
+Email: erda@terminus.io
+知乎: Erda技术团队 (知乎：A Chinese knowledge community, similar to quora)
+
 ## License
 Erda is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.
