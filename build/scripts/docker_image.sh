@@ -62,6 +62,7 @@ DOCKER_IMAGE=${APP_NAME}:${VERSION}
 if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 fi
+BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 
 # print details
 print_details() {
@@ -75,14 +76,22 @@ print_details
 
 # build docker image
 build_image()  {
+    if [ -z "${DOCKER_REGISTRY}" ]; then
+        BASE_IMAGE_ID="$(docker images ${BASE_DOCKER_IMAGE} -q)"
+        if [ -z "${BASE_IMAGE_ID}" ]; then
+            echo "base image '${BASE_DOCKER_IMAGE}' not exist, start build base image ..."
+            build/scripts/base_image.sh build
+        fi
+    fi
     docker build -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
-         --build-arg "MODULE_PATH=${MODULE_PATH}" \
+        --build-arg "MODULE_PATH=${MODULE_PATH}" \
         --build-arg "APP_NAME=${APP_NAME}" \
         --build-arg "CONFIG_PATH=${CONFIG_PATH}" \
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
+        --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         -f "${DOCKERFILE}" .
 }
 
