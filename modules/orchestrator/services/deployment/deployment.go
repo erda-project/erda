@@ -426,7 +426,7 @@ func (d *Deployment) Approve(userID user.ID, orgID uint64, deploymentID uint64, 
 			UserIDs: []string{deployment.Operator},
 		})
 		if err != nil || len(user.Users) != 1 {
-			logrus.Errorf("failed to get user(%d): %v", deployment.Operator, err)
+			logrus.Errorf("failed to get user(%s): %v", deployment.Operator, err)
 			break
 		}
 		u, err := url.Parse(referer)

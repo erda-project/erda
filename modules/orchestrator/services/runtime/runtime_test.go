@@ -19,8 +19,8 @@ func TestModifyStatusIfNotForDisplay(t *testing.T) {
 		},
 	}
 	updateStatusToDisplay(&runtime)
-	assert.Equal(t, "UnHealthy", runtime.Status)
+	assert.Equal(t, "Unknown", runtime.Status)
 	for _, s := range runtime.Services {
-		assert.Equal(t, "UnHealthy", s.Status)
+		assert.Equal(t, "Stopped", s.Status)
 	}
 }

@@ -1189,7 +1189,7 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		var req apistructs.ServiceGroupDeleteRequest
 		cInfo, err := r.bdl.GetCluster(runtime.ClusterName)
 		if err != nil {
-			logrus.Error("get cluster info failed, cluster name: %v, error: %v", runtime.ClusterName, err)
+			logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
 			return err
 		}
 		if cInfo != nil && cInfo.OpsConfig != nil && cInfo.OpsConfig.Status == apistructs.ClusterStatusOffline {
@@ -1846,7 +1846,7 @@ func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, deploymentID u
 // OrgJobLogs 数据中心--->任务列表 日志接口
 func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	if clusterName == "" {
-		logrus.Errorf("job instance infos without cluster, jobID is: ", jobID)
+		logrus.Errorf("job instance infos without cluster, jobID is: %s", jobID)
 		return nil, apierrors.ErrOrgLog.AccessDenied()
 	}
 	clusterInfo, err := r.bdl.GetCluster(clusterName)

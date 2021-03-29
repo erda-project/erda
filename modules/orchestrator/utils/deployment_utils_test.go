@@ -5,17 +5,16 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestApplyOverlay(t *testing.T) {
-	target := spec.LegacyDice{
-		Services: map[string]*spec.Service{
-			"demo": {
-				Resources: &spec.Resources{
+	target := diceyml.Object{
+		Services: map[string]*diceyml.Service{
+			"demo": &diceyml.Service{
+				Resources: diceyml.Resources{
 					CPU:  1.0,
 					Mem:  256,
 					Disk: 0,
@@ -24,38 +23,38 @@ func TestApplyOverlay(t *testing.T) {
 		},
 	}
 
-	var overlay spec.LegacyDice
-	err := json.Unmarshal([]byte(`{"services":{"demo":{"scale":1,"resources":{"cpu":2.0,"mem":512.0,"disk":0.0}}}}`), &overlay)
+	var overlay diceyml.Object
+	err := json.Unmarshal([]byte(`{"services":{"demo":{"scale":1,"resources":{"cpu":2.0,"mem":512,"disk":0}}}}`), &overlay)
 	assert.NoError(t, err)
 
 	ApplyOverlay(&target, &overlay)
 
 	//fmt.Println(source)
 	assert.Equal(t, 2.0, target.Services["demo"].Resources.CPU)
-	assert.Equal(t, 512.0, target.Services["demo"].Resources.Mem)
-	assert.Equal(t, 0.0, target.Services["demo"].Resources.Disk)
+	assert.Equal(t, 512, target.Services["demo"].Resources.Mem)
+	assert.Equal(t, 0, target.Services["demo"].Resources.Disk)
 }
 
-func TestApplyOverlay2(t *testing.T) {
-	var target spec.LegacyDice
-	err := json.Unmarshal([]byte(`
-{"diceVersion":"","name":"","description":"","keywords":null,"website":"","repository":"","logo":"","buildMode":"","jointDebug":false,"endpoints":{"demo":{"context":"","scale":1,"ports":[8082],"environment":{"TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"resources":{"cpu":0.1,"mem":256,"disk":0},"modulePath":"","cmd":"","hosts":null,"volumes":null,"image":"docker-registry.registry.marathon.mesos:5000/org-default-default/nwwtest-galaxy:demo-1540189786479971316","commit":"","shouldPackage":false,"health_check":{"http":{"port":"0","path":"","duration":"0"},"exec":{"cmd":"echo 1","duration":"0"}},"unitTest":false}},"commitId":"","commitAuthor":"","commitEmail":"","commitTime":"","commitMessage":"","branch":"feature/demo3","globalEnv":{"TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"abilityDeclaration ":null,"runtimeAddonInstanceId":""}
-`), &target)
-	assert.NoError(t, err)
-
-	var overlay spec.LegacyDice
-	err = json.Unmarshal([]byte(`
-{"services":{"demo":{"scale":1,"environment":{"test2":"222","TEST":"1","TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"resources":{"cpu":0.2,"mem":512.0,"disk":0.0},"buildpack":{},"shouldPackage":true,"unitTest":false}},"build_mode":"standard"}
-`), &overlay)
-	assert.NoError(t, err)
-
-	ApplyOverlay(&target, &overlay)
-
-	//fmt.Println(target)
-	assert.Equal(t, 0.2, target.Endpoints["demo"].Resources.CPU)
-	assert.Equal(t, 512.0, target.Endpoints["demo"].Resources.Mem)
-	assert.Equal(t, 0.0, target.Endpoints["demo"].Resources.Disk)
-}
+// func TestApplyOverlay2(t *testing.T) {
+// 	var target spec.LegacyDice
+// 	err := json.Unmarshal([]byte(`
+// {"diceVersion":"","name":"","description":"","keywords":null,"website":"","repository":"","logo":"","buildMode":"","jointDebug":false,"endpoints":{"demo":{"context":"","scale":1,"ports":[8082],"environment":{"TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"resources":{"cpu":0.1,"mem":256,"disk":0},"modulePath":"","cmd":"","hosts":null,"volumes":null,"image":"docker-registry.registry.marathon.mesos:5000/org-default-default/nwwtest-galaxy:demo-1540189786479971316","commit":"","shouldPackage":false,"health_check":{"http":{"port":"0","path":"","duration":"0"},"exec":{"cmd":"echo 1","duration":"0"}},"unitTest":false}},"commitId":"","commitAuthor":"","commitEmail":"","commitTime":"","commitMessage":"","branch":"feature/demo3","globalEnv":{"TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"abilityDeclaration ":null,"runtimeAddonInstanceId":""}
+// `), &target)
+// 	assert.NoError(t, err)
+//
+// 	var overlay spec.LegacyDice
+// 	err = json.Unmarshal([]byte(`
+// {"services":{"demo":{"scale":1,"environment":{"test2":"222","TEST":"1","TERMINUS_APP_NAME":"demo","TERMINUS_TRACE_ENABLE":"true","TRACE_SAMPLE":"1"},"resources":{"cpu":0.2,"mem":512.0,"disk":0.0},"buildpack":{},"shouldPackage":true,"unitTest":false}},"build_mode":"standard"}
+// `), &overlay)
+// 	assert.NoError(t, err)
+//
+// 	ApplyOverlay(&target, &overlay)
+//
+// 	//fmt.Println(target)
+// 	assert.Equal(t, 0.2, target.Endpoints["demo"].Resources.CPU)
+// 	assert.Equal(t, 512.0, target.Endpoints["demo"].Resources.Mem)
+// 	assert.Equal(t, 0.0, target.Endpoints["demo"].Resources.Disk)
+// }
 
 func TestConvertToLegacyDice_GlobalEnvShouldNotMerge(t *testing.T) {
 	diceYmlContent := `
@@ -125,12 +124,12 @@ func TestBuildDiscoveryConfig(t *testing.T) {
 		{
 			Name:  "backend-1",
 			Vip:   "backend-1.marathon.dice",
-			Ports: []int{8080, 8090},
+			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8090}},
 		},
 		{
 			Name:  "frontend-2",
 			Vip:   "frontend-2.marathon.dice",
-			Ports: []int{8081},
+			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8081}},
 		},
 		{
 			Name: "empty",

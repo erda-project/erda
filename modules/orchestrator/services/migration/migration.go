@@ -118,7 +118,7 @@ func (m *Migration) Start(migrationLog *dbclient.MigrationLog, diceyml *diceyml.
 	if err != nil {
 		return respBodyDecodeErr(statusCode, respBody, err)
 	}
-	logrus.Debugf("scheduler: invoke scheduler to start migration task, namespace: %d, statusCode: %d, respBody: %s",
+	logrus.Debugf("scheduler: invoke scheduler to start migration task, namespace: %s, statusCode: %d, respBody: %s",
 		namespace, statusCode, respBody)
 	if result.Error != "" {
 		return errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)

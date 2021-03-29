@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 type Service struct {
@@ -42,11 +43,11 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:  "s1",
 					Vip:   "v1",
-					Ports: []int{8080, 8081},
+					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8081}},
 				},
 				{
 					Name:  "s2",
-					Ports: []int{9090, 9091},
+					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 9090}, diceyml.ServicePort{Port: 9091}},
 				},
 				{
 					Name: "s3",
@@ -55,7 +56,7 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:   "s4",
 					Vip:    "v4",
-					Ports:  []int{80},
+					Ports:  []diceyml.ServicePort{diceyml.ServicePort{Port: 80}},
 					Labels: map[string]string{"HAPROXY_0_VHOST": "google.com,youtube.com"},
 				},
 				{
