@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	oas2WithBasePath = "../oas2-witth-basepath.json"
+	oas2WithBasePath = "../testdata/oas2-with-basepath.json"
 )
 
-// go test -v -run testOas2ConvertTo3WithBasePath
+// go test -v -run TestOAS2ConvTo3
 func TestOAS2ConvTo3(t *testing.T) {
 	t.Run("testOas2ConvertTo3WithBasePath", testOas2ConvertTo3WithBasePath)
 }
