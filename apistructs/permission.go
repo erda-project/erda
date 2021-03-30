@@ -47,6 +47,7 @@ const (
 	NotifyConfigResource       string = "notify-config"
 	AutotestSceneResource      string = "autotest-scene"
 	SceneSetResource           string = "sceneset"
+	CustomAddonResource        string = "customAddon"
 )
 
 // 权限操作集
