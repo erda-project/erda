@@ -27,6 +27,10 @@ func TestMobile(t *testing.T) {
 	require.Equal(t, "188****8888", Mobile("18888888888"))
 }
 
+func TestName(t *testing.T) {
+	require.Equal(t, "e**********t", Name("erda-project"))
+}
+
 func TestEmail(t *testing.T) {
 	require.Equal(t, "pla**b@plan.com", Email("plan-b@plan.com"))
 	require.Equal(t, "*@plan.com", Email("t@plan.com"))
@@ -34,4 +38,14 @@ func TestEmail(t *testing.T) {
 	require.Equal(t, "t*a@plan.com", Email("tba@plan.com"))
 	require.Equal(t, "oj*k@plan.com", Email("ojbk@plan.com"))
 	require.Equal(t, "dic*******s@plan.com", Email("dice.tjjtds@plan.com"))
+
+	// illegal emails
+	require.Equal(t, "@plan.com", Email("@plan.com"))
+	require.Equal(t, "pla****m", Email("plan.com"))
+	require.Equal(t, "*", Email("a"))
+	require.Equal(t, "a*", Email("ab"))
+	require.Equal(t, "a*c", Email("abc"))
+	require.Equal(t, "ab*d", Email("abcd"))
+	require.Equal(t, "abc*e", Email("abcde"))
+	require.Equal(t, "abc**f", Email("abcdef"))
 }
