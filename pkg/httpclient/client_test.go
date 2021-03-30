@@ -1,7 +1,6 @@
 package httpclient
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -70,11 +69,11 @@ func TestResponseStatusCode(t *testing.T) {
 // 	assert.Nil(t, err)
 // 	resp.
 // }
-func TestDnsCache(t *testing.T) {
-	r, err := New(WithDnsCache()).Get("www.baidu.com:80").Path("/").Do().DiscardBody()
-	assert.Nil(t, err)
-	fmt.Printf("%+v\n", r.StatusCode()) // debug print
-}
+//func TestDnsCache(t *testing.T) {
+//	r, err := New(WithDnsCache()).Get("www.baidu.com:80").Path("/").Do().DiscardBody()
+//	assert.Nil(t, err)
+//	fmt.Printf("%+v\n", r.StatusCode()) // debug print
+//}
 
 func TestTimeout(t *testing.T) {
 	_, err := New(WithTimeout(5*time.Millisecond, 5*time.Millisecond)).Get("www.baidu.com").Path("/").Do().DiscardBody()
