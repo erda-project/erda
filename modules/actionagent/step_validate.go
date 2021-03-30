@@ -196,7 +196,7 @@ func (agent *Agent) reportMachineStat() {
 	}
 
 	// callback
-	data := callback{MachineStat: &stat}
+	data := Callback{MachineStat: &stat}
 	if err := agent.callbackToPipelinePlatform(&data); err != nil {
 		logrus.Warnf("[Ignore] failed to report machine stat, err: %v", err)
 	}

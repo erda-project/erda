@@ -104,9 +104,12 @@ type JobStopResponse struct {
 }
 
 type JobDeleteResponse struct {
-	Name  string `json:"name"`
-	Error string `json:"error"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Error     string `json:"error"`
 }
+
+type JobsDeleteResponse []JobDeleteResponse
 
 type JobBatchRequest struct {
 	Names []string `json:"names"`

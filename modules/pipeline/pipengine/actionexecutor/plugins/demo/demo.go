@@ -81,18 +81,6 @@ func (d *Demo) Remove(ctx context.Context, action *spec.PipelineTask) (interface
 	return nil, nil
 }
 
-func (d *Demo) Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	logrus.Info("demo destroy ...")
-	time.Sleep(time.Second * 5)
-	return nil, nil
-}
-
-func (d *Demo) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	logrus.Info("demo delete namespace ...")
-	time.Sleep(time.Second * 5)
-	return nil, nil
-}
-
 func (d *Demo) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error) {
 	logrus.Info("demo batch delete ...")
 	time.Sleep(time.Second * 5)
