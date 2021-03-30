@@ -66,14 +66,6 @@ func (m *Memory) Remove(ctx context.Context, action *spec.PipelineTask) (interfa
 	panic("implement me")
 }
 
-func (m *Memory) Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	panic("implement me")
-}
-
-func (m *Memory) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	panic("implement me")
-}
-
 func (m *Memory) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (interface{}, error) {
 	panic("implement me")
 }
