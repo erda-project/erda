@@ -13,6 +13,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/httpclient"
 )
+
 const (
 	ResultSuccess = "success"
 	ResultFailed  = "failed"

@@ -1,8 +1,9 @@
 package dbclient
 
 import (
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/mitchellh/mapstructure"
+
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 // defaultAPITestActionExecutor provide api-test action-executor

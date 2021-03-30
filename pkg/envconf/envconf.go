@@ -43,7 +43,8 @@ func MustLoad(obj interface{}) {
 }
 
 // Load 分析配置对象 obj，并从环境变量里获取值初始化配置对象.
-func Load(obj interface{}, envOpts ...map[string]string) error {	typ := reflect.TypeOf(obj)
+func Load(obj interface{}, envOpts ...map[string]string) error {
+	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Ptr {
 		return errors.New("not a pointer")
 	}

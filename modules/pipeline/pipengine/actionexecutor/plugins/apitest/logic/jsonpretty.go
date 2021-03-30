@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 )
+
 // jsonOneLine remove newline added by json encoder.Encode
 func jsonOneLine(ctx context.Context, o interface{}) string {
 	log := clog(ctx)
