@@ -17,6 +17,12 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.14
+      - name: Run Build
+        run: make
+      - name: Run Test
+        run: |
+          go test -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
+          bash <(curl -s https://codecov.io/bash)
       - name: Run Lint
         uses: golangci/golangci-lint-action@v2
         with:
@@ -34,9 +40,3 @@ jobs:
           # skip-pkg-cache: true
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           # skip-build-cache: true
-      - name: Run Build
-        run: make
-      - name: Run Test
-        run: |
-          go test -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
-          bash <(curl -s https://codecov.io/bash)
