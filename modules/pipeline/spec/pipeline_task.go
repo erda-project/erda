@@ -119,6 +119,13 @@ type PipelineTaskExecutorKind string
 var (
 	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
+	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
+)
+
+var (
+	PipelineTaskExecutorNameEmpty            = ""
+	PipelineTaskExecutorNameSchedulerDefault = "scheduler"
+	PipelineTaskExecutorNameAPITestDefault   = "api-test"
 )
 
 type RuntimeResource struct {

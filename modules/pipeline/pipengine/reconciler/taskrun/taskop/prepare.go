@@ -48,10 +48,21 @@ func (pre *prepare) Processing() (interface{}, error) {
 }
 
 func (pre *prepare) WhenDone(data interface{}) error {
-	if err := pre.makeTaskRun(); err != nil {
+	needRetry, err := pre.makeTaskRun()
+	if needRetry {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		return err
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("need retry")
 	}
+	// no need retry
+	if err != nil {
+		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
+		pre.Task.Result.Errors = append(pre.Task.Result.Errors, apistructs.ErrorResponse{Msg: err.Error()})
+		return nil
+	}
+
 	logrus.Infof("reconciler: pipelineID: %d, task %q end prepare (%s -> %s)",
 		pre.P.ID, pre.Task.Name, apistructs.PipelineStatusAnalyzed, apistructs.PipelineStatusBorn)
 	return nil
@@ -77,23 +88,24 @@ func (pre *prepare) TuneTriggers() taskrun.TaskOpTuneTriggers {
 	}
 }
 
-func (pre *prepare) makeTaskRun() error {
+// makeTaskRun return flag needRetry and err.
+func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task := pre.Task
 	p := pre.P
 	tasks, err := pre.DBClient.ListPipelineTasksByPipelineID(p.ID)
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	// 如果 task 已经是终态，无需 taskRun
 	if task.Status.IsEndStatus() {
-		return nil
+		return false, nil
 	}
 
 	// 获取集群信息
 	clusterInfo, err := pre.Bdl.QueryClusterInfo(p.ClusterName)
 	if err != nil {
-		return apierrors.ErrGetCluster.InternalError(err)
+		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解
@@ -108,7 +120,7 @@ func (pre *prepare) makeTaskRun() error {
 	// OUTPUT
 	dbOutputs, err := pre.DBClient.GetPipelineOutputs(p.ID)
 	if err != nil {
-		return apierrors.ErrGetPipelineOutputs.InternalError(err)
+		return true, apierrors.ErrGetPipelineOutputs.InternalError(err)
 	}
 	outputs := pipelineyml.Outputs{}
 	for actionAlias, kvs := range dbOutputs {
@@ -143,7 +155,7 @@ func (pre *prepare) makeTaskRun() error {
 		pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams),
 	)
 	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
+		return false, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 
 	// 从 extension marketplace 获取 image 和 resource limit
@@ -153,26 +165,26 @@ func (pre *prepare) makeTaskRun() error {
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq,
 		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
-		return err
+		return true, nil
 	}
 
 	// 校验 action agent
 	agentDiceYmlJob := actionDiceYmlJobMap[getActionAgentTypeVersion()]
 	if agentDiceYmlJob == nil || agentDiceYmlJob.Image == "" {
-		return apierrors.ErrDownloadActionAgent.InvalidState(fmt.Sprintf("not found agent image (%s)", getActionAgentTypeVersion()))
+		return false, apierrors.ErrDownloadActionAgent.InvalidState(fmt.Sprintf("not found agent image (%s)", getActionAgentTypeVersion()))
 	}
 	agentMD5, ok := agentDiceYmlJob.Labels["MD5"]
 	if !ok || agentMD5 == "" {
-		return apierrors.ErrValidateActionAgent.MissingParameter("MD5 (labels)")
+		return false, apierrors.ErrValidateActionAgent.MissingParameter("MD5 (labels)")
 	}
 	if err := pre.ActionAgentSvc.Ensure(clusterInfo, agentDiceYmlJob.Image, agentMD5); err != nil {
-		return err
+		return true, nil
 	}
 
 	// action
 	action, err := pipelineyml.GetAction(pipelineYml.Spec(), pipelineyml.ActionAlias(task.Name))
 	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
+		return false, apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 	task.Extra.Action = *action
 	// --- uuid ---
@@ -252,7 +264,7 @@ func (pre *prepare) makeTaskRun() error {
 	// 只有 custom-script 可以设置自定义镜像，优先级高于默认自定义镜像。
 	diceYmlJob, ok := actionDiceYmlJobMap[taskrun.GetActionTypeVersion(action)]
 	if !ok || diceYmlJob == nil || diceYmlJob.Image == "" {
-		return apierrors.ErrRunPipeline.InvalidState(
+		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found image, actionType: %q, version: %q", action.Type, action.Version))
 	}
 	task.Extra.Image = diceYmlJob.Image
@@ -315,10 +327,10 @@ func (pre *prepare) makeTaskRun() error {
 
 	// 条件表达式存在
 	if jump := condition(task); jump {
-		return nil
+		return false, nil
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
@@ -340,7 +352,7 @@ func (pre *prepare) makeTaskRun() error {
 			}
 			stageOrder, err := strconv.Atoi(stageOrderStr)
 			if err != nil {
-				return apierrors.ErrParsePipelineContext.InternalError(err)
+				return false, apierrors.ErrParsePipelineContext.InternalError(err)
 			}
 			if stageOrder >= task.Extra.StageOrder {
 				// 如果说 action 的 need 中有对应的挂载的名称，对应的就是 snippet 的状态，各个 task 的 stageOrder 相等会导致的问题
@@ -361,7 +373,7 @@ func (pre *prepare) makeTaskRun() error {
 	// for get action callback openapi oauth2 token
 	specYmlJob, ok := actionSpecYmlJobMap[taskrun.GetActionTypeVersion(action)]
 	if !ok || specYmlJob == nil {
-		return apierrors.ErrRunPipeline.InvalidState(
+		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found action spec, actionType: %q, version: %q", action.Type, action.Version))
 	}
 	task.Extra.OpenapiOAuth2TokenPayload = apistructs.OpenapiOAuth2TokenPayload{
@@ -384,7 +396,7 @@ func (pre *prepare) makeTaskRun() error {
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.StorageConfig.EnableShareVolume() {
+	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
@@ -397,12 +409,12 @@ func (pre *prepare) makeTaskRun() error {
 				Kind:        "",
 			})
 			if err != nil {
-				return fmt.Errorf("error create createJobVolume: %v", err)
+				return true, fmt.Errorf("error create createJobVolume: %v", err)
 			}
 			p.Extra.ShareVolumeID = volumeID
 			err = pre.DBClient.UpdatePipelineExtraByPipelineID(p.ID, &p.PipelineExtra)
 			if err != nil {
-				return err
+				return true, err
 			}
 		}
 		task.Context.OutStorages = append(task.Context.OutStorages,
@@ -436,7 +448,7 @@ func (pre *prepare) makeTaskRun() error {
 		}
 
 	}
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -453,7 +465,7 @@ func (pre *prepare) makeTaskRun() error {
 	// cmd
 	cmd, args, err := generateTaskCMDs(action, task.Context, p.ID, task.ID)
 	if err != nil {
-		return apierrors.ErrRunPipeline.InternalError(err)
+		return false, apierrors.ErrRunPipeline.InternalError(err)
 	}
 	task.Extra.Cmd = cmd
 	task.Extra.CmdArgs = args
@@ -462,7 +474,7 @@ func (pre *prepare) makeTaskRun() error {
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() {
+	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 	}
@@ -471,7 +483,7 @@ func (pre *prepare) makeTaskRun() error {
 	task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
 	jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
 	if err != nil {
-		return apierrors.ErrRunPipeline.InternalError(err)
+		return false, apierrors.ErrRunPipeline.InternalError(err)
 	}
 	for _, bind := range jobBinds {
 		task.Extra.Binds = append(task.Extra.Binds, bind)
@@ -493,13 +505,13 @@ func (pre *prepare) makeTaskRun() error {
 
 	// pull bootstrap info
 	if err := pre.generateOpenapiTokenForPullBootstrapInfo(task); err != nil {
-		return err
+		return true, err
 	}
 
 	// insert into queue
 	pre.insertIntoQueue(*specYmlJob)
 
-	return nil
+	return false, nil
 }
 
 func existContinuePrivateEnv(privateEnvs map[string]string, key string) bool {
