@@ -9,16 +9,12 @@ on:
       - release/*
   pull_request:
 jobs:
-  CI:
+  lint-go:
+    name: Lint Go code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14
-      - name: Set up Go mod
-        run: go mod tidy
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Run Lint
         uses: golangci/golangci-lint-action@v2
         with:
@@ -36,6 +32,14 @@ jobs:
           # skip-pkg-cache: true
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           # skip-build-cache: true
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
       - name: Run Build
         run: make
       - name: Run Test
