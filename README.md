@@ -42,5 +42,9 @@ This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
 
 ## Contact Us
 
+We look forward to your connecting with us, you can ask us all questions.
+
+- Email: erda@terminus.io
+
 ## License
 Erda is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.
