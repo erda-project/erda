@@ -121,7 +121,7 @@ func (agent *Agent) uploadDir() {
 			Type:  apistructs.MetadataTypeDiceFile,
 		})
 	}
-	err = agent.callbackToPipelinePlatform(&callback{Metadata: metadata})
+	err = agent.callbackToPipelinePlatform(&Callback{Metadata: metadata})
 	if err != nil {
 		agent.AppendError(err)
 	}
