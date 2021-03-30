@@ -51,8 +51,8 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 			return err
 		}
 		logrus.Debugf("监听到了 METAFILE 改动，时间: %v，全量内容: %s", time.Now().Format(time.RFC3339), string(b))
-		cb := &callback{}
-		err = cb.handleMetaFile(b)
+		cb := &Callback{}
+		err = cb.HandleMetaFile(b)
 		if err != nil {
 			return err
 		}
