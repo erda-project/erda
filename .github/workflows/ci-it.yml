@@ -27,15 +27,15 @@ jobs:
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
           # Optional: golangci-lint command line arguments.
-          # args: --issues-exit-code=0
+          # args: -v --timeout=10m
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true
           # Optional: if set to true then the action will use pre-installed Go.
           # skip-go-installation: true
           # Optional: if set to true then the action don't cache or restore ~/go/pkg.
-          # skip-pkg-cache: true
+          skip-pkg-cache: true
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
-          # skip-build-cache: true
+          skip-build-cache: true
       - name: Run Build
         run: make
       - name: Run Test
