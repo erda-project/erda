@@ -2,70 +2,11 @@ package report
 
 import (
 	"fmt"
-	//"io"
 	"net/http"
-	//"reflect"
 	"testing"
 
 	"github.com/erda-project/erda/providers/metrics/common"
 )
-
-func Test_reportClient_Send(t *testing.T) {
-	type fields struct {
-		cfg        *config
-		httpClient *http.Client
-	}
-	type args struct {
-		in []*common.Metric
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "testSend",
-			fields: fields{
-				cfg: &config{
-					Addr:     "collector.default.svc.cluster.local:7076",
-					UserName: "admin",
-					Password: "Cqqsg7WXJ9M13tId8vb9~",
-					Retry:    2,
-				},
-				httpClient: new(http.Client),
-			},
-			args: args{
-				in: Metrics{
-					&common.Metric{
-						Name:      "_metric_meta",
-						Timestamp: 1614583470000,
-						Tags: map[string]string{
-							"cluster_name": "terminus-dev",
-							"meta":         "true",
-							"metric_name":  "application_db",
-						},
-						Fields: map[string]interface{}{
-							"fields": []string{"value:number"},
-							"tags":   []string{"is_edge", "org_id"},
-						},
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &reportClient{
-				cfg:        tt.fields.cfg,
-				httpClient: tt.fields.httpClient,
-			}
-			if err := c.Send(tt.args.in); (err != nil) != tt.wantErr {
-				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
 
 func Test_reportClient_serialize(t *testing.T) {
 	type fields struct {
