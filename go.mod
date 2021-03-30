@@ -77,6 +77,7 @@ require (
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	golang.org/x/mod v0.4.0 // indirect
+	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
