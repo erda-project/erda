@@ -43,7 +43,6 @@ func (r *telegrafReporter) send(metrics []*common.Metric) (err error) {
 		if r.conn != nil {
 			_, err = r.conn.Write(data)
 		}
-
 	}
 	return err
 }
