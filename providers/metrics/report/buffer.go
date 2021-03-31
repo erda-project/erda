@@ -48,6 +48,5 @@ func (b *buffer) Add(v *common.Metric) bool {
 		b.count++
 		return true
 	}
-
 	return false
 }
