@@ -1,0 +1,111 @@
+package driver
+
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/impl/volume"
+	"github.com/erda-project/erda/pkg/jsonstore"
+
+	"github.com/pkg/errors"
+)
+
+var (
+	BadVolumeTypeNotLocalVolume = errors.New("Bad VolumeType, not localvolume")
+	BadAttachDest               = errors.New("Bad Attach dest")
+	MultiAttachWithLocalVolume  = errors.New("multiple attach localvolume")
+)
+
+const (
+	LocalVolumeHostPathPrefix = "/data/volumes"
+)
+
+type LocalVolumeDriver struct {
+	js jsonstore.JsonStore
+}
+
+func NewLocalVolumeDriver(js jsonstore.JsonStore) volume.Volume {
+	return &LocalVolumeDriver{js}
+}
+
+func (d LocalVolumeDriver) Type() volume.VolumeType {
+	return apistructs.LocalVolume
+}
+
+func (d LocalVolumeDriver) Create(config volume.VolumeCreateConfig) (volume.VolumeInfo, error) {
+	if config.Type != apistructs.LocalVolume {
+		return volume.VolumeInfo{}, BadVolumeTypeNotLocalVolume
+	}
+	return defaultCreate(d.js, config)
+}
+
+func (d LocalVolumeDriver) Info(ID volume.VolumeIdentity) (volume.VolumeInfo, error) {
+	return defaultInfo(d.js, ID)
+}
+
+func (d LocalVolumeDriver) Attach(ID volume.VolumeIdentity, dst volume.AttachDest) (volume.AttachCallback, error) {
+	if err := dst.Validate(); err != nil {
+		return nil, errors.Wrap(BadAttachDest, err.Error())
+	}
+	info, err := defaultInfo(d.js, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if info.Type != apistructs.LocalVolume {
+		return nil, BadVolumeTypeNotLocalVolume
+	}
+
+	ref := volume.VolumeReference{apistructs.AttachDest(dst)}
+	info.References = append(info.References, ref)
+
+	_, err = defaultUpdate(d.js, ID, info)
+	if err != nil {
+		return nil, err
+	}
+
+	cb := func(runtime *apistructs.ServiceGroup) (volume.VolumeInfo, error) {
+		for i, s := range runtime.Services {
+			if s.Name == dst.Service {
+				for idx := range s.Volumes {
+					runtime.Services[i].Volumes[idx].VolumePath = mkLocalVolumeHostPath(info.ID)
+				}
+			}
+		}
+		return info, nil
+	}
+
+	return cb, nil
+}
+
+func (d LocalVolumeDriver) UnAttach(ID volume.VolumeIdentity, dst volume.AttachDest) (volume.VolumeInfo, error) {
+	if err := dst.Validate(); err != nil {
+		return volume.VolumeInfo{}, errors.Wrap(BadAttachDest, err.Error())
+	}
+	info, err := defaultInfo(d.js, ID)
+	if err != nil {
+		return volume.VolumeInfo{}, err
+	}
+
+	newReferences := []volume.VolumeReference{}
+	for _, ref := range info.References {
+		if !volume.AttachDest(ref.Info).Equal(dst) {
+			newReferences = append(newReferences, ref)
+		}
+	}
+	info.References = newReferences
+	_, err = defaultUpdate(d.js, ID, info)
+	if err != nil {
+		return volume.VolumeInfo{}, err
+	}
+	return info, nil
+}
+
+// 对于 localvolume， Delete 什么都不做，只清除元数据，具体的清理工作由plugin提供的localvolume来实现
+// 比如对于 marathon， localpv 由它来清理
+func (d LocalVolumeDriver) Delete(ID volume.VolumeIdentity, force bool) error {
+	_, err := defaultDelete(d.js, ID)
+	return err
+}
+
+func mkLocalVolumeHostPath(ID string) string {
+	return ID
+}
