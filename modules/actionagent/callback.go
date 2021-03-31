@@ -21,7 +21,7 @@ import (
 )
 
 func (agent *Agent) Callback() {
-	cb := &callback{}
+	cb := &Callback{}
 	defer func() {
 		cb.Errors = append(cb.Errors, agent.MergeErrors()...)
 		agent.LockPushedMetaFileMap.Lock()
@@ -57,13 +57,13 @@ func (agent *Agent) Callback() {
 		agent.AppendError(err)
 		return
 	}
-	if err := cb.handleMetaFile(mb); err != nil {
+	if err := cb.HandleMetaFile(mb); err != nil {
 		agent.AppendError(err)
 		return
 	}
 }
 
-func (agent *Agent) callbackToPipelinePlatform(cb *callback) (err error) {
+func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 
 	filterMetadata(cb, agent)
 	defer func() {
@@ -142,11 +142,11 @@ func (agent *Agent) callbackToPipelinePlatform(cb *callback) (err error) {
 	}, 5, time.Second*5)
 }
 
-type callback apistructs.ActionCallback
+type Callback apistructs.ActionCallback
 
 // 1) decode as: apistructs.Metadata
 // 2) decode as: line(k=v)
-func (c *callback) handleMetaFile(b []byte) error {
+func (c *Callback) HandleMetaFile(b []byte) error {
 	// 1)
 	err := json.NewDecoder(bytes.NewReader(b)).Decode(c)
 	if err == nil || err == io.EOF {
@@ -193,7 +193,7 @@ func (c *callback) handleMetaFile(b []byte) error {
 	return nil
 }
 
-func filterMetadata(cb *callback, agent *Agent) {
+func filterMetadata(cb *Callback, agent *Agent) {
 	// 不推送已经推送过的
 	var filteredMetadata apistructs.Metadata
 	for _, wait := range cb.Metadata {
@@ -206,7 +206,7 @@ func filterMetadata(cb *callback, agent *Agent) {
 	cb.Metadata = filteredMetadata
 }
 
-func updatePushedMetadata(cb *callback, agent *Agent) {
+func updatePushedMetadata(cb *Callback, agent *Agent) {
 	for _, meta := range cb.Metadata {
 		agent.PushedMetaFileMap[meta.Name] = meta.Value
 	}

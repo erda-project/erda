@@ -9,12 +9,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-)
-
-const (
-	defaultExecutorScheduler = "scheduler"
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
@@ -25,9 +22,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	task.Name = action.Alias.String()
 	// task.OpType
 	task.Type = action.Type.String()
-	task.ExecutorKind = spec.PipelineTaskExecutorKindScheduler
 	task.Extra.Namespace = p.Extra.Namespace
-	task.Extra.ExecutorName = "scheduler"
 	task.Extra.ClusterName = p.ClusterName
 	task.Extra.AllowFailure = false
 	task.Extra.Pause = false
@@ -39,6 +34,14 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.Extra.Envs
 	// task.Extra.Labels
 	// task.Extra.Image
+
+	// set executor
+	executorKind, executorName, err := s.judgeTaskExecutor(action)
+	if err != nil {
+		return nil, apierrors.ErrCreatePipelineTask.InvalidParameter(err)
+	}
+	task.ExecutorKind = executorKind
+	task.Extra.ExecutorName = executorName
 
 	// default task resource limit
 	task.Extra.RuntimeResource = spec.RuntimeResource{
@@ -122,7 +125,7 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) (spec.PipelineTaskExtra, error) {
 	var ex spec.PipelineTaskExtra
 	ex.Namespace = p.Extra.Namespace
-	ex.ExecutorName = defaultExecutorScheduler
+	ex.ExecutorName = spec.PipelineTaskExecutorNameEmpty
 	ex.ClusterName = p.ClusterName
 	ex.AllowFailure = false
 	ex.Pause = false
@@ -149,4 +152,12 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 		runAfters = append(runAfters, need.String())
 	}
 	return runAfters
+}
+
+// judgeTaskExecutor judge task executor by action info
+func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action) (spec.PipelineTaskExecutorKind, string, error) {
+	if action.Type == apistructs.ActionTypeAPITest {
+		return spec.PipelineTaskExecutorKindAPITest, spec.PipelineTaskExecutorNameAPITestDefault, nil
+	}
+	return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
 }
