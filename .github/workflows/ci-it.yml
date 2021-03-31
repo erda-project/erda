@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install libc-dev pkg-config librdkafka-dev
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
