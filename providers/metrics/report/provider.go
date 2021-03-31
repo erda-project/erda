@@ -3,8 +3,9 @@ package report
 import (
 	"net/http"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/recallsong/go-utils/logs"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
 type define struct{}

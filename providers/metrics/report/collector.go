@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erda-project/erda/providers/metrics/common"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/providers/metrics/common"
 )
 
 type reportClient struct {
