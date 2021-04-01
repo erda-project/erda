@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -76,12 +78,22 @@ func (d *Daemonset) Get(namespace, name string) (*appsv1.DaemonSet, error) {
 	return ds, nil
 }
 
-func (d *Daemonset) List(namespace string) (appsv1.DaemonSetList, error) {
+func (d *Daemonset) List(namespace string, labelSelector map[string]string) (appsv1.DaemonSetList, error) {
 	var dsList appsv1.DaemonSetList
+	var params url.Values
+	if len(labelSelector) > 0 {
+		var kvs []string
+		params = make(url.Values, 0)
+		for key, value := range labelSelector {
+			kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+		}
+		params.Add("labelSelector", strings.Join(kvs, ","))
+	}
 
 	var b bytes.Buffer
 	resp, err := d.client.Get(d.addr).
 		Path("/apis/apps/v1/namespaces/" + namespace + "/daemonsets").
+		Params(params).
 		Do().
 		Body(&b)
 	if err != nil {
