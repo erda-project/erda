@@ -702,7 +702,7 @@ func (svc *Issue) batchCreateStateChaningStream(req *apistructs.IssueBatchUpdate
 			IssueID:      v.ID,
 			Operator:     req.UserID,
 			StreamType:   apistructs.ISTTransferState,
-			StreamParams: apistructs.ISTParam{CurrentState: string(v.State), NewState: string(req.State)},
+			StreamParams: apistructs.ISTParam{CurrentState: fmt.Sprintf("%d", v.State), NewState: fmt.Sprintf("%d", v.State)},
 		}
 		// create stream
 		if _, err := svc.stream.Create(&streamReq); err != nil {
