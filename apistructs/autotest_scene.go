@@ -49,6 +49,7 @@ type AutoTestScene struct {
 	Inputs      []AutoTestSceneInput  `json:"inputs"`    // 输入参数
 	Output      []AutoTestSceneOutput `json:"output"`    // 输出参数
 	Steps       []AutoTestSceneStep   `json:"steps"`     // 步骤
+	RefSetID    uint64                `json:"refSetID"`  // 引用场景集ID
 }
 
 type AutoTestSceneInput struct {
@@ -93,6 +94,7 @@ type AutotestSceneRequest struct {
 	SceneID     uint64 `json:"sceneID,omitempty"`     // 场景ID
 	SetID       uint64 `json:"setID,omitempty"`       // 场景集ID
 	APISpecID   uint64 `json:"apiSpecID,omitempty"`   // api集市id
+	RefSetID    uint64 `json:"refSetID,omitempty"`    // 引用场景集的ID
 
 	Type     StepAPIType `json:"type,omitempty"`
 	Target   int64       `json:"target,omitempty"`   // 目标位置
