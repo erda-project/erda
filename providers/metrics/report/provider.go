@@ -11,10 +11,10 @@ import (
 type define struct{}
 
 type config struct {
-	Addr     string
-	UserName string
-	Password string
-	Retry    int
+	Addr     string `file:"addr"`
+	UserName string `file:"username"`
+	Password string `file:"password"`
+	Retry    int    `file:"retry"`
 }
 
 type provider struct {

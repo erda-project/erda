@@ -19,12 +19,32 @@ type reportClient struct {
 	httpClient *http.Client
 }
 
+type MetricReport interface {
+	SetCFG(cfg *config)
+	Send(in []*common.Metric) error
+}
+
 type NamedMetrics struct {
 	Name    string
 	Metrics Metrics
 }
 
 type Metrics []*common.Metric
+
+func (c *reportClient) SetCFG(cfg *config) {
+	c.cfg = cfg
+}
+
+func CreateReportClient(addr, username, password string) *reportClient {
+	return &reportClient{
+		cfg: &config{
+			Addr:     addr,
+			UserName: username,
+			Password: password,
+			Retry:    2,
+		}, httpClient: new(http.Client),
+	}
+}
 
 func (c *reportClient) Send(in []*common.Metric) error {
 	groups := c.group(in)
