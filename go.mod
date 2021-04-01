@@ -79,6 +79,7 @@ require (
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/cobra v1.1.1 // indirect
 	github.com/stretchr/testify v1.6.1
+	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
