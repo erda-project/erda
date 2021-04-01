@@ -1,6 +1,5 @@
 # Erda - An enterprise-grade microservice application development platform
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
 ![](./docs/files/logo.jpg)
@@ -28,9 +27,8 @@ We split the codes of erda into multiple repositories according to different fun
 [erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
 ## Quick start
-### To start using erda
 
-### To start developing erda
+TODO
 
 ## User Documentation
 - [中文](https://dice-docs.app.terminus.io)
@@ -47,4 +45,5 @@ We look forward to your connecting with us, you can ask us all questions.
 - Email: erda@terminus.io
 
 ## License
-Erda is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.
+
+TODO
