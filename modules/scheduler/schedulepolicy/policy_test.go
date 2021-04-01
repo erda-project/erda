@@ -31,7 +31,7 @@ func TestDisableLabelFilterChain(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	// runtime 未有任何标签
@@ -86,7 +86,7 @@ func TestLabelFilterChain1(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -152,7 +152,7 @@ func TestLabelFilterChain2(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -225,7 +225,7 @@ func TestLabelFilterChain3(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -297,7 +297,7 @@ func TestLabelFilterChain4(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -376,7 +376,7 @@ func TestLabelFilterChain5(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -460,7 +460,7 @@ func TestLabelFilterChain6(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -546,7 +546,7 @@ func TestLabelFilterChain7(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -629,7 +629,7 @@ func TestLabelFilterChain8(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -695,7 +695,7 @@ func TestLabelFilterChain9(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -951,7 +951,7 @@ func TestMultiOrg(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -1104,7 +1104,7 @@ func TestLabelFilterChainForJob(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1195,7 +1195,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1337,7 +1337,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1487,7 +1487,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 
 	labelConfigs := &executortypes.ExecutorWholeConfigs{
 		BasicConfig: config.Options,
-		PlusConfigs:  config.OptionsPlus,
+		PlusConfigs: config.OptionsPlus,
 	}
 
 	j := apistructs.Job{
