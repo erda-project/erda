@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
@@ -219,28 +220,46 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 		affectedPipelineIDs = append(affectedPipelineIDs, pipelineID)
 	}
 
-	// 获取其中一个 task 的 executor，删除 ns
-	var tasks []*spec.PipelineTask
+	// group tasks by executorName
+	groupedTasks := make(map[string][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
 		dbTasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
 		if err != nil {
 			return err
 		}
-
-		for _, task := range dbTasks {
-			var taskValue = task
-			tasks = append(tasks, &taskValue)
+		for i := range dbTasks {
+			task := dbTasks[i]
+			// snippet task has no entity to delete
+			if task.IsSnippet {
+				continue
+			}
+			// no executor info
+			if task.ExecutorKind == "" || task.Extra.ExecutorName == "" {
+				continue
+			}
+			// not begin reconcile prepare
+			if task.Extra.UUID != "" {
+				continue
+			}
+			groupedTasks[task.Extra.ExecutorName] = append(groupedTasks[task.Extra.ExecutorName], &task)
 		}
 	}
 
-	if len(tasks) > 0 {
-		executor, err := actionexecutor.GetManager().Get(types.Name(tasks[0].Extra.ExecutorName))
+	// iterate groupedTasks by executorName and batchDelete tasks
+	var batchDeleteErrs []string
+	for executorName, tasks := range groupedTasks {
+		executor, err := actionexecutor.GetManager().Get(types.Name(executorName))
 		if err != nil {
-			return err
+			batchDeleteErrs = append(batchDeleteErrs, err.Error())
+			continue
 		}
 		if _, err := executor.BatchDelete(context.Background(), tasks); err != nil {
-			return err
+			batchDeleteErrs = append(batchDeleteErrs, err.Error())
+			continue
 		}
+	}
+	if len(batchDeleteErrs) > 0 {
+		return fmt.Errorf("failed to gc namespace: %s, errs: %s", namespace, strings.Join(batchDeleteErrs, ", "))
 	}
 
 	if _, err := r.js.PrefixRemove(context.Background(), gcPrefixKey); err != nil {

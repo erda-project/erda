@@ -11,18 +11,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	Kind = "SCHEDULER"
+var Kind = types.Kind(spec.PipelineTaskExecutorKindScheduler)
 
+const (
 	OPTION_ADDR = "ADDR"
 
 	notFoundError = "not found"
@@ -34,13 +34,13 @@ var (
 )
 
 func init() {
-	types.Register(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
+	types.MustRegister(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
 		addr, ok := options[OPTION_ADDR]
 		if !ok {
 			return nil, errors.Errorf("not found some config of action executor, kind [%s], name [%s], field [ADDR]", Kind, name)
 		}
-		if discover.Scheduler() != "" {
-			addr = discover.Scheduler()
+		if conf.SchedulerAddr() != "" {
+			addr = conf.SchedulerAddr()
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 		return &Sched{
@@ -325,52 +325,19 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 	return result.Name, nil
 }
 
-func (s *Sched) Destroy(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	return s.Remove(ctx, action)
-}
-
-func (s *Sched) DeleteNamespace(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
-	defer wrapError(&err, "delete pipeline namespace", action)
-
-	if err = validateAction(action); err != nil {
-		return nil, err
-	}
-
-	var body bytes.Buffer
-	resp, err := httpclient.New().Delete(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/deletealljobs", action.Extra.Namespace)).
-		Do().Body(&body)
-	if err != nil {
-		return nil, httpInvokeErr(err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobDeleteResponse
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return nil, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	if result.Error != "" {
-		if strings.Contains(result.Error, notFoundError) {
-			logrus.Infof("skip resp.Error(not found) when invoke scheduler.deletealljobs, pipelineID: %d, namespace: %s, resp.Error: %s",
-				action.PipelineID, action.Extra.Namespace, result.Error)
-			return result.Name, nil
-		}
-		return nil, errors.Errorf("statusCode: %d, resp.error: %s", resp.StatusCode(), result.Error)
-	}
-	return result.Name, nil
-}
-
 func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (data interface{}, err error) {
 	if len(actions) == 0 {
 		return nil, nil
 	}
+
 	action := actions[0]
+
 	defer wrapError(&err, "batch delete jobs", action)
+
 	if err = validateAction(action); err != nil {
 		return nil, err
 	}
+
 	var req []apistructs.JobFromUser
 	for _, action := range actions {
 		if len(action.Extra.UUID) <= 0 {
@@ -386,25 +353,31 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 	if err != nil {
 		return nil, httpInvokeErr(err)
 	}
+
 	statusCode := resp.StatusCode()
 	respBody := body.String()
-	var result apistructs.JobDeleteResponse
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
+
+	var results apistructs.JobsDeleteResponse
+	if err := json.NewDecoder(&body).Decode(&results); err != nil {
 		return nil, respBodyDecodeErr(statusCode, respBody, err)
 	}
-	if result.Error != "" {
-		var actionIDs []uint64
-		for _, action := range actions {
-			actionIDs = append(actionIDs, action.ID)
+	var filteredErrResults apistructs.JobsDeleteResponse
+	for i := range results {
+		result := results[i]
+		if result.Error == "" {
+			continue
 		}
 		if strings.Contains(result.Error, notFoundError) {
-			logrus.Infof("skip resp.Error(not found) when invoke scheduler.batchDelete, pipelineID: %d, namespace: %s, actions: %v, resp.Error: %s",
-				action.PipelineID, action.Extra.Namespace, actionIDs, result.Error)
-			return result.Name, nil
+			logrus.Infof("skip resp.Error(not found) when invoke scheduler.batchDelete, pipelineID: %d, namespace: %s, taskName: %v, resp.Error: %s",
+				action.PipelineID, result.Namespace, result.Name, result.Error)
+			continue
 		}
-		return nil, errors.Errorf("statusCode: %d, resp.error: %s", resp.StatusCode(), result.Error)
+		filteredErrResults = append(filteredErrResults, result)
 	}
-	return result.Name, nil
+	if len(filteredErrResults) > 0 {
+		return nil, fmt.Errorf("statusCode: %d, results: %+v", resp.StatusCode(), filteredErrResults)
+	}
+	return "", nil
 }
 
 func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {

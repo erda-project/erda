@@ -2,6 +2,8 @@ package task
 
 import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/plugins/autotest_cookie_keep_after"
+	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/plugins/autotest_cookie_keep_before"
 	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/plugins/echo"
 	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/plugins/unit_test_report"
 )
@@ -23,6 +25,7 @@ var TuneTriggerChains = map[aoptypes.TuneTrigger]aoptypes.TuneChain{
 	// 创建前
 	aoptypes.TuneTriggerTaskBeforeCreate: []aoptypes.TunePoint{
 		echo.New(),
+		autotest_cookie_keep_before.New(),
 	},
 	// 创建后
 	aoptypes.TuneTriggerTaskAfterCreate: []aoptypes.TunePoint{
@@ -56,5 +59,6 @@ var TuneTriggerChains = map[aoptypes.TuneTrigger]aoptypes.TuneChain{
 	aoptypes.TuneTriggerTaskAfterExec: []aoptypes.TunePoint{
 		echo.New(),
 		unit_test_report.New(),
+		autotest_cookie_keep_after.New(),
 	},
 }
