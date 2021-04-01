@@ -157,6 +157,7 @@ const (
 	ClickSceneOperationKey            OperationKey = "ClickScene"
 	ExpandSceneSetOperationKey        OperationKey = "ExpandSceneSet"
 	AddSceneOperationKey              OperationKey = "AddScene"
+	RefSceneSetOperationKey           OperationKey = "RefSceneSet"
 	SubmitSceneOperationKey           OperationKey = "SubmitScene"
 	UpdateSceneOperationKey           OperationKey = "UpdateScene"
 	DeleteSceneOperationKey           OperationKey = "DeleteScene"
