@@ -43,7 +43,7 @@ func MustLoad(obj interface{}) {
 }
 
 // Load 分析配置对象 obj，并从环境变量里获取值初始化配置对象.
-func Load(obj interface{}) error {
+func Load(obj interface{}, envOpts ...map[string]string) error {
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Ptr {
 		return errors.New("not a pointer")
@@ -54,6 +54,14 @@ func Load(obj interface{}) error {
 
 	keyRegexStr := `^[A-Z][A-Z0-9_]*$`
 	keyRegex := regexp.MustCompile(keyRegexStr)
+
+	// use passed in envs if have
+	var envs map[string]string
+	var usePassedInEnvs bool
+	if len(envOpts) > 0 {
+		usePassedInEnvs = true
+		envs = envOpts[0]
+	}
 
 	for i := 0; i < num; i++ {
 		typeField := typ.Elem().Field(i)
@@ -72,8 +80,12 @@ func Load(obj interface{}) error {
 		}
 		value := typeField.Tag.Get("default")
 
-		if v := os.Getenv(key); v != "" {
-			value = v
+		if usePassedInEnvs {
+			value = envs[key]
+		} else {
+			if v := os.Getenv(key); v != "" {
+				value = v
+			}
 		}
 		value = strings.TrimSpace(value)
 

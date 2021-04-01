@@ -17,11 +17,19 @@ coverage:
     project:
       default:
         # basic
-        target: 20%
-        threshold: 2%
+        target: 15%
+        threshold: 0%
         base: auto
         if_ci_failed: error
         informational: false
+        only_pulls: false
+    patch:
+      default:
+        # basic
+        target: auto
+        threshold: 0%
+        base: auto
+        if_ci_failed: error
         only_pulls: false
 
 github_checks:

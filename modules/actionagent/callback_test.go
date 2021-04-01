@@ -7,12 +7,12 @@ import (
 )
 
 func TestHandleMetaFile(t *testing.T) {
-	cb := callback{}
-	err := cb.handleMetaFile([]byte(`{"metadata":[{"name":"commit","value":"7fbca4b1d73c2a68cf0817c31a0c246747e5735d"},{"name":"author","value":"linjun"},{"name":"author_date","value":"2019-08-07 09:57:52 +0800","type":"time"},{"name":"branch","value":"release/3.4"},{"name":"message","value":"update .npmrc\n","type":"message"}]}{"metadata":[{"name":"commit","value":"7fbca4b1d73c2a68cf0817c31a0c246747e5735d"},{"name":"author","value":"linjun"},{"name":"author_date","value":"2019-08-07 09:57:52 +0800","type":"time"},{"name":"branch","value":"release/3.4"},{"name":"message","value":"update .npmrc\n","type":"message"}]}`))
+	cb := Callback{}
+	err := cb.HandleMetaFile([]byte(`{"metadata":[{"name":"commit","value":"7fbca4b1d73c2a68cf0817c31a0c246747e5735d"},{"name":"author","value":"linjun"},{"name":"author_date","value":"2019-08-07 09:57:52 +0800","type":"time"},{"name":"branch","value":"release/3.4"},{"name":"message","value":"update .npmrc\n","type":"message"}]}{"metadata":[{"name":"commit","value":"7fbca4b1d73c2a68cf0817c31a0c246747e5735d"},{"name":"author","value":"linjun"},{"name":"author_date","value":"2019-08-07 09:57:52 +0800","type":"time"},{"name":"branch","value":"release/3.4"},{"name":"message","value":"update .npmrc\n","type":"message"}]}`))
 	assert.NoError(t, err)
 
-	cb = callback{}
-	err = cb.handleMetaFile([]byte(`
+	cb = Callback{}
+	err = cb.HandleMetaFile([]byte(`
 commit= 777
 author =xxx
 message = test metafile
