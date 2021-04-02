@@ -97,3 +97,18 @@ func (client *DBClient) GetNotifyItemsByNotifyIDAndItemName(notifyID int64, item
 		Scan(&items).Error
 	return items, err
 }
+
+func (client *DBClient) QuerytNotifyItemsByNotifyIDAndItemName(notifyID int64, itemName string) ([]*apistructs.NotifyItem, error) {
+	var items []*apistructs.NotifyItem
+	sql := client.Table("dice_notify_item_relation").
+		Joins("inner join dice_notify_items on dice_notify_items.id = dice_notify_item_relation.notify_item_id").
+		Select("dice_notify_items.id, dice_notify_items.name,dice_notify_items.display_name,dice_notify_items.category,dice_notify_items.label,dice_notify_items.scope_type,"+
+			"dice_notify_items.mobile_template,dice_notify_items.email_template,dice_notify_items.dingding_template,"+
+			"dice_notify_items.mbox_template,dice_notify_items.vms_template").
+		Where("dice_notify_item_relation.notify_id = ?", notifyID)
+	if itemName != "" {
+		sql.Where("dice_notify_items.name = ?", itemName)
+	}
+	err := sql.Scan(&items).Error
+	return items, err
+}
