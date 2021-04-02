@@ -72,6 +72,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/recallsong/go-utils v1.1.1
 	github.com/robfig/cron v1.2.0
+	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil/v3 v3.20.11
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
@@ -79,6 +80,7 @@ require (
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/cobra v1.1.1 // indirect
 	github.com/stretchr/testify v1.6.1
+	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
