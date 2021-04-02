@@ -38,7 +38,7 @@ func New(options ...Option) *Bundle {
 	}
 	if b.i18nLoader == nil {
 		b.i18nLoader = i18n.NewLoader()
-		b.i18nLoader.LoadDir("libs/dice-configs/i18n")
+		b.i18nLoader.LoadDir("dice-configs/i18n")
 		b.i18nLoader.DefaultLocale("zh-CN")
 	}
 	return b
