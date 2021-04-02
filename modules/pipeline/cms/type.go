@@ -28,14 +28,3 @@ func transformKeysToStrSlice(keys ...apistructs.PipelineCmsConfigKey) []string {
 	}
 	return result
 }
-
-func transformStrSliceToKeys(decrypt bool, keys ...string) []apistructs.PipelineCmsConfigKey {
-	result := make([]apistructs.PipelineCmsConfigKey, 0, len(keys))
-	for _, key := range keys {
-		result = append(result, apistructs.PipelineCmsConfigKey{
-			Key:     key,
-			Decrypt: decrypt,
-		})
-	}
-	return result
-}
