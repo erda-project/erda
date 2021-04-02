@@ -102,11 +102,11 @@ var (
 )
 
 func initPermissions() {
-	permissions = getAllFiles("libs/dice-configs/permission", permissions)
+	permissions = getAllFiles("dice-configs/permission", permissions)
 }
 
 func initAuditTemplate() {
-	auditsTemplate = genTempFromFiles("libs/dice-configs/audit/template.json")
+	auditsTemplate = genTempFromFiles("dice-configs/audit/template.json")
 }
 
 func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
