@@ -26,10 +26,14 @@ func Test_reportClient_serialize(t *testing.T) {
 			name: "test_serialize",
 			fields: fields{
 				cfg: &config{
-					Addr:     "collector.default.svc.cluster.local:7076",
-					UserName: "admin",
-					Password: "Cqq",
-					Retry:    2,
+					ReportConfig: &ReportConfig{
+						Collector: &CollectorConfig{
+							Addr:     "collector.default.svc.cluster.local:7076",
+							UserName: "admin",
+							Password: "Cqq",
+							Retry:    2,
+						},
+					},
 				},
 				httpClient: new(http.Client),
 			},
@@ -57,9 +61,9 @@ func Test_reportClient_serialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &reportClient{
-				cfg:        tt.fields.cfg,
-				httpClient: tt.fields.httpClient,
+			c := &ReportClient{
+				CFG:        tt.fields.cfg,
+				HttpClient: tt.fields.httpClient,
 			}
 			got, err := c.serialize(tt.args.group)
 			if (err != nil) != tt.wantErr {
@@ -88,10 +92,14 @@ func Test_reportClient_group(t *testing.T) {
 			name: "test_group",
 			fields: fields{
 				cfg: &config{
-					Addr:     "collector.default.svc.cluster.local:7076",
-					UserName: "admin",
-					Password: "Cqq",
-					Retry:    2,
+					ReportConfig: &ReportConfig{
+						Collector: &CollectorConfig{
+							Addr:     "collector.default.svc.cluster.local:7076",
+							UserName: "admin",
+							Password: "Cqq",
+							Retry:    2,
+						},
+					},
 				},
 				httpClient: new(http.Client),
 			},
@@ -116,9 +124,9 @@ func Test_reportClient_group(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &reportClient{
-				cfg:        tt.fields.cfg,
-				httpClient: tt.fields.httpClient,
+			c := &ReportClient{
+				CFG:        tt.fields.cfg,
+				HttpClient: tt.fields.httpClient,
 			}
 			if got := c.group(tt.args.in); got != nil {
 				for _, v := range got {

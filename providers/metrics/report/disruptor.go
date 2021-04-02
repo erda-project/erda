@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/providers/metrics/common"
-	report_config "github.com/erda-project/erda/providers/metrics/config"
 )
 
 type Disruptor interface {
@@ -12,9 +11,9 @@ type Disruptor interface {
 }
 
 type disruptor struct {
-	metrics chan *common.Metric
-	labels  common.GlobalLabel
-
+	metrics  chan *common.Metric
+	labels   common.GlobalLabel
+	cfg      *config
 	reporter Reporter
 }
 
@@ -57,5 +56,5 @@ func (d *disruptor) push() {
 				}
 			}
 		}
-	}(d.metrics, d.reporter, report_config.GlobalConfig().ReportConfig.BufferSize)
+	}(d.metrics, d.reporter, d.cfg.ReportConfig.BufferSize)
 }

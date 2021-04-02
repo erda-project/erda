@@ -26,13 +26,16 @@ func (d *define) Description() string {
 }
 
 type provider struct {
-	Log        logs.Logger
+	Log logs.Logger
+	//SendClient report.MetricReport
 	SendClient report.MetricReport
 }
 
 func (d *define) Creator() servicehub.Creator {
 	return func() servicehub.Provider {
-		return &provider{}
+		return func() servicehub.Provider {
+			return &provider{}
+		}
 	}
 }
 
@@ -56,7 +59,7 @@ func (p *provider) Run(ctx context.Context) error {
 			},
 		},
 	}
-	client := report.CreateReportClient(os.Getenv("ADDR"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
+	client := p.SendClient.CreateReportClient(os.Getenv("COLLECTOR_ADDR"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
 	err := client.Send(metric)
 	return err
 }

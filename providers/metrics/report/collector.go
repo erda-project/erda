@@ -14,14 +14,15 @@ import (
 	"github.com/erda-project/erda/providers/metrics/common"
 )
 
-type reportClient struct {
-	cfg        *config
-	httpClient *http.Client
+type ReportClient struct {
+	CFG        *config
+	HttpClient *http.Client
 }
 
 type MetricReport interface {
 	SetCFG(cfg *config)
 	Send(in []*common.Metric) error
+	CreateReportClient(addr, username, password string) *ReportClient
 }
 
 type NamedMetrics struct {
@@ -31,22 +32,26 @@ type NamedMetrics struct {
 
 type Metrics []*common.Metric
 
-func (c *reportClient) SetCFG(cfg *config) {
-	c.cfg = cfg
+func (c *ReportClient) SetCFG(cfg *config) {
+	c.CFG = cfg
 }
 
-func CreateReportClient(addr, username, password string) *reportClient {
-	return &reportClient{
-		cfg: &config{
-			Addr:     addr,
-			UserName: username,
-			Password: password,
-			Retry:    2,
-		}, httpClient: new(http.Client),
+func (c *ReportClient) CreateReportClient(addr, username, password string) *ReportClient {
+	return &ReportClient{
+		CFG: &config{
+			ReportConfig: &ReportConfig{
+				Collector: &CollectorConfig{
+					Addr:     addr,
+					UserName: username,
+					Password: password,
+				},
+			},
+			QueryConfig: c.CFG.QueryConfig,
+		}, HttpClient: new(http.Client),
 	}
 }
 
-func (c *reportClient) Send(in []*common.Metric) error {
+func (c *ReportClient) Send(in []*common.Metric) error {
 	groups := c.group(in)
 	for _, group := range groups {
 		if len(group.Metrics) == 0 {
@@ -56,7 +61,7 @@ func (c *reportClient) Send(in []*common.Metric) error {
 		if err != nil {
 			continue
 		}
-		for i := 0; i < c.cfg.Retry; i++ {
+		for i := 0; i < c.CFG.ReportConfig.Collector.Retry; i++ {
 			if err = c.write(group.Name, requestBuffer); err == nil {
 				break
 			}
@@ -66,7 +71,7 @@ func (c *reportClient) Send(in []*common.Metric) error {
 	return nil
 }
 
-func (c *reportClient) serialize(group *NamedMetrics) (io.Reader, error) {
+func (c *ReportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	requestContent, err := json.Marshal(map[string]interface{}{group.Name: group.Metrics})
 	if err != nil {
 		return nil, err
@@ -76,7 +81,7 @@ func (c *reportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	return common.CompressWithGzip(bytes.NewBuffer(base64Content))
 }
 
-func (c *reportClient) group(in []*common.Metric) []*NamedMetrics {
+func (c *ReportClient) group(in []*common.Metric) []*NamedMetrics {
 	metrics := &NamedMetrics{
 		Name:    "metrics",
 		Metrics: make([]*common.Metric, 0),
@@ -105,7 +110,7 @@ func (c *reportClient) group(in []*common.Metric) []*NamedMetrics {
 	return []*NamedMetrics{metrics, trace, errorG}
 }
 
-func (c *reportClient) write(name string, requestBuffer io.Reader) error {
+func (c *ReportClient) write(name string, requestBuffer io.Reader) error {
 	req, err := http.NewRequest(http.MethodPost, c.formatRoute(name), requestBuffer)
 	if err != nil {
 		return err
@@ -113,8 +118,8 @@ func (c *reportClient) write(name string, requestBuffer io.Reader) error {
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Custom-Content-Encoding", "base64")
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.cfg.UserName, c.cfg.Password)
-	resp, err := c.httpClient.Do(req)
+	req.SetBasicAuth(c.CFG.ReportConfig.Collector.UserName, c.CFG.ReportConfig.Collector.UserName)
+	resp, err := c.HttpClient.Do(req)
 	if err == nil && (resp.StatusCode < 200 || resp.StatusCode >= 300) {
 		err = errors.Errorf("when writing to [%s] received status code: %d/n", c.formatRoute(name), resp.StatusCode)
 	}
@@ -126,6 +131,6 @@ func (c *reportClient) write(name string, requestBuffer io.Reader) error {
 	return err
 }
 
-func (c *reportClient) formatRoute(name string) string {
-	return fmt.Sprintf("http://%s/collect/%s", c.cfg.Addr, name)
+func (c *ReportClient) formatRoute(name string) string {
+	return fmt.Sprintf("http://%s/collect/%s", c.CFG.ReportConfig.Collector.Addr, name)
 }

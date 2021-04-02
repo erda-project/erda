@@ -44,6 +44,12 @@ func Test_disruptor_push(t *testing.T) {
 				metrics:  tt.fields.metrics,
 				labels:   tt.fields.labels,
 				reporter: tt.fields.reporter,
+				cfg: &config{
+					ReportConfig: &ReportConfig{
+						BufferSize: 100,
+					},
+					QueryConfig: &QueryConfig{},
+				},
 			}
 			d.push()
 			d.metrics <- m

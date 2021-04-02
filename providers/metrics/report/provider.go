@@ -9,18 +9,38 @@ import (
 )
 
 type define struct{}
+type ReportMode string
 
 type config struct {
-	Addr     string `file:"addr"`
-	UserName string `file:"username"`
-	Password string `file:"password"`
-	Retry    int    `file:"retry"`
+	ReportConfig *ReportConfig
+	QueryConfig  *QueryConfig
+}
+
+type CollectorConfig struct {
+	Addr     string `file:"addr" env:"COLLECTOR_ADDR" default:"localhost:7076"`
+	UserName string `file:"username" env:"COLLECTOR_AUTH_USERNAME"`
+	Password string `file:"password" env:"COLLECTOR_AUTH_PASSWORD"`
+	Retry    int    `file:"retry" env:"TELEMETRY_REPORT_STRICT_RETRY" default:"3"`
+}
+
+type ReportConfig struct {
+	Mode    string `file:"mode" default:"performance"`
+	UdpHost string `file:"udp_host" env:"HOST_IP" default:"localhost"`
+	UdpPort string `file:"upd_port" env:"HOST_PORT" default:"7082"`
+
+	Collector *CollectorConfig `file:"collector"`
+
+	BufferSize int `file:"buffer_size" env:"REPORT_BUFFER_SIZE" default:"200"`
+}
+
+type QueryConfig struct {
+	MonitorAddr string `file:"monitor_addr" env:"MONITOR_ADDR" default:"localhost:7076"`
 }
 
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
-	httpClient *reportClient
+	httpClient *ReportClient
 }
 
 func (d *define) Service() []string {
@@ -46,14 +66,12 @@ func (d *define) Creator() servicehub.Creator {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	client := &reportClient{
-		cfg: &config{
-			Addr:     p.Cfg.Addr,
-			UserName: p.Cfg.UserName,
-			Password: p.Cfg.Password,
-			Retry:    p.Cfg.Retry,
+	client := &ReportClient{
+		CFG: &config{
+			ReportConfig: p.Cfg.ReportConfig,
+			QueryConfig:  p.Cfg.QueryConfig,
 		},
-		httpClient: &http.Client{},
+		HttpClient: &http.Client{},
 	}
 	p.httpClient = client
 	return nil
