@@ -39,6 +39,15 @@ type AutoTestSpace struct {
 	DeletedAt *time.Time `json:"deletedAt"`
 }
 
+// record the structure of the information before and after the scene collection is copied
+// to update those scenes that refer to the old scene set to refer to the new scene set
+type AutoTestSceneCopyRef struct {
+	PreSetID     uint64 // the id of the copied scene set
+	PreSpaceID   uint64 // the id of the copied space
+	AfterSetID   uint64 // id of the scene set to be copied
+	AfterSpaceID uint64 // id of the space to be copied
+}
+
 // AutoTestSpaceCopy 测试空间复制
 type AutoTestSpaceCopy struct {
 	Name      string `json:"name"`
