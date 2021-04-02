@@ -14,7 +14,7 @@ func TestAgentConvertEnvsByClusterLocation(t *testing.T) {
 		fmt.Println(kv)
 	}
 	agent := &Agent{
-		Arg:    &AgentArg{},
+		Arg: &AgentArg{},
 	}
 
 	os.Setenv("OPENAPI_ADDR", "openapi addr")
@@ -46,7 +46,7 @@ func TestAgentCentralClusterConvertEnvsByClusterLocation2(t *testing.T) {
 		fmt.Println(kv)
 	}
 	agent := &Agent{
-		Arg:    &AgentArg{},
+		Arg: &AgentArg{},
 	}
 
 	os.Setenv("OPENAPI_ADDR", "openapi addr")
