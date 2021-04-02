@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
@@ -51,24 +50,6 @@ type Conf struct {
 	ActionTypeMappingStr string `env:"ACTION_TYPE_MAPPING"` // git:git-checkout,dicehub:release
 	ActionTypeMapping    map[string]string
 
-	// 流水线自动清理策略，JSON 格式配置。
-	// 1. 提供默认策略
-	// 2. 自定义 source 级别策略只需填写需要覆盖的字段即可，未填写的自动使用默认值。
-	// e.g.
-	// {
-	//    "default": {
-	//        "maxFinishedStoreTime": "720h", # 已完成的 默认保留 30 天
-	//        "minFinishedStoreCount": 100,   # 已完成的 至少保留 100 条
-	//        "maxAnalyzedStoreTime": "24h",  # 未开始的 默认保留 1 天
-	//        "minAnalyzedStoreCount": 10     # 未开始的 至少保留 10 条
-	//    },
-	//    "ops": {                            # ops 场景自定义策略
-	//        "minFinishedStoreCount": 5      # ops 场景下，已完成的 至少保留 5 条
-	//    }                                   # 其他未声明字段使用默认值
-	//}
-	PipelineAutoCleanupStrategy PipelineAutoCleanupStrategy `env:"PIPELINE_AUTO_CLEANUP_STRATEGY"`
-	PipelineAutoCleanupJobCron  string                      `env:"PIPELINE_AUTO_CLEANUP_JOB_CRON" default:"0 30 5 * * ?"`
-
 	// 默认用户 ID，用于鉴权
 	InternalUserID string `env:"INTERNAL_USER_ID" default:"1103"`
 
@@ -92,9 +73,6 @@ func Load() {
 
 	// actionTypeMapping
 	checkActionTypeMapping(&cfg)
-
-	// pipelineAutoCleanupStrategy
-	handlePipelineAutoCleanupStrategy(&cfg)
 }
 
 // ListenAddr 返回 pipeline 服务监听地址.
@@ -223,16 +201,6 @@ func StorageURL() string {
 // ActionTypeMapping 返回新老 action type 映射关系.
 func ActionTypeMapping() map[string]string {
 	return cfg.ActionTypeMapping
-}
-
-// GetPipelineAutoCleanupSourceStrategy 获取 source 级别流水线自动清理策略
-func GetPipelineAutoCleanupSourceStrategy(source apistructs.PipelineSource) PipelineAutoCleanupSourceStrategyItem {
-	return cfg.PipelineAutoCleanupStrategy.GetSourceStrategy(source)
-}
-
-// PipelineAutoCleanupJobCron 返回 流水线自动清理 定时任务 的定时设置.
-func PipelineAutoCleanupJobCron() string {
-	return cfg.PipelineAutoCleanupJobCron
 }
 
 // InternalUserID 返回 pipeline 组件在内部调用时默认分配的 用户 ID

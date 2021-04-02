@@ -11,7 +11,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/httpserver/errorresp"
@@ -144,33 +143,6 @@ func (e *Endpoints) pipelineDelete(ctx context.Context, r *http.Request, vars ma
 	}
 
 	return httpserver.OkResp(nil)
-}
-
-func (e *Endpoints) pipelineAppInvokedCombos(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-
-	appIDStr := r.URL.Query().Get(queryParamAppID)
-	appID, err := strconv.ParseUint(appIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrListInvokedCombos.InvalidParameter(err).ToResp(), nil
-	}
-
-	if err := e.checkAppPermission(r, appID, apistructs.GetAction); err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	selected := spec.PipelineCombosReq{
-		Branches: strutil.Split(r.URL.Query().Get(queryParamBranches), ",", true),
-		Sources:  strutil.Split(r.URL.Query().Get(queryParamSources), ",", true),
-		YmlNames: strutil.Split(r.URL.Query().Get(queryParamYmlNames), ",", true),
-	}
-
-	combos, err := e.pipelineSvc.AppCombos(appID, &selected)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	return httpserver.OkResp(combos)
 }
 
 func (e *Endpoints) pipelineOperate(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -343,28 +315,6 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 	}
 
 	return httpserver.OkResp(e.pipelineSvc.ConvertPipeline(p))
-}
-
-// branchWorkspaceMap 获取该应用下所有符合 gitflow 规范的 branch:workspace 映射
-func (e *Endpoints) branchWorkspaceMap(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-
-	appIDStr := r.URL.Query().Get(queryParamAppID)
-	appID, err := strconv.ParseUint(appIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetBranchWorkspaceMap.InvalidParameter(err).ToResp(), nil
-	}
-
-	if err := e.checkAppPermission(r, appID, apistructs.GetAction); err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	m, err := e.pipelineSvc.AllValidBranchWorkspaces(appID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	return httpserver.OkResp(m)
 }
 
 // pipelineYmlGraph 根据 yml 文件内容返回解析好的 spec 结构，兼容 1.0, 1.1
