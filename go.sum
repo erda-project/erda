@@ -160,7 +160,6 @@ github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcju
 github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27/go.mod h1:VQx0hjo2oUeQkQUET7wRwradO6f+fN5jzXgB/zROxxE=
 github.com/confluentinc/confluent-kafka-go v0.0.0-20180628122213-5690c413c277 h1:DHGfc3LsRIp8ewumpYgFhx1mnFNoGZqpB7Za5VOEQTo=
 github.com/confluentinc/confluent-kafka-go v0.0.0-20180628122213-5690c413c277/go.mod h1:u2zNLny2xq+5rWeTQjFHbDzzNuba4P1vo31r9r4uAdg=
-github.com/coreos/bbolt v1.3.5 h1:XFv7xaq7701j8ZSEzR28VohFYSlyakMyqNMU5FQH6Ac=
 github.com/coreos/bbolt v1.3.5/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
