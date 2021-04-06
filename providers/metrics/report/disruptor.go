@@ -3,6 +3,7 @@ package report
 import (
 	"time"
 
+	parallel "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda/providers/metrics/common"
 )
 
@@ -31,27 +32,42 @@ func (d *disruptor) In(metrics ...*common.Metric) error {
 	return nil
 }
 
+func (d *disruptor) dataToMetric(data []interface{}) []*common.Metric {
+	resultArr := make([]*common.Metric, 0)
+	for _, v := range data {
+		m, ok := v.(*common.Metric)
+		if ok {
+			resultArr = append(resultArr, m)
+		}
+	}
+	return resultArr
+}
+
 func (d *disruptor) push() {
 	go func(queue chan *common.Metric, reporter Reporter, queueSize int) {
-		buf := newBuffer(queueSize)
+		reportWrite := NewReportWrite(queueSize)
+		buf := parallel.NewBuffer(reportWrite, queueSize)
 		ticker := time.NewTicker(time.Second * time.Duration(5))
 		for {
 			select {
 			case metric, ok := <-queue:
 				if !ok {
-					if metrics := buf.Flush(); len(metrics) != 0 {
-						_ = reporter.Send(metrics)
+					if res, err := buf.WriteN(metric); res != 0 && err == nil {
+						data := buf.Data()
+						resultArr := d.dataToMetric(data[:res])
+						if resultArr != nil {
+							_ = reporter.Send(resultArr)
+						}
 					}
 					break
 				}
-				buf.Add(metric)
-				if buf.IsOverFlow() {
-					_ = reporter.Send(buf.Flush())
-				}
+				buf.Write(metric)
 			case <-ticker.C:
-				if !buf.IsEmpty() {
-					if metrics := buf.Flush(); len(metrics) != 0 {
-						_ = reporter.Send(metrics)
+				if data := buf.Data(); len(data) > 0 {
+					buf.Flush()
+					resultArr := d.dataToMetric(data[:])
+					if resultArr != nil {
+						_ = reporter.Send(resultArr)
 					}
 				}
 			}

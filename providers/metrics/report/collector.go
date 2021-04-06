@@ -46,7 +46,6 @@ func (c *ReportClient) CreateReportClient(addr, username, password string) *Repo
 					Password: password,
 				},
 			},
-			QueryConfig: c.CFG.QueryConfig,
 		}, HttpClient: new(http.Client),
 	}
 }

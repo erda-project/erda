@@ -12,8 +12,7 @@ type define struct{}
 type ReportMode string
 
 type config struct {
-	ReportConfig *ReportConfig
-	QueryConfig  *QueryConfig
+	ReportConfig *ReportConfig `file:"report_config"`
 }
 
 type CollectorConfig struct {
@@ -31,10 +30,6 @@ type ReportConfig struct {
 	Collector *CollectorConfig `file:"collector"`
 
 	BufferSize int `file:"buffer_size" env:"REPORT_BUFFER_SIZE" default:"200"`
-}
-
-type QueryConfig struct {
-	MonitorAddr string `file:"monitor_addr" env:"MONITOR_ADDR" default:"localhost:7076"`
 }
 
 type provider struct {
@@ -69,7 +64,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	client := &ReportClient{
 		CFG: &config{
 			ReportConfig: p.Cfg.ReportConfig,
-			QueryConfig:  p.Cfg.QueryConfig,
 		},
 		HttpClient: &http.Client{},
 	}
