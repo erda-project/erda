@@ -249,7 +249,7 @@ func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNoti
 		query = query.Where("dice_notifies.channels LIKE ?", genFuzzyQuery(req.Channel))
 	}
 	query = query.Select("dice_notifies.id,dice_notifies.name,dice_notifies.scope_type,dice_notifies.scope_id,dice_notifies.notify_group_id," +
-		"dice_notifies.channels,dice_notifies.enabled,dice_notifies.updated_at,dice_notifies.created_at").
+		"dice_notifies.channels,dice_notifies.enabled,dice_notifies.updated_at,dice_notifies.created_at").Group("dice_notifies.id").
 		Order("created_at desc").Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize)
 	err := query.Scan(&notifies).Error
 	if err != nil {
@@ -269,7 +269,7 @@ func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNoti
 			CreatedAt: notify.CreatedAt,
 		}
 		apiNotify.NotifyGroup, _ = client.GetNotifyGroupByIDWithoutOrgID(notify.NotifyGroupID)
-		apiNotify.NotifyItems, _ = client.GetNotifyItemsByNotifyIDAndItemName(notify.ID, req.ItemName)
+		apiNotify.NotifyItems, _ = client.QuerytNotifyItemsByNotifyIDAndItemName(notify.ID, req.ItemName)
 		apiNotify.NotifySources, _ = client.GetNotifySourcesByNotifyID(notify.ID)
 		result = append(result, apiNotify)
 	}
