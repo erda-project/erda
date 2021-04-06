@@ -60,6 +60,10 @@ func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, er
 
 func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.DaemonSet, error) {
 	deployName := getDeployName(service)
+	enableServiceLinks := false
+	if _, ok := sg.Labels[EnableServiceLinks]; ok {
+		enableServiceLinks = true
+	}
 	daemonset := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -72,7 +76,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": deployName},
+				MatchLabels: map[string]string{"app": service.Name},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -80,7 +84,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 					Labels: make(map[string]string),
 				},
 				Spec: corev1.PodSpec{
-					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
+					EnableServiceLinks:    func(enable bool) *bool { return &enable }(enableServiceLinks),
 					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
 					Tolerations:           toleration.GenTolerations(),
 				},
@@ -156,11 +160,11 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		daemonset.Spec.Template.Spec.InitContainers = initcontainers
 	}
 
-	daemonset.Spec.Selector.MatchLabels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Spec.Template.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Labels["app"] = deployName
-	daemonset.Spec.Template.Labels["app"] = deployName
+	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Labels["app"] = service.Name
+	daemonset.Spec.Template.Labels["app"] = service.Name
 
 	if daemonset.Spec.Template.Annotations == nil {
 		daemonset.Spec.Template.Annotations = make(map[string]string)

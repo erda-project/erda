@@ -418,7 +418,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 	group := namespace + "-" + name
 	logrus.Debugf("[EDAS] get deploylist from group: %+v", group)
 
-	deployList, err := e.k8sDeployClient.List(defaultNamespace)
+	deployList, err := e.k8sDeployClient.List(defaultNamespace, nil)
 	if err != nil {
 		return nil, err
 	}

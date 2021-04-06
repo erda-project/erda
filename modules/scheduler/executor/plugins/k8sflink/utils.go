@@ -99,6 +99,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1be
 			},
 			EnvVars:         data.Spec.Envs,
 			FlinkProperties: data.Spec.Properties,
+			LogConfig:       composeLogConfig(),
 		},
 	}
 
@@ -175,4 +176,56 @@ func composeOwnerReferences(versionGroup, kind, name string, uid types.UID) meta
 		Controller:         getBoolPoint(true),
 		BlockOwnerDeletion: getBoolPoint(true),
 	}
+}
+
+func composeLogConfig() map[string]string {
+	logConfig := map[string]string{
+		"log4j-console.properties": `rootLogger.level = WARN,ERROR
+      rootLogger.appenderRef.file.ref = LogFile
+      rootLogger.appenderRef.console.ref = LogConsole
+      appender.file.name = LogFile
+      appender.file.type = File
+      appender.file.append = false
+      appender.file.fileName = ${sys:log.file}
+      appender.file.layout.type = PatternLayout
+      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      appender.console.name = LogConsole
+      appender.console.type = CONSOLE
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      logger.akka.name = akka
+      logger.akka.level = ERROR,WARN
+      logger.kafka.name= org.apache.kafka
+      logger.kafka.level = ERROR,WARN
+      logger.hadoop.name = org.apache.hadoop
+      logger.hadoop.level = ERROR,WARN
+      logger.zookeeper.name = org.apache.zookeeper
+      logger.zookeeper.level = ERROR,WARN
+      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
+      logger.netty.level = OFF`,
+		"logback-console.xml": `<configuration>
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <appender name="file" class="ch.qos.logback.core.FileAppender">
+          <file>${log.file}</file>
+          <append>false</append>
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <root level="ERROR">
+          <appender-ref ref="console"/>
+          <appender-ref ref="file"/>
+        </root>
+        <logger name="akka" level="ERROR" />
+        <logger name="org.apache.kafka" level="ERROR" />
+        <logger name="org.apache.hadoop" level="ERROR" />
+        <logger name="org.apache.zookeeper" level="ERROR" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR" />
+      </configuration>`,
+	}
+	return logConfig
 }

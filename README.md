@@ -12,6 +12,13 @@ Erda is an open-source platform created by [Terminus](https://www.terminus.io/) 
 
 ![](./docs/files/functional_architecture.jpg)
 
+Erda is mainly composed of the following parts, they are
+- DevOps
+- Microservice Governance, include Application Performance Management, Monitoring, Log Analysis, API Gateway, etc.
+- Multi-cloud Management
+- Edge Computing
+- FastData Management
+
 We will gradually open source the entire function according to the workload. The first to complete will be DevOps, multi-cloud management, followed by microservice governance, edge computing, etc. IT service is a function planned in the roadmap, and it has not yet started.
 
 ## Architecture
@@ -26,10 +33,6 @@ We split the codes of erda into multiple repositories according to different fun
 
 [erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
-## Quick start
-
-TODO
-
 ## User Documentation
 - [中文](https://dice-docs.app.terminus.io)
 - English
@@ -40,9 +43,10 @@ This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
 
 ## Contact Us
 
-We look forward to your connecting with us, you can ask us all questions.
+We look forward to your connecting with us, you can ask us any questions.
 
 - Email: erda@terminus.io
+- 知乎：Erda技术团队 (A Chinese knowledge community, similar to Quora.)
 
 ## License
 
