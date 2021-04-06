@@ -6,14 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/istioctl"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -75,13 +74,9 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 			return fmt.Errorf("delete service %s error: %v", service.Env[ProjectNamespaceServiceNameNameKey], err)
 		}
 
-		err = k.service.Delete(ns, service.Name)
-		if err != nil {
-			return fmt.Errorf("delete service %s error: %v", service.Name, err)
-		}
-
+		originServiceName := service.Name
 		if sg.ProjectNamespace != "" {
-			service.Name = service.Env[ProjectNamespaceDeployNameKey]
+			service.Name = service.Env[ProjectNamespaceServiceNameNameKey]
 		}
 
 		switch service.WorkLoad {
@@ -94,10 +89,32 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 			return fmt.Errorf("delete resource %s, %s error: %v", service.WorkLoad, service.Name, err)
 		}
 
-		if k.istioEngine != istioctl.EmptyEngine {
-			err = k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &service)
+		labelSelector := map[string]string{
+			"app": originServiceName,
+		}
+
+		deploys, err := k.deploy.List(ns, labelSelector)
+		if err != nil {
+			return fmt.Errorf("list pod resource error: %v in the namespace %s", err, service.Name)
+		}
+
+		remainCount := 0
+		for _, deploy := range deploys.Items {
+			if deploy.DeletionTimestamp == nil {
+				remainCount++
+			}
+		}
+
+		if remainCount < 1 {
+			err = k.service.Delete(ns, originServiceName)
 			if err != nil {
-				return fmt.Errorf("delete istio resource error: %v", err)
+				return fmt.Errorf("delete service %s error: %v", service.Name, err)
+			}
+			if k.istioEngine != istioctl.EmptyEngine {
+				err = k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &service)
+				if err != nil {
+					return fmt.Errorf("delete istio resource error: %v", err)
+				}
 			}
 		}
 	}

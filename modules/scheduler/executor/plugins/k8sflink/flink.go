@@ -14,6 +14,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8sjob"
 	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -71,46 +72,20 @@ func (f *Flink) Create(ctx context.Context, spec interface{}) (interface{}, erro
 			job.LastMessage = nsErr.Error()
 			return nil, fmt.Errorf("create namespace err: %s", nsErr.Error())
 		}
-
-		defaultSC := &corev1.Secret{}
-		if defaultSC, err = f.Client.K8sClient.CoreV1().Secrets(corev1.NamespaceDefault).Get(ctx, AliyunPullSecret, metav1.GetOptions{}); err != nil {
-			job.Status = apistructs.StatusError
-			job.Reason = err.Error()
-			job.LastMessage = err.Error()
-			return nil, fmt.Errorf("get default namespace secret err: %s", err.Error())
-		}
-
-		sc := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      AliyunPullSecret,
-				Namespace: ns.Name,
-				OwnerReferences: []metav1.OwnerReference{
-					composeOwnerReferences("v1", "Namespace", ns.Name, ns.UID),
-				},
-			},
-			Data: defaultSC.Data,
-			Type: defaultSC.Type,
-		}
-		logrus.Infof("copy secrets from default to namespaces %s", job.Namespace)
-		if _, scErr := f.Client.K8sClient.CoreV1().Secrets(job.Namespace).Create(ctx, &sc, metav1.CreateOptions{}); scErr != nil {
-			job.Status = apistructs.StatusError
-			job.Reason = scErr.Error()
-			job.LastMessage = scErr.Error()
-			return nil, fmt.Errorf("create secret err: %s", scErr.Error())
-		}
-
 	}
 
+	if err := f.createImageSecretIfNotExist(job.Namespace); err != nil {
+		return nil, err
+	}
 	_, _, pvcs := k8sjob.GenerateK8SVolumes(&job)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
 		}
-		if _, err := f.Client.K8sClient.CoreV1().PersistentVolumeClaims(job.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
+		if _, err := f.Client.K8sClient.CoreV1().PersistentVolumeClaims(job.Namespace).Create(context.Background(), pvc, metav1.CreateOptions{}); err != nil {
 			return nil, err
 		}
 	}
-
 	for index := range pvcs {
 		if pvcs[index] == nil {
 			continue
@@ -335,4 +310,37 @@ func (f *Flink) GetClusterInfo(name string) (map[string]string, error) {
 		return nil, errMsg
 	}
 	return cm.Data, nil
+}
+
+func (f *Flink) createImageSecretIfNotExist(namespace string) error {
+	if _, err := f.Client.K8sClient.CoreV1().Secrets(namespace).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{}); err == nil {
+		return nil
+	}
+
+	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	s, err := f.Client.K8sClient.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	mysecret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s.Name,
+			Namespace: namespace,
+		},
+		Data:       s.Data,
+		StringData: s.StringData,
+		Type:       s.Type,
+	}
+
+	if _, err := f.Client.K8sClient.CoreV1().Secrets(namespace).Create(context.Background(), mysecret, metav1.CreateOptions{}); err != nil {
+		if strutil.Contains(err.Error(), "AlreadyExists") {
+			return nil
+		}
+		return err
+	}
+	return nil
 }

@@ -66,10 +66,10 @@ const (
 	MIN_CPU_SIZE = 0.1
 
 	// ProjectNamespace Env
-	LabelRuntimeID                     = "runtime-id"
-	KeyDiceRuntimeID                   = "DICE_RUNTIME_ID"
+	LabelServiceGroupID                = "servicegroup-id"
+	KeyServiceGroupID                  = "SERVICE_GROUP_ID"
+	KeyOriginServiceName               = "ORIGIN_SERVICE_NAME"
 	ProjectNamespaceServiceNameNameKey = "PROJECT_NAMESPACE_SERVICE_NAME"
-	ProjectNamespaceDeployNameKey      = "PROJECT_NAMESPACE_DEPLOY_NAME"
 	ProjectNamespace                   = "PROJECT_NAMESPACE"
 )
 
@@ -651,7 +651,8 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	if sg.ProjectNamespace != "" && len(service.Ports) > 0 {
 		var runtimeService, _ = deepcopy.Copy(service).(*apistructs.Service)
 
-		runtimeService.Name = runtimeService.Env[ProjectNamespaceServiceNameNameKey]
+		runtimeService.Env[KeyOriginServiceName] = service.Name
+		runtimeService.Name = service.Env[ProjectNamespaceServiceNameNameKey]
 		if err := k.updateService(runtimeService); err != nil {
 			return err
 		}
@@ -700,8 +701,8 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 // 1, Update接口分析出的删除，此时无法确保k8s的资源是否存在
 func (k *Kubernetes) tryDelete(namespace, name string) error {
 	var (
-		wg               sync.WaitGroup
-		err1, err2, err3 error
+		wg         sync.WaitGroup
+		err1, err2 error
 	)
 	if k.istioEngine != istioctl.EmptyEngine {
 		svc := &apistructs.Service{Namespace: namespace, Name: name}
@@ -709,23 +710,20 @@ func (k *Kubernetes) tryDelete(namespace, name string) error {
 			return err
 		}
 	}
-	wg.Add(3)
+	wg.Add(2)
 	go func() {
 		err1 = k.deleteDeployment(namespace, name)
 		wg.Done()
 	}()
 	go func() {
-		err2 = k.DeleteService(namespace, name)
+		err2 = k.deleteDaemonSet(namespace, name)
 		wg.Done()
-	}()
-	go func() {
-		err3 = k.deleteDaemonSet(namespace, name)
 	}()
 	wg.Wait()
 
-	if err1 != nil || err2 != nil || err3 != nil {
-		return errors.Errorf("failed to delete deployment or service or daemonset, namespace: %s, name: %s, (%v, %v, %v)",
-			namespace, name, err1, err2, err3)
+	if err1 != nil || err2 != nil {
+		return errors.Errorf("failed to delete deployment or  daemonset, namespace: %s, name: %s, (%v, %v)",
+			namespace, name, err1, err2)
 	}
 
 	return nil
@@ -742,13 +740,16 @@ func (k *Kubernetes) getClusterIP(namespace, name string) (string, error) {
 // 创建操作需要先于更新操作完成，因为新创建的service有可能是要更新的服务的依赖
 // TODO: 后面要抽象出updateOne函数
 func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
+	labelSelector := make(map[string]string)
 	var ns = sg.ProjectNamespace
 	if ns == "" {
 		ns = MakeNamespace(sg)
+	} else {
+		labelSelector[LabelServiceGroupID] = sg.ID
 	}
 
 	visited := make([]string, 0)
-	oldSpecServices, err := k.listServiceName(ns)
+	oldSpecServices, err := k.listServiceName(ns, labelSelector)
 	if err != nil {
 		//TODO:
 		return err
@@ -783,9 +784,9 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 	}
 
 	// update 操作
-	for _, s := range visited {
-		for _, svc := range sg.Services {
-			deployName := getDeployName(&svc)
+	for _, svc := range sg.Services {
+		deployName := getDeployName(&svc)
+		for _, s := range visited {
 			if s != deployName {
 				continue
 			}
@@ -807,7 +808,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 				}
 			default:
 				// then update the deployment
-				desiredDeployment, err := k.newDeploymet(&svc, sg)
+				desiredDeployment, err := k.newDeployment(&svc, sg)
 				if err != nil {
 					return err
 				}
@@ -844,12 +845,53 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 		}
 	}
 
+	k8sServices := []string{}
+
+	for _, svc := range sg.Services {
+		deployName := getDeployName(&svc)
+		for _, svcName := range toBeDeleted {
+			if deployName == svcName {
+				k8sServices = append(k8sServices, svc.Name)
+				break
+			}
+		}
+	}
+
 	for _, svcName := range toBeDeleted {
 		// logrus.Debugf("in Update interface, going to delete service(%s/%s)", ns, svcName)
 		// TODO: what to do if errors in DELETE ?
 		if err := k.tryDelete(ns, svcName); err != nil {
 			logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
 			return err
+		}
+	}
+
+	for _, svcName := range toBeDeleted {
+		if err = k.service.Delete(ns, svcName); err != nil {
+			logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+			return err
+		}
+	}
+
+	for _, svc := range k8sServices {
+		deploys, err := k.deploy.List(ns, map[string]string{"app": svc})
+		if err != nil {
+			logrus.Errorf("failed to get deploys in ns %s", ns)
+			return err
+		}
+
+		remainCount := 0
+		for _, deploy := range deploys.Items {
+			if deploy.DeletionTimestamp == nil {
+				remainCount++
+			}
+		}
+		if remainCount < 1 {
+			err = k.service.Delete(ns, svc)
+			if err != nil {
+				logrus.Errorf("failed to delete global service %s in ns %s", svc, ns)
+				return err
+			}
 		}
 	}
 
@@ -1021,7 +1063,7 @@ func GenTolerations() []apiv1.Toleration {
 func (k *Kubernetes) setProjectNamespaceEnvs(sg *apistructs.ServiceGroup) {
 	for index, service := range sg.Services {
 		service.Env[ProjectNamespaceServiceNameNameKey] = k.composeNewKey([]string{service.Name, "-", sg.ID})
-		service.Env[ProjectNamespaceDeployNameKey] = k.composeNewKey([]string{service.Name, "-", service.Env[KeyDiceRuntimeID]})
+		service.Env[KeyServiceGroupID] = sg.ID
 		service.Env[ProjectNamespace] = "true"
 		sg.Services[index] = service
 	}
