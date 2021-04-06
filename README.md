@@ -50,4 +50,4 @@ We look forward to your connecting with us, you can ask us any questions.
 
 ## License
 
-TODO
+Erda is under the AGPL 3.0 license. See the [LICENSE](/LICENSE) file for details.
