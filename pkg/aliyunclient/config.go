@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
-)git
+)
 
 type Config struct {
 	AutoRetry         bool              `default:"true"`
