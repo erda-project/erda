@@ -25,14 +25,16 @@ import (
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 
+	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Event is the object to encapsulate docker
 type Event struct {
-	addr   string
-	client *httpclient.HTTPClient
+	addr      string
+	client    *httpclient.HTTPClient
+	k8sClient *kubernetes.Clientset
 }
 
 // Option configures an Event
@@ -54,6 +56,12 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	return func(e *Event) {
 		e.addr = addr
 		e.client = client
+	}
+}
+
+func WithKubernetesClient(client *kubernetes.Clientset) Option {
+	return func(event *Event) {
+		event.k8sClient = client
 	}
 }
 

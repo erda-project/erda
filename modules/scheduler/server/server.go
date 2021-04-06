@@ -180,7 +180,7 @@ func (s *Server) initEndpoints() {
 		{"/v1/job/{namespace}/{name}/start", http.MethodPost, s.httpendpoints.JobStart},
 		{"/v1/job/{namespace}/{name}/stop", http.MethodPost, s.httpendpoints.JobStop},
 		{"/v1/job/{namespace}/{name}/delete", http.MethodDelete, s.httpendpoints.JobDelete},
-		{"/v1/job/{namespace}/deletealljobs", http.MethodDelete, s.httpendpoints.JobsDelete},
+		{"/v1/jobs", http.MethodDelete, s.httpendpoints.DeleteJobs},
 		{"/v1/job/{namespace}/{name}", http.MethodGet, s.httpendpoints.JobInspect},
 		{"/v1/jobs/{namespace}", http.MethodGet, s.httpendpoints.JobList},
 		{"/api/jobvolume", http.MethodPost, s.httpendpoints.JobVolumeCreate},

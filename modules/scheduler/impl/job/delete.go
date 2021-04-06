@@ -15,64 +15,26 @@ package job
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/task"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (j *JobImpl) Delete(namespace, name string) error {
-	job := apistructs.Job{}
-	ctx := context.Background()
-	// 多次删除后job为空结构体, jsonstore的remove接口可以再添加一个返回值判断job是否被填充
-	if err := j.js.Remove(ctx, makeJobKey(namespace, name), &job); err != nil {
+func (j *JobImpl) Delete(job apistructs.Job) error {
+	var (
+		ok  bool
+		err error
+	)
+	if _, err = j.handleJobTask(context.Background(), &job, task.TaskRemove); err != nil {
 		return err
 	}
-
-	if len(job.Name) == 0 {
-		return fmt.Errorf("job not found: namespace: %v, name:%v", namespace, name)
-	}
-
-	if _, err := j.handleJobTask(ctx, &job, task.TaskRemove); err != nil {
+	if ok, err = j.js.Notfound(context.Background(), makeJobKey(job.Namespace, job.Name)); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (j *JobImpl) DeletePipelineJobs(namespace string) error {
-	if namespace == "default" || namespace == "kube-system" || namespace == "kube-public" {
-		return fmt.Errorf("can't delete jobs, namespace: %s", namespace)
-	}
-	ctx := context.Background()
-	job := apistructs.Job{}
-	if err := j.js.Get(ctx, makeJobKey(namespace, ""), &job); err != nil {
-		return err
-	}
-	job.Name = ""
-	// k8s 实现能直接删除所有同一namespace下的job，metronome 不支持，则要一个一个删除所有job
-	if _, err := j.handleJobTask(ctx, &job, task.TaskRemove); err != nil {
-		if strutil.Contains(err.Error(), "metronome not support delete pipeline jobs") {
-			keys, err := j.js.ListKeys(ctx, makeJobKey(namespace, ""))
-			if err != nil {
-				return err
-			}
-
-			for _, k := range keys {
-				splited := strutil.Split(k, "/")
-				if err := j.Delete(splited[len(splited)-2], splited[len(splited)-1]); err != nil {
-					return err
-				}
-			}
-			return nil
+	if ok {
+		if err = j.js.Remove(context.Background(), makeJobKey(job.Namespace, job.Name), &job); err != nil {
+			return err
 		}
-		return err
 	}
-
-	if _, err := j.js.PrefixRemove(ctx, makeJobKey(namespace, "")); err != nil {
-		return err
-	}
-
 	return nil
 }

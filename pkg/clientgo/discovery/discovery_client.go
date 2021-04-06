@@ -20,20 +20,35 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/pkg/clientgo/restclient"
 )
 
 func NewDiscoveryClient(addr string) (*discovery.DiscoveryClient, error) {
-	config := restclient.GetDefaultConfig("")
-	config.APIPath = ""
-	config.GroupVersion = nil
-	if config.Timeout == 0 {
-		config.Timeout = 32 * time.Second
+	var (
+		client rest.Interface
+		err    error
+		config *rest.Config
+	)
+	if addr != "" {
+		config = restclient.GetDefaultConfig("")
+		config.APIPath = ""
+		config.GroupVersion = nil
+		if config.Timeout == 0 {
+			config.Timeout = 32 * time.Second
+		}
+		codec := runtime.NoopEncoder{Decoder: scheme.Codecs.UniversalDecoder()}
+		config.NegotiatedSerializer = serializer.NegotiatedSerializerWrapper(runtime.SerializerInfo{Serializer: codec})
+		client, err = restclient.NewInetRESTClient(addr, config)
+	} else {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+		config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+		client, err = rest.UnversionedRESTClientFor(config)
 	}
-	codec := runtime.NoopEncoder{Decoder: scheme.Codecs.UniversalDecoder()}
-	config.NegotiatedSerializer = serializer.NegotiatedSerializerWrapper(runtime.SerializerInfo{Serializer: codec})
-	client, err := restclient.NewInetRESTClient(addr, config)
 	if err != nil {
 		return nil, err
 	}
