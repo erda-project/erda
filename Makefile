@@ -25,14 +25,14 @@ VERSION_OPS := -ldflags "\
 # GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
 # GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
-GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
+GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE} CGO_CFLAGS=-Wno-undef-prefix
 
 .PHONY: build-version clean tidy
 build-all:
 	@set -o errexit; \
 	MODULES=$$(find "cmd" -maxdepth 10 -type d); \
 	for path in $${MODULES}; \
-    do \
+	do \
 		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
@@ -40,7 +40,7 @@ build-all:
 			MODULE_PATH=$${MODULE_PATH} make build; \
 			echo ""; \
 		fi; \
-    done; \
+	done; \
 	echo "build all modules successfully !"
 
 build: build-version submodule tidy
@@ -101,3 +101,7 @@ build-image:
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
 build-push-image: build-image push-image
+
+build-push-base-image:
+	./build/scripts/base_image.sh build-push
+
