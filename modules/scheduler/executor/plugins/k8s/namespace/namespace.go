@@ -71,7 +71,7 @@ func (n *Namespace) Create(ns string, labels map[string]string) error {
 	if !resp.IsOK() {
 		return errors.Errorf("failed to create namespace, ns: %s, statuscode: %v, body: %v", ns, resp.StatusCode(), b.String())
 	}
-	logrus.Infof("succeed to create namespace, ns: %s", ns)
+	logrus.Infof("succeed to create namespace %s", ns)
 	return nil
 }
 

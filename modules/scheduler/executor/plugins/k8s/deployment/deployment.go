@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -95,12 +97,22 @@ func (d *Deployment) Get(namespace, name string) (*appsv1.Deployment, error) {
 }
 
 // List lists deployments under specific namespace
-func (d *Deployment) List(namespace string) (appsv1.DeploymentList, error) {
+func (d *Deployment) List(namespace string, labelSelector map[string]string) (appsv1.DeploymentList, error) {
 	var deployList appsv1.DeploymentList
+	var params url.Values
+	if len(labelSelector) > 0 {
+		var kvs []string
+		params = make(url.Values, 0)
 
+		for key, value := range labelSelector {
+			kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+		}
+		params.Add("labelSelector", strings.Join(kvs, ","))
+	}
 	var b bytes.Buffer
 	resp, err := d.client.Get(d.addr).
 		Path("/apis/apps/v1/namespaces/" + namespace + "/deployments").
+		Params(params).
 		Do().
 		Body(&b)
 

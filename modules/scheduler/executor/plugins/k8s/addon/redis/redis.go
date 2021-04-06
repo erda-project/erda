@@ -193,7 +193,7 @@ func (ro *RedisOperator) Create(k8syml interface{}) error {
 }
 
 func (ro *RedisOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.ServiceGroup, error) {
-	deploylist, err := ro.deployment.List(genK8SNamespace(sg.Type, sg.ID))
+	deploylist, err := ro.deployment.List(genK8SNamespace(sg.Type, sg.ID), nil)
 	if err != nil {
 		return nil, err
 	}

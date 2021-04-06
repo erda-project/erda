@@ -26,10 +26,11 @@ const (
 	DefaultServiceDNSSuffix = "svc.cluster.local"
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
+	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
 )
 
 func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistructs.ServiceGroup) error {
-	deployment, err := k.newDeploymet(service, sg)
+	deployment, err := k.newDeployment(service, sg)
 	if err != nil {
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
 	}
@@ -348,8 +349,12 @@ func podAnnotations(service *apistructs.Service, podannotations map[string]strin
 	}
 }
 
-func (k *Kubernetes) newDeploymet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
+func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.Deployment, error) {
 	deploymentName := getDeployName(service)
+	enableServiceLinks := false
+	if _, ok := sg.Labels[EnableServiceLinks]; ok {
+		enableServiceLinks = true
+	}
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
@@ -369,13 +374,13 @@ func (k *Kubernetes) newDeploymet(service *apistructs.Service, sg *apistructs.Se
 					Labels: make(map[string]string),
 				},
 				Spec: apiv1.PodSpec{
-					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
+					EnableServiceLinks:    func(enable bool) *bool { return &enable }(enableServiceLinks),
 					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
 					Tolerations:           toleration.GenTolerations(),
 				},
 			},
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": deploymentName},
+				MatchLabels: map[string]string{"app": service.Name},
 			},
 		},
 	}
@@ -387,7 +392,7 @@ func (k *Kubernetes) newDeploymet(service *apistructs.Service, sg *apistructs.Se
 	}
 
 	affinity := constraintbuilders.K8S(&sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
-		{PodLabels: map[string]string{"app": deploymentName}}}, k).Affinity
+		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 	deployment.Spec.Template.Spec.Affinity = &affinity
 
 	// 注入 hosts
@@ -400,7 +405,7 @@ func (k *Kubernetes) newDeploymet(service *apistructs.Service, sg *apistructs.Se
 
 	container := apiv1.Container{
 		// TODO, container name e.g. redis-1528180634
-		Name:  deploymentName,
+		Name:  service.Name,
 		Image: service.Image,
 		Resources: apiv1.ResourceRequirements{
 			Requests: apiv1.ResourceList{
@@ -455,8 +460,8 @@ func (k *Kubernetes) newDeploymet(service *apistructs.Service, sg *apistructs.Se
 	//}
 
 	// k8s deployment 必须得有app的label来辖管pod
-	deployment.Labels["app"] = deploymentName
-	deployment.Spec.Template.Labels["app"] = deploymentName
+	deployment.Labels["app"] = service.Name
+	deployment.Spec.Template.Labels["app"] = service.Name
 
 	setDeploymentLabels(service, deployment)
 
@@ -748,16 +753,16 @@ func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec) {
 
 func getDeployName(service *apistructs.Service) string {
 	if service.Env[ProjectNamespace] == "true" {
-		return service.Env[ProjectNamespaceDeployNameKey]
+		return service.Env[ProjectNamespaceServiceNameNameKey]
 	}
 	return service.Name
 }
 
 func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment) {
 	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" {
-		deployment.Spec.Selector.MatchLabels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-		deployment.Spec.Template.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-		deployment.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
+		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+		deployment.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+		deployment.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
 	}
 }
 
