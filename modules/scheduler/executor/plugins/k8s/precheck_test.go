@@ -14,9 +14,10 @@
 package k8s
 
 import (
-	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 )
 
 func Test_matchNodeLabels(t *testing.T) {

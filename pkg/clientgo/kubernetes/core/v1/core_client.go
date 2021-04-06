@@ -15,16 +15,35 @@ package v1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/pkg/clientgo/restclient"
 )
 
 // NewCoreClient creates a new CoreV1Client for the given addr.
 func NewCoreClient(addr string) (*corev1client.CoreV1Client, error) {
-	config := restclient.GetDefaultConfig("/api")
-	config.GroupVersion = &corev1.SchemeGroupVersion
-	client, err := restclient.NewInetRESTClient(addr, config)
+	var (
+		client rest.Interface
+		err    error
+		config *rest.Config
+	)
+	if addr != "" {
+		config = restclient.GetDefaultConfig("/api")
+		config.GroupVersion = &corev1.SchemeGroupVersion
+		client, err = restclient.NewInetRESTClient(addr, config)
+	} else {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+		config.APIPath = "/api"
+		config.GroupVersion = &corev1.SchemeGroupVersion
+		config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+		rest.SetKubernetesDefaults(config)
+		client, err = rest.RESTClientFor(config)
+	}
 	if err != nil {
 		return nil, err
 	}

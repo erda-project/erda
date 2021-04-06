@@ -89,6 +89,13 @@ func (Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, p
 
 	buildSpecificHost(s.SpecificHost, cons, hostnameUtil)
 
+	if len(cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
+		cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = nil
+	}
+	if len(cons.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution) == 0 {
+		cons.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = nil
+	}
+
 	return cons
 }
 

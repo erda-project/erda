@@ -57,7 +57,13 @@ func (c *FlinkoperatorV1beta1Client) RESTClient() rest.Interface {
 func NewFlinkOpeartorClient(addr string) (*FlinkoperatorV1beta1Client, error) {
 	config := restclient.GetDefaultConfig("/apis")
 	config.GroupVersion = &v1beta1.SchemeGroupVersion
-	client, err := restclient.NewInetRESTClient(addr, config)
+	var client rest.Interface
+	var err error
+	if addr != "" {
+		client, err = restclient.NewInetRESTClient(addr, config)
+	} else {
+		client, err = rest.RESTClientFor(config)
+	}
 	if err != nil {
 		return nil, err
 	}

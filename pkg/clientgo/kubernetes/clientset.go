@@ -56,10 +56,11 @@ import (
 	storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
 	storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
 
-	terminusdiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
-	terminusappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
-	terminuscorev1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/core/v1"
-	terminuspolicyv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/policy/v1beta1"
+	erdadiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
+	erdaappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
+	erdabatchv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/batch/v1"
+	erdacorev1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/core/v1"
+	erdapolicyv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/policy/v1beta1"
 )
 
 type Clientset struct {
@@ -317,19 +318,23 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 func NewKubernetesClientSet(addr string) (*Clientset, error) {
 	var cs Clientset
 	var err error
-	cs.DiscoveryClient, err = terminusdiscovery.NewDiscoveryClient(addr)
+	cs.coreV1, err = erdacorev1.NewCoreClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.coreV1, err = terminuscorev1.NewCoreClient(addr)
+	cs.appsV1, err = erdaappsv1.NewAppClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.appsV1, err = terminusappsv1.NewAppClient(addr)
+	cs.policyV1beta1, err = erdapolicyv1beta1.NewPolicyClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.policyV1beta1, err = terminuspolicyv1beta1.NewPolicyClient(addr)
+	cs.batchV1, err = erdabatchv1.NewBatchClient(addr)
+	if err != nil {
+		return nil, err
+	}
+	cs.DiscoveryClient, err = erdadiscovery.NewDiscoveryClient(addr)
 	if err != nil {
 		return nil, err
 	}

@@ -21,14 +21,14 @@ import (
 	secv1beta1 "istio.io/client-go/pkg/clientset/versioned/typed/security/v1beta1"
 	"k8s.io/client-go/discovery"
 
-	terminusconfigv1alpha2 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/config/v1alpha2"
+	erdaconfigv1alpha2 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/config/v1alpha2"
 	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/flinkoperator/v1beta1"
-	terminusnetworkingv1alpha3 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/networking/v1alpha3"
-	terminusnetworkingv1beta1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/networking/v1beta1"
+	erdanetworkingv1alpha3 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/networking/v1alpha3"
+	erdanetworkingv1beta1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/networking/v1beta1"
 	openYurtV1alpha1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/openyurt/v1alpha1"
-	terminusrbacv1alpha1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/rbac/v1alpha1"
-	terminussecurityv1beta1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/security/v1beta1"
-	terminusdiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
+	erdarbacv1alpha1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/rbac/v1alpha1"
+	erdasecurityv1beta1 "github.com/erda-project/erda/pkg/clientgo/clientset/versioned/typed/security/v1beta1"
+	erdadiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
 )
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -96,32 +96,32 @@ func NewCustomClientSet(addr string) (*Clientset, error) {
 		return nil, err
 	}
 
-	cs.networkingV1alpha3, err = terminusnetworkingv1alpha3.NewNetworkingClient(addr)
+	cs.networkingV1alpha3, err = erdanetworkingv1alpha3.NewNetworkingClient(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.networkingV1beta1, err = terminusnetworkingv1beta1.NewNetworkingClient(addr)
+	cs.networkingV1beta1, err = erdanetworkingv1beta1.NewNetworkingClient(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.rbacV1alpha1, err = terminusrbacv1alpha1.NewRBACClient(addr)
+	cs.rbacV1alpha1, err = erdarbacv1alpha1.NewRBACClient(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.configV1alpha2, err = terminusconfigv1alpha2.NewConfigClient(addr)
+	cs.configV1alpha2, err = erdaconfigv1alpha2.NewConfigClient(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.securityV1beta1, err = terminussecurityv1beta1.NewSecurityClient(addr)
+	cs.securityV1beta1, err = erdasecurityv1beta1.NewSecurityClient(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.DiscoveryClient, err = terminusdiscovery.NewDiscoveryClient(addr)
+	cs.DiscoveryClient, err = erdadiscovery.NewDiscoveryClient(addr)
 	if err != nil {
 		return nil, err
 	}
