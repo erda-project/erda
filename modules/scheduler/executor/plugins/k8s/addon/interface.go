@@ -31,7 +31,7 @@ type K8SUtil interface {
 type DeploymentUtil interface {
 	Create(*appsv1.Deployment) error
 	Get(namespace, name string) (*appsv1.Deployment, error)
-	List(namespace string) (appsv1.DeploymentList, error)
+	List(namespace string, labelSelector map[string]string) (appsv1.DeploymentList, error)
 	Delete(namespace, name string) error
 }
 
@@ -47,7 +47,7 @@ type DaemonsetUtil interface {
 	Update(*appsv1.DaemonSet) error
 	Delete(namespace, name string) error
 	Get(namespace, name string) (*appsv1.DaemonSet, error)
-	List(namespace string) (appsv1.DaemonSetList, error)
+	List(namespace string, labelSelector map[string]string) (appsv1.DaemonSetList, error)
 }
 
 type ServiceUtil interface {
