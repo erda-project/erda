@@ -29,5 +29,5 @@ func NotFound(err error) bool {
 }
 
 func notFound(err error) bool {
-	return err == ErrNotFound
+	return err.Error() == ErrNotFound.Error()
 }

@@ -99,7 +99,13 @@ func (c *AppsV1alpha1Client) RESTClient() rest.Interface {
 func NewOpenYurtClient(addr string) (*AppsV1alpha1Client, error) {
 	config := restclient.GetDefaultConfig("/apis")
 	config.GroupVersion = &v1alpha1.SchemeGroupVersion
-	client, err := restclient.NewInetRESTClient(addr, config)
+	var client rest.Interface
+	var err error
+	if addr != "" {
+		client, err = restclient.NewInetRESTClient(addr, config)
+	} else {
+		client, err = rest.RESTClientFor(config)
+	}
 	if err != nil {
 		return nil, err
 	}

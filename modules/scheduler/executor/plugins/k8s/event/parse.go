@@ -15,9 +15,13 @@
 package event
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
+
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/kubelet/events"
@@ -42,7 +46,15 @@ func (em MessageList) Less(i, j int) bool { return em[i].Timestamp < em[j].Times
 func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 	var ems MessageList
 
-	eventList, err := e.ListByNamespace(namespace)
+	var (
+		eventList *apiv1.EventList
+		err       error
+	)
+	if e.k8sClient != nil {
+		eventList, err = e.k8sClient.CoreV1().Events(namespace).List(context.Background(), metav1.ListOptions{})
+	} else {
+		eventList, err = e.ListByNamespace(namespace)
+	}
 	if err != nil {
 		return nil, errors.Errorf("failed to list pod events, namespace: %s, podName: %s, (%v)",
 			namespace, name, err)

@@ -99,11 +99,11 @@ func (f *Flink) Create(ctx context.Context, spec interface{}) (interface{}, erro
 			return nil, err
 		}
 	}
-	for index := range pvcs {
-		if pvcs[index] == nil {
+	for i := range pvcs {
+		if pvcs[i] == nil {
 			continue
 		}
-		job.Volumes[index].ID = &(pvcs[index].Name)
+		job.Volumes[i].ID = &(pvcs[i].Name)
 	}
 
 	logrus.Infof("create flinkcluster cr name %s in namespace %s", job.Name, ns.Name)
