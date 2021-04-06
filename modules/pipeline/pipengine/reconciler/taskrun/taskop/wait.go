@@ -42,9 +42,9 @@ func (w *wait) Processing() (interface{}, error) {
 		case <-w.Ctx.Done():
 			w.StopWaitLoop = true
 			return
-		case <-w.PExitCh:
-			logrus.Warnf("reconciler: pipeline exit, stop wait, pipelineID: %d, taskID: %d", w.P.ID, w.Task.ID)
-			return
+		//case <-w.PExitCh:
+		//	logrus.Warnf("reconciler: pipeline exit, stop wait, pipelineID: %d, taskID: %d", w.P.ID, w.Task.ID)
+		//	return
 		case <-stopWaitCh:
 			rlog.TDebugf(w.P.ID, w.Task.ID, "stop wait")
 			close(stopWaitCh)

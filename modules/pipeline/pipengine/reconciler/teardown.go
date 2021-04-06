@@ -21,10 +21,13 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 		return
 	}
 	defer func() {
-		rlog.PDebugf(p.Pipeline.ID, "pipeline exit, send signal to exit channel")
-		exitCh := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})
-		exitCh <- struct{}{}
-		close(exitCh)
+		// todo Here, if write a value to the channal,
+		// it may cause a deadlock.
+		// I haven't found the effect of this line of code yet
+		//rlog.PDebugf(p.Pipeline.ID, "pipeline exit, send signal to exit channel")
+		//exitCh := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})
+		//exitCh <- struct{}{}
+		//close(exitCh)
 	}()
 	defer r.doCompensateIfHave(ctx, p.Pipeline.ID)
 	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)

@@ -39,9 +39,9 @@ func (q *queue) Processing() (interface{}, error) {
 		case <-q.Ctx.Done():
 			q.StopQueueLoop = true
 			return
-		case <-q.PExitCh:
-			logrus.Warnf("reconciler: pipeline exit, stop queue, pipelineID: %d, taskID: %d", q.P.ID, q.Task.ID)
-			return
+		//case <-q.PExitCh:
+		//	logrus.Warnf("reconciler: pipeline exit, stop queue, pipelineID: %d, taskID: %d", q.P.ID, q.Task.ID)
+		//	return
 		case <-stopQueueCh:
 			rlog.TDebugf(q.P.ID, q.Task.ID, "stop queue")
 			close(stopQueueCh)
