@@ -15,15 +15,19 @@ package clusterinfo
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/configmap"
+	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -49,7 +53,8 @@ const (
 	netportalURLPrefix  = "inet://"
 	netportalURLKeyName = "NETPORTAL_URL"
 	// DiceClusterName dice 集群名
-	DiceClusterName = "DICE_CLUSTER_NAME"
+	DiceClusterName                = "DICE_CLUSTER_NAME"
+	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
 )
 
 // diceCIODiscardKeys 需要丢弃的
@@ -92,6 +97,8 @@ type ClusterInfo struct {
 	clusterName          string              // 集群名
 	data                 map[string]string   // cluster info 数据
 	addr                 string              // k8s master address
+	client               httpclient.HTTPClient
+	k8sClient            *kubernetes.Clientset
 }
 
 // Option configures an ClusterInfo
@@ -125,6 +132,12 @@ func New(clusterName string, options ...Option) (*ClusterInfo, error) {
 	return cm, nil
 }
 
+func WithKubernetesClient(client *kubernetes.Clientset) Option {
+	return func(info *ClusterInfo) {
+		info.k8sClient = client
+	}
+}
+
 // WithCompleteParams provides an Option
 func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	return func(ci *ClusterInfo) {
@@ -138,11 +151,24 @@ func (ci *ClusterInfo) Load() error {
 	ci.load_mutex.Lock()
 	defer ci.load_mutex.Unlock()
 
-	if ci.ConfigMap == nil {
-		return errors.New("configMap is nil")
+	var namespace = metav1.NamespaceDefault
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+	var (
+		cm      *corev1.ConfigMap
+		addonCM *corev1.ConfigMap
+		err     error
+	)
+	if ci.k8sClient != nil {
+		cm, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), clusterInfoConfigMapName, metav1.GetOptions{})
+	} else {
+		if ci.ConfigMap == nil {
+			return errors.New("configMap is nil")
+		}
+		cm, err = ci.ConfigMap.Get(namespace, clusterInfoConfigMapName)
 	}
 
-	ciCM, err := ci.ConfigMap.Get(diceCMNamespace, clusterInfoConfigMapName)
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
 			clusterInfoConfigMapName, ci.clusterName, err)
@@ -150,11 +176,14 @@ func (ci *ClusterInfo) Load() error {
 
 	// 忽略指定的字段
 	for _, key := range diceCIDiscardKeys {
-		delete(ciCM.Data, key)
+		delete(cm.Data, key)
 	}
-	ci.data = ciCM.Data
-
-	addonCM, err := ci.ConfigMap.Get(diceCMNamespace, addonsConfigMapName)
+	ci.data = cm.Data
+	if ci.k8sClient != nil {
+		addonCM, err = ci.k8sClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), addonsConfigMapName, metav1.GetOptions{})
+	} else {
+		addonCM, err = ci.ConfigMap.Get(namespace, addonsConfigMapName)
+	}
 	if err != nil {
 		return errors.Errorf("failed to get %s configMap, clusterName: %s, (%v)",
 			addonsConfigMapName, ci.clusterName, err)
