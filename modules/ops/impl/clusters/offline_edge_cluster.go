@@ -1,0 +1,121 @@
+package clusters
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/ops/dbclient"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/httpclient"
+)
+
+type precheckResp struct {
+	Success bool `json:"success"`
+	Data    bool `json:"data"`
+}
+type cmdbDeleteClusterResp struct {
+	Success bool   `json:"success"`
+	Data    string `json:"data"`
+}
+
+func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, userid string, orgid string) (uint64, error) {
+	var recordID uint64
+	var fakecluster bool
+	clusterInfo, err := c.bdl.QueryClusterInfo(req.ClusterName)
+	if err != nil {
+		fakecluster = true
+	} else {
+		isEdgeCluster := clusterInfo.Get(apistructs.DICE_IS_EDGE)
+		if isEdgeCluster != "true" {
+			errstr := fmt.Sprintf("unsupport to offline non-edge cluster, clustername: %s", clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME))
+			logrus.Errorf(errstr)
+			err := errors.New(errstr)
+			return recordID, err
+		}
+	}
+	status := dbclient.StatusTypeSuccess
+	detail := ""
+	if !fakecluster {
+		// 检查项目是否使用集群
+		projectRefer := precheckResp{}
+		resp, err := httpclient.New().Get(discover.CMDB()).
+			Header("Internal-Client", "ops").
+			Path("/api/projects/actions/refer-cluster").
+			Param("cluster", req.ClusterName).Do().JSON(&projectRefer)
+		if err != nil {
+			errstr := fmt.Sprintf("failed to call cmdb /api/projects/actions/refer-cluster: %v", err)
+			logrus.Errorf(errstr)
+			err := errors.New(errstr)
+			return recordID, err
+		}
+		if !resp.IsOK() || !projectRefer.Success {
+			errstr := fmt.Sprintf("call cmdb /api/projects/actions/refer-cluster, statuscode: %d, resp: %+v", resp.StatusCode(), projectRefer)
+			logrus.Errorf(errstr)
+			err := errors.New(errstr)
+			return recordID, err
+		}
+		if projectRefer.Data {
+			status = dbclient.StatusTypeFailed
+			detail = "存在项目使用该集群, 无法下线该集群"
+		}
+		// 查询 cmdb api 检查没有项目设置中用到这个集群
+		if status == dbclient.StatusTypeSuccess {
+			runtimeRefer := precheckResp{}
+			resp, err := httpclient.New().Get(discover.Orchestrator()).
+				Header("Internal-Client", "ops").
+				Path("/api/runtimes/actions/refer-cluster").
+				Param("cluster", req.ClusterName).Do().JSON(&runtimeRefer)
+			if err != nil {
+				errstr := fmt.Sprintf("failed to call orch /api/runtimes/actions/refer-cluster: %v", err)
+				logrus.Errorf(errstr)
+				err := errors.New(errstr)
+				return recordID, err
+			}
+			if !resp.IsOK() || !runtimeRefer.Success {
+				errstr := fmt.Sprintf("call orch /api/runtimes/actions/refer-cluster, statuscode: %d, resp: %+v",
+					resp.StatusCode(), runtimeRefer)
+				logrus.Errorf(errstr)
+				err := errors.New(errstr)
+				return recordID, err
+			}
+			if runtimeRefer.Data {
+				status = dbclient.StatusTypeFailed
+				detail = "存在runtime(addon)在该集群中, 无法下线集群"
+			}
+		}
+	}
+	// 调用 cmdb api 下线集群
+	if status == dbclient.StatusTypeSuccess {
+		deletecluster := cmdbDeleteClusterResp{}
+		resp, err := httpclient.New().Delete(discover.CMDB()).
+			Header("Internal-Client", "ops").
+			Path(fmt.Sprintf("/api/clusters/%s", req.ClusterName)).
+			Do().JSON(&deletecluster)
+		if err != nil {
+			errstr := fmt.Sprintf("failed to call cmdb /api/clusters/%s : %v", req.ClusterName, err)
+			logrus.Errorf(errstr)
+			err := errors.New(errstr)
+			return recordID, err
+		}
+		if !resp.IsOK() || !deletecluster.Success {
+			errstr := fmt.Sprintf("call cmdb /api/clusters/%s, statuscode: %d, resp: %+v",
+				req.ClusterName, resp.StatusCode(), deletecluster)
+			logrus.Errorf(errstr)
+			err := errors.New(errstr)
+			return recordID, err
+		}
+	}
+
+	recordID, err = c.db.RecordsWriter().Create(&dbclient.Record{
+		RecordType:  dbclient.RecordTypeOfflineEdgeCluster,
+		UserID:      userid,
+		OrgID:       orgid,
+		ClusterName: req.ClusterName,
+		Status:      status,
+		Detail:      string(detail),
+	})
+	return recordID, nil
+}
