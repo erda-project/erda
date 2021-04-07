@@ -34,6 +34,9 @@ We split the codes of erda into multiple repositories according to different fun
 [erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
 ## User Documentation
+
+To start using Erda, please see our user documentation. Before using, you need to see the installation document to install erda.
+
 - [中文](https://dice-docs.app.terminus.io)
 - English
 
