@@ -6,6 +6,7 @@
   ],
   "ignore": [
     "vendor/",
+    "third_party/",
     "modules/pipeline/pipengine/actionexecutor/plugins/apitest/logic/cookiejar/jar.go",
     "pkg/clientgo/apis/flinkoperator/",
     "pkg/clientgo/apis/openyurt/",
