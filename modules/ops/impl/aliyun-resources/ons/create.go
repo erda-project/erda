@@ -40,7 +40,7 @@ func CreateInstanceWithRecord(ctx aliyun_resources.Context, req apistructs.Creat
 	detail.ClientToken = req.ClientToken
 	detail.InstanceName = req.Name
 
-	// 重名检查
+	// Duplicate name check
 	regionids := aliyun_resources.ActiveRegionIDs(ctx)
 	list, err := List(ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 	if err != nil {
