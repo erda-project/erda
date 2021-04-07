@@ -1,0 +1,320 @@
+package clusters
+
+import (
+	"fmt"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/golang-collections/collections/set"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/ops/dbclient"
+)
+
+type Clusters struct {
+	db  *dbclient.DBClient
+	bdl *bundle.Bundle
+}
+
+func New(db *dbclient.DBClient, bdl *bundle.Bundle) *Clusters {
+	return &Clusters{db: db, bdl: bdl}
+}
+
+// status:
+//		1 -- in processing, jump to check log
+//		2 -- do precheck
+//		3 -- invalid, do not support (non k8s cluster, central cluster, higher version ecluster)
+func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, userid string, orgid string) (recordID uint64, status int, precheckHint string, err error) {
+	records, err := c.db.RecordsReader().ByClusterNames(req.ClusterName).ByRecordTypes(dbclient.RecordTypeUpgradeEdgeCluster.String()).Do()
+	if err != nil {
+		errstr := fmt.Sprintf("failed to query record: %v", err)
+		logrus.Errorf(errstr)
+		return
+	}
+	if len(records) > 0 {
+		if records[0].Status == dbclient.StatusTypeProcessing &&
+			records[0].CreatedAt.After(time.Now().Add(-2*time.Hour)) {
+			status = 1
+			precheckHint = "集群正在升级, 是否跳转查看进度"
+			recordID = records[0].ID
+			return
+		}
+	}
+	clusterInfo, err := c.bdl.QueryClusterInfo(req.ClusterName)
+	if err != nil {
+		errstr := fmt.Sprintf("failed to queryclusterinfo: %v, clusterinfo: %v", err, clusterInfo)
+		logrus.Errorf(errstr)
+		return
+	}
+	if !clusterInfo.IsK8S() {
+		status = 3
+		precheckHint = "不支持非 k8s 集群升级"
+		return
+	}
+	if clusterInfo.Get(apistructs.DICE_IS_EDGE) != "true" {
+		status = 3
+		precheckHint = "不支持升级中心集群"
+		return
+	}
+	centralClusterInfo, err := c.bdl.QueryClusterInfo(os.Getenv("DICE_CLUSTER_NAME"))
+	if err != nil {
+		errStr := fmt.Sprintf("failed to queryclusterinfo: %v, clusterinfo: %v", err, clusterInfo)
+		logrus.Errorf(errStr)
+		return
+	}
+
+	edgeVersion := clusterInfo.Get(apistructs.DICE_VERSION)
+	centralVersion := centralClusterInfo.Get(apistructs.DICE_VERSION)
+	logrus.Infof("upgrade edge cluster [%v], edge cluster version [%v], central version [%v]",
+		req.ClusterName, edgeVersion, centralVersion)
+
+	if strings.Compare(edgeVersion, centralVersion) > 0 {
+		status = 3
+		precheckHint = fmt.Sprintf("边缘集群版本[%s] 高于中心集群[%s], 不用升级", edgeVersion, centralVersion)
+		return
+	}
+
+	if req.PreCheck {
+		status = 2
+		precheckHint = fmt.Sprintf("将从 [%s] 升级至 [%s], 请确认", edgeVersion, centralVersion)
+		return
+	}
+
+	yml := apistructs.PipelineYml{
+		Version: "1.1",
+		Stages: [][]*apistructs.PipelineYmlAction{{{
+			Type:    "upgrade-edge-cluster",
+			Version: "1.0",
+			Params: map[string]interface{}{
+				"dice_version": centralClusterInfo.Get(apistructs.DICE_VERSION),
+			},
+		}}},
+	}
+	b, err := yaml.Marshal(yml)
+	if err != nil {
+		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
+		logrus.Errorf(errstr)
+		return
+	}
+
+	dto, err := c.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+		PipelineYml: string(b),
+		PipelineYmlName: fmt.Sprintf("ops-upgrade-edge-cluster-%s.yml",
+			clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME)),
+		ClusterName:    clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),
+		PipelineSource: apistructs.PipelineSourceOps,
+		AutoRunAtOnce:  true,
+	})
+	if err != nil {
+		errstr := fmt.Sprintf("failed to createpipeline: %v", err)
+		logrus.Errorf(errstr)
+		return
+	}
+	recordID, err = c.db.RecordsWriter().Create(&dbclient.Record{
+		RecordType:  dbclient.RecordTypeUpgradeEdgeCluster,
+		UserID:      userid,
+		OrgID:       orgid,
+		ClusterName: req.ClusterName,
+		Status:      dbclient.StatusTypeProcessing,
+		Detail:      "",
+		PipelineID:  dto.ID,
+	})
+	if err != nil {
+		errstr := fmt.Sprintf("failed to create record: %v", err)
+		logrus.Errorf(errstr)
+		return
+	}
+	return
+}
+
+func (c *Clusters) BatchUpgradeEdgeCluster(req apistructs.BatchUpgradeEdgeClusterRequest, userid string) {
+	for _, v := range req.Clusters {
+		recordID, status, precheckHint, err := c.UpgradeEdgeCluster(
+			apistructs.UpgradeEdgeClusterRequest{
+				OrgID:       v.OrgID,
+				ClusterName: v.ClusterName},
+			userid,
+			strconv.FormatUint(v.OrgID, 10))
+		if err == nil && recordID != 0 {
+			continue
+		}
+		orgIdStr := strconv.FormatUint(v.OrgID, 10)
+		if err != nil {
+			err = fmt.Errorf("update edge cluster failed, org id:%d, cluster:%s, error:%v", v.OrgID, v.ClusterName, err)
+			logrus.Errorf(err.Error())
+			_, er := c.db.RecordsWriter().Create(&dbclient.Record{
+				RecordType:  dbclient.RecordTypeUpgradeEdgeCluster,
+				UserID:      userid,
+				OrgID:       orgIdStr,
+				ClusterName: v.ClusterName,
+				Status:      dbclient.StatusTypeFailed,
+				Detail:      err.Error(),
+				PipelineID:  0,
+			})
+			if er != nil {
+				logrus.Errorf("failed to create record: %v", err)
+			}
+		}
+		switch status {
+		case 1:
+			logrus.Warnf("cluster upgrade ignore, org [%d], cluster [%s] is in upgrading", v.OrgID, v.ClusterName)
+		case 2:
+			logrus.Warnf("cluster upgrade ignore, org [%d], cluster [%s] need precheck", v.OrgID, v.ClusterName)
+		case 3:
+			logrus.Warnf("cluster upgrade ignore, org [%d], cluster [%s], %s", v.OrgID, v.ClusterName, precheckHint)
+		default:
+			logrus.Errorf("cluster upgrade, org [%d], cluster [%s], invalid status code:%d", v.OrgID, v.ClusterName, status)
+		}
+	}
+}
+
+func (c *Clusters) GetOrgInfo(req *apistructs.OrgSearchRequest) (map[uint64]apistructs.OrgDTO, error) {
+	orgs, err := c.bdl.ListOrgs(req)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[uint64]apistructs.OrgDTO, len(orgs.List))
+	for _, v := range orgs.List {
+		result[v.ID] = v
+	}
+	return result, nil
+}
+
+func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []apistructs.OrgClusterInfoBasicData, err error) {
+	orgsInfo := make(map[uint64]apistructs.OrgDTO)
+	result = make([]apistructs.OrgClusterInfoBasicData, 0)
+	// get org info
+	orgsInfo, err = c.GetOrgInfo(&apistructs.OrgSearchRequest{
+		Q:        req.OrgName,
+		PageNo:   1,
+		PageSize: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// get org cluster info
+	if len(orgsInfo) == 0 {
+		return result, nil
+	}
+	clusters := make([]apistructs.ClusterInfo, 0)
+	if req.OrgName != "" && len(orgsInfo) < 5 {
+		var wg sync.WaitGroup
+		for k := range orgsInfo {
+			wg.Add(1)
+			go func(orgid uint64) {
+				defer func() {
+					wg.Done()
+				}()
+				c, e := c.bdl.ListClusters(req.ClusterType, orgid)
+				if e != nil {
+					err = e
+					return
+				}
+				clusters = append(clusters, c...)
+			}(k)
+		}
+		wg.Wait()
+	} else {
+		clusters, err = c.bdl.ListClusters(req.ClusterType, 0)
+	}
+
+	if err != nil {
+		return
+	}
+	cSet := set.New()
+	for _, v := range clusters {
+		// 企业可以关联集群，过滤掉关联的重复的集群
+		if cSet.Has(v.Name) {
+			continue
+		}
+		cSet.Insert(v.Name)
+		// 只包含关联集群时，也过滤掉
+		if _, ok := (orgsInfo)[uint64(v.OrgID)]; !ok {
+			continue
+		}
+		result = append(result,
+			apistructs.OrgClusterInfoBasicData{
+				ClusterName:    v.Name,
+				OrgID:          uint64(v.OrgID),
+				OrgName:        (orgsInfo)[uint64(v.OrgID)].Name,
+				OrgDisplayName: (orgsInfo)[uint64(v.OrgID)].DisplayName,
+				ClusterType:    v.Type,
+				Version:        "",
+				CreateTime:     v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			})
+	}
+	sort.Sort(orgClusterInfoList(result))
+	return result, nil
+}
+
+func (c *Clusters) UpdateClusterVersion(req []apistructs.OrgClusterInfoBasicData) error {
+	var wg sync.WaitGroup
+	if len(req) == 0 {
+		return nil
+	}
+	wg.Add(len(req))
+	for i, v := range req {
+		val := v
+		go func(oc *apistructs.OrgClusterInfoBasicData) {
+			defer func() {
+				wg.Done()
+			}()
+			cid, err := c.bdl.QueryClusterInfo(oc.ClusterName)
+			if err != nil {
+				logrus.Errorf("query cluster info failed, request:%+v, error:%v", val, err)
+			}
+			oc.Version = cid.Get(apistructs.DICE_VERSION)
+			isEdgeCluster := cid.Get(apistructs.DICE_IS_EDGE)
+			if isEdgeCluster == "false" {
+				oc.IsCentralCluster = true
+			} else {
+				oc.IsCentralCluster = false
+			}
+		}(&req[i])
+	}
+	wg.Wait()
+	return nil
+}
+
+func (c *Clusters) GetOrgClusterInfo(req apistructs.OrgClusterInfoRequest) (apistructs.OrgClusterInfoData, error) {
+	var start, end int
+	result := apistructs.OrgClusterInfoData{}
+	clusters, err := c.ListClusters(req)
+	if err != nil {
+		return result, err
+	}
+	result.Total = len(clusters)
+
+	end = req.PageNo * req.PageSize
+	start = (req.PageNo - 1) * req.PageSize
+	if start >= result.Total {
+		return result, nil
+	} else if end > result.Total {
+		result.List = clusters[start:]
+	} else {
+		result.List = clusters[start:end]
+	}
+	_ = c.UpdateClusterVersion(result.List)
+	return result, nil
+}
+
+type orgClusterInfoList []apistructs.OrgClusterInfoBasicData
+
+func (o orgClusterInfoList) Len() int {
+	return len(o)
+}
+
+func (o orgClusterInfoList) Less(i, j int) bool {
+	return strings.Compare(o[i].OrgName, o[j].OrgName) < 0
+}
+
+func (o orgClusterInfoList) Swap(i, j int) {
+	o[i], o[j] = o[j], o[i]
+}

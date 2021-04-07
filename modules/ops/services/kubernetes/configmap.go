@@ -1,0 +1,90 @@
+package kubernetes
+
+import (
+	"context"
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// ListConfigMap 获取指定集群下指定 namespace 所有 configMap
+func (k *Kubernetes) ListConfigMap(clusterName, namespace string) (*corev1.ConfigMapList, error) {
+	clientSet, err := k.getClientSet(clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
+	}
+
+	cmList, err := clientSet.K8sClient.CoreV1().ConfigMaps(namespace).List(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("cluster %s list configmap(namespace: %s) error, %v", clusterName, namespace, err)
+	}
+
+	return cmList, nil
+}
+
+// GetConfigMap 获取指定集群下 configMap
+func (k *Kubernetes) GetConfigMap(clusterName, namespace, cmName string) (*corev1.ConfigMap, error) {
+	clientSet, err := k.getClientSet(clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
+	}
+
+	cm, err := clientSet.K8sClient.CoreV1().ConfigMaps(namespace).Get(context.TODO(), cmName, v1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("cluster %s get configmap(namespace: %s) %s error, %v", clusterName, namespace, cmName, err)
+	}
+
+	return cm, nil
+}
+
+// CreateConfigMap 在指定集群下创建 configMap
+func (k *Kubernetes) CreateConfigMap(clusterName, namespace string, cm *corev1.ConfigMap) error {
+	if cm == nil {
+		return fmt.Errorf("configmap entity can't be nil")
+	}
+	clientSet, err := k.getClientSet(clusterName)
+	if err != nil {
+		return fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
+	}
+
+	_, err = clientSet.K8sClient.CoreV1().ConfigMaps(namespace).Create(context.TODO(), cm, v1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("cluster %s create configmap(namespace: %s) %s error, %v", clusterName, namespace, cm.Name, err)
+	}
+
+	return nil
+}
+
+// DeleteConfigMap 在指定集群下删除 configMap
+func (k *Kubernetes) DeleteConfigMap(clusterName, namespace, cmName string) error {
+	clientSet, err := k.getClientSet(clusterName)
+	if err != nil {
+		return fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
+	}
+
+	err = clientSet.K8sClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), cmName, v1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("cluster %s delete configmap(namespace: %s) %s error, %v", clusterName, namespace, cmName, err)
+	}
+
+	return nil
+}
+
+// UpdateConfigMap 在指定集群下更新 configMap
+func (k *Kubernetes) UpdateConfigMap(clusterName, namespace string, cm *corev1.ConfigMap) error {
+	if cm == nil {
+		return fmt.Errorf("configmap entity can't be nil")
+	}
+	clientSet, err := k.getClientSet(clusterName)
+	if err != nil {
+		return fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
+	}
+
+	_, err = clientSet.K8sClient.CoreV1().ConfigMaps(namespace).Update(context.TODO(), cm, v1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("cluster %s update configmap(namespace: %s) %s error, %v", clusterName, namespace, cm.Name, err)
+	}
+
+	return nil
+}

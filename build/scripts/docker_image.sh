@@ -31,7 +31,8 @@ MODULE_PATH=$1
 APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
 
 # Dockerfile path
-DOCKERFILE="build/dockerfiles/Dockerfile"
+DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
+DOCKERFILE=${DOCKERFILE_DEFAULT}
 if [ -f "build/dockerfiles/Dockerfile-${APP_NAME}" ];then
     DOCKERFILE="build/dockerfiles/Dockerfile-${APP_NAME}"
 elif [ -d "build/dockerfiles/${APP_NAME}" ];then
@@ -76,7 +77,7 @@ print_details
 
 # build docker image
 build_image()  {
-    if [ -z "${DOCKER_REGISTRY}" ]; then
+    if [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
         BASE_IMAGE_ID="$(docker images ${BASE_DOCKER_IMAGE} -q)"
         if [ -z "${BASE_IMAGE_ID}" ]; then
             echo "base image '${BASE_DOCKER_IMAGE}' not exist, start build base image ..."
