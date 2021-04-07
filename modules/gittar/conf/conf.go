@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package conf
 
 import (
@@ -30,8 +43,8 @@ type Conf struct {
 	GitMaxDiffFiles          int    `env:"GIT_DIFF_FILES" default:"300"`
 	GitMaxDiffSize           int    `env:"GIT_MAX_DIFF_SIZE" default:"256000"`
 	GitDiffContextLines      int    `env:"GIT_DIFF_CONTEXT_LINES" default:"3"`
-	GitInnerUserName         string `env:"GIT_INNER_USER_NAME" default:"18000000000"`
-	GitInnerUserPassword     string `env:"GIT_INNER_USER_PASSWORD" default:"123456"`
+	GitInnerUserName         string `env:"GIT_INNER_USER_NAME"`
+	GitInnerUserPassword     string `env:"GIT_INNER_USER_PASSWORD"`
 	GitMergeTemplatePath     string `env:"GIT_MERGE_TEMPLATE_PATH" default:".gitlab/merge_request_templates"`
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
 }

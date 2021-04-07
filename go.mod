@@ -82,8 +82,9 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/lib/pq v1.3.0 // indirect
-	github.com/libgit2/git2go/v30 v30.3.14
+	github.com/libgit2/git2go/v28 v28.4.0
 	github.com/magiconair/properties v1.8.4
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mholt/archiver v2.1.0+incompatible
@@ -94,7 +95,11 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
+	github.com/onsi/ginkgo v1.15.2 // indirect
+	github.com/onsi/gomega v1.11.0 // indirect
 	github.com/otiai10/copy v1.5.0
+	github.com/parnurzeal/gorequest v0.2.16
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.1
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
