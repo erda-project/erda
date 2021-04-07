@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package server
 
 import (
@@ -167,7 +180,7 @@ func (s *Server) initEndpoints() {
 		{"/v1/job/{namespace}/{name}/start", http.MethodPost, s.httpendpoints.JobStart},
 		{"/v1/job/{namespace}/{name}/stop", http.MethodPost, s.httpendpoints.JobStop},
 		{"/v1/job/{namespace}/{name}/delete", http.MethodDelete, s.httpendpoints.JobDelete},
-		{"/v1/job/{namespace}/deletealljobs", http.MethodDelete, s.httpendpoints.JobsDelete},
+		{"/v1/jobs", http.MethodDelete, s.httpendpoints.DeleteJobs},
 		{"/v1/job/{namespace}/{name}", http.MethodGet, s.httpendpoints.JobInspect},
 		{"/v1/jobs/{namespace}", http.MethodGet, s.httpendpoints.JobList},
 		{"/api/jobvolume", http.MethodPost, s.httpendpoints.JobVolumeCreate},
