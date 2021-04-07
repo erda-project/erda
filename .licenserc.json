@@ -1,12 +1,24 @@
-{
-  "**/*.go": [
-    "Copyright (c) 2021 Terminus, Inc.",
-    "This program is free software: you can use, redistribute, and/or modify",
-    "it under the terms of the GNU Affero General Public License, version 3"
-  ],
-  "**/*.go": "Use of this source code is governed by a BSD-style",
-  "**/*.go": "Licensed under the Apache License, Version 2.0 (the \"License\");",
-  "ignore": [
-    "vendor/"
-  ]
-}
+[
+  {
+    "**/*.go": [
+      "Copyright (c) 2021 Terminus, Inc.",
+      "This program is free software: you can use, redistribute, and/or modify",
+      "it under the terms of the GNU Affero General Public License, version 3"
+    ],
+    "ignore": [
+      "vendor/"
+    ]
+  },
+  {
+    "**/*.go": "Use of this source code is governed by a BSD-style",
+    "ignore": [
+      "vendor/"
+    ]
+  },
+  {
+    "**/*.go": "Licensed under the Apache License, Version 2.0 (the \"License\");",
+    "ignore": [
+      "vendor/"
+    ]
+  }
+]
