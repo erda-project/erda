@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package deployment
 
 import (
@@ -43,11 +56,11 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:  "s1",
 					Vip:   "v1",
-					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8081}},
+					Ports: []diceyml.ServicePort{{Port: 8080}, {Port: 8081}},
 				},
 				{
 					Name:  "s2",
-					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 9090}, diceyml.ServicePort{Port: 9091}},
+					Ports: []diceyml.ServicePort{{Port: 9090}, {Port: 9091}},
 				},
 				{
 					Name: "s3",
@@ -56,7 +69,7 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:   "s4",
 					Vip:    "v4",
-					Ports:  []diceyml.ServicePort{diceyml.ServicePort{Port: 80}},
+					Ports:  []diceyml.ServicePort{{Port: 80}},
 					Labels: map[string]string{"HAPROXY_0_VHOST": "google.com,youtube.com"},
 				},
 				{

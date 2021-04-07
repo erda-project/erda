@@ -1,10 +1,27 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package event manipulates the k8s api of event object
 package event
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
+
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/kubelet/events"
@@ -29,7 +46,15 @@ func (em MessageList) Less(i, j int) bool { return em[i].Timestamp < em[j].Times
 func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 	var ems MessageList
 
-	eventList, err := e.ListByNamespace(namespace)
+	var (
+		eventList *apiv1.EventList
+		err       error
+	)
+	if e.k8sClient != nil {
+		eventList, err = e.k8sClient.CoreV1().Events(namespace).List(context.Background(), metav1.ListOptions{})
+	} else {
+		eventList, err = e.ListByNamespace(namespace)
+	}
 	if err != nil {
 		return nil, errors.Errorf("failed to list pod events, namespace: %s, podName: %s, (%v)",
 			namespace, name, err)
