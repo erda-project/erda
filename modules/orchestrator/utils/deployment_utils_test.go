@@ -26,7 +26,7 @@ import (
 func TestApplyOverlay(t *testing.T) {
 	target := diceyml.Object{
 		Services: map[string]*diceyml.Service{
-			"demo": &diceyml.Service{
+			"demo": {
 				Resources: diceyml.Resources{
 					CPU:  1.0,
 					Mem:  256,
@@ -137,12 +137,12 @@ func TestBuildDiscoveryConfig(t *testing.T) {
 		{
 			Name:  "backend-1",
 			Vip:   "backend-1.marathon.dice",
-			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8090}},
+			Ports: []diceyml.ServicePort{{Port: 8080}, {Port: 8090}},
 		},
 		{
 			Name:  "frontend-2",
 			Vip:   "frontend-2.marathon.dice",
-			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8081}},
+			Ports: []diceyml.ServicePort{{Port: 8081}},
 		},
 		{
 			Name: "empty",
