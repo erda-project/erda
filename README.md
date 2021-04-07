@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
 <div align="left">
-	<img src="./docs/files/logo.jpg" alt="Editor" width="100">
+	<img src="./docs/files/logo.jpg" alt="Editor" width="500">
 </div>
 
 ## Introduction
