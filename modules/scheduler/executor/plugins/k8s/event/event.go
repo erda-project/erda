@@ -140,7 +140,6 @@ func (e *Event) WatchPodEventsAllNamespaces(ctx context.Context, callback func(*
 			body.Close()
 		}
 	}
-	panic("unreachable")
 }
 
 // LimitedListAllNamespace limit list event all namespaces
