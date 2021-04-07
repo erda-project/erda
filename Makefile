@@ -45,11 +45,11 @@ build-all:
 
 build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
-	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
 
 build-for-linux:
 	GOOS=linux GOARCH=amd64 make build-cross

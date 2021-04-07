@@ -19,13 +19,13 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-const servicePipeline = "scheduler"
+const serviceScheduler = "scheduler"
 
 type provider struct{}
 
-func init() { servicehub.RegisterProvider(servicePipeline, &provider{}) }
+func init() { servicehub.RegisterProvider(serviceScheduler, &provider{}) }
 
-func (p *provider) Service() []string                 { return []string{servicePipeline} }
+func (p *provider) Service() []string                 { return []string{serviceScheduler} }
 func (p *provider) Dependencies() []string            { return []string{} }
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
 func (p *provider) Run(ctx context.Context) error     { return Initialize() }
