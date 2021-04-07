@@ -13,6 +13,6 @@
 
 package volume
 
-// 各个后端 volume 实现 GC
+// Each backend volume implements GC
 type GC interface {
 }

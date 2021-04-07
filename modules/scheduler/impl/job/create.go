@@ -29,7 +29,7 @@ import (
 func (j *JobImpl) Create(create apistructs.JobCreateRequest) (apistructs.Job, error) {
 	// check job kind
 	if create.Kind == "" {
-		create.Kind = string(apistructs.Metronome) // FIXME 兼容现有job kind未传的情况，后续须强制业务方传kind
+		create.Kind = string(apistructs.Metronome) // FIXME Compatible with the untransmitted situation of the existing job kind, the business side must be forced to transmit the kind
 	} else {
 		if create.Kind != string(apistructs.Metronome) && create.Kind != string(apistructs.Flink) &&
 			create.Kind != string(apistructs.K8SFlink) && create.Kind != string(apistructs.Spark) &&
@@ -45,7 +45,7 @@ func (j *JobImpl) Create(create apistructs.JobCreateRequest) (apistructs.Job, er
 		}
 	}
 
-	// TODO: 后续须增加clusterName强制校验
+	// TODO: Mandatory verification of clusterName must be added in the follow-up
 	logrus.Infof("epCreateJob job: %+v", create)
 	job := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser(create),
@@ -88,8 +88,8 @@ func (j *JobImpl) Create(create apistructs.JobCreateRequest) (apistructs.Job, er
 		}
 	}
 
-	// 获取jobStatus，判断是否处于Running
-	// 处于Running的话，不更新job到store
+	// Get jobStatus, determine whether it is Running
+	// If you are in Running, do not update the job to the store
 	ctx := context.Background()
 	update, err := j.fetchJobStatus(ctx, &job)
 	if err != nil {
