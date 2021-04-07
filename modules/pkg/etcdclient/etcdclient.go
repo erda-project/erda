@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 /* 由于要实现 多个eventbox实例同时watch相同目录，并且只处理一次，而etcd库中提供的分布式锁在etcd断开连接时候有问题，
 eventbox中用事务来实现, 但是需要一个 etcd client， 所以在这个文件实现一下 NewEtcdClient
 */

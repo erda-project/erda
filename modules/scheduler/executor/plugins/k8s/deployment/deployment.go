@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package deployment manipulates the k8s api of deployment object
 package deployment
 
@@ -6,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -95,12 +110,22 @@ func (d *Deployment) Get(namespace, name string) (*appsv1.Deployment, error) {
 }
 
 // List lists deployments under specific namespace
-func (d *Deployment) List(namespace string) (appsv1.DeploymentList, error) {
+func (d *Deployment) List(namespace string, labelSelector map[string]string) (appsv1.DeploymentList, error) {
 	var deployList appsv1.DeploymentList
+	var params url.Values
+	if len(labelSelector) > 0 {
+		var kvs []string
+		params = make(url.Values, 0)
 
+		for key, value := range labelSelector {
+			kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+		}
+		params.Add("labelSelector", strings.Join(kvs, ","))
+	}
 	var b bytes.Buffer
 	resp, err := d.client.Get(d.addr).
 		Path("/apis/apps/v1/namespaces/" + namespace + "/deployments").
+		Params(params).
 		Do().
 		Body(&b)
 
