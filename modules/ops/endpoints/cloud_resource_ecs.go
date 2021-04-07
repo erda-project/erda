@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Terminus, Inc.
+// Copyright (c)  2021 Terminus, Inc.
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
