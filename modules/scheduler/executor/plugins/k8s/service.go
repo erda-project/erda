@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -6,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/istioctl"
-
 	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
+	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -79,10 +91,15 @@ func (k *Kubernetes) updateService(service *apistructs.Service) error {
 }
 
 func newService(service *apistructs.Service) *apiv1.Service {
-	deployName := getDeployName(service)
 	if len(service.Ports) == 0 {
 		return nil
 	}
+
+	appValue := service.Env[KeyOriginServiceName]
+	if appValue == "" {
+		appValue = service.Name
+	}
+
 	k8sService := &apiv1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -97,12 +114,12 @@ func newService(service *apistructs.Service) *apiv1.Service {
 			// TODO: type?
 			//Type: ServiceTypeLoadBalancer,
 			Selector: map[string]string{
-				"app": deployName,
+				"app": appValue,
 			},
 		},
 	}
 
-	setServiceEnv(service, k8sService)
+	setServiceLabelSelector(service, k8sService)
 
 	for i, port := range service.Ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
@@ -138,9 +155,9 @@ func diffServiceMetadata(left, right *apiv1.Service) bool {
 
 // actually get deployment's names list, as k8s service would not be created
 // if no ports exposed
-func (k *Kubernetes) listServiceName(namespace string) ([]string, error) {
+func (k *Kubernetes) listServiceName(namespace string, labelSelector map[string]string) ([]string, error) {
 	strs := make([]string, 0)
-	deployList, err := k.deploy.List(namespace)
+	deployList, err := k.deploy.List(namespace, labelSelector)
 	if err != nil {
 		return strs, err
 	}
@@ -149,7 +166,7 @@ func (k *Kubernetes) listServiceName(namespace string) ([]string, error) {
 		strs = append(strs, item.Name)
 	}
 
-	daemonSets, err := k.ds.List(namespace)
+	daemonSets, err := k.ds.List(namespace, labelSelector)
 	if err != nil {
 		return strs, err
 	}
@@ -167,9 +184,9 @@ func getServiceName(service *apistructs.Service) string {
 	return service.Name
 }
 
-func setServiceEnv(service *apistructs.Service, k8sService *apiv1.Service) {
-	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" {
-		k8sService.Spec.Selector[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
+func setServiceLabelSelector(service *apistructs.Service, k8sService *apiv1.Service) {
+	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" && service.Name == service.Env[ProjectNamespaceServiceNameNameKey] {
+		k8sService.Spec.Selector[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
 	}
 }
 

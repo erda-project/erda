@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package namespace manipulates the k8s api of namespace object
 package namespace
 
@@ -71,7 +84,7 @@ func (n *Namespace) Create(ns string, labels map[string]string) error {
 	if !resp.IsOK() {
 		return errors.Errorf("failed to create namespace, ns: %s, statuscode: %v, body: %v", ns, resp.StatusCode(), b.String())
 	}
-	logrus.Infof("succeed to create namespace, ns: %s", ns)
+	logrus.Infof("succeed to create namespace %s", ns)
 	return nil
 }
 

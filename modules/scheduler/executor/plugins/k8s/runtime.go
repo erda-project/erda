@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -6,14 +19,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/istioctl"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -75,13 +87,9 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 			return fmt.Errorf("delete service %s error: %v", service.Env[ProjectNamespaceServiceNameNameKey], err)
 		}
 
-		err = k.service.Delete(ns, service.Name)
-		if err != nil {
-			return fmt.Errorf("delete service %s error: %v", service.Name, err)
-		}
-
+		originServiceName := service.Name
 		if sg.ProjectNamespace != "" {
-			service.Name = service.Env[ProjectNamespaceDeployNameKey]
+			service.Name = service.Env[ProjectNamespaceServiceNameNameKey]
 		}
 
 		switch service.WorkLoad {
@@ -94,10 +102,32 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 			return fmt.Errorf("delete resource %s, %s error: %v", service.WorkLoad, service.Name, err)
 		}
 
-		if k.istioEngine != istioctl.EmptyEngine {
-			err = k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &service)
+		labelSelector := map[string]string{
+			"app": originServiceName,
+		}
+
+		deploys, err := k.deploy.List(ns, labelSelector)
+		if err != nil {
+			return fmt.Errorf("list pod resource error: %v in the namespace %s", err, service.Name)
+		}
+
+		remainCount := 0
+		for _, deploy := range deploys.Items {
+			if deploy.DeletionTimestamp == nil {
+				remainCount++
+			}
+		}
+
+		if remainCount < 1 {
+			err = k.service.Delete(ns, originServiceName)
 			if err != nil {
-				return fmt.Errorf("delete istio resource error: %v", err)
+				return fmt.Errorf("delete service %s error: %v", service.Name, err)
+			}
+			if k.istioEngine != istioctl.EmptyEngine {
+				err = k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &service)
+				if err != nil {
+					return fmt.Errorf("delete istio resource error: %v", err)
+				}
 			}
 		}
 	}
