@@ -31,14 +31,14 @@ type Operator uint32
 const (
 	ILLEGAL Operator = iota
 
-	ADD     // +
-	SUB     // -
-	MUL     // *
-	DIV     // /
-	MOD     // %
-	BIT_AND // &
-	BIT_OR  // |
-	BIT_XOR // ^
+	ADD    // +
+	SUB    // -
+	MUL    // *
+	DIV    // /
+	MOD    // %
+	BITAND // &
+	BITOR  // |
+	BITXOR // ^
 
 	AND // &&
 	OR  // ||
@@ -61,9 +61,9 @@ var (
 		MUL:     "*",
 		DIV:     "/",
 		MOD:     "%",
-		BIT_AND: "&",
-		BIT_OR:  "|",
-		BIT_XOR: "^",
+		BITAND:  "&",
+		BITOR:   "|",
+		BITXOR:  "^",
 
 		AND: "&&",
 		OR:  "||",
@@ -1312,7 +1312,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) % int64(bv)), nil
 			}
 		}
-	case BIT_AND:
+	case BITAND:
 		switch av := a.(type) {
 		case nil:
 			switch b.(type) {
@@ -1399,7 +1399,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) & int64(bv)), nil
 			}
 		}
-	case BIT_OR:
+	case BITOR:
 		switch av := a.(type) {
 		case nil:
 			switch bv := b.(type) {
@@ -1484,7 +1484,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) | int64(bv)), nil
 			}
 		}
-	case BIT_XOR:
+	case BITXOR:
 		switch av := a.(type) {
 		case nil:
 			switch bv := b.(type) {

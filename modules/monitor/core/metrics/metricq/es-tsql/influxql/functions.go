@@ -172,7 +172,7 @@ type AggFuncDefine struct {
 
 // AggFunctions .
 var AggFunctions = map[string]*AggFuncDefine{
-	"max": &AggFuncDefine{
+	"max": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"max",
@@ -187,7 +187,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"min": &AggFuncDefine{
+	"min": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"min",
@@ -202,7 +202,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"avg": &AggFuncDefine{
+	"avg": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"avg",
@@ -217,7 +217,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"mean": &AggFuncDefine{
+	"mean": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"mean",
@@ -232,7 +232,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"sum": &AggFuncDefine{
+	"sum": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"sum",
@@ -247,7 +247,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"count": &AggFuncDefine{
+	"count": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"count",
@@ -262,7 +262,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"distinct": &AggFuncDefine{
+	"distinct": {
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"distinct",
@@ -277,7 +277,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"median": &AggFuncDefine{
+	"median": {
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
 			"median",
@@ -299,7 +299,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"percentiles": &AggFuncDefine{
+	"percentiles": {
 		Flag: FuncFlagSelect,
 		New: newMultivariateAggFunction(
 			"percentiles",
@@ -552,9 +552,9 @@ var PainlessFuntions map[string]*PainlessFuntion
 
 func init() {
 	PainlessFuntions = map[string]*PainlessFuntion{
-		"substring": &PainlessFuntion{Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
-		"tostring":  &PainlessFuntion{Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
-		"if": &PainlessFuntion{
+		"substring": {Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
+		"tostring":  {Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
+		"if": {
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 3)
 				if err != nil {
@@ -575,7 +575,7 @@ func init() {
 				return "((" + cond + ")?(" + trueExpr + "):(" + falseExpr + "))", nil
 			},
 		},
-		"eq": &PainlessFuntion{
+		"eq": {
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 2)
 				if err != nil {
@@ -592,7 +592,7 @@ func init() {
 				return "((" + left + ")==(" + right + "))", nil
 			},
 		},
-		"include": &PainlessFuntion{
+		"include": {
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsMinNum(call, 2)
 				if err != nil {
