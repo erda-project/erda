@@ -15,7 +15,7 @@ package eventtypes
 
 type StatusEvent struct {
 	Type string `json:"type"`
-	// ID由{runtimeName}.{serviceName}.{dockerID}生成
+	// ID Generate by {runtimeName}.{serviceName}.{dockerID}
 	ID      string `json:"id,omitempty"`
 	IP      string `json:"ip,omitempty"`
 	Status  string `json:"status"`

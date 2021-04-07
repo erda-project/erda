@@ -31,9 +31,9 @@ import (
 )
 
 const (
-	// DialTimeout 建立 tcp 连接的超时时间
+	// DialTimeout Timeout for establishing tcp connection
 	DialTimeout = 15 * time.Second
-	// ClientDefaultTimeout 从建立 tcp 到读完 response body 超时时间
+	// ClientDefaultTimeout The timeout period from the establishment of tcp to the completion of reading the response body
 	ClientDefaultTimeout = 60 * time.Second
 )
 
@@ -192,9 +192,9 @@ func mkDialContext(option *Option) func(ctx context.Context, network, addr strin
 				remain = addr[idx:]
 			}
 
-			// 1. address 是 IP
-			// 2. network 是 tcp.*
-			// 3. network 是 udp.*
+			// 1. address is IP
+			// 2. network is tcp.*
+			// 3. network is udp.*
 			if net.ParseIP(host) != nil || (!strings.HasPrefix(network, "tcp") && !strings.HasPrefix(network, "udp")) {
 				return raw(ctx, network, addr)
 			}

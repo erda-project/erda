@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// ParseJobHostBindTemplate 对 hostPath 进行模版解析，替换成 cluster info 值
+// ParseJobHostBindTemplate Analyze the hostPath template and replace it with the value of cluster info
 func ParseJobHostBindTemplate(hostPath string, clusterInfo apistructs.ClusterInfoData) (string, error) {
 	var b bytes.Buffer
 

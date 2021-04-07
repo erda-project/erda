@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	// DefaultServiceDNSSuffix k8s service dns 固定后缀
+	// DefaultServiceDNSSuffix k8s service dns fixed suffix
 	DefaultServiceDNSSuffix = "svc.cluster.local"
 	shardDirSuffix          = "-shard-dir"
 	sidecarNamePrefix       = "sidecar-"
@@ -63,7 +63,7 @@ func (k *Kubernetes) getDeploymentStatus(service *apistructs.Service) (apistruct
 		return statusDesc, err
 	}
 	status := deployment.Status
-	// 刚刚开始创建的时候可能获取到该状态
+	//You may get this status when you just start creating
 	if len(status.Conditions) == 0 {
 		statusDesc.Status = apistructs.StatusUnknown
 		statusDesc.LastMessage = "cannot get statusDesc condition"
@@ -110,7 +110,7 @@ func (k *Kubernetes) deleteDeployment(namespace, name string) error {
 	return k.deploy.Delete(namespace, name)
 }
 
-// AddContainersEnv 新增容器环境变量
+// AddContainersEnv Add container environment variables
 func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	var envs []apiv1.EnvVar
 	ns := MakeNamespace(sg)
@@ -120,7 +120,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		serviceName = service.Env[ProjectNamespaceServiceNameNameKey]
 	}
 
-	// 用户注入的环境变量
+	// User-injected environment variables
 	if len(service.Env) > 0 {
 		for k, v := range service.Env {
 			envs = append(envs, apiv1.EnvVar{
@@ -140,13 +140,13 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 				return err
 			}
 		}
-		// 添加{serviceName}_HOST
+		// add {serviceName}_HOST
 		*envs = append(*envs, apiv1.EnvVar{
 			Name:  makeEnvVariableName(serviceName) + "_HOST",
 			Value: host,
 		})
 
-		// {serviceName}_PORT 指代第一个端口
+		// {serviceName}_PORT Refers to the first port
 		if len(svc.Ports) > 0 {
 			*envs = append(*envs, apiv1.EnvVar{
 				Name:  makeEnvVariableName(serviceName) + "_PORT",
@@ -154,7 +154,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 			})
 		}
 
-		// 有多个端口的情况下，依次使用{serviceName}_PORT0,{serviceName}_PORT1,...
+		//If there are multiple ports, use them in sequence: {serviceName}_PORT0,{serviceName}_PORT1,...
 		for i, port := range svc.Ports {
 			*envs = append(*envs, apiv1.EnvVar{
 				Name:  makeEnvVariableName(serviceName) + "_PORT" + strconv.Itoa(i),
@@ -164,24 +164,24 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		return nil
 	}
 
-	// 所有容器都有所有service的环境变量
+	//All containers have environment variables for all services
 	if sg.ServiceDiscoveryMode == "GLOBAL" {
-		// 由于某些服务可能尚未创建，所以注入dns
-		// TODO: 也可以先将runtime的所有service的k8s service先创建出来
+		// Since some services may not be created yet, so inject dns
+		// TODO: You can also create the k8s service of all services in the runtime first
 		for _, svc := range sg.Services {
-			// 无端口暴露的服务无{serviceName}_HOST,{serviceName}_PORT等环境变量
+			// Services without port exposure have no environment variables such as {serviceName}_HOST, {serviceName}_PORT, etc.
 			if len(svc.Ports) == 0 {
 				continue
 			}
 			svc.Namespace = ns
-			// dns环境变量
+			// dns environment variables
 			if err := addEnv(&svc, &envs, false); err != nil {
 				return err
 			}
 		}
 	} else {
-		// 按约定注入依赖的服务的环境变量，比如服务A依赖服务B，
-		// 则将{B}_HOST, {B}_PORT 注入到对A可见的容器环境变量中
+		//Inject the environment variables of dependent services according to the convention, for example, service A depends on service B,
+		//Then inject {B}_HOST, {B}_PORT into the container environment variable visible to A
 		var backendURLEnv apiv1.EnvVar
 		for _, name := range service.Depends {
 			var dependSvc *apistructs.Service
@@ -202,12 +202,12 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 				continue
 			}
 
-			// 注入{B}_HOST, {B}_PORT等
+			// Inject {B}_HOST, {B}_PORT, etc.
 			if err := addEnv(dependSvc, &envs, false); err != nil {
 				return err
 			}
 
-			// 适配上层逻辑, 如果IS_ENDPOINT被赋为true, 增加BACKEND_URL环境变量
+			//Adapt the upper-level logic, if IS_ENDPOINT is assigned to true, add the BACKEND_URL environment variable
 			if service.Labels["IS_ENDPOINT"] == "true" && len(dependSvc.Ports) > 0 {
 				backendIP := strings.Join([]string{getServiceName(dependSvc), dependSvc.Namespace, DefaultServiceDNSSuffix}, ".")
 				backendPort := dependSvc.Ports[0].Port
@@ -224,7 +224,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 				serviceName, service.Namespace, backendURLEnv.Value)
 		}
 
-		// 注入服务自身的环境变量，即{A}_HOST, {A}_PORT等
+		// Inject the environment variables of the service itself, namely {A}_HOST, {A}_PORT, etc.
 		if len(service.Ports) > 0 {
 			if err := addEnv(service, &envs, false); err != nil {
 				return err
@@ -232,13 +232,13 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		}
 	}
 
-	// 加上 K8S 标识
+	// add K8S label
 	envs = append(envs, apiv1.EnvVar{
 		Name:  "IS_K8S",
 		Value: "true",
 	})
 
-	// 加上 namespace 标识
+	// add namespace label
 	envs = append(envs, apiv1.EnvVar{
 		Name:  "DICE_NAMESPACE",
 		Value: ns,
@@ -250,7 +250,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 			Value: service.NewHealthCheck.HttpHealthCheck.Path,
 		})
 	}
-	// 加上 POD_IP 及 HOST_IP
+	// add POD_IP, HOST_IP
 	envs = append(envs, apiv1.EnvVar{
 		Name: "POD_IP",
 		ValueFrom: &apiv1.EnvVarSource{
@@ -291,7 +291,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		},
 	})
 
-	// 加上 SELF_URL、SELF_HOST、SELF_PORT
+	// add SELF_URL、SELF_HOST、SELF_PORT
 	selfHost := strings.Join([]string{serviceName, service.Namespace, DefaultServiceDNSSuffix}, ".")
 	envs = append(envs, apiv1.EnvVar{
 		Name:  "SELF_HOST",
@@ -348,9 +348,9 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 }
 
 func podAnnotations(service *apistructs.Service, podannotations map[string]string) {
-	// 默认关闭 inject，不受 ns 开启 inject 的影响
+	//Inject is turned off by default, and will not be affected by turning on inject in ns
 	podannotations["sidecar.istio.io/inject"] = "false"
-	// 开启 mesh，并且启动了 security traffic 的情况下，需要劫持HTTP的健康检查
+	// When mesh is enabled and security traffic is enabled, HTTP health checks need to be hijacked
 	if service.MeshEnable != nil {
 		if *service.MeshEnable {
 			podannotations["sidecar.istio.io/inject"] = "true"
@@ -408,12 +408,10 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		{PodLabels: map[string]string{"app": service.Name}}}, k).Affinity
 	deployment.Spec.Template.Spec.Affinity = &affinity
 
-	// 注入 hosts
+	// inject hosts
 	deployment.Spec.Template.Spec.HostAliases = ConvertToHostAlias(service.Hosts)
 
-	// 1核等于1000m
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	// 1Mi=1024K=1024x1024字节
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
 	container := apiv1.Container{
@@ -428,7 +426,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		},
 	}
 
-	//根据环境设置超分比
+	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
 	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
@@ -443,7 +441,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		memSubscribeRatio = k.stagingMemSubscribeRatio
 	}
 
-	// 根据超卖比，设置细粒度的CPU
+	// Set fine-grained CPU based on the oversold ratio
 	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
 		return nil, err
 	}
@@ -452,10 +450,10 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		return nil, err
 	}
 
-	// 生成 sidecars 容器配置
+	// Generate sidecars container configuration
 	sidecars := k.generateSidecarContainers(service.SideCars)
 
-	// 生成 initcontainer 配置
+	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
 	containers := []apiv1.Container{container}
@@ -472,7 +470,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	//}
 	//}
 
-	// k8s deployment 必须得有app的label来辖管pod
+	// k8s deployment Must have app label to manage pod
 	deployment.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["app"] = service.Name
 
@@ -483,7 +481,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	}
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
-	// 按当前的设定，一个pod中只有一个用户的容器
+	// According to the current setting, there is only one user container in a pod
 	if service.Cmd != "" {
 		for i := range containers {
 			//TODO:
@@ -493,16 +491,16 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 		}
 	}
 
-	// 配置健康检查
+	// Configure health check
 	SetHealthCheck(&deployment.Spec.Template.Spec.Containers[0], service)
 
 	if err := k.AddContainersEnv(containers, service, sg); err != nil {
 		return nil, err
 	}
 
-	// TODO: 删除这段逻辑
-	// 美孚临时需求:
-	// 将 "secret" namespace 下的 secret 注入业务容器
+	// TODO: Delete this logic
+	//Mobil temporary demand:
+	// Inject the secret under the "secret" namespace into the business container
 
 	secrets, err := k.CopyDiceSecrets("secret", service.Namespace)
 	if err != nil {
@@ -572,10 +570,8 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 	}
 
 	for name, sidecar := range sidecars {
-		// 1核等于1000m
 		reqCPU := fmt.Sprintf("%.fm", k.CPUOvercommit(sidecar.Resources.CPU)*1000)
 		limitCPU := fmt.Sprintf("%.fm", sidecar.Resources.CPU*1000)
-		// 1Mi=1024K=1024x1024字节
 		memory := fmt.Sprintf("%.dMi", sidecar.Resources.Mem)
 
 		sc := apiv1.Container{
@@ -593,7 +589,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 			},
 		}
 
-		// 不塞入平台环境变量(DICE_*)，防止实例列表被采集
+		//Do not insert platform environment variables (DICE_*) to prevent the instance list from being collected
 		for k, v := range sidecar.Envs {
 			sc.Env = append(sc.Env, apiv1.EnvVar{
 				Name:  k,
@@ -601,7 +597,7 @@ func (k *Kubernetes) generateSidecarContainers(sidecars map[string]*diceyml.Side
 			})
 		}
 
-		// sidecar 与业务容器共享目录
+		// Sidecar and business container share directory
 		for _, dir := range sidecar.SharedDirs {
 			emptyDirVolumeName := strutil.Concat(name, shardDirSuffix)
 			dstMount := apiv1.VolumeMount{
@@ -621,13 +617,13 @@ func makeEnvVariableName(str string) string {
 	return strings.ToUpper(strings.Replace(str, "-", "_", -1))
 }
 
-// AddPodMountVolume 新增 pod volume 配置
+// AddPodMountVolume Add pod volume configuration
 func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *apiv1.PodSpec,
 	secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
 
 	podSpec.Volumes = make([]apiv1.Volume, 0)
 
-	// 注意上面提到的设定，一个pod中只有一个container
+	//Pay attention to the settings mentioned above, there is only one container in a pod
 	podSpec.Containers[0].VolumeMounts = make([]apiv1.VolumeMount, 0)
 
 	// get cluster info
@@ -636,12 +632,12 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 		return errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
 	}
 
-	// hostPath类型
+	// hostPath type
 	for i, bind := range service.Binds {
 		if bind.HostPath == "" || bind.ContainerPath == "" {
 			continue
 		}
-		// 名字构成 '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
+		//Name formation '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
 		name := "volume" + "-bind-" + strconv.Itoa(i)
 
 		hostPath, err := ParseJobHostBindTemplate(bind.HostPath, clusterInfo)
@@ -706,7 +702,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			})
 	}
 
-	// 配置业务容器 sidecar 共享目录
+	// Configure the business container sidecar shared directory
 	for name, sidecar := range service.SideCars {
 		for _, dir := range sidecar.SharedDirs {
 			emptyDirVolumeName := strutil.Concat(name, shardDirSuffix)
@@ -716,7 +712,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 				MountPath: dir.Main,
 				ReadOnly:  false, // rw
 			}
-			// 业务主容器
+			// Business master container
 			podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, srcMount)
 
 			podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
