@@ -25,13 +25,15 @@ import (
 
 // TuneTriggerChains 保存流水线所有触发时机下的调用链
 var TuneTriggerChains = map[aoptypes.TuneTrigger]aoptypes.TuneChain{
-	// pipeline 执行前
+	// pipeline before exec
 	aoptypes.TuneTriggerPipelineBeforeExec: []aoptypes.TunePoint{
 		echo.New(),
 		project.New(),
 		scene_before.New(),
 	},
-	// pipeline 执行后
+	// pipeline before exec precheck
+	aoptypes.TuneTriggerPipelineBeforeExecPrecheck: []aoptypes.TunePoint{},
+	// pipeline after exec
 	aoptypes.TuneTriggerPipelineAfterExec: []aoptypes.TunePoint{
 		echo.New(),
 		basic.New(),

@@ -25,8 +25,9 @@ const (
 type TuneTrigger string
 
 const (
-	TuneTriggerPipelineBeforeExec TuneTrigger = "pipeline_before_exec"
-	TuneTriggerPipelineAfterExec  TuneTrigger = "pipeline_after_exec"
+	TuneTriggerPipelineBeforeExec         TuneTrigger = "pipeline_before_exec"
+	TuneTriggerPipelineBeforeExecPrecheck TuneTrigger = "pipeline_before_exec_precheck"
+	TuneTriggerPipelineAfterExec          TuneTrigger = "pipeline_after_exec"
 
 	TuneTriggerTaskBeforeExec    TuneTrigger = "task_before_exec"
 	TuneTriggerTaskAfterExec     TuneTrigger = "task_after_exec"
