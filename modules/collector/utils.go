@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/base64"
 	"errors"
@@ -23,6 +24,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
+
+func isJSONArray(b []byte) bool {
+	x := bytes.TrimLeft(b, " \t\r\n")
+	return len(x) > 0 && x[0] == '['
+}
 
 // ReadGzip .
 func ReadGzip(body io.ReadCloser) ([]byte, error) {

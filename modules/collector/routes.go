@@ -15,7 +15,6 @@ package collector
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"hash/adler32"
 	"io"
@@ -213,9 +212,4 @@ func (c *collector) parseLine(ctx echo.Context, name string) error {
 		}
 	}
 	return ctx.NoContent(http.StatusNoContent)
-}
-
-func isJSONArray(b []byte) bool {
-	x := bytes.TrimLeft(b, " \t\r\n")
-	return len(x) > 0 && x[0] == '['
 }
