@@ -12,9 +12,7 @@ Erda is an open-source platform created by [Terminus](https://www.terminus.io/) 
 
 **Functional Architecture**
 
-<div align="center">
-	<img src="./docs/files/functional_architecture.jpg" alt="Editor" width="800">
-</div>
+![](./docs/files/functional_architecture.jpg)
 
 Erda is mainly composed of the following parts, they are
 - DevOps
@@ -56,7 +54,9 @@ We look forward to your connecting with us, you can ask us any questions.
 - 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - 微信公众号:
 
-![](./docs/files/wechat.jpg)
+<div align="left">
+	<img src="./docs/files/wechat.jpg" alt="Editor" width="150">
+</div>
 
 
 ## License
