@@ -9,6 +9,7 @@ run:
     - internal/cli/command/generate
     - internal/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
+    - third_party
   skip-files:
     - apistructs/generated_desc.go
 
