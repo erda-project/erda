@@ -56,11 +56,11 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:  "s1",
 					Vip:   "v1",
-					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8081}},
+					Ports: []diceyml.ServicePort{{Port: 8080}, {Port: 8081}},
 				},
 				{
 					Name:  "s2",
-					Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 9090}, diceyml.ServicePort{Port: 9091}},
+					Ports: []diceyml.ServicePort{{Port: 9090}, {Port: 9091}},
 				},
 				{
 					Name: "s3",
@@ -69,7 +69,7 @@ func Test_convertDeploymentRuntimeDTO(t *testing.T) {
 				{
 					Name:   "s4",
 					Vip:    "v4",
-					Ports:  []diceyml.ServicePort{diceyml.ServicePort{Port: 80}},
+					Ports:  []diceyml.ServicePort{{Port: 80}},
 					Labels: map[string]string{"HAPROXY_0_VHOST": "google.com,youtube.com"},
 				},
 				{
