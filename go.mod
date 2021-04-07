@@ -47,6 +47,7 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v2.0.1+incompatible // indirect
+	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jinzhu/gorm v1.9.16
@@ -62,6 +63,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
+	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
@@ -90,6 +92,7 @@ require (
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/text v0.3.5
+	google.golang.org/grpc v1.31.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
@@ -115,6 +118,7 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
+	github.com/influxdata/influxql => ./third_party/influxql
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 	k8s.io/api => github.com/kubernetes/api v0.18.3

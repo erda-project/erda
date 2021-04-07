@@ -9,12 +9,13 @@ run:
     - internal/cli/command/generate
     - internal/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
+    - third_party
   skip-files:
     - apistructs/generated_desc.go
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/erda-project/erda
+    # local-prefixes: github.com/erda-project/erda
 
 linters:
   disable-all: true
