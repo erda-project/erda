@@ -7,7 +7,7 @@ import (
 	"github.com/recallsong/go-utils/logs"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/providers/metrics/common"
+	"github.com/erda-project/erda/providers/common"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 

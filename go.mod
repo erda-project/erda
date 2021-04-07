@@ -12,6 +12,7 @@ require (
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
 	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
+	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
@@ -25,7 +26,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210406064843-766ab170fe54
+	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -39,6 +40,7 @@ require (
 	github.com/go-xorm/builder v0.2.0 // indirect
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
@@ -81,11 +83,12 @@ require (
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
+	github.com/valyala/fasthttp v1.23.0 // indirect
 	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	golang.org/x/mod v0.4.0 // indirect
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/text v0.3.5
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect

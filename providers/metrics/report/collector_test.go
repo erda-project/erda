@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/erda-project/erda/providers/metrics/common"
+	"github.com/erda-project/erda/providers/common"
 )
 
 func Test_reportClient_serialize(t *testing.T) {

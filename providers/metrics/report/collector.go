@@ -11,7 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/providers/metrics/common"
+	"github.com/erda-project/erda-infra/pkg/transport/http/compress"
+	"github.com/erda-project/erda/providers/common"
 )
 
 type ReportClient struct {
@@ -77,7 +78,7 @@ func (c *ReportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	}
 	base64Content := make([]byte, base64.StdEncoding.EncodedLen(len(requestContent)))
 	base64.StdEncoding.Encode(base64Content, requestContent)
-	return common.CompressWithGzip(bytes.NewBuffer(base64Content))
+	return compress.CompressWithGzip(bytes.NewBuffer(base64Content))
 }
 
 func (c *ReportClient) group(in []*common.Metric) []*NamedMetrics {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/providers/metrics/common"
+	"github.com/erda-project/erda/providers/common"
 )
 
 func Test_disruptor_push(t *testing.T) {

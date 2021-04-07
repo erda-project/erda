@@ -4,7 +4,7 @@ import (
 	"time"
 
 	parallel "github.com/erda-project/erda-infra/pkg/parallel-writer"
-	"github.com/erda-project/erda/providers/metrics/common"
+	"github.com/erda-project/erda/providers/common"
 )
 
 type Disruptor interface {
