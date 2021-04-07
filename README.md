@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
 <div align="left">
-	<img src="./docs/files/logo.jpg" alt="Editor" width="300">
+	<img src="./docs/files/logo.jpg" alt="Editor" width="350">
 </div>
 
 ## Introduction
@@ -12,7 +12,9 @@ Erda is an open-source platform created by [Terminus](https://www.terminus.io/) 
 
 **Functional Architecture**
 
-![](./docs/files/functional_architecture.jpg)
+<div align="center">
+	<img src="./docs/files/functional_architecture.jpg" alt="Editor" width="800">
+</div>
 
 Erda is mainly composed of the following parts, they are
 - DevOps
