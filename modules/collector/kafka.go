@@ -14,8 +14,9 @@
 package collector
 
 import (
-	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda-infra/providers/kafka"
 )
 
 var (

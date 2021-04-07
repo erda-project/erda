@@ -26,12 +26,13 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda/modules/collector/statik" // include static files
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda/modules/collector/statik" // include static files
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js
@@ -87,7 +88,7 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 		logrus.Errorf("fail to read request body, err: %v", err)
 		return err
 	}
-	if isJsonArray(body) {
+	if isJSONArray(body) {
 		logrus.Warningf("the body is not a json array. body=%s", string(body))
 		return ctx.NoContent(http.StatusNoContent)
 	}
@@ -214,7 +215,7 @@ func (c *collector) parseLine(ctx echo.Context, name string) error {
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func isJsonArray(b []byte) bool {
+func isJSONArray(b []byte) bool {
 	x := bytes.TrimLeft(b, " \t\r\n")
 	return len(x) > 0 && x[0] == '['
 }

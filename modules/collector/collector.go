@@ -17,14 +17,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/pkg/parallel-writer"
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 )
 
 type config struct {
