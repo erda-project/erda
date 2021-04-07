@@ -1,0 +1,4 @@
+metric-report-client:
+  addr: http://localhost:7076
+
+example:
