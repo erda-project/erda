@@ -27,7 +27,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210406064843-766ab170fe54
+	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -72,6 +72,7 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
+	github.com/recallsong/go-utils v1.1.1
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/satori/go.uuid v1.2.0
@@ -86,7 +87,6 @@ require (
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
 	github.com/valyala/fasthttp v1.23.0 // indirect
-	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
