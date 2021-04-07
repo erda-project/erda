@@ -3,6 +3,7 @@ package edge
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -296,6 +297,8 @@ func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 		appAddonType   = "addon"
 		appNsFormatter = "edgeapp-%s"
 		stsLabels      = "statefulset.kubernetes.io/pod-name"
+		offlineTag     = "dice/offline"
+		cleanDelayTime = 30 * time.Second
 	)
 
 	edgeSite, err := e.db.GetEdgeSite(edgeSiteID)
@@ -361,20 +364,33 @@ func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 		return err
 	}
 
+	node.Labels[offlineTag] = "true"
+
 	delete(node.Labels, v1alpha1.LabelDesiredNodePool)
 
 	if err = e.k8s.UpdateNode(clusterInfo.Name, node); err != nil {
 		return fmt.Errorf("update node labels error: %v", err)
 	}
 
-	if err = e.k8s.DeleteNode(clusterInfo.Name, nodeName); err != nil {
-		return fmt.Errorf("delete node %s eror: %v", nodeName, err)
-	}
+	go func() {
+		ticker := time.NewTimer(cleanDelayTime)
+		select {
+		case <-ticker.C:
+			if err = e.k8s.DeleteNode(clusterInfo.Name, nodeName); err != nil {
+				logrus.Errorf("delete node %s eror: %v", nodeName, err)
+				return
+			}
 
-	// delete monitor data.
-	if err = cleanOfflineData(clusterInfo.Name, siteIP); err != nil {
-		logrus.Errorf("clean monitor data %s error: %v", siteIP, err)
-	}
+			// delete monitor data.
+			if err = cleanOfflineData(clusterInfo.Name, siteIP); err != nil {
+				logrus.Errorf("clean monitor data %s error: %v", siteIP, err)
+			}
+			break
+		}
+		ticker.Stop()
+		logrus.Infof("offline edge host %s in cluster %s succes", siteIP, clusterInfo.Name)
+		return
+	}()
 
 	return nil
 }
