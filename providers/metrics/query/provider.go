@@ -31,7 +31,7 @@ type config struct {
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"metricq-client"} }
+func (d *define) Services() []string { return []string{"metricq-client"} }
 func (d *define) Types() []reflect.Type {
 	return []reflect.Type{
 		clientType,
