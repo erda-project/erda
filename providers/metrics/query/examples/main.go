@@ -15,40 +15,27 @@ package main
 
 import (
 	"context"
-	"os"
-
-	"github.com/recallsong/go-utils/logs"
-
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/providers/metrics/report"
+	"github.com/erda-project/erda/providers/metrics/query"
+	"os"
+	"time"
 )
 
 type define struct{}
 
-func (d *define) Service() []string {
-	return []string{"hello metric_report_client"}
-}
-
-func (d *define) Dependencies() []string {
-	return []string{"metric-report-client"}
-}
-
-func (d *define) Description() string {
-	return "hello for metric_report_client example"
+func (d *define) Services() []string      { return []string{"hello"} }
+func (d *define) Dependencies() []string { return []string{"metricq-client"} }
+func (d *define) Description() string    { return "hello for example" }
+func (d *define) Creator() servicehub.Creator {
+	return func() servicehub.Provider {
+		return &provider{}
+	}
 }
 
 type provider struct {
-	Log logs.Logger
-	//SendClient report.MetricReport
-	SendClient report.MetricReport
-}
-
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return func() servicehub.Provider {
-			return &provider{}
-		}
-	}
+	Log         logs.Logger
+	QueryClient query.MetricQuery
 }
 
 func (p *provider) Init(ctx context.Context) error {
@@ -56,24 +43,21 @@ func (p *provider) Init(ctx context.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	metric := []*report.Metric{
-		{
-			Name:      "_metric_meta",
-			Timestamp: 1614583470000,
-			Tags: map[string]string{
-				"cluster_name": "terminus-dev",
-				"meta":         "true",
-				"metric_name":  "application_db",
-			},
-			Fields: map[string]interface{}{
-				"fields": []string{"value:number"},
-				"tags":   []string{"is_edge", "org_id"},
-			},
-		},
+	request := query.CreateQueryRequest("docker_container_summary")
+	now := time.Now()
+	start, end := now.AddDate(0, 0, -1), now
+	request = request.StartFrom(start).EndWith(end).Apply("avg", "fields.cpu_usage_percent")
+	resp, err := p.QueryClient.QueryMetric(request)
+	if err != nil {
+		return err
 	}
-	client := p.SendClient.CreateReportClient(os.Getenv("COLLECTOR_ADDR"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
-	err := client.Send(metric)
-	return err
+	// 获取单值数据对象
+	point, err := resp.ReturnAsPoint()
+	p.Log.Infof("metric_name : %s", point.Name)
+	for _, data := range point.Data {
+		p.Log.Infof("cpu_usage_percent : %f", data.Data)
+	}
+	return nil
 }
 
 func init() {

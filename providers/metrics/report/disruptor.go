@@ -17,21 +17,20 @@ import (
 	"time"
 
 	parallel "github.com/erda-project/erda-infra/pkg/parallel-writer"
-	"github.com/erda-project/erda/providers/common"
 )
 
 type Disruptor interface {
-	In(metrics ...*common.Metric) error
+	In(metrics ...*Metric) error
 }
 
 type disruptor struct {
-	metrics  chan *common.Metric
-	labels   common.GlobalLabel
+	metrics  chan *Metric
+	labels   GlobalLabel
 	cfg      *config
 	reporter Reporter
 }
 
-func (d *disruptor) In(metrics ...*common.Metric) error {
+func (d *disruptor) In(metrics ...*Metric) error {
 	if len(metrics) > 0 {
 		for _, metric := range metrics {
 			for k, v := range d.labels {
@@ -45,10 +44,10 @@ func (d *disruptor) In(metrics ...*common.Metric) error {
 	return nil
 }
 
-func (d *disruptor) dataToMetric(data []interface{}) []*common.Metric {
-	resultArr := make([]*common.Metric, 0)
+func (d *disruptor) dataToMetric(data []interface{}) []*Metric {
+	resultArr := make([]*Metric, 0)
 	for _, v := range data {
-		m, ok := v.(*common.Metric)
+		m, ok := v.(*Metric)
 		if ok {
 			resultArr = append(resultArr, m)
 		}
@@ -57,7 +56,7 @@ func (d *disruptor) dataToMetric(data []interface{}) []*common.Metric {
 }
 
 func (d *disruptor) push() {
-	go func(queue chan *common.Metric, reporter Reporter, queueSize int) {
+	go func(queue chan *Metric, reporter Reporter, queueSize int) {
 		reportWrite := NewReportWrite(queueSize)
 		buf := parallel.NewBuffer(reportWrite, queueSize)
 		ticker := time.NewTicker(time.Second * time.Duration(5))
