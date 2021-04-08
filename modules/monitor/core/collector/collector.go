@@ -40,7 +40,7 @@ type config struct {
 
 type define struct{}
 
-func (m *define) Services() []string      { return []string{"metrics-collector"} }
+func (m *define) Services() []string     { return []string{"metrics-collector"} }
 func (m *define) Dependencies() []string { return []string{"http-server", "kafka-producer"} }
 func (m *define) Summary() string        { return "log and metrics collector" }
 func (m *define) Description() string    { return m.Summary() }
