@@ -16,7 +16,6 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
