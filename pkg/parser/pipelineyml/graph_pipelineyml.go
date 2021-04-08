@@ -74,24 +74,27 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 		s.Stages = append(s.Stages, &Stage{Actions: actions})
 	}
 
-	params := frontendYmlSpec.Params
 	var pipelineParams []*PipelineParam
-	if params != nil {
-		for _, param := range params {
-			pipelineInput := toPipelineYamlParam(param)
-			pipelineParams = append(pipelineParams, pipelineInput)
-		}
+	for _, param := range frontendYmlSpec.Params {
+		pipelineInput := toPipelineYamlParam(param)
+		pipelineParams = append(pipelineParams, pipelineInput)
 	}
-	outputs := frontendYmlSpec.Outputs
+
 	var pipelineOutputs []*PipelineOutput
-	if outputs != nil {
-		for _, output := range outputs {
-			pipelineOutput := toPipelineYamlOutput(output)
-			pipelineOutputs = append(pipelineOutputs, pipelineOutput)
-		}
+	for _, output := range frontendYmlSpec.Outputs {
+		pipelineOutput := toPipelineYamlOutput(output)
+		pipelineOutputs = append(pipelineOutputs, pipelineOutput)
 	}
+
 	s.Params = pipelineParams
 	s.Outputs = pipelineOutputs
+
+	var lifecycle []*HookInfo
+	for _, hookInfo := range frontendYmlSpec.Lifecycle {
+		hookInfo := toPipelineYamlHookInfo(hookInfo)
+		lifecycle = append(lifecycle, hookInfo)
+	}
+	s.Lifecycle = lifecycle
 
 	return GenerateYml(s)
 }
@@ -240,5 +243,13 @@ func toPipelineYamlOutput(outputs *apistructs.PipelineOutput) (pipelineOutput *P
 		Desc: outputs.Desc,
 		Name: outputs.Name,
 		Ref:  outputs.Ref,
+	}
+}
+
+func toPipelineYamlHookInfo(hookInfo *apistructs.HookInfo) (pipelineHookInfo *HookInfo) {
+	return &HookInfo{
+		Hook:   hookInfo.Hook,
+		Client: hookInfo.Client,
+		Labels: hookInfo.Labels,
 	}
 }

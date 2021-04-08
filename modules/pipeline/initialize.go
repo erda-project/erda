@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/lifecycle"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
@@ -174,6 +175,9 @@ func do() (*httpserver.Server, error) {
 
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
+
+	// cache client information
+	go lifecycle.RegisterLifecycleHookClient(dbClient)
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)

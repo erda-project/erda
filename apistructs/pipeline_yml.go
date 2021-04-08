@@ -54,6 +54,15 @@ type PipelineYml struct {
 	//    2) 用户传入的为 YAML(spec.PipelineYml) 时，返回优化后的 YAML(spec.PipelineYml)
 	YmlContent string         `json:"ymlContent,omitempty"`
 	On         *TriggerConfig `json:"on,omitempty"`
+
+	// describe the use of network hooks in the pipeline
+	Lifecycle []*HookInfo `json:"lifecycle"`
+}
+
+type HookInfo struct {
+	Hook   string                 `json:"hook"`   // hook type
+	Client string                 `json:"client"` // use network client
+	Labels map[string]interface{} `json:"labels"` // additional information
 }
 
 type TriggerConfig struct {
