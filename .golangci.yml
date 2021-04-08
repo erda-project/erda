@@ -15,7 +15,7 @@ run:
 
 linters-settings:
   goimports:
-    # local-prefixes: github.com/erda-project/erda
+    #local-prefixes: github.com/erda-project/erda
 
 linters:
   disable-all: true

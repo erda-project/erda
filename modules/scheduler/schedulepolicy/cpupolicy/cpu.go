@@ -19,8 +19,7 @@ import (
 	"strconv"
 )
 
-// 应用公式 round(x+1.5**(-3.6*x)*1.6*x,1)
-// 具体参考 http://git.terminus.io/dice/dice/blob/develop/scripts/cpu_policy/policy.org
+// Application formula round(x+1.5**(-3.6*x)*1.6*x,1)
 func AdjustCPUSize(origin float64) float64 {
 	value := origin + math.Pow(1.5, -3.0*origin)*0.9*origin
 	value_, _ := strconv.ParseFloat(fmt.Sprintf("%.1f", value), 64)
