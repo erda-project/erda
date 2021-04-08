@@ -235,4 +235,3 @@ func (p *Pipeline) GetResourceGCTTL() uint64 {
 	}
 	return resourceGCTTL
 }
-
