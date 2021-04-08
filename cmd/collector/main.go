@@ -18,10 +18,10 @@ import (
 	"github.com/erda-project/erda-infra/modcom"
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/kafka"
-	_ "github.com/erda-project/erda/modules/collector"
+	_ "github.com/erda-project/erda/modules/monitor/core/collector"
 )
 
-//go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/collector"
+//go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
-	modcom.RunWithCfgDir("conf/monitor", "collector")
+	modcom.RunWithCfgDir("conf/collector", "collector")
 }

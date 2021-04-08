@@ -31,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda/modules/collector/statik" // include static files
+	_ "github.com/erda-project/erda/modules/monitor/core/collector/statik" // include static files
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js
