@@ -52,6 +52,7 @@ require (
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/gommon v0.3.0
 	github.com/lib/pq v1.3.0 // indirect
