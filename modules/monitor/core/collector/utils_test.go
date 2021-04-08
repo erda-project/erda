@@ -18,6 +18,7 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -36,7 +37,7 @@ func TestReadRequestBody_b64_gzip(t *testing.T) {
 	r, err := ReadRequestBodyReader(req)
 
 	assert.Nil(t, err)
-	body, err := io.ReadAll(r)
+	body, err := ioutil.ReadAll(r)
 	assert.Nil(t, err)
 	assert.Equal(t, bodyContent, string(body))
 }
@@ -48,7 +49,7 @@ func TestReadRequestBody_b64(t *testing.T) {
 	r, err := ReadRequestBodyReader(req)
 
 	assert.Nil(t, err)
-	body, err := io.ReadAll(r)
+	body, err := ioutil.ReadAll(r)
 	assert.Nil(t, err)
 	assert.Equal(t, bodyContent, string(body))
 }
@@ -59,7 +60,7 @@ func TestReadRequestBody(t *testing.T) {
 	r, err := ReadRequestBodyReader(req)
 
 	assert.Nil(t, err)
-	body, err := io.ReadAll(r)
+	body, err := ioutil.ReadAll(r)
 	assert.Nil(t, err)
 	assert.Equal(t, bodyContent, string(body))
 }
@@ -70,7 +71,7 @@ func mockRequest(body io.Reader) *http.Request {
 }
 
 func gzipRequest(req *http.Request) {
-	content, err := io.ReadAll(req.Body)
+	content, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,7 +89,7 @@ func gzipRequest(req *http.Request) {
 	body := io.Reader(bytes.NewReader(b.Bytes()))
 	rc, ok := (body).(io.ReadCloser)
 	if !ok && body != nil {
-		rc = io.NopCloser(body)
+		rc = ioutil.NopCloser(body)
 	}
 
 	req.Body = rc
@@ -96,7 +97,7 @@ func gzipRequest(req *http.Request) {
 }
 
 func b64Request(req *http.Request) {
-	content, err := io.ReadAll(req.Body)
+	content, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +105,7 @@ func b64Request(req *http.Request) {
 	body := io.Reader(strings.NewReader(base64.StdEncoding.EncodeToString(content)))
 	rc, ok := (body).(io.ReadCloser)
 	if !ok && body != nil {
-		rc = io.NopCloser(body)
+		rc = ioutil.NopCloser(body)
 	}
 	req.Body = rc
 	req.Header.Set("Custom-Content-Encoding", "base64")
