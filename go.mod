@@ -47,10 +47,12 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v2.0.1+incompatible // indirect
+	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/gommon v0.3.0
 	github.com/lib/pq v1.3.0 // indirect
@@ -62,6 +64,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
+	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
@@ -101,10 +104,10 @@ require (
 	honnef.co/go/tools v0.0.1-2020.1.6 // indirect
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
-	k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.19.6
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kubernetes v1.19.6
+	k8s.io/kubernetes v1.18.3
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
@@ -115,16 +118,34 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
+	github.com/influxdata/influxql => ./third_party/influxql
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
-	k8s.io/api => github.com/kubernetes/api v0.18.3
-	k8s.io/apiextensions-apiserver => github.com/kubernetes/apiextensions-apiserver v0.18.3
-	k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.18.3
-	k8s.io/apiserver => github.com/kubernetes/apiserver v0.18.3
-	k8s.io/client-go => github.com/kubernetes/client-go v0.18.3
-	k8s.io/component-base => github.com/kubernetes/component-base v0.18.3
-	k8s.io/klog => github.com/kubernetes/klog v1.0.0
-	k8s.io/kube-scheduler => github.com/kubernetes/kube-scheduler v0.18.3
-	k8s.io/kubectl => github.com/kubernetes/kubectl v0.18.3
-	k8s.io/kubernetes => github.com/kubernetes/kubernetes v1.13.5
+
+	k8s.io/api => k8s.io/api v0.18.3
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.3
+	k8s.io/apimachinery => k8s.io/apimachinery v0.18.3
+	k8s.io/apiserver => k8s.io/apiserver v0.18.3
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.18.3
+	k8s.io/client-go => k8s.io/client-go v0.18.3
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.3
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.18.3
+	k8s.io/code-generator => k8s.io/code-generator v0.18.3
+	k8s.io/component-base => k8s.io/component-base v0.18.3
+	k8s.io/component-helpers => k8s.io/component-helpers v0.18.3
+	k8s.io/controller-manager => k8s.io/controller-manager v0.18.3
+	k8s.io/cri-api => k8s.io/cri-api v0.18.3
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.18.3
+	k8s.io/klog => k8s.io/klog v1.0.0
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.18.3
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.18.3
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.18.3
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.18.3
+	k8s.io/kubectl => k8s.io/kubectl v0.18.3
+	k8s.io/kubelet => k8s.io/kubelet v0.18.3
+	k8s.io/kubernetes => k8s.io/kubernetes v1.18.3
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.18.3
+	k8s.io/metrics => k8s.io/metrics v0.18.3
+	k8s.io/mount-utils => k8s.io/mount-utils v0.18.3
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.18.3
 )
