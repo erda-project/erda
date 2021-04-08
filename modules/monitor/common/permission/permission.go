@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -251,12 +252,12 @@ func ProjectIdFromParams() func(ctx httpserver.Context) (string, error) {
 }
 
 func projectIdFromParams(ctx httpserver.Context) (string, error) {
-	projectId := api.ProjectId(ctx.Request())
+	projectId := ProjectId(ctx.Request())
 	return projectId, nil
 }
 
 func tkFromParams(ctx httpserver.Context, db *table.DB) (string, error) {
-	tk := api.Tk(ctx.Request())
+	tk := Tk(ctx.Request())
 	projectId, err := db.Monitor.SelectProjectIdByTk(tk)
 	return projectId, err
 }
@@ -339,4 +340,40 @@ func OrgIDByOrgName(key string) func(ctx httpserver.Context) (string, error) {
 		ctx.SetAttribute("Org-ID", int(orgInfo.ID))
 		return strconv.Itoa(int(orgInfo.ID)), nil
 	}
+}
+
+func ProjectId(r *http.Request) string {
+	projectId := ""
+	queries := strings.Split(r.URL.RawQuery, "&")
+
+	for _, value := range queries {
+
+		param := strings.Split(value, "=")
+		k := param[0]
+		v := param[1]
+
+		if "projectId" == k || "project_id" == k {
+			projectId = v
+			break
+		}
+	}
+	return projectId
+}
+
+func Tk(r *http.Request) string {
+	tk := ""
+	queries := strings.Split(r.URL.RawQuery, "&")
+
+	for _, value := range queries {
+
+		param := strings.Split(value, "=")
+		k := param[0]
+		v := param[1]
+
+		if "terminusKey" == k || "terminus_key" == k {
+			tk = v
+			break
+		}
+	}
+	return tk
 }
