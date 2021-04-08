@@ -44,91 +44,91 @@ const (
 	// EXECUTOR_K8SJOB k8sjob
 	EXECUTOR_K8SJOB = "K8SJOB"
 
-	// ENABLETAG 是否开启标签调度的
+	// ENABLETAG Whether to enable label scheduling
 	ENABLETAG = "ENABLETAG"
 
-	// DCOS_ATTRIBUTE dice 约定的限制条件的标识
+	// DCOS_ATTRIBUTE The identification of the restriction conditions agreed by dice
 	DCOS_ATTRIBUTE = "dice_tags"
 
-	// ORG_KEY apistructs.ServiceGroup.Labels 中的 key
+	// ORG_KEY key of pistructs.ServiceGroup.Labels
 	// org label example: "DICE_ORG_NAME": "org-xxxx"
 	ORG_KEY = "DICE_ORG_NAME"
-	// ORG_VALUE_PREFIX org label 前缀
+	// ORG_VALUE_PREFIX org label prefix
 	ORG_VALUE_PREFIX = "org-"
-	// ENABLE_ORG 是否打开 org 调度
+	// ENABLE_ORG Whether to open org scheduling
 	ENABLE_ORG = "ENABLE_ORG"
 
 	// WORKSPACE_KEY apistructs.ServiceGroup.Labels 中的 key
 	// workspace label example: "DICE_WORKSPACE" : "workspace-xxxx"
 	WORKSPACE_KEY = "DICE_WORKSPACE"
-	// WORKSPACE_VALUE_PREFIX workspace label 前缀
+	// WORKSPACE_VALUE_PREFIX workspace label prefix
 	WORKSPACE_VALUE_PREFIX = "workspace-"
-	// ENABLE_WORKSPACE 是否打开 workspace 调度
+	// ENABLE_WORKSPACE Whether to open workspace scheduling
 	ENABLE_WORKSPACE = "ENABLE_WORKSPACE"
 
-	// CPU_SUBSCRIBE_RATIO 配置中超卖比的 key
+	// CPU_SUBSCRIBE_RATIO The key of the oversold ratio in the configuration
 	CPU_SUBSCRIBE_RATIO = "CPU_SUBSCRIBE_RATIO"
-	// CPU_NUM_QUOTA 配置 quota 值
+	// CPU_NUM_QUOTA Configure the quota value
 	CPU_NUM_QUOTA = "CPU_NUM_QUOTA"
 
-	// WORKSPACE_DEV dev 环境
+	// WORKSPACE_DEV dev environment
 	WORKSPACE_DEV = "dev"
-	// WORKSPACE_TEST test 环境
+	// WORKSPACE_TEST test environment
 	WORKSPACE_TEST = "test"
-	// WORKSPACE_STAGING staging 环境
+	// WORKSPACE_STAGING staging environment
 	WORKSPACE_STAGING = "staging"
-	// WORKSPACE_PROD prod 环境
+	// WORKSPACE_PROD prod environment
 	WORKSPACE_PROD = "prod"
 
-	// 对 Staging 和 Prod 的 job 可以配置目的工作区，比如:
+	// You can configure the destination workspace for Staging and Prod jobs, such as:
 	// "STAGING_JOB_DEST":"dev"
 	// "PROD_JOB_DEST":"dev,test"
 
-	// STAGING_JOB_DEST staging 环境的 JOB 可以运行的环境，如果没有配置，则只允许在原本所属环境（staging）
+	// STAGING_JOB_DEST The environment where JOB of the staging environment can run. If there is no configuration, only the environment where it belongs (staging)
 	STAGING_JOB_DEST = "STAGING_JOB_DEST"
-	// PROD_JOB_DEST prod 环境的 JOB 可以运行的环境，如果没有配置，则只允许在原本所属环境（prod）
+	// PROD_JOB_DEST The environment in which the JOB of the prod environment can run. If there is no configuration, it is only allowed in the original environment (prod)
 	PROD_JOB_DEST = "PROD_JOB_DEST"
 
-	// SPECIFIC_HOSTS 指定节点调度的特定key
+	// SPECIFIC_HOSTS Specify a specific key for node scheduling
 	SPECIFIC_HOSTS = "SPECIFIC_HOSTS"
 
-	// HOST_UNIQUE 服务打散在不同节点
-	// value: 是个json结构的字符串
+	// HOST_UNIQUE Services are scattered in different nodes
+	// value: Is a string of json structure
 	// e.g. [["service1-name", "service2-name"], ["service3-name"]]
-	// value 代表打散的分组，比如上面的例子， service1 和 service2 互相打散，service3 自身为一组
+	// value Represents broken groups. For example, in the above example, service1 and service2 are separated from each other, and service3 itself is a group
 	HOST_UNIQUE = "HOST_UNIQUE"
 
-	// PLATFORM 服务是否属于平台组件
+	// PLATFORM Whether the service is a platform component
 	PLATFORM = "PLATFORM"
 
 	LOCATION_PREFIX = "LOCATION-"
 
 	// K8SLabelPrefix K8S label prefix
-	// node 和 pod 的 label 都用这个前缀
+	// Both node and pod labels use this prefix
 	K8SLabelPrefix = "dice/"
 )
 
-// LabelPipelineFunc labelpipeline 中的所有 filter 函数的类型
+// LabelPipelineFunc Types of all filter functions in labelpipeline
 type LabelPipelineFunc func(*RawLabelRuleResult, *RawLabelRuleResult2, *LabelInfo)
 
-// RawLabelRuleResult label 调度模块最终输出结果结构
+// RawLabelRuleResult label The final output structure of the scheduling module
 type RawLabelRuleResult = apistructs.ScheduleInfo
 
 type RawLabelRuleResult2 = apistructs.ScheduleInfo2
 
-// LabelInfo label 调度模块输入结构
+// LabelInfo label Scheduling module input structure
 type LabelInfo struct {
-	// job 或 runtime 的 label 字段
+	// The label field of job or runtime
 	Label map[string]string
-	// label 所在的 job 或 runtime 对应的 executor name
+	// The executor name corresponding to the job or runtime where the label is located
 	ExecutorName string
-	// label 所在的 job 或 runtime 对应的 executor kind
+	// The executor kind corresponding to the job or runtime where the label is located
 	ExecutorKind string
-	// ExecutorConfig 集群配置
+	// ExecutorConfig cluster configure
 	ExecutorConfig *executortypes.ExecutorWholeConfigs
-	// label 所在的 job 或 runtime 对应的 executor optionsPlus
+	// executor optionsPlus corresponding to the job or runtime where the label is located
 	OptionsPlus *conf.OptPlus
-	// label 宿主（runtime 或者 job）的名字
+	// label host (runtime or job) name
 	ObjName string
 	// Selectors map[servicename]diceyml.Selectors
 	Selectors map[string]diceyml.Selectors

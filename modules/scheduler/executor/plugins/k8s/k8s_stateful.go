@@ -42,12 +42,12 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 
 	logrus.Infof("parsed multi addon group, name: %s, number: %v", sg.ID, num)
 
-	// store 分组标识与该标识下的服务的映射
+	// store The mapping between the group ID and the service under the ID
 	// e.g. redis : [redis-1, redis-2]
 	store := make(map[string][]apistructs.Service)
-	// rstore 是 store 的反向存储，服务与分组标识的映射
+	// rstore is the reverse storage of store, the mapping between service and group identification
 	rstore := make(map[string]string)
-	// 分组标识与分组标识之间的依赖，key 依赖 value
+	// The dependency between the group ID and the group ID, the key depends on the value
 	groupDep := make(map[string][]string)
 
 	for i := range sg.Services {
@@ -76,15 +76,15 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 		serviceGroup.Dice.ID = k
 		serviceGroup.Dice.Type = sg.Dice.Type
 		serviceGroup.Dice.Services = v
-		// 记录一个group下所有service名字, e.g. redis 这个groupID 下有 [redis-1, redis-2]
+		// Record all service names under a group, e.g. redis has [redis-1, redis-2] under this groupID
 		groupSrv := map[string]bool{}
 		for i := range v {
 			groupSrv[v[i].Name] = true
 		}
 
-		// 修正 service 的 depends 字段
-		// 该 group 下任一服务的依赖只能是该 group 下的服务
-		// 服务跨 group 的依赖转换成 group 之间的依赖，即statefulset之间的创建顺序
+		// Fix the depends field of service
+		// The dependency of any service under the group can only be the service under the group
+		// The dependency of the service across the group is converted into the dependency between the groups, that is, the order of creation between statefulsets
 		for i := range v {
 			idx := 0
 			for _, depend := range v[i].Depends {
@@ -101,7 +101,7 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 		groups = append(groups, serviceGroup)
 	}
 
-	// 构建virtualGroup, 根据 groupDep 调整 groups 的顺序, 保证被依赖的 statefulset 先被创建
+	// Construct a virtualGroup, adjust the order of groups according to groupDep, and ensure that the dependent statefulset is created first
 	virtualGroup := &apistructs.ServiceGroup{}
 	for i := range groups {
 		virtualGroup.Services = append(virtualGroup.Services, apistructs.Service{
@@ -121,7 +121,7 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 	if err != nil {
 		return nil, errors.Errorf("failed to adjust group sequence, (%v)", err)
 	}
-	// sortedGroup 按 virtualGroup 排好的依赖顺序安置group的id
+	// sortedGroup arranges group id in the order of dependency arranged by virtualGroup
 	sortedGroup := []string{}
 	for i := range layers {
 		for j := range layers[i] {
@@ -144,22 +144,22 @@ func groupStatefulset(sg *apistructs.ServiceGroup) ([]*apistructs.ServiceGroup, 
 	return groups, nil
 }
 
-// 初始化annotations, annotations目的是记录该编号对应的原始服务名称
-// annotations 不仅要记录一个 statefulset 内的编号(NO, N1...),
-// 还要记录分组的组号, 因为有的环境变量会跨组依赖
-// 比如 1主1从3哨兵的 redis 的 runtime, 1主1从是一组(一个 statefulset 内),
-// 3个 sentinel 是一组, 而 sentinel 里却有主和从的环境变量的依赖,
-// 即 sentinel 里有诸如 ${REDIS_MASTER_HOST}, ${REDIS_SLAVE_PORT} 环境变量
+// Initialize annotations, the purpose of annotations is to record the original service name corresponding to the number
+// annotations not only need to record the number (NO, N1...) in a statefulset,
+// Also record the group number of the group, because some environment variables will depend on cross-group
+// For example, 1 master 1 slave 3 sentinel redis runtime, 1 master 1 slave is a group (within a statefulset),
+// The three sentinels are a group, and sentinel has the dependency of the master and slave environment variables.
+// That is, there are environment variables such as ${REDIS_MASTER_HOST}, ${REDIS_SLAVE_PORT} in sentinel
 
-// 格式: G0_N0
-// globalSeq 是全局分组号，代表的是服务隶属于第几个组
-// N0 是在一组中的顺序号
+// format: G0_N0
+// globalSeq is the global group number, which represents how many groups the service belongs to
+// N0 is the sequence number in a group
 func initAnnotations(layers [][]*apistructs.Service, globalSeq int) map[string]string {
 	order := 0
 	annotations := map[string]string{}
 	for _, layer := range layers {
 		for j := range layer {
-			// 记录该编号对应的原始服务名称
+			// Record the original service name corresponding to the number
 			// e.g. annotations["G0_N1"]="redis-slave"
 			key := strutil.Concat("G", strconv.Itoa(globalSeq), "_N", strconv.Itoa(order))
 			annotations[key] = layer[j].Name
@@ -171,7 +171,7 @@ func initAnnotations(layers [][]*apistructs.Service, globalSeq int) map[string]s
 			// annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")] = layer[j].Labels[groupID]
 			annotations[strutil.Concat("G", strconv.Itoa(globalSeq), "_ID")], _ = getGroupID(layer[j])
 
-			// 记录各个服务的PORT
+			// Record the PORT of each service
 			// redis-slave -> redis_slave -> REDIS_SLAVE_PORT
 			if len(layer[j].Ports) > 0 {
 				name := strings.Replace(layer[j].Name, "-", "_", -1)
@@ -188,8 +188,8 @@ func initAnnotations(layers [][]*apistructs.Service, globalSeq int) map[string]s
 	return annotations
 }
 
-// 1，确定各个服务的编号，从0开始
-// 2，搜集各个服务的环境变量
+// 1， Determine the number of each service, starting from 0
+// 2， Collect environment variables of each service
 func (k *Kubernetes) initGroupEnv(layers [][]*apistructs.Service, annotations map[string]string) map[string]string {
 	order := 0
 	allEnv := make(map[string]string)
@@ -225,7 +225,7 @@ func (k *Kubernetes) initGroupEnv(layers [][]*apistructs.Service, annotations ma
 	return allEnv
 }
 
-// 将中间件中带变量的环境变量解析出来，如TERMINUS_ZOOKEEPER_1_HOST=${terminus-zookeeper-1}
+// Resolve the environment variables with variables in the middleware, such as TERMINUS_ZOOKEEPER_1_HOST=${terminus-zookeeper-1}
 func parseSpecificEnv(val string, annotations map[string]string) (string, bool) {
 	results := envReg.FindAllString(val, -1)
 	if len(results) == 0 {
@@ -241,13 +241,13 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 		}
 		// e.g. ${REDIS_HOST} -> REDIS_HOST
 		key := str[2 : len(str)-1]
-		// 目前只支持在变量中解析 _HOST, _PORT 类型的变量
+		// Currently only supports parsing _HOST, _PORT type variables in variables
 		if strings.Contains(key, "_HOST") {
 			pos := strings.LastIndex(key, "_")
 			name := strings.TrimSuffix(key[:pos], "_HOST")
 			name = toServiceName(name)
 
-			// seq 值 "G0_N1" 代表第0分组(statefulset), 在该分组里的序号是1
+			// The seq value "G0_N1" represents the 0th group (statefulset), the serial number in this group is 1
 			bigSeq, ok := annotations[name]
 			if !ok {
 				logrus.Errorf("failed to parse env as not found in annotations,"+
@@ -261,7 +261,7 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 			}
 			// "N1" -> "1"
 			seq := seqs[1][1:]
-			// e.g. G0_ID, G1_ID, 组号标识
+			// e.g. G0_ID, G1_ID, Group ID
 			id, ok := annotations[strutil.Concat(seqs[0], "_ID")]
 			if !ok {
 				logrus.Errorf("failed to get group id from annotations, key: %s, groupseq: %s", key, seqs[0])
@@ -273,7 +273,7 @@ func parseSpecificEnv(val string, annotations map[string]string) (string, bool) 
 			if ok {
 				replace[bracedKey] = strutil.Concat(id, "-", seq, ".", id, ".", ns, ".svc.cluster.local")
 			} else {
-				// e.g. 用户设置的 id 为 web, 在statefulset中的实例序列号为1，则该pod的短域名为web-1.web
+				// e.g. The id set by the user is web, and the instance serial number in the statefulset is 1, then the short domain name of the pod is web-1.web
 				replace[bracedKey] = strutil.Concat(id, "-", seq, ".", id)
 			}
 
@@ -306,15 +306,15 @@ func toServiceName(origin string) string {
 	return strings.Replace(strings.ToLower(origin), "_", "-", -1)
 }
 
-// 创建 statefulset 的 service, statefulset下的各个实例都有相应的 dns 域名
-// 每个实例的域名规则：{podName}.{serviceName}.{namespace}.svc.cluster.local
-// 暂不使用 headless service
+// Create a statefulset service, each instance under statefulset has a corresponding dns domain name
+// Domain name rules for each instance：{podName}.{serviceName}.{namespace}.svc.cluster.local
+// Not in use headless service
 func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 	if len(sg.Services[0].Ports) == 0 {
 		return nil
 	}
-	// TODO: 和无状态 service 区分开
-	// 构建一个 statefulset 的 service
+	// TODO: Distinguish from stateless services
+	// Build a statefulset service
 	svc := sg.Services[0]
 
 	newService(&svc)
@@ -325,16 +325,16 @@ func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 		return err
 	}
 	v, ok := sg.Services[0].Labels["HAPROXY_0_VHOST"]
-	// 无外部域名
+	// No external domain name
 	if !ok {
 		return nil
 	}
-	// 将label中HAPROXY_0_VHOST对应的域名/vip集合都转发到该服务的第0个端口上
+	// Forward the domain name/vip set corresponding to HAPROXY_0_VHOST in the label to the 0th port of the service
 	publicHosts := strings.Split(v, ",")
 	if len(publicHosts) == 0 {
 		return nil
 	}
-	// 创建ingress
+	// create ingress
 	rules := buildRules(publicHosts, svc.Name, sg.Services[0].Ports[0].Port)
 	tls := buildTLS(publicHosts)
 	ingress := &extensionsv1beta1.Ingress{
@@ -355,7 +355,7 @@ func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 	return k.ingress.Create(ingress)
 }
 
-// TODO: 状态要更精确
+// TODO: State need more precise
 func (k *Kubernetes) GetStatefulStatus(sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
 	var status apistructs.StatusDesc
 	namespace := MakeNamespace(sg)
@@ -367,11 +367,11 @@ func (k *Kubernetes) GetStatefulStatus(sg *apistructs.ServiceGroup) (apistructs.
 
 	logrus.Infof("in getStatefulStatus, name: %s, namespace: %s", statefulName, namespace)
 
-	// 只有一个 statefulset
+	// only one statefulset
 	if !strings.HasPrefix(namespace, "group-") {
 		return k.getOneStatus(namespace, statefulName)
 	}
-	// 有多个 statefulset，需要组合状态
+	// have many statefulset， Need to combine state
 	groups, err := groupStatefulset(sg)
 	if err != nil {
 		return status, err
@@ -455,7 +455,6 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 		if err != nil && err != k8serror.ErrNotFound {
 			return nil, err
 		}
-		// 从存储在statefulset中的anno
 		key := strutil.Concat("G", strconv.Itoa(groupNum), "_N", strconv.Itoa(i))
 		serviceName, ok := set.Annotations[key]
 		if !ok {
@@ -509,7 +508,7 @@ func (k *Kubernetes) inspectOne(g *apistructs.ServiceGroup, namespace, name stri
 	return groupInfo, nil
 }
 
-// inspect 多个 statefulset
+// inspect multiple statefulset
 func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name string) (*apistructs.ServiceGroup, error) {
 	mygroups, err := groupStatefulset(g)
 	if err != nil {
@@ -519,7 +518,7 @@ func (k *Kubernetes) inspectGroup(g *apistructs.ServiceGroup, namespace, name st
 
 	var groupsInfo []*OneGroupInfo
 	for i, group := range mygroups {
-		// 先找到groupNum
+		// First find groupNum
 		//for k, v := range
 		oneGroup, err := k.inspectOne(g, namespace, group.ID, i)
 		if err != nil {
@@ -562,7 +561,7 @@ func existedInSlice(array []string, elem string) bool {
 	return false
 }
 
-// todo: 兼容老的标识
+// todo: Compatible with old labels
 func getGroupNum(sg *apistructs.ServiceGroup) (string, bool) {
 	if group, ok := sg.Labels[groupNum]; ok {
 		return group, ok

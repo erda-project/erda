@@ -26,10 +26,10 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// 同步策略:
-// 0. 周期性的列出所有 deployment , statefulset, pod  的状态
+//Synchronization strategy:
+// 0. Periodically list all deployment, statefulset, and pod states
 // 1. watch deployment, statefulset, pod
-// TODO: 2. watch event for more detail messages(辅助信息)
+// TODO: 2. watch event for more detail messages
 
 type deploymentUtils interface {
 	// watch deployment in all namespace, use ctx to cancel
@@ -179,7 +179,7 @@ func (s *Syncer) listSyncPod(ctx context.Context) {
 		logrus.Infof("export podlist info end: %s", s.addr)
 		logrus.Infof("updatepods for: %s", s.addr)
 		// it is last part of pod list, so execute gcAliveInstancesInDB
-		// 每2次完整遍历完之后触发一次 gcAliveInstancesInDB
+		// GcAliveInstancesInDB is triggered after every 2 complete traversals
 		cost := int(time.Now().Sub(initUpdateTime).Seconds())
 		if err := gcAliveInstancesInDB(s.dbupdater, cost, s.clustername); err != nil {
 			logrus.Errorf("failed to gcAliveInstancesInDB: %v", err)

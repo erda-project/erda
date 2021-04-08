@@ -117,7 +117,7 @@ func (r *instanceReader) ByFinishedTime(beforeNday int) *instanceReader {
 	return r
 }
 func (r *instanceReader) ByUpdatedTime(beforeNSecs int) *instanceReader {
-	//使用scheduler时间查询，避免sceduler跟数据库时间不一致导致实例误GC
+	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
 	now := time.Now().Format("2006-01-02 15:04:05")
 	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < '%s' - interval %d second", now, beforeNSecs))
 	return r

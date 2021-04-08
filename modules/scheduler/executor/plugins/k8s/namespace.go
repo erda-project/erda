@@ -22,12 +22,12 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// MakeNamespace 生成一个 Namespace 名字
-// 每一个runtime对应到k8s上是一个k8s namespace,
-// 格式为 ${runtimeNamespace}--${runtimeName}
+// MakeNamespace Generate a Namespace name
+// Each runtime corresponds to a k8s namespace on k8s,
+// format is ${runtimeNamespace}--${runtimeName}
 func MakeNamespace(sg *apistructs.ServiceGroup) string {
 	if IsGroupStateful(sg) {
-		// 针对需要拆成多个 statefulset 的 servicegroup 创建一个新的 namespace, 即加上group-的前缀
+		// Create a new namespace for the servicegroup that needs to be split into multiple statefulsets, that is, add the group- prefix
 		if v, ok := sg.Labels[groupNum]; ok && v != "" && v != "1" {
 			return strutil.Concat("group-", sg.Type, "--", sg.ID)
 		}
@@ -35,7 +35,7 @@ func MakeNamespace(sg *apistructs.ServiceGroup) string {
 	return strutil.Concat(sg.Type, "--", sg.ID)
 }
 
-// CreateNamespace 创建 namespace
+// CreateNamespace create namespace
 func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) error {
 	notfound, err := k.NotfoundNamespace(ns)
 	if err != nil {
@@ -58,7 +58,7 @@ func (k *Kubernetes) CreateNamespace(ns string, sg *apistructs.ServiceGroup) err
 	if err = k.namespace.Create(ns, labels); err != nil {
 		return err
 	}
-	// 创建该 namespace 下的 imagePullSecret
+	// Create imagePullSecret under this namespace
 	if err = k.NewRuntimeImageSecret(ns, sg); err != nil {
 		logrus.Errorf("failed to create imagePullSecret, namespace: %s, (%v)", ns, err)
 	}

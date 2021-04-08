@@ -67,16 +67,16 @@ func (k *Kubernetes) createRuntime(sg *apistructs.ServiceGroup) error {
 		return err
 	}
 
-	// 有状态应用
+	// statefulset application
 	if IsGroupStateful(sg) {
 		return k.CreateStatefulGroup(sg, layers)
 	}
-	// 无状态应用
+	// stateless application
 	return k.createStatelessGroup(sg, layers)
 }
 
 func (k *Kubernetes) destroyRuntime(ns string) error {
-	// 删除 namespace 会级连删除该 namespace 下的资源
+	// Deleting a namespace will cascade delete the resources under that namespace
 	return k.DeleteNamespace(ns)
 }
 
@@ -142,7 +142,7 @@ func (k *Kubernetes) updateRuntime(sg *apistructs.ServiceGroup) error {
 	if err := k.UpdateNamespace(ns, sg); err != nil {
 		return err
 	}
-	// 有状态应用暂不支持更新
+	// Stateful apps don’t support updates yet
 	if IsGroupStateful(sg) {
 		return errors.Errorf("Not supported for updating stateful applications")
 	}
@@ -161,8 +161,8 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 		for _, service := range layer {
 			service.Namespace = ns
 			// logrus.Debugf("in Create, going to create service(%s/%s)", service.Namespace, service.Name)
-			// 只要其中某个服务创建失败，那么就清空已成功创建的服务
-			// 这种情况要新建状态，返回给上层
+			// As long as one of the services fails to create, then the successfully created services are cleared
+			// In this case, create a new state and return to the upper level
 			if err = k.createOne(service, sg); err == nil {
 				continue
 			}
@@ -186,7 +186,7 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 					logrus.Infof("failed to destroy namespace, ns: %s, (namespace not found)", ns)
 					return
 				}
-				// 会有资源残留，需要人工运维
+				// There will be residual resources, requiring manual operation and maintenance
 				logrus.Errorf("failed to destroy resource, ns: %s, (%v)", ns, delErr)
 				return
 			}()
@@ -196,25 +196,25 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 	return nil
 }
 
-// CreateStatefulGroup 创建有状态服务
+// CreateStatefulGroup create statefull group
 func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][]*apistructs.Service) error {
 	if sg == nil || len(layers) == 0 {
 		return k8serror.ErrInvalidParams
 	}
-	// 从label中判断分组，每组是一个 statefulset
+	// Judge the group from the label, each group is a statefulset
 	groups, err := groupStatefulset(sg)
 	if err != nil {
 		logrus.Infof(err.Error())
 		return err
 	}
 	ns := MakeNamespace(sg)
-	// 分解成一个 statefulset
+	// Decompose into a statefulset
 	if len(groups) == 1 {
 		logrus.Infof("create one statefulset, name: %s", sg.ID)
 		if err := k.createStatefulService(sg); err != nil {
 			return err
 		}
-		// 预处理获取全部服务的环境变量, 由于只有1个statefulset，globalSeq设置为0
+		// Preprocess to obtain the environment variables of all services, since there is only one statefulset, globalSeq is set to 0
 		annotations := initAnnotations(layers, 0)
 
 		annotations["RUNTIME_NAMESPACE"] = sg.Type
@@ -225,7 +225,7 @@ func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][
 
 		allEnv := k.initGroupEnv(layers, annotations)
 
-		// 上层保证同一个group肯定是同一镜像
+		// The upper layer guarantees that the same group must be the same image
 		info := StatefulsetInfo{
 			sg:          sg,
 			namespace:   ns,
@@ -290,11 +290,11 @@ func (k *Kubernetes) CreateStatefulGroup(sg *apistructs.ServiceGroup, layers [][
 	return nil
 }
 
-// IsGroupStateful 判断是否是有状态服务
+// IsGroupStateful Determine whether it is a stateful service
 // the caller have to make sure sg is not nil
-// 一般来说设置了 "SERVICE_TYPE" 为 "ADDONS" 的为有状态应用,
-// 但是 ADDONS 类型中有部分仍然想按照无状态方式去部署，新增 STATELESS_SERVICE
-// 来区分 ADDONS 类型中是有状态还是无状态，默认都按有状态去执行
+// Generally speaking, those with "SERVICE_TYPE" set to "ADDONS" are stateful applications,
+// However, some of the ADDONS types still want to be deployed in a stateless manner, adding STATELESS_SERVICE
+// To distinguish whether the ADDONS type is stateful or stateless, the default is to execute according to state
 func IsGroupStateful(sg *apistructs.ServiceGroup) bool {
 	if sg.Labels[ServiceType] == ServiceAddon {
 		if sg.Labels[StatelessService] != IsStatelessService {
@@ -337,7 +337,7 @@ func (k *Kubernetes) inspectStateless(sg *apistructs.ServiceGroup) (*apistructs.
 func (k *Kubernetes) InspectStateful(sg *apistructs.ServiceGroup) (*apistructs.ServiceGroup, error) {
 	namespace := MakeNamespace(sg)
 	name := statefulsetName(sg)
-	// 只有一个 statefulset
+	// have only one statefulset
 	if !strings.HasPrefix(namespace, "group-") {
 		info, err := k.inspectOne(sg, namespace, name, 0)
 		if err != nil {
