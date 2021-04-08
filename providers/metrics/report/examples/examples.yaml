@@ -1,4 +1,5 @@
 metric-report-client:
-  addr: http://localhost:7076
-
+  addr: localhost:7076
+  username: admin
+  password: 123456
 example:
