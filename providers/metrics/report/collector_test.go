@@ -17,8 +17,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
-	"github.com/erda-project/erda/providers/common"
 )
 
 func Test_reportClient_serialize(t *testing.T) {
@@ -54,7 +52,7 @@ func Test_reportClient_serialize(t *testing.T) {
 				group: &NamedMetrics{
 					Name: "_metric_meta",
 					Metrics: Metrics{
-						&common.Metric{
+						&Metric{
 							Name:      "_metric_meta",
 							Timestamp: 1614583470000,
 							Tags: map[string]string{
@@ -94,7 +92,7 @@ func Test_reportClient_group(t *testing.T) {
 		httpClient *http.Client
 	}
 	type args struct {
-		in []*common.Metric
+		in []*Metric
 	}
 	tests := []struct {
 		name   string
@@ -118,7 +116,7 @@ func Test_reportClient_group(t *testing.T) {
 			},
 			args: args{
 				in: Metrics{
-					&common.Metric{
+					&Metric{
 						Name:      "span",
 						Timestamp: 1614583470000,
 						Tags: map[string]string{

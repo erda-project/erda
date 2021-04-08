@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/pkg/transport/http/compress"
-	"github.com/erda-project/erda/providers/common"
 )
 
 type ReportClient struct {
@@ -35,7 +34,7 @@ type ReportClient struct {
 
 type MetricReport interface {
 	SetCFG(cfg *config)
-	Send(in []*common.Metric) error
+	Send(in []*Metric) error
 	CreateReportClient(addr, username, password string) *ReportClient
 }
 
@@ -44,7 +43,7 @@ type NamedMetrics struct {
 	Metrics Metrics
 }
 
-type Metrics []*common.Metric
+type Metrics []*Metric
 
 func (c *ReportClient) SetCFG(cfg *config) {
 	c.CFG = cfg
@@ -64,7 +63,7 @@ func (c *ReportClient) CreateReportClient(addr, username, password string) *Repo
 	}
 }
 
-func (c *ReportClient) Send(in []*common.Metric) error {
+func (c *ReportClient) Send(in []*Metric) error {
 	groups := c.group(in)
 	for _, group := range groups {
 		if len(group.Metrics) == 0 {
@@ -94,18 +93,18 @@ func (c *ReportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	return compress.CompressWithGzip(bytes.NewBuffer(base64Content))
 }
 
-func (c *ReportClient) group(in []*common.Metric) []*NamedMetrics {
+func (c *ReportClient) group(in []*Metric) []*NamedMetrics {
 	metrics := &NamedMetrics{
 		Name:    "metrics",
-		Metrics: make([]*common.Metric, 0),
+		Metrics: make([]*Metric, 0),
 	}
 	trace := &NamedMetrics{
 		Name:    "trace",
-		Metrics: make([]*common.Metric, 0),
+		Metrics: make([]*Metric, 0),
 	}
 	errorG := &NamedMetrics{
 		Name:    "error",
-		Metrics: make([]*common.Metric, 0),
+		Metrics: make([]*Metric, 0),
 	}
 	for _, m := range in {
 		switch m.Name {

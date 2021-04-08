@@ -20,7 +20,6 @@ import (
 	"github.com/recallsong/go-utils/logs"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/providers/common"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
@@ -57,7 +56,7 @@ func (p *provider) Init(ctx context.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	metric := []*common.Metric{
+	metric := []*report.Metric{
 		{
 			Name:      "_metric_meta",
 			Timestamp: 1614583470000,
