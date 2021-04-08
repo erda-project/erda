@@ -30,11 +30,11 @@ func (k *Kubernetes) DeletePV(sg *apistructs.ServiceGroup) error {
 	for _, service := range sg.Services {
 		for _, bind := range service.Binds {
 			hostPath := bind.HostPath
-			// 找到本地盘
+			// Find local disk
 			if strings.HasPrefix(hostPath, "/") || len(hostPath) == 0 {
 				continue
 			}
-			// todo: pv名字规则由某个函数统一生产
+			// todo: The pv name rule is uniformly produced by a certain function
 			pvName := strutil.Concat("lp-", sg.ID, "-")
 			if len(hostPath) > 8 {
 				pvName = strutil.Concat(pvName, hostPath[:8])
@@ -42,7 +42,7 @@ func (k *Kubernetes) DeletePV(sg *apistructs.ServiceGroup) error {
 				pvName = strutil.Concat(pvName, hostPath)
 			}
 
-			// todo: 确认该pv与该runtime下的service的对应的pvc绑定
+			// todo: Confirm that the PV is bound to the corresponding PVC of the service under the runtime
 			list, err := k.pv.List(pvName)
 			if err != nil {
 				logrus.Errorf("failed to list pv, runtime: %s, pv: %s, (%v)", sg.ID, pvName, err)

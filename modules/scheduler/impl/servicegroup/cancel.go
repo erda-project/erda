@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/task"
 )
 
-// TODO: 对比service_endpoints.go, 返回的内容是否应该改一下？
+// TODO: Compared with service_endpoints.go, should the returned content be changed?
 func (s ServiceGroupImpl) Cancel(namespace string, name string) error {
 	sg := apistructs.ServiceGroup{}
 	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {

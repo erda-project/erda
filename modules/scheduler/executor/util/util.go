@@ -49,7 +49,7 @@ func ParseServiceDependency(runtime *apistructs.ServiceGroup) ([][]*apistructs.S
 		serviceMap[svc.Name] = &services[i]
 	}
 
-	// 检查依赖是否在service集合中
+	// Check if the dependency is in the service collection
 	for _, depends := range svcSet {
 		for d := range depends {
 			if _, ok := svcSet[d]; !ok {
@@ -61,24 +61,24 @@ func ParseServiceDependency(runtime *apistructs.ServiceGroup) ([][]*apistructs.S
 	handleDepends := func(svcDepMap map[string]serviceDepends) ([]string, error) {
 		independents := make([]string, 0)
 
-		// 找出没有依赖的 service
+		// Find out the service that has no dependencies
 		for name, depends := range svcDepMap {
 			if len(depends) == 0 {
 				independents = append(independents, name)
 			}
 		}
 
-		// 如果找不到一个无依赖的 service，说明存在死循环.
+		// If you can't find a non-dependent service, there is an infinite loop.
 		if len(independents) == 0 {
 			return nil, errors.New("dead loop in the service dependency")
 		}
 
-		// 清除这一批无依赖的 service
+		// Clear this batch of non-dependent services
 		for _, name := range independents {
 			delete(svcDepMap, name)
 		}
 
-		// 清理依赖
+		// Cleanup dependencies
 		for _, name := range independents {
 			for job, depends := range svcDepMap {
 				delete(depends, name)
@@ -91,14 +91,14 @@ func ParseServiceDependency(runtime *apistructs.ServiceGroup) ([][]*apistructs.S
 
 	layers := make([][]*apistructs.Service, 0, len(services))
 	for len(svcSet) != 0 {
-		// 理出有向无环图中出度为0的节点, 并将这些节点从svcSet中删除
+		// Sort out the nodes with degree 0 in the directed acyclic graph, and delete these nodes from svcSet
 		independents, err := handleDepends(svcSet)
 		if err != nil {
 			return nil, err
 		}
 		sort.Strings(independents)
 
-		// 处于同一层的service可以并行的去创建
+		// Services in the same layer can be created in parallel
 		svcLayer := make([]*apistructs.Service, 0, len(independents))
 		for _, name := range independents {
 			if svcAddr, ok := serviceMap[name]; ok {
@@ -173,7 +173,7 @@ func BuildDcosConstraints(enable bool, labels map[string]string, preserveProject
 		}
 	} else if len(matchTags) != 0 && !anyTagDisable {
 		for _, matchTag := range matchTags {
-			// bigdata标签不与any共存
+			// The bigdata tag does not coexist with any
 			if matchTag == "bigdata" {
 				cs = append(cs, []string{"dice_tags", "LIKE", `.*\b` + matchTag + `\b.*`})
 			} else {
@@ -215,7 +215,7 @@ func GetAndSetTokenAuth(client *httpclient.HTTPClient, executorName string) {
 			if token, ok := os.LookupEnv("AUTH_TOKEN"); ok {
 				if len(token) > 0 {
 					client.TokenAuth(token)
-					// 每2小时更新一次，需要小于getDCOSTokenAuthPeriodically中周期（24小时）
+					// Update every 2 hours, need to be less than getDCOSTokenAuthPeriodically medium period (24 hours)
 					waitTime = 2 * time.Hour
 					logrus.Debugf("executor %s got auth token, would re-get in %s later",
 						executorName, waitTime.String())
@@ -227,7 +227,7 @@ func GetAndSetTokenAuth(client *httpclient.HTTPClient, executorName string) {
 						executorName, waitTime.String())
 				}
 			} else {
-				// 用户未设置token auth, 重试 userNotSetAuthToken 次
+				// The user has not set token auth, retry userNotSetAuthToken times
 				cnt++
 			}
 		}

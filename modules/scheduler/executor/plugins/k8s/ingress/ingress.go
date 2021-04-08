@@ -87,7 +87,7 @@ func (n *Ingress) Delete(namespace, name string) error {
 
 	if !resp.IsOK() {
 		if resp.IsNotfound() {
-			// ingress 不存在，认为删除成功
+			// The ingress does not exist, the deletion is considered successful
 			logrus.Debugf("ingress not found, name: %s", name)
 			return nil
 		}

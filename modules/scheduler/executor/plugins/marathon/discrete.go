@@ -46,12 +46,12 @@ func hostConstraint(host string) Constraint {
 	return Constraint{"hostname", "LIKE", host}
 }
 
-// TODO: 归属 App struct 的 method
+// TODO: Method attributable to App struct
 func updateAppConstraints(app *App, constraint Constraint) {
 	app.Constraints = append(app.Constraints, constraint)
 }
 
-// TODO: 重命名函数名，应该归属于 Group struct 的 method
+// TODO: Rename the function name, it should belong to the method of Group struct
 func updateGroupByPlaceHolderHosts(g *Group, pchosts placeHolderHosts) error {
 	for i := range g.Apps {
 		host, ok := pchosts[g.Apps[i].Id]
@@ -119,12 +119,12 @@ func (m *Marathon) makeSureAppsRunning(sg *apistructs.ServiceGroup) (*Group, err
 	return &group, nil
 }
 
-// buildPlaceHolderGroup 根据 `runtime` 中的 service 所需要的资源，
-// 构建出一个用来占用资源的 servicegroup
+// buildPlaceHolderGroup According to the resources required by the service in `runtime`,
+// Construct a servicegroup to occupy resources
 // return (placeholderGroup, map[placeholder-appid][]exact-appid, err)
 // NOTE:
-// 1. 对于 app 列表中存在 instances > 1 的 app 时候，直接返回 errAppInstanceNum
-// 比如： {
+// 1. For apps with instances> 1 in the app list, directly return errAppInstanceNum
+// such as： {
 //   app1: {
 //     instances: N (N>1),
 //   },
@@ -132,8 +132,8 @@ func (m *Marathon) makeSureAppsRunning(sg *apistructs.ServiceGroup) (*Group, err
 //     instances: 1,
 //   },
 // }
-// 2. 如果 app 列表中只有 `不超过` 1 个 app , 返回 errNoNeedBuildPlaceHolder
-// 3. 如果 app 列表中的 各个 App 的 constrains 不全相同, 返回 errDiffConstraints
+// 2. If there is only `no more than` 1 app in the app list, return errNoNeedBuildPlaceHolder
+// 3. If the constrains of each app in the app list are not all the same, return errDiffConstraints
 func buildPlaceHolderGroup(sg *apistructs.ServiceGroup, originGroup *Group) (*Group, map[string][]string, error) {
 	appNum := len(originGroup.Apps)
 	if appNum <= 1 {
@@ -178,7 +178,7 @@ func buildPlaceHolderGroup(sg *apistructs.ServiceGroup, originGroup *Group) (*Gr
 		r.Apps[thisone].Constraints = append(r.Apps[thisone].Constraints,
 			Constraint([]string{"hostname", "UNIQUE"}))
 		r.Apps[thisone].Instances = len(apps)
-		// 把 volumes 置为 nil， 防止原本 group 中的 localpv 影响
+		// Set volumes to nil to prevent the influence of localpv in the original group
 		r.Apps[thisone].Container.Volumes = nil
 	}
 	return &r, exactappMap, nil

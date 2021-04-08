@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// 身份标签
+// Identity tag
 func IdentityFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
 	jobLabelFilter(r, r2, li)
@@ -49,19 +49,19 @@ func jobLabelFilter(
 }
 
 // pack
-// 当前几乎未使用该标签
+// The label is currently almost unused
 func packLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
 	if li.ExecutorKind == labelconfig.EXECUTOR_METRONOME || li.ExecutorKind == labelconfig.EXECUTOR_K8SJOB {
 		if li.Label[apistructs.LabelPack] == "true" {
-			// marathon&metronome 不用 pack 标, k8s 会用, 所以 r 中不设置, r2 中设置
+			// marathon&metronome does not use the pack label, k8s will use it, so it is not set in r, but set in r2
 			// r.Likes = append(r.Likes, apistructs.TagPack)
 			r2.Pack = true
 		}
 	}
 }
 
-// 在 dcos 上不支持 daemonset 部署
+// Daemonset deployment is not supported on dcos
 func daemonsetLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
 	if li.Label["SERVICE_TYPE"] == "DAEMONSET" {
@@ -90,7 +90,7 @@ func statelessLabelFilter(
 // bigdata
 func bigdataLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	// 当前 bigdata 只有对应的 job，没有 runtime
+	// Currently bigdata only has corresponding job, no runtime
 	if li.ExecutorKind == labelconfig.EXECUTOR_METRONOME ||
 		li.ExecutorKind == labelconfig.EXECUTOR_K8SJOB ||
 		li.ExecutorKind == labelconfig.EXECUTOR_SPARK ||
@@ -107,7 +107,7 @@ func bigdataLabelFilter(
 // platform
 func platformLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	// TODO: 完全消除 v1 API 后，删除 li.Label
+	// TODO: After the v1 API is completely eliminated, delete li.Label
 	if _, ok := li.Label[labelconfig.PLATFORM]; ok {
 		r.IsPlatform = true
 		r2.IsPlatform = true
@@ -144,14 +144,14 @@ func lockLabelFilter(
 // any
 func anyLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	// 一般而言 "platform" 和 "locked" 标签不会被打到服务或者job上
+	// Generally, the "platform" and "locked" tags will not be hit on the service or job
 	sort.Strings(r.ExclusiveLikes)
 	idx := sort.SearchStrings(r.ExclusiveLikes, apistructs.TagBigdata)
 	exist := idx < len(r.ExclusiveLikes) && r.ExclusiveLikes[idx] == apistructs.TagBigdata
 	if exist || elemPrefixInArray(apistructs.TagProjectPrefix, r.Likes) {
 		return
 	}
-	// 对 any 标签特殊处理
+	// Special treatment for any tag
 	//r.Likes = append(r.Likes, spec.TagAny)
 	r.Flag = true
 	r2.PreferJob = true

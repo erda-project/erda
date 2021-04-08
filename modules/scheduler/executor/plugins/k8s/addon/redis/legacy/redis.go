@@ -74,7 +74,7 @@ func (ro *RedisOperator) IsSupported() bool {
 	return true
 }
 
-// Validate 检查
+// Validate
 func (ro *RedisOperator) Validate(sg *apistructs.ServiceGroup) error {
 	operator, ok := sg.Labels["USE_OPERATOR"]
 	if !ok {
@@ -289,7 +289,7 @@ func convertSentinel(svc apistructs.Service) SentinelSettings {
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = RedisFailoverResources{
-		Requests: CPUAndMem{ // sentinel 不超配, 因为本身就应该已经很少占用资源了
+		Requests: CPUAndMem{ // sentinel Not over-provisioned, because it should already occupy very little resources
 			CPU:    fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu)),
 			Memory: fmt.Sprintf("%dMi", int(svc.Resources.Mem)),
 		},

@@ -25,13 +25,13 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-// 对以下情形做了测试:
+// Tested in the following situations:
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 集群配置只有基本配置
-// 测试 runtime 的 label 中带上了 org 和没有带上 org
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling，
+// The cluster configuration has only basic configuration
+// Org and no org are included in the label of the test runtime
 func TestOrgLabelFilter1(t *testing.T) {
-	// 集群配置中无精细配置，基本配置中未配置 org，则（所有 org）都不开启 org 调度
+	// There is no fine configuration in the cluster configuration. If org is not configured in the basic configuration, then (all orgs) do not enable org scheduling
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
     "kind": "MARATHON",
@@ -52,7 +52,7 @@ func TestOrgLabelFilter1(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中没有 org 标签
+		// There is no org tag in the label
 		Label:          make(map[string]string),
 		ExecutorName:   config.Name,
 		ExecutorKind:   config.Kind,
@@ -74,7 +74,7 @@ func TestOrgLabelFilter1(t *testing.T) {
 	result2 = labelconfig.RawLabelRuleResult2{}
 
 	li2 := &labelconfig.LabelInfo{
-		// lable 中有 org 标签，但并未开启 org 调度(没有"ENABLE_ORG"的设置)
+		// There is an org tag in the label, but org scheduling is not enabled (there is no "ENABLE_ORG" setting)
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "org-1",
 			"DICE_WORKSPACE": "test",
@@ -87,7 +87,7 @@ func TestOrgLabelFilter1(t *testing.T) {
 	}
 
 	OrgLabelFilter(&result, &result2, li2)
-	// 结果同 result1，因为集群配置中没有精细配置且基本配置中没有开启 org 调度(集群配置中没有设置"ENABLE_ORG")
+	// The result is the same as result1, because there is no fine configuration in the cluster configuration and the org scheduling is not enabled in the basic configuration (the "ENABLE_ORG" is not set in the cluster configuration)
 	assert.Zero(t, len(result.Likes))
 	assert.Zero(t, len(result.UnLikes))
 	assert.Zero(t, len(result.LikePrefixs))
@@ -115,7 +115,7 @@ func TestOrgLabelFilter1(t *testing.T) {
 	}
 
 	OrgLabelFilter(&result, &result2, li3)
-	// 结果同 result1，因为集群配置中没有精细配置且基本配置中没有开启 org 调度(集群配置中没有设置"ENABLE_ORG")
+	// The result is the same as result1, because there is no fine configuration in the cluster configuration and the org scheduling is not enabled in the basic configuration (the "ENABLE_ORG" is not set in the cluster configuration)
 	assert.Zero(t, len(result.Likes))
 	assert.Zero(t, len(result.UnLikes))
 	assert.Zero(t, len(result.LikePrefixs))
@@ -125,7 +125,7 @@ func TestOrgLabelFilter1(t *testing.T) {
 	assert.Equal(t, labelconfig.ORG_VALUE_PREFIX, result.UnLikePrefixs[0])
 }
 
-// 在集群的基本配置中设置了开启 org 调度（建议用法是在精细配置中开启，见TestOrgLabelFilter3）
+// The org scheduling is set in the basic configuration of the cluster (the recommended usage is to enable it in the fine configuration, see TestOrgLabelFilter3)
 func TestOrgLabelFilter2(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -148,7 +148,7 @@ func TestOrgLabelFilter2(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1xx",
 			"DICE_WORKSPACE": "test",
@@ -169,7 +169,7 @@ func TestOrgLabelFilter2(t *testing.T) {
 	assert.Equal(t, []string{"org-1xx"}, result.ExclusiveLikes)
 }
 
-// 在集群的精细配置中设置了开启 org 调度，并且 runtime 的 label 中设置了 org
+// Org scheduling is set in the fine configuration of the cluster, and org is set in the runtime label
 func TestOrgLabelFilter3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -226,7 +226,7 @@ func TestOrgLabelFilter3(t *testing.T) {
 	assert.Equal(t, []string{"org-2"}, result.ExclusiveLikes)
 }
 
-// 在集群的精细配置中设置了开启 org 调度，但是 runtime 的 label 中没有设置了 org
+// The org scheduling is set in the fine configuration of the cluster, but org is not set in the runtime label
 func TestOrgLabelFilter4(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -281,8 +281,8 @@ func TestOrgLabelFilter4(t *testing.T) {
 	//assert.Equal(t, []string{"org-"}, result.UnLikePrefixs)
 }
 
-// 在集群的精细配置中设置了开启 org 调度，并且 runtime 的 label 中设置了 org
-// 但是 runtime label 中设置的 org 名字没有出现在集群精细配置的 orgs 中
+// Org scheduling is set in the fine configuration of the cluster, and org is set in the runtime label
+// But the org name set in the runtime label does not appear in the orgs of the cluster's fine configuration
 func TestOrgLabelFilter5(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",

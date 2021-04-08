@@ -34,7 +34,7 @@ func (s *LabelManagerImpl) SetNodeLabel(cluster Cluster, hosts []string, tags ma
 		executorType = clusterutil.ServiceKindMarathon
 	case apistructs.K8S, "kubernetes":
 		// executorType = clusterutil.ServiceKindK8S
-		// TODO: 现在即使是 k8s， executorname也是 MARATHONFORXXX
+		// TODO: Now even for k8s, executorname is MARATHONFORXXX
 		executorType = clusterutil.ServiceKindMarathon
 	case "edas":
 		executorType = clusterutil.EdasKindInK8s

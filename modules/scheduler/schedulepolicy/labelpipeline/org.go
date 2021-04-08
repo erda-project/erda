@@ -19,13 +19,13 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 )
 
-// 租户标签
+// Tenant label
 func OrgLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	// 获取 orgName 的两种途径
-	// 1. 在 diceyml.meta (li.Label) 中的 labelconfig.ORG_KEY
-	// 2. diceyml.deployments.selectors.org, 只要某个 service 存在即可，取第一个
-	// 优先级 2 > 1
+	// Two ways to get orgName
+	// 1. Labelconfig.ORG_KEY in diceyml.meta (li.Label)
+	// 2. diceyml.deployments.selectors.org, as long as a certain service exists, take the first one
+	// Priority 2> 1
 	orgName := li.Label[labelconfig.ORG_KEY]
 	for _, selectors := range li.Selectors {
 		if v, ok := selectors["org"]; ok && len(v.Values) > 0 {
@@ -38,7 +38,7 @@ func OrgLabelFilter(
 		logrus.Infof("obj(%s) have no orgName", li.ObjName)
 		return
 	}
-	// 从集群精细配置获取是否开启 org 调度
+	// Get whether to enable org scheduling from the cluster fine configuration
 	if li.OptionsPlus != nil {
 		for _, orgCfg := range li.OptionsPlus.Orgs {
 			if orgCfg.Name == orgName {
@@ -54,10 +54,10 @@ func OrgLabelFilter(
 		}
 	}
 
-	// 从基本配置中获取是否开启 org 调度
-	// 一般建议 org 是否开启放在精细配置中，基本配置中不配置 org，即默认不开启 org
+	// Get whether to enable org scheduling from the basic configuration
+	// It is generally recommended that whether org is enabled or not is placed in the fine configuration, and org is not configured in the basic configuration, that is, org is not enabled by default
 	enableOrgScheduler := li.ExecutorConfig.EnableOrgLabelSchedule()
-	// 未开启 org 调度
+	// Org scheduling is not turned on
 	if !enableOrgScheduler {
 		r.UnLikePrefixs = append(r.UnLikePrefixs, labelconfig.ORG_VALUE_PREFIX)
 		r2.HasOrg = false

@@ -31,22 +31,19 @@ import (
 )
 
 var (
-	// ErrInvalidAction 不合法的 clusterevent 的 action
+	// ErrInvalidAction Illegal clusterevent action
 	ErrInvalidAction = errors.New("invalid cluster event action")
-	// ErrInvalidClusterType 不合法的 cluster type
+	// ErrInvalidClusterType Illegal cluster type
 	ErrInvalidClusterType = errors.New("invalid cluster type")
-	// ErrEmptyClusterName cluster name 为空
+	// ErrEmptyClusterName cluster name is empty
 	ErrEmptyClusterName = errors.New("empty cluster name")
-	// ErrClusterAddrNotSet cluster addr 未设置
+	// ErrClusterAddrNotSet cluster addr not setting
 	ErrClusterAddrNotSet = errors.New("cluster addr not set")
 )
 
-// Hook 接收 clusterevent， 见 `apistructs.ClusterEvent`
+// Hook receive clusterevent， reference `apistructs.ClusterEvent`
 func (c *ClusterImpl) Hook(clusterEvent *apistructs.ClusterEvent) error {
 	if !strutil.Equal(clusterEvent.Content.Type, clusterTypeDcos, true) {
-		if strutil.Equal(clusterEvent.Content.Type, clusterTypeLocaldocker, true) {
-			return c.createLocalDocker(clusterEvent)
-		}
 		if strutil.Equal(clusterEvent.Content.Type, clusterTypeK8S, true) {
 			return c.handleK8SCluster(clusterEvent)
 		}
@@ -143,10 +140,10 @@ func setDefaultClusterConfig(ci *ClusterInfo) {
 		ci.Options[labelconfig.ENABLE_WORKSPACE] = t
 	}
 	if _, ok := ci.Options[labelconfig.CPU_NUM_QUOTA]; !ok {
-		// 这里的 "-1" 指按照用户申请的真实cpu来限制其最大cpu，
-		// 即如果用户申请的是1个核的cpu，则quota对应的就是1个核
-		// 如果设置为 "0"，则cpu quota无限制
-		// 具体请参考 marathon 插件中的实现（setFineGrainedCPU 函数中）
+		// Here "-1" means to limit the maximum cpu according to the real cpu requested by the user,
+		// That is, if the user applies for a 1 core cpu, the quota corresponds to 1 core
+		// If set to "0", the cpu quota is unlimited
+		// For details, please refer to the implementation in the marathon plugin (in the setFineGrainedCPU function)
 		ci.Options[labelconfig.CPU_NUM_QUOTA] = "-1"
 	}
 }
@@ -177,12 +174,12 @@ func createMarathonExecutor(js jsonstore.JsonStore, cluster ClusterInfo, addr st
 	srv.Kind = clusterutil.ServiceKindMarathon
 	srv.ExecutorName = clusterutil.GenerateExecutorByCluster(cluster.ClusterName, clusterutil.ServiceKindMarathon)
 	srv.Options["ADDR"] = addr + marathonAddrSuffix
-	// 默认限制最大cpu(cpu quota)
+	// Maximum cpu limit by default (cpu quota)
 	if _, ok := srv.Options["CPU_NUM_QUOTA"]; !ok {
-		// 这里的 "-1" 指按照用户申请的真实cpu来限制其最大cpu，
-		// 即如果用户申请的是1个核的cpu，则quota对应的就是1个核
-		// 如果设置为 "0"，则cpu quota无限制
-		// 具体请参考 marathon 插件中的实现（setFineGrainedCPU 函数中）
+		// Here "-1" means to limit the maximum cpu according to the real cpu requested by the user,
+		// That is, if the user applies for a 1 core cpu, the quota corresponds to 1 core
+		// If set to "0", the cpu quota is unlimited
+		// For details, please refer to the implementation in the marathon plugin (in the setFineGrainedCPU function)
 		srv.Options["CPU_NUM_QUOTA"] = "-1"
 	}
 
@@ -222,8 +219,8 @@ func generateClusterInfoFromEvent(eventCluster *apistructs.ClusterInfo) ClusterI
 	return configCluster
 }
 
-// TODO: 需要讨论开放给用户修改的内容
-// TODO: 支持 patch 精细化配置
+// TODO: Need to discuss the content that is open to users to modify
+// TODO: Support patch refined configuration
 func patchClusterConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error {
 	if request.SchedConfig != nil {
 		if request.SchedConfig.MasterURL != "" {
@@ -248,36 +245,6 @@ func patchClusterConfig(local *ClusterInfo, request *apistructs.ClusterInfo) err
 			local.Options["CLIENT_KEY"] = request.SchedConfig.ClientKey
 		}
 	}
-	return nil
-}
-
-// 临时代码，用于支持 localdocker 的 executor 创建
-func (c *ClusterImpl) createLocalDocker(clusterEvent *apistructs.ClusterEvent) error {
-	srv := ClusterInfo{
-		ClusterName: clusterEvent.Content.Name,
-		Kind:        "LOCALDOCKER",
-		// 用 MARATHON 类型模拟生成 localdocker 的服务类型 executor
-		ExecutorName: clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.ServiceKindMarathon),
-	}
-	key := clusterPrefix + clusterEvent.Content.Name + clusterMarathonSuffix
-	if err := c.js.Put(context.Background(), key, srv); err != nil {
-		content := fmt.Sprintf("write key(%s) to etcd error: %v", key, err)
-		return errors.New(content)
-	}
-
-	job := ClusterInfo{
-		ClusterName: clusterEvent.Content.Name,
-		Kind:        "LOCALJOB",
-		// 用 METRONOME 类型模拟生成 localdocker 的 job 类型 executor
-		ExecutorName: clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.JobKindMetronome),
-	}
-	key = clusterPrefix + clusterEvent.Content.Name + clusterMetronomeSuffix
-	if err := c.js.Put(context.Background(), key, job); err != nil {
-		content := fmt.Sprintf("write key(%s) to etcd error: %v", key, err)
-		return errors.New(content)
-	}
-
-	logrus.Infof("successed to create local cluster, name: %s", clusterEvent.Content.Name)
 	return nil
 }
 
@@ -370,7 +337,7 @@ func (c *ClusterImpl) updateK8SExecutor(clusterEvent *apistructs.ClusterEvent) e
 	return nil
 }
 
-// todo: 暂只支持修改地址
+// todo: Only support to modify the address at the moment
 func patchK8SConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error {
 	if request.SchedConfig != nil {
 		if request.SchedConfig.MasterURL != "" {
@@ -410,13 +377,13 @@ func (c *ClusterImpl) createEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 	serviceExecutorName := clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.ServiceKindEdas)
 	jobExecutorName := clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.JobKindK8S)
 	addonExecutorName := clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.ServiceKindK8S)
-	//写入edas service excutor
+	//write to edas service excutor
 	svcExecutorPath := strutil.Concat(edasExecutorPrefix, clusterEvent.Content.Name, "/", clusterutil.ServiceKindMarathon)
 	if err := createEdasExector(c.js, svcExecutorPath, serviceExecutorName); err != nil {
 		logrus.Errorf("failed to create edas service executor, executor: %s", serviceExecutorName)
 		return err
 	}
-	//写edas service 配置
+	//write edas service configure
 	serviceCfg := ClusterInfo{
 		ClusterName:  clusterEvent.Content.Name,
 		ExecutorName: serviceExecutorName,
@@ -437,13 +404,13 @@ func (c *ClusterImpl) createEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 		logrus.Errorf("failed to create edas service executor, cluster: %s", clusterEvent.Content.Name)
 		return err
 	}
-	//写入edas job excutor
+	//wirte to edas job excutor
 	jobExecutorPath := strutil.Concat(edasExecutorPrefix, clusterEvent.Content.Name, "/", clusterutil.JobKindMetronome)
 	if err := createEdasExector(c.js, jobExecutorPath, jobExecutorName); err != nil {
 		logrus.Errorf("failed to create edas service executor, executor: %s", jobExecutorName)
 		return err
 	}
-	//写edas job 配置
+	//write to edas job configure
 	jobCfg := ClusterInfo{
 		ClusterName:  clusterEvent.Content.Name,
 		ExecutorName: jobExecutorName,
@@ -460,13 +427,13 @@ func (c *ClusterImpl) createEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 		return err
 	}
 
-	//写入edas addon excutor
+	//write to edas addon excutor
 	addonExecutorPath := strutil.Concat(edasExecutorPrefix, clusterEvent.Content.Name, "/", clusterutil.EdasKindInK8s)
 	if err := createEdasExector(c.js, addonExecutorPath, addonExecutorName); err != nil {
 		logrus.Errorf("failed to create edas service executor, executor: %s", addonExecutorName)
 		return err
 	}
-	//写edas addon 配置
+	//write to edas addon configure
 	addonCfg := ClusterInfo{
 		ClusterName:  clusterEvent.Content.Name,
 		ExecutorName: addonExecutorName,
@@ -517,7 +484,7 @@ func (c *ClusterImpl) updateEdasExecutor(clusterEvent *apistructs.ClusterEvent) 
 	return nil
 }
 
-// 修改edas调度器
+// update edas executor
 func patchEdasConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error {
 	if request.SchedConfig != nil {
 		local.Options["ADDR"] = request.SchedConfig.EdasConsoleAddr

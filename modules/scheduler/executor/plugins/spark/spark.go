@@ -37,9 +37,9 @@ type Spark struct {
 	addr          string
 	options       map[string]string
 	client        *httpclient.HTTPClient
-	enableTag     bool   // 是否开启标签调度
-	sparkVersion  string // Spark部署版本
-	executorImage string // Spark Executor所用镜像 eg: mesosphere/spark:2.3.1-2.2.1-2-hadoop-2.6
+	enableTag     bool   // Whether to enable label scheduling
+	sparkVersion  string // Spark version
+	executorImage string // Spark Executor image eg: mesosphere/spark:2.3.1-2.2.1-2-hadoop-2.6
 }
 
 func init() {
@@ -99,7 +99,7 @@ func (s *Spark) Create(ctx context.Context, specObj interface{}) (interface{}, e
 		return nil, errors.New("invalid job spec")
 	}
 
-	// 构造Spark任务请求结构体, 配置可参考: https://spark.apache.org/docs/latest/running-on-mesos.html#configuration
+	// Construct Spark task request structure, configuration can refer to: https://spark.apache.org/docs/latest/running-on-mesos.html#configuration
 	sparkProperties := make(map[string]string)
 	sparkProperties["spark.app.name"] = job.Name
 	sparkProperties["spark.driver.supervise"] = "true"
@@ -107,8 +107,8 @@ func (s *Spark) Create(ctx context.Context, specObj interface{}) (interface{}, e
 	sparkProperties["spark.submit.deployMode"] = "cluster"
 	sparkProperties["spark.mesos.executor.docker.image"] = s.executorImage
 	constrains := constructSparkConstraints(&job.ScheduleInfo)
-	if constrains != "dice_tags" { // 用户未传label时，constrains为dice_tags, spark任务不用限制，否则会导致spark退出
-		// 已实测，标签配置在spark.mesos.driver.constraints生效，而不是spark.mesos.constraints
+	if constrains != "dice_tags" { // When the user does not pass the label, the constraints are dice_tags, and the spark task does not need to be restricted, otherwise it will cause spark to exit
+		// Measured, the tag configuration takes effect in spark.mesos.driver.constraints instead of spark.mesos.constraints
 		sparkProperties["spark.mesos.driver.constraints"] = constrains
 	}
 
@@ -120,7 +120,7 @@ func (s *Spark) Create(ctx context.Context, specObj interface{}) (interface{}, e
 		sparkProperties["spark.executor.memory"] = fmt.Sprintf("%d", int64(job.Memory)) + "m"
 	}
 
-	// 设置必须的环境变量
+	// Set the necessary environment variables
 	if len(job.Env) == 0 {
 		job.Env = make(map[string]string)
 	}
@@ -138,7 +138,7 @@ func (s *Spark) Create(ctx context.Context, specObj interface{}) (interface{}, e
 		sparkRequest.MainClass = job.MainClass
 	}
 
-	// AppArgs用户未指定的情况下也需要指定为:[]
+	// If the AppArgs user does not specify, it also needs to be specified as: []
 	if len(job.MainArgs) > 0 {
 		sparkRequest.AppArgs = job.MainArgs
 	} else {
@@ -146,7 +146,7 @@ func (s *Spark) Create(ctx context.Context, specObj interface{}) (interface{}, e
 	}
 	logrus.Infof("job: %s, spark request: %+v", job.Name, sparkRequest)
 
-	// 发送创建请求至Spark Server
+	// Send creation request to Spark Server
 	var sparkResp SparkResponse
 	resp, err := s.client.Post(s.addr).
 		Path("/v1/submissions/create").

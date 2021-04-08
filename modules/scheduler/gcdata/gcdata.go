@@ -50,7 +50,7 @@ func GCData() error {
 	}
 }
 
-// gcJobData 清理在 etcd 中的 pipeline 数据
+// gcJobData Clean up pipeline data in etcd
 func gcJobData(js jsonstore.JsonStore) error {
 	keys, err := js.ListKeys(context.Background(), "/dice/job/")
 	if err != nil {
@@ -100,7 +100,7 @@ func gcJobData(js jsonstore.JsonStore) error {
 	return nil
 }
 
-// gcServiceData 清理在 etcd 中的 service 数据
+// gcServiceData Clean up the service data in etcd
 func gcServiceData(js jsonstore.JsonStore) {
 	// TODO:
 }

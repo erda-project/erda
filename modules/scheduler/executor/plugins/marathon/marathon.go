@@ -61,28 +61,18 @@ const (
 	defaultPublicIpGroup   = "internal"
 	defaultCloudVolumePath = "/netdata/volumes"
 
-	// 配置中超卖比的 key
+	// The key of the oversold ratio in the configuration
 	CPU_SUBSCRIBE_RATIO = "CPU_SUBSCRIBE_RATIO"
 
-	// 100000 是 /sys/fs/cgroup/cpu/cpu.cfs_period_us 默认值
+	// 100000  /sys/fs/cgroup/cpu/cpu.cfs_period_us default value
 	CPU_CFS_PERIOD_US int = 100000
-	// 最小申请cpu值
+	// Minimum application cpu value
 	MIN_CPU_SIZE = 0.1
 
 	HCMethodCommand = "COMMAND"
 	HCMethodTCP     = "TCP"
 )
 
-// marathon plugin's configure
-//
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_ADDR=http://dice.test.terminus.io/service/marathon
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_PREFIX=/runtimes/v1
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_FETCHURIS=
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_VERSION=1.6
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_BASICAUTH=admin:Terminus1234
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_PUBLICIP=public-ip.app.terminus.io
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_ENABLETAG=true
-// EXECUTOR_MARATHON_MARATHONFORSERVICE_PRESERVEPROJECTS=1,2,3
 func init() {
 	// go instanceinfosync.NewSyncer(instanceinfo.New(dbengine.MustOpen())).Sync()
 	executortypes.Register(kind, func(
@@ -229,7 +219,7 @@ func init() {
 		if disableEvent := os.Getenv("DISABLE_EVENT"); disableEvent == "true" {
 			return m, nil
 		}
-		// key是{runtimeNamespace}/{runtimeName}, value是对应event结构的地址
+		// The key is {runtimeNamespace}/{runtimeName}, and the value is the address of the corresponding event structure
 		lstore := &sync.Map{}
 		stopCh := make(chan struct{}, 1)
 		registerEventChanAndLocalStore(string(name), evCh, stopCh, lstore)
@@ -262,23 +252,23 @@ type Marathon struct {
 	preserveProjects map[string]struct{}
 	workspaceTags    map[string]struct{}
 	evCh             chan *eventtypes.StatusEvent
-	// 为特定的集群设置marathon的backoff factor
+	// Set the backoff factor of marathon for a specific cluster
 	backoff string
-	// 为特定的集群设置均衡实例调度
+	// Set up balanced instance scheduling for a specific cluster
 	unique bool
-	// 为特定的集群设置服务挂了后不被marathon拉起(通过backoff time设置为3600实现)
-	// 生效需要同时满足以下两个条件：
-	// 1, 集群配置中设置 ADDONS_DISABLE_AUTO_RESTART 为 "true"
-	// 2，ServiceGroup(ServiceGroup)的 label 中传入 SERVICE_TYPE : ADDONS
+	// Set the service for a specific cluster without being pulled up by marathon after it hangs (by setting the backoff time to 3600)
+	// To take effect, the following two conditions must be met at the same time:
+	// 1, Set ADDONS_DISABLE_AUTO_RESTART to "true" in the cluster configuration
+	// 2， Pass in SERVICE_TYPE in the label of ServiceGroup (ServiceGroup): ADDONS
 	addonsDisableAutoRestart bool
-	// 将上层实际设置的 cpu 除以一个比例, 传递给集群调度, 默认为1
+	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
 	cpuSubscribeRatio float64
-	// 将 cpu quota 值设置为 cpuNumQuota 个 cpu 的 quota, 默认为0，即cpu quota不限制
-	// 当取值为 -1 时，表示使用真实的 cpu 个数来设置 cpu quota (quota 可能还会被其他参数修改，如向上弹的 cpu 个数)
+	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
+	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
 	cpuNumQuota float64
-	// 对 docker 额外的配置, 如 swapiness
+	// Additional configuration for docker, such as swapiness
 	dockerCfg string
-	// 对 docker env 设置
+	// Set up docker env
 	dockerEnv string
 
 	db          *instanceinfo.Client
@@ -395,9 +385,9 @@ func (m *Marathon) Remove(ctx context.Context, specObj interface{}) error {
 
 // Update update marathon group
 // NOTE:
-//    如果更新的 servicegroup 中 HOST_UNIQUE=true, 则直接返回错误
-//    因为更新 group 之后，可能原来的 host 已经不符合现在的约束（constraints） 了，
-//    而重新像 create 处一样获取可用 host 会使服务的蓝绿发布失效
+// If HOST_UNIQUE=true in the updated servicegroup, return an error directly
+// Because after updating the group, the original host may no longer meet the current constraints.
+// And re-obtaining the available host like create will invalidate the blue-green release of the service
 func (m *Marathon) Update(ctx context.Context, specObj interface{}) (interface{}, error) {
 	runtime, ok := specObj.(apistructs.ServiceGroup)
 	if !ok {
@@ -479,7 +469,7 @@ func (m *Marathon) Inspect(ctx context.Context, specObj interface{}) (interface{
 						instance.Alive = "false"
 					}
 				} else {
-					// 对于由某种原因没有开始做健康检查的实例，暂时认定其状态为未通过健康检查
+					// For instances where the health check is not started for some reason, the status is temporarily deemed to have failed the health check
 					if service.NewHealthCheck != nil || service.HealthCheck != nil {
 						instance.Alive = "false"
 					} else {
@@ -603,7 +593,7 @@ func getAllAppStatus(mApps *[]App, queue *Queue) map[string]AppStatus {
 			} else if mApp.Instances == 0 && mApp.TasksRunning == 0 {
 				mAppStatus = AppStatusHealthy
 			} else if mApp.TasksRunning > 0 {
-				// 只有设置了健康检查并且有不健康的实例，状态才是AppStatusRunning
+				// Only when the health check is set and there are unhealthy instances, the status is AppStatusRunning
 				if mApp.TasksUnhealthy > 0 {
 					mAppStatus = AppStatusRunning
 				} else {
@@ -785,7 +775,7 @@ func (m *Marathon) deleteGroup(mGroupId string, force bool) (*GroupPutResponse, 
 		return nil, errors.Wrapf(err, "marathon delete failed, groupId: %s", mGroupId)
 	}
 
-	// 没有找到的话，直接返回成功
+	// If not found, directly return to success
 	if resp.IsNotfound() {
 		return &obj, nil
 	}
@@ -929,10 +919,10 @@ func (m *Marathon) buildMarathonGroup(runtime apistructs.ServiceGroup) (*Group, 
 
 		mApps[i].Container.Volumes = append(binds, volumes...)
 
-		// 设置细粒度的CPU, 包括：
-		// 1，申请 cpu 值
-		// 2，cpu 超卖
-		// 3，最大 cpu 值
+		// Set fine-grained CPU, including:
+		// 1，Apply for cpu value
+		// 2， cpu oversold
+		// 3，Maximum cpu value
 		cpulimit, err := m.setFineGrainedCPU(&mApps[i], runtime.Extra)
 		if err != nil {
 			return nil, err
@@ -1405,7 +1395,7 @@ func convertBinds(binds []apistructs.ServiceBind, ciEnvs apistructs.ClusterInfoD
 
 // convert health check to marathon format
 func convertHealthCheck(service apistructs.Service, ver Ver) (hc *AppHealthCheck, err error) {
-	// dice 强制给低于7分钟的健康检查设置为7分钟
+	// dice Mandatory to set the health check less than 7 minutes to 7 minutes
 	diceDuration := apistructs.HealthCheckDuration
 	interval := 15
 
@@ -1414,12 +1404,12 @@ func convertHealthCheck(service apistructs.Service, ver Ver) (hc *AppHealthCheck
 		logrus.Infof("in newhealthCheck for service(%s)", service.Name)
 		hc = new(AppHealthCheck)
 		hc.GracePeriodSeconds = 0
-		// 每次health check的间隔
+		// The interval of each health check
 		hc.IntervalSeconds = interval
 		hc.TimeoutSeconds = 10
-		// kill容器前连续的health check失败次数
+		// The number of consecutive health check failures before the kill container
 		hc.MaxConsecutiveFailures = diceDuration / interval
-		// 等待DelaySeconds秒开始健康检查
+		// Wait for DelaySeconds seconds to start health check
 		hc.DelaySeconds = 0
 
 		if service.NewHealthCheck.HttpHealthCheck != nil {
@@ -1455,7 +1445,7 @@ func convertHealthCheck(service apistructs.Service, ver Ver) (hc *AppHealthCheck
 			hc.MaxConsecutiveFailures = diceDuration / interval
 			hc.DelaySeconds = 0
 		} else {
-			// 对既没有配置健康检查也没有暴露端口的服务, 配置一个默认的健康检查
+			// Configure a default health check for services that are neither configured with health checks nor exposed ports
 			hc.Protocol = HCMethodCommand
 			hc.Command = &AppHealthCheckCommand{Value: "echo 1"}
 			hc.MaxConsecutiveFailures = diceDuration / interval
@@ -1558,8 +1548,8 @@ func buildVolumeCloudHostPath(prefix string, mAppId string, containerPath string
 }
 
 func (m *Marathon) addDockerConfg(app *App) {
-	// 各个集群默认值
-	// TODO: 全部做到 etcd 集群配置中
+	// Default value of each cluster
+	// TODO: All done in etcd cluster configuration
 	app.Container.Docker.Parameters = append(app.Container.Docker.Parameters,
 		AppContainerDockerParameter{Key: "log-driver", Value: "json-file"},
 		AppContainerDockerParameter{Key: "log-opt", Value: "max-size=100m"},
@@ -1608,24 +1598,24 @@ func (m *Marathon) addDockerEnv(app *App, srvEnv map[string]string) {
 }
 
 func (m *Marathon) setFineGrainedCPU(app *App, extra map[string]string) (float64, error) {
-	// 1, 处理申请 cpu 值
+	// 1, Processing request cpu value
 	requestCPU := app.Cpus
 	if requestCPU < MIN_CPU_SIZE {
 		return 0, errors.Errorf("app(%s) request cpu is %v, which is lower than min cpu(%v)",
 			app.Id, requestCPU, MIN_CPU_SIZE)
 	}
 
-	// 2, 处理 cpu 超卖
+	// 2, Dealing with cpu oversold
 	ratio := cpupolicy.CalcCPUSubscribeRatio(m.cpuSubscribeRatio, extra)
 	app.Cpus = requestCPU / ratio
 
-	// 3, 处理最大 cpu, 即对应的 cpu quota，默认不限制 cpu quota, 即对应到 cgroup 下的 cpu.cfs_quota_us 值为 -1
+	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
 	quota := int64(0)
 
-	// 按申请 cpu 来设置最大 cpu
+	// Set the maximum cpu according to the requested cpu
 	if m.cpuNumQuota == -1.0 {
 		maxCPU := cpupolicy.AdjustCPUSize(requestCPU)
-		// 设置 cpu quota 对应的 cpu 个数值为 maxCPU
+		// Set the cpu value corresponding to cpu quota to maxCPU
 		quota = int64(maxCPU * float64(CPU_CFS_PERIOD_US))
 	} else if m.cpuNumQuota > 0 {
 		quota = int64(m.cpuNumQuota * float64(CPU_CFS_PERIOD_US))
@@ -1651,7 +1641,7 @@ func handleAddonsLabel(runtime *apistructs.ServiceGroup, app *App) {
 		app.Env = make(map[string]string)
 	}
 	for k, v := range runtime.Labels {
-		// 将 runtime 上以 DICE 前缀的 label 拷贝到 service 的 label 和 env 中
+		// Copy the label prefixed with DICE on the runtime to the label and env of the service
 		if strings.HasPrefix(k, "DICE") {
 			app.Labels[k] = v
 			app.Env[k] = v
@@ -1659,7 +1649,7 @@ func handleAddonsLabel(runtime *apistructs.ServiceGroup, app *App) {
 	}
 }
 
-// 设置服务资源不足的具体信息
+// Set specific information about insufficient service resources
 func setServiceDetailedResourceInfo(service *apistructs.Service, queue *Queue, appID string, status AppStatus) {
 	if status != AppStatusWaiting {
 		return
@@ -1668,7 +1658,7 @@ func setServiceDetailedResourceInfo(service *apistructs.Service, queue *Queue, a
 	for _, offer := range queue.Queue {
 		if appID == offer.App.Id && offer.Delay.Overdue {
 			for _, lastOffer := range offer.ProcessedOffersSummary.RejectSummaryLastOffers {
-				// 所有递交过来的 offer 均不满足条件，表示该项资源缺乏
+				// All the submitted offers do not meet the conditions, indicating that the resources are lacking
 				if lastOffer.Declined == lastOffer.Processed && lastOffer.Processed > 0 {
 					unScheduledReasons.AddResourceInfo(lastOffer.Reason)
 					logrus.Infof("service(%s) has resource insufficiency: %v",
@@ -1680,7 +1670,7 @@ func setServiceDetailedResourceInfo(service *apistructs.Service, queue *Queue, a
 	}
 }
 
-// TODO: 这个函数需要重构
+// TODO: This function needs to be refactored
 func constructConstrains(r *apistructs.ScheduleInfo, service *apistructs.Service) []Constraint {
 	var constrains []Constraint
 
@@ -1716,12 +1706,12 @@ func constructConstrains(r *apistructs.ScheduleInfo, service *apistructs.Service
 		return constrains
 	}
 
-	// 不调度到打上了带该前缀的标签的节点上
+	// Do not schedule to the node marked with the prefix of the label
 	for _, unlikePrefix := range r.UnLikePrefixs {
 		constrains = append(constrains,
 			[]string{labelconfig.DCOS_ATTRIBUTE, "UNLIKE", `.*\b` + unlikePrefix + `[^,]+\b.*`})
 	}
-	// 不调度到打上了带该标签的节点上
+	// Not scheduled to the node with this label
 	unlikes := []string{}
 	copy(unlikes, r.UnLikes)
 	if !r.IsPlatform {
@@ -1734,18 +1724,18 @@ func constructConstrains(r *apistructs.ScheduleInfo, service *apistructs.Service
 		constrains = append(constrains,
 			[]string{labelconfig.DCOS_ATTRIBUTE, "UNLIKE", `.*\b` + unlike + `\b.*`})
 	}
-	// 指定调度到打上了带该前缀的标签的节点上
-	// 目前暂无此类标签
+	// Specify scheduling to the node labeled with the prefix
+	// Currently no such label
 	for _, likePrefix := range r.LikePrefixs {
 		constrains = append(constrains,
 			[]string{labelconfig.DCOS_ATTRIBUTE, "LIKE", `.*\b` + likePrefix + `\b.*`})
 	}
-	// 指定调度到打上了该标签的节点上，不与 any 共存
+	// Specify to be scheduled to the node with this label, not coexisting with any
 	for _, exclusiveLike := range r.ExclusiveLikes {
 		constrains = append(constrains,
 			[]string{labelconfig.DCOS_ATTRIBUTE, "LIKE", `.*\b` + exclusiveLike + `\b.*`})
 	}
-	// 指定调度到打上了该标签的节点上，如果启用了 any 标签则带上 any 标签
+	// Specify to be scheduled to the node with this label, if the any label is enabled, the any label is attached
 	for _, like := range r.Likes {
 		if r.Flag {
 			constrains = append(constrains,
@@ -1757,7 +1747,7 @@ func constructConstrains(r *apistructs.ScheduleInfo, service *apistructs.Service
 		}
 	}
 
-	// 指定调度到打上了该标签的节点上，允许多个或运算
+	// Specify scheduling to the node with this label, allowing multiple OR operations
 	if len(r.InclusiveLikes) > 0 {
 		constrain := []string{labelconfig.DCOS_ATTRIBUTE, "LIKE"}
 		var sentence string

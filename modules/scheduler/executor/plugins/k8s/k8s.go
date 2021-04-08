@@ -68,14 +68,14 @@ import (
 const (
 	kind = "K8S"
 
-	// SUBSCRIBE_RATIO_SUFFIX 超分比的key后缀
+	// SUBSCRIBE_RATIO_SUFFIX the key suffix of the super ratio
 	SUBSCRIBE_RATIO_SUFFIX = "_SUBSCRIBE_RATIO"
 
 	// CPU_NUM_QUOTA cpu limit key
 	CPU_NUM_QUOTA = "CPU_NUM_QUOTA"
-	// CPU_CFS_PERIOD_US 100000 是 /sys/fs/cgroup/cpu/cpu.cfs_period_us 默认值
+	// CPU_CFS_PERIOD_US 100000  /sys/fs/cgroup/cpu/cpu.cfs_period_us default value
 	CPU_CFS_PERIOD_US int = 100000
-	// MIN_CPU_SIZE 最小申请cpu值
+	// MIN_CPU_SIZE Minimum application cpu value
 	MIN_CPU_SIZE = 0.1
 
 	// ProjectNamespace Env
@@ -115,7 +115,7 @@ func init() {
 		if err := k.registerEvent(localStore, stopCh, notifier); err != nil {
 			logrus.Errorf("failed to register event sync fn, executor: %s, (%v)", name, err)
 		}
-		// 同步实例状态
+		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
 		bdl := bundle.New(bundle.WithCMDB())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
@@ -177,7 +177,7 @@ type Kubernetes struct {
 	ClusterInfo  *clusterinfo.ClusterInfo
 	resourceInfo *resourceinfo.ResourceInfo
 	event        *event.Event
-	// 将上层实际设置的 cpu 除以一个比例, 传递给集群调度, 默认为1
+	// Divide the CPU actually set by the upper layer by a ratio and pass it to the cluster scheduling, the default is 1
 	cpuSubscribeRatio        float64
 	memSubscribeRatio        float64
 	devCpuSubscribeRatio     float64
@@ -186,8 +186,8 @@ type Kubernetes struct {
 	testMemSubscribeRatio    float64
 	stagingCpuSubscribeRatio float64
 	stagingMemSubscribeRatio float64
-	// 将 cpu quota 值设置为 cpuNumQuota 个 cpu 的 quota, 默认为0，即cpu quota不限制
-	// 当取值为 -1 时，表示使用真实的 cpu 个数来设置 cpu quota (quota 可能还会被其他参数修改，如向上弹的 cpu 个数)
+	// Set the cpu quota value to cpuNumQuota cpu quota, the default is 0, that is, the cpu quota is not limited
+	// When the value is -1, it means that the actual number of cpus is used to set the cpu quota (quota may also be modified by other parameters, such as the number of cpus that pop up)
 	cpuNumQuota float64
 
 	// operators
@@ -222,7 +222,7 @@ func (k *Kubernetes) CleanUpBeforeDelete() {
 	k.instanceinfoSyncCancelFunc()
 }
 
-// Addr 返回 kubernetes addr
+// Addr return kubernetes addr
 func (k *Kubernetes) Addr() string {
 	return k.addr
 }
@@ -247,7 +247,7 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	if !istioInfo.Installed {
 		return istioctl.EmptyEngine, nil
 	}
-	// TODO: 获取asm的kubeconfig 创建对应的engine
+	// TODO: Take asm's kubeconfig to create the corresponding engine
 	if istioInfo.IsAliyunASM {
 		return istioctl.EmptyEngine, nil
 	}
@@ -255,7 +255,7 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	if apiServerUrl == "" {
 		return istioctl.EmptyEngine, errors.Errorf("empty api server url, cluster:%s", info.Get(apistructs.DICE_CLUSTER_NAME))
 	}
-	// TODO: 结合版本进行选择
+	// TODO: Combine version to choose
 	localEngine, err := engines.NewLocalEngine(apiServerUrl)
 	if err != nil {
 		return istioctl.EmptyEngine, errors.Errorf("create local istio engine failed, cluster:%s, err:%v", info.Get(apistructs.DICE_CLUSTER_NAME), err)
@@ -276,7 +276,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		}
 	}
 
-	//获取不同环境的超分比的值
+	//Get the value of the super-scoring ratio for different environments
 	var memSubscribeRatio,
 		cpuSubscribeRatio,
 		devMemSubscribeRatio,
@@ -314,7 +314,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		if !ok {
 			return nil, errors.Errorf("not found k8s bearer token")
 		}
-		// 默认开启了 RBAC, 需要通过 token 进行用户鉴权
+		// RBAC is enabled by default, and user authentication is required through token
 		client.BearerTokenAuth(token)
 	}
 
@@ -348,7 +348,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 	resourceInfo := resourceinfo.New(addr, client)
 
-	// 同步 cluster info 到 ETCD（10m 一次）
+	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
 	rawData, err := clusterInfo.Get()
@@ -457,7 +457,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		if err != nil {
 			return fmt.Errorf("not found addonoperator: %v", operator)
 		}
-		// 如果失败,尝试当作普通runtime删除
+		// If it fails, try to delete it as a normal runtime
 		if err := addon.Remove(op, runtime); err == nil {
 			return nil
 		}
@@ -475,7 +475,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 			}
 			return err
 		}
-		// 删除有状态服务的 local pv
+		// Delete the local pv of the stateful service
 		if err := k.DeletePV(runtime); err != nil {
 			logrus.Errorf("failed to delete pv, namespace: %s, name: %s, (%v)", runtime.Type, runtime.ID, err)
 			return err
@@ -510,7 +510,7 @@ func (k *Kubernetes) Remove(ctx context.Context, specObj interface{}) error {
 }
 
 // Update implements updating servicegroup based on k8s api
-// 暂不支持更新云盘(pvc)
+// Does not support updating cloud disk (pvc)
 func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface{}, error) {
 	runtime, err := ValidateRuntime(specObj, "Update")
 	if err != nil {
@@ -526,8 +526,8 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 		return nil, addon.Update(op, runtime)
 	}
 
-	// Update需要区分出普通的更新和中途创建失败后系统删除了runtime(namespace)后"重新分析"的更新，
-	// 这种更新其实就是创建runtime了, 通过namespace是否存在去判断
+	// Update needs to distinguish between ordinary updates and updates that are "re-analyzed" after the system deletes the runtime (namespace) after the creation fails.
+	// This kind of update is actually to create a runtime, which is judged by whether the namespace exists
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
@@ -539,7 +539,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 		logrus.Errorf("failed to get whether namespace existed, ns: %s, (%v)", ns, err)
 		return nil, err
 	}
-	// namespace不存在，此更新相当于创建
+	// namespace does not exist, this update is equivalent to creating
 	if notFound {
 		if err = k.createRuntime(runtime); err != nil {
 			return nil, err
@@ -548,12 +548,12 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 		logrus.Debugf("succeed to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 		return nil, nil
 	}
-	// namespace存在，走普通更新的流程
-	// Update提供两种实现
-	// 1, forceUpdate, 全量删除再创建
-	// 2, updateOneByOne, 分类出要创建的服务，要更新的服务，要删除的服务等三类并逐一处理
+	// namespace exists, follow the normal update process
+	// Update provides two implementations
+	// 1, forceUpdate, Delete all and create again
+	// 2, updateOneByOne, Categorize the three types of services to be created, services to be updated, and services to be deleted, and deal with them one by one
 
-	// 目前无状态采用updateOneByOne
+	// Stateless service using updateOneByOne currently
 	return nil, k.updateRuntime(runtime)
 }
 
@@ -577,7 +577,7 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 		return k.InspectStateful(runtime)
 	}
 
-	// 元数据信息从上层传入，这里只需要拿到runtime的状态并拼装到runtime里返回
+	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
 	status, err := k.Status(ctx, specObj)
 	if err != nil {
 		return nil, err
@@ -652,7 +652,7 @@ func (k *Kubernetes) KillPod(podname string) error {
 	return k.killPod(pod.K8sNamespace, podname)
 }
 
-// 两个接口可能会调用此函数
+// Two interfaces may call this function
 // 1, Create
 // 2, Update
 func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.ServiceGroup) error {
@@ -678,7 +678,7 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	}
 
 	// Step 1. Firstly create service
-	// 只对填写了暴露端口的服务创建k8s service
+	// Only create k8s service for services with exposed ports
 	if len(service.Ports) > 0 {
 		if err := k.updateService(service); err != nil {
 			return err
@@ -709,9 +709,9 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 }
 
 // not sure with whether this service exists
-// bool 变量表示是否真正删除
-// 在以下情况发生,
-// 1, Update接口分析出的删除，此时无法确保k8s的资源是否存在
+// bool The variable indicates whether it is really deleted
+// Occurs in the following situations,
+// 1, If the update interface analyzes the deletion, it is impossible to ensure the existence of k8s resources at this time
 func (k *Kubernetes) tryDelete(namespace, name string) error {
 	var (
 		wg         sync.WaitGroup
@@ -750,8 +750,8 @@ func (k *Kubernetes) getClusterIP(namespace, name string) (string, error) {
 	return svc.Spec.ClusterIP, nil
 }
 
-// 创建操作需要先于更新操作完成，因为新创建的service有可能是要更新的服务的依赖
-// TODO: 后面要抽象出updateOne函数
+// The creation operation needs to be completed before the update operation, because the newly created service may be a dependency of the service to be updated
+// TODO: The updateOne function will be abstracted later
 func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 	labelSelector := make(map[string]string)
 	var ns = sg.ProjectNamespace
@@ -781,13 +781,13 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 			break
 		}
 		if found {
-			// 已存在老的service集合中，做put操作
-			// visited记录已更新过的service
+			// Existing in the old service collection, do the put operation
+			// The visited record has been updated service
 			visited = append(visited, deployName)
 			continue
 		}
 
-		// 不存在于老的service集合中，做create操作
+		// Does not exist in the old service collection, do the create operation
 		// TODO: what to do if errors in Create ? before k8s create deployment ?
 		// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
 		if err := k.createOne(&svc, sg); err != nil {
@@ -796,7 +796,6 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 		}
 	}
 
-	// update 操作
 	for _, svc := range sg.Services {
 		deployName := getDeployName(&svc)
 		for _, s := range visited {
@@ -805,7 +804,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 			}
 
 			// firstly update the service
-			// service同deployment不一样，只对暴露端口的服务才会创建service
+			// service is not the same as deployment, service is only created for services with exposed ports
 			if err := k.updateService(&svc); err != nil {
 				return err
 			}
@@ -843,7 +842,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 		return nil
 	}
 
-	// 老的service中除去已被更新的service即需要删除的service
+	// Remove the updated service from the old service, that is, the service that needs to be deleted
 	toBeDeleted := make([]string, 0)
 	for _, s := range oldSpecServices {
 		existed := false
@@ -934,13 +933,13 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		case ServicePerNode:
 			status, err = k.getDaemonSetStatus(&sg.Services[i])
 		default:
-			// 要区分出下面的异常：
-			// 1, 创建过程中发生错误，整个runtime被删掉了后再来查询
-			// 2, 其他
+			// To distinguish the following exceptions：
+			// 1, An error occurred during the creation process, and the entire runtime is deleted and then come back to query
+			// 2, Others
 			status, err = k.getDeploymentStatus(&sg.Services[i])
 		}
 		if err != nil {
-			// TODO: 状态可改成"Error"..
+			// TODO: the state can be chanded to "Error"..
 			status.Status = apistructs.StatusUnknown
 
 			if !k8serror.NotFound(err) {
@@ -954,12 +953,12 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 				return status, err
 			}
 
-			// namespace不存在说明创建途中有错误，runtime已被调度器删除
+			// The namespace does not exist, indicating that there was an error during creation, and the runtime has been deleted by the scheduler
 			if notfound {
 				status.Status = apistructs.StatusErrorAndDeleted
 				status.LastMessage = fmt.Sprintf("namespace not found, probably deleted, namespace: %s", ns)
 			} else {
-				// 理论上只会出现在删除namespace过程中，某个deployment已被删除而namespace处于terminating状态并即将被删除
+				// In theory, it will only appear in the process of deleting the namespace. A deployment has been deleted and the namespace is in terminating state and is about to be deleted.
 				status.Status = apistructs.StatusUnknown
 				status.LastMessage = fmt.Sprintf("found namespace exists but deployment not found,"+
 					" namespace: %s, deployment: %s", sg.Services[i].Namespace, getDeployName(&sg.Services[i]))
@@ -1001,9 +1000,9 @@ func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRa
 	return nil
 }
 
-// SetFineGrainedCPU 设置合适的 cpu ratio & quota
+// SetFineGrainedCPU Set proper cpu ratio & quota
 func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
-	// 1, 处理申请 cpu 值
+	// 1, Processing request cpu value
 	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
 
 	if requestCPU < MIN_CPU_SIZE {
@@ -1011,15 +1010,15 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 			requestCPU, MIN_CPU_SIZE)
 	}
 
-	// 2, 处理 cpu 超卖
+	// 2, Dealing with cpu oversold
 	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
 	actualCPU := requestCPU / ratio
 	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%v", actualCPU))
 
-	// 3, 处理最大 cpu, 即对应的 cpu quota，默认不限制 cpu quota, 即对应到 cgroup 下的 cpu.cfs_quota_us 值为 -1
+	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
 	quota := k.cpuNumQuota
 
-	// 按申请 cpu 来设置最大 cpu
+	// Set the maximum cpu according to the requested cpu
 	if k.cpuNumQuota == -1.0 {
 		quota = cpupolicy.AdjustCPUSize(requestCPU)
 	}

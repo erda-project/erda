@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// HostUniqueLabelFilter 处理 Pass1ScheduleInfo.label 中的 HOST_UNIQUE
+// HostUniqueLabelFilter Process HOST_UNIQUE in Pass1ScheduleInfo.label
 func HostUniqueLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
 	hostUniqueStr, ok := li.Label[labelconfig.HOST_UNIQUE]

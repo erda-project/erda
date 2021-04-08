@@ -87,7 +87,7 @@ func init() {
 			if !ok {
 				return nil, errors.Errorf("not found k8s bearer token")
 			}
-			// 默认开启了 RBAC, 需要通过 token 进行用户鉴权
+			// RBAC is enabled by default, and user authentication is required through token
 			client.BearerTokenAuth(token)
 		}
 
@@ -106,7 +106,7 @@ func init() {
 			return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 				name, clusterName, err)
 		}
-		// 同步 cluster info（10m 一次）
+		// Synchronize cluster info (every 10m)
 		go clusterInfo.LoopLoadAndSync(context.Background(), false)
 
 		return &k8sSpark{
@@ -133,8 +133,8 @@ type k8sSpark struct {
 	clusterName  string
 	addr         string
 	options      map[string]string
-	enableTag    bool   // 是否开启标签调度
-	sparkVersion string // Spark部署版本
+	enableTag    bool   // Whether to enable label scheduling
+	sparkVersion string // Spark deployment version
 	client       *sparkapplication.SparkApplication
 	pvc          *persistentvolumeclaim.PersistentVolumeClaim
 	namespace    *namespace.Namespace

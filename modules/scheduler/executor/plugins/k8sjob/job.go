@@ -50,8 +50,8 @@ const (
 var (
 	defaultParallelism int32 = 1
 	defaultCompletions int32 = 1
-	// k8s job 默认是有 6 次重试的机会，
-	// 基于现有业务，重试次数设置成 0 次，要么成功要么失败
+	// By default, k8s job has 6 retry opportunities.
+	// Based on the existing business, the number of retries is set to 0, either success or failure
 	defaultBackoffLimit int32 = 0
 )
 
@@ -61,15 +61,6 @@ const (
 	SpecifyImagePullPolicy = "SPECIFY_IMAGE_PULL_POLICY"
 )
 
-// k8s job plugin's configure
-//
-// EXECUTOR_K8SJOB_K8SJOBFORTERMINUS_ADDR=http://127.0.0.1:8080
-// EXECUTOR_K8SJOB_K8SJOBFORJOBTERMINUS_BASICAUTH=admin:1234
-// EXECUTOR_K8S_K8SFORSERVICE_BASICAUTH=
-// EXECUTOR_K8S_K8SFORSERVICE_CA_CRT=
-// EXECUTOR_K8S_K8SFORSERVICE_CLIENT_CRT=
-// EXECUTOR_K8S_K8SFORSERVICE_CLIENT_KEY=
-// EXECUTOR_K8S_K8SFORSERVICE_BEARER_TOKEN=
 func init() {
 	executortypes.Register(executorKind, func(name executortypes.Name, clusterName string, options map[string]string, optionsPlus interface{}) (
 		executortypes.Executor, error) {
@@ -100,7 +91,7 @@ func init() {
 				name, clusterName, err)
 		}
 
-		// 同步 cluster info（10m 一次）
+		// Synchronize cluster info (every 10m)
 		go clusterInfo.LoopLoadAndSync(context.Background(), false)
 
 		return &k8sJob{
@@ -135,7 +126,7 @@ func (k *k8sJob) Name() executortypes.Name {
 	return k.name
 }
 
-// Create 创建 k8s job
+// Create create k8s job
 func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, error) {
 	job := specObj.(apistructs.Job)
 
@@ -190,12 +181,12 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 	return job, nil
 }
 
-// Destroy 等同于 Remove
+// Destroy Equivalent to Remove
 func (k *k8sJob) Destroy(ctx context.Context, specObj interface{}) error {
 	return k.Remove(ctx, specObj)
 }
 
-// Status 查询 k8s job 状态
+// Status Query k8s job status
 func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.StatusDesc, error) {
 	var (
 		statusDesc apistructs.StatusDesc
@@ -256,7 +247,7 @@ func (k *k8sJob) removePipelineJobs(namespace string) error {
 	return k.client.CoreV1().Namespaces().Delete(context.Background(), namespace, metav1.DeleteOptions{})
 }
 
-// Remove 删除 k8s job
+// Remove delete k8s job
 func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 	job, ok := specObj.(apistructs.Job)
 	if !ok {
@@ -347,7 +338,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 	return nil
 }
 
-// Update 更新 k8s job
+// Update update k8s job
 func (k *k8sJob) Update(ctx context.Context, specObj interface{}) (interface{}, error) {
 	var (
 		kubeJob *batchv1.Job
@@ -366,12 +357,12 @@ func (k *k8sJob) Update(ctx context.Context, specObj interface{}) (interface{}, 
 	return nil, nil
 }
 
-// Inspect 查看 k8s job 详细信息
+// Inspect View k8s job details
 func (k *k8sJob) Inspect(ctx context.Context, specObj interface{}) (interface{}, error) {
 	return nil, errors.New("job(k8s) not support inspect action")
 }
 
-// Cancel 停止 k8s job
+// Cancel stop k8s job
 func (k *k8sJob) Cancel(ctx context.Context, specObj interface{}) (interface{}, error) {
 
 	job, ok := specObj.(apistructs.Job)
@@ -385,7 +376,7 @@ func (k *k8sJob) Cancel(ctx context.Context, specObj interface{}) (interface{}, 
 
 	name := strutil.Concat(namespace, ".", job.Name)
 
-	// 通过设置 job.spec.parallelism = 0 来停止 job
+	// Stop the job by setting job.spec.parallelism = 0
 	return nil, k.setJobParallelism(namespace, name, 0)
 }
 func (k *k8sJob) Precheck(ctx context.Context, specObj interface{}) (apistructs.ServiceGroupPrecheckData, error) {
@@ -400,9 +391,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 
 	//logrus.Debugf("input object to k8s job, body: %+v", job)
 
-	// 1核=1000m
 	cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.CPU*1000)), "m"))
-	// 1Mi=1024K=1024x1024字节
 	memory := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.Memory)), "Mi"))
 
 	var (
@@ -433,12 +422,12 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      strutil.Concat(job.Namespace, ".", job.Name),
 			Namespace: job.Namespace,
-			// TODO: 现在无法直接使用job.Labels，不符合k8s labels的规则
+			// TODO: Job.Labels cannot be used directly now, which does not comply with the rules of k8s labels
 			//Labels:    job.Labels,
 		},
 		Spec: batchv1.JobSpec{
 			Parallelism: &defaultParallelism,
-			// Completions = nil, 即表示只要有一次成功，就算completed
+			// Completions = nil, It means that as long as there is one success, it will be completed
 			Completions: &defaultCompletions,
 			// TODO: add ActiveDeadlineSeconds
 			//ActiveDeadlineSeconds: &defaultActiveDeadlineSeconds,
@@ -484,7 +473,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 	}
 
 	pod := &kubeJob.Spec.Template
-	// 按当前业务，只支持一个 Pod 一个 Container
+	// According to the current business, only one Pod and one Container are supported
 	container := &pod.Spec.Containers[0]
 
 	// cmd
@@ -610,13 +599,13 @@ func (k *k8sJob) generateContainerEnvs(job *apistructs.Job, clusterInfo map[stri
 		})
 	}
 
-	// 加上 K8S 标识
+	// add K8S label
 	env = append(env, corev1.EnvVar{
 		Name:  "IS_K8S",
 		Value: "true",
 	})
 
-	// 加上 namespace 标识
+	// add namespace label
 	env = append(env, corev1.EnvVar{
 		Name:  "DICE_NAMESPACE",
 		Value: job.Namespace,
@@ -686,7 +675,7 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 		}
 	}
 
-	// job controller 都还未处理该 Job
+	// job controller Have not yet processed the job
 	if job.Status.StartTime == nil {
 		statusDesc.Status = apistructs.StatusUnschedulable
 		return statusDesc
@@ -701,7 +690,7 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 			statusDesc.Status = apistructs.StatusUnschedulable
 		}
 	} else {
-		// TODO: 如何判断 job 是被 stopped?
+		// TODO: How to determine if a job is stopped?
 		if job.Status.Succeeded >= *job.Spec.Completions {
 			statusDesc.Status = apistructs.StatusStoppedOnOK
 		} else {
@@ -762,7 +751,7 @@ func (k *k8sJob) CapacityInfo() apistructs.CapacityInfoData {
 	return apistructs.CapacityInfoData{}
 }
 
-// GenerateK8SVolumes 根据 job 配置，生产 volume 相关配置
+// GenerateK8SVolumes According to job configuration, production volume related configuration
 func GenerateK8SVolumes(job *apistructs.Job) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
 	vols := []corev1.Volume{}
 	volMounts := []corev1.VolumeMount{}
@@ -831,7 +820,7 @@ func (k *k8sJob) createImageSecretIfNotExist(namespace string) error {
 		return err
 	}
 
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	s, err := k.client.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), k8s.AliyunRegistry, metav1.GetOptions{})
 	if err != nil {
 		if !strings.Contains(err.Error(), "not found") {

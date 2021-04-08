@@ -30,12 +30,12 @@ var (
 	VolumeNameReferNilVolume = errors.New("volume name refer to nil volume")
 )
 
-// etcd 中存储的 volume 信息
+// etcd Volume information stored in etcd
 // key: /volume/<id>
 // val: VolumeInfo
 type etcdVolumeInfo volume.VolumeInfo
 
-// defaultCreate 把 volume 元数据存储到 etcd
+// defaultCreate Store volume metadata in etcd
 func defaultCreate(js jsonstore.JsonStore, config volume.VolumeCreateConfig) (volume.VolumeInfo, error) {
 	id, err := volume.NewVolumeID(config)
 	if err != nil {
@@ -48,8 +48,8 @@ func defaultCreate(js jsonstore.JsonStore, config volume.VolumeCreateConfig) (vo
 		Size:      config.Size,
 		Type:      config.Type,
 	}
-	// TODO(zj): 这里先Get 后 Set 存在 并发问题
-	// 后续在jsonstore中加 STM 的支持, 以方便使用，避免直接用etcd库的stm
+	// TODO(zj): Here there is a concurrency problem with Get first and then Set
+	// Later, STM support will be added to jsonstore to facilitate the use and avoid directly using the stm of the etcd library
 	IDPath := mkIndexEtcdPath(volume.ETCDVolumeMetadataDir, id.String())
 	infoToEtcd := etcdVolumeInfo(info)
 	notfound, err := js.Notfound(context.Background(), IDPath)
@@ -94,8 +94,8 @@ func defaultDelete(js jsonstore.JsonStore, ID volume.VolumeIdentity) (volume.Vol
 	return volume.VolumeInfo(info), nil
 }
 
-// defaultUpdate 目前只会更新 VolumeInfo 中 References 值,
-// 返回 更新前 的 volumeinfo
+// defaultUpdate Currently only the References value in VolumeInfo will be updated,
+// Return volumeinfo before update
 func defaultUpdate(js jsonstore.JsonStore, ID volume.VolumeIdentity, vlm volume.VolumeInfo) (volume.VolumeInfo, error) {
 	path := mkIndexEtcdPath(volume.ETCDVolumeMetadataDir, ID.String())
 	var info etcdVolumeInfo

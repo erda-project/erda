@@ -237,7 +237,7 @@ type QueueOffer struct {
 	Count int             `json:"count,omitempty"`
 	Delay QueueOfferDelay `json:"delay,omitempty"`
 	App   App             `json:"app,omitempty"`
-	// 概述 offer 处理情况
+	// Overview of offer processing
 	ProcessedOffersSummary ProcessedOffersSummary `json:"processedOffersSummary,omitempty"`
 }
 
@@ -246,12 +246,12 @@ type QueueOfferDelay struct {
 	Overdue         bool `json:"overdue,omitempty"`
 }
 
-// ProcessedOffersSummary 简要描述 offer 是否符合的情况
+// ProcessedOffersSummary Briefly describe whether the offer is in compliance
 type ProcessedOffersSummary struct {
 	RejectSummaryLastOffers []RejectSummaryLastOffer `json:"rejectSummaryLastOffers,omitempty"`
 }
 
-// RejectSummaryLastOffer 描述最近的 offer 不通过的情况
+// RejectSummaryLastOffer Describe the failure of the recent offer
 type RejectSummaryLastOffer struct {
 	Reason    string `json:"reason,omitempty"`
 	Declined  int    `json:"declined,omitempty"`

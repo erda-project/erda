@@ -104,9 +104,9 @@ type TerminalExecutor interface {
 }
 
 type ExecutorWholeConfigs struct {
-	// 普通集群配置
+	// Common cluster configuration
 	BasicConfig map[string]string
-	// 精细化的配置
+	// Accurate cluster configuration
 	PlusConfigs *conf.OptPlus
 }
 

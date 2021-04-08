@@ -93,11 +93,11 @@ func (s *Syncer) gc() {
 	}()
 }
 
-// MetaserverMSG kafka容器信息格式
+// MetaserverMSG kafka format of container message
 type MetaserverMSG struct {
 	Name      string                 `json:"name"`      // metaserver_container、metaserver_all_containers
-	TimeStamp int64                  `json:"timestamp"` // 纳秒
-	Fields    map[string]interface{} `json:"fields"`    // 全量容器事件时 key: containerID value: container info
+	TimeStamp int64                  `json:"timestamp"` // Nanosecond
+	Fields    map[string]interface{} `json:"fields"`    // Full container event key: containerID value: container info
 	Tags      map[string]string      `json:"tags,omitempty"`
 }
 
@@ -189,13 +189,13 @@ func createOrUpdate(db *instanceinfo.Client, instance instanceinfo.InstanceInfo)
 	}
 
 	// clear duplicate instance in db
-	// dcos有 2 处代码会去新建 instance(in db),
+	// dcos has 2 codes to create a new instance (in db),
 	// 1. marathon event
-	// 2. 当前代码
+	// 2. Current code
 	// -------------
-	// 然而这里可能会有同步问题, 会出现2条container_id一样的记录,
-	// (注意,container_id不能设置为unique,因为marathon event处没有container_id)
-	// 所以需要处理一下重复记录
+	// However, there may be synchronization problems here, and there will be two records with the same container_id.
+	// (Note that container_id cannot be set to unique, because there is no container_id at the marathon event)
+	// So we need to deal with duplicate records
 	idmap := map[string]uint64{}
 	idToDel := []uint64{}
 	currentInstances, err = db.InstanceReader().ByTaskID(instance.TaskID).Do()
@@ -259,7 +259,7 @@ func convertToInstance(fields map[string]interface{}) instanceinfo.InstanceInfo 
 	if status, ok := fields["status"]; ok {
 		instance.Phase = convertStatus(status.(string))
 		if _, ok := fields["edas_app_id"]; ok {
-			// 如果是 edas 的实例, 则直接将 running 作为 healthy
+			// If it is an instance of edas, then directly use running as healthy
 			if instance.Phase == instanceinfo.InstancePhaseRunning {
 				instance.Phase = instanceinfo.InstancePhaseHealthy
 			}
@@ -348,7 +348,7 @@ func convertToInstance(fields map[string]interface{}) instanceinfo.InstanceInfo 
 
 func round(f float64, n int) float64 {
 	shift := math.Pow(10, float64(n))
-	fv := 0.0000000001 + f //对浮点数产生.xxx999999999 计算不准进行处理
+	fv := 0.0000000001 + f //Generate floating point number. xxx999999999 calculation is not allowed to be processed
 	return math.Floor(fv*shift+.5) / shift
 }
 

@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// clusterInfoPrefix 是集群配置信息在 etcd 中的路径前缀
+// clusterInfoPrefix Is the path prefix of the cluster configuration information in etcd
 const (
 	clusterInfoPrefix = "/dice/scheduler/clusterinfo/"
 	queryTimeout      = 3 * time.Second

@@ -35,7 +35,7 @@ type andrule struct {
 	elems []string
 }
 
-// OR 语义上等于 '|' （或）
+// OR is semantically equivalent to'|' (or)
 func (r *rule) or(or ...*andrule) *rule {
 	r.elems = append(r.elems, or...)
 	return r
@@ -63,7 +63,7 @@ func (r *rule) generate() string {
 	return strutil.Concat(`.*\b(`, strutil.Join(andrules, "|", true), ")")
 }
 
-// AND 语义上等于 '&' (且)
+// And is semantically equivalent to'|' (and)
 func and(ss ...string) *andrule {
 	return &andrule{elems: ss}
 }

@@ -14,7 +14,6 @@
 package executor
 
 import (
-	_ "github.com/erda-project/erda/modules/scheduler/executor/plugins/chronos"
 	_ "github.com/erda-project/erda/modules/scheduler/executor/plugins/demo"
 	_ "github.com/erda-project/erda/modules/scheduler/executor/plugins/edas"
 	_ "github.com/erda-project/erda/modules/scheduler/executor/plugins/flink"

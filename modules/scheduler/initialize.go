@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
-// Initialize 应用相关的初始化操作
+// Initialize Application-related initialization operations
 func Initialize() error {
 	logrus.Infof(version.String())
 	conf.Load()
@@ -41,9 +41,5 @@ func Initialize() error {
 	logrus.Errorf("[alert] starting scheduler instance")
 	i18n.InitI18N()
 
-	//if err := server.NewServer(conf.ListenAddr()).ListenAndServe(); err != nil {
-	//	logrus.Error(err)
-	//	os.Exit(2)
-	//}
 	return server.NewServer(conf.ListenAddr()).ListenAndServe()
 }

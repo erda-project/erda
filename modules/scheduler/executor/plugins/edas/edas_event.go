@@ -38,14 +38,14 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 
 	logrus.Infof("edas registerEventChanAndLocalStore, name: %s", name)
 
-	// watch 特定etcd目录的事件的处理函数
+	// watch event handler for a specific etcd directory
 	syncRuntimeToLstore := func(key string, value interface{}, t storetypes.ChangeType) error {
 		runtimeName := etcdKeyToMapKey(key)
 		if len(runtimeName) == 0 {
 			return nil
 		}
 
-		// 先处理delete的事件
+		// Deal with the delete event first
 		if t == storetypes.Del {
 			_, ok := lstore.Load(runtimeName)
 			if ok {
@@ -60,7 +60,7 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 
 		run := value.(*apistructs.ServiceGroup)
 
-		// 过滤不属于本executor的事件
+		// Filter events that do not belong to this executor
 		if run.Executor != name {
 			return nil
 		}
@@ -81,7 +81,7 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 		return nil
 	}
 
-	// 将注册来的executor的name及其event channel对应起来
+	// Correspond the name of the registered executor and its event channel
 	getEvChanFn := func(executorName executortypes.Name) (chan *eventtypes.StatusEvent, chan struct{}, *sync.Map, error) {
 		logrus.Infof("in RegisterEvChan executor(%s)", name)
 		if string(executorName) == name {
@@ -93,7 +93,7 @@ func (m *EDAS) registerEventChanAndLocalStore(evCh chan *eventtypes.StatusEvent,
 	executortypes.RegisterEvChan(executortypes.Name(name), getEvChanFn, syncRuntimeToLstore)
 }
 
-// 目前edas没有使用事件驱动机制，因而每次用轮询去模拟
+// Currently edas does not use an event-driven mechanism, so it uses polling to simulate each time
 func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 	o11 := discover.Orchestrator()
 	eventAddr := "http://" + o11 + "/api/events/runtimes/actions/sync"
@@ -161,12 +161,12 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 				e.ServiceStatuses[i].ServiceName = srv.Name
 				e.ServiceStatuses[i].Replica = srv.Scale
 				e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(srv.Status)
-				// 状态为空字符串
+				// Status is empty string
 				if len(e.ServiceStatuses[i].ServiceStatus) == 0 {
 					e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(apistructs.StatusProgressing)
 				}
-				// 通过 edas 的 Status 接口拿服务状态目前没有附带实例信息，
-				// 如果上层将某服务的实例数设置为 0，则将edas的服务设置为健康状态
+				//Get the service status through the Status interface of edas. Currently there is no instance information attached.
+				//If the upper layer sets the number of instances of a service to 0, then the edas service is set to a healthy state
 				if e.ServiceStatuses[i].Replica == 0 {
 					e.ServiceStatuses[i].ServiceStatus = string(apistructs.StatusHealthy)
 				}
@@ -208,7 +208,7 @@ func (m *EDAS) WaitEvent(lstore *sync.Map, stopCh chan struct{}) {
 	}
 }
 
-// 对etcd里的原始key做个处理
+// Treat the original key in etcd
 // /dice/service/services/staging-77 -> "services/staging-77"
 func etcdKeyToMapKey(eKey string) string {
 	fields := strings.Split(eKey, "/")
@@ -218,7 +218,7 @@ func etcdKeyToMapKey(eKey string) string {
 	return ""
 }
 
-// Status 接口通过 edas 拿到的服务的状态的修改
+// Modification of the status of the service obtained through the Status interface through edas
 func convertServiceStatus(serviceStatus apistructs.StatusCode) string {
 	switch serviceStatus {
 	case apistructs.StatusReady:

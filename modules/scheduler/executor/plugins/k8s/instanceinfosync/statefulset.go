@@ -54,7 +54,7 @@ func updateAddonStatefulSet(dbclient *instanceinfo.Client, stslist *appsv1.State
 		)
 
 		// -------------------------------
-		// 1. 从 statefulset 中获取所有需要的信息
+		// 1. Get all needed information from statefulset
 		// -------------------------------
 		for _, env := range sts.Spec.Template.Spec.Containers[0].Env {
 			for k, v := range envsuffixmap {
@@ -64,8 +64,8 @@ func updateAddonStatefulSet(dbclient *instanceinfo.Client, stslist *appsv1.State
 			}
 		}
 
-		// 如果 envsuffixmap 中的内容有为空的情况, 则不更新这个 sts 到 DB
-		// 因为走 dice 部署流程发起的服务都应该有這些环境变量
+		// If the content in envsuffixmap is empty, don't update this sts to DB
+		// Because the services initiated by the dice deployment process should have these environment variables
 		skipThisSts := false
 		for _, v := range envsuffixmap {
 			if *v == "" {
@@ -83,7 +83,7 @@ func updateAddonStatefulSet(dbclient *instanceinfo.Client, stslist *appsv1.State
 		startedAt = sts.ObjectMeta.CreationTimestamp.Time
 
 		// -------------------------------
-		// 2. 更新或创建 ServiceInfo 记录
+		// 2. Update or create ServiceInfo record
 		// -------------------------------
 		svcs, err := r.ByOrgName(orgName).
 			ByProjectName(projectName).

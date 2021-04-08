@@ -21,59 +21,57 @@ import (
 )
 
 const (
-	// clusterPrefix 是集群配置信息在 etcd 中的路径前缀
+	// clusterPrefix Is the path prefix of the cluster configuration information in etcd
 	clusterPrefix = "/dice/scheduler/configs/cluster/"
-	// edasExecutorPrefix 是edas集群executor配置信息在 etcd 中的路径前缀
+	// edasExecutorPrefix It is the path prefix of edas cluster executor configuration information in etcd
 	edasExecutorPrefix = "/dice/clustertoexecutor/"
-	// clusterMarathonSuffix 标识 marathon executor 的后缀
+	// clusterMarathonSuffix Suffix to identify marathon executor
 	// e.g. /dice/scheduler/configs/cluster/terminus-y-service-marathon
 	clusterMarathonSuffix = "-service-marathon"
-	// clusterMetronomeSuffix 标识 metronome executor 的后缀
+	// clusterMetronomeSuffix Suffix to identify metronome executor
 	// e.g. /dice/scheduler/configs/cluster/terminus-y-job-metronome
 	clusterMetronomeSuffix = "-job-metronome"
-	// clusterEdasSuffix 标识 edas executor 的后缀
+	// clusterEdasSuffix Suffix to identify edas executor
 	// e.g. /dice/scheduler/configs/cluster/bsd-edas-service-edas
 	clusterEdasSuffix = "-service-edas"
-	// clusterK8SSuffix 标识 k8s service executor 的后缀
+	// clusterK8SSuffix Suffix that identifies the k8s service executor
 	clusterK8SSuffix = "-service-k8s"
-	// clusterK8SJobSuffix 标识 k8s job executor 的后缀
+	// clusterK8SJobSuffix Suffix to identify k8s job executo
 	clusterK8SJobSuffix = "-job-k8s"
-	// clusterK8SFlinkSuffix 是 k8s flink 的地址后缀
+	// clusterK8SFlinkSuffix Is the address suffix of k8s flink
 	clusterK8SFlinkSuffix = "-flink-k8s"
-	// clusterK8SSparkSuffix 是 k8s spark 的地址后缀
+	// clusterK8SSparkSuffix Is the address suffix of k8s spark
 	clusterK8SSparkSuffix = "-spark-k8s"
-	// jobKindFlink 标识 flink 类型 job
+	// jobKindFlink Identifies the flink type job
 	jobKindFlink = "FLINK"
-	// jobKindSpark 标识 spark 类型 job
+	// jobKindSpark Identifies spark type job
 	jobKindSpark = "SPARK"
-	// clusterTypeDcos 标识 colony 事件中 dcos 集群类型
+	// clusterTypeDcos Identify the dcos cluster type in the colony event
 	clusterTypeDcos = "dcos"
-	// clusterTypeK8S 标识 colony 事件中 k8s 集群类型
+	// clusterTypeK8S Identify the k8s cluster type in the colony event
 	clusterTypeK8S = "k8s"
-	// clusterTypeK8S 标识 colony 事件中 edas 集群类型
+	// clusterTypeK8S Identify the edas cluster type in the colony event
 	clusterTypeEdas = "edas"
-	// clusterTypeLocaldocker 标识用本地 docker 的单机集群类型
-	clusterTypeLocaldocker = "localdocker"
-	// clusterActionCreate 标识 colony 事件中创建动作
+	// clusterActionCreate Identifies the creation of an action in a colony event
 	clusterActionCreate = "create"
-	// clusterActionUpdate 标识 colony 事件中更新动作
+	// clusterActionUpdate Identifies the update action in a colony event
 	clusterActionUpdate = "update"
-	// marathonAddrSuffix 是 marathon 地址后缀
+	// marathonAddrSuffix Is the marathon address suffix
 	marathonAddrSuffix = "/service/marathon"
-	// metronomeAddrSuffix 是 metronome 地址后缀
+	// metronomeAddrSuffix Is the metronome address suffix
 	metronomeAddrSuffix = "/service/metronome"
 )
 
-// ClusterInfo 集群信息，不同于 apistructs.ClusterInfo, 这个结构 cluster pkg 内部使用
+// ClusterInfo Cluster information, different from apistructs.ClusterInfo, this structure is used internally by cluster pkg
 type ClusterInfo struct {
-	// 集群名称, e.g. "terminus-y"
+	// cluster name, e.g. "terminus-y"
 	ClusterName string `json:"clusterName,omitempty"`
-	// executor名称, e.g. MARATHONFORTERMINUS
+	// executor name, e.g. MARATHONFORTERMINUS
 	ExecutorName string `json:"name,omitempty"`
-	// executor类型，对应plugins，e.g. MARATHON, METRONOME, K8S, EDAS
+	// executor type，e.g. MARATHON, METRONOME, K8S, EDAS
 	Kind string `json:"kind,omitempty"`
 
-	// options可包含如下
+	// options can include the following
 	//"ADDR": "master.mesos/service/marathon",
 	//"PREFIX": "/runtimes/v1",
 	//"VERSION":"1.6.0",
@@ -87,17 +85,17 @@ type ClusterInfo struct {
 	OptionsPlus *conf.OptPlus     `json:"optionsPlus,omitempty"`
 }
 
-// Cluster clusterimpl 的接口
+// Cluster clusterimpl interface
 type Cluster interface {
 	Hook(event *apistructs.ClusterEvent) error
 }
 
-// ClusterImpl Cluster interface 的实现
+// ClusterImpl Cluster interface implement
 type ClusterImpl struct {
 	js jsonstore.JsonStore
 }
 
-// NewClusterImpl 创建 ClusterImpl
+// NewClusterImpl create ClusterImpl
 func NewClusterImpl(js jsonstore.JsonStore) Cluster {
 	return &ClusterImpl{js}
 }

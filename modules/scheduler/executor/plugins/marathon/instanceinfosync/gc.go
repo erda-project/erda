@@ -22,11 +22,11 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// gcAliveInstancesInDB 处理一段时间内没有更新过的非 Dead 实例.
-// 策略:
-// 1. 找出所有 SECS(参数) 内未更新的非 Dead 实例
-// 2. 检查上面找出的每个实例相应的 宿主机 上是否有其他更新过状态(1小时内)的实例
-// 3. 如果有, 将这个实例设置为 Dead. 如果没有, 则忽略
+// gcAliveInstancesInDB Process non-Dead instances that have not been updated in a period of time.
+// Strategy:
+// 1. Find all non-Dead instances that have not been updated in SECS (parameters)
+// 2. Check whether there are other instances with updated status (within 1 hour) on the corresponding host of each instance found above
+// 3. If there is, set this instance to Dead. If not, ignore
 func gcAliveInstancesInDB(dbclient *instanceinfo.Client, secs int) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()

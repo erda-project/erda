@@ -39,7 +39,7 @@ type Flink struct {
 	addr      string
 	options   map[string]string
 	client    *httpclient.HTTPClient
-	enableTag bool // 是否开启标签调度
+	enableTag bool // Whether to enable label scheduling
 }
 
 func init() {
@@ -117,7 +117,7 @@ func (f *Flink) Create(ctx context.Context, specObj interface{}) (interface{}, e
 	return flinkCreateResponse.JobId, nil
 }
 
-// Flink未提供删除job API，暂使用Flink UI上使用的取消API
+// Flink does not provide a job deletion API, and temporarily uses the cancellation API used on the Flink UI
 func (f *Flink) Destroy(ctx context.Context, specObj interface{}) error {
 	job, ok := specObj.(apistructs.Job)
 	if !ok {

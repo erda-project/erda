@@ -27,7 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/events"
 )
 
-// Message 事件消息
+// Message Event message
 type Message struct {
 	Timestamp int64
 	Reason    string
@@ -42,7 +42,7 @@ func (em MessageList) Len() int           { return len(em) }
 func (em MessageList) Swap(i, j int)      { em[i], em[j] = em[j], em[i] }
 func (em MessageList) Less(i, j int) bool { return em[i].Timestamp < em[j].Timestamp }
 
-// AnalyzePodEvents 分析 pod events, 转成可解读的内容
+// AnalyzePodEvents Analyze pod events and turn them into interpretable content
 func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 	var ems MessageList
 
@@ -66,7 +66,7 @@ func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 			continue
 		}
 
-		// 一阶段分析，原因直观可见
+		// One-stage analysis, the reasons are intuitively visible
 		if cmt, ok := interestedEventCommentFirstMap[e.Reason]; ok {
 			ems = append(ems, Message{
 				Timestamp: e.LastTimestamp.Unix(),
@@ -77,7 +77,7 @@ func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 			continue
 		}
 
-		// 二阶段分析，需要进行 event.message 解析
+		// Two-stage analysis requires event.message analysis
 		cmt, err := secondAnalyzePodEventComment(e.Reason, e.Message)
 		if err == nil {
 			ems = append(ems, Message{
@@ -93,7 +93,7 @@ func (e *Event) AnalyzePodEvents(namespace, name string) (MessageList, error) {
 	return ems, nil
 }
 
-// 一阶段信息获取，可直观分析出原因
+// One-stage analysis, the reasons are intuitively visible
 var interestedEventCommentFirstMap = map[string]string{
 	// events.FailedToInspectImage:     errInspectImage,
 	events.ErrImageNeverPullPolicy:  errImageNeverPull,
@@ -107,7 +107,7 @@ var interestedEventCommentFirstMap = map[string]string{
 	events.NodeRebooted:             errNodeRebooted,
 }
 
-// 二阶段分析，需要解析 event.message
+// wo-stage analysis requires event.message analysis
 func secondAnalyzePodEventComment(reason, message string) (string, error) {
 	switch reason {
 	case "FailedScheduling":
@@ -120,7 +120,7 @@ func secondAnalyzePodEventComment(reason, message string) (string, error) {
 	}
 }
 
-// 解析调度失败的原因
+// Analyze the reason for scheduling failure
 func parseFailedScheduling(message string) (string, error) {
 	var (
 		totalNodes    int
@@ -133,11 +133,10 @@ func parseFailedScheduling(message string) (string, error) {
 	}
 	msgSlice := strings.FieldsFunc(message, splitFunc)
 
-	// 节点资源不可用
-	// 可以分为：
-	// 1. 标签不匹配。 示例："0/8 nodes are available: 8 node(s) didn't match node selector."
-	// 2. CPU 不足。示例："0/8 nodes are available: 5 Insufficient cpu, 5 node(s) didn't match node selector."
-	// 3. 内存不足。示例："0/8 nodes are available: 5 node(s) didn't match node selector, 5 Insufficient memory."
+	// Node resource is unavailable
+	// 1. Labes don't match。 Example："0/8 nodes are available: 8 node(s) didn't match node selector."
+	// 2. Insufficient CPU。Example："0/8 nodes are available: 5 Insufficient cpu, 5 node(s) didn't match node selector."
+	// 3. Insufficient Memory。Example："0/8 nodes are available: 5 node(s) didn't match node selector, 5 Insufficient memory."
 	if strings.Contains(message, "nodes are available") {
 		_, err := fmt.Sscanf(message, "0/%d nodes are available: %s", &totalNodes, &tmpStr)
 		if err != nil {
@@ -166,21 +165,21 @@ func parseFailedScheduling(message string) (string, error) {
 		}
 	}
 
-	// TODO: 补充更多的信息
+	// TODO: Add more information
 	return "", errors.New("unexpected")
 }
 
-// 解析运行失败的原因
+// Analyze the reason for the failure
 func parseFailedReason(message string) (string, error) {
 	switch {
-	// 无效的镜像名
+	// Invalid image name
 	case strings.Contains(message, "InvalidImageName"):
 		return errInvalidImageName, nil
-	// 无效的镜像
+	// Invalid image
 	case strings.Contains(message, "ImagePullBackOff"):
 		return errPullImage, nil
 	default:
-		// TODO: 分析更多的原因
+		// TODO: Analyze the reason for the failure
 		return "", errors.New("unexpected")
 	}
 }

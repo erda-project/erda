@@ -53,7 +53,7 @@ import (
 
 const (
 	kind = "EDAS"
-	// 查询部署结果的循环次数
+	// The number of cycles to query the deployment results
 	loopCount = 2 * 60
 	// edas k8s service namespace
 	defaultNamespace = "default"
@@ -78,10 +78,6 @@ var deleteOptions = &k8sapi.CascadingDeleteOptions{
 }
 
 // EDAS plugin's configure
-//
-// EXECUTOR_EDAS_EDASFORSERVICE_KUBEADDR="127.0.0.1:8080"
-// EXECUTOR_EDAS_EDASFORSERVICE_KUBEBASICAUTH=""
-// EXECUTOR_EDAS_EDASFORSERVICE_REGADDR=""
 func init() {
 	executortypes.Register(kind, func(name executortypes.Name, clustername string, options map[string]string, optionsPlus interface{}) (
 		executortypes.Executor, error) {
@@ -176,7 +172,7 @@ func init() {
 			return edas, nil
 		}
 		evCh := make(chan *eventtypes.StatusEvent, 10)
-		// key是{runtimeNamespace}/{runtimeName}, value是对应spec.ServiceGroup
+		// key is {runtimeNamespace}/{runtimeName}, value is spec.ServiceGroup
 		lstore := &sync.Map{}
 		stopCh := make(chan struct{}, 1)
 		edas.registerEventChanAndLocalStore(evCh, stopCh, lstore)
@@ -185,24 +181,21 @@ func init() {
 	})
 }
 
-// EDAS 访问 edas server 结构体
+// EDAS edas server structure
 type EDAS struct {
 	name     executortypes.Name
 	options  map[string]string
 	addr     string
 	kubeAddr string
-	// TODO: hack
-	// dice 平台的 docker registry addr
-	// 因为不同集群内部 DNS 无法访问，需要 hack 一把
-	regAddr string
+	regAddr  string
 	// default: "cn-hangzhou"
 	regionID string
-	// EDAS 命名空间，默认与 regionID 一致
+	// EDAS namespace, the default is the same as regionID
 	logicalRegionID string
-	// 访问 EDAS openAPI 的key & secret
+	// key & secret of edas openAPI
 	accessKey    string
 	accessSecret string
-	// EDAS 集群 ID, 需要提前创建
+	// EDAS Cluster ID
 	clusterID string
 	// edas pop client
 	client          *api.Client
@@ -210,7 +203,7 @@ type EDAS struct {
 	notifier        eventapi.Notifier
 	k8sDeployClient *deployment.Deployment
 	k8sSvcClient    *k8sservice.Service
-	//是否不限制小于1c的CPU资源申请
+	// Whether to limit the application of CPU resources less than 1c
 	unlimitCPU   string
 	resourceInfo *resourceinfo.ResourceInfo
 }
@@ -298,7 +291,7 @@ func (e *EDAS) Destroy(ctx context.Context, specObj interface{}) error {
 func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.StatusDesc, error) {
 	var status apistructs.StatusDesc
 
-	// 初始化一把，防止上层 console 无法识别
+	// Initialize it to prevent the upper console from being unrecognized
 	status.Status = apistructs.StatusUnknown
 
 	runtime, ok := specObj.(apistructs.ServiceGroup)
@@ -346,7 +339,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 		}
 	}
 
-	// 所有service都ready则runtime置为ready,否则状态保持为计算过程中的值
+	//All services are ready, the runtime is set to ready, otherwise the state remains as the value during the calculation process
 	if isReady {
 		status.Status = apistructs.StatusReady
 	}
@@ -354,8 +347,7 @@ func (e *EDAS) Status(ctx context.Context, specObj interface{}) (apistructs.Stat
 	return status, nil
 }
 
-// 因为 edas 删除接口需要花很长的时间，超过了 console 设置的 timeout，所以并行删除 app
-// 忽略删除错误。
+//Because it takes a long time for edas to delete the interface, which exceeds the timeout set by the console, the app is deleted in parallel
 // Remove edas remove runtime
 func (e *EDAS) Remove(ctx context.Context, specObj interface{}) error {
 	var err error
@@ -379,7 +371,7 @@ func (e *EDAS) Remove(ctx context.Context, specObj interface{}) error {
 		close(errChan)
 	}(runtime.Services)
 
-	// HACK: edas api 必然超时(> 10s), 这里需要等待 5s 的原因是让子弹飞一会儿。
+	// HACK: edas api Inevitable timeout (> 10s), here you need to wait for 5s
 	select {
 	case err := <-errChan:
 		return err
@@ -404,7 +396,7 @@ func (e *EDAS) Update(ctx context.Context, specObj interface{}) (interface{}, er
 		return nil, err
 	}
 
-	//从k8s API获取deploy列表
+	// Get the deploy list from k8s API
 	logrus.Debugf("[EDAS] Update runtime, new runtime: %+v", newRun)
 	if _, err = e.getK8sDeployList(newRun.Type, newRun.ID, &oldRun.Services); err != nil {
 		logrus.Debugf("[EDAS] Get deploy from k8s error: %+v", err)
@@ -418,7 +410,7 @@ func (e *EDAS) Update(ctx context.Context, specObj interface{}) (interface{}, er
 	return nil, nil
 }
 
-//从k8s api获取相应runtime的deploy list
+//Get the deploy list of corresponding runtime from k8s api
 func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apistructs.Service) (interface{}, error) {
 	var err error
 	var edasAhasName string
@@ -437,7 +429,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 	}
 	logrus.Debugf("[EDAS] get deploylist of old runtime from k8s : %+v", deployList.Items)
 	for _, i := range deployList.Items {
-		//从deploylist中获取到已经部署的该runtime的deploy
+		// Get the deployed deployment of the runtime from the deploylist
 		logrus.Debugf("[EDAS] deploy name: %+v", i.ObjectMeta.Name)
 		if strings.Contains(i.ObjectMeta.Name, group) {
 			var iService apistructs.Service
@@ -450,7 +442,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 					image = i.Spec.Template.Spec.Containers[0].Image
 				}
 			}
-			//查询service接口获取port list
+			// Query the service interface to get the port list
 			appName := group + "-" + edasAhasName
 			if kubeSvc, err = e.getK8sService(appName); err != nil {
 				if err.Error() == k8sServiceNotFound {
@@ -475,7 +467,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 	return services, nil
 }
 
-// Inspect 查询 runtime 信息
+// Inspect Query runtime information
 func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, error) {
 
 	runtime, ok := specObj.(apistructs.ServiceGroup)
@@ -483,7 +475,7 @@ func (e *EDAS) Inspect(ctx context.Context, specObj interface{}) (interface{}, e
 		return nil, errors.New("edas k8s inspect: invalid runtime spec")
 	}
 
-	// 元数据信息从上层传入，这里只需要拿到runtime的状态并拼装到runtime里返回
+	// Metadata information is passed in from the upper layer, here you only need to get the state of the runtime and assemble it into the runtime to return
 	status, err := e.Status(ctx, specObj)
 	if err != nil {
 		return nil, errors.Errorf("edas k8s inspect: %v", err)
@@ -559,7 +551,7 @@ func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGro
 		return errors.Wrap(err, "fill service spec")
 	}
 
-	// 创建应用
+	// Create application
 	if appID, err = e.insertApp(serviceSpec); err != nil {
 		return errors.Wrap(err, "edas create app")
 	}
@@ -567,7 +559,7 @@ func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGro
 	group := runtime.Type + "-" + runtime.ID
 	appName := group + "-" + s.Name
 
-	//创建k8s service
+	//create k8s service
 	if err := e.createK8sService(appName, appID, diceyml.ComposeIntPortsFromServicePorts(s.Ports)); err != nil {
 		logrus.Errorf("[EDAS] Failed to create k8s service, appName: %s, error: %v", appName, err)
 		return errors.Wrap(err, "edas create k8s service")
@@ -598,9 +590,8 @@ func (e *EDAS) createK8sService(appName string, appID string, ports []int) error
 	for i, port := range ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
 			// TODO: name?
-			Name: strutil.Concat(servicenamePrefix, strconv.Itoa(i)),
-			Port: int32(port),
-			// Dice上用户只填写Port, 即Port(service暴露的端口)和targetPort(容器暴露的端口)相同
+			Name:       strutil.Concat(servicenamePrefix, strconv.Itoa(i)),
+			Port:       int32(port),
 			TargetPort: intstr.FromInt(port),
 		})
 	}
@@ -615,7 +606,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 
 	appName = runtime.Type + "-" + runtime.ID + "-" + s.Name
 
-	// 检查 service 是否存在，不存在的话，则新建；否则就更新
+	// Check whether the service exists, if it does not exist, create a new one; otherwise, update it
 	if appID, err = e.getAppID(appName); err != nil {
 		if err.Error() == notFound {
 			logrus.Warningf("[EDAS] app(%s) is not found via edas api, will create it ", appName)
@@ -628,7 +619,7 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 	} else {
-		//查询最新一次的发布单，如果存在运行中则终止
+		// Query the latest release order, and terminate if it is running
 		orderList, _ := e.listRecentChangeOrderInfo(appID)
 		if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
 			e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
@@ -676,9 +667,7 @@ func (e *EDAS) removeService(ctx context.Context, group string, s *apistructs.Se
 		logrus.Errorf("[EDAS] Failed to delete k8s svc of app(%s): %v", appName, err)
 		return err
 	}
-	// HACK: 不论调用 edas api 删除服务是否成功，都再尝试直接通过 k8s 删除相关的服务
-	// 忽略错误
-	// edas 接口即使调用成功，也会出现后台服务没有删掉的情况
+	// HACK: Regardless of whether calling edas api to delete the service is successful, try to delete the related service directly through k8s
 	// if err = e.deleteDeploymentAndService(group, s); err != nil {
 	// 	logrus.Warnf("[EDAS] Failed to delete k8s deployments and service, appName: %s, error: %v", appName, err)
 	// }
@@ -692,7 +681,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 	errChan := make(chan error, 1)
 	group := newRuntime.Type + "-" + newRuntime.ID
 
-	// 解析依赖
+	// Resolve dependencies
 	flows, err := util.ParseServiceDependency(newRuntime)
 	if err != nil {
 		return errors.Wrapf(err, "parse service flow, runtime: %s", group)
@@ -701,9 +690,9 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		logrus.Debugf("[EDAS] Start to cyclicUpdateService, group: %s", group)
 		defer logrus.Debugf("[EDAS] End cyclicUpdateService, group: %s", group)
 
-		// 检测需要提前删除的服务
-		// 1.已被删除或更新名字的 service
-		// 2.已被修改端口的 service
+		// Detect services that need to be deleted in advance
+		// 1. The service whose name has been deleted or updated
+		// 2. The service whose port has been modified
 		svcs := checkoutServicesToDelete(newRuntime, oldRuntime)
 		isScale := e.isScaleServices(newRuntime, oldRuntime)
 		logrus.Errorf("[EDAS] group %s scale mode is: %+v", group, isScale)
@@ -725,7 +714,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				svcName := newSvc.Name
 				appName := group + "-" + svcName
 
-				// 新增 service
+				// add service
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
 						logrus.Errorf("[EDAS] Failed to create service: %s, error: %v", appName, err)
@@ -735,7 +724,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 					continue
 				}
 				if e.isServiceToScale(newSvc, oldRuntime) {
-					// 扩容services
+					// scale services
 					logrus.Errorf("[EDAS] Begin to scale service: %s", appName)
 					if err = e.scaleApp(appName, newSvc.Scale); err != nil {
 						logrus.Errorf("[EDAS] Failed to scale service: %s, error: %v", appName, err)
@@ -743,12 +732,12 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 						return
 					}
 				} else {
-					// 更新场景下不影响其他没有更新的服务
+					// The update scenario does not affect other services that have not been updated
 					if isScale && e.isNotChangeService(newSvc, oldRuntime) {
 						continue
 					}
-					// 更新 service
-					// 不包括域名的更新
+					// update service
+					// Does not include domain name updates
 					if err = e.updateService(ctx, newRuntime, newSvc); err != nil {
 						logrus.Errorf("[EDAS] Failed to update service: %s, error: %v", appName, err)
 						errChan <- err
@@ -759,8 +748,8 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 		}
 	}()
 
-	// HACK: edas api 必然超时(> 10s), 这里需要等待 5s 的原因是便于该 runtime 的状态更新。
-	// 防止异步还未执行时，上层就来查询状态。
+	// HACK: The edas api must time out (> 10s). The reason for waiting for 5s here is to facilitate the status update of the runtime.
+	// Prevent the upper layer from querying the status when the asynchronous has not been executed.
 	select {
 	case err := <-errChan:
 		close(errChan)
@@ -840,8 +829,8 @@ func (e *EDAS) removeAndCreateRuntime(ctx context.Context, runtime *apistructs.S
 		}
 	}()
 
-	// HACK: edas api 必然超时(> 10s), 这里需要等待 5s 的原因是便于该 runtime 的状态更新。
-	// 防止异步还未执行时，上层就来查询状态。
+	// HACK: The edas api must time out (> 10s). The reason for waiting for 5s here is to facilitate the status update of the runtime.
+	// Prevent the upper layer from querying the status when the asynchronous has not been executed.
 	select {
 	case err := <-errChan:
 		close(errChan)
@@ -857,7 +846,7 @@ func (e *EDAS) deleteDeploymentAndService(group string, service *apistructs.Serv
 
 	appName := group + "-" + service.Name
 
-	// 只有对外暴露端口的服务才有对应的k8s service
+	// Only services with externally exposed ports have corresponding k8s service
 	if len(service.Ports) > 0 {
 		if err := e.deleteK8sService(group, service); err != nil {
 			logrus.Warnf("[EDAS] Failed to delete k8s service, appName: %s, error: %v", appName, err)
@@ -942,9 +931,9 @@ func buildTLS(publicHosts []string) []k8sapi.IngressTLS {
 	return tls
 }
 
-// 创建应用
+// Create Application
 // InsertK8sApplication
-// 问题1：服务名不支持"_"
+// Question 1: The service name does not support "_"
 func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 	var req *api.InsertK8sApplicationRequest
 	var resp *api.InsertK8sApplicationResponse
@@ -980,14 +969,6 @@ func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 	req.RequestsMem = requests.NewInteger(spec.Mem)
 	req.LimitMem = requests.NewInteger(spec.Mem)
 
-	// TODO: edas 暂没有提供创建 service api。
-	// Intranet Slb: edas 自动新购私网slb，类型为"性能共享型"
-	// if len(spec.Ports) > 0 {
-	// 	req.IntranetSlbProtocol = "TCP"
-	// 	req.IntranetSlbPort = requests.NewInteger(spec.Ports[0])
-	// 	req.IntranetTargetPort = requests.NewInteger(spec.Ports[0])
-	// }
-
 	logrus.Debugf("[EDAS] insert k8s application, request body: %+v", req)
 
 	// InsertK8sApplication
@@ -1022,18 +1003,12 @@ func (e *EDAS) insertApp(spec *ServiceSpec) (string, error) {
 
 	logrus.Debugf("[EDAS] start loop check k8s service status: appName: %s", req.AppName)
 
-	// 需要确认 k8s service 是否创建，来判断服务是否创建成功
-	// if !e.loopCheckK8sServiceIsCreated(spec) {
-	// 	logrus.Errorf("[EDAS] Failed to insert app: %s, k8s service is not ready.", spec.Name)
-	// 	return "", errors.Errorf("k8s service is not ready.")
-	// }
-
 	appID := resp.ApplicationInfo.AppId
 	logrus.Infof("[EDAS] Successfully to insert app name: %s, appID: %s", spec.Name, appID)
 	return appID, nil
 }
 
-//终止并回滚变更单
+// Terminate and roll back the change order
 func (e *EDAS) abortAndRollbackChangeOrder(changeOrderID string) error {
 	var req *api.AbortAndRollbackChangeOrderRequest
 	//var resp *api.AbortAndRollbackChangeOrderResponse
@@ -1051,7 +1026,7 @@ func (e *EDAS) abortAndRollbackChangeOrder(changeOrderID string) error {
 	return nil
 }
 
-//终止变更单
+//Termination of change order
 func (e *EDAS) abortChangeOrder(changeOrderID string) error {
 	var req *api.AbortChangeOrderRequest
 	var err error
@@ -1064,16 +1039,15 @@ func (e *EDAS) abortChangeOrder(changeOrderID string) error {
 	_, err = e.client.AbortChangeOrder(req)
 	if err != nil {
 		logrus.Errorf("[EDAS] failed to abort change order(%s), err: %v", changeOrderID, err)
-		//return errors.Errorf("[EDAS] failed to abort change order(%s), err: %v", changeOrderID, err)
 	}
 	return nil
 }
 
-// 删除应用
+// Delete Application
 func (e *EDAS) deleteAppByName(appName string) error {
 
 	logrus.Infof("[EDAS] Start to delete app: %s", appName)
-	// 获取appId
+	// get appId
 	appID, err := e.getAppID(appName)
 	if err != nil {
 		if err.Error() == notFound {
@@ -1091,7 +1065,7 @@ func (e *EDAS) deleteAppByName(appName string) error {
 	return e.deleteAppByID(appID)
 }
 
-// 通过 app id 删除应用
+// delete application by app id
 func (e *EDAS) deleteAppByID(id string) error {
 	var req *api.DeleteK8sApplicationRequest
 	var resp *api.DeleteK8sApplicationResponse
@@ -1138,7 +1112,7 @@ func (e *EDAS) deleteAppByID(id string) error {
 	return nil
 }
 
-// 获取应用ID
+// get application ID
 func (e *EDAS) getAppID(name string) (string, error) {
 	var req *api.ListApplicationRequest
 	var resp *api.ListApplicationResponse
@@ -1147,7 +1121,7 @@ func (e *EDAS) getAppID(name string) (string, error) {
 	req = api.CreateListApplicationRequest()
 	req.SetDomain(e.addr)
 
-	// 获取应用列表
+	// get application list
 	resp, err = e.client.ListApplication(req)
 	if err != nil {
 		return "", errors.Wrap(err, "edas list app")
@@ -1171,9 +1145,7 @@ func (e *EDAS) getAppID(name string) (string, error) {
 	return "", errors.Errorf(notFound)
 }
 
-//
-
-// 循环获取任务发布单结果
+// Get the results of the task release list in a loop
 func (e *EDAS) loopTerminationStatus(orderID string) (ChangeOrderStatus, error) {
 	var status ChangeOrderStatus
 	var err error
@@ -1200,16 +1172,16 @@ func (e *EDAS) loopTerminationStatus(orderID string) (ChangeOrderStatus, error) 
 	return status, errors.Errorf("get change order info timeout.")
 }
 
-// 获取检查 k8s service 是否创建成功
+// Get to check whether the k8s service is created successfully
 func (e *EDAS) loopCheckK8sServiceIsCreated(spec *ServiceSpec) bool {
 	var err error
 
-	// 没有配置端口，则跳过 k8s service 的检查
+	//If no port is configured, skip the k8s service check
 	if len(spec.Ports) <= 0 {
 		return true
 	}
 
-	// 循环检查 k8s service
+	// Cycle check k8s service
 	for i := 0; i < 10; i++ {
 		if _, err = e.getK8sService(spec.Name); err == nil {
 			return true
@@ -1221,7 +1193,7 @@ func (e *EDAS) loopCheckK8sServiceIsCreated(spec *ServiceSpec) bool {
 	return false
 }
 
-// 查询变更详情
+// Check details of changes
 func (e *EDAS) getChangeOrderInfo(orderID string) (ChangeOrderStatus, error) {
 	var req *api.GetChangeOrderInfoRequest
 	var resp *api.GetChangeOrderInfoResponse
@@ -1252,7 +1224,7 @@ func (e *EDAS) getChangeOrderInfo(orderID string) (ChangeOrderStatus, error) {
 	return status, nil
 }
 
-// 查询发布单历史列表
+// Query the list of release history
 func (e *EDAS) listRecentChangeOrderInfo(appID string) (*api.ChangeOrderList, error) {
 	var req *api.ListRecentChangeOrderRequest
 	var resp *api.ListRecentChangeOrderResponse
@@ -1322,7 +1294,7 @@ func (e *EDAS) queryAppStatus(appName string) (AppStatus, error) {
 	if len(resp.AppInfo.EccList.Ecc) == 0 {
 		state = AppStatusStopped
 	} else {
-		// 可能会有多实例，只要有一个不处于running，就返回
+		//There may be multiple instances, as long as one is not running, return
 		for _, ecc := range resp.AppInfo.EccList.Ecc {
 			appState := AppState(ecc.AppState)
 			taskState := TaskState(ecc.TaskState)
@@ -1359,7 +1331,7 @@ func (e *EDAS) queryAppStatus(appName string) (AppStatus, error) {
 	return state, nil
 }
 
-// 容器服务k8s service dns record: svc.Name + ".default.svc.cluster.local"
+// container service, k8s service dns record: svc.Name + ".default.svc.cluster.local"
 func (e *EDAS) getK8sService(name string) (*k8sapi.Service, error) {
 	var err error
 
@@ -1444,7 +1416,7 @@ func (e *EDAS) getDeploymentStatus(group string, srv *apistructs.Service) (apist
 			status.Status = apistructs.StatusReady
 			status.LastMessage = fmt.Sprintf("deployment(%s) is running", dep.Metadata.Name)
 		} else {
-			// 只有在被删除的一瞬间才有这种状态
+			// This state is only present at the moment of deletion
 			status.LastMessage = fmt.Sprintf("deployment(%s) replica is 0", dep.Metadata.Name)
 		}
 	}
@@ -1506,17 +1478,17 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 		}
 
 		svcRecord := kubeSvc.Metadata.Name + ".default.svc.cluster.local"
-		// 添加{serviceName}_HOST
+		// add {serviceName}_HOST
 		key := makeEnvVariableName(s.Name) + "_HOST"
 		(*envs)[key] = svcRecord
 
-		// {serviceName}_PORT 指向第一个端口
+		// {serviceName}_PORT Point to the first port
 		if len(s.Ports) > 0 {
 			key := makeEnvVariableName(s.Name) + "_PORT"
 			(*envs)[key] = strconv.Itoa(s.Ports[0].Port)
 		}
 
-		// 有多个端口的情况下，依次使用{serviceName}_PORT0, {serviceName}_PORT1,...
+		//If there are multiple ports, use them in sequence, like {serviceName}_PORT0, {serviceName}_PORT1,...
 		for i, port := range s.Ports {
 			key := makeEnvVariableName(s.Name) + "_PORT" + strconv.Itoa(i)
 			(*envs)[key] = strconv.Itoa(port.Port)
@@ -1525,9 +1497,9 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 		return nil
 	}
 
-	// TODO: 所有容器都有所有service的环境变量,用于addon部署
-	// 由于edas是需要在创建完app之后，才能确定 service name, 导致无法预先塞入全量环境变量
-	// edas 不部署addon, 暂不支持 GLOBAL；但是需要部署低配版addon 进行测试，所以不返回错误。
+	// TODO: All containers have all service environment variables for addon deployment
+	// Since edas needs to create the app before it can determine the service name, it is impossible to pre-fill the full amount of environment variables
+	// edas does not deploy addons and does not support GLOBAL; however, it is necessary to deploy low-profile addons for testing, so no error is returned.
 	if runtime.ServiceDiscoveryMode == "GLOBAL" {
 		//return nil, errors.Errorf("not support ServiceDiscoveryMode: %v", runtime.ServiceDiscoveryMode)
 	} else {
@@ -1548,7 +1520,7 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 				continue
 			}
 
-			// 注入{depSvc}_HOST, {depSvc}_PORT等
+			//Inject {depSvc}_HOST, {depSvc}_PORT, etc.
 			if err := addEnv(depSvc, &envs); err != nil {
 				return nil, err
 			}
@@ -1567,16 +1539,16 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	}
 
 	svcAddr := appName + ".default.svc.cluster.local"
-	// 加上 K8S 标识
+	// add K8S label
 	envs["IS_K8S"] = "true"
-	// 加上svc表示
+	// add svc label
 	envs["SELF_HOST"] = svcAddr
 	envs["SELF_PORT"] = strconv.Itoa(s.Ports[0].Port)
 	envs["SELF_URL"] = "http://" + svcAddr + ":" + strconv.Itoa(s.Ports[0].Port)
 	envs["SELF_PORT0"] = strconv.Itoa(s.Ports[0].Port)
 
 	// TODO: add self env
-	// 问题：在创建完服务之后，才会有 k8s service，导致无法提前塞入 SELF_HOST env
+	//Problem: After the service is created, there will be k8s service, which makes it impossible to insert SELF_HOST env in advance
 
 	return envs, nil
 }
@@ -1606,19 +1578,14 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 		svcSpec.Image = e.regAddr + body[1]
 	}
 
-	// TODO: CPU 配置最低1核起步，且不支持小数点，让 EDAS 进行支持
-	// 如果配置大于等于 1 核，那就按实际配置进行设置
-	// 否则就按 CPU 为 1 核计算
-
-	//对于打开了unlimitCPU的集群，小于1核的做不限制处理，默认限制为1C
+	//For clusters with unlimitCPU turned on, the processing of less than 1 core is unlimited, and the default limit is 1C
 	if e.unlimitCPU == "true" {
 		svcSpec.CPU = 0
 	} else {
 		svcSpec.CPU = 1
 	}
 
-	//edas挂载nfs卷
-
+	//edas mount nfs volume
 	if len(s.Binds) != 0 {
 		type localVolumes struct {
 			Type      string `json:"type"`
@@ -1695,7 +1662,7 @@ func (e *EDAS) fillServiceSpec(s *apistructs.Service, runtime *apistructs.Servic
 		return nil, errors.Wrapf(err, "failed to set health check, service name: %s", appName)
 	}
 
-	// TODO: 支持 postStart, preStop, nasId, mountDescs, storageType, localvolume
+	// TODO: support postStart, preStop, nasId, mountDescs, storageType, localvolume
 
 	logrus.Infof("[EDAS] fill service spec: %+v", svcSpec)
 
@@ -1721,7 +1688,7 @@ func setHealthCheck(service *apistructs.Service, svcSpec *ServiceSpec) error {
 	return nil
 }
 
-// FIXME: 20 次是否合理？
+// FIXME: Is 20 times reasonable?
 func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistructs.Service, group string) error {
 	var err error
 	var status AppStatus
@@ -1735,13 +1702,13 @@ func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistruct
 				continue
 			}
 			appName := group + "-" + srv.Name
-			// 1. 从 edas 确认 app status
+			// 1. Confirm app status from edas
 			if status, err = e.queryAppStatus(appName); err != nil {
 				logrus.Errorf("[EDAS] failed to query app(name: %s) status: %v", appName, err)
 				continue
 			}
 			if status != AppStatusFailed {
-				// 2. app status 等于 running之后，再确认 k8s service 是否已经就绪
+				// 2. After app status is equal to running, confirm whether the k8s service is ready
 				if len(srv.Ports) == 0 {
 					done[appName] = struct{}{}
 					continue
@@ -1797,14 +1764,11 @@ func envToString(envs map[string]string) (string, error) {
 	return string(res), nil
 }
 
-// 部署应用
-// 作用：该接口的作用为replace，暂时只支持image tag的更新
+// Deploy the application
+// Role: The role of this interface is replace, temporarily only supports image tag update
 func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	var req *api.DeployK8sApplicationRequest
-	// var getStatusReq *api.QueryApplicationStatusRequest
 	var resp *api.DeployK8sApplicationResponse
-	// var getStatusResp *api.QueryApplicationStatusResponse
-	// var status ChangeOrderStatus
 	var err error
 
 	if spec == nil {
@@ -1812,24 +1776,14 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	}
 
 	logrus.Infof("[EDAS] Start to deploy app, id: %s", appID)
-	// getStatusReq = api.CreateQueryApplicationStatusRequest()
-	// getStatusReq.AppId = appID
-	// getStatusResp, err = e.client.QueryApplicationStatus(getStatusReq)
-	// lastDeployID := getStatusResp.AppInfo.DeployRecordList.DeployRecord[0].DeployRecordId
 
-	// status, err = e.getChangeOrderInfo(lastDeployID)
-	// //如果该deploy处于运行状态,则终止deploy
-	// if status == CHANGE_ORDER_STATUS_EXECUTING {
-	// 	continue
-	// }
-	// println(getStatusResp)
 	req = api.CreateDeployK8sApplicationRequest()
 	req.Headers["Pragma"] = "no-cache"
 	req.Headers["Cache-Control"] = "no-cache"
 	req.Headers["Connection"] = "keep-alive"
 	req.SetDomain(e.addr)
 
-	// 兼容 edas 专有云 3.7.1 版本
+	// Compatible with edas proprietary cloud version 3.7.1
 	res := strings.SplitAfter(spec.Image, ":")
 	splitLen := len(res)
 	if splitLen > 0 {
@@ -1857,7 +1811,7 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	req.MemoryLimit = requests.NewInteger(spec.Mem)
 
 	// HACK: edas don't support k8s container probe
-	// 该值等价于 k8s min-ready-seconds, 进行粗粒度控制
+	// This value is equivalent to k8s min-ready-seconds, for coarse-grained control
 	// https://kubernetes.io/docs/concepts/workloads/controllers/deployment/?spm=a2c4g.11186623.2.3.7N5Zxk#min-ready-seconds
 	req.BatchWaitTime = requests.NewInteger(minReadySeconds)
 
@@ -1895,7 +1849,7 @@ func (e *EDAS) deployApp(appID string, spec *ServiceSpec) error {
 	return nil
 }
 
-// 实例伸缩
+// Instance scaling
 // ScaleK8sApplicationRequest
 func (e *EDAS) scaleApp(name string, scale int) error {
 	var req *api.ScaleK8sApplicationRequest
@@ -1909,7 +1863,6 @@ func (e *EDAS) scaleApp(name string, scale int) error {
 		return errors.Errorf("edas scale app: size < 0 ")
 	}
 
-	// 获取appId
 	appID, err := e.getAppID(name)
 	if err != nil {
 		return err
@@ -1937,7 +1890,7 @@ func (e *EDAS) scaleApp(name string, scale int) error {
 		return errors.Errorf("failed to scale app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
-	// TODO: 等待 edas 修复 ChangeOrderId 返回 struct{} 的问题
+	// TODO: Wait for edas to fix the problem that ChangeOrderId returns struct{}
 	//if len(resp.ChangeOrderId) != 0 {
 	//	status, err := e.loopTerminationStatus(resp.ChangeOrderId)
 	//	if err != nil {
@@ -1952,9 +1905,9 @@ func (e *EDAS) scaleApp(name string, scale int) error {
 	return nil
 }
 
-// 更新 service resoures，暂时只支持配置 mem
-// cpu 使用了共享模式
-// FIXME: 该接口只支持配置 cpu & mem limit 值，改完之后会把 request 值设置为 0
+// Update service resoures, only support mem configuration for the time being
+// cpu uses shared mode
+// FIXME: This interface only supports the configuration of cpu & mem limit value, and the request value will be set to 0 after the change
 func (e *EDAS) updateAppResources(name string, mem int) error {
 	var req *api.UpdateK8sApplicationConfigRequest
 	var resp *api.UpdateK8sApplicationConfigResponse
@@ -1977,7 +1930,7 @@ func (e *EDAS) updateAppResources(name string, mem int) error {
 
 	req.AppId = appID
 	req.ClusterId = e.clusterID
-	// 共享 cpu
+	// cpu share
 	req.CpuLimit = strconv.Itoa(0)
 	req.MemoryLimit = strconv.Itoa(mem)
 
@@ -2010,7 +1963,7 @@ func (e *EDAS) updateAppResources(name string, mem int) error {
 	return nil
 }
 
-// 适用于edas的label，edas.appid 和 edas.groupid
+// Apply to edas label, edas.appid and edas.groupid
 func (e *EDAS) getPodsStatus(namespace string, label string) ([]k8sapi.PodItem, error) {
 	var pi []k8sapi.PodItem
 	var b bytes.Buffer
@@ -2043,11 +1996,11 @@ func (e *EDAS) getPodsStatus(namespace string, label string) ([]k8sapi.PodItem, 
 	return pi, nil
 }
 
-// 确认是否被删除的 service 名单
-// 条件如下：
-// 1.被删除的 service
-// 2.被改名字的 service
-// 3.被修改端口的 service
+// Confirm whether to delete the service list
+// The conditions are as follows:
+// 1.Deleted service
+// 2.The service whose name has been changed
+// 3.The service of the modified port
 func checkoutServicesToDelete(newRuntime, oldRuntime *apistructs.ServiceGroup) *[]apistructs.Service {
 	var svcs []apistructs.Service
 
@@ -2106,7 +2059,7 @@ func (e *EDAS) isScaleServices(newRuntime, oldRuntime *apistructs.ServiceGroup) 
 	return false
 }
 
-//确认只修改实例数量的名单
+// Confirm that only the list of the number of instances is modified
 func (e *EDAS) isServiceToScale(newRuntime *apistructs.Service, oldRuntime *apistructs.ServiceGroup) bool {
 	if newRuntime == nil || oldRuntime == nil {
 		return false
@@ -2132,7 +2085,7 @@ func (e *EDAS) isServiceToScale(newRuntime *apistructs.Service, oldRuntime *apis
 	return false
 }
 
-//确认没有任何变化的service
+// Confirm that there is no change in the service
 func (e *EDAS) isNotChangeService(newRuntime *apistructs.Service, oldRuntime *apistructs.ServiceGroup) bool {
 	if newRuntime == nil || oldRuntime == nil {
 		return false

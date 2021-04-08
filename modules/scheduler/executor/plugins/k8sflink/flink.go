@@ -330,7 +330,7 @@ func (f *Flink) createImageSecretIfNotExist(namespace string) error {
 		return nil
 	}
 
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	s, err := f.Client.K8sClient.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{})
 	if err != nil {
 		return err

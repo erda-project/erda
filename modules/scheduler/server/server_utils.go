@@ -42,14 +42,14 @@ func getDCOSTokenAuthPeriodically() {
 				break
 			}
 
-			// 每24小时更新一次
+			// Update every 24 hours
 			waitTime = 24 * time.Hour
 
 			if len(token) > 0 {
 				os.Setenv("AUTH_TOKEN", token)
 				logrus.Debugf("get auth token: %s", token)
 			} else {
-				// err为nil且token为空表示用户没有设置token auth
+				// If err is nil and token is empty, it means that the user has not set token auth
 				os.Unsetenv("AUTH_TOKEN")
 				logrus.Debugf("clear auth token")
 			}

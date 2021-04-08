@@ -147,7 +147,7 @@ func (s *Sched) FindExecutor(name, kind string) (executortypes.Executor, error) 
 }
 
 func (s *Sched) setObjLabelScheduleInfo(task *Task) error {
-	// 只针对 POST 或者 PUT 请求做标签过滤
+	// Only do tag filtering for POST or PUT requests
 	if task.Action != TaskCreate && task.Action != TaskUpdate && task.Action != TaskPrecheck {
 		return nil
 	}

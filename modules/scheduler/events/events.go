@@ -44,7 +44,7 @@ func GetEventManager() *EventMgr {
 	return &eventMgr
 }
 
-// RegisterEventCallback 将插件中事件处理函数注册到事件控制面
+// RegisterEventCallback Register the event handler function
 func (m *EventMgr) RegisterEventCallback(name string, cb executortypes.EventCbFn) error {
 	if _, ok := m.executorCbMap.Load(name); ok {
 		return errors.Errorf("duplicate executor registering for executor(%s)", name)
@@ -55,7 +55,7 @@ func (m *EventMgr) RegisterEventCallback(name string, cb executortypes.EventCbFn
 	return nil
 }
 
-// UnRegisterEventCallback 在事件控制面中清理某插件的事件处理函数
+// UnRegisterEventCallback Unregister the event handler function
 func (m *EventMgr) UnRegisterEventCallback(name string) {
 	if _, ok := m.executorCbMap.Load(name); !ok {
 		return
@@ -171,8 +171,8 @@ func init() {
 
 func getLayerInfoFromEvent(id, eventType string) (*EventLayer, error) {
 	err := errors.Errorf("event's taskId(%s) format error", id)
-	// status_update_event的id(taskId)格式: runtimes_v1_services_staging-773_web.e622bf15-9300-11e8-ad54-70b3d5800001
-	// instance_health_changed_event的id(instanceId)格式: runtimes_v1_services_staging-790_web.marathon-0ad6d3ce-946c-11e8-ad54-70b3d5800001
+	// status_update_event id(taskId) Format: runtimes_v1_services_staging-773_web.e622bf15-9300-11e8-ad54-70b3d5800001
+	// instance_health_changed_event id(instanceId) Format: runtimes_v1_services_staging-790_web.marathon-0ad6d3ce-946c-11e8-ad54-70b3d5800001
 	strs := strings.Split(id, ".")
 	if len(strs) < 2 {
 		return nil, err
@@ -192,7 +192,7 @@ func getLayerInfoFromEvent(id, eventType string) (*EventLayer, error) {
 	return nil, err
 }
 
-// HandleOneExecutorEvent 处理单个插件 executor 的事件逻辑
+// HandleOneExecutorEvent Process the event logic of a single plug-in executor
 func HandleOneExecutorEvent(name string, ch chan *eventtypes.StatusEvent, lstore *sync.Map, cb executortypes.EventCbFn, stopCh chan struct{}) {
 	evm := GetEventManager()
 	if err := evm.RegisterEventCallback(name, cb); err != nil {
@@ -220,7 +220,7 @@ func HandleOneExecutorEvent(name string, ch chan *eventtypes.StatusEvent, lstore
 			return
 		default:
 		}
-		// 时间窗口 + 统计状态
+		// Time window + statistics status
 		if time.Since(nowTime) >= 10*time.Second {
 			nowTime = time.Now()
 
@@ -239,7 +239,7 @@ func HandleOneExecutorEvent(name string, ch chan *eventtypes.StatusEvent, lstore
 					logrus.Errorf("eventbox send api err: %v", err)
 					continue
 				}
-				// 清理该事件中记录的KILLED/FINISHED/FAILED的实例，避免重复发送
+				// Clean up the instances of KILLED/FINISHED/FAILED recorded in the event to avoid repeated sending
 				for i := range ev.ServiceStatuses {
 					for j := len(ev.ServiceStatuses[i].InstanceStatuses) - 1; j >= 0; j-- {
 						is := ev.ServiceStatuses[i].InstanceStatuses[j].InstanceStatus
@@ -263,16 +263,16 @@ func HandleOneExecutorEvent(name string, ch chan *eventtypes.StatusEvent, lstore
 				logrus.Infof("event's executor(%s) not matched this executor(%s)", e.Cluster, name)
 				break
 			}
-			// 过滤KILLING/STARTING事件
+			// Filter KILLING/STARTING events
 			if e.Status == KILLING || e.Status == STARTING || e.Status == STAGING || e.Status == DROPPED {
 				break
 			}
-			// 通过 eventbox hook 发送实例变化事件
+			// Send instance change events through eventbox hook
 			if err := handleInstanceStatusChangedEvents(e, lstore); err != nil {
 				logrus.Errorf("handle instance status with err: %v", err)
 			}
 
-			// 对 addons 的事件不递送到 orchestrator
+			// Events for addons are not delivered to orchestrator
 			if strings.HasPrefix(e.TaskId, "runtimes_v1_addon") {
 				break
 			}
@@ -291,8 +291,8 @@ func HandleOneExecutorEvent(name string, ch chan *eventtypes.StatusEvent, lstore
 				}
 			}
 
-			// 记录该时间窗口内的事件，用于时间到期后发送某类状态事件
-			// eventsInWindow 是以 runtime 为单位，发送整个 runtime 下的事件
+			// Record events in this time window for sending certain status events after the time expires
+			// eventsInWindow is based on runtime unit，sending events of the entire runtime
 			evExisted := false
 			for i, ev := range eventsInWindow {
 				if ev.key != eKey {
@@ -331,19 +331,17 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 
 	foundEvInSrv := false
 	for i, srv := range run.ServiceStatuses {
-		// 事件隶属于该service下的某个instance
-		// logrus.Infof("srv.SericeName: %v, srvName: %v", srv.ServiceName, srvName)
-		// 用户定义的service如果是大写，对应到marathon中去创建时候会被转化成小写
+		//The event belongs to an instance under the service
 		if !strings.EqualFold(srv.ServiceName, srvName) {
 			continue
 		}
 		foundEvInSrv = true
 		foundInstance := false
-		// 记录下如果是健康检查超时导致的将实例杀死的情况
+		// Record the case of killing the instance if it is caused by the health check timeout
 		recordInstanceExited := func(insKey string, status string, instance *InstanceStatus) {
-			// 容器已退出，缓存中的 key 需要清除
+			// The container has exited and the key in the cache needs to be cleared
 			defer lstore.Delete(insKey)
-			// Failed 或者 Finished 必定是用户自己原因导致的容器退出, 默认标记在容器启动阶段
+			// Failed or Finished must be the container exit caused by the user's own reasons, and the default mark is in the container startup stage
 			if status == INSTANCE_FAILED || status == INSTANCE_FINISHED {
 				instance.Stage = "BeforeHealthCheckTimeout"
 				return
@@ -352,7 +350,7 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 			if !ok {
 				return
 			}
-			// 处理容器被 Killed 的情况
+			//Handling the case where the container is Killed
 
 			d := run.ServiceStatuses[i].HealthCheckDuration
 			if d < apistructs.HealthCheckDuration {
@@ -363,8 +361,8 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 			current := time.Now().Unix()
 			expectedKilledTime := startHcTime + int64(d)
 
-			// 判断这个实例是被健康检查超时所杀的, 被杀时间在 (开始健康时间 + duration) 的时间之后, 且没有超过太久
-			// startHcTime 在该实例已健康的情况下被置为 0
+			//Determine that this instance was killed by the health check timeout, and the killing time was after the (start health time + duration) time and did not exceed too long
+			//startHcTime is set to 0 when the instance is healthy
 			if startHcTime > 0 &&
 				current-expectedKilledTime > LEFT_EDGE &&
 				current-expectedKilledTime < RIGHT_DEGE {
@@ -384,28 +382,28 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 			foundInstance = true
 			switch e.Status {
 			case KILLED:
-				// KILLED 有可能是健康检查超时被杀, 区分出这种情况出来
+				// KILLED It is possible that the health check was overtime and was killed, distinguish this situation
 				instance.InstanceStatus = INSTANCE_KILLED
 				recordInstanceExited(e.TaskId+START_HC_TIME_SUFFIX, INSTANCE_KILLED, instance)
 
 			case RUNNING:
-				// 禁止实例从 healthy / unhealthy 退化到 running, 因为是否是 healthy 得由 healthy 事件来决定
+				// It is forbidden for an instance to degenerate from healthy / unhealthy to running, because whether it is healthy or not depends on the healthy event.
 				if instance.InstanceStatus != HEALTHY && instance.InstanceStatus != UNHEALTHY {
 					instance.InstanceStatus = INSTANCE_RUNNING
 				}
 
-				// 如果健康检查设置了 delaySeconds, 会有两个 TASK_RUNNING 事件
-				// 后一次 TASK_RUNNING 才开始做健康检查
-				// 所以记录的是开始健康检查的时间
+				// If the health check sets delaySeconds, there will be two TASK_RUNNING events
+				// The next TASK_RUNNING will start the health check
+				// So what is recorded is the time when the health check started
 				lstore.Store(e.TaskId+START_HC_TIME_SUFFIX, time.Now().Unix())
 
 			case FINISHED:
-				// FINISHED 必定是业务方自己原因退出
+				// FINISHED It must be the business side's own reason to withdraw
 				instance.InstanceStatus = INSTANCE_FINISHED
 				recordInstanceExited(e.TaskId+START_HC_TIME_SUFFIX, INSTANCE_FINISHED, instance)
 
 			case FAILED:
-				// FAILED 必定是业务自己原因退出
+				// FAILED It must be the business side's own reason to withdraw
 				instance.InstanceStatus = INSTANCE_FAILED
 				recordInstanceExited(e.TaskId+START_HC_TIME_SUFFIX, INSTANCE_FAILED, instance)
 
@@ -415,20 +413,20 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 					srv.ServiceName, instance.ID, e.Status)
 			}
 
-			// marathon bug: marathon instance KILLED 事件中容器 ip 绝大多数情况下为宿主机 ip
+			// marathon bug: marathon instance KILLED In the event, the container ip is the host ip in most cases
 			if e.Status != KILLED {
 				instance.Ip = e.IP
 			}
 			break
 		}
 
-		// instanceId 已记录在当前service的status中
+		// instanceId has been recorded in the status of the current service
 		if foundInstance {
 			lstore.Store(eKey, run)
 			break
 		}
 
-		// instanceId 未记录在当前service的status中
+		// instanceId not recorded in the status of the current service
 		hasVacancy := false
 		for j := range run.ServiceStatuses[i].InstanceStatuses {
 			instance := &(run.ServiceStatuses[i].InstanceStatuses[j])
@@ -453,7 +451,7 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 				recordInstanceExited(e.TaskId+START_HC_TIME_SUFFIX, INSTANCE_FINISHED, instance)
 
 			case KILLED:
-				// 正常情况下KILLING/KILLED的instance之前会被记录
+				// the instance of KILLING/KILLED will be recorded before normal
 				logrus.Errorf("event taskID(%s) not found in previous status but its status is %s", eInstanceID, e.Status)
 				instance.InstanceStatus = INSTANCE_KILLED
 				recordInstanceExited(e.TaskId+START_HC_TIME_SUFFIX, INSTANCE_KILLED, instance)
@@ -468,8 +466,8 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 			break
 		}
 
-		// 未有空位表明从 etcd 元数据信息中获知某服务A有B个副本(scale), 当前记录的不同实例已超过了副本数
-		// 经常在重启，滚动升级中可见
+		//No space indicates that it is known from etcd metadata information that a certain service A has B copies (scale), and the number of different instances currently recorded has exceeded the number of copies
+		//Often visible during restarts and rolling upgrades
 		if !hasVacancy {
 			var status string
 			ins := InstanceStatus{
@@ -500,7 +498,6 @@ func handleStatusUpdateEvent(e *eventtypes.StatusEvent, lstore *sync.Map) (strin
 		break
 	}
 
-	// 理论上该情况不会出现
 	if !foundEvInSrv {
 		return "", errors.Errorf("event taskId(%s) instance(%s) not found in runtime(%s)'s any service",
 			e.TaskId, eInstanceID, run.RuntimeName)
@@ -525,7 +522,7 @@ func handleHealthStatusChanged(e *eventtypes.StatusEvent, lstore *sync.Map) (str
 
 	foundEvInSrv := false
 	for i, srv := range run.ServiceStatuses {
-		// 事件隶属于该service下的某个instance
+		// The event belongs to an instance under the service
 		if !strings.EqualFold(srv.ServiceName, srvName) {
 			continue
 		}
@@ -540,7 +537,7 @@ func handleHealthStatusChanged(e *eventtypes.StatusEvent, lstore *sync.Map) (str
 			switch e.Status {
 			case HEALTHY:
 				run.ServiceStatuses[i].InstanceStatuses[j].InstanceStatus = HEALTHY
-				// 置为0表明该实例至少有通过过健康检查
+				// Set to 0 to indicate that the instance has passed the health check at least
 				lstore.Store(instance.ID+START_HC_TIME_SUFFIX, int64(0))
 			case UNHEALTHY:
 				run.ServiceStatuses[i].InstanceStatuses[j].InstanceStatus = UNHEALTHY
@@ -548,7 +545,7 @@ func handleHealthStatusChanged(e *eventtypes.StatusEvent, lstore *sync.Map) (str
 			break
 		}
 
-		// instanceId 未记录在当前service的status中,理论上不会发生
+		// instanceId Not recorded in the status of the current service, theoretically it will not happen
 		if !foundInstance {
 			return "", errors.Errorf("healthy instance(%s) not found in service(%s)", e.TaskId, srvName)
 		}
@@ -556,7 +553,6 @@ func handleHealthStatusChanged(e *eventtypes.StatusEvent, lstore *sync.Map) (str
 		break
 	}
 
-	// 理论上该情况不会出现
 	if !foundEvInSrv {
 		return "", errors.Errorf("event taskId(%s) not found in runtime(%s)'s any service",
 			e.TaskId, run.RuntimeName)
@@ -569,7 +565,7 @@ func computeServiceStatus(e *RuntimeEvent) {
 		runningReplica := 0
 		healthyReplica := 0
 
-		// 表明runtime被删除
+		// Indicates that the runtime is deleted
 		if e.IsDeleted {
 			e.ServiceStatuses[i].ServiceStatus = "Deleted"
 			continue
@@ -587,7 +583,7 @@ func computeServiceStatus(e *RuntimeEvent) {
 				healthyReplica++
 			}
 		}
-		// 为了便于上层展示的方便，约定对实例数为0并且无实例在跑的服务，也设置其状态为 Healthy
+		// In order to facilitate the display of the upper layer, it is agreed that the service status is set to Healthy if the number of instances is 0 and no instances are running.
 		if healthyReplica == srv.Replica && runningReplica == srv.Replica {
 			//e.ServiceStatuses[i].ServiceStatus = string(spec.StatusReady)
 			e.ServiceStatuses[i].ServiceStatus = HEALTHY

@@ -115,7 +115,7 @@ func (d NasVolumeDriver) UnAttach(ID volume.VolumeIdentity, dst volume.AttachDes
 }
 
 func (d NasVolumeDriver) Delete(ID volume.VolumeIdentity, force bool) error {
-	// TODO: 调用 soldier 来删除
+	// TODO: Call soldier to delete
 	_, err := defaultSoftDelete(d.js, ID) // soft delete
 	return err
 }

@@ -47,7 +47,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 
 	logrus.Infof("executor in k8s sendEvent, name: %s", k.name)
 
-	// 处理增量事件
+	// Handling incremental events
 	eventHandler := func() (bool, error) {
 
 		urlPath := "/api/v1/watch/events"
@@ -90,7 +90,7 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 			}
 
 			status := ConvertEventStatus(event.Object.Reason)
-			// todo: 去掉 addon 的事件
+			// todo: Remove the addon event
 			if status == "" || strings.Contains(event.Object.Namespace, "addon-") {
 				continue
 			}
@@ -101,12 +101,12 @@ func (k *Kubernetes) sendEvent(localStore *sync.Map, stopCh chan struct{}, notif
 				continue
 			}
 
-			// 实例事件
+			// Instance event
 			runtimeName := strutil.Concat(paths[0], "/", paths[1])
 			go k.InstanceEvent(event, runtimeName, notifier)
 
-			// 对于中间件多个 statefulset 的情况, 多个 statefulset 共用一个 namespace, 在传递给调度器的 namespace 上
-			// 加上了前缀 group-, 因此对于这种情况, 需要去掉前缀 group-, 才能在 etcd 中找到相应的记录
+			// For the case of multiple statefulsets in the middleware, multiple statefulsets share a namespace, which is passed to the scheduler on the namespace
+			// The prefix group- is added, so in this case, the prefix group- needs to be removed to find the corresponding record in etcd
 			paths[0] = strings.TrimPrefix(paths[0], "group-")
 
 			key := strutil.Concat("/dice/service/", paths[0], "/", paths[1])
@@ -168,14 +168,14 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 	ie.IP = pod.Status.PodIP
 	if len(pod.Status.ContainerStatuses) == 0 {
 		logrus.Infof("[alert] empty containerStatuses list: %v", pod.Status)
-		// 不存在 containerStatuses, 不发事件
+		// containerStatuses not exist, do not send event
 		return
 	}
 	// "containerID": "docker://c894809fa10635e455be2bfec5c151a23ac9d27ec6cfc5948444ff01b6836819"
-	// 去掉 prefix "docker://"
+	// remove prefix "docker://"
 	ie.ID = strutil.TrimPrefixes(pod.Status.ContainerStatuses[0].ContainerID, "docker://")
 
-	// 兼容 edas v2
+	// compatible edas v2
 	for _, env := range pod.Spec.Containers[0].Env {
 		if env.Name == "DICE_SERVICE_NAME" {
 			ie.ServiceName = env.Value
@@ -193,7 +193,7 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 	}
 }
 
-// 定期发送全量事件
+// Send full events regularly
 func (k *Kubernetes) totalEvent(localStore *sync.Map, notifier eventboxapi.Notifier, eventAddr string) {
 	initStore := func(key string, v interface{}) error {
 		reKey := etcdKeyToMapKey(key)
@@ -296,7 +296,7 @@ func GenerateEvent(sg *apistructs.ServiceGroup) events.RuntimeEvent {
 		e.ServiceStatuses[i].ServiceName = srv.Name
 		e.ServiceStatuses[i].Replica = srv.Scale
 		e.ServiceStatuses[i].ServiceStatus = string(srv.Status)
-		// 状态为空字符串
+		// Status is empty string
 		if len(e.ServiceStatuses[i].ServiceStatus) == 0 {
 			e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(apistructs.StatusProgressing)
 		}
@@ -307,7 +307,7 @@ func GenerateEvent(sg *apistructs.ServiceGroup) events.RuntimeEvent {
 	return e
 }
 
-// 用于增量服务事件中判断缓存服务状态是否变更
+// Used to determine whether the cache service status has changed in incremental service events
 func isStatusCached(localStore *sync.Map, name, status string) bool {
 	if v, ok := localStore.Load(name); ok && v.(string) == status {
 		return true
@@ -323,7 +323,7 @@ func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, n
 
 	logrus.Infof("in k8s registerEvent, executor: %s", name)
 
-	// watch 特定etcd目录的事件的处理函数
+	// watch event handler for a specific etcd directory
 	syncRuntimeToLstore := func(key string, value interface{}, t storetypes.ChangeType) error {
 
 		runtimeName := etcdKeyToMapKey(key)
@@ -331,7 +331,7 @@ func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, n
 			return nil
 		}
 
-		// 先处理delete的事件
+		// Deal with the delete event first
 		if t == storetypes.Del {
 			_, ok := localStore.Load(runtimeName)
 			if ok {
@@ -350,7 +350,7 @@ func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, n
 			return nil
 		}
 
-		// 过滤不属于本executor的事件
+		// Filter events that do not belong to this executor
 		if sg.Executor != name {
 			return nil
 		}
@@ -374,7 +374,7 @@ func (k *Kubernetes) registerEvent(localStore *sync.Map, stopCh chan struct{}, n
 		return nil
 	}
 
-	// 将注册来的executor的name及其event channel对应起来
+	// Correspond the name of the registered executor and its event channel
 	getEventFn := func(executorName executortypes.Name) (chan *eventtypes.StatusEvent, chan struct{}, *sync.Map, error) {
 		logrus.Infof("in RegisterEvChan executor(%s)", name)
 		if string(executorName) == name {

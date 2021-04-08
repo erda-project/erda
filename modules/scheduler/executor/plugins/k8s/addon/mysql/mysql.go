@@ -53,7 +53,7 @@ func New(k8s addon.K8SUtil, ns addon.NamespaceUtil, secret addon.SecretUtil, pvc
 }
 
 func (my *MysqlOperator) IsSupported() bool {
-	// 目前 mysql operator 测试还是有点问题,暂时设置成不支持
+	// At present, the mysql operator test is still a bit problematic, and it is temporarily set to not support
 	return false
 
 	// resp, err := my.client.Get(my.k8s.GetK8SAddr().Host).
@@ -273,8 +273,7 @@ func (my *MysqlOperator) Remove(sg *apistructs.ServiceGroup) error {
 		return fmt.Errorf("failed to remove mysql, %s/%s, statuscode: %v, body: %v",
 			k8snamespace, sg.ID, resp.StatusCode(), b.String())
 	}
-	// 为甚么需要等待 mysql 删除完?
-	// mysql 删除完之后, 会生成 drmn, 还需要删除drmn才算完整的删除了mysql, 不然pvc, secret等都还在
+	// After mysql is deleted, drmn will be generated, and drmn needs to be deleted to completely delete mysql, otherwise pvc, secret, etc. are still there
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
 	if err := my.waitMysqlDeleted(ctx, k8snamespace, sg.ID); err != nil {
 		if err == ctx.Err() {
@@ -322,7 +321,7 @@ func (my *MysqlOperator) waitMysqlDeleted(ctx context.Context, namespace, name s
 	return nil
 }
 
-// TODO: 放到 k8sutil 去
+// TODO: Put it in k8sutil
 func genK8SNamespace(namespace, name string) string {
 	return strutil.Concat(namespace, "--", name)
 }

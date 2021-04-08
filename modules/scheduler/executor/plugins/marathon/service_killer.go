@@ -40,9 +40,9 @@ type judgement struct {
 	sync.RWMutex
 }
 
-// 监测一段时间内多次被杀死的实例, 实例所隶属的 service 会被送到这里处死
+// Monitor instances that have been killed multiple times within a period of time, and the service to which the instance belongs will be sent here to be executed
 func (m *Marathon) SuspendApp(ch chan string) {
-	// record 的 key 实例所在 service, value 是实例被杀时间
+	// The service where the key instance of the record is located, and the value is the time when the instance was killed
 	j := &judgement{record: make(map[string][]int64)}
 
 	go compactRecord(j)
@@ -76,12 +76,12 @@ func (m *Marathon) SuspendApp(ch chan string) {
 		srvInstances = ag.App.Instances
 		logrus.Infof("got appID(%s) instances number: %v", appID, srvInstances)
 
-		// 记录, 有罪则审判
+		// Record, judge if guilty
 		if !determineGuilty(appID, srvInstances, j) {
 			continue
 		}
 
-		// 对确认有罪但在保护期内(10分钟)的服务豁免, 释放
+		// Exempt from service confirmed guilty but within the protection period (10 minutes), released
 		if inProtection(appID) {
 			continue
 		}
@@ -118,7 +118,7 @@ func generateEtcdKey(appID string) (string, error) {
 	return "/dice/service/" + strs[3] + "/" + strs[4], nil
 }
 
-// 保护 PROTECTION 秒内被修改过的 runtime 下的所有 service
+// Protect all services under the runtime that have been modified within PROTECTION seconds
 func inProtection(appID string) bool {
 	key, err := generateEtcdKey(appID)
 	if err != nil {
@@ -139,7 +139,7 @@ func inProtection(appID string) bool {
 	return false
 }
 
-// 裁定是否有罪，有罪定义为 $(PERIOD) 秒内有 $(TIMES) 次被杀
+// The verdict is guilty, and guilty is defined as $(TIMES) killed in $(PERIOD) seconds
 func determineGuilty(appID string, instance int, j *judgement) bool {
 	t := time.Now().Unix()
 	j.RLock()
@@ -178,7 +178,7 @@ func permutation(s []int64, v int64) []int64 {
 	return s
 }
 
-// 删除过期的犯罪记录
+// Delete expired criminal records
 func compactRecord(j *judgement) {
 	for {
 		select {

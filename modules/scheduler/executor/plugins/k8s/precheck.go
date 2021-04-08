@@ -87,7 +87,7 @@ func precheck(sg *apistructs.ServiceGroup, resourceinfo apistructs.ClusterResour
 
 // extractLabels
 // return [(exist_label_list, not_exist_label_list), (exist_label_list, not_exist_label_list),...]
-// 不同元组之间为 或 关系
+// The relationship between different tuples is or
 func extractLabels(terms []v1.NodeSelectorTerm) [][2][]string {
 	r := [][2][]string{}
 	for _, t := range terms {

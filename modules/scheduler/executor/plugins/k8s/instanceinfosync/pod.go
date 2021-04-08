@@ -32,7 +32,7 @@ func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList) {
 	now := time.Now()
 	for _, pod := range podlist.Items {
 		for _, containerstatus := range pod.Status.ContainerStatuses {
-			// restartcount > 5 && 上一次terminated的容器的finish时间在一小时以内（防止过多误报）
+			// restartcount > 5 && The finish time of the last terminated container is within one hour (to prevent too many false positives)
 			if containerstatus.RestartCount > 5 &&
 				containerstatus.LastTerminationState.Terminated != nil &&
 				containerstatus.LastTerminationState.Terminated.FinishedAt.After(now.Add(-1*time.Hour)) {
@@ -180,7 +180,7 @@ func buildErrorInfo(bdl *bundle.Bundle, pod corev1.Pod, errorinfo string, errori
 	}
 }
 
-// extractEnvs 参考 terminus.io/dice/dice/docs/dice-env-vars.md
+// extractEnvs reference terminus.io/dice/dice/docs/dice-env-vars.md
 func extractEnvs(pod corev1.Pod) (
 	addonID,
 	pipelineID,
@@ -234,7 +234,7 @@ func extractEnvs(pod corev1.Pod) (
 	return
 }
 
-// updatePodInstance 更新 pod 信息到 db 中
+// updatePodInstance Update pod information to db
 func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList, delete bool,
 	eventmap map[string]*corev1.Event) error {
 	r := dbclient.InstanceReader()
@@ -275,10 +275,10 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			lastExitCode int
 			exitCode     int
 
-			// 放在 instanceinfo.meta 中,
-			// k8snamespace & k8spodname & k8scontainername 这3个值在 k8s 的控制台 api 中需要用到
-			k8snamespace     string // k8s中的 namespace, 不同于 scheduler API 中的 namespace
-			k8spodname       string // k8s中的 name, 不同于 scheduler API 中的 name
+			// Put it in instanceinfo.meta,
+			// k8snamespace & k8spodname & k8scontainername these 3 valuea need to be used in the console api of k8s
+			k8snamespace     string
+			k8spodname       string
 			k8scontainername string
 
 			diceComponent string
@@ -287,8 +287,8 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			name      string
 		)
 		// -------------------------------
-		// 1. 从 pod 中收集所需信息
-		//    上面列出的有些 env 可能不存在
+		// 1. Collect the required information from the pod
+		// Some of the envs listed above may not exist
 		// -------------------------------
 		addonID, pipelineID, cluster, orgName, orgID, projectName, projectID, applicationName,
 			applicationID, runtimeName, runtimeID, serviceName, workspace, addonName, cpuOriginStr,
@@ -329,9 +329,9 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		k8spodname = pod.Name
 		k8scontainername = pod.Spec.Containers[0].Name
 
-		// servicegroup 的 namespace 和 name 写入 ENV, 以至于无法直接从 pod 信息中获取,
-		// 这里从 Pod 中的其他 ENV 推导出 namespace 和 name.
-		// addon 无法推导.
+		// The namespace and name of the servicegroup are written into ENV, so that they cannot be obtained directly from the pod information.
+		// the namespace and name are derived from other ENVs in the Pod.
+		// addon cannot be deduced.
 		if runtimeID != "" && workspace != "" && addonName == "" {
 			namespace = "services"
 			name = workspace + "-" + runtimeID
@@ -480,7 +480,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			}
 		}
 		// -------------------------------
-		// 2. 更新和创建 InstanceInfo 记录
+		// 2. Update and create InstanceInfo records
 		// -------------------------------
 		meta := strutil.Join([]string{
 			"k8snamespace=" + k8snamespace,

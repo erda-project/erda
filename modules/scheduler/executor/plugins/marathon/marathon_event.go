@@ -42,10 +42,10 @@ import (
 	_ "github.com/erda-project/erda/pkg/monitor"
 )
 
-// TODO: 需要考虑marathon集群重启、异常等情况重新建连
-// TODO: 定时从marathon api上获取状态（聚合计算层实现）
+// TODO: Re-establish connections in consideration of marathon cluster restarts, exceptions, etc.
+// TODO: Regularly obtain status from marathon api (implemented by aggregation computing layer)
 func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInstanceCh chan string, stopCh chan struct{}) {
-	// 等待5到30秒开始监听事件
+	// Wait for 5 to 30 seconds to start listening for events
 	waitSeconds := 2 + rand.Intn(5)
 	logrus.Infof("executor(name:%s, addr:%s) in WaitEvent, sleep %vs", m.name, m.addr, waitSeconds)
 	time.Sleep(time.Duration(waitSeconds) * time.Second)
@@ -72,12 +72,12 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 		select {
 		case <-stopCh:
 			logrus.Errorf("executor(%s) event got stop chan message", m.name)
-			// 终止循环执行
+			// Terminate loop execution
 			return true, errors.Errorf("got stop message and exit")
 		default:
 		}
 
-		// 不用m.client，避开其超时时间等制约条件
+		// Don't use m.client, avoid its timeout time and other constraints
 		var (
 			req *http.Request
 			err error
@@ -136,10 +136,10 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 		}
 
 		reader := bufio.NewReader(resp.Body)
-		// marathon事件一次来两行，格式为
+		// The marathon event comes two lines at a time, the format is
 		// event: status_update_event
 		// data: {"slaveId":"2aa23eb3-fa5c-4248-a203-ba4ddb9fb562-S2",...}
-		// 除开事件本身会一直有空行进来
+		// Except for the event itself, there will always be time to travel
 		var eventType string
 		var lastContent string
 		for {
@@ -157,7 +157,7 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 				break
 			}
 
-			// 先判断出事件类型
+			// First determine the type of event
 			if len(line) > 7 && string(line[:5]) == "event" {
 				eventType = string(line[7:])
 				eventType = strings.TrimSuffix(eventType, "\r\n")
@@ -168,10 +168,10 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 				continue
 			}
 
-			// 解析出事件内容
+			// Parse out the content of the event
 			content := line[6:]
 
-			// 丢弃非用户服务的事件
+			// Discard non-user service events
 			if !strings.Contains(string(content), "runtimes") {
 				continue
 			}
@@ -184,7 +184,7 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 					continue
 				}
 
-				// 或者状态为 unknown 事件及 unreachable 事件
+				// Or the status is unknown event and unreachable event
 				if ev.TaskStatus == events.UNKNOWN || ev.TaskStatus == events.UNREACHABLE {
 					continue
 				}
@@ -204,16 +204,16 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 				logrus.Debugf("going to send status update ev: %+v", statusEvent)
 				m.evCh <- &statusEvent
 
-				// 统计经常挂掉的实例
+				// Count the instances that frequently hang
 				if monitor {
 					collectDeadInstances(&ev, killedInstanceCh)
 				}
 
 			case events.INSTANCE_HEALTH_CHANGED_EVENT:
-				// instance_health_changed_event 一直是两个相同事件同时发送过来
+				// instance_health_changed_event Two identical events have always been sent at the same time
 				// https://jira.mesosphere.com/browse/MARATHON-8134
 				// https://jira.mesosphere.com/browse/MARATHON-8494
-				// 过滤掉 instance_health_changed_event 中的 "healthy":null 的 event
+				// Filter out "healthy":null events in instance_health_changed_event
 				if string(content) == lastContent || strings.Contains(string(content), "\"healthy\":null") {
 					continue
 				}
@@ -225,12 +225,12 @@ func (m *Marathon) WaitEvent(options map[string]string, monitor bool, killedInst
 					continue
 				}
 
-				// instance_health_changed_event 的 instanceId 格式：
+				// instanceId format of instance_health_changed_event ：
 				// "instanceId":"runtimes_v1_services_mydev-590_user-service.marathon-56153805-9004-11e8-aaac-70b3d5800001"
 
-				// status_update_event 的 taskId格式
+				// taskId format of status_update_event
 				// "taskId":"runtimes_v1_services_mydev-590_user-service.56153805-9004-11e8-aaac-70b3d5800001"
-				// instance_health_changed_event 的 instanceId的格式转化一下，即去掉"marathon-"
+				// Convert the format of instanceId of instance_health_changed_event to remove "marathon-"
 				statusEvent := eventtypes.StatusEvent{
 					Type:    eventType,
 					TaskId:  modifyHealthEventId(ev.InstanceId),
@@ -304,12 +304,12 @@ func withHttpsCertFromJSON(certFile, keyFile, cacrt []byte) (tls.Certificate, *x
 	return pair, pool
 }
 
-// 对etcd里的原始key做个处理
+// Treat the original key in etcd
 // /dice/service/services/staging-77 -> "services/staging-77"
 func etcdKeyToMapKey(eKey string) string {
 	fields := strings.Split(eKey, "/")
 	if l := len(fields); l > 2 {
-		// 过滤 addon 的服务
+		// Filter addon services
 		if strings.HasPrefix(fields[l-2], "addon") {
 			return ""
 		}
@@ -319,7 +319,7 @@ func etcdKeyToMapKey(eKey string) string {
 }
 
 func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEvent, stopCh chan struct{}, lstore *sync.Map) {
-	// watch 特定etcd目录的事件的处理函数
+	// watch event handler for a specific etcd directory
 	syncRuntimeToEvent := func(key string, value interface{}, t storetypes.ChangeType) error {
 
 		runtimeName := etcdKeyToMapKey(key)
@@ -327,10 +327,10 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 			return nil
 		}
 
-		// 先处理delete的事件
+		// Deal with the delete event first
 		if t == storetypes.Del {
-			// TODO: 先不删除key，删除了的话事件来了找不到对应的结构体，不好发事件
-			// TODO: 后面可以置个标志位，然后开个协程定时清理
+			// TODO: Do not delete the key first, if the event is deleted, the corresponding structure cannot be found, so it is not easy to send the event
+			// TODO: You can set a flag bit later, and then open a coroutine to clean up regularly
 			// lstore.Delete(runtimeName)
 			de_, ok := lstore.Load(runtimeName)
 			if ok {
@@ -343,7 +343,7 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 
 		run := value.(*apistructs.ServiceGroup)
 
-		// 过滤不属于本executor的事件
+		// Filter events that do not belong to this executor
 		if run.Executor != name {
 			return nil
 		}
@@ -360,7 +360,7 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 			for i, srv := range run.Services {
 				event.ServiceStatuses[i].ServiceName = srv.Name
 				event.ServiceStatuses[i].Replica = srv.Scale
-				// 当前实例信息不可知
+				// Unknowable current instance information
 				event.ServiceStatuses[i].InstanceStatuses = make([]events.InstanceStatus, len(srv.InstanceInfos))
 			}
 
@@ -374,15 +374,15 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 				logrus.Errorf("key(%s) updated but not found related key in lstore", key)
 				return nil
 			}
-			// 判断service个数是否改变，如考虑新增N个，删除M个情形
+			// Determine whether the number of services has changed, such as considering adding N and deleting M cases
 			for _, newS := range run.Services {
 				found := false
 				for _, oldS := range oldEvent.(events.RuntimeEvent).ServiceStatuses {
 					if oldS.ServiceName == newS.Name {
 						found = true
 						event.ServiceStatuses = append(event.ServiceStatuses, oldS)
-						// 判断是否是任何一个service里的instance个数发生变化, 只有扩容、缩容两种情况
-						// 扩容
+						// Determine whether the number of instances in any service has changed, and there are only two cases: expansion and contraction
+						// scale up
 						if oldS.Replica < newS.Scale {
 							i := 0
 							for i < newS.Scale-oldS.Replica {
@@ -391,16 +391,16 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 									event.ServiceStatuses[len(event.ServiceStatuses)-1].InstanceStatuses, events.InstanceStatus{})
 							}
 							event.ServiceStatuses[len(event.ServiceStatuses)-1].Replica = newS.Scale
-						} else if len(oldS.InstanceStatuses) > newS.Scale { // 缩容
-							// 根据marathon的策略"killSelection": "YOUNGEST_FIRST", 新的实例会先被杀
-							// 而比较新的实例会被添加在slice的后面
+						} else if len(oldS.InstanceStatuses) > newS.Scale { // scale down
+							// According to marathon's strategy "killSelection": "YOUNGEST_FIRST", new instances will be killed first
+							// The newer instance will be added after the slice
 							event.ServiceStatuses[len(event.ServiceStatuses)-1].Replica = newS.Scale
 						}
 						break
 					}
 				}
 
-				// 未找到说明newS是需要新增的service, 不需考虑instance个数变化
+				// Not found, indicating that newS is a service that needs to be added, no need to consider the number of instances
 				if !found {
 					event.ServiceStatuses = append(event.ServiceStatuses, events.ServiceStatus{
 						ServiceName:      newS.Name,
@@ -420,7 +420,7 @@ func registerEventChanAndLocalStore(name string, evCh chan *eventtypes.StatusEve
 		return nil
 	}
 
-	// 将注册来的executor的name及其event channel对应起来
+	// Correspond the name of the registered executor and its event channe
 	getEvChanFn := func(executorName executortypes.Name) (chan *eventtypes.StatusEvent, chan struct{}, *sync.Map, error) {
 		logrus.Infof("in RegisterEvChan executor(%s)", name)
 		if string(executorName) == name {
@@ -445,7 +445,7 @@ func (m *Marathon) initEventAndPeriodSync(name string, lstore *sync.Map, stopCh 
 	}
 
 	isInit := true
-	// 第一次初始化和周期性更新
+	// First initialization and periodic update
 	initRuntimeEventStore := func(k string, v interface{}) error {
 		r := v.(*apistructs.ServiceGroup)
 		if r.Executor != string(name) {
@@ -471,7 +471,7 @@ func (m *Marathon) initEventAndPeriodSync(name string, lstore *sync.Map, stopCh 
 			e.ServiceStatuses[i].ServiceStatus = convertServiceStatus(r2.Services[i].Status)
 			e.ServiceStatuses[i].InstanceStatuses = make([]events.InstanceStatus, len(r2.Services[i].InstanceInfos))
 
-			// 对服务的实例数被设置为 0 并且服务中无实例信息的，设置其为特定的健康状态
+			// If the number of instances of the service is set to 0 and there is no instance information in the service, set it to a specific health state
 			if e.ServiceStatuses[i].Replica == 0 && len(r2.Services[i].InstanceInfos) == 0 {
 				e.ServiceStatuses[i].ServiceStatus = string(apistructs.StatusHealthy)
 			}
@@ -482,7 +482,7 @@ func (m *Marathon) initEventAndPeriodSync(name string, lstore *sync.Map, stopCh 
 			}
 
 			for j, instance := range r2.Services[i].InstanceInfos {
-				// instance.Id格式 runtimes_v1_services_staging-821_web.ca3113d1-9531-11e8-ad54-70b3d5800001
+				// instance.Id format:  runtimes_v1_services_staging-821_web.ca3113d1-9531-11e8-ad54-70b3d5800001
 				// runtimes_v1_services_staging-821_web.ca3113d1-9531-11e8-ad54-70b3d5800001.1
 				e.ServiceStatuses[i].InstanceStatuses[j].ID = instance.Id
 				e.ServiceStatuses[i].InstanceStatuses[j].InstanceStatus = convertStatus(&instance)
@@ -511,16 +511,16 @@ func (m *Marathon) initEventAndPeriodSync(name string, lstore *sync.Map, stopCh 
 		return nil
 	}
 
-	// 每个executor被初始化的时候去jsonstore里初始化一把元数据作用：
-	// 1, 拿到隶属于该executor的所有runtime的状态信息, 作为后续计算增量事件的结构基础
-	// 2, 发送初始化状态事件(全量事件)
+	// When each executor is initialized, go to jsonstore to initialize a metadata function:
+	// 1, Get the status information of all runtimes belonging to the executor, as the structural basis for subsequent calculation of incremental events
+	// 2, Send initialization status event (full event)
 	em := events.GetEventManager()
 
 	if err = em.MemEtcdStore.ForEach(context.Background(), "/dice/service/", apistructs.ServiceGroup{}, initRuntimeEventStore); err != nil {
 		logrus.Errorf("executor(%s) foreach initRuntimeEventStore error: %v", name, err)
 	}
 
-	// 定期补偿状态
+	// Periodic compensation status
 	go func() {
 		isInit = false
 		for {
@@ -542,15 +542,15 @@ func (m *Marathon) initEventAndPeriodSync(name string, lstore *sync.Map, stopCh 
 	return nil
 }
 
-// Status接口通过marathon拿到实例的原生状态，转成RuntimeEvent中对应实例的状态
+// The Status interface gets the native state of the instance through marathon, and converts it to the state of the corresponding instance in RuntimeEvent
 func convertStatus(instance *apistructs.InstanceInfo) string {
 	switch instance.Status {
 	case events.RUNNING:
 		if instance.Alive == "false" {
 			return string(apistructs.StatusUnHealthy)
 		}
-		// 包含实例为 Healthy 和 实例没有配置健康检查的情况
-		// 当前所有服务都会配置健康检查，只有那些非常老的服务可能没有配置
+		// Including the case where the instance is Healthy and the instance is not configured with health check
+		// All current services will be configured with health checks, only those very old services may not be configured
 		return string(apistructs.StatusHealthy)
 
 	case events.KILLED:
@@ -579,7 +579,7 @@ func convertStatus(instance *apistructs.InstanceInfo) string {
 	}
 }
 
-// Status接口通过marathon拿到的服务的状态的修改
+// Modification of the status of the service obtained through the Status interface through marathon
 func convertServiceStatus(serviceStatus apistructs.StatusCode) string {
 	switch serviceStatus {
 	case apistructs.StatusReady:

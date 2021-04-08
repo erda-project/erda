@@ -11,10 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package constraintbuilders 根据 scheduleInfo 生成各类 executor 具体的约束(constraints)
-//
-// TODO: example here...
-//
+// Package constraintbuilders Generate various executor specific constraints (constraints) according to scheduleInfo
 package constraintbuilders
 
 import (
@@ -27,7 +24,7 @@ import (
 
 type constraintBuilder interface {
 	// Build parameters:
-	// podlabels: 用于设置 podAntiAffinity, 对于 marathon 来说，这个参数没有意义
+	// podlabels: Used to set podAntiAffinity, for marathon, this parameter has no meaning
 	Build(scheduleInfo *apistructs.ScheduleInfo2, service *apistructs.Service, podlabels []constraints.PodLabelsForAffinity, hostnameUtil constraints.HostnameUtil) constraints.Constraints
 }
 

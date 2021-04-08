@@ -23,8 +23,8 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// updateStatelessServiceDeploymentService 更新 stateless-service类型的deployment 到db中
-// TODO: 还没有处理 'cluster', 'namespace', 'name'  这 3 个字段
+// updateStatelessServiceDeploymentService Update stateless-service type deployment to db
+// TODO: The 3 fields of'cluster','namespace', and'name' have not been processed
 func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.DeploymentList, delete bool) error {
 	r := dbclient.ServiceReader()
 	w := dbclient.ServiceWriter()
@@ -64,15 +64,15 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist 
 			}
 		)
 		// -------------------------------------
-		// 1. 从 deployment 获取所有需要的信息
+		// 1. Obtain all required information from deployment
 		// -------------------------------------
 		for _, env := range deploy.Spec.Template.Spec.Containers[0].Env {
 			if variable, ok := envmap[env.Name]; ok {
 				*variable = env.Value
 			}
 		}
-		// 如果 envmap 中的内容有为空的情况, 则不更新这个 deployment 到 DB
-		// 因为走 dice 部署流程发起的服务都应该有這些环境变量
+		// If the content in envmap is empty, do not update the deployment to DB
+		// Because the services initiated by the dice deployment process should have these environment variables
 		skipThisDeploy := false
 		for _, v := range envmap {
 			if *v == "" {
@@ -99,7 +99,7 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist 
 		}
 
 		// -------------------------------
-		// 2. 更新或创建 ServiceInfo 记录
+		// 2. Update or create ServiceInfo record
 		// -------------------------------
 
 		svcs, err := r.ByOrgName(orgName).
@@ -133,14 +133,14 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist 
 			StartedAt:       startedAt,
 		}
 		switch len(svcs) {
-		case 0: // DB 中没有这个 service
+		case 0: // There is no such service in DB
 			if delete {
 				break
 			}
 			if err := w.Create(&serviceinfo); err != nil {
 				return err
 			}
-		default: // 会有 len(svcs)> 1 的情况吗?
+		default: // Will there be a situation where len(svcs)> 1?
 			for _, svc := range svcs {
 				serviceinfo.ID = svc.ID
 				if delete {
@@ -158,7 +158,7 @@ func updateStatelessServiceDeployment(dbclient *instanceinfo.Client, deploylist 
 	return nil
 }
 
-// updateAddonDeploymentService 更新 addon 类型的 deployment到 db中
+// updateAddonDeploymentService Update addon type deployment to db
 func updateAddonDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.DeploymentList, delete bool) error {
 	r := dbclient.ServiceReader()
 	w := dbclient.ServiceWriter()
@@ -187,7 +187,7 @@ func updateAddonDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.Dep
 			}
 		)
 		// -------------------------------
-		// 1. 从 deployment 中获取所有需要的信息
+		// 1. Get all the required information from the deployment
 		// -------------------------------
 		for _, env := range deploy.Spec.Template.Spec.Containers[0].Env {
 			if variable, ok := envmap[env.Name]; ok {
@@ -215,7 +215,7 @@ func updateAddonDeployment(dbclient *instanceinfo.Client, deploylist *appsv1.Dep
 		startedAt = deploy.ObjectMeta.CreationTimestamp.Time
 
 		// -------------------------------
-		// 2. 更新或创建 ServiceInfo 记录
+		// 2. Update or create ServiceInfo record
 		// -------------------------------
 		svcs, err := r.ByOrgName(orgName).
 			ByProjectName(projectName).

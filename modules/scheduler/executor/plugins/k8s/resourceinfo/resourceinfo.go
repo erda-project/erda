@@ -42,7 +42,7 @@ func New(addr string, client *httpclient.HTTPClient) *ResourceInfo {
 	return &ResourceInfo{addr: addr, client: client, podutil: podutil, nodeutil: nodeutil}
 }
 
-// PARAM brief: 不提供 cpuusage, memusage 数据, 减少调用k8sapi的开销
+// PARAM brief: Does not provide cpuusage, memusage data, reducing the overhead of calling k8sapi
 func (ri *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, error) {
 	podlist := &v1.PodList{Items: nil}
 	if !brief {

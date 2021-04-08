@@ -26,11 +26,11 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// NewImageSecret 新建 image pull secret
-// 1, 创建该 namespace 下的 imagePullSecret
-// 2, 将这个 secret 加到该 namespace 的 serviceaccount 中去
+// NewImageSecret create new image pull secret
+// 1, create imagePullSecret of this namespace
+// 2, put this secret into serviceaccount of the namespace
 func (k *Kubernetes) NewImageSecret(namespace string) error {
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	s, err := k.secret.Get("default", AliyunRegistry)
 	if err != nil {
 		return err
@@ -57,12 +57,12 @@ func (k *Kubernetes) NewImageSecret(namespace string) error {
 	return k.updateDefaultServiceAccountForImageSecret(namespace, s.Name)
 }
 
-// NewImageSecret 新建 image pull secret
-// 1, 创建该 namespace 下的 imagePullSecret
-// 2, 将需要认证的image的secret添加到该namespace的secret中
-// 3, 将这个 secret 加到该 namespace 的 serviceaccount 中去
+// NewImageSecret create mew image pull secret
+// 1, create imagePullSecret of this namespace
+// 2, Add the secret of the image that needs to be authenticated to the secret of the namespace
+// 3, put this secret into serviceaccount of the namespace
 func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.ServiceGroup) error {
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	s, err := k.secret.Get("default", AliyunRegistry)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 		return err
 	}
 
-	//将有设置用户名密码的runtime的secret追加到secret中
+	//Append the runtime secret with the username and password to the secret
 	for _, service := range sg.Services {
 		if service.ImageUsername != "" {
 			u := strings.Split(service.Image, "/")[0]
@@ -107,7 +107,7 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 	return k.updateDefaultServiceAccountForImageSecret(namespace, s.Name)
 }
 
-// CopyDiceSecrets 将 orignns namespace 下的 secret 复制到 dstns 下
+// CopyDiceSecrets Copy the secret under orignns namespace to dstns
 func (k *Kubernetes) CopyDiceSecrets(originns, dstns string) ([]apiv1.Secret, error) {
 	secrets, err := k.secret.List(originns)
 	if err != nil {

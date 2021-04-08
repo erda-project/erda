@@ -78,8 +78,8 @@ func (s *Server) epCreateRuntime(ctx context.Context, r *http.Request, vars map[
 		return nil, err
 	}
 
-	// 不轮询最新状态，etcd只存储相应元数据信息及期望值
-	// runtime最新状态是希望上层通过GET接口来查询
+	// Do not poll the latest status, etcd only stores the corresponding metadata information and expected values
+	// The latest state of runtime is to be queried by the upper layer through the GET interface
 
 	return HTTPResponse{
 		Status: http.StatusOK,
@@ -93,8 +93,8 @@ func (s *Server) epCreateRuntime(ctx context.Context, r *http.Request, vars map[
 }
 
 func (s *Server) epUpdateRuntime(ctx context.Context, r *http.Request, vars map[string]string) (Responser, error) {
-	// 根据全量更新来实现
-	// upRuntime 从上层request body解析出，反映上层期望的runtime
+	// Realize based on full update
+	// upRuntime is parsed from the upper request body and reflects the runtime expected by the upper layer
 	upRuntime := apistructs.ServiceGroup{}
 	if err := json.NewDecoder(r.Body).Decode(&upRuntime); err != nil {
 		return HTTPResponse{Status: http.StatusBadRequest}, err
@@ -112,7 +112,7 @@ func (s *Server) epUpdateRuntime(ctx context.Context, r *http.Request, vars map[
 		}, nil
 	}
 
-	// oldRuntime 从etcd中获取，反映当前runtime
+	// oldRuntime is obtained from etcd, reflecting the current runtime
 	oldRuntime := apistructs.ServiceGroup{}
 	if err := s.store.Get(ctx, makeRuntimeKey(namespace, name), &oldRuntime); err != nil {
 		return HTTPResponse{
@@ -123,7 +123,7 @@ func (s *Server) epUpdateRuntime(ctx context.Context, r *http.Request, vars map[
 		}, nil
 	}
 
-	// 清理 cache, 会触发一次新的部署
+	// Clearing the cache will trigger a new deployment
 	s.l.Lock()
 	_, ok := s.runtimeMap[oldRuntime.Type+"--"+oldRuntime.ID]
 	if ok {
@@ -151,7 +151,7 @@ func (s *Server) epUpdateRuntime(ctx context.Context, r *http.Request, vars map[
 	}, nil
 }
 
-// 暂时约定上层通过epUpdateRuntime来实现
+// Temporarily agree that the upper layer is implemented through epUpdateRuntime
 func (s *Server) epUpdateService(ctx context.Context, r *http.Request, vars map[string]string) (Responser, error) {
 	// TODO
 	return nil, nil
@@ -172,7 +172,7 @@ func (s *Server) epRestartRuntime(ctx context.Context, r *http.Request, vars map
 		}, nil
 	}
 
-	// 清理 cache, 会触发一次新的部署
+	// Clearing the cache will trigger a new deployment
 	s.l.Lock()
 	_, ok := s.runtimeMap[runtime.Type+"--"+runtime.ID]
 	if ok {
@@ -381,7 +381,7 @@ func diffAndPatchRuntime(upRuntime *apistructs.ServiceGroup, oldRuntime *apistru
 	oldRuntime.ServiceDiscoveryKind = upRuntime.ServiceDiscoveryKind
 
 	// TODO: refactor it, separate data and status into different etcd key
-	// 全量更新
+	// full update
 	oldRuntime.Services = upRuntime.Services
 }
 
@@ -414,7 +414,7 @@ func (s *Server) epPrefixGetRuntime(ctx context.Context, r *http.Request, vars m
 	prefix := vars["prefix"]
 	var prefixKey string
 
-	// TODO: FIX ME. 默认用services这个namespace
+	// TODO: FIX ME. The namespace of services is used by default
 	if !strings.HasPrefix(prefix, "/dice/service/") {
 		prefixKey = "/dice/service/services/" + prefix
 	}
@@ -529,7 +529,7 @@ func (s *Server) epGetRuntimeStatus(ctx context.Context, r *http.Request, vars m
 		Name:      name,
 	}
 
-	// 返回空的runtime
+	// return empty runtime
 	if result.Extra == nil {
 		logrus.Errorf("got runtime(%v/%v) empty, executor: %s", runtime.Type, runtime.ID, runtime.Executor)
 		return nil, errors.Errorf("got runtime(%v/%v) but found it empty", runtime.Type, runtime.ID)
