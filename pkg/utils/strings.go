@@ -14,8 +14,6 @@
 package utils
 
 import (
-	"crypto/md5"
-	"encoding/base64"
 	"math/rand"
 	"unsafe"
 
@@ -52,21 +50,6 @@ func RandomString(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func GetMD5Base64(bytes []byte) string {
-	md5Ctx := md5.New()
-	md5Ctx.Write(bytes)
-	md5Value := md5Ctx.Sum(nil)
-	return base64.RawURLEncoding.EncodeToString(md5Value)
-}
-
-func GetMD5Base64WithLegth(bytes []byte, maxLength int) string {
-	res := GetMD5Base64(bytes)
-	if len(res) > maxLength {
-		res = res[:maxLength]
-	}
-	return res
 }
 
 func StringToBytes(s string) []byte {

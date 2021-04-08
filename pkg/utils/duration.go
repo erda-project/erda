@@ -41,3 +41,31 @@ func (d Duration) MarshalYAML() (interface{}, error) {
 func (d Duration) Duration() time.Duration {
 	return time.Duration(d)
 }
+
+// Keep the specified decimal places.
+func (d Duration) formatDuration(precision int) (string, error) {
+	if precision < 0 {
+		return "", fmt.Errorf("invalid precision: %v", precision)
+	}
+	val, base := int64(d), int64(time.Nanosecond)
+	switch {
+	case val <= int64(time.Microsecond):
+		return d.Duration().String(), nil
+	case val <= int64(time.Millisecond):
+		base = int64(time.Microsecond)
+	case val <= int64(time.Second):
+		base = int64(time.Millisecond)
+	default:
+		base = int64(time.Second)
+	}
+	for i := 0; i < precision; i++ {
+		base /= 10
+	}
+	if base > 1 {
+		if (val % base) >= (base / 2) {
+			return time.Duration((val/base + 1) * base).String(), nil
+		}
+		return time.Duration(val / base * base).String(), nil
+	}
+	return d.Duration().String(), nil
+}
