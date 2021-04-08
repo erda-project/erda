@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// Workspace 标签(即 env 标签，区分 dev, test, staging, prod)
+// Workspace label (ie env label, distinguish dev, test, staging, prod)
 func WorkspaceLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
 	envName_ := li.Label[labelconfig.WORKSPACE_KEY]
@@ -36,7 +36,7 @@ func WorkspaceLabelFilter(
 		}
 	}
 	if envName == "" {
-		// 未打 env 标的应用，不应该被调度到任意一个已打了该标签的节点上
+		// Applications that are not labeled with env should not be scheduled to any node that has this label
 		r.UnLikePrefixs = append(r.UnLikePrefixs, labelconfig.WORKSPACE_VALUE_PREFIX)
 		r2.HasWorkSpace = false
 		logrus.Infof("obj(%s) have no workspace label", li.ObjName)
@@ -47,7 +47,7 @@ func WorkspaceLabelFilter(
 		workspaceopt *executortypes.WorkspaceOpt
 		orgopt       *executortypes.OrgOpt
 	)
-	// 从集群精细配置获取是否开启 workspace 调度，workspace 的配置在 org 之下
+	// Get whether workspace scheduling is enabled from the fine configuration of the cluster, and the workspace configuration is under org
 	orgName, orgOK := li.Label[labelconfig.ORG_KEY]
 	for _, selectors := range li.Selectors {
 		if v, ok := selectors["org"]; ok && len(v.Values) > 0 {
@@ -56,8 +56,8 @@ func WorkspaceLabelFilter(
 			break
 		}
 	}
-	// 未打 org 标的应用，在精细配置中无法找到是否开启 workspace 调度的配置
-	// 去集群基本配置中读取是否开启 workspace 调度
+	// For applications that are not marked with org, in the fine configuration, it is not possible to find whether to enable the workspace scheduling configuration
+	// Go to the basic configuration of the cluster to read whether workspace scheduling is enabled
 	if !orgOK || li.OptionsPlus == nil {
 		goto basic
 	}
@@ -86,11 +86,11 @@ func WorkspaceLabelFilter(
 	}
 
 basic:
-	// 从基本配置获取是否开启 workspace 调度
+	// Get whether to enable workspace scheduling from the basic configuration
 	enableEnvScheduler := li.ExecutorConfig.EnableWorkspaceLabelSchedule()
-	// 未开启 workspace 调度
+	// Workspace scheduling is not enabled
 	if !enableEnvScheduler {
-		// 兼容老的 WORKSPACETAGS 标签
+		// Compatible with old WORKSPACETAGS tags
 		if tag, tagOK := li.ExecutorConfig.WORKSPACETAGSForCompatibility(); tagOK {
 			tags := strings.Split(tag, ",")
 			sort.Strings(tags)
@@ -118,7 +118,7 @@ basic:
 	r2.WorkSpaces = []string{envName}
 }
 
-// fixJobDest 对 Staging 和 Prod 的 job 可以额外配置目的工作区，相应配置如下:
+// fixJobDest For Staging and Prod jobs, additional destination workspaces can be configured, and the corresponding configuration is as follows:
 // "STAGING_JOB_DEST":"dev"
 // "PROD_JOB_DEST":"dev,test"
 func fixJobDest(r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo, org, workspace string, options *executortypes.ExecutorWholeConfigs, basicconfig bool) bool {
@@ -152,7 +152,7 @@ func fixJobDest(r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleR
 		r.InclusiveLikes = append(r.InclusiveLikes,
 			labelconfig.WORKSPACE_VALUE_PREFIX+labelconfig.WORKSPACE_TEST)
 		r2.HasWorkSpace = true
-		// k8s 集群不配置默认值，按实际传递的 workspace 进行调度
+		// The k8s cluster is not configured with default values ​​and is scheduled according to the actual workspace delivered
 		r2.WorkSpaces = append(r2.WorkSpaces, workspace)
 		return true
 	}

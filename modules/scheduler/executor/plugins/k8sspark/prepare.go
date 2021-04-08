@@ -158,8 +158,8 @@ func (s *k8sSpark) composePodSpec(job *apistructs.Job, podType string, mount []c
 }
 
 func (s *k8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource) {
-	// 资源不超卖
-	// executor cores 必须大于 1c
+	// Resources are not oversold
+	// executor cores Must be greater than 1c
 	cpu, err := strconv.ParseInt(resource.CPU, 10, 32)
 	if err != nil {
 		cpu = 1
@@ -170,7 +170,7 @@ func (s *k8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	}
 
 	cpuString := strutil.Concat(strconv.Itoa(int(cpu)))
-	// spark-submit 会将 m 转换成 Mi
+	// spark-submit Will convert m to Mi
 	memory := strutil.Concat(resource.Memory, "m")
 
 	podSpec.Cores = int32ptr(int32(cpu))
@@ -178,10 +178,10 @@ func (s *k8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	podSpec.Memory = stringptr(memory)
 }
 
-// 环境变量注入参考：https://dice.app.terminus.io/workBench/projects/70/apps/178/repo/tree/master/docs/dice-env-vars.md
+// Environment variable injection reference：https://dice.app.terminus.io/workBench/projects/70/apps/178/repo/tree/master/docs/dice-env-vars.md
 func (s *k8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource) {
-	// 资源不超卖
-	// executor cores 必须大于 1c
+	// Resources are not oversold
+	// executor cores Must be greater than 1c
 	cpu, err := strconv.ParseFloat(resource.CPU, 32)
 	if err != nil {
 		cpu = 1.0
@@ -224,7 +224,7 @@ func (s *k8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apis
 }
 
 func addLabels() map[string]string {
-	// TODO: 现在无法直接使用job.Labels，不符合k8s labels的规
+	// TODO: Job.Labels cannot be used directly now, which does not meet the regulations of k8s labels
 	// if job.Labels == nil {
 	// 	job.Labels = make(map[string]string)
 	// }
@@ -424,7 +424,7 @@ func (s *k8sSpark) createImageSecretIfNotExist(ns, defaultSecret string) error {
 		return nil
 	}
 
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	se, err := s.secret.Get("default", defaultSecret)
 	if err != nil {
 		return err

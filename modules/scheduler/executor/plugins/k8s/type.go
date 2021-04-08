@@ -37,7 +37,7 @@ const (
 	// local volume storageclass name
 	localStorage = "dice-local-volume"
 
-	// 默认的 sa
+	// default sa
 	defaultServiceAccountName = "default"
 )
 
@@ -50,7 +50,7 @@ type StatefulsetInfo struct {
 	annotations map[string]string
 }
 
-// OneGroupInfo 返回该group对应的statefulset的信息
+// OneGroupInfo Returns information about the statefulset corresponding to the group
 type OneGroupInfo struct {
 	sg  *apistructs.ServiceGroup
 	sts *appsv1.StatefulSet

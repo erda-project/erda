@@ -21,15 +21,15 @@ import (
 )
 
 type AddonOperator interface {
-	// 判断这个集群是否支持 addon operator
+	// Determine whether this cluster supports addon operator
 	IsSupported() bool
-	// 验证由 diceyml 转化而来的 sg 的合法性
+	// Verify the legality of sg converted from diceyml
 	Validate(*apistructs.ServiceGroup) error
-	// 将 sg 转化为 cr, 由于各个 cr 的定义不同, 这里用 interface{}
+	// Convert sg to cr. Because of the different definitions of cr, use interface() here
 	Convert(*apistructs.ServiceGroup) interface{}
-	// 将 Convert 所转化的 cr 在 k8s 中部署
+	// the cr converted by Convert in k8s deploying
 	Create(interface{}) error
-	// 检查运行状态
+	// Check running status
 	Inspect(*apistructs.ServiceGroup) (*apistructs.ServiceGroup, error)
 
 	Remove(*apistructs.ServiceGroup) error
@@ -80,8 +80,8 @@ type SecretUtil interface {
 }
 
 type ImageSecretUtil interface {
-	// 在 default namespace 下的用来pull镜像的secret复制到当前 ns 中,
-	// 再将这个 secret 加到这个 ns 的 default sa 中去
+	//The secret used to pull the mirror under the default namespace is copied to the current ns,
+	// Then add this secret to the default sa of this ns
 	NewImageSecret(ns string) error
 }
 
@@ -93,8 +93,6 @@ type PVCUtil interface {
 	Create(pvc *corev1.PersistentVolumeClaim) error
 }
 type OvercommitUtil interface {
-	// 5 -> 2.5  == 超卖 2 倍 (单位 核数)
 	CPUOvercommit(limit float64) float64
-	// 1000 -> 500 == 超卖 2 倍 (单位 Mi)
 	MemoryOvercommit(limit int) int
 }
