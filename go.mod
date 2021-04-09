@@ -89,9 +89,11 @@ require (
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
 	github.com/valyala/fasthttp v1.23.0 // indirect
+	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c // indirect
 	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
+	go.uber.org/ratelimit v0.2.0 // indirect
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/text v0.3.5
