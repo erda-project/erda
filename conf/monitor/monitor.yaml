@@ -1,0 +1,19 @@
+http-server:
+  addr: ":7096"
+
+cassandra:
+# host: "${CASSANDRA_ADDR:localhost:9042}"
+# security: ${CASSANDRA_SECURITY_ENABLE:false}
+# username: ${CASSANDRA_SECURITY_USERNAME:}
+# password: ${CASSANDRA_SECURITY_PASSWORD:}
+# timeout: "${CASSANDRA_TIMEOUT:3s}"
+
+logs-query:
+  _enable: ${LOGS_QUERY_ENABLE:true}
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+      auto: true # 自动创建 keyspace
+      replication:
+        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}

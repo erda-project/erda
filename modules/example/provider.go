@@ -30,7 +30,7 @@ import (
 type define struct{}
 
 // Declare what services the provider provides
-func (d *define) Service() []string { return []string{"example"} }
+func (d *define) Services() []string { return []string{"example"} }
 
 // Declare which services the provider depends on
 func (d *define) Dependencies() []string { return []string{"http-server"} }
