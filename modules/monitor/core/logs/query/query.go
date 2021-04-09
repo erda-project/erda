@@ -230,69 +230,7 @@ func gunzipContent(content []byte) ([]byte, error) {
 	return res, nil
 }
 
-func (p *provider) removeBaseLog(ids []string, timeBuckets []int64, orgName string) error {
-	var values []interface{}
-	stmt := "DELETE FROM " + schema.BaseLogWithOrgName(orgName) + " WHERE source IN ('container', 'job') AND stream IN ('stdout', 'stderr') "
-	stmt += "AND time_bucket IN ("
-	for idx, item := range timeBuckets {
-		if idx > 0 {
-			stmt += ", "
-		}
-		stmt += "?"
-		values = append(values, item)
-	}
-	stmt += ") "
-
-	qress := p.doLoopQuery(stmt, ids)
-	for _, item := range qress {
-		tmp := make([]interface{}, len(values))
-		copy(tmp, values)
-		tmp = append(tmp, item.values...)
-		if err := p.session.Query(item.stmt, tmp...).Exec(); err != nil {
-			return fmt.Errorf("stmt=%s, values=%+v. err=%s", item.stmt, tmp, err)
-		}
-	}
-	return nil
-}
-
 type qresult struct {
 	stmt   string
 	values []interface{}
-}
-
-func (p *provider) doLoopQuery(baseQry string, ids []string) []*qresult {
-	res := make([]*qresult, 0)
-	start, end := 0, maxIdsLength
-loop:
-	values := make([]interface{}, 0)
-	qry := baseQry + "AND id IN ("
-	if end >= len(ids) {
-		end = len(ids) - 1
-	}
-	for idx, item := range ids[start:end] {
-		if idx > 0 {
-			qry += ", "
-		}
-		qry += "?"
-		values = append(values, item)
-	}
-	qry += ") "
-	res = append(res, &qresult{qry, values})
-
-	start, end = start+maxIdsLength, end+maxIdsLength
-	if start >= len(ids) {
-		return res
-	} else {
-		goto loop
-	}
-}
-
-func (p *provider) getTimeBuckets(offset int64) []int64 {
-	timeBuckets := []int64{}
-	t := time.Unix((offset-offset%1000)/1000, offset%1000*100000)
-	for i := 1; i <= maxDay; i++ {
-		t := trncateDate(t.AddDate(0, 0, -1*i).UnixNano())
-		timeBuckets = append(timeBuckets, t)
-	}
-	return timeBuckets
 }

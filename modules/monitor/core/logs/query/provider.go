@@ -70,15 +70,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-// Start .
-func (p *provider) Start() error {
-	return nil
-}
-
-func (p *provider) Close() error {
-	return nil
-}
-
 func init() {
 	servicehub.RegisterProvider("logs-query", &define{})
 }
