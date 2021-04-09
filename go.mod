@@ -25,6 +25,8 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
+	github.com/docker/docker v1.13.1
+	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
 	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
