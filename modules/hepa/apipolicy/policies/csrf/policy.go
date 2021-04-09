@@ -31,7 +31,6 @@ import (
 
 type Policy struct {
 	apipolicy.BasePolicy
-	policyDb db.GatewayPolicyService
 }
 
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
@@ -121,7 +120,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
-	exist, err := policy.policyDb.GetByAny(&orm.GatewayPolicy{
+	policyDb, _ := db.NewGatewayPolicyServiceImpl()
+	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
 		PluginName: "csrf-token",
 	})
@@ -134,7 +134,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			if err != nil {
 				return res, err
 			}
-			_ = policy.policyDb.DeleteById(exist.Id)
+			_ = policyDb.DeleteById(exist.Id)
 			res.KongPolicyChange = true
 		}
 		return res, nil
@@ -151,7 +151,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			return res, err
 		}
 		exist.Config = configByte
-		err = policy.policyDb.Update(exist)
+		err = policyDb.Update(exist)
 		if err != nil {
 			return res, err
 		}
@@ -172,7 +172,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			Config:     configByte,
 			Enabled:    1,
 		}
-		err = policy.policyDb.Insert(policyDao)
+		err = policyDb.Insert(policyDao)
 		if err != nil {
 			return res, err
 		}
@@ -182,11 +182,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 }
 
 func init() {
-	policyDb, err := db.NewGatewayPolicyServiceImpl()
-	if err != nil {
-		panic(err)
-	}
-	err = apipolicy.RegisterPolicyEngine("safety-csrf", &Policy{policyDb: policyDb})
+
+	err := apipolicy.RegisterPolicyEngine("safety-csrf", &Policy{})
 	if err != nil {
 		panic(err)
 	}

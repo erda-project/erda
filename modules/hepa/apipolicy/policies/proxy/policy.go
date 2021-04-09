@@ -22,13 +22,11 @@ import (
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
 	"github.com/pkg/errors"
 )
 
 type Policy struct {
 	apipolicy.BasePolicy
-	policyDb db.GatewayPolicyService
 }
 
 func (policy Policy) CreateDefaultConfig(ctx map[string]interface{}) apipolicy.PolicyDto {
@@ -136,8 +134,8 @@ send_timeout %ds;
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
-
-	exist, err := policy.policyDb.GetByAny(&orm.GatewayPolicy{
+	policyDb, _ := db.NewGatewayPolicyServiceImpl()
+	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
 		PluginName: "host-passthrough",
 	})
@@ -149,7 +147,8 @@ send_timeout %ds;
 		if err != nil {
 			return res, err
 		}
-		_ = policy.policyDb.DeleteById(exist.Id)
+		policyDb, _ := db.NewGatewayPolicyServiceImpl()
+		_ = policyDb.DeleteById(exist.Id)
 		res.KongPolicyChange = true
 	}
 	if exist == nil && policyDto.HostPassthrough {
@@ -175,7 +174,8 @@ send_timeout %ds;
 			Config:     configByte,
 			Enabled:    1,
 		}
-		err = policy.policyDb.Insert(policyDao)
+		policyDb, _ := db.NewGatewayPolicyServiceImpl()
+		err = policyDb.Insert(policyDao)
 		if err != nil {
 			return res, err
 		}
@@ -185,11 +185,7 @@ send_timeout %ds;
 }
 
 func init() {
-	policyDb, err := db.NewGatewayPolicyServiceImpl()
-	if err != nil {
-		panic(err)
-	}
-	err = apipolicy.RegisterPolicyEngine("proxy", &Policy{policyDb: policyDb})
+	err := apipolicy.RegisterPolicyEngine("proxy", &Policy{})
 	if err != nil {
 		panic(err)
 	}

@@ -82,7 +82,7 @@ func (wrapper SqlLogWrapper) Level() core.LogLevel {
 func (wrapper SqlLogWrapper) SetLevel(l core.LogLevel) {
 }
 
-var SqlLog = SqlLogWrapper{common.ErrorLog, config.LogConf.ShowSQL}
+var SqlLog SqlLogWrapper
 
 func SetGlobalCacher(engine OrmEngineInterface, expired time.Duration, size int) {
 	cacher := xorm.NewLRUCacher2(xorm.NewMemoryStore(), expired, size)
@@ -183,10 +183,11 @@ func GetSingleton() (*OrmEngine, error) {
 	return engine, nil
 }
 
-func init() {
+func Init() {
 	ormEngine := CreateSingleton(config.ServerConf.DbDriver, config.ServerConf.DbSources, map[string]string{})
 	err := SetPrefix(ormEngine, config.ServerConf.TableNamePrefix)
 	if err != nil {
 		panic(err)
 	}
+	SqlLog = SqlLogWrapper{common.ErrorLog, config.LogConf.ShowSQL}
 }

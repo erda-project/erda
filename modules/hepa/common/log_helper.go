@@ -39,7 +39,7 @@ var AccessLog *logrus.Logger
 
 var ErrorLog = logrus.StandardLogger()
 
-func init() {
+func InitLogger() {
 	AccessLog = logrus.New()
 	level, err := logrus.ParseLevel(config.LogConf.AccessLevel)
 	if err != nil {

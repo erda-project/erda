@@ -22,14 +22,12 @@ import (
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 type Policy struct {
 	apipolicy.BasePolicy
-	policyDb db.GatewayPolicyService
 }
 
 func (policy Policy) NeedSerialUpdate() bool {
@@ -83,7 +81,8 @@ proxy_intercept_errors on;
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
-	plugins, err := policy.policyDb.SelectByAny(&orm.GatewayPolicy{
+	policyDb, _ := db.NewGatewayPolicyServiceImpl()
+	plugins, err := policyDb.SelectByAny(&orm.GatewayPolicy{
 		ZoneId:   zone.Id,
 		Category: "built-in",
 	})
@@ -102,7 +101,7 @@ proxy_intercept_errors on;
 			if err != nil {
 				return res, err
 			}
-			_ = policy.policyDb.DeleteById(plugin.Id)
+			_ = policyDb.DeleteById(plugin.Id)
 			res.KongPolicyChange = true
 		}
 	}
@@ -141,7 +140,8 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 		Config:  config,
 		Enabled: &disable,
 	}
-	exist, err := policy.policyDb.GetByAny(&orm.GatewayPolicy{
+	policyDb, _ := db.NewGatewayPolicyServiceImpl()
+	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zoneId,
 		PluginName: pluginName,
 	})
@@ -159,7 +159,7 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 			return false, err
 		}
 		exist.Config = configByte
-		err = policy.policyDb.Update(exist)
+		err = policyDb.Update(exist)
 		if err != nil {
 			return false, err
 		}
@@ -182,7 +182,7 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 		Config:     configByte,
 		Enabled:    1,
 	}
-	err = policy.policyDb.Insert(policyDao)
+	err = policyDb.Insert(policyDao)
 	if err != nil {
 		return false, err
 	}
@@ -191,11 +191,7 @@ func (policy Policy) touchPluginIfNeed(zoneId string, builtinPlugins []string, p
 }
 
 func init() {
-	policyDb, err := db.NewGatewayPolicyServiceImpl()
-	if err != nil {
-		panic(err)
-	}
-	err = apipolicy.RegisterPolicyEngine("built-in", &Policy{policyDb: policyDb})
+	err := apipolicy.RegisterPolicyEngine("built-in", &Policy{})
 	if err != nil {
 		panic(err)
 	}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/config"
+	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	"github.com/erda-project/erda/modules/hepa/server"
 	"github.com/erda-project/erda/modules/hepa/ver"
 )
@@ -62,6 +63,8 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	config.ServerConf = &p.Cfg.Server
 	config.LogConf = &p.Cfg.Log
+	common.InitLogger()
+	orm.Init()
 	return nil
 }
 
