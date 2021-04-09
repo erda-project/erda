@@ -24,7 +24,7 @@ func mockMysqlStore() *mysqlStore {
 	ms := &mysqlStore{
 		defaultTTLSec: 60,
 		ttlValue:      map[string]int{},
-		L:             logrusx.New(),
+		Log:           logrusx.New(),
 	}
 	return ms
 }

@@ -33,6 +33,8 @@ logs-store:
       queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
   output:
     id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+    log_schema:
+      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
     cassandra:
       writer_config:
         parallelism: ${CASSANDRA_PARALLELISM:3}

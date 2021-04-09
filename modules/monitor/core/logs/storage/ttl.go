@@ -31,7 +31,7 @@ type mysqlStore struct {
 	defaultTTLSec int
 	ttlValue      map[string]int
 	mysql         *gorm.DB
-	L             logs.Logger
+	Log           logs.Logger
 	mu            sync.RWMutex
 }
 
@@ -52,7 +52,7 @@ func (m *mysqlStore) Run(ctx context.Context, interval time.Duration) {
 		select {
 		case <-ticker.C:
 			if err := m.loadLogsTTL(); err != nil {
-				m.L.Errorf("loadLogs failed. err=%s", err)
+				m.Log.Errorf("loadLogs failed. err=%s", err)
 			}
 		case <-ctx.Done():
 			return
@@ -75,14 +75,14 @@ type monitorConfig struct {
 func (m *mysqlStore) loadLogsTTL() error {
 	var list []*MonitorConfig
 	if err := m.mysql.Table("sp_monitor_config").Where("`type`='log' AND `enable`=1").Find(&list).Error; err != nil {
-		m.L.Errorf("fail to load sp_monitor_config: %s", err)
+		m.Log.Errorf("fail to load sp_monitor_config: %s", err)
 		return err
 	}
 	ttlmap := m.populateTTLValue(list)
 	m.mu.Lock()
 	m.ttlValue = ttlmap
 	m.mu.Unlock()
-	m.L.Info("load logs ttl config")
+	m.Log.Info("load logs ttl config")
 	return nil
 }
 
@@ -92,12 +92,12 @@ func (m *mysqlStore) populateTTLValue(list []*MonitorConfig) map[string]int {
 		var mc monitorConfig
 		err := json.Unmarshal(item.Config, &mc)
 		if err != nil || len(mc.TTL) <= 0 {
-			m.L.Errorf("invalid monitor log config for key=%s", item.Key)
+			m.Log.Errorf("invalid monitor log config for key=%s", item.Key)
 			continue
 		}
 		d, err := time.ParseDuration(mc.TTL)
 		if err != nil || int64(d) < int64(time.Second) {
-			m.L.Errorf("invalid monitor log config for key=%s, %s", item.Key, err)
+			m.Log.Errorf("invalid monitor log config for key=%s, %s", item.Key, err)
 			continue
 		}
 		ttlMap[item.OrgName] = int(d.Seconds())

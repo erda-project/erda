@@ -48,7 +48,7 @@ type config struct {
 	Output struct {
 		LogSchema struct {
 			OrgRefreshInterval time.Duration `file:"org_refresh_interval" default:"2m" env:"LOG_SCHEMA_ORG_REFRESH_INTERVAL"`
-		}
+		} `file:"log_schema"`
 		Cassandra struct {
 			cassandra.WriterConfig  `file:"writer_config"`
 			cassandra.SessionConfig `file:"session_config"`
@@ -85,7 +85,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		ttlValue:      make(map[string]int),
 		defaultTTLSec: int(p.Cfg.Output.Cassandra.DefaultTTL.Seconds()),
 		mysql:         p.Mysql.DB(),
-		L:             p.Log.Sub("ttlStore"),
+		Log:           p.Log.Sub("ttlStore"),
 	}
 
 	p.schema, err = schema.NewCassandraSchema(cass, p.Log.Sub("logSchema"))
