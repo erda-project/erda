@@ -115,7 +115,7 @@ func ParseResourceTiming(s string) (ResourceTimingList, error) {
 			continue
 		}
 
-		timing := value[1:len(value)]
+		timing := value[1:]
 		times := resTimingDecode(timing)
 
 		rt := ResourceTiming{
