@@ -3,6 +3,7 @@ module github.com/erda-project/erda
 go 1.14
 
 require (
+    github.com/docker/docker v1.13.1
 	bou.ke/monkey v1.0.2
 	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
