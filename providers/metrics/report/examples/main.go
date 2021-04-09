@@ -25,7 +25,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string {
+func (d *define) Services() []string {
 	return []string{"hello metric_report_client"}
 }
 

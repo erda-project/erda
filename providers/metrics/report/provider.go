@@ -51,7 +51,7 @@ type provider struct {
 	httpClient *ReportClient
 }
 
-func (d *define) Service() []string {
+func (d *define) Services() []string {
 	return []string{"metric-report-client"}
 }
 
