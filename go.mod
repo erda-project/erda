@@ -70,6 +70,7 @@ require (
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
+	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
 	github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 // indirect
