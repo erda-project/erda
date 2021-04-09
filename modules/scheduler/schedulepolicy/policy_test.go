@@ -25,8 +25,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// 未开启标签调度（即未设置标志位 "ENABLETAG": "true")，
-// 无论runtime 或者 job 是否带有 label
+// Tag scheduling is not turned on (that is, the flag bit "ENABLETAG": "true" is not set),
+// No matter whether runtime or job has a label
 func TestDisableLabelFilterChain(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -47,7 +47,7 @@ func TestDisableLabelFilterChain(t *testing.T) {
 		PlusConfigs: config.OptionsPlus,
 	}
 
-	// runtime 未有任何标签
+	// runtime no tags
 	r1 := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
 		Dice: apistructs.Dice{
@@ -55,7 +55,7 @@ func TestDisableLabelFilterChain(t *testing.T) {
 		},
 	}
 
-	// runtime 带有标签
+	// runtime whit tags
 	r2 := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
 		Dice: apistructs.Dice{
@@ -78,8 +78,8 @@ func TestDisableLabelFilterChain(t *testing.T) {
 	assert.Nil(t, refinedConfigs_)
 }
 
-// 集群已开启标签调度，即集群基本配置中有 "ENABLETAG": "false"
-// 配置中基础配置中只配置 org，没有配置 workspace
+// The cluster has enabled tag scheduling, that is, there is "ENABLETAG": "false" in the basic configuration of the cluster
+// In the configuration, only org is configured in the basic configuration, but no workspace is configured
 func TestLabelFilterChain1(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -128,24 +128,10 @@ func TestLabelFilterChain1(t *testing.T) {
 	assert.Equal(t, "1", s2.Org)
 	assert.True(t, s2.HasOrg)
 
-	// constrains 按照 UnLikePrefixs，UnLikes，LikePrefixs，ExclusiveLikes，Likes 5个 slice 的顺序来组装
-	// 其中每个 slice 又是按照 org, workspace, identity 三层来拼装
-	// UnLikePrefixs 中会有 workspace- 和 project-
-	// Unlikes 中会有 platform, locked
-	// LikePrefixs 是空
-	// ExclusiveLikes 中会有 org-1
-	// Likes 是空
-	// 其中 UnLikePrefixs，Unlikes 会转化成 DCOS 的 UNLIKE 语句
-	// LikePrefixs, ExclusiveLikes, Likes 会转化成 DCOS 的 LIKE 语句
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-1\\b.*"}, constrains[4])
 }
 
-// 集群已开启标签调度，即集群基本配置中有 "ENABLETAG": "false"
-// 集群配置中基础配置中只配置 workspace，没有配置 org
+// The cluster has enabled tag scheduling, that is, there is "ENABLETAG": "false" in the basic configuration of the cluster
+// In the basic configuration of the cluster configuration, only workspace is configured, not org
 func TestLabelFilterChain2(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -192,16 +178,10 @@ func TestLabelFilterChain2(t *testing.T) {
 
 	assert.Equal(t, []string{"test"}, s2.WorkSpaces)
 	assert.True(t, s2.HasWorkSpace)
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*"}, constrains[4])
 }
 
-// 集群已开启标签调度，即集群基本配置中有 "ENABLETAG": "false"
-// 集群配置中精细配置中只配置 org，没有配置 workspace
+// The cluster has enabled tag scheduling, that is, there is "ENABLETAG": "false" in the basic configuration of the cluster
+// In the fine configuration of the cluster configuration, only org is configured, but workspace is not configured
 func TestLabelFilterChain3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -265,16 +245,10 @@ func TestLabelFilterChain3(t *testing.T) {
 
 	assert.True(t, s2.HasOrg)
 	assert.Equal(t, "1", s2.Org)
-	// // 结果与 TestLabelFilterChain1 相同
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-1\\b.*"}, constrains[4])
 }
 
-// 集群已开启标签调度，即集群基本配置中有 "ENABLETAG": "false"
-// 集群配置中精细配置中只配置 workspace，没有配置 org
+// The cluster has enabled tag scheduling, that is, there is "ENABLETAG": "false" in the basic configuration of the cluster
+// In the fine configuration of the cluster configuration, only workspace is configured, not org
 func TestLabelFilterChain4(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -341,16 +315,9 @@ func TestLabelFilterChain4(t *testing.T) {
 	assert.False(t, s2.HasOrg)
 	// constrains, ok := constrains_.([][]string)
 	// assert.True(t, ok)
-
-	// // 结果与 TestLabelFilterChain2 相同
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*"}, constrains[4])
 }
 
-// 集群配置中精细配置中配置了 org 和 workspace
+// Org and workspace are configured in the fine configuration in the cluster configuration
 func TestLabelFilterChain5(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -417,23 +384,17 @@ func TestLabelFilterChain5(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "prod", s2.WorkSpaces[0])
 
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-test1\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-prod\\b.*"}, constrains[4])
-
 	assert.NotNil(t, refinedConfigs_)
 	refinedConfigs, ok := refinedConfigs_.(map[string]string)
 	assert.True(t, ok)
 
 	cpu_subscribe_ratio, ok := refinedConfigs["CPU_SUBSCRIBE_RATIO"]
 	assert.True(t, ok)
-	// cpu 超卖比读的是该 runtime 隶属的 org（test1）下的 workspace （prod）下的 CPU_SUBSCRIBE_RATIO
+	// The cpu overselling ratio reads the CPU_SUBSCRIBE_RATIO under the workspace (prod) under the org (test1) to which the runtime belongs
 	assert.Equal(t, "2", cpu_subscribe_ratio)
 }
 
-// 集群配置中精细配置中配置了 org 和 workspace
+// Org and workspace are configured in the fine configuration in the cluster configuration
 // label 中的 org 匹配上，但是 workspace 没有匹配上
 func TestLabelFilterChain6(t *testing.T) {
 	var jsonBlob = []byte(`{
@@ -511,7 +472,7 @@ func TestLabelFilterChain6(t *testing.T) {
 	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
 	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-test1\\b.*"}, constrains[4])
 
-	// 精细配置中 org 匹配上了，workspace没有匹配上，cpu 超卖比被设置成该 org 下的超卖比
+	// In the fine configuration, the org matches, the workspace does not match, and the cpu oversold ratio is set to the oversold ratio under the org
 	refinedConfigs, ok := refinedConfigs_.(map[string]string)
 	assert.True(t, ok)
 	cpu_subscribe_ratio, ok := refinedConfigs["CPU_SUBSCRIBE_RATIO"]
@@ -519,8 +480,8 @@ func TestLabelFilterChain6(t *testing.T) {
 	assert.Equal(t, "4", cpu_subscribe_ratio)
 }
 
-// 集群配置中精细配置中配置了 org 和 workspace
-// label 中的 org 没匹配上（等同于 org 和 workspace 都没有匹配上）
+// Org and workspace are configured in the fine configuration in the cluster configuration
+// The org in the label does not match (equivalent to that neither org nor workspace matches)
 func TestLabelFilterChain7(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -596,13 +557,13 @@ func TestLabelFilterChain7(t *testing.T) {
 	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
 	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
 
-	// 精细配置中 org 没有匹配上，所以 cpu 超卖比是默认集群配置超卖比
+	// In the fine configuration, org is not matched, so the cpu oversold ratio is the oversold ratio of the default cluster configuration
 	_, ok := refinedConfigs_.(map[string]string)
 	assert.False(t, ok)
 }
 
-// 集群配置中精细配置中配置了 org 和 workspace
-// label 中的 org 没匹配上（等同于 org 和 workspace 都没有匹配上）
+// Org and workspace are configured in the fine configuration in the cluster configuration
+// The org in the label does not match (equivalent to that neither org nor workspace matches)
 // runtime 带上 "SERVICE_TYPE": "STATELESS"
 func TestLabelFilterChain8(t *testing.T) {
 	var jsonBlob = []byte(`{
@@ -688,7 +649,7 @@ func TestLabelFilterChain8(t *testing.T) {
 	// assert.Equal(t, []string{"hostname", "LIKE", "192.168.1.2"}, constrains[6])
 }
 
-// 测试兼容"WORKSPACETAGS"标签的情况，注意"ENABLE_WORKSPACE"不开启
+// Test the compatibility with the "WORKSPACETAGS" tag, and note that "ENABLE_WORKSPACE" is not turned on
 func TestLabelFilterChain9(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -738,16 +699,6 @@ func TestLabelFilterChain9(t *testing.T) {
 	assert.True(t, s2.Stateless)
 	assert.True(t, s2.PreferStateless)
 	assert.False(t, s2.HasWorkSpace)
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bservice-stateless\\b.*"}, constrains[5])
 
 	r2 := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
@@ -780,17 +731,6 @@ func TestLabelFilterChain9(t *testing.T) {
 	assert.True(t, s2.Stateless)
 	assert.True(t, s2.PreferStateless)
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-staging\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bservice-stateless\\b.*"}, constrains[5])
-
 	r2a := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
 		Dice: apistructs.Dice{
@@ -822,17 +762,6 @@ func TestLabelFilterChain9(t *testing.T) {
 	assert.True(t, s2.Stateful)
 	assert.True(t, s2.PreferStateful)
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-staging\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bservice-stateful\\b.*"}, constrains[5])
-
 	r3 := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
 		Dice: apistructs.Dice{
@@ -861,17 +790,6 @@ func TestLabelFilterChain9(t *testing.T) {
 	assert.True(t, s2.Stateless)
 	assert.True(t, s2.PreferStateless)
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bservice-stateless\\b.*"}, constrains[5])
-
 	r3a := apistructs.ServiceGroup{
 		ClusterName: "terminus-dev",
 		Dice: apistructs.Dice{
@@ -898,20 +816,9 @@ func TestLabelFilterChain9(t *testing.T) {
 
 	assert.True(t, s2.Stateful)
 	assert.False(t, s2.HasWorkSpace)
-
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// // 结果及其顺序的分析参考 TestLabelFilterChain1
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bservice-stateful\\b.*"}, constrains[5])
 }
 
-// 多个企业情况下使用集群的配置（非精细化的配置）
+// Use cluster configuration in multiple enterprise situations (non-refined configuration)
 func TestMultiOrg(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -994,14 +901,6 @@ func TestMultiOrg(t *testing.T) {
 	assert.True(t, s2.HasWorkSpace)
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "prod", s2.WorkSpaces[0])
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-hangzhou\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-prod\\b.*"}, constrains[4])
 
 	assert.NotNil(t, refinedConfigs_)
 	refinedConfigs, ok := refinedConfigs_.(map[string]string)
@@ -1009,7 +908,7 @@ func TestMultiOrg(t *testing.T) {
 
 	cpu_subscribe_ratio, ok := refinedConfigs["CPU_SUBSCRIBE_RATIO"]
 	assert.True(t, ok)
-	// cpu 超卖比读的是该 runtime 隶属的 org（hangzhou）下的 workspace （prod）下的 CPU_SUBSCRIBE_RATIO
+	// The cpu overselling ratio reads the CPU_SUBSCRIBE_RATIO under the workspace (prod) under the org (hangzhou) to which the runtime belongs
 	assert.Equal(t, "4", cpu_subscribe_ratio)
 
 	r2 := apistructs.ServiceGroup{
@@ -1039,22 +938,13 @@ func TestMultiOrg(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "dev", s2.WorkSpaces[0])
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-test1\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-dev\\b.*"}, constrains[4])
-
 	assert.NotNil(t, refinedConfigs_)
 	refinedConfigs, ok = refinedConfigs_.(map[string]string)
 	assert.True(t, ok)
 
 	cpu_subscribe_ratio, ok = refinedConfigs["CPU_SUBSCRIBE_RATIO"]
 	assert.True(t, ok)
-	// cpu 超卖比读的是该 runtime 隶属的 org（test1）下的配置，workspace没有匹配上精细配置
+	// The cpu overselling ratio reads the configuration under the org (test1) to which the runtime belongs, and the workspace does not match the fine configuration
 	assert.Equal(t, "3", cpu_subscribe_ratio)
 
 	r3 := apistructs.ServiceGroup{
@@ -1085,20 +975,10 @@ func TestMultiOrg(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "staging", s2.WorkSpaces[0])
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-wrong\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-staging\\b.*"}, constrains[4])
-
-	// 精细化配置为空
 	assert.Nil(t, refinedConfigs_)
 }
 
-// 普通 job 和 大数据 job
+// Ordinary job and big data job
 func TestLabelFilterChainForJob(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -1144,17 +1024,6 @@ func TestLabelFilterChainForJob(t *testing.T) {
 	assert.False(t, s2.HasWorkSpace)
 	assert.False(t, s2.HasProject)
 
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[5])
-
-	// 大数据类型的 job
 	j2 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1175,19 +1044,9 @@ func TestLabelFilterChainForJob(t *testing.T) {
 	}, si)
 
 	assert.True(t, s2.BigData)
-
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bworkspace-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bbigdata\\b.*"}, constrains[5])
 }
 
-// metronome 开启了 workspace 调度并且job 带了相应的 label
+// metronome has enabled workspace scheduling and the job has a corresponding label
 func TestLabelFilterChainForJob2(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -1200,7 +1059,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
     }
 }`)
 
-	// 测试环境的 job
+	// Job of the test environment
 	var config conf.ExecutorConfig
 	err := json.Unmarshal(jsonBlob, &config)
 	assert.Nil(t, err)
@@ -1238,17 +1097,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 	assert.Equal(t, "test", s2.WorkSpaces[0])
 	assert.True(t, s2.Job)
 
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[5])
-
-	// 预发环境的job
+	// Job of the staging environment
 	j2 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1277,17 +1126,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "dev"))
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "test"))
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-dev\\b.*|.*\\bworkspace-test\\b.*"}, constrains[5])
-
-	// 生产环境的job
+	// Job of the prod environment
 	j3 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1316,19 +1155,9 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "dev"))
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "test"))
-
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-dev\\b.*|.*\\bworkspace-test\\b.*"}, constrains[5])
 }
 
-// metronome 开启了 workspace 调度并且job 带了相应的 label
+// metronome has enabled workspace scheduling and the job has a corresponding label
 func TestLabelFilterChainForJob3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -1342,7 +1171,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
     }
 }`)
 
-	// 测试环境的 job
+	// Job of the test environment
 	var config conf.ExecutorConfig
 	err := json.Unmarshal(jsonBlob, &config)
 	assert.Nil(t, err)
@@ -1382,17 +1211,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "test", s2.WorkSpaces[0])
 	assert.True(t, s2.Job)
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-xx\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[5])
-
-	// 预发环境的job
+	// Job of the staging environment
 	j2 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1423,17 +1242,8 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "dev"))
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "test"))
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
 
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-xy\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-dev\\b.*|.*\\bworkspace-test\\b.*"}, constrains[5])
-
-	// 生产环境的job
+	// Job of the prod environment
 	j3 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1465,19 +1275,9 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 	assert.False(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "dev"))
 	assert.True(t, s2.HasOrg)
 	assert.Equal(t, "xyz", s2.Org)
-
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\borg-xyz\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-dev\\b.*|.*\\bworkspace-test\\b.*"}, constrains[5])
 }
 
-// 测试配置了 STAGING_JOB_DEST 和 PROD_JOB_DEST 的情况
+// Test the configuration of STAGING_JOB_DEST and PROD_JOB_DEST
 func TestLabelFilterChainForJob4(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -1492,7 +1292,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
     }
 }`)
 
-	// 测试环境的 job
+	// Job of the test environment
 	var config conf.ExecutorConfig
 	err := json.Unmarshal(jsonBlob, &config)
 	assert.Nil(t, err)
@@ -1530,17 +1330,8 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 	assert.True(t, s2.HasWorkSpace)
 	assert.Equal(t, 1, len(s2.WorkSpaces))
 	assert.Equal(t, "test", s2.WorkSpaces[0])
-	// constrains, ok := constrains_.([][]string)
-	// assert.True(t, ok)
 
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[5])
-
-	// 预发环境的job
+	// Job of the staging environment
 	j2 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1570,17 +1361,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 	assert.True(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "prod"))
 	assert.True(t, strutil.Contains(strutil.Concat(s2.WorkSpaces...), "test"))
 
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-test\\b.*|.*\\bworkspace-prod\\b.*"}, constrains[5])
-
-	// 生产环境的job
+	// Job of the prod environment
 	j3 := apistructs.Job{
 		JobFromUser: apistructs.JobFromUser{
 			Name: "xx",
@@ -1606,14 +1387,4 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 	assert.True(t, s2.Job)
 	assert.True(t, s2.HasWorkSpace)
 	assert.Equal(t, "staging", s2.WorkSpaces[0])
-
-	// constrains, ok = constrains_.([][]string)
-	// assert.True(t, ok)
-
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\borg-[^,]+\\b.*"}, constrains[0])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bproject-[^,]+\\b.*"}, constrains[1])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\bplatform\\b.*"}, constrains[2])
-	// assert.Equal(t, []string{"dice_tags", "UNLIKE", ".*\\blocked\\b.*"}, constrains[3])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bany\\b.*|.*\\bjob\\b.*"}, constrains[4])
-	// assert.Equal(t, []string{"dice_tags", "LIKE", ".*\\bworkspace-staging\\b.*"}, constrains[5])
 }

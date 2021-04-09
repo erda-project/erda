@@ -17,17 +17,15 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/erda-project/erda/providers/common"
 )
 
 func Test_disruptor_push(t *testing.T) {
 	type fields struct {
-		metrics  chan *common.Metric
-		labels   common.GlobalLabel
+		metrics  chan *Metric
+		labels   GlobalLabel
 		reporter Reporter
 	}
-	m := &common.Metric{
+	m := &Metric{
 		Name:      "_metric_meta",
 		Timestamp: 1614583470000,
 		Tags: map[string]string{
@@ -47,8 +45,8 @@ func Test_disruptor_push(t *testing.T) {
 		{
 			name: "test_test",
 			fields: fields{
-				metrics:  make(chan *common.Metric, 0),
-				labels:   common.GlobalLabel{},
+				metrics:  make(chan *Metric, 0),
+				labels:   GlobalLabel{},
 				reporter: nil,
 			},
 		},
@@ -73,13 +71,13 @@ func Test_disruptor_push(t *testing.T) {
 
 func Test_disruptor_In(t *testing.T) {
 	type fields struct {
-		metrics  chan *common.Metric
-		labels   common.GlobalLabel
+		metrics  chan *Metric
+		labels   GlobalLabel
 		cfg      *config
 		reporter Reporter
 	}
 	type args struct {
-		metrics []*common.Metric
+		metrics []*Metric
 	}
 	tests := []struct {
 		name    string
@@ -104,10 +102,10 @@ func Test_disruptor_In(t *testing.T) {
 					"_meta":   "true",
 					"_custom": "true",
 				},
-				metrics: make(chan *common.Metric),
+				metrics: make(chan *Metric),
 			},
 			args: args{
-				metrics: []*common.Metric{
+				metrics: []*Metric{
 					{
 						Name:      "_metric_meta",
 						Timestamp: 1614583470000,
@@ -146,15 +144,15 @@ func Test_disruptor_In(t *testing.T) {
 
 func Test_disruptor_dataToMetric(t *testing.T) {
 	type fields struct {
-		metrics  chan *common.Metric
-		labels   common.GlobalLabel
+		metrics  chan *Metric
+		labels   GlobalLabel
 		cfg      *config
 		reporter Reporter
 	}
 	type args struct {
 		data []interface{}
 	}
-	metric := &common.Metric{
+	metric := &Metric{
 		Name:      "_metric_meta",
 		Timestamp: 1614583470000,
 		Tags: map[string]string{
@@ -171,7 +169,7 @@ func Test_disruptor_dataToMetric(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []*common.Metric
+		want   []*Metric
 	}{
 		{
 			name:   "test_dataToMetric",
@@ -181,7 +179,7 @@ func Test_disruptor_dataToMetric(t *testing.T) {
 					metric,
 				},
 			},
-			want: []*common.Metric{metric},
+			want: []*Metric{metric},
 		},
 	}
 	for _, tt := range tests {

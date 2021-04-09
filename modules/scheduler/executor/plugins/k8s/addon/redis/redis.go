@@ -323,7 +323,7 @@ func convertSentinel(svc apistructs.Service, affinity *corev1.NodeAffinity) Sent
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = corev1.ResourceRequirements{
-		Requests: corev1.ResourceList{ // sentinel 不超配, 因为本身就应该已经很少占用资源了
+		Requests: corev1.ResourceList{ // sentinel Not over-provisioned, because it should already occupy very little resources
 			"cpu": resource.MustParse(
 				fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu))),
 			"memory": resource.MustParse(

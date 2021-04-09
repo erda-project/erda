@@ -22,7 +22,6 @@ import (
 )
 
 func TestAdjustCPUSize(t *testing.T) {
-	// http://git.terminus.io/dice/dice/blob/develop/scripts/cpu_policy/policy.org
 	ks := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 2.9, 3.0}
 	vs := []float64{0.2, 0.3, 0.5, 0.6, 0.7, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.6, 3.0, 3.1}
 
@@ -40,30 +39,30 @@ func TestString(t *testing.T) {
 }
 
 func TestCalcCPUSubscribeRatio(t *testing.T) {
-	// map 中含有 CPU_SUBSCRIBE_RATIO 配置
+	// The map contains the CPU_SUBSCRIBE_RATIO configuratio
 	extra := map[string]string{
 		"CPU_SUBSCRIBE_RATIO": "2.5",
 	}
 	v := CalcCPUSubscribeRatio(2.0, extra)
 	assert.Equal(t, v, 2.5)
 
-	// 空 map
+	// empty map
 	extra2 := map[string]string{}
 	v = CalcCPUSubscribeRatio(2.0, extra2)
 	assert.Equal(t, v, 2.0)
 
-	// map 中不含有 CPU_SUBSCRIBE_RATIO 配置
+	// map Does not contain CPU_SUBSCRIBE_RATIO configuration
 	extra3 := map[string]string{
 		"CPU_XX": "10",
 	}
 	v = CalcCPUSubscribeRatio(3.0, extra3)
 	assert.Equal(t, v, 3.0)
 
-	// 集群配置中的超卖比小于 1，不是合理值
+	// The oversold ratio in the cluster configuration is less than 1, which is not a reasonable value
 	v = CalcCPUSubscribeRatio(0.5, extra3)
 	assert.Equal(t, v, 1.0)
 
-	// map 中 CPU_SUBSCRIBE_RATIO 配置不合理
+	// The CPU_SUBSCRIBE_RATIO configuration in the map is unreasonable
 	extra4 := map[string]string{
 		"CPU_SUBSCRIBE_RATIO": "0.8",
 	}

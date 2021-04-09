@@ -16,7 +16,7 @@ Optionally add one or more of the following kinds if applicable:
 /kind api-change
 /kind deprecation
 /kind failing-test
-/kind flakedd
+/kind flaked
 /kind regression
 -->
 

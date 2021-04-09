@@ -41,11 +41,6 @@ const (
 	kind = "METRONOME"
 )
 
-// Metronome plugin's configure, Format: EXECUTOR_{kind}_{name}_{key}
-//
-// EXECUTOR_METRONOME_METRONOMEFORTERMINUS_ADDR="{host}:{port}/service/metronome"
-// EXECUTOR_METRONOME_METRONOMEFORTERMINUS_BASICAUTH="admin:Terminus1234"
-// EXECUTOR_METRONOME_METRONOMEFORTERMINUS_ENABLETAG=true
 func init() {
 	executortypes.Register(kind, func(name executortypes.Name, clusterName string, options map[string]string, optionsPlus interface{}) (executortypes.Executor, error) {
 		addr, ok := options["ADDR"]
@@ -256,8 +251,8 @@ func (c *Metronome) Status(ctx context.Context, specObj interface{}) (apistructs
 	}
 	if !resp.IsOK() {
 		if resp.StatusCode() == http.StatusNotFound {
-			// 1. create接口进来的，会忽略这个状态继续走下去
-			// 2. 真正的get接口进来的，正常场景可以归纳成StatusStoppedByKilled状态，即该job已被删除
+			// 1. If the create interface comes in, it will ignore this state and go on
+			// 2. The real get interface comes in, and the normal scene can be summarized into StatusStoppedByKilled state, that is, the job has been deleted
 			jobStatus.Status = apistructs.StatusNotFoundInCluster
 			logrus.Debugf("not found metronome job, name: %s", jobName)
 			return jobStatus, nil
@@ -265,7 +260,7 @@ func (c *Metronome) Status(ctx context.Context, specObj interface{}) (apistructs
 		return jobStatus, errors.Errorf("failed to get metronome job(%s), statusCode=%d", jobName, resp.StatusCode())
 	}
 
-	// 当前的设定，一个job里只会有一个run
+	// The current setting, there will only be one runtime in a job
 	runs := make([]RunResult, 0)
 	resp, err = c.client.Get(c.addr).
 		Path("/v1/jobs/" + url.PathEscape(jobName) + "/runs").
@@ -286,9 +281,9 @@ func (c *Metronome) Status(ctx context.Context, specObj interface{}) (apistructs
 		}
 	} else {
 		run := runs[0]
-		// 目前观察到的状态包括
-		// INITIAL, 资源未到位, "INITIAL"是从api取得的状态, 在dcos页面上对应的显示是"Starting"
-		// ACTIVE, 正在运行, 对应dcos页面上显示"Running"
+		// The currently observed state includes
+		// INITIAL, The resource is not in place, "INITIAL" is the status obtained from the api, and the corresponding display on the dcos page is "Starting"
+		// ACTIVE, Running, "Running" is displayed on the corresponding dcos page
 		// STARTING
 		// SUCCESS
 		// FAILED
@@ -519,8 +514,8 @@ func constrains2Placement(constrains [][]string) *Placement {
 func setDockerLabelParameters(labels map[string]string) []DockerParameter {
 	parameters := make([]DockerParameter, 0)
 	for k, v := range labels {
-		// 直接塞到 metronome 的 label 是 mesos labels，与 docker label 不相关
-		// 传递到 docker label 的方式详见
+		// The label directly inserted into the metronome is the mesos label, which is not related to the docker label
+		// The way to pass to docker label is detailed in
 		// https://jira.mesosphere.com/browse/MARATHON-4738
 		// https://issues.apache.org/jira/browse/MESOS-4446
 		parameters = append(parameters, DockerParameter{"label", k + "=" + v})
@@ -528,7 +523,7 @@ func setDockerLabelParameters(labels map[string]string) []DockerParameter {
 	return parameters
 }
 
-// TODO: 这个函数需要重构
+// TODO: This function needs to be refactored
 func constructMetronomeConstrains(r *apistructs.ScheduleInfo) [][]string {
 	var constrains [][]string
 	if r.IsPlatform {
@@ -540,11 +535,11 @@ func constructMetronomeConstrains(r *apistructs.ScheduleInfo) [][]string {
 		}
 	}
 
-	// 不调度到打上了带该前缀的标签的节点上
+	// Do not schedule to the node marked with the prefix of the label
 	for _, unlikePrefix := range r.UnLikePrefixs {
 		constrains = append(constrains, []string{labelconfig.DCOS_ATTRIBUTE, "UNLIKE", `.*\b` + unlikePrefix + `[^,]+\b.*`})
 	}
-	// 不调度到打上了带该标签的节点上
+	// Not scheduled to the node with this label
 	unlikes := []string{}
 	copy(unlikes, r.UnLikes)
 	if !r.IsPlatform {
@@ -556,16 +551,16 @@ func constructMetronomeConstrains(r *apistructs.ScheduleInfo) [][]string {
 	for _, unlike := range unlikes {
 		constrains = append(constrains, []string{labelconfig.DCOS_ATTRIBUTE, "UNLIKE", `.*\b` + unlike + `\b.*`})
 	}
-	// 指定调度到打上了带该前缀的标签的节点上
-	// 目前暂无此类标签
+	// Specify scheduling to the node labeled with the prefix
+	// Currently no such label
 	for _, likePrefix := range r.LikePrefixs {
 		constrains = append(constrains, []string{labelconfig.DCOS_ATTRIBUTE, "LIKE", `.*\b` + likePrefix + `\b.*`})
 	}
-	// 指定调度到打上了该标签的节点上，不与 any 共存
+	// Specify to be scheduled to the node with this label, not coexisting with any
 	for _, exclusiveLike := range r.ExclusiveLikes {
 		constrains = append(constrains, []string{labelconfig.DCOS_ATTRIBUTE, "LIKE", `.*\b` + exclusiveLike + `\b.*`})
 	}
-	// 指定调度到打上了该标签的节点上，如果启用了 any 标签则带上 any 标签
+	// Specify to be scheduled to the node with this label, if the any label is enabled, the any label is attached
 	for _, like := range r.Likes {
 		if r.Flag {
 			constrains = append(constrains, []string{labelconfig.DCOS_ATTRIBUTE, "LIKE", `.*\b` + apistructs.TagAny + `\b.*|.*\b` + like + `\b.*`})
@@ -574,7 +569,7 @@ func constructMetronomeConstrains(r *apistructs.ScheduleInfo) [][]string {
 		}
 	}
 
-	// 指定调度到打上了该标签的节点上，允许多个或运算
+	// Specify scheduling to the node with this label, allowing multiple OR operations
 	if len(r.InclusiveLikes) > 0 {
 		constrain := []string{labelconfig.DCOS_ATTRIBUTE, "LIKE"}
 		var sentence string

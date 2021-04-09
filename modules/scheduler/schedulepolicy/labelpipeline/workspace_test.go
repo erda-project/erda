@@ -25,11 +25,11 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 集群配置只有基本配置
-// 测试 runtime 的 label 中带上了 workspace 和没有带上 workspace
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling,
+// The cluster configuration has only basic configuration
+// The label of the test runtime has workspace and no workspace
 func TestWorkspaceLabelFilter1(t *testing.T) {
-	// 集群配置中无精细配置，基本配置中未配置 org，则（所有 org）都不开启 org 调度
+	// There is no fine configuration in the cluster configuration. If org is not configured in the basic configuration, then (all orgs) do not enable org scheduling
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
     "kind": "MARATHON",
@@ -50,7 +50,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中没有 workspace 标签
+		// There is no workspace label in the label
 		Label:          make(map[string]string),
 		ExecutorName:   config.Name,
 		ExecutorKind:   config.Kind,
@@ -70,7 +70,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	result = labelconfig.RawLabelRuleResult{}
 	result2 = labelconfig.RawLabelRuleResult2{}
 	li2 := &labelconfig.LabelInfo{
-		// lable 中有 workspace 标签，但并未开启 worksapce 调度(集群配置中没有"ENABLE_WORKSPACE"的设置)
+		// There is a workspace label in the label, but worksapce scheduling is not enabled (there is no "ENABLE_WORKSPACE" setting in the cluster configuration)
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "test",
@@ -83,7 +83,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	}
 
 	WorkspaceLabelFilter(&result, &result2, li2)
-	// 结果同 result1，因为集群配置中没有精细配置且基本配置中没有开启 org 调度(没有设置"ENABLE_ORG")
+	// The result is the same as result1, because there is no fine configuration in the cluster configuration and the org scheduling is not enabled in the basic configuration ("ENABLE_ORG" is not set)
 	assert.Zero(t, len(result.Likes))
 	assert.Zero(t, len(result.UnLikes))
 	assert.Zero(t, len(result.LikePrefixs))
@@ -94,7 +94,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	result = labelconfig.RawLabelRuleResult{}
 	result2 = labelconfig.RawLabelRuleResult2{}
 	li3 := &labelconfig.LabelInfo{
-		// lable 中有 workspace 标签，但并未开启 worksapce 调度(集群配置中没有"ENABLE_WORKSPACE"的设置)
+		// There is a workspace label in the label, but worksapce scheduling is not enabled (there is no "ENABLE_WORKSPACE" setting in the cluster configuration)
 		Label:          map[string]string{},
 		ExecutorName:   config.Name,
 		ExecutorKind:   config.Kind,
@@ -110,7 +110,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	}
 
 	WorkspaceLabelFilter(&result, &result2, li3)
-	// 结果同 result1，因为集群配置中没有精细配置且基本配置中没有开启 org 调度(没有设置"ENABLE_ORG")
+	// The result is the same as result1, because there is no fine configuration in the cluster configuration and the org scheduling is not enabled in the basic configuration ("ENABLE_ORG" is not set)
 	assert.Zero(t, len(result.Likes))
 	assert.Zero(t, len(result.UnLikes))
 	assert.Zero(t, len(result.LikePrefixs))
@@ -119,7 +119,7 @@ func TestWorkspaceLabelFilter1(t *testing.T) {
 	assert.Equal(t, []string{"workspace-"}, result.UnLikePrefixs)
 }
 
-// 在集群的基本配置中设置了开启 workspace 调度（建议用法是在精细配置中开启，指定隶属的 org 及 workspace）
+// Open workspace scheduling is set in the basic configuration of the cluster (the recommended usage is to enable it in the fine configuration, and specify the subordinate org and workspace)
 func TestWorkspaceLabelFilter2(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -142,7 +142,7 @@ func TestWorkspaceLabelFilter2(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "test",
@@ -166,7 +166,7 @@ func TestWorkspaceLabelFilter2(t *testing.T) {
 	result2 = labelconfig.RawLabelRuleResult2{}
 
 	li1 := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1111",
 			"DICE_WORKSPACE": "testttt",
@@ -194,7 +194,7 @@ func TestWorkspaceLabelFilter2(t *testing.T) {
 
 }
 
-// 在集群的精细配置中设置了开启 workspace 调度，并且 runtime 的 label 中设置了 org 及 workspace
+// Open workspace scheduling is set in the fine configuration of the cluster, and org and workspace are set in the runtime label
 func TestWorkspaceLabelFilter3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -253,7 +253,7 @@ func TestWorkspaceLabelFilter3(t *testing.T) {
 	assert.Equal(t, []string{"workspace-staging"}, result.ExclusiveLikes)
 }
 
-// 在集群的精细配置中设置了开启 workspace 调度，但是 runtime 的 label 中没有设置 workspace
+// Open workspace scheduling is set in the fine configuration of the cluster, and org and workspace are set in the runtime label
 func TestWorkspaceLabelFilter4(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -309,8 +309,8 @@ func TestWorkspaceLabelFilter4(t *testing.T) {
 	assert.Equal(t, []string{"workspace-"}, result.UnLikePrefixs)
 }
 
-// 在集群的精细配置中设置了开启 workspace 调度，并且 runtime 的 label 中设置了 workspace
-// 但是 runtime label 中设置的 workspace 名字没有出现在集群精细配置的 orgs 中
+// Open workspace scheduling is set in the fine configuration of the cluster, and workspace is set in the runtime label
+// But the workspace name set in the runtime label does not appear in the orgs of the cluster's fine configuration
 func TestWorkspaceLabelFilter5(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -380,7 +380,7 @@ func TestWorkspaceLabelFilter5(t *testing.T) {
 	assert.Equal(t, []string{"workspace-"}, result.UnLikePrefixs)
 }
 
-// 测试兼容"WORKSPACETAGS"标签的情况，注意"ENABLE_WORKSPACE"不开启
+// Test the compatibility with the "WORKSPACETAGS" tag, and note that "ENABLE_WORKSPACE" is not turned on
 func TestWorkspaceLabelFilter6(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -402,7 +402,7 @@ func TestWorkspaceLabelFilter6(t *testing.T) {
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
 
-	// 预发环境的 服务
+	// staging environment services
 	li := &labelconfig.LabelInfo{
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
@@ -426,7 +426,7 @@ func TestWorkspaceLabelFilter6(t *testing.T) {
 	result = labelconfig.RawLabelRuleResult{}
 	result2 = labelconfig.RawLabelRuleResult2{}
 
-	// 生产环境的服务
+	// prod environment services
 	li2 := &labelconfig.LabelInfo{
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
@@ -468,7 +468,7 @@ func TestWorkspaceLabelFilterForJob1(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "test",
@@ -492,7 +492,7 @@ func TestWorkspaceLabelFilterForJob1(t *testing.T) {
 	result2 = labelconfig.RawLabelRuleResult2{}
 
 	li2 := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "test",
@@ -534,7 +534,7 @@ func TestWorkspaceLabelFilterForJob2(t *testing.T) {
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "staging",
@@ -558,7 +558,7 @@ func TestWorkspaceLabelFilterForJob2(t *testing.T) {
 	result2 = labelconfig.RawLabelRuleResult2{}
 
 	li2 := &labelconfig.LabelInfo{
-		// lable 中有 org 标签
+		// org label in label
 		Label: map[string]string{
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "prod",
@@ -578,7 +578,7 @@ func TestWorkspaceLabelFilterForJob2(t *testing.T) {
 	assert.Equal(t, []string{"workspace-dev", "workspace-test"}, result.InclusiveLikes)
 }
 
-// 测试设置 STAGING_JOB_DEST 和 PROD_JOB_DEST
+// Test settings STAGING_JOB_DEST and PROD_JOB_DEST
 func TestWorkspaceLabelFilterForJob3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",

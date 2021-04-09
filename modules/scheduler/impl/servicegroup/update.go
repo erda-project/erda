@@ -58,6 +58,6 @@ func diffAndPatchRuntime(newsg *apistructs.ServiceGroup, oldsg *apistructs.Servi
 	oldsg.ServiceDiscoveryKind = newsg.ServiceDiscoveryKind
 
 	// TODO: refactor it, separate data and status into different etcd key
-	// 全量更新
+	// Full update
 	oldsg.Services = newsg.Services
 }

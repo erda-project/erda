@@ -31,14 +31,14 @@ type OptPlus struct {
 	Orgs []Org `json:"orgs,omitempty"`
 }
 
-// Org 结构体，对应租户概念
+// Org organization, Corresponding tenant concept
 type Org struct {
 	Name       string            `json:"name,omitempty"`
 	Workspaces []Workspace       `json:"workspaces,omitempty"`
 	Options    map[string]string `json:"options,omitempty"`
 }
 
-// 发布的环境，name 从 dev, test, staging, prod 中选取
+// Environment
 type Workspace struct {
 	Name    string            `json:"name,omitempty"`
 	Options map[string]string `json:"options,omitempty"`
