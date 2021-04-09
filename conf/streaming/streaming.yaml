@@ -1,0 +1,53 @@
+
+cassandra:
+# host: "${CASSANDRA_ADDR:localhost:9042}"
+# security: ${CASSANDRA_SECURITY_ENABLE:false}
+# username: ${CASSANDRA_SECURITY_USERNAME:}
+# password: ${CASSANDRA_SECURITY_PASSWORD:}
+# timeout: "${CASSANDRA_TIMEOUT:3s}"
+
+kafka:
+  # servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  comsumer:
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  producer:
+    options:
+      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+
+mysql:
+# host: "${MYSQL_HOST:localhost}"
+# port: ${MYSQL_PORT:3306}
+# username: "${MYSQL_USERNAME:root}"
+# password: "${MYSQL_PASSWORD:123456}"
+# database: "${MYSQL_DATABASE:dice}"
+
+logs-store:
+  _enable: ${LOGS_STORE_ENABLE:true}
+  input:
+    topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
+    group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
+    parallelism: ${LOG_CONSUMERS:3}
+    options:
+      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
+  output:
+    id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+    log_schema:
+      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: "10s"
+        retry: -1  # block forever. kafka will handle the issue of stream block
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: true # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+      default_ttl: "${LOG_TTL:168h}"
+      gc_grace_seconds: 86400
