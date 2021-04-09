@@ -1,0 +1,12 @@
+http-server@admin:
+  addr: ":8081"
+health:
+admin-tools:
+  urls: http://localhost:9200
+elasticsearch:
+  urls: "http://localhost:9200"
+    security: false
+    username: ""
+    password: ""
+cassandra:
+kafka:

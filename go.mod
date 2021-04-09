@@ -25,10 +25,8 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
-	github.com/docker/docker v1.13.1
-	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
+	github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -40,6 +38,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/builder v0.2.0 // indirect
+	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
@@ -74,6 +73,7 @@ require (
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
 	github.com/pkg/errors v0.9.1
+	github.com/rakyll/statik v0.1.7
 	github.com/recallsong/go-utils v1.1.1
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1

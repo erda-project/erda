@@ -1,0 +1,50 @@
+{
+  "name": "monitor",
+  "version": "1.0.0",
+  "description": "monitor tools",
+  "scripts": {
+    "build": "webpack --config webpack.config.js --mode production && cd .. && pwd && statik -src=./web/public -ns \\\"monitor/admin-tools\\\" -include=\\\"*.jpg,*.png,*ico,*.txt,*.html,*.css,*.js,*.js.map\\\"",
+    "build-dev": "webpack --config webpack.config.js --mode development --watch",
+    "start": "webpack-dev-server"
+  },
+  "keywords": [
+    "monitor"
+  ],
+  "author": "recallsong",
+  "license": "ISC",
+  "devDependencies": {
+    "awesome-typescript-loader": "^5.2.1",
+    "clean-webpack-plugin": "^3.0.0",
+    "css-loader": "^3.4.2",
+    "file-loader": "^5.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "less": "^3.11.1",
+    "less-loader": "^5.0.0",
+    "node-sass": "^4.14.1",
+    "sass-loader": "^8.0.2",
+    "source-map-loader": "^0.2.4",
+    "style-loader": "^1.1.3",
+    "typescript": "^3.8.3",
+    "webpack": "^4.42.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.2.2",
+    "@types/echarts": "^4.6.5",
+    "@types/react": "^16.9.23",
+    "@types/react-dom": "^16.9.5",
+    "@types/react-highlight-words": "^0.16.1",
+    "@types/react-router-dom": "^5.1.5",
+    "antd": "^4.6.5",
+    "echarts": "^4.9.0",
+    "echarts-for-react": "^2.0.16",
+    "jquery": "^3.5.1",
+    "moment": "^2.28.0",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
+    "react-highlight-words": "^0.16.0",
+    "react-router-dom": "^5.2.0",
+    "whatwg-fetch": "^3.4.1"
+  }
+}
