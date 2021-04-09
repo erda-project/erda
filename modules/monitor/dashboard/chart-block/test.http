@@ -1,0 +1,5 @@
+@url = http://localhost:7096/api
+
+### query custom metric
+GET {{url}}/dashboard/system/blocks/daily
+Lang: en

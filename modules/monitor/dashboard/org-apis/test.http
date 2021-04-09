@@ -1,0 +1,24 @@
+@url = http://localhost:7096
+
+### metric
+GET {{url}}/api/orgCenter/metrics/host_summary
+    ?start=before_1h
+    &end=now
+    &sum=containers
+User-ID: 1100
+Org-ID: 1
+
+### metric histogram
+GET {{url}}/api/orgCenter/metrics/host_summary/histogram
+    ?start=before_1h
+    &end=now
+    &sum=containers
+User-ID: 1100
+Org-ID: 1
+
+### .
+GET {{url}}/api/resources/types
+    ?clusterName=terminus-dev
+    &orgName=terminus
+User-ID: 1100
+Org-ID: 1
