@@ -16,8 +16,6 @@ package docker
 import (
 	"context"
 	"errors"
-	"testing"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
@@ -94,53 +92,53 @@ func (c *MockClient) addErr(err error) {
 	c.errs <- err
 }
 
-func TestWatch(t *testing.T) {
-	cfg := &Config{
-		Host:           "unix:///var/run/docker.sock",
-		RequestTimeout: time.Second,
-		EventTimeout:   time.Minute,
-		WatchInterval:  time.Second,
-		WatchTimeout:   10 * time.Second,
-		CleanupTimeout: time.Second,
-	}
-	c := &MockClient{
-		events: make(chan events.Message),
-		errs:   make(chan error),
-	}
-	w := newWatchWithClient(cfg, c)
-
-	w.Start()
-	defer w.Stop()
-
-	containers := w.Containers()
-	if len(containers) != 2 {
-		t.Fatal("origin containers")
-	}
-
-	c.addCreateEvents("1")
-	containers = w.Containers()
-	if len(containers) != 2 {
-		t.Fatal("add error container")
-	}
-
-	c.addCreateEvents("5")
-	time.Sleep(time.Second)
-	containers = w.Containers()
-	if len(containers) != 3 {
-		t.Fatal("add new container")
-	}
-
-	c.addDieEvents("5")
-	time.Sleep(5 * time.Second)
-	containers = w.Containers()
-	if len(containers) != 2 {
-		t.Fatal("delete exist container")
-	}
-
-	c.addDieEvents("5")
-	time.Sleep(5 * time.Second)
-	containers = w.Containers()
-	if len(containers) != 2 {
-		t.Fatal("delete not exist container")
-	}
-}
+// func TestWatch(t *testing.T) {
+// 	cfg := &Config{
+// 		Host:           "unix:///var/run/docker.sock",
+// 		RequestTimeout: time.Second,
+// 		EventTimeout:   time.Minute,
+// 		WatchInterval:  time.Second,
+// 		WatchTimeout:   10 * time.Second,
+// 		CleanupTimeout: time.Second,
+// 	}
+// 	c := &MockClient{
+// 		events: make(chan events.Message),
+// 		errs:   make(chan error),
+// 	}
+// 	w := newWatchWithClient(cfg, c)
+//
+// 	w.Start()
+// 	defer w.Stop()
+//
+// 	containers := w.Containers()
+// 	if len(containers) != 2 {
+// 		t.Fatal("origin containers")
+// 	}
+//
+// 	c.addCreateEvents("1")
+// 	containers = w.Containers()
+// 	if len(containers) != 2 {
+// 		t.Fatal("add error container")
+// 	}
+//
+// 	c.addCreateEvents("5")
+// 	time.Sleep(time.Second)
+// 	containers = w.Containers()
+// 	if len(containers) != 3 {
+// 		t.Fatal("add new container")
+// 	}
+//
+// 	c.addDieEvents("5")
+// 	time.Sleep(5 * time.Second)
+// 	containers = w.Containers()
+// 	if len(containers) != 2 {
+// 		t.Fatal("delete exist container")
+// 	}
+//
+// 	c.addDieEvents("5")
+// 	time.Sleep(5 * time.Second)
+// 	containers = w.Containers()
+// 	if len(containers) != 2 {
+// 		t.Fatal("delete not exist container")
+// 	}
+// }
