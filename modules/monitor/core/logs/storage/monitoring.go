@@ -22,7 +22,7 @@ var (
 		Name: "log_bytes",
 		Help: "the size of consumed log",
 	},
-	[]string{levelKey, srcKey, srcComponentTypeKey, srcComponentNameKey, srcClusterNameKey, srcOrgNameKey, srcProjectIDKey, srcProjectNameKey, srcApplicationIDKey, srcApplicationNameKey, srcWorkspaceKey})
+		[]string{levelKey, srcKey, srcComponentTypeKey, srcComponentNameKey, srcClusterNameKey, srcOrgNameKey, srcProjectIDKey, srcProjectNameKey, srcApplicationIDKey, srcApplicationNameKey, srcWorkspaceKey})
 )
 
 func init() {

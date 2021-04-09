@@ -29,7 +29,6 @@ func mockMysqlStore() *mysqlStore {
 	return ms
 }
 
-
 func TestPopulateTTLValue(t *testing.T) {
 	ms := mockMysqlStore()
 	list := []*MonitorConfig{
