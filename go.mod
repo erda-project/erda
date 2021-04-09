@@ -11,7 +11,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
 	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1022
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
@@ -33,7 +33,6 @@ require (
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gocql/gocql v0.0.0-20210313142353-65899a66288b
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/swag v0.19.9 // indirect
@@ -93,11 +92,11 @@ require (
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
 	github.com/valyala/fasthttp v1.23.0 // indirect
-	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c // indirect
+	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	go.uber.org/ratelimit v0.2.0 // indirect
+	go.uber.org/ratelimit v0.2.0
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/text v0.3.5
