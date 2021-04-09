@@ -69,6 +69,7 @@ func (p *provider) getLogStatement(log *logs.Log, reusedWriter *gzip.Writer) (st
 	if err != nil {
 		return "", nil, err
 	}
+	// nolint
 	cql := fmt.Sprintf(`INSERT INTO %s (source, id, stream, time_bucket, timestamp, offset, content, level, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) USING TTL ?;`, table)
 	return cql, []interface{}{
 		log.Source,
@@ -86,7 +87,7 @@ func (p *provider) getLogStatement(log *logs.Log, reusedWriter *gzip.Writer) (st
 
 func (p *provider) getMetaStatement(meta *logs.LogMeta) (string, []interface{}, error) {
 	ttl := p.ttl.GetSecondByKey(meta.Tags[diceOrgNameKey])
-	cql := fmt.Sprintf(`INSERT INTO %s.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`, schema.DefaultKeySpace)
+	cql := `INSERT INTO spot_prod.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{
 		meta.Source,
 		meta.ID,
