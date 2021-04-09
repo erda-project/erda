@@ -9,7 +9,6 @@ require (
 	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
-	github.com/Selvatico/go-mocket v1.0.7 // indirect
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
 	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
@@ -27,10 +26,8 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
-	github.com/docker/docker v1.13.1
-	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
+	github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -83,8 +80,6 @@ require (
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/scylladb/gocqlx v1.5.0
-	github.com/shirou/gopsutil/v3 v3.20.11
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.8.0
