@@ -16,18 +16,17 @@ package browser
 import (
 	"fmt"
 
-	utils2 "github.com/erda-project/erda/modules/monitor/utils"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/labstack/gommon/log"
 )
 
 type define struct{}
 
-func (d *define) Service() []string      { return []string{"browser-analytics"} }
+func (d *define) Services() []string     { return []string{"browser-analytics"} }
 func (d *define) Dependencies() []string { return []string{"kafka"} }
 func (d *define) Summary() string        { return "browser-analytics" }
 func (d *define) Description() string    { return d.Summary() }
@@ -47,13 +46,13 @@ type config struct {
 type provider struct {
 	Cfg    *config
 	Log    logs.Logger
-	ipdb   *utils2.Locator
+	ipdb   *utils.Locator
 	output writer.Writer
 	kafka  kafka.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	ipdb, err := utils2.NewLocator(p.Cfg.Ipdb)
+	ipdb, err := utils.NewLocator(p.Cfg.Ipdb)
 	if err != nil {
 		return fmt.Errorf("fail to load ipdb: %s", err)
 	}

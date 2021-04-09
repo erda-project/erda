@@ -30,8 +30,8 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"cloudcat"} }
-func (d *define) Summary() string   { return "cloudcat" }
+func (d *define) Services() []string { return []string{"cloudcat"} }
+func (d *define) Summary() string    { return "cloudcat" }
 func (d *define) Dependencies() []string {
 	return []string{"kafka-producer"}
 }

@@ -21,10 +21,9 @@ import (
 	"strings"
 	"time"
 
-	utils2 "github.com/erda-project/erda/modules/monitor/utils"
-
 	"github.com/erda-project/erda/modules/monitor/apm/browser/timing"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/varstr/uaparser"
 )
@@ -70,7 +69,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	dp, err := url.Parse(data.Get("dp"))
 	if err == nil {
-		metric.Tags["doc_path"] = utils2.GetPath(dp.Path)
+		metric.Tags["doc_path"] = utils.GetPath(dp.Path)
 	}
 	name := data.Get("t")
 	switch name {
@@ -200,8 +199,8 @@ func (p *provider) handleEvent(metric *metrics.Metric, data url.Values) error {
 	metric.Tags["x"] = data.Get("x")
 	metric.Tags["y"] = data.Get("y")
 	metric.Tags["xp"] = data.Get("xp")
-	metric.Fields["x"] = utils2.ParseInt64(data.Get("x"), 0)
-	metric.Fields["y"] = utils2.ParseInt64(data.Get("y"), 0)
+	metric.Fields["x"] = utils.ParseInt64(data.Get("x"), 0)
+	metric.Fields["y"] = utils.ParseInt64(data.Get("y"), 0)
 	return nil
 }
 
@@ -302,11 +301,11 @@ func (p *provider) handleError(metric *metrics.Metric, data url.Values) error {
 func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error {
 	metric.Name = "ta_req"
 	_ = appendMobileInfoIfNeed(metric, data)
-	metric.Fields["tt"] = utils2.ParseInt64(data.Get("tt"), 0)
-	metric.Fields["req"] = utils2.ParseInt64(data.Get("req"), 0)
-	metric.Fields["res"] = utils2.ParseInt64(data.Get("res"), 0)
+	metric.Fields["tt"] = utils.ParseInt64(data.Get("tt"), 0)
+	metric.Fields["req"] = utils.ParseInt64(data.Get("req"), 0)
+	metric.Fields["res"] = utils.ParseInt64(data.Get("res"), 0)
 	statusCodeStr := data.Get("st")
-	statusCode := utils2.ParseInt64(statusCodeStr, 0)
+	statusCode := utils.ParseInt64(statusCodeStr, 0)
 	reqError := false
 	if statusCode >= 400 {
 		reqError = true
@@ -315,7 +314,7 @@ func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error 
 	metric.Fields["status"] = statusCode
 	reqURL := data.Get("url")
 	metric.Tags["url"] = reqURL
-	metric.Tags["req_path"] = utils2.GetPath(reqURL)
+	metric.Tags["req_path"] = utils.GetPath(reqURL)
 	metric.Tags["status_code"] = statusCodeStr
 	metric.Tags["method"] = data.Get("me")
 	return nil
@@ -324,7 +323,7 @@ func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error 
 func (p *provider) handleTiming(metric *metrics.Metric, data url.Values) error {
 	metric.Name = "ta_timing"
 	if appendMobileInfoIfNeed(metric, data) {
-		metric.Fields["plt"] = utils2.ParseInt64(data.Get("nt"), 0)
+		metric.Fields["plt"] = utils.ParseInt64(data.Get("nt"), 0)
 	} else {
 		ua := data.Get("ua")
 		handleUA(ua, metric)
@@ -425,7 +424,7 @@ func (p *provider) handleTiming(metric *metrics.Metric, data url.Values) error {
 
 func appendMobileInfoIfNeed(metric *metrics.Metric, data url.Values) bool {
 	ua := data.Get("ua")
-	if utils2.IsMobile(ua) {
+	if utils.IsMobile(ua) {
 		metric.Name = metric.Name + "_mobile"
 		metric.Tags["type"] = "mobile"
 		appendMobileInfo(metric, data)
