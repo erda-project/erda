@@ -193,7 +193,7 @@ func composeOwnerReferences(versionGroup, kind, name string, uid types.UID) meta
 
 func composeLogConfig() map[string]string {
 	logConfig := map[string]string{
-		"log4j-console.properties": `rootLogger.level = WARN,ERROR
+		"log4j-console.properties": `rootLogger.level = INFO
       rootLogger.appenderRef.file.ref = LogFile
       rootLogger.appenderRef.console.ref = LogConsole
       appender.file.name = LogFile
@@ -207,13 +207,13 @@ func composeLogConfig() map[string]string {
       appender.console.layout.type = PatternLayout
       appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
       logger.akka.name = akka
-      logger.akka.level = ERROR,WARN
+      logger.akka.level = INFO
       logger.kafka.name= org.apache.kafka
-      logger.kafka.level = ERROR,WARN
+      logger.kafka.level = INFO
       logger.hadoop.name = org.apache.hadoop
-      logger.hadoop.level = ERROR,WARN
+      logger.hadoop.level = INFO
       logger.zookeeper.name = org.apache.zookeeper
-      logger.zookeeper.level = ERROR,WARN
+      logger.zookeeper.level = INFO
       logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
       logger.netty.level = OFF`,
 		"logback-console.xml": `<configuration>
@@ -229,15 +229,15 @@ func composeLogConfig() map[string]string {
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
           </encoder>
         </appender>
-        <root level="ERROR">
+        <root level="INFO">
           <appender-ref ref="console"/>
           <appender-ref ref="file"/>
         </root>
-        <logger name="akka" level="ERROR" />
-        <logger name="org.apache.kafka" level="ERROR" />
-        <logger name="org.apache.hadoop" level="ERROR" />
-        <logger name="org.apache.zookeeper" level="ERROR" />
-        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR" />
+        <logger name="akka" level="INFO" />
+        <logger name="org.apache.kafka" level="INFO" />
+        <logger name="org.apache.hadoop" level="INFO" />
+        <logger name="org.apache.zookeeper" level="INFO" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="INFO" />
       </configuration>`,
 	}
 	return logConfig
