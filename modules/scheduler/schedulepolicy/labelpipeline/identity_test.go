@@ -25,11 +25,11 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 )
 
-// 对未开启标签调度的测试用例放在 policy_test.go 中执行
+// The test cases that are not enabled for tag scheduling are placed in policy_test.go for execution
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 并且runtime 或者 job 未带任何 label 情况下
-// 集群配置只有基本配置
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling,
+// And when the runtime or job does not carry any label
+// The cluster configuration has only basic configuration
 func TestIdentityLabelFilter1(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -66,15 +66,15 @@ func TestIdentityLabelFilter1(t *testing.T) {
 	assert.False(t, result.IsPlatform)
 	assert.True(t, result.IsUnLocked)
 
-	// 临时支持 project 标签
+	// Temporary support for the project tag
 	assert.Equal(t, []string{"project-"}, result.UnLikePrefixs)
-	// any 的 flag 被置为 true，但是 any 标签只与 Likes 里的标签搭配组合，而 Likes 是空，所以 any 不会出现在约束条件中
+	// The flag of any is set to true, but the any label is only combined with the label in Likes, and Likes is empty, so any will not appear in the constraints
 	assert.True(t, result.Flag)
 }
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 并且runtime 或者 job 有设置 label 情况下
-// 集群配置只有基本配置
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling,
+// And when the runtime or job has a label set
+// The cluster configuration has only basic configuration
 func TestIdentityLabelFilter2(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -113,12 +113,12 @@ func TestIdentityLabelFilter2(t *testing.T) {
 	assert.False(t, result.IsPlatform)
 	assert.True(t, result.IsUnLocked)
 
-	// 临时支持 project 标签
+	// Temporary support for the project tag
 	assert.Equal(t, []string{"project-"}, result.UnLikePrefixs)
 	assert.True(t, result.Flag)
 }
 
-// 测试 addons 有状态服务
+// Test addons stateful service
 func TestIdentityLabelFilter2B(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -155,14 +155,14 @@ func TestIdentityLabelFilter2B(t *testing.T) {
 	assert.False(t, result.IsPlatform)
 	assert.True(t, result.IsUnLocked)
 
-	// 临时支持 project 标签
+	// Temporary support for the project tag
 	assert.Equal(t, []string{"project-"}, result.UnLikePrefixs)
 	assert.True(t, result.Flag)
 }
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 并且runtime 或者 job 有设置 label 情况下
-// 集群配置还有精细配置
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling,
+// And when the runtime or job has a label set
+// Cluster configuration and fine configuration
 func TestIdentityLabelFilter3(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -213,7 +213,7 @@ func TestIdentityLabelFilter3(t *testing.T) {
 		ObjName:        "test-1234",
 	}
 
-	// 与 TestIdentityLabelFilter2 的结果相同，因为集群的精细配置只影响 ORG 和 WORKSPACE 标签
+	// Same result as TestIdentityLabelFilter2, because the fine configuration of the cluster only affects ORG and WORKSPACE labels
 	IdentityFilter(&result, &result2, li)
 	assert.Zero(t, len(result.LikePrefixs))
 	assert.Zero(t, len(result.ExclusiveLikes))
@@ -221,13 +221,13 @@ func TestIdentityLabelFilter3(t *testing.T) {
 	assert.False(t, result.IsPlatform)
 	assert.True(t, result.IsUnLocked)
 
-	// 临时支持 project 标签
+	// Temporary support for the project tag
 	assert.Equal(t, []string{"project-"}, result.UnLikePrefixs)
 	assert.True(t, result.Flag)
 }
 
-// 已设置了标志位 ("ENABLETAG": "true") 开启标签调度，
-// 并且 job 有设置 label 情况下
+// The flag bit ("ENABLETAG": "true") has been set to enable tag scheduling,
+// And the job has a label set
 func TestIdentityLabelFilter4(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -246,7 +246,7 @@ func TestIdentityLabelFilter4(t *testing.T) {
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
-	// 当前 job 的 org, workspace 信息都存放在 ENV 里
+	// The org and workspace information of the current job are stored in ENV
 	li := &labelconfig.LabelInfo{
 		Label:          map[string]string{},
 		ExecutorName:   config.Name,
@@ -290,7 +290,7 @@ func TestIdentityLabelFilter4(t *testing.T) {
 	assert.True(t, result.Flag)
 }
 
-// 测试 bigdata 类型的 job
+// Test bigdata type job
 func TestIdentityLabelFilter6(t *testing.T) {
 	var jsonBlob = []byte(`{
     "clusterName": "terminus-dev",
@@ -309,7 +309,7 @@ func TestIdentityLabelFilter6(t *testing.T) {
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
-	// 当前 job 的 org, workspace 信息都存放在 ENV 里
+	// The org and workspace information of the current job are stored in ENV
 	li := &labelconfig.LabelInfo{
 		Label:          map[string]string{"JOB_KIND": "bigdata"},
 		ExecutorName:   config.Name,

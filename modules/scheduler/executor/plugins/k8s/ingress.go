@@ -38,8 +38,8 @@ func buildIngress(svc *apistructs.Service) (*extensionsv1beta1.Ingress, error) {
 	if svc.Labels["IS_ENDPOINT"] != "true" {
 		return nil, nil
 	}
-	// 需要对公网暴露的服务
-	// 将label中HAPROXY_0_VHOST对应的域名/vip集合都转发到该服务的第0个端口上
+	// Services that need to be exposed to the public network
+	// Forward the domain name/vip set corresponding to HAPROXY_0_VHOST in the label to the 0th port of the service
 	publicHosts := strings.Split(svc.Labels["HAPROXY_0_VHOST"], ",")
 	if len(publicHosts) == 0 {
 		return nil, errors.Errorf("failed to set label IS_ENDPOINT true but label HAPROXY_0_VHOST empty, service: %s", svc.Name)
@@ -47,7 +47,7 @@ func buildIngress(svc *apistructs.Service) (*extensionsv1beta1.Ingress, error) {
 	if len(svc.Ports) == 0 {
 		return nil, errors.Errorf("failed to create ingress as ports is empty, service: %s", svc.Name)
 	}
-	// 创建ingress
+	// create ingress
 	rules := buildRules(publicHosts, svc.Name, svc.Ports[0].Port)
 
 	// tls
@@ -107,16 +107,16 @@ func (k *Kubernetes) updateIngress(svc *apistructs.Service) error {
 		return err
 	}
 
-	// 如果需要更新 ingress，则判断是 create 还是 update
+	// If you need to update ingress, determine whether it is create or update
 	if ing != nil {
 		return k.ingress.CreateOrUpdate(ing)
 	}
 
-	// 如果不需要更新，则判断是否需要删除残留的 ingress
+	// If there is no need to update, determine whether you need to delete the remaining ingress
 	return k.ingress.DeleteIfExists(svc.Namespace, svc.Name)
 }
 
-// 删除ingress资源
+// delete ingress resource
 func (k *Kubernetes) deleteIngress(namespace, name string) error {
 	return k.ingress.Delete(namespace, name)
 }
