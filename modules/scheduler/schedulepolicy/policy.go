@@ -72,15 +72,15 @@ var (
 //|                                                                                           |
 //+-------------------------------------------------------------------------------------------+
 //
-// 将 label 的喜好转换成不同集群可以识别的调度约束
-// 需要获取的信息包括:
-// 1, 集群的配置信息，包括基本配置及精细配置
-// 2, runtime 或者 job 的具体标签
-// 返回的第一个参数是具体的约束条件，第二个参数是该应用在(如果有)集群精细配置中获取的配置
+// Convert label preferences into scheduling constraints that can be recognized by different clusters
+// The information that needs to be obtained includes:
+// 1, Cluster configuration information, including basic configuration and fine configuration
+// 2, runtime or job specific label
+// The first parameter returned is the specific constraint, and the second parameter is the configuration obtained by the application in the cluster fine configuration (if any)
 func LabelFilterChain(configs *executortypes.ExecutorWholeConfigs, name, kind string, obj interface{}) (apistructs.ScheduleInfo2, apistructs.ScheduleInfo, interface{}, error) {
 	defaultScheduleInfo2 := apistructs.ScheduleInfo2{IsUnLocked: true}
 	defaultScheduleInfo := apistructs.ScheduleInfo{IsUnLocked: true}
-	// 尚未开启 label 调度
+	// Label scheduling has not been opened
 	if !configs.EnableLabelSchedule() {
 		return defaultScheduleInfo2, defaultScheduleInfo, nil, nil
 	}
@@ -103,9 +103,9 @@ func LabelFilterChain(configs *executortypes.ExecutorWholeConfigs, name, kind st
 		objLabels = r.Labels
 		objName = r.ID
 		serviceSelectors = collectServiceSelectors(&r)
-		// 需要差异化覆盖的配置
+		// Configurations that require differentiated coverage
 		if configs.PlusConfigs != nil && len(configs.PlusConfigs.Orgs) > 0 {
-			//e.g. 不同 org 与/或 不同 env 下设置不同的 cpu 超卖比
+			//e.g. Set different cpu overselling ratios under different orgs and/or different envs
 			setRuntimeRefinedConfig(&r, serviceSelectors, configs.PlusConfigs)
 			if len(r.Extra) > 0 {
 				refinedConfigs = r.Extra
@@ -158,7 +158,7 @@ func setRuntimeRefinedConfig(r *apistructs.ServiceGroup, svcSelectors map[string
 			break
 		}
 	}
-	// runtime 中标识的 org 未在集群精细配置中找到
+	// runtime The org identified in is not found in the cluster fine configuration
 	if idx < 0 {
 		return
 	}
