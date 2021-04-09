@@ -28,12 +28,13 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
-	github.com/erda-project/erda-infra v0.0.0-20210407072029-60083c06846f
+	github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/gocql/gocql v0.0.0-20210313142353-65899a66288b
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/swag v0.19.9 // indirect
