@@ -83,9 +83,9 @@ const (
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
 )
 
-// Routes scheduler 路由列表
-// TODO: 目前只有 servicegroup，volume 的 API，
-//       还有 job API 需要迁移过来
+// Routes scheduler
+// TODO: Currently there are only servicegroup and volume APIs,，
+//       There is also job API that needs to be migrated
 func (h *HTTPEndpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/api/volumes", Method: http.MethodPost, Handler: h.VolumeCreate},

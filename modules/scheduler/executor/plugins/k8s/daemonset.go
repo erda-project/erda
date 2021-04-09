@@ -119,9 +119,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		{PodLabels: map[string]string{"app": deployName}}}, k).Affinity
 	daemonset.Spec.Template.Spec.Affinity = &affinity
 
-	// 1核等于1000m
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	// 1Mi=1024K=1024x1024字节
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
 	container := corev1.Container{
@@ -136,7 +134,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		},
 	}
 
-	//根据环境设置超分比
+	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
 	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
@@ -151,7 +149,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		memSubscribeRatio = k.stagingMemSubscribeRatio
 	}
 
-	// 根据超卖比，设置细粒度的CPU
+	// Set fine-grained CPU based on the oversold ratio
 	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
 		return nil, err
 	}
@@ -160,10 +158,10 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		return nil, err
 	}
 
-	// 生成 sidecars 容器配置
+	// Generate sidecars container configuration
 	sidecars := k.generateSidecarContainers(service.SideCars)
 
-	// 生成 initcontainer 配置
+	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
 	containers := []corev1.Container{container}
@@ -184,7 +182,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	podAnnotations(service, daemonset.Spec.Template.Annotations)
 
-	// 按当前的设定，一个pod中只有一个用户的容器
+	// According to the current setting, there is only one user container in a pod
 	if service.Cmd != "" {
 		for i := range containers {
 			cmds := []string{"sh", "-c", service.Cmd}
