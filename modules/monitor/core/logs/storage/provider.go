@@ -25,15 +25,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/monitor/core/logs/storage/schema"
-	"github.com/jinzhu/gorm"
+	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
 )
 
 type define struct{}
 
 func (d *define) Services() []string { return []string{"logs-store"} }
 func (d *define) Dependencies() []string {
-	return []string{"kafka", "cassandra", "mysql", "cassandra-manager"}
+	return []string{"kafka", "cassandra", "mysql"}
 }
 func (d *define) Summary() string     { return "logs store" }
 func (d *define) Description() string { return d.Summary() }
@@ -63,38 +62,33 @@ type config struct {
 }
 
 type provider struct {
-	Cfg        *config
-	Log        logs.Logger
-	mysql      *gorm.DB
-	kafka      kafka.Interface
-	output     writer.Writer
-	ttl        ttlStore
-	schema     schema.LogSchema
-	cache      gcache.Cache
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	Cfg    *config
+	Log    logs.Logger
+	Mysql  mysql.Interface
+	Kafka  kafka.Interface
+	output writer.Writer
+	ttl    ttlStore
+	schema schema.LogSchema
+	cache  gcache.Cache
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.mysql = ctx.Service("mysql").(mysql.Interface).DB()
-	p.kafka = ctx.Service("kafka").(kafka.Interface)
-
-	cassandra := ctx.Service("cassandra").(cassandra.Cassandra)
-	session, err := cassandra.Session(&p.C.Output.Cassandra.SessionConfig)
+	cass := ctx.Service("cassandra").(cassandra.Interface)
+	session, err := cass.Session(&p.Cfg.Output.Cassandra.SessionConfig)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session, err=%s", err)
 	}
 
-	p.output = cassandra.NewBatchWriter(session, &p.C.Output.Cassandra.WriterConfig, p.createLogStatementBuilder)
+	p.output = cass.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createLogStatementBuilder)
 
 	p.ttl = &mysqlStore{
 		ttlValue:      make(map[string]int),
-		defaultTTLSec: int(p.C.Output.Cassandra.DefaultTTL.Seconds()),
-		mysql:         p.mysql,
-		L:             p.L.Sub("ttlStore"),
+		defaultTTLSec: int(p.Cfg.Output.Cassandra.DefaultTTL.Seconds()),
+		mysql:         p.Mysql.DB(),
+		L:             p.Log.Sub("ttlStore"),
 	}
 
-	p.schema, err = schema.NewCassandraSchema(cassandra, p.Log.Sub("log schema"))
+	p.schema, err = schema.NewCassandraSchema(cass, p.Log.Sub("logSchema"))
 	if err != nil {
 		return err
 	}
@@ -104,19 +98,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-// Start .
-func (p *provider) Start() error {
-	p.ctx, p.cancelFunc = context.WithCancel(context.Background())
+func (p *provider) Run(ctx context.Context) error {
+	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval)
+	go p.ttl.Run(ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
+	go p.startStoreMetaCache(ctx)
+	if err := p.Kafka.NewConsumer(&p.Cfg.Input, p.invoke); err != nil {
+		return err
+	}
 
-	go p.schema.RunDaemon(p.ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval)
-	go p.ttl.Run(p.ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
-	go p.startStoreMetaCache(p.ctx)
-	return p.kafka.NewConsumer(&p.Cfg.Input, p.invoke)
-
-}
-
-func (p *provider) Close() error {
-	p.cancelFunc()
+	select {
+	case <-ctx.Done():
+	}
 	return nil
 }
 

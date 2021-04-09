@@ -16,11 +16,11 @@ package schema
 import (
 	"context"
 	"fmt"
+	"math"
 	"reflect"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	ProviderName     = "cassandra-manager"
-	impossibleOrgNum = 100000
+	impossibleOrgNum = math.MaxInt64
+	gcGraceSeconds   = 86400
 )
 
 var bdl = bundle.New(bundle.WithCMDB())
@@ -46,12 +46,12 @@ type LogSchema interface {
 
 type CassandraSchema struct {
 	Logger         logs.Logger
-	cass           cassandra.Cassandra
+	cass           cassandra.Interface
 	defaultSession *gocql.Session
 	lastOrgList    []string
 }
 
-func NewCassandraSchema(cass cassandra.Cassandra, l logs.Logger) (LogSchema, error) {
+func NewCassandraSchema(cass cassandra.Interface, l logs.Logger) (LogSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
 	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
@@ -60,6 +60,7 @@ func NewCassandraSchema(cass cassandra.Cassandra, l logs.Logger) (LogSchema, err
 	}
 	cs.defaultSession = sysSession
 	cs.lastOrgList = []string{}
+	cs.Logger = l
 
 	// create default
 	if err := cs.createDefault(); err != nil {
@@ -83,7 +84,6 @@ func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration
 				cs.Logger.Errorf("refresh org info or keyspaces failed. err: %s", err)
 			}
 		case <-ctx.Done():
-			cs.Logger.Infof("exit")
 		}
 	}
 }
@@ -107,7 +107,7 @@ func (cs *CassandraSchema) compareOrUpdate() error {
 			}
 		}
 		if !tableExisted {
-			if err := cs.createTableWithKC(defaultKeyspaceConfig(keyspace), cs.C.GCGraceSeconds); err != nil {
+			if err := cs.createTableWithKC(defaultKeyspaceConfig(keyspace)); err != nil {
 				return errors.Wrapf(err, "create table failed of %s", keyspace)
 			}
 		}
@@ -148,7 +148,7 @@ func (cs *CassandraSchema) listOrgNames() (res []string, err error) {
 	return
 }
 
-func (cs *CassandraSchema) createTableWithKC(item *cassandra.KeyspaceConfig, gcGraceSeconds int) error {
+func (cs *CassandraSchema) createTableWithKC(item *cassandra.KeyspaceConfig) error {
 	stmts := []string{
 		fmt.Sprintf(BaseLogCreateTable, item.Name, gcGraceSeconds),
 		fmt.Sprintf(BaseLogAlterTableGCGraceSeconds, item.Name, gcGraceSeconds),
@@ -158,17 +158,17 @@ func (cs *CassandraSchema) createTableWithKC(item *cassandra.KeyspaceConfig, gcG
 		if err := cs.createTable(stmt); err != nil {
 			return fmt.Errorf("create table failed. stmt=%s, err=%s", stmt, err)
 		}
-		cs.L.Infof("cassandra init cql: %s", stmt)
+		cs.Logger.Infof("cassandra init cql: %s", stmt)
 	}
 	return nil
 }
 
 func (cs *CassandraSchema) createDefault() error {
 	for _, stmt := range []string{
-		fmt.Sprintf(BaseLogCreateTable, DefaultKeySpace, cs.C.GCGraceSeconds),
-		fmt.Sprintf(BaseLogAlterTableGCGraceSeconds, DefaultKeySpace, cs.C.GCGraceSeconds),
+		fmt.Sprintf(BaseLogCreateTable, DefaultKeySpace, gcGraceSeconds),
+		fmt.Sprintf(BaseLogAlterTableGCGraceSeconds, DefaultKeySpace, gcGraceSeconds),
 		fmt.Sprintf(BaseLogCreateIndex, DefaultKeySpace),
-		fmt.Sprintf(LogMetaCreateTable, DefaultKeySpace, cs.C.GCGraceSeconds),
+		fmt.Sprintf(LogMetaCreateTable, DefaultKeySpace, gcGraceSeconds),
 		fmt.Sprintf(LogMetaCreateIndex, DefaultKeySpace),
 	} {
 		err := cs.createTable(stmt)
@@ -198,8 +198,4 @@ func defaultKeyspaceConfig(keysapce string) *cassandra.KeyspaceConfig {
 			Factor: 2,
 		},
 	}
-}
-
-func init() {
-	servicehub.RegisterProvider(ProviderName, &define{})
 }

@@ -61,7 +61,7 @@ func (p *provider) processLog(log *logs.Log) {
 	}
 	log.Tags["level"] = level
 
-	for _, key := range p.C.Output.IDKeys {
+	for _, key := range p.Cfg.Output.IDKeys {
 		if val, ok := log.Tags[key]; ok {
 			log.ID = val
 			break
@@ -82,7 +82,7 @@ func (p *provider) storeMetaCache() {
 }
 
 func (p *provider) startStoreMetaCache(ctx context.Context) {
-	ticker := time.NewTicker(p.C.Output.Cassandra.CacheStoreInterval)
+	ticker := time.NewTicker(p.Cfg.Output.Cassandra.CacheStoreInterval)
 	defer ticker.Stop()
 	for {
 		select {
