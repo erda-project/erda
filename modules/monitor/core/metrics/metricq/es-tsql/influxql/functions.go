@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-//
+
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -172,7 +172,7 @@ type AggFuncDefine struct {
 
 // AggFunctions .
 var AggFunctions = map[string]*AggFuncDefine{
-	"max": {
+	"max": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"max",
@@ -187,7 +187,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"min": {
+	"min": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"min",
@@ -202,7 +202,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"avg": {
+	"avg": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"avg",
@@ -217,7 +217,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"mean": {
+	"mean": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"mean",
@@ -232,7 +232,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"sum": {
+	"sum": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"sum",
@@ -247,7 +247,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"count": {
+	"count": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"count",
@@ -262,7 +262,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"distinct": {
+	"distinct": &AggFuncDefine{
 		Flag: FuncFlagSelect | FuncFlagOrderBy,
 		New: newUnaryValueAggFunction(
 			"distinct",
@@ -277,7 +277,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"median": {
+	"median": &AggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
 			"median",
@@ -299,7 +299,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
-	"percentiles": {
+	"percentiles": &AggFuncDefine{
 		Flag: FuncFlagSelect,
 		New: newMultivariateAggFunction(
 			"percentiles",
@@ -552,9 +552,9 @@ var PainlessFuntions map[string]*PainlessFuntion
 
 func init() {
 	PainlessFuntions = map[string]*PainlessFuntion{
-		"substring": {Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
-		"tostring":  {Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
-		"if": {
+		"substring": &PainlessFuntion{Name: "substring", Objective: true, ObjectType: "string", DefaultValue: "''"},
+		"tostring":  &PainlessFuntion{Name: "toString", Objective: true, ObjectType: "object", DefaultValue: "''"},
+		"if": &PainlessFuntion{
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 3)
 				if err != nil {
@@ -575,7 +575,7 @@ func init() {
 				return "((" + cond + ")?(" + trueExpr + "):(" + falseExpr + "))", nil
 			},
 		},
-		"eq": {
+		"eq": &PainlessFuntion{
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsNum(call, 2)
 				if err != nil {
@@ -592,7 +592,7 @@ func init() {
 				return "((" + left + ")==(" + right + "))", nil
 			},
 		},
-		"include": {
+		"include": &PainlessFuntion{
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsMinNum(call, 2)
 				if err != nil {

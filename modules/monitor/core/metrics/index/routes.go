@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-//
+
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,12 +23,12 @@ import (
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
 	// metric query apis
-	routes.GET("/api/metrics-index-manager/inspect/indices", p.getIndicesCache)
-	routes.GET("/api/metrics-index-manager/inspect/ttl", p.getTTLConfigCache)
-	routes.GET("/api/metrics-index-manager/inspect/ttl-keys", p.getTTLKeysCache)
-	routes.GET("/api/metrics-index-manager/inspect/created", p.getCreatedCache)
-	routes.GET("/api/metrics-index-manager/inspect/merge", p.getMergeIndices)
-	routes.POST("/api/metrics-index-manager/inspect/merge", p.doIndicesMerge)
+	routes.GET("/api/telemetry-index-manager/inspect/indices", p.getIndicesCache)
+	routes.GET("/api/telemetry-index-manager/inspect/ttl", p.getTTLConfigCache)
+	routes.GET("/api/telemetry-index-manager/inspect/ttl-keys", p.getTTLKeysCache)
+	routes.GET("/api/telemetry-index-manager/inspect/created", p.getCreatedCache)
+	routes.GET("/api/telemetry-index-manager/inspect/merge", p.getMergeIndices)
+	routes.POST("/api/telemetry-index-manager/inspect/merge", p.doIndicesMerge)
 	return nil
 }
 

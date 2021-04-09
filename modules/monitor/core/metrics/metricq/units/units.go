@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-//
+
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -15,6 +15,8 @@ package units
 
 import (
 	"time"
+
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // Converter .
@@ -97,7 +99,7 @@ type ByteConverter struct {
 
 // Convert .
 func Convert(from, to string, data interface{}) interface{} {
-	val, ok := convertFloat64(data)
+	val, ok := utils.ConvertFloat64(data)
 	if !ok {
 		return data
 	}
@@ -111,34 +113,4 @@ func Convert(from, to string, data interface{}) interface{} {
 		}
 	}
 	return data
-}
-
-func convertFloat64(obj interface{}) (float64, bool) {
-	switch val := obj.(type) {
-	case int:
-		return float64(val), true
-	case int8:
-		return float64(val), true
-	case int16:
-		return float64(val), true
-	case int32:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case uint:
-		return float64(val), true
-	case uint8:
-		return float64(val), true
-	case uint16:
-		return float64(val), true
-	case uint32:
-		return float64(val), true
-	case uint64:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	case float64:
-		return float64(val), true
-	}
-	return 0, false
 }

@@ -1,29 +1,15 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
 
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-// data format in elasticsearch
-// {
-// 	"name":"table_name",
-//     "tags":{
-//         "tag1":"val1",
-//         "tag2":"val2"
-//     },
-//     "fields":{
-//         "field1":1,
-//         "field2":2
-//     },
-//     "timestamp":1599551100000000000
-// }
 
 package tsql
 
@@ -46,7 +32,6 @@ const (
 	DefaultLimtSize = 100
 )
 
-// TimeUnit .
 type TimeUnit time.Duration
 
 // TimeUnit values
@@ -61,7 +46,6 @@ const (
 	Day           = TimeUnit(24 * time.Hour)
 )
 
-// ParseTimeUnit .
 func ParseTimeUnit(u string) (TimeUnit, error) {
 	switch u {
 	case "ns":
@@ -86,7 +70,6 @@ func ParseTimeUnit(u string) (TimeUnit, error) {
 	return UnsetTimeUnit, fmt.Errorf("invaild time unit '%s'", u)
 }
 
-// ConvertTimestamp .
 func ConvertTimestamp(t int64, from, to TimeUnit) int64 {
 	if to == UnsetTimeUnit {
 		return t
@@ -97,7 +80,6 @@ func ConvertTimestamp(t int64, from, to TimeUnit) int64 {
 	return t * int64(from) / int64(to)
 }
 
-// ResultSet .
 type ResultSet struct {
 	Total    int64
 	Interval int64
@@ -105,7 +87,6 @@ type ResultSet struct {
 	Rows     [][]interface{}
 }
 
-// Column .
 type Column struct {
 	Type  string
 	Name  string
@@ -114,7 +95,6 @@ type Column struct {
 	Extra interface{}
 }
 
-// ColumnFlag .
 type ColumnFlag int32
 
 // ColumnFlag values
@@ -185,13 +165,11 @@ func (f ColumnFlag) String() string {
 	return string(buf.Bytes()[0 : buf.Len()-1])
 }
 
-// Source .
 type Source struct {
 	Database string
 	Name     string
 }
 
-// Query .
 type Query interface {
 	Sources() []*Source
 	SearchSource() *elastic.SearchSource
@@ -201,10 +179,8 @@ type Query interface {
 	Context() Context
 }
 
-// ErrNotSupportNonQueryStatement .
 var ErrNotSupportNonQueryStatement = fmt.Errorf("not support non query statement")
 
-// Parser .
 type Parser interface {
 	SetParams(params map[string]interface{}) Parser
 	SetFilter(filter *elastic.BoolQuery) Parser
@@ -216,18 +192,14 @@ type Parser interface {
 	ParseRawQuery() ([]*Source, *elastic.BoolQuery, *elastic.SearchSource, error)
 }
 
-// Creator .
 type Creator func(start, end int64, stmt string) Parser
 
-// Parsers .
 var Parsers = map[string]Creator{}
 
-// RegisterParser .
 func RegisterParser(name string, c Creator) {
 	Parsers[name] = c
 }
 
-// New .
 func New(start, end int64, ql, stmt string) Parser {
 	creator := Parsers[ql]
 	if creator != nil {

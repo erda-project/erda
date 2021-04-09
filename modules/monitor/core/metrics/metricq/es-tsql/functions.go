@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-//
+
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
@@ -31,47 +32,22 @@ import (
 type Context interface {
 	Now() time.Time
 	Range(conv bool) (int64, int64)
-	OriginalTimeUnit() TimeUnit // 表示 TimeKey() 返回的字段，原始的单位
-	TargetTimeUnit() TimeUnit   // 如果有需要返回时间，则按该单位显示时间
-	TimeKey() string            // 默认是 timestamp
+	OriginalTimeUnit() TimeUnit // Represents the field returned by TimeKey (), the original unit.
+	TargetTimeUnit() TimeUnit   // If it is necessary to return the time, the time is displayed in that unit.
+	TimeKey() string            // Default timestamp
 	Aggregations() elastic.Aggregations
 	HandleScopeAgg(scope string, aggs elastic.Aggregations, expr influxql.Expr) (interface{}, error)
 	RowNum() int64
 }
 
-// IsFunction .
-func IsFunction(name string) bool {
-	_, ok := LiteralFuntions[name]
-	if ok {
-		return true
-	}
-	_, ok = BuildInFuntions[name]
-	if ok {
-		return true
-	}
-	return false
+var timeLayouts = []string{
+	time.RFC3339,
+	"2006-01-02 15:04:05",
+	"2006-01-02",
 }
 
-// MustFuncArgsNum .
-func MustFuncArgsNum(name string, args, num int) error {
-	if args < num {
-		return fmt.Errorf("function '%s' must has %d args", name, num)
-	} else if args > num {
-		return fmt.Errorf("function '%s' expect %d args, but got %d args", name, num, args)
-	}
-	return nil
-}
-
-// MustFuncArgsMinNum .
-func MustFuncArgsMinNum(name string, args, num int) error {
-	if args < num {
-		return fmt.Errorf("function '%s' args must more than %d", name, num)
-	}
-	return nil
-}
-
-// BuildInFuntions .
-var BuildInFuntions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
+// Custom functions in SELECT
+var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"time": func(ctx Context, args ...interface{}) (interface{}, error) {
 		for _, arg := range args {
 			if b, ok := arg.(*elastic.AggregationBucketHistogramItem); ok {
@@ -218,7 +194,7 @@ var BuildInFuntions = map[string]func(ctx Context, args ...interface{}) (interfa
 			v *= 24 * float64(time.Hour)
 		}
 		if len(args) > 2 {
-			return formatDuration(time.Duration(int64(v)), conv.ToInt(args[2], 2))
+			return utils.Duration(int64(v)).FormatDuration(conv.ToInt(args[2], 2))
 		}
 		return time.Duration(int64(v)).String(), nil
 	},
@@ -719,8 +695,8 @@ var BuildInFuntions = map[string]func(ctx Context, args ...interface{}) (interfa
 	},
 }
 
-// LiteralFuntions .
-var LiteralFuntions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
+// Constant functions in SELECT
+var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"interval": func(ctx Context, args ...interface{}) (interface{}, error) {
 		start, end := ctx.Range(false)
 		if start >= end {
@@ -807,6 +783,38 @@ var LiteralFuntions = map[string]func(ctx Context, args ...interface{}) (interfa
 	},
 }
 
+// Check function is exist.
+func IsFunction(name string) bool {
+	_, ok := LiteralFunctions[name]
+	if ok {
+		return true
+	}
+	_, ok = BuildInFunctions[name]
+	if ok {
+		return true
+	}
+	return false
+}
+
+// Check whether the number of input parameters meets the equal condition.
+func MustFuncArgsNum(name string, args, num int) error {
+	if args < num {
+		return fmt.Errorf("function '%s' must has %d args", name, num)
+	} else if args > num {
+		return fmt.Errorf("function '%s' expect %d args, but got %d args", name, num, args)
+	}
+	return nil
+}
+
+// Check whether the number of input parameters meets the minimum condition.
+func MustFuncArgsMinNum(name string, args, num int) error {
+	if args < num {
+		return fmt.Errorf("function '%s' args must more than %d", name, num)
+	}
+	return nil
+}
+
+// Verify both parameters entered are strings.
 func stringTrim(name string, args []interface{}, fn func(string, string) string) (interface{}, error) {
 	err := MustFuncArgsNum(name, len(args), 2)
 	if err != nil {
@@ -831,23 +839,16 @@ func getStringArg(name string, i int, arg interface{}) (string, error) {
 	return text, nil
 }
 
-var timeLayouts = []string{
-	time.RFC3339,
-	"2006-01-02 15:04:05",
-	"2006-01-02",
-}
-
 func getTimeArg(name string, i int, arg interface{}, layouts []string) (time.Time, error) {
-	t, ok := getTimeValue(arg, timeLayouts)
+	formats := timeLayouts
+	if len(layouts) > 0 {
+		formats = layouts
+	}
+	t, ok := getTimeValue(arg, formats)
 	if ok {
 		return t, nil
 	}
 	return time.Time{}, fmt.Errorf("function '%s' args[%d] %v is not a time", name, i, arg)
-}
-
-// GetTimeValue .
-func GetTimeValue(v interface{}) (time.Time, bool) {
-	return getTimeValue(v, timeLayouts)
 }
 
 func getTimeValue(v interface{}, layouts []string) (time.Time, bool) {
@@ -893,7 +894,6 @@ func getTimeValue(v interface{}, layouts []string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// GetTimestampValue .
 func GetTimestampValue(v interface{}) (int64, bool) {
 	switch val := v.(type) {
 	case int:
@@ -905,7 +905,7 @@ func GetTimestampValue(v interface{}) (int64, bool) {
 	case int32:
 		return int64(val), true
 	case int64:
-		return int64(val), true
+		return val, true
 	case uint:
 		return int64(val), true
 	case uint8:
@@ -937,6 +937,7 @@ func GetTimestampValue(v interface{}) (int64, bool) {
 	return 0, false
 }
 
+// Convert interfaces to float64 , return false if not numerical type.
 func convertToFloat64(v interface{}) (float64, bool) {
 	switch val := v.(type) {
 	case int:
@@ -969,6 +970,7 @@ func convertToFloat64(v interface{}) (float64, bool) {
 	return 0, false
 }
 
+// Check whether interfaces is a numeric type.
 func checkNumerical(v []interface{}) ([]float64, error) {
 	var arrFloat []float64
 	for index, val := range v {
@@ -979,31 +981,4 @@ func checkNumerical(v []interface{}) ([]float64, error) {
 		arrFloat = append(arrFloat, floatVal)
 	}
 	return arrFloat, nil
-}
-
-func formatDuration(d time.Duration, precision int) (string, error) {
-	if precision < 0 {
-		return "", fmt.Errorf("invalid precision: %v", precision)
-	}
-	val, base := int64(d), int64(time.Nanosecond)
-	switch {
-	case val <= int64(time.Microsecond):
-		return d.String(), nil
-	case val <= int64(time.Millisecond):
-		base = int64(time.Microsecond)
-	case val <= int64(time.Second):
-		base = int64(time.Millisecond)
-	default:
-		base = int64(time.Second)
-	}
-	for i := 0; i < precision; i++ {
-		base /= 10
-	}
-	if base > 1 {
-		if (val % base) >= (base / 2) {
-			return time.Duration((val/base + 1) * base).String(), nil
-		}
-		return time.Duration(val / base * base).String(), nil
-	}
-	return d.String(), nil
 }

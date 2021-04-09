@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-//
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
-//
+// or later (AGPL), as published by the Free Software Foundation.
+
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-//
+
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,21 +24,20 @@ import (
 	"github.com/recallsong/go-utils/reflectx"
 )
 
-// Operator .
 type Operator uint32
 
-// Operator values
+// Operator enumeration.
 const (
 	ILLEGAL Operator = iota
 
-	ADD    // +
-	SUB    // -
-	MUL    // *
-	DIV    // /
-	MOD    // %
-	BITAND // &
-	BITOR  // |
-	BITXOR // ^
+	ADD     // +
+	SUB     // -
+	MUL     // *
+	DIV     // /
+	MOD     // %
+	BIT_AND // &
+	BIT_OR  // |
+	BIT_XOR // ^
 
 	AND // &&
 	OR  // ||
@@ -61,9 +60,9 @@ var (
 		MUL:     "*",
 		DIV:     "/",
 		MOD:     "%",
-		BITAND:  "&",
-		BITOR:   "|",
-		BITXOR:  "^",
+		BIT_AND: "&",
+		BIT_OR:  "|",
+		BIT_XOR: "^",
 
 		AND: "&&",
 		OR:  "||",
@@ -94,7 +93,7 @@ func init() {
 	}
 }
 
-// ParseOperator .
+// Parse string to operator.
 func ParseOperator(name string) Operator {
 	if op, ok := operatorStrings[name]; ok {
 		return op
@@ -102,10 +101,9 @@ func ParseOperator(name string) Operator {
 	return ILLEGAL
 }
 
-// DataType .
 type DataType uint32
 
-// DataType values
+// DataType enumeration.
 const (
 	NullType DataType = iota
 	BoolType
@@ -139,7 +137,6 @@ func (t DataType) String() string {
 	return types[t]
 }
 
-// TypeOf .
 func TypeOf(v interface{}) DataType {
 	switch v.(type) {
 	case nil:
@@ -164,7 +161,6 @@ func TypeOf(v interface{}) DataType {
 	return UnknownType
 }
 
-// ValueOf .
 func ValueOf(a interface{}) interface{} {
 	switch v := a.(type) {
 	case int:
@@ -176,7 +172,7 @@ func ValueOf(a interface{}) interface{} {
 	case int32:
 		return int64(v)
 	case int64:
-		return int64(v)
+		return v
 	case uint:
 		return uint64(v)
 	case uint8:
@@ -186,7 +182,7 @@ func ValueOf(a interface{}) interface{} {
 	case uint32:
 		return uint64(v)
 	case uint64:
-		return uint64(v)
+		return v
 	case float32:
 		return float64(v)
 	case float64:
@@ -195,10 +191,8 @@ func ValueOf(a interface{}) interface{} {
 	return a
 }
 
-// ErrDivideByZero .
 var ErrDivideByZero = fmt.Errorf("number divide by zero")
 
-// OperateValues .
 func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, error) {
 	a, b = ValueOf(a), ValueOf(b)
 	switch op {
@@ -1312,7 +1306,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) % int64(bv)), nil
 			}
 		}
-	case BITAND:
+	case BIT_AND:
 		switch av := a.(type) {
 		case nil:
 			switch b.(type) {
@@ -1399,7 +1393,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) & int64(bv)), nil
 			}
 		}
-	case BITOR:
+	case BIT_OR:
 		switch av := a.(type) {
 		case nil:
 			switch bv := b.(type) {
@@ -1484,7 +1478,7 @@ func OperateValues(a interface{}, op Operator, b interface{}) (interface{}, erro
 				return time.Duration(int64(av) | int64(bv)), nil
 			}
 		}
-	case BITXOR:
+	case BIT_XOR:
 		switch av := a.(type) {
 		case nil:
 			switch bv := b.(type) {
