@@ -17,17 +17,16 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/recallsong/go-utils/encoding/jsonx"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/recallsong/go-utils/encoding/jsonx"
 )
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"metricq-example"} }
+func (d *define) Services() []string { return []string{"metricq-example"} }
 func (d *define) Dependencies() []string {
 	return []string{"metrics-query"}
 }
@@ -48,8 +47,8 @@ type cNode struct {
 }
 
 type provider struct {
-	C       *config
-	L       logs.Logger
+	Cfg     *config
+	Log     logs.Logger
 	index   indexmanager.Index
 	metricq metricq.Queryer
 }

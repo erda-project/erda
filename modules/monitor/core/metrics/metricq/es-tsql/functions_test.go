@@ -38,16 +38,13 @@ func Test_BuildInFunctions(t *testing.T) {
 			buildInFunction := BuildInFunctions[tt.name]
 			got, err := buildInFunction(ctx, tt.args...)
 			if err != nil && tt.wantErr == true {
-				println(11111)
 				return
 			}
 			if err != nil && tt.wantErr == false {
-				println(11111)
 				t.Errorf("buildInFunction() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				println(11111)
 				t.Errorf("buildInFunction() = %v, want %v", got, tt.want)
 			}
 		})
