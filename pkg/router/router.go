@@ -15,6 +15,7 @@ package router
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -232,8 +233,14 @@ func (n *node) printTree(sb *strings.Builder, pfx string, tail, verbose bool) {
 			children[i].printTree(sb, p, i == l-1, verbose)
 		}
 	} else {
+		var keys []string
+		for key := range n.childrenMap {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
 		i, l := 0, len(n.childrenMap)
-		for _, node := range n.childrenMap {
+		for _, key := range keys {
+			node := n.childrenMap[key]
 			node.printTree(sb, p, i == l-1, verbose)
 			i++
 		}
