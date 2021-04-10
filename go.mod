@@ -15,6 +15,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
+	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bluele/gcache v0.0.2
@@ -98,6 +99,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil/v3 v3.21.3
+	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.8.0
 	github.com/sony/sonyflake v1.0.0
@@ -128,6 +130,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gotest.tools v2.2.0+incompatible
 	honnef.co/go/tools v0.0.1-2020.1.6 // indirect
+	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
 	k8s.io/api v0.18.3
