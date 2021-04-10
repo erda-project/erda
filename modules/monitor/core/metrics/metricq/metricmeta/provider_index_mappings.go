@@ -47,19 +47,15 @@ func (p *IndexMappingsGroupProvider) MappingsByID(id, scope, scopeID string, nam
 }
 
 // Groups .
-func (p *IndexMappingsGroupProvider) Groups(lang string, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
+func (p *IndexMappingsGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
 	names := p.index.MetricNames()
 	for _, name := range names {
 		if strings.HasPrefix(name, "_") {
 			continue
 		}
-		langCode, err := i18n.ParseLanguageCode(lang)
-		if err != nil {
-			return nil, err
-		}
 		groups = append(groups, &Group{
 			ID:   name + "@" + name,
-			Name: t.Text(langCode, name),
+			Name: t.Text(langCodes, name),
 		})
 	}
 	return groups, nil

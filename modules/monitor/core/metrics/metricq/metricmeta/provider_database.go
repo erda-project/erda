@@ -71,7 +71,7 @@ func (p *DatabaseGroupProvider) MappingsByID(id, scope, scopeID string, names []
 	return gmm, nil
 }
 
-func (p *DatabaseGroupProvider) Groups(lang string, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
+func (p *DatabaseGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
 	group := &Group{
 		ID:   "log_metrics",
 		Name: "Log Metrics",

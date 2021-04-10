@@ -53,22 +53,18 @@ func (p *MetaIndexGroupProvider) MappingsByID(id, scope, scopeID string, names [
 }
 
 // Groups .
-func (p *MetaIndexGroupProvider) Groups(lang string, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
-	langCode, err := i18n.ParseLanguageCode(lang)
-	if err != nil {
-		return nil, err
-	}
+func (p *MetaIndexGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
 	if scope == "org" || scope == "dice" { // 暂时硬编码
 		groups = append(groups, &Group{
 			ID:    "other",
-			Name:  t.Text(langCode, "Other"),
+			Name:  t.Text(langCodes, "Other"),
 			Order: math.MaxInt32,
 		})
 		groups = appendMetricToGroup(groups, "@", ms, p.getOtherGroupsMetrics(ms), true)
 	} else {
 		groups = append(groups, &Group{
 			ID:    "custom",
-			Name:  t.Text(langCode, "Custom"),
+			Name:  t.Text(langCodes, "Custom"),
 			Order: math.MaxInt32,
 		})
 		groups = appendMetricToGroup(groups, "@", ms, p.getCustomGroupsMetrics(ms), true)
