@@ -606,7 +606,7 @@ func (f *esFunction) Aggregations(ctx *Context, flags ...Flag) ([]*Aggregation, 
 		return nil, err
 	}
 	return []*Aggregation{
-		&Aggregation{
+		{
 			ID:          f.ID,
 			Aggregation: aggs,
 		},
@@ -830,7 +830,7 @@ func (f *groupReduceFunction) Aggregations(ctx *Context, flags ...Flag) ([]*Aggr
 			f.innerFn = fn
 			f.interCol = col
 			return []*Aggregation{
-				&Aggregation{
+				{
 					ID:          f.ID,
 					Aggregation: terms.SubAggregation(aggs[0].ID, aggs[0].Aggregation),
 				},

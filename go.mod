@@ -70,6 +70,7 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mholt/archiver v2.1.0+incompatible
+	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826

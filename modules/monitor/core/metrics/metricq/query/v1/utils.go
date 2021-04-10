@@ -14,7 +14,6 @@
 package queryv1
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -22,6 +21,7 @@ import (
 
 	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	md5simd "github.com/minio/md5-simd"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
@@ -237,9 +237,12 @@ func NormalizeKey(keys, typ string) string {
 // NormalizeID .
 func NormalizeID(fn string, p *Property) string {
 	if p.IsScript() {
-		h := md5.New()
-		h.Write([]byte(fn + "_" + p.Name))
-		return hex.EncodeToString(h.Sum(nil))[8:24]
+		server := md5simd.NewServer()
+		defer server.Close()
+		md5Hash := server.NewHash()
+		defer md5Hash.Close()
+		md5Hash.Write([]byte(fn + "_" + p.Name))
+		return hex.EncodeToString(md5Hash.Sum(nil))[8:24]
 	}
 	return strings.Replace(fn+"_"+p.Key, ".", "_", -1)
 }

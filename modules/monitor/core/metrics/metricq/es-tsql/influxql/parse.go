@@ -210,7 +210,7 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 	// 自动添加特殊列
 	if flag&queryFlagGroupByTime == queryFlagGroupByTime {
 		handlers = append([]*columnHandler{
-			&columnHandler{
+			{
 				col: &tsql.Column{
 					Name: "time",
 					Flag: tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByInterval,
@@ -220,7 +220,7 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 		}, handlers...)
 	} else if flag&queryFlagGroupByRange == queryFlagGroupByRange {
 		handlers = append([]*columnHandler{
-			&columnHandler{
+			{
 				col: &tsql.Column{
 					Name: "range",
 					Flag: tsql.ColumnFlagGroupBy | tsql.ColumnFlagGroupByRange,

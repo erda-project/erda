@@ -93,7 +93,7 @@ func (p *metaProcessor) add(metric *Metric) error {
 			tags := make([]string, 0)
 			fields := make([]string, 0)
 			if metric.Tags != nil && len(metric.Tags) > 0 {
-				for tag, _ := range metric.Tags {
+				for tag := range metric.Tags {
 					// 过滤系统内置的 _ 前缀的tag，如 _id  _meta
 					if !strings.HasPrefix(tag, MetricInternalPrefix) {
 						tags = append(tags, tag)

@@ -85,92 +85,92 @@ func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*
 	case "", "query":
 		return &MetaMode{
 			Types: map[string]*TypeDefine{
-				NumberType: &TypeDefine{
+				NumberType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "max",
 							Name:        t.Text(langCodes, aggNames["max"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "min",
 							Name:        t.Text(langCodes, aggNames["min"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "sum",
 							Name:        t.Text(langCodes, aggNames["sum"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "avg",
 							Name:        t.Text(langCodes, aggNames["avg"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "sumCps",
 							Name:        t.Text(langCodes, aggNames["sumCps"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "cps",
 							Name:        t.Text(langCodes, aggNames["cps"]),
 							ResultType:  NumberType,
 						},
-						// &Aggregation{
+						// {
 						// 	Aggregation: "diffps",
 						// 	Name:        t.Text(langCodes, aggNames["diffps"]),
 						// 	ResultType:  NumberType,
 						// },
-						// &Aggregation{
+						// {
 						// 	Aggregation: "diff",
 						// 	Name:        t.Text(langCodes, aggNames["diff"]),
 						// 	ResultType:  NumberType,
 						// },
 					},
 				},
-				BoolType: &TypeDefine{
+				BoolType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  BoolType,
 						},
 					},
 				},
-				StringType: &TypeDefine{
+				StringType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "distinct",
 							Name:        t.Text(langCodes, aggNames["distinct"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "cps",
 							Name:        t.Text(langCodes, aggNames["cps"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  StringType,
@@ -179,32 +179,32 @@ func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*
 				},
 			},
 			Filters: []*Operation{
-				&Operation{
+				{
 					Operation: "eq",
 					Name:      t.Text(langCodes, "Equal"),
 				},
-				&Operation{
+				{
 					Operation: "neq",
 					Name:      t.Text(langCodes, "Not Equal"),
 				},
-				&Operation{
+				{
 					Operation: "in",
 					Name:      t.Text(langCodes, "In"),
 					Multi:     true,
 				},
-				&Operation{
+				{
 					Operation: "like",
 					Name:      t.Text(langCodes, "Include"),
 				},
-				&Operation{
+				{
 					Operation: "exclude",
 					Name:      t.Text(langCodes, "Exclude"),
 				},
-				&Operation{
+				{
 					Operation: "match",
 					Name:      t.Text(langCodes, "Match"),
 				},
-				&Operation{
+				{
 					Operation: "notMatch",
 					Name:      t.Text(langCodes, "Not Match"),
 				},
@@ -213,218 +213,218 @@ func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*
 	case "analysis":
 		return &MetaMode{
 			Types: map[string]*TypeDefine{
-				NumberType: &TypeDefine{
+				NumberType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "max",
 							Name:        t.Text(langCodes, "Maximum"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "min",
 							Name:        t.Text(langCodes, "Minimum"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "sum",
 							Name:        t.Text(langCodes, "Sum"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "avg",
 							Name:        t.Text(langCodes, "Average"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, "Last Value"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "values",
 							Name:        t.Text(langCodes, "All Values"),
 							ResultType:  NumberArrayType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, "Count"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "p99",
 							Name:        t.Text(langCodes, "99 Percentile"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "p95",
 							Name:        t.Text(langCodes, "95 Percentile"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "p90",
 							Name:        t.Text(langCodes, "90 Percentile"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "p75",
 							Name:        t.Text(langCodes, "75 Percentile"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "p50",
 							Name:        t.Text(langCodes, "50 Percentile"),
 							ResultType:  NumberType,
 						},
 					},
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "eq",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "neq",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
-						&Operation{
+						{
 							Operation: "gt",
 							Name:      t.Text(langCodes, "Greater Than"),
 						},
-						&Operation{
+						{
 							Operation: "gte",
 							Name:      t.Text(langCodes, "Greater Than Or Equal"),
 						},
-						&Operation{
+						{
 							Operation: "lt",
 							Name:      t.Text(langCodes, "Less Than"),
 						},
-						&Operation{
+						{
 							Operation: "lte",
 							Name:      t.Text(langCodes, "Less Than Or Equal"),
 						},
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
 					},
 				},
-				BoolType: &TypeDefine{
+				BoolType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, "Count"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, "Last Value"),
 							ResultType:  BoolType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "values",
 							Name:        t.Text(langCodes, "All Values"),
 							ResultType:  BoolArrayType,
 						},
 					},
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "eq",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "neq",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
 					},
 				},
-				StringType: &TypeDefine{
+				StringType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "distinct",
 							Name:        t.Text(langCodes, "Distinct"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, "Count"),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, "Last Value"),
 							ResultType:  StringType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "values",
 							Name:        t.Text(langCodes, "All Values"),
 							ResultType:  StringArrayType,
 						},
 					},
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "eq",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "neq",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
-						&Operation{
+						{
 							Operation: "like",
 							Name:      t.Text(langCodes, "Contains"),
 						},
 					},
 				},
-				NumberArrayType: &TypeDefine{
+				NumberArrayType: {
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
 					},
 				},
-				BoolArrayType: &TypeDefine{
+				BoolArrayType: {
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
 					},
 				},
-				StringArrayType: &TypeDefine{
+				StringArrayType: {
 					Operations: []*Operation{
-						&Operation{
+						{
 							Operation: "contains",
 							Name:      t.Text(langCodes, "Contains"),
 						},
-						&Operation{
+						{
 							Operation: "all",
 							Name:      t.Text(langCodes, "All Values Equal"),
 						},
@@ -432,23 +432,23 @@ func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*
 				},
 			},
 			Filters: []*Operation{
-				&Operation{
+				{
 					Operation: "eq",
 					Name:      t.Text(langCodes, "Equal"),
 				},
-				&Operation{
+				{
 					Operation: "neq",
 					Name:      t.Text(langCodes, "Not Equal"),
 				},
-				&Operation{
+				{
 					Operation: "like",
 					Name:      t.Text(langCodes, "Include"),
 				},
-				&Operation{
+				{
 					Operation: "match",
 					Name:      t.Text(langCodes, "Match"),
 				},
-				&Operation{
+				{
 					Operation: "notMatch",
 					Name:      t.Text(langCodes, "Not Match"),
 				},
@@ -464,118 +464,118 @@ func (m *Manager) getTypeAggDefineInflux(langCodes i18n.LanguageCodes, mode stri
 	case "", "query":
 		return &MetaMode{
 			Types: map[string]*TypeDefine{
-				NumberType: &TypeDefine{
+				NumberType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "max",
 							Name:        t.Text(langCodes, aggNames["max"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "min",
 							Name:        t.Text(langCodes, aggNames["min"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "sum",
 							Name:        t.Text(langCodes, aggNames["sum"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "avg",
 							Name:        t.Text(langCodes, aggNames["avg"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  NumberType,
 						},
 					},
 					Filters: []*Operation{
-						&Operation{
+						{
 							Operation: "=",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "!=",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
-						&Operation{
+						{
 							Operation: ">",
 							Name:      t.Text(langCodes, "Greater Than"),
 						},
-						&Operation{
+						{
 							Operation: ">=",
 							Name:      t.Text(langCodes, "Greater Than Or Equal"),
 						},
-						&Operation{
+						{
 							Operation: "<",
 							Name:      t.Text(langCodes, "Less Than"),
 						},
-						&Operation{
+						{
 							Operation: "<=",
 							Name:      t.Text(langCodes, "Less Than Or Equal"),
 						},
 					},
 				},
-				BoolType: &TypeDefine{
+				BoolType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  BoolType,
 						},
 					},
 					Filters: []*Operation{
-						&Operation{
+						{
 							Operation: "=",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "!=",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
 					},
 				},
-				StringType: &TypeDefine{
+				StringType: {
 					Aggregations: []*Aggregation{
-						&Aggregation{
+						{
 							Aggregation: "distinct",
 							Name:        t.Text(langCodes, aggNames["distinct"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "count",
 							Name:        t.Text(langCodes, aggNames["count"]),
 							ResultType:  NumberType,
 						},
-						&Aggregation{
+						{
 							Aggregation: "value",
 							Name:        t.Text(langCodes, aggNames["value"]),
 							ResultType:  StringType,
 						},
 					},
 					Filters: []*Operation{
-						&Operation{
+						{
 							Operation: "=",
 							Name:      t.Text(langCodes, "Equal"),
 						},
-						&Operation{
+						{
 							Operation: "!=",
 							Name:      t.Text(langCodes, "Not Equal"),
 						},
-						&Operation{
+						{
 							Operation: "=~",
 							Name:      t.Text(langCodes, "Regular Expression"),
 						},

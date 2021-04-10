@@ -14,7 +14,6 @@
 package chartv2
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	query "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/units"
@@ -52,11 +51,7 @@ func (f *Formater) formatListChart(ctx *query.Context, chart *chartmeta.ChartMet
 		}
 		if ctx.Req.TransGroup {
 			if key, ok := term.Key.(string); ok {
-				langCode, err := i18n.ParseLanguageCode(ctx.Lang)
-				if err != nil {
-					return nil, err
-				}
-				data["title"] = ctx.T.Text(langCode, key)
+				data["title"] = ctx.T.Text(ctx.Lang, key)
 			}
 		} else if title, ok := term.Key.(string); ok {
 			if chart != nil && chart.Defines != nil && chart.Defines[title] != nil && chart.Defines[title].Label != nil {
