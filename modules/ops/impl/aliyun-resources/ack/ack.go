@@ -19,9 +19,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cs"
-	"github.com/sirupsen/logrus"
-
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
+	"github.com/sirupsen/logrus"
 )
 
 type DescribeACKInstancesResponse struct {
