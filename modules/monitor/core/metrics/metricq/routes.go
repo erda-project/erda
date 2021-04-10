@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -31,8 +31,8 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.POST("/api/query", p.queryMetrics) // for tsql
 
 	// 数据导出，临时方案
-	routes.GET("/api/telemetry/:scope/export", p.exportMetrics)
-	routes.POST("/api/telemetry/:scope/export", p.exportMetrics)
+	routes.GET("/api/metrics/:scope/export", p.exportMetrics)
+	routes.POST("/api/metrics/:scope/export", p.exportMetrics)
 
 	// metric meta
 	routes.GET("/api/metric/names", p.listMetricNames)

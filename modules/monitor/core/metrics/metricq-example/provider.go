@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -29,7 +29,7 @@ type define struct{}
 
 func (d *define) Service() []string { return []string{"metricq-example"} }
 func (d *define) Dependencies() []string {
-	return []string{"telemetry-query"}
+	return []string{"metrics-query"}
 }
 func (d *define) Summary() string     { return "metricq-example" }
 func (d *define) Description() string { return d.Summary() }
@@ -55,8 +55,8 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.index = ctx.Service("telemetry-index-manager").(indexmanager.Index) // 不是必须的，引用只是为了，例子查询能在索引加载后进行
-	p.metricq = ctx.Service("telemetry-query").(metricq.Queryer)
+	p.index = ctx.Service("metrics-index-manager").(indexmanager.Index) // 不是必须的，引用只是为了，例子查询能在索引加载后进行
+	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	return nil
 }
 

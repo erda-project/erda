@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -159,11 +159,11 @@ func downloadExcelFile(w http.ResponseWriter, data interface{}) interface{} {
 // 		}
 // 	}
 // 	// 查询元数据
-// 	telemetry, err := p.q.MetricMeta(api.Language(r), params.Scope, params.ScopeID, params.Metric)
+// 	metrics, err := p.q.MetricMeta(api.Language(r), params.Scope, params.ScopeID, params.Metric)
 // 	if err != nil {
 // 		return api.Errors.Internal(err)
 // 	}
-// 	if len(telemetry) <= 0 {
+// 	if len(metrics) <= 0 {
 // 		return nil
 // 	}
 // 	// new excel file
@@ -172,7 +172,7 @@ func downloadExcelFile(w http.ResponseWriter, data interface{}) interface{} {
 // 	if err != nil {
 // 		return api.Errors.InvalidParameter(err)
 // 	}
-// 	metric := telemetry[0]
+// 	metric := metrics[0]
 // 	tagKeys := metric.TagsKeys()
 // 	fieldKeys := metric.FieldsKeys()
 // 	headers := []interface{}{

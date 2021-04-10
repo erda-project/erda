@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -26,10 +26,10 @@ import (
 
 func (p *provider) initRoutesV1(routes httpserver.Router) {
 	// metric query apis
-	routes.GET("/api/telemetry/:scope", p.queryMetricsV1)
-	routes.POST("/api/telemetry/:scope", p.queryMetricsV1)
-	routes.GET("/api/telemetry/:scope/:aggregate", p.queryMetricsV1)
-	routes.POST("/api/telemetry/:scope/:aggregate", p.queryMetricsV1)
+	routes.GET("/api/metrics/:scope", p.queryMetricsV1)
+	routes.POST("/api/metrics/:scope", p.queryMetricsV1)
+	routes.GET("/api/metrics/:scope/:aggregate", p.queryMetricsV1)
+	routes.POST("/api/metrics/:scope/:aggregate", p.queryMetricsV1)
 
 	// chart meta
 	routes.GET("/api/charts", p.getCharts)

@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -33,7 +33,7 @@ type Queryer interface {
 // Response .
 type Response struct {
 	Total   int64    `json:"total"`
-	Metrics []string `json:"telemetry"`
+	Metrics []string `json:"metrics"`
 	Elapsed struct {
 		Search time.Duration `json:"search"`
 	} `json:"elapsed"`

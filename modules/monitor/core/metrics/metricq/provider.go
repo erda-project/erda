@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -46,11 +46,11 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"telemetry-query"} }
+func (d *define) Service() []string { return []string{"metrics-query"} }
 func (d *define) Dependencies() []string {
-	return []string{"mysql", "telemetry-index-manager", "http-server", "i18n", "i18n@metric"}
+	return []string{"mysql", "metrics-index-manager", "http-server", "i18n", "i18n@metric"}
 }
-func (d *define) Summary() string     { return "telemetry query api" }
+func (d *define) Summary() string     { return "metrics query api" }
 func (d *define) Description() string { return d.Summary() }
 func (d *define) Config() interface{} { return &config{} }
 func (d *define) Creator() servicehub.Creator {
@@ -80,7 +80,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 
 	db := ctx.Service("mysql").(mysql.Interface).DB()
-	index := ctx.Service("telemetry-index-manager").(indexmanager.Index)
+	index := ctx.Service("metrics-index-manager").(indexmanager.Index)
 
 	trans := ctx.Service("i18n").(i18n.I18n).Translator("charts")
 	charts := chartmeta.NewManager(db, p.C.ChartMeta.ReloadInterval, p.C.ChartMeta.Path, trans, p.L)
@@ -115,7 +115,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to start charts manager: %s", err)
 	}
 
-	// routes := ctx.Service("http-server", telemetry.HttpMetric(), interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
+	// routes := ctx.Service("http-server", metrics.HttpMetric(), interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
 	// err = p.initRoutes(routes)
 	// if err != nil {
 	// 	return fmt.Errorf("fail to init routes: %s", err)
@@ -135,5 +135,5 @@ func (p *provider) Provide(name string, args ...interface{}) interface{} {
 }
 
 func init() {
-	servicehub.RegisterProvider("telemetry-query", &define{})
+	servicehub.RegisterProvider("metrics-query", &define{})
 }

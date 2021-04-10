@@ -2,7 +2,7 @@
 //
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
+// or later ("AGPL"), as published by the Free Software Foundation.
 //
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -27,11 +27,11 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"telemetry-storage"} }
+func (d *define) Service() []string { return []string{"metrics-storage"} }
 func (d *define) Dependencies() []string {
-	return []string{"kafka", "elasticsearch", "telemetry-index-manager"}
+	return []string{"kafka", "elasticsearch", "metrics-index-manager"}
 }
-func (d *define) Summary() string     { return "telemetry store" }
+func (d *define) Summary() string     { return "metrics store" }
 func (d *define) Description() string { return d.Summary() }
 func (d *define) Config() interface{} { return &config{} }
 func (d *define) Creator() servicehub.Creator {
@@ -75,7 +75,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
 	p.output.es = es.NewBatchWriter(&p.C.Output.Elasticsearch.WriterConfig)
-	p.index = ctx.Service("telemetry-index-manager").(indexmanager.Index)
+	p.index = ctx.Service("metrics-index-manager").(indexmanager.Index)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	if p.index.EnableRollover() {
@@ -116,5 +116,5 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider("telemetry-storage", &define{})
+	servicehub.RegisterProvider("metrics-storage", &define{})
 }
