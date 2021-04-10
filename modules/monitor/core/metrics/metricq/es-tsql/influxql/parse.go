@@ -506,7 +506,7 @@ func (p *Parser) parseFiledAgg(expr influxql.Expr, aggs map[string]elastic.Aggre
 				}
 				fns[id] = fn
 			}
-		} else if _, ok := tsql.BuildInFuntions[expr.Name]; ok {
+		} else if _, ok := tsql.BuildInFunctions[expr.Name]; ok {
 			for _, arg := range expr.Args {
 				if err := p.parseFiledAgg(arg, aggs, fns); err != nil {
 					return err
@@ -859,7 +859,7 @@ func getLiteralValue(ctx *Context, expr influxql.Expr) (interface{}, bool, error
 }
 
 func getLiteralFuncValue(ctx *Context, call *influxql.Call) (interface{}, bool, error) {
-	if fn, ok := tsql.LiteralFuntions[call.Name]; ok {
+	if fn, ok := tsql.LiteralFunctions[call.Name]; ok {
 		var args []interface{}
 		for _, arg := range call.Args {
 			arg, ok, err := getLiteralValue(ctx, arg)
@@ -876,7 +876,7 @@ func getLiteralFuncValue(ctx *Context, call *influxql.Call) (interface{}, bool, 
 			return nil, false, err
 		}
 		return v, true, nil
-	} else if fn, ok := tsql.BuildInFuntions[call.Name]; ok {
+	} else if fn, ok := tsql.BuildInFunctions[call.Name]; ok {
 		var args []interface{}
 		for _, arg := range call.Args {
 			arg, ok, err := getLiteralValue(ctx, arg)

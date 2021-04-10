@@ -329,7 +329,7 @@ func (c *columnHandler) getRawValue(source map[string]interface{}) (interface{},
 func (c *columnHandler) getAggValue(source map[string]interface{}, buckets []interface{}, aggs elastic.Aggregations) (interface{}, error) {
 	if c.field == nil {
 		if c.col.Flag&tsql.ColumnFlagGroupByInterval == tsql.ColumnFlagGroupByInterval {
-			if fn, ok := tsql.BuildInFuntions["time"]; ok {
+			if fn, ok := tsql.BuildInFunctions["time"]; ok {
 				v, err := fn(c.ctx, buckets...)
 				if err != nil {
 					return nil, err
@@ -337,7 +337,7 @@ func (c *columnHandler) getAggValue(source map[string]interface{}, buckets []int
 				return v, nil
 			}
 		} else if c.col.Flag&tsql.ColumnFlagGroupByRange == tsql.ColumnFlagGroupByRange {
-			if fn, ok := tsql.BuildInFuntions["range"]; ok {
+			if fn, ok := tsql.BuildInFunctions["range"]; ok {
 				v, err := fn(c.ctx, buckets...)
 				if err != nil {
 					return nil, err
@@ -353,7 +353,7 @@ func (c *columnHandler) getAggValue(source map[string]interface{}, buckets []int
 func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buckets []interface{}, aggs elastic.Aggregations, expr influxql.Expr) (interface{}, error) {
 	switch expr := expr.(type) {
 	case *influxql.Call:
-		if fn, ok := tsql.LiteralFuntions[expr.Name]; ok {
+		if fn, ok := tsql.LiteralFunctions[expr.Name]; ok {
 			c.col.Flag |= tsql.ColumnFlagFunc | tsql.ColumnFlagLiteral
 			var args []interface{}
 			for _, arg := range expr.Args {
@@ -368,7 +368,7 @@ func (c *columnHandler) getAggFieldExprValue(source map[string]interface{}, buck
 				return nil, err
 			}
 			return v, nil
-		} else if fn, ok := tsql.BuildInFuntions[expr.Name]; ok {
+		} else if fn, ok := tsql.BuildInFunctions[expr.Name]; ok {
 			c.col.Flag |= tsql.ColumnFlagFunc
 			var args []interface{}
 			if expr.Name == "time" || expr.Name == "timestamp" {
