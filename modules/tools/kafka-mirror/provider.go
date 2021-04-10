@@ -15,6 +15,7 @@ package kafka_mirror
 
 import (
 	"fmt"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"

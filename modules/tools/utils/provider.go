@@ -14,10 +14,11 @@
 package utils
 
 import (
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	kubernetesp "github.com/erda-project/erda-infra/providers/kubernetes"
-	"k8s.io/client-go/kubernetes"
 )
 
 type define struct{}

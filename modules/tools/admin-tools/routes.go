@@ -15,8 +15,6 @@ package admin_tools
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/rakyll/statik/fs"
@@ -34,8 +32,6 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.GET("/api/admin/kafka/channel", p.showKafkaChannelSize)
 	routes.POST("/api/admin/kafka/push", p.pushKafkaData)
 
-	//routes.POST("/api/admin/internal/log-level", p.setGlobalLoglevel)
-
 	routes.Any("/api/admin/proxy", p.proxy, interceptors.CORS())
 	routes.Any("/api/admin/proxy/*", p.proxy, interceptors.CORS())
 
@@ -43,7 +39,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	if err != nil {
 		return fmt.Errorf("fail to init file system: %s", err)
 	}
-	fs := http.FileSystem(assets)
+	fs := assets
 	routes.Static("/", "/", httpserver.WithFileSystem(fs))
 	return nil
 }

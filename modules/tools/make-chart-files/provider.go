@@ -16,13 +16,14 @@ package make_chart_files
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/jinzhu/gorm"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type define struct{}

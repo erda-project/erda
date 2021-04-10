@@ -16,11 +16,12 @@ package kafka_push
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"time"
 )
 
 type define struct{}

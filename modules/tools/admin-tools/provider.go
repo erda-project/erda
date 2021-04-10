@@ -50,11 +50,11 @@ type config struct {
 }
 
 type provider struct {
-	C      *config
-	L      logs.Logger
-	bundle *bundle.Bundle
-	cmdb   *cmdb.Cmdb
-	//metricq   metricq.Queryer
+	C         *config
+	L         logs.Logger
+	bundle    *bundle.Bundle
+	cmdb      *cmdb.Cmdb
+	metricq   metricq.Queryer
 	es        *elastic.Client
 	cassandra *gocql.Session
 	kafka     struct {
