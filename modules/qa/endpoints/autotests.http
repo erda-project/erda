@@ -1,0 +1,75 @@
+GET http://localhost:3033/api/autotests/scenes/2/actions/list-input
+Accept: application/json
+User-ID: 2
+
+###
+PUT http://localhost:3033/api/autotests/scenes/2/actions/update-input
+Content-Type: application/json
+User-ID: 2
+
+{"id":1,"name": "name1","value":"vv2","temp": "tp2","description": "444","spaceID": 1,"sceneID": 1}
+
+
+###
+POST http://localhost:3033/api/autotests/scenes/2/actions/add-input
+Content-Type: application/json
+User-ID: 2
+
+{"name": "name3","value":"vv","temp": "tp","description": "333","spaceID": 1,"sceneID": 1}
+
+###
+GET http://localhost:3033/api/autotests/scenes?setID=1
+Accept: application/json
+User-ID: 2
+###
+PUT http://localhost:3033/api/autotests/scenes/2
+Content-Type: application/json
+User-ID: 2
+
+{"name": "name2","description": "222","spaceID": 1,"setID": 1}
+
+###
+POST http://localhost:3033/api/autotests/scenes
+Content-Type: application/json
+User-ID: 2
+
+{"name": "name3","description": "333","spaceID": 1,"setID": 1}
+
+
+###
+### 查询我创建的autotest node
+GET http://localhost:3033/api/autotests/filetree/actions/fuzzy-search?scope=project&scopeId=4&creatorId=2
+Content-Type: application/json
+User-ID: 2
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+
+###
+POST http://localhost:3033/api/autotests/scenes/45/actions/execute
+Accept: application/json
+User-ID: 2
+
+{ "clusterName": "terminus-dev"}
+
+
+###
+POST http://localhost:3033/api/autotests/scenes-step/7857/actions/execute
+Accept: application/json
+User-ID: 2
+
+{ "configManageNamespaces": "", "userId": "1"}
+
+
+
+### s
+POST http://localhost:3033/api/autotests/pipeline-snippets/actions/batch-query-snippet-yml
+Accept: application/json
+User-ID: 2
+
+[{"Source":"autotest","Name":"1279","Labels":{"autotestExecType":"sceneSets","sceneSetID":"1279","spaceID":"1083"}},{"Source":"autotest","Name":"2828","Labels":{"autotestExecType":"scene","sceneID":"2828","spaceID":"1083"}}]
+
+
+###
+GET  http://localhost:3033/api/autotests/scenes/modal
+Accept: application/json
+User-ID: 2

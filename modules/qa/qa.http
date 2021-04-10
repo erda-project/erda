@@ -1,0 +1,451 @@
+POST http://127.0.0.1:3033/api/autotests/scenes/2/actions/add-step
+Content-Type: application/json
+User-ID: 2
+
+{
+  "groupID": -1,
+  "target": 2,
+  "position": 1,
+  "name": "st3",
+  "setID": 1,
+  "sceneID": 2,
+  "spaceID": 2,
+  "type": "api",
+  "value": "[abc]3"
+}
+
+###
+### 测试用例 - 新建
+POST {{qa}}/api/testcases
+User-ID: 2
+Content-Type: application/json
+
+{
+  "projectID": 4,
+  "testSetID": 2,
+  "name": "qa.http 创建的测试用例",
+  "priority": "P0",
+  "stepAndResults": [
+    {
+      "step": "填写 title",
+      "result": "填写正常"
+    }
+  ],
+  "preCondition": "前置条件需要打开 Chrome 浏览器",
+  "desc": "这个测试用例由程序生成",
+  "apis": [
+    {
+      "apiInfo": "{\"headers\":[{\"key\":\"w\",\"value\":\"1\",\"desc\":\"\"}],\"method\":\"GET\",\"url\":\"/sss?a=1&b=1\",\"name\":\"。ss\",\"params\":[{\"key\":\"a\",\"value\":\"1\",\"desc\":\"\"},{\"key\":\"b\",\"value\":\"1\",\"desc\":\"\"}],\"body\":{\"type\":\"none\",\"content\":\"\"},\"outParams\":[],\"asserts\":[[]]}"
+    }
+  ]
+}
+
+### 测试用例 - 批量创建
+POST {{qa}}/api/testcases/actions/batch-create
+User-ID: 2
+Content-Type: application/json
+
+{
+  "projectID": 4,
+  "testCases": [
+    {
+      "name": "batch-create-1",
+      "priority": "P0",
+      "stepAndResults": [
+        {
+          "step": "填写 title",
+          "result": "填写正常"
+        }
+      ],
+      "preCondition": "前置条件需要打开 Chrome 浏览器",
+      "desc": "这个测试用例由程序生成"
+    },
+    {
+      "name": "batch-create-2",
+      "priority": "P2",
+      "stepAndResults": [
+        {
+          "step": "填写 title",
+          "result": "填写正常"
+        }
+      ],
+      "preCondition": "前置条件需要打开 Chrome 浏览器",
+      "desc": "这个测试用例由程序生成"
+    }
+  ]
+}
+
+### 测试用例 - 详情
+GET {{qa}}/api/testcases/3
+
+### 测试用例 - 分页查询 项目 ID
+GET {{qa}}/api/testcases?pageSize=15&testSetID=186&pageNo=1&recycled=false&projectID=24&orderField=test_set_id&orderField=id
+
+### 测试用例 - 分页查询 项目 ID + 测试集 ID + 是否不查询子测试集(默认查询子测试集)
+GET {{qa}}/api/testcases?projectID=4&testSetID=5&noSubTestSets=true
+
+### 测试用例 - 分页查询 项目 ID + 更新人
+GET {{qa}}/api/testcases?projectID=4&updaterID=3&updaterID=2
+
+### 测试用例 - 分页查询 项目 ID + 标题匹配
+GET {{qa}}/api/testcases?projectID=4&query=测试用例
+
+### 测试用例 - 分页查询 项目 ID + 优先级
+GET {{qa}}/api/testcases?projectID=4&priority=P2&priority=P0
+
+### 测试用例 - 分页查询 项目 ID + 更新时间
+GET {{qa}}/api/testcases?projectID=4&timestampSecUpdatedAtBegin=1596079235&timestampSecUpdatedAtEnd=1596080435
+
+### 测试用例 - 分页查询 项目 ID + 排序：优先级升序、更新人降序、更新时间降序
+# orderByPriorityAsc, orderByPriorityDesc
+# orderByUpdaterIDAsc, orderByUpdaterIDDesc
+# orderByUpdatedAtAsc, orderByUpdatedAtDesc
+GET {{qa}}/api/testcases?projectID=4&orderByPriorityAsc=true&orderByUpdaterIDDesc=true&orderByUpdatedAtDesc=true
+
+### 测试用例 - 分页查询 项目 ID + 不在指定测试计划里
+GET {{qa}}/api/testcases?projectID=27&notInTestPlanID=19
+
+### 测试用例 - 更新
+PUT {{qa}}/api/testcases/22
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testCaseID": 22,
+  "apiCount": {
+    "created": 1,
+    "failed": 0,
+    "passed": 0,
+    "running": 0,
+    "total": 1
+  },
+  "apis": [
+    {
+      "apiID": 92,
+      "projectID": 5,
+      "usecaseID": 22,
+      "usecaseOrder": 0,
+      "apiResponse": "",
+      "assertResult": "",
+      "status": "Created",
+      "apiInfo": "{\"headers\":[],\"method\":\"GET\",\"url\":\"baidu\",\"name\":\"接口2\",\"params\":[],\"body\":{\"type\":\"none\",\"content\":\"\"},\"outParams\":[],\"asserts\":[[]],\"apiRequest\":\"\"}"
+    },
+    {
+      "apiInfo": "{\"headers\":[],\"method\":\"GET\",\"url\":\"terminus\",\"name\":\"接口3\",\"params\":[],\"body\":{\"type\":\"none\",\"content\":\"\"},\"outParams\":[],\"asserts\":[[]]}"
+    }
+  ],
+  "attachments": null,
+  "bugIDs": null,
+  "createdAt": "2020-08-20T17:20:41+08:00",
+  "creatorID": "2",
+  "desc": "",
+  "labelIDs": null,
+  "labels": null,
+  "name": "14二级目录1-用例1",
+  "preCondition": "14二级目录1-用例1",
+  "priority": "P3",
+  "projectID": "5",
+  "recycled": false,
+  "stepAndResults": [
+    {
+      "result": "14二级目录1-用例1",
+      "step": "14二级目录1-用例1"
+    }
+  ],
+  "testSetID": 52,
+  "updatedAt": "2020-08-21T13:34:34+08:00",
+  "updaterID": "2"
+}
+
+### 测试用例 - 批量更新
+POST {{qa}}/api/testcases/actions/batch-update
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testCaseIDs": [
+    1,
+    2
+  ],
+  "priority": "P2",
+  "recycled": true,
+  "moveToTestSetID": 3
+}
+
+### 测试用例 - 批量复制
+POST {{qa}}/api/testcases/actions/batch-copy
+User-ID: 2
+Content-Type: application/json
+
+{
+  "copyToTestSetID": 5,
+  "projectID": 4,
+  "testCaseIDs": [
+    19,
+    20
+  ]
+}
+
+### 测试用例 - 从回收站批量彻底删除
+DELETE {{qa}}/api/testcases/actions/batch-clean-from-recycle-bin
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testCaseIDs": [
+    47
+  ]
+}
+
+### 测试用例 - 导出 Excel
+GET {{qa}}/api/testcases/actions/export?fileType=excel&pageNo=1&projectID=5&recycled=false&testCaseIDs=130&testCaseIDs=125&testSetID=0
+User-ID: 2
+
+### 测试用例 - 导入 excel
+POST {{qa}}/api/testcases/actions/import?fileType=excel&testSetID=0&projectID=5
+User-ID: 2
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="测试用例.xlsx"
+
+< /tmp/测试用例.xlsx
+--WebAppBoundary--
+
+### 测试用例 - 导出 XMind
+GET {{qa}}/api/testcases/actions/export?fileType=xmind&pageNo=1&projectID=5&recycled=false&testCaseID=285&testCaseID=286&testSetID=105
+User-ID: 2
+
+### 测试用例 - 导入 XMind
+POST {{qa}}/api/testcases/actions/import?projectID=5&fileType=xmind&testSetID=179
+User-ID: 2
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="测试用例.xlsx"
+
+< /Users/sfwn/Downloads/Dice3.18-研发效能.xmind
+
+--WebAppBoundary--
+
+### 测试集 - 创建
+POST {{qa}}/api/testsets
+User-ID: 2
+Content-Type: application/json
+
+{
+  "projectID": 4,
+  "parentID": 0,
+  "name": "项目4 根测试集1"
+}
+
+### 测试集 - 详情
+GET {{qa}}/api/testsets/1
+
+### 测试集 - 列表
+GET {{qa}}/api/testsets?projectID=4&parentID=1&recycled=false
+User-ID: 2
+
+### 测试集 - 更新 测试集名称
+PUT {{qa}}/api/testsets/5
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testSetID": 4,
+  "name": "修改名称",
+  "moveToParentID": 7
+}
+
+### 测试集 - 更新 移动
+PUT {{qa}}/api/testsets/5
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testSetID": 4,
+  "moveToParentID": 7
+}
+
+### 测试集 - 拷贝 (递归子测试集和测试用例)
+POST {{qa}}/api/testsets/51/actions/copy
+User-ID: 2
+Content-Type: application/json
+
+{
+  "copyToTestSetID": 0
+}
+
+### 测试集 - 回收
+POST {{qa}}/api/testsets/114/actions/recycle
+User-ID: 2
+
+### 测试集 - 从回收站彻底删除测试集 (递归子测试集和测试用例)
+DELETE {{qa}}/api/testsets/124/actions/clean-from-recycle-bin
+User-ID: 2
+
+### 测试集 - 从回收站恢复测试集 (递归子测试集和测试用例)
+POST {{qa}}/api/testsets/120/actions/recover-from-recycle-bin
+User-ID: 2
+Content-Type: application/json
+
+{
+  "recoverToTestSetID": 0
+}
+
+### 测试计划 - 创建
+POST {{qa}}/api/testplans
+User-ID: 2
+Content-Type: application/json
+
+{
+  "name": "qa.http 创建的测试计划1",
+  "ownerID": "3",
+  "partnerIDs": [
+    "1",
+    "2",
+    "3"
+  ],
+  "projectID": 26
+}
+
+### 测试计划 - 详情
+GET {{qa}}/api/testplans/2
+User-ID: 2
+
+### 测试计划 - 分页查询
+GET {{qa}}/api/testplans?projectID=26&name=qa&status=DOING&status=DONE&ownerID=4
+User-ID: 2
+
+### 测试计划 - 分页查询 我创建的或我参与的
+GET localhost:9094/api/testplans?projectID=26&userID=2
+User-ID: 2
+
+### 测试计划 - 更新
+PUT {{qa}}/api/testplans/18
+User-ID: 2
+Content-Type: application/json
+
+{
+  "name": "xxx",
+  "ownerID": "1",
+  "partnerIDs": [
+    "3",
+    "1",
+    "2"
+  ],
+  "summary": "我更新了一下总结",
+  "timestampSecStartedAt": 1596079235,
+  "timestampSecEndedAt": 1596088235
+}
+
+### 测试计划 - 批量关联测试用例
+POST {{qa}}/api/testplans/19/testcase-relations
+User-ID: 2
+Content-Type: application/json
+
+{
+  "testCaseIDs": [
+    66
+  ],
+  "testSetIDs": [
+    0
+  ]
+}
+
+### 测试计划 - 分页查询测试用例关联
+GET {{qa}}/api/testplans/664/testcase-relations?pageNo=1&pageSize=15&testSetID=6262&recycled=false&execStatus=INIT
+User-ID: 92
+
+### 测试计划 - 测试用例关联详情
+GET {{qa}}/api/testplans/19/testcase-relations/36
+User-ID: 2
+
+### 测试计划 - 用例关联关系列表 内部查询
+GET {{qa}}/api/testplans/testcase-relations/actions/internal-list
+User-ID: 2
+
+### 测试计划 - 测试用例关联 新增 缺陷关联
+POST {{qa}}/api/testplans/2/testcase-relations/84/actions/add-issue-relations
+User-ID: 1000005
+Content-Type: application/json
+
+{
+  "issueIDs": [
+    74
+  ]
+}
+
+### 测试计划 - 测试用例关联 解除 缺陷关联
+POST {{qa}}/api/testplans/19/testcase-relations/35/actions/remove-issue-relations
+User-ID: 2
+Content-Type: application/json
+
+{
+  "issueTestCaseRelationIDs": [
+    14
+  ]
+}
+
+### 测试计划 - 用例关联批量更新执行人、执行状态
+POST {{qa}}/api/testplans/4/testcase-relations/actions/batch-update
+User-ID: 2
+Content-Type: application/json
+
+{
+  "relationIDs": [
+    1,
+    2
+  ],
+  "executorID": "3",
+  "execStatus": "DOING"
+}
+
+### 测试计划 - 用例关联批量删除
+POST {{qa}}/api/testplans/7/testcase-relations/actions/batch-update
+User-ID: 2
+Internal-Client: true
+Content-Type: application/json
+
+{
+  "relationIDs": [
+    1,
+    2
+  ],
+  "testSetID": 215,
+  "delete": true
+}
+
+### 测试计划 - 执行接口测试
+POST {{qa}}/api/testplans/4/actions/execute-apitest
+User-ID: 2
+Content-Type: application/json
+
+{
+  "envID": 1,
+  "testCaseIDs": [
+    48,
+    49,
+    50
+  ]
+}
+
+### 测试计划 - 测试集列表
+GET {{qa}}/api/testplans/4/testsets?parentTestSetID=19
+User-ID: 2
+
+### 测试计划 - 导出测试计划下的测试用例
+GET {{qa}}/api/testplans/2/actions/export?projectID=5&fileType=excel
+User-ID: 2
+Lang: en-US
+
+### 测试计划 - 生成测试报告
+GET {{qa}}/api/testplans/19/actions/generate-report
+User-ID: 2
+
+### API - 更新
+PUT {{qa}}/api/apitests/88
+Content-Type: application/json
+
+{
+  "apiInfo": "{}"
+}
