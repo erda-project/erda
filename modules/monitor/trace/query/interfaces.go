@@ -13,6 +13,10 @@
 
 package query
 
+import (
+	"github.com/gocql/gocql"
+)
+
 type (
 	SpanQueryAPI interface {
 		SelectSpans(traceId string, limit int64) []map[string]interface{}
@@ -20,5 +24,19 @@ type (
 )
 
 func (p *provider) SelectSpans(traceId string, limit int64) []map[string]interface{} {
-	return p.selectSpans(traceId, limit)
+	return p.spansResult(traceId, limit)
+}
+
+func (p *provider) selectSpans(traceId string, limit int64) *gocql.Iter {
+	return p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", traceId, limit).
+		Consistency(gocql.All).RetryPolicy(nil).Iter()
+}
+
+func (p *provider) spansResult(traceId string, limit int64) []map[string]interface{} {
+	iter := p.selectSpans(traceId, limit)
+	list := make([]map[string]interface{}, 0, 10)
+	for row := make(map[string]interface{}, 0); iter.MapScan(row); {
+		list = append(list, row)
+	}
+	return list
 }

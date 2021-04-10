@@ -64,19 +64,6 @@ func (p *provider) Close() error {
 	return nil
 }
 
-func (p *provider) selectSpans(traceId string, limit int64) []map[string]interface{} {
-	query := p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", traceId, limit)
-
-	iter := query.Consistency(gocql.All).RetryPolicy(nil).Iter()
-
-	list := make([]map[string]interface{}, 0, 10)
-	for row := make(map[string]interface{}, 0); iter.MapScan(row); {
-		list = append(list, row)
-	}
-
-	return list
-}
-
 func init() {
 	servicehub.RegisterProvider("trace-query", &define{})
 }

@@ -109,6 +109,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	return p.output.cassandra.Write(span)
 }
 
+// metricToSpan .
 func metricToSpan(metric *metrics.Metric) (*trace.Span, error) {
 	var span trace.Span
 	span.Tags = metric.Tags
@@ -156,6 +157,7 @@ func metricToSpan(metric *metrics.Metric) (*trace.Span, error) {
 	return &span, nil
 }
 
+// toInt64 .
 func toInt64(obj interface{}) (int64, error) {
 	switch val := obj.(type) {
 	case int:
@@ -167,7 +169,7 @@ func toInt64(obj interface{}) (int64, error) {
 	case int32:
 		return int64(val), nil
 	case int64:
-		return int64(val), nil
+		return val, nil
 	case uint:
 		return int64(val), nil
 	case uint8:
@@ -192,11 +194,16 @@ func toInt64(obj interface{}) (int64, error) {
 	return 0, fmt.Errorf("invalid type")
 }
 
+// toSpan . Span data is generated from various language agents.
 func toSpan(span *trace.Span) *metrics.Metric {
 	metric := &metrics.Metric{
 		Name: "span",
 		Tags: map[string]string{
-			"_lt": "transient",
+			"_lt":            "transient",
+			"trace_id":       span.TraceID,
+			"span_id":        span.SpanID,
+			"parent_span_id": span.ParentSpanID,
+			"operation_name": span.OperationName,
 		},
 		Fields: map[string]interface{}{
 			"start_time": span.StartTime,
