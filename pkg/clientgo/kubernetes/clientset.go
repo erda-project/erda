@@ -60,6 +60,7 @@ import (
 	erdaappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
 	erdabatchv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/batch/v1"
 	erdacorev1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/core/v1"
+	erdaextensionsv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/extensions/v1beta1"
 	erdapolicyv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/policy/v1beta1"
 )
 
@@ -335,6 +336,10 @@ func NewKubernetesClientSet(addr string) (*Clientset, error) {
 		return nil, err
 	}
 	cs.DiscoveryClient, err = erdadiscovery.NewDiscoveryClient(addr)
+	if err != nil {
+		return nil, err
+	}
+	cs.extensionsV1beta1, err = erdaextensionsv1beta1.NewExtensionsV1beta1Client(addr)
 	if err != nil {
 		return nil, err
 	}

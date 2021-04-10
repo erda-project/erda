@@ -51,11 +51,11 @@ func (k *Kubernetes) DeleteService(namespace, name string) error {
 	return k.service.Delete(namespace, name)
 }
 
-// 服务描述中的端口变化会导致services及ingress的变化
+// Port changes in the service description will cause changes in services and ingress
 func (k *Kubernetes) updateService(service *apistructs.Service) error {
-	// service.Ports为空表明期望无service
+	// Service.Ports is empty, indicating that no service is expected
 	if len(service.Ports) == 0 {
-		// 更新前有service, 期望无service, 则删除service
+		// There is a service before the update, if there is no service, delete the servicece
 		if err := k.DeleteService(service.Namespace, service.Name); err != nil {
 			return err
 		}
@@ -68,13 +68,13 @@ func (k *Kubernetes) updateService(service *apistructs.Service) error {
 		return errors.Errorf("failed to get service, name: %s, (%v)", service.Name, getErr)
 	}
 
-	// 如果没有找到，则新建 k8s service
+	// If not found, create a new k8s service
 	if getErr == k8serror.ErrNotFound {
 		if err := k.CreateService(service); err != nil {
 			return err
 		}
 	} else {
-		// 更新前有service，期望有service，则更新service
+		// If there is service before the update, if there is a service, then update the service
 		desiredService := newService(service)
 
 		if diffServiceMetadata(desiredService, svc) {
@@ -126,7 +126,7 @@ func newService(service *apistructs.Service) *apiv1.Service {
 			// TODO: name?
 			Name: strutil.Concat(strings.ToLower(port.Protocol), "-", strconv.Itoa(i)),
 			Port: int32(port.Port),
-			// Dice上用户只填写Port, 即Port(service暴露的端口)和targetPort(容器暴露的端口)相同
+			// The user on Dice only fills in Port, that is, Port (port exposed by service) and targetPort (port exposed by container) are the same
 			TargetPort: intstr.FromInt(port.Port),
 			// Append protocol feature, Protocol Type contains TCP, UDP, SCTP
 			Protocol: port.L4Protocol,

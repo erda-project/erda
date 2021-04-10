@@ -46,7 +46,7 @@ type ServiceInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName         string `gorm:"type:varchar(64);index"`
 	OrgID           string `gorm:"type:varchar(64);index"`
 	ProjectName     string `gorm:"type:varchar(64);index"`
@@ -78,7 +78,7 @@ type InstanceInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName             string `gorm:"type:varchar(64);index"`
 	OrgID               string `gorm:"type:varchar(64);index"`
 	ProjectName         string `gorm:"type:varchar(64);index"`
@@ -96,7 +96,7 @@ type InstanceInfo struct {
 	AddonID     string
 
 	Meta string
-	// 如果是k8s,值为"k8s"
+	// If it is k8s, the value is "k8s"
 	TaskID string `gorm:"type:varchar(150);index"`
 
 	Phase       InstancePhase
@@ -140,7 +140,7 @@ type PodInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName         string `gorm:"type:varchar(64);index"`
 	OrgID           string `gorm:"type:varchar(64);index"`
 	ProjectName     string `gorm:"type:varchar(64);index"`

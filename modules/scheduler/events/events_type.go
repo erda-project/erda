@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	// status_update_event 定义的状态
+	// status_update_event state
 	KILLING     = "TASK_KILLING"
 	KILLED      = "TASK_KILLED"
 	RUNNING     = "TASK_RUNNING"
@@ -37,60 +37,60 @@ const (
 	UNKNOWN     = "TASK_UNKNOWN"
 	UNREACHABLE = "TASK_UNREACHABLE"
 
-	// instance 状态
+	// instance state
 	INSTANCE_RUNNING  = "Running"
 	INSTANCE_FAILED   = "Failed"
 	INSTANCE_FINISHED = "Finished"
 	INSTANCE_KILLED   = "Killed"
-	// instance_health_changed_event 封装后的状态
-	// instance 和 service 共用
+	// instance_health_changed_event state after packaging
+	// instance and service shared
 	HEALTHY   = "Healthy"
 	UNHEALTHY = "UnHealthy"
 
 	WATCHED_DIR = "/dice/service/"
 
-	// 调用eventbox时发送方名字的后缀, 用于区分发事件的阶段
-	// 初始化executor阶段发送的事件
+	// The suffix of the sender's name when eventbox is called, used to zone the stage of event distribution
+	//The events sent by the initialize executor phase
 	SUFFIX_INIT = "_INIT"
-	// 周期性补偿阶段发的事件
+	// Events in the periodic compensation phase
 	SUFFIX_PERIOD = "_PERIOD"
-	// 其他时期的普通时间到的事件
+	// Events in other periods on ordinary time
 	SUFFIX_NORMAL = "_NORMAL"
-	// 暂时为edas事件指定的前缀
+	// Temporarily assigned prefix for edas event
 	SUFFIX_EDAS = "_EDAS"
-	// EDASV2 周期性补偿阶段发的事件
+	// EDASV2 Events in the periodic compensation phase
 	SUFFIX_EDASV2_PERIOD = "_EDASV2_PERIOD"
-	// EDASV2 增量事件
+	// EDASV2 Incremental event
 	SUFFIX_EDASV2_NORMAL = "_EDASV2_NORMAL"
-	// EDASV2 初始事件
+	// EDASV2 Initial event
 	SUFFIX_EDASV2_INIT = "_EDASV2_INIT"
-	// K8S 周期性补偿阶段发的事件
+	// K8S Events in the periodic compensation phase
 	SUFFIX_K8S_PERIOD = "_K8S_PERIOD"
-	// K8S 增量事件
+	// K8S Incremental event
 	SUFFIX_K8S_NORMAL = "_K8S_NORMAL"
-	// K8S 初始事件
+	// K8S Initial event
 	SUFFIX_K8S_INIT = "_K8S_INIT"
 
-	// 事件类型
-	// 计算得出的事件，对应SUFFIX_NORMAL
+	// Event type
+	// The calculated event corresponds to SUFFIX_NORMAL
 	EVENTS_INCR = "increment"
-	// 初始化或者周期性补偿的事件，对应SUFFIX_INIT和SUFFIX_PERIOD
+	//Initialization or periodic compensation event，corresponds to SUFFIX_INIT和SUFFIX_PERIOD
 	EVENTS_TOTAL = "total"
 
-	// instance 后缀, 作为key一部分存储于lstore, 标识实例开始健康检查的时间
+	// instance suffix, which is stored in lstore as part of the key, identifies the time when the instance starts the health check
 	START_HC_TIME_SUFFIX = "_start_hc_time"
 
-	// 判断健康检查超时的左窗口边缘, 包含 interval(15s) 的时间
+	// Determine the left window edge of the health check timeout, including the interval(15s) time
 	LEFT_EDGE int64 = -20
-	// 判断健康检查超时的右窗口边缘, 考虑 sigterm 干不掉容器, 等待一段时间(20s~30s)后收到 sigkill 退出
+	// Determine the right window edge of the health check timeout, consider that sigterm cannot kill the container, wait for a period of time (20s~30s) and then receive sigkill exit
 	RIGHT_DEGE int64 = 40
 
-	// marathon 实例状态变化事件类型
+	// marathon event type of instance state change
 	STATUS_UPDATE_EVENT = "status_update_event"
-	// marathon 实例健康变化类型
+	// marathon type of instance health change
 	INSTANCE_HEALTH_CHANGED_EVENT = "instance_health_changed_event"
 
-	// 调度器实例变化事件，根据上述两类事件处理得出
+	// The scheduler instance change event is processed according to the above two types of events
 	INSTANCE_STATUS = "instances-status"
 )
 
@@ -130,21 +130,21 @@ type Notifier interface {
 
 type EventMgr struct {
 	ctx context.Context
-	// 记录所有executor的callback函数的map
+	//Record the map of callback functions of all executors
 	executorCbMap sync.Map
-	// watch WATCHED_DIR 路径，同步到 executor 的本地缓存中
-	// 1, 用于计算增量状态事件
-	// 2, 用于初始化和定期补偿事件
+	// watch WATCHED_DIR path, synchronized to the local cache of the executor
+	// 1, Used to calculate incremental state events
+	// 2, Used for initialization and periodic compensation events
 	MemEtcdStore jsonstore.JsonStore
 
 	notifier Notifier
 }
 
-// 塞到eventbox里的结构体
+//Structure stuffed into eventbox
 type RuntimeEvent struct {
 	RuntimeName     string          `json:"runtimeName"`
 	ServiceStatuses []ServiceStatus `json:"serviceStatuses,omitempty"`
-	// 临时字段，标识对应的runtime是否被删除
+	// Temporary field, which identifies whether the corresponding runtime is deleted
 	IsDeleted bool   `json:"isDeleted,omitempty"`
 	EventType string `json:"eventType,omitempty"`
 }
@@ -162,13 +162,13 @@ type InstanceStatus struct {
 	ID             string `json:"id,omitempty"`
 	Ip             string `json:"ip,omitempty"`
 	InstanceStatus string `json:"instanceStatus,omitempty"`
-	// stage记录容器退出的阶段, 只体现在增量事件中的退出(Killed, Failed, Finished)事件
-	// 当前分的阶段为：
-	// a) 容器启动阶段（健康检查超时之前退出）,"BeforeHealthCheckTimeout"
-	// b) 健康检查超时阶段（被健康检查所杀）,"HealthCheckTimeout"
-	// c) 后健康检查阶段（健康检查完成后退出）,"AfterHealthCheckTimeout"
+	// stage records the exit stage of the container, which is only reflected in the exit (Killed, Failed, Finished) event in the incremental event
+	// The current phases are:
+	// a) Container startup phase (exit before health check timeout),"BeforeHealthCheckTimeout"
+	// b) Health check timeout period (killed by health check）,"HealthCheckTimeout"
+	// c) Post-health check stage (exit after the health check is completed),"AfterHealthCheckTimeout"
 	Stage string `json:"stage,omitempty"`
-	// 扩展字段
+	// Extended field
 	Extra map[string]interface{} `json:"extra,omitempty"`
 }
 
@@ -221,7 +221,7 @@ func mergeMap(main map[string]interface{}, minor map[string]interface{}) map[str
 	return m
 }
 
-// 将 message 写入 etcd
+// Write message to etcd
 func (n *NotifierImpl) Send(content interface{}, options ...OpOperation) error {
 	option := &Op{}
 	for _, op := range options {

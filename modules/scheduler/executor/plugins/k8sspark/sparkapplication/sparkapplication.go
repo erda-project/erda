@@ -139,7 +139,7 @@ func (s *SparkApplication) List(namespace string) (sparkv1beta2.SparkApplication
 func (s *SparkApplication) Update(app *sparkv1beta2.SparkApplication) error {
 	var b bytes.Buffer
 
-	// FIXME: spark operator 在 ResourceVersion 不变的情况下，不进行更新
+	// FIXME: Spark operator does not update when the ResourceVersion remains unchanged
 	oriApp, err := s.Get(app.Namespace, app.Name)
 	if err == nil {
 		app.ObjectMeta.ResourceVersion = oriApp.ObjectMeta.ResourceVersion

@@ -1,0 +1,123 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package common
+
+var (
+	serialVersionUID  int64 = -802234107812549630
+	DEFAULT_PAGE_SIZE int64 = 15
+	DEFAULT_TOTAL_NUM int64 = 0
+)
+
+type Page struct {
+	SerialVersionUID *int64 `json:"serialVersionUID"`
+	PageSize         int64  `json:"pageSize"`
+	CurPage          int64  `json:"curPage"`
+	TotalNum         int64  `json:"totalNum"`
+	StartIndex       int64  `json:"startIndex"`
+	EndIndex         int64  `json:"endIndex"`
+}
+
+func NewPage() *Page {
+	return &Page{&serialVersionUID, DEFAULT_PAGE_SIZE, 1, DEFAULT_TOTAL_NUM, 0, 0}
+}
+
+func NewPage2(PageSize int64, CurPage int64) *Page {
+	return &Page{&serialVersionUID, PageSize, CurPage, DEFAULT_TOTAL_NUM, 0, 0}
+}
+
+func NewPage3(PageSize int64, CurPage int64, TotalNum int64) *Page {
+	return &Page{&serialVersionUID, PageSize, CurPage, TotalNum, 0, 0}
+}
+
+/**
+ * 获取分页后页面总数
+ */
+func (page *Page) GetTotalPageNum() int64 {
+	if page.TotalNum == 0 {
+		return 0
+	}
+	num := page.TotalNum / page.PageSize
+	if (page.TotalNum % page.PageSize) != 0 {
+		num++
+	}
+	return num
+}
+
+/**
+ * 设置每页条数
+ */
+func (page *Page) SetPageSize(size int64) {
+	page.PageSize = size
+	page.caculatIndex()
+}
+
+/**
+ * 获取每页条数
+ */
+func (page *Page) GetPageSize() int64 {
+	return page.PageSize
+}
+
+/**
+ * 获取分页当前页码
+ */
+func (page *Page) GetCurPage() int64 {
+	return page.CurPage
+}
+
+/**
+ * 设置当前页码
+ */
+func (page *Page) SetCurPage(num int64) {
+	page.CurPage = num
+	page.caculatIndex()
+}
+
+/**
+ * 获取查询结果总条数
+ */
+func (page *Page) GetTotalNum() int64 {
+	return page.TotalNum
+}
+
+/**
+ * 设置结果总条数
+ */
+func (page *Page) SetTotalNum(num int64) {
+	page.TotalNum = num
+	page.caculatIndex()
+}
+
+func (page *Page) caculatIndex() {
+	if page.CurPage < 1 {
+		page.CurPage = 1
+	}
+	if page.PageSize <= 0 {
+		page.PageSize = DEFAULT_PAGE_SIZE
+	}
+	page.StartIndex = (page.CurPage - 1) * page.PageSize
+	page.EndIndex = page.CurPage * page.PageSize
+	if page.EndIndex > page.TotalNum {
+		page.EndIndex = page.TotalNum
+	}
+
+}
+
+func (page *Page) GetStartIndex() int64 {
+	return page.StartIndex
+}
+
+func (page *Page) GetEndIndex() int64 {
+	return page.EndIndex
+}

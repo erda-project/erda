@@ -1,5 +1,15 @@
-# Author: recallsong
-# Email: songruiguo@qq.com
+# Copyright (c) 2021 Terminus, Inc.
+#
+# This program is free software: you can use, redistribute, and/or modify
+# it under the terms of the GNU Affero General Public License, version 3
+# or later ("AGPL"), as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # project info
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -25,7 +35,7 @@ VERSION_OPS := -ldflags "\
 # GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
 # GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
-GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE} CGO_CFLAGS=-Wno-undef-prefix
+GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
 
 .PHONY: build-version clean tidy
 build-all:
@@ -45,11 +55,11 @@ build-all:
 
 build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
-	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
 
 build-for-linux:
 	GOOS=linux GOARCH=amd64 make build-cross
