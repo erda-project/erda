@@ -24,7 +24,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string      { return []string{"trace-query"} }
+func (d *define) Services() []string     { return []string{"trace-query"} }
 func (d *define) Dependencies() []string { return []string{"cassandra"} }
 func (d *define) Summary() string        { return "trace query" }
 func (d *define) Description() string    { return d.Summary() }
@@ -40,14 +40,14 @@ type config struct {
 }
 
 type provider struct {
-	C                *config
-	L                logs.Logger
+	Cfg              *config
+	Log              logs.Logger
 	cassandraSession *gocql.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	c := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := c.Session(&p.C.Cassandra)
+	session, err := c.Session(&p.Cfg.Cassandra)
 	p.cassandraSession = session
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)

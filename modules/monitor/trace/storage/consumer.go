@@ -45,8 +45,8 @@ func (p *provider) initCassandra(session *gocql.Session) error {
 			AND compaction = {'class': 'org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy', 'compaction_window_size': '4', 'compaction_window_unit': 'HOURS'}
 			AND compression = {'chunk_length_in_kb': '64', 'class': 'LZ4Compressor'}
 			AND gc_grace_seconds = %d;
-		`, p.C.Output.Cassandra.GCGraceSeconds),
-		fmt.Sprintf("ALTER TABLE spans WITH gc_grace_seconds = %d;", p.C.Output.Cassandra.GCGraceSeconds),
+		`, p.Cfg.Output.Cassandra.GCGraceSeconds),
+		fmt.Sprintf("ALTER TABLE spans WITH gc_grace_seconds = %d;", p.Cfg.Output.Cassandra.GCGraceSeconds),
 	} {
 		q := session.Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
 		err := q.Exec()
@@ -54,7 +54,7 @@ func (p *provider) initCassandra(session *gocql.Session) error {
 		if err != nil {
 			return err
 		}
-		p.L.Infof("cassandra init cql: %s", stmt)
+		p.Log.Infof("cassandra init cql: %s", stmt)
 	}
 	return nil
 }
@@ -103,7 +103,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	metric = toSpan(span)
 	err = p.output.kafka.Write(metric)
 	if err != nil {
-		p.L.Errorf("fail to push kafka: %s", err)
+		p.Log.Errorf("fail to push kafka: %s", err)
 		return err
 	}
 	return p.output.cassandra.Write(span)

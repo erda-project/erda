@@ -27,7 +27,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string      { return []string{"trace-storage"} }
+func (d *define) Services() []string     { return []string{"trace-storage"} }
 func (d *define) Dependencies() []string { return []string{"kafka", "cassandra"} }
 func (d *define) Summary() string        { return "trace storage" }
 func (d *define) Description() string    { return d.Summary() }
@@ -52,8 +52,8 @@ type config struct {
 }
 
 type provider struct {
-	C      *config
-	L      logs.Logger
+	Cfg    *config
+	Log    logs.Logger
 	ttlSec int
 	kafka  kafka.Interface
 	output struct {
@@ -64,9 +64,9 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.ttlSec = int(p.C.Output.Cassandra.TTL.Seconds())
+	p.ttlSec = int(p.Cfg.Output.Cassandra.TTL.Seconds())
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := cassandra.Session(&p.C.Output.Cassandra.SessionConfig)
+	session, err := cassandra.Session(&p.Cfg.Output.Cassandra.SessionConfig)
 	p.cassandraSession = session
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
@@ -75,10 +75,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	p.output.cassandra = cassandra.NewBatchWriter(session, &p.C.Output.Cassandra.WriterConfig, p.createTraceStatement)
+	p.output.cassandra = cassandra.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createTraceStatement)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
-	w, err := p.kafka.NewProducer(&p.C.Output.Kafka)
+	w, err := p.kafka.NewProducer(&p.Cfg.Output.Kafka)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
@@ -88,11 +88,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 // Start .
 func (p *provider) Start() error {
-	return p.kafka.NewConsumer(&p.C.Input, p.invoke)
+	return p.kafka.NewConsumer(&p.Cfg.Input, p.invoke)
 }
 
 func (p *provider) Close() error {
-	p.L.Debug("not support close kafka consumer")
+	p.Log.Debug("not support close kafka consumer")
 	return nil
 }
 
