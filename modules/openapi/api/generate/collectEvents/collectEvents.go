@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	events := parseComments("../../../../vendor/github.com/erda-project/erda/apistructs")
+	events := parseComments("../../../../apistructs")
 	io.WriteString(output, "package main\n")
 	io.WriteString(output, imports())
 	writeEvents(output, events)

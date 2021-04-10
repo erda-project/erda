@@ -52,3 +52,5 @@ modules/openapi/component-protocol/generate/auto_register/auto_register.go
 # cli
 modules/cli/generated_cmd
 modules/cli/command/generate/collectCMDs.go
+# apistructs
+apistructs/generated_desc.go

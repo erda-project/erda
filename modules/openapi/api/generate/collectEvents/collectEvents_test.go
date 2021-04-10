@@ -20,6 +20,6 @@ import (
 )
 
 func TestParseComments(t *testing.T) {
-	r := parseComments("../../../../../vendor/github.com/erda-project/erda/apistructs")
+	r := parseComments("../../../../../apistructs")
 	assert.NotEqual(t, 0, len(r))
 }

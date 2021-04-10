@@ -81,8 +81,8 @@ func main() {
 	generateDoc(false, "../swagger_all.json")
 	generateEventDoc(false, "../events_all.json")
 
-	//fmt.Println("rm generated_desc.go")
-	//os.Remove("../../../../vendor/github.com/erda-project/erda/apistructs/generated_desc.go")
+	fmt.Println("rm generated_desc.go")
+	os.Remove("../../../../apistructs/generated_desc.go")
 }
 
 var SpecTemplate = template.Must(template.New("spec").Parse(`	{NewPath({{.Path}}), NewPath({{.BackendPath}}), {{.Host}}, {{.Scheme}}, {{.Method}}, {{.Custom}}, {{.CustomResponse}}, {{.Audit}}, {{.NeedDesensitize}}, {{.CheckLogin}}, {{.TryCheckLogin}}, {{.CheckToken}}, {{.CheckBasicAuth}}, {{.ChunkAPI}}, {{.MarathonHost}}, {{.K8SHost}}, {{.Port}}},

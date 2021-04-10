@@ -26,13 +26,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/generate/auto_register"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/hooks/prehandle"
 	"github.com/erda-project/erda/modules/openapi/oauth2"
+	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type LoginServer struct {
