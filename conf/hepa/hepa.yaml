@@ -1,0 +1,11 @@
+hepa:
+  server:
+    dbSources: "${MYSQL_USERNAME}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DATABASE}?charset=utf8,"
+    clusterName: ${DICE_CLUSTER_NAME}
+    hasRouteInfo: ${SERVER_HAS_ROUTE_INFO}
+    useAdminEndpoint: ${SERVER_USE_ADMIN_ENDPOINT}
+    aoneAppName: ${SERVER_AONE_APP_NAME}
+  log:
+    accessFile: "logs/access.log"
+    errorFile: "logs/error.log"
+  
