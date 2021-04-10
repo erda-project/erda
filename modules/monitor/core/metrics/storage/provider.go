@@ -27,7 +27,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string { return []string{"metrics-storage"} }
+func (d *define) Services() []string { return []string{"metrics-storage"} }
 func (d *define) Dependencies() []string {
 	return []string{"kafka", "elasticsearch", "metrics-index-manager"}
 }

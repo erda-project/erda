@@ -23,7 +23,7 @@ func Test_BuildInFunctions(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []interface{}
-		want    string
+		want    interface{}
 		wantErr bool
 	}{
 		{"default_value", []interface{}{"1", "2", "3"}, "1", true},
@@ -46,7 +46,7 @@ func Test_BuildInFunctions(t *testing.T) {
 				t.Errorf("buildInFunction() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got.(string) != tt.want {
+			if got != tt.want {
 				println(11111)
 				t.Errorf("buildInFunction() = %v, want %v", got, tt.want)
 			}

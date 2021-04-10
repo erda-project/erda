@@ -602,19 +602,3 @@ func (m *Manager) GetSingleAggregationMeta(langCodes i18n.LanguageCodes, mode, n
 	}
 	return
 }
-
-// TODO 还没想好产品形态
-// // FunctionDefine .
-// type FunctionDefine struct {
-// 	Name      string
-// 	Args      []*FunctionArg
-// 	Exclusion bool // 是否互斥，即同一个组内的函数，针对一列，是否只允许出现一次。
-// }
-
-// // FunctionArg .
-// type FunctionArg struct {
-// 	Name    string      `json:"name"`
-// 	Dynamic bool        `json:"dynamic"`
-// 	Type    TypeName    `json:"type"`
-// 	Default interface{} `json:"default"`
-// }
