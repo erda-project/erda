@@ -55,6 +55,7 @@ const (
 	DiceApplicationName   = "DICE_APPLICATION_NAME"
 	DiceWorkspaceEnv      = "DICE_WORKSPACE"
 	GittarBranchEnv       = "GITTAR_BRANCH"
+	LabelGittarYmlPath    = "gittarYmlPath"    // app snippetConfig label in order to specify the address of yml to address
 	LabelAutotestExecType = "autotestExecType" // 新版自动化测试的snippet的执行类型
 	LabelSceneSetID       = "sceneSetID"       // 新版自动化测试的场景集的 id
 	LabelSceneID          = "sceneID"          // 新版自动化测试的场景的 id
