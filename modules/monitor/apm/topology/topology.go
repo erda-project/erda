@@ -37,6 +37,7 @@ import (
 	apm "github.com/erda-project/erda/modules/monitor/apm/common"
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/olivere/elastic"
 )
 

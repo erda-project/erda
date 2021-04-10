@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/modules/monitor/common/db"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/gocql/gocql"
 	"github.com/olivere/elastic"
 )

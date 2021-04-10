@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 )
 
 func (p *provider) traceDebugRecords(r *http.Request, params struct {
@@ -88,7 +89,9 @@ func (p *provider) traces(r *http.Request, params struct {
 			where.WriteString(" errors_sum::field>$errors_sum AND ")
 		}
 	}
-	str := fmt.Sprintf("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),trace_id::tag FROM  %s %s %s %s %s ", metrics.TraceSummary, " WHERE ", where.String(), "terminus_key::tag=$terminus_key  GROUP BY trace_id::tag ORDER BY max(start_time_min::field) LIMIT ", strconv.FormatInt(params.Limit, 10))
+	str := fmt.Sprintf("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),trace_id::tag FROM  %s %s %s %s %s ",
+		"trace", " WHERE ", where.String(), "terminus_key::tag=$terminus_key  GROUP BY trace_id::tag ORDER BY max(start_time_min::field) LIMIT ",
+		strconv.FormatInt(params.Limit, 10))
 	response, err := p.metricq.Query(
 		metricq.InfluxQL,
 		str,
