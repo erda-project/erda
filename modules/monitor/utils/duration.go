@@ -43,7 +43,7 @@ func (d Duration) Duration() time.Duration {
 }
 
 // Keep the specified decimal places.
-func (d Duration) formatDuration(precision int) (string, error) {
+func (d Duration) FormatDuration(precision int) (string, error) {
 	if precision < 0 {
 		return "", fmt.Errorf("invalid precision: %v", precision)
 	}
