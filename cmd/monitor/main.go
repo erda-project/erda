@@ -18,6 +18,7 @@ import (
 
 	"github.com/erda-project/erda-infra/modcom"
 	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
+
 	// _ "github.com/erda-project/erda/modules/business/alert/alert-apis"
 	// _ "github.com/erda-project/erda/modules/business/alert/details-apis"
 	// _ "github.com/erda-project/erda/modules/business/dashboard/chart-block"
