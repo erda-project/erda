@@ -1,9 +1,23 @@
+// Copyright (c)  2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package orgapis
 
 import (
 	"fmt"
 	"net/url"
 
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
@@ -40,7 +54,7 @@ func (mqs *queryService) queryComponentStatus(componentType, clusterName string)
 }
 
 func (mqs *queryService) queryStatusWithTSQL(statement string) (statuses []*statusDTO, err error) {
-	_, data, err := mqs.metricQ.QueryWithFormat(metricq.InfluxQL, statement, "dict", "", nil, defaultDuration())
+	_, data, err := mqs.metricQ.QueryWithFormat(metricq.InfluxQL, statement, "dict", nil, nil, defaultDuration())
 	if err != nil {
 		return nil, errors.Wrap(err, "query inlfuxql failed")
 	}
