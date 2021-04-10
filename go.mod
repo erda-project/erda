@@ -11,7 +11,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
 	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.554
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
