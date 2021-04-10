@@ -16,7 +16,7 @@ package metricmeta
 import (
 	"fmt"
 
-	i18n "github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 // Aggregation .

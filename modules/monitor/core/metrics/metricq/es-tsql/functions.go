@@ -46,7 +46,7 @@ var timeLayouts = []string{
 	"2006-01-02",
 }
 
-// Custom functions in SELECT
+// BuildInFunctions is custom functions in SELECT
 var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"time": func(ctx Context, args ...interface{}) (interface{}, error) {
 		for _, arg := range args {
@@ -695,7 +695,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 	},
 }
 
-// Constant functions in SELECT
+// LiteralFunctions is constant functions in SELECT
 var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interface{}, error){
 	"interval": func(ctx Context, args ...interface{}) (interface{}, error) {
 		start, end := ctx.Range(false)
@@ -783,7 +783,7 @@ var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 	},
 }
 
-// IsFunction Check function is exist.
+// IsFunction check function is exist.
 func IsFunction(name string) bool {
 	_, ok := LiteralFunctions[name]
 	if ok {
@@ -796,7 +796,7 @@ func IsFunction(name string) bool {
 	return false
 }
 
-// MustFuncArgsNum Check whether the number of input parameters meets the equal condition.
+// MustFuncArgsNum check whether the number of input parameters meets the equal condition.
 func MustFuncArgsNum(name string, args, num int) error {
 	if args < num {
 		return fmt.Errorf("function '%s' must has %d args", name, num)
@@ -806,7 +806,7 @@ func MustFuncArgsNum(name string, args, num int) error {
 	return nil
 }
 
-// MustFuncArgsMinNum Check whether the number of input parameters meets the minimum condition.
+// MustFuncArgsMinNum check whether the number of input parameters meets the minimum condition.
 func MustFuncArgsMinNum(name string, args, num int) error {
 	if args < num {
 		return fmt.Errorf("function '%s' args must more than %d", name, num)
@@ -814,7 +814,7 @@ func MustFuncArgsMinNum(name string, args, num int) error {
 	return nil
 }
 
-// Verify both parameters entered are strings.
+// stringTrim verify both parameters entered are strings.
 func stringTrim(name string, args []interface{}, fn func(string, string) string) (interface{}, error) {
 	err := MustFuncArgsNum(name, len(args), 2)
 	if err != nil {
@@ -851,6 +851,7 @@ func getTimeArg(name string, i int, arg interface{}, layouts []string) (time.Tim
 	return time.Time{}, fmt.Errorf("function '%s' args[%d] %v is not a time", name, i, arg)
 }
 
+// getTimeValue.
 func getTimeValue(v interface{}, layouts []string) (time.Time, bool) {
 	switch val := v.(type) {
 	case int:
@@ -894,6 +895,7 @@ func getTimeValue(v interface{}, layouts []string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// GetTimestampValue.
 func GetTimestampValue(v interface{}) (int64, bool) {
 	switch val := v.(type) {
 	case int:
@@ -937,7 +939,7 @@ func GetTimestampValue(v interface{}) (int64, bool) {
 	return 0, false
 }
 
-// convertToFloat64 Convert interfaces to float64 , return false if not numerical type.
+// convertToFloat64 convert interfaces to float64 , return false if not numerical type.
 func convertToFloat64(v interface{}) (float64, bool) {
 	switch val := v.(type) {
 	case int:

@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-
 	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 	"github.com/olivere/elastic"
 )
