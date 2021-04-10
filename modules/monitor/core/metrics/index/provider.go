@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-
+//
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
-
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -27,19 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/pkg/router"
 )
-
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"telemetry-index-manager"} }
-func (d *define) Dependencies() []string { return []string{"elasticsearch", "mysql", "http-server"} }
-func (d *define) Summary() string        { return "telemetry index manager" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
 
 type config struct {
 	RequestTimeout time.Duration `file:"request_timeout" env:"METRIC_REQUEST_TIMEOUT"`
@@ -140,5 +127,13 @@ func (p *provider) Provide(name string, args ...interface{}) interface{} {
 }
 
 func init() {
-	servicehub.RegisterProvider("telemetry-index-manager", &define{})
+	servicehub.Register("metrics-index-manager", &servicehub.Spec{
+		Services:     []string{"metrics-index-manager"},
+		Dependencies: []string{"elasticsearch", "mysql", "http-server"},
+		Description:  "metrics index manager",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

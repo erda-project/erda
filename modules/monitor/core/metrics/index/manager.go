@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-
+//
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
-
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -475,7 +475,7 @@ func (m *IndexManager) reloadIndices() error {
 
 	// fmt.Println(jsonx.MarshalAndIntend(indices))
 	m.indices.Store(indices)
-	m.log.Infof("load indices %d, telemetry: %d", indexNum, len(indices))
+	m.log.Infof("load indices %d, metrics: %d", indexNum, len(indices))
 
 	// 索引已经加载，清空 created
 	m.createdLock.Lock()

@@ -622,7 +622,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		arrFloat, err := checkNumerical(args)
+		arrFloat, err := CheckNumerical(args)
 		if err != nil {
 			return nil, err
 		}
@@ -633,7 +633,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		arrFloat, err := checkNumerical(args)
+		arrFloat, err := CheckNumerical(args)
 		if err != nil {
 			return nil, err
 		}
@@ -644,7 +644,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		arrFloat, err := checkNumerical(args)
+		arrFloat, err := CheckNumerical(args)
 		if err != nil {
 			return nil, err
 		}
@@ -655,7 +655,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		arrFloat, err := checkNumerical(args)
+		arrFloat, err := CheckNumerical(args)
 		if err != nil {
 			return nil, err
 		}
@@ -783,7 +783,7 @@ var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 	},
 }
 
-// Check function is exist.
+// IsFunction Check function is exist.
 func IsFunction(name string) bool {
 	_, ok := LiteralFunctions[name]
 	if ok {
@@ -796,7 +796,7 @@ func IsFunction(name string) bool {
 	return false
 }
 
-// Check whether the number of input parameters meets the equal condition.
+// MustFuncArgsNum Check whether the number of input parameters meets the equal condition.
 func MustFuncArgsNum(name string, args, num int) error {
 	if args < num {
 		return fmt.Errorf("function '%s' must has %d args", name, num)
@@ -806,7 +806,7 @@ func MustFuncArgsNum(name string, args, num int) error {
 	return nil
 }
 
-// Check whether the number of input parameters meets the minimum condition.
+// MustFuncArgsMinNum Check whether the number of input parameters meets the minimum condition.
 func MustFuncArgsMinNum(name string, args, num int) error {
 	if args < num {
 		return fmt.Errorf("function '%s' args must more than %d", name, num)
@@ -937,7 +937,7 @@ func GetTimestampValue(v interface{}) (int64, bool) {
 	return 0, false
 }
 
-// Convert interfaces to float64 , return false if not numerical type.
+// convertToFloat64 Convert interfaces to float64 , return false if not numerical type.
 func convertToFloat64(v interface{}) (float64, bool) {
 	switch val := v.(type) {
 	case int:
@@ -970,8 +970,8 @@ func convertToFloat64(v interface{}) (float64, bool) {
 	return 0, false
 }
 
-// Check whether interfaces is a numeric type.
-func checkNumerical(v []interface{}) ([]float64, error) {
+// CheckNumerical Check whether interfaces is a numeric type.
+func CheckNumerical(v []interface{}) ([]float64, error) {
 	var arrFloat []float64
 	for index, val := range v {
 		floatVal, ok := convertToFloat64(val)
