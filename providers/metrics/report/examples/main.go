@@ -71,7 +71,7 @@ func (p *provider) Run(ctx context.Context) error {
 			},
 		},
 	}
-	client := p.SendClient.CreateReportClient(os.Getenv("COLLECTOR_ADDR"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
+	client := p.SendClient
 	err := client.Send(metric)
 	return err
 }
