@@ -2,7 +2,9 @@
 
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
-![](./docs/files/logo.jpg)
+<div align="left">
+	<img src="./docs/files/logo.jpg" alt="Editor" width="350">
+</div>
 
 ## Introduction
 
@@ -20,6 +22,13 @@ Erda is mainly composed of the following parts, they are
 - FastData Management
 
 We will gradually open source the entire function according to the workload. The first to complete will be DevOps, multi-cloud management, followed by microservice governance, edge computing, etc. IT service is a function planned in the roadmap, and it has not yet started.
+
+## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
+![](./docs/files/vision.png)
+
+## Showcase
+
+![](./docs/files/showcase.gif)
 
 ## Architecture
 
@@ -52,7 +61,9 @@ We look forward to your connecting with us, you can ask us any questions.
 - 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - 微信公众号:
 
-![](./docs/files/wechat.jpg)
+<div align="left">
+	<img src="./docs/files/wechat.jpg" alt="Editor" width="150">
+</div>
 
 
 ## License
