@@ -57,7 +57,7 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 }
 
 // Create creates a k8s namespace
-// TODO: 需要传入 namespace 结构体
+// TODO: Need to pass in the namespace structure
 func (n *Namespace) Create(ns string, labels map[string]string) error {
 	namespace := &apiv1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -160,7 +160,7 @@ func (n *Namespace) Delete(ns string) error {
 			logrus.Debugf("namespace not found, ns: %s", ns)
 			return k8serror.ErrNotFound
 		}
-		//遇到删除失败进行强制删除namespace, 将spec设置为空
+		//When the deletion fails, the namespace is forced to be deleted, and the spec is set to empty
 		if resp.StatusCode() == 409 {
 			return n.DeleteForce(ns)
 		}

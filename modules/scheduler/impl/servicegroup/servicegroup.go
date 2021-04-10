@@ -119,7 +119,7 @@ func (s ServiceGroupImpl) handleServiceGroup(ctx context.Context, sg *apistructs
 
 ///////////////////////////////////////////////////////////////////////////////
 //                   util funcs
-//  TODO: 删除以下代码中 marathon 之类的相关代码
+//  TODO: Delete related code such as marathon in the following code
 ///////////////////////////////////////////////////////////////////////////////
 
 func getServiceExecutorKindByName(name string) string {
@@ -139,7 +139,7 @@ func validateServiceGroupNamespace(namespace string) bool {
 	return len(namespace) > 0 && runtimeFormater.MatchString(namespace)
 }
 
-// servicegroup 的 executor 为空时，根据 cluster 值设置 executor
+// When the executor of the servicegroup is empty, set the executor according to the cluster value
 func setServiceGroupExecutorByCluster(sg *apistructs.ServiceGroup, clusterinfo clusterinfo.ClusterInfo) error {
 	if len(sg.Executor) > 0 {
 		return nil
@@ -148,7 +148,7 @@ func setServiceGroupExecutorByCluster(sg *apistructs.ServiceGroup, clusterinfo c
 		return errors.Errorf("servicegroup(%s/%s) neither executor nor cluster is set", sg.Type, sg.ID)
 	}
 
-	//判断是否是edas部署addon场景
+	// Determine whether it is edas deployment addon scenario
 	isEdasStatefull := isEdasStatefull(sg, clusterinfo)
 
 	if isEdasStatefull {
@@ -167,7 +167,7 @@ func isEdasStatefull(sg *apistructs.ServiceGroup, clusterinfo clusterinfo.Cluste
 		return false
 	}
 
-	//集群类型为edas,且是addon类型的service时设置edasink8s的executor
+	//Set the executor of edasink8s when the cluster type is edas and it is an addon type service
 	if info.Get(apistructs.DICE_CLUSTER_TYPE) == "edas" {
 		_, ok := sg.Labels["USE_OPERATOR"]
 		if ok {
