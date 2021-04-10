@@ -30,8 +30,8 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"default_value", []interface{}{nil, "1"}, "1", false},
 		{"default_value", []interface{}{"1", nil}, "1", false},
 		{"format", []interface{}{}, "1", true},
-		{"format", []interface{}{nil, "1"}, "1", false},
-		{"format", []interface{}{"1", nil}, "1", false},
+		{"format", []interface{}{"1"}, "1", false},
+		{"format", []interface{}{nil}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
