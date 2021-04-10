@@ -15,11 +15,12 @@ package main
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/providers/metrics/query"
-	"os"
-	"time"
 )
 
 type define struct{}
