@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/generate/auto_register"
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/httpclient"
@@ -57,50 +56,6 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 	}
 	cont = req
 	return
-}
-
-func TestDefaultOperation(t *testing.T) {
-	req := apistructs.ComponentProtocolRequest{
-		Scenario: apistructs.ComponentProtocolScenario{
-			ScenarioType: "action",
-			ScenarioKey:  "api-test",
-		},
-	}
-	auto_register.RegisterAll()
-
-	cont, err := rend(&req)
-	if err != nil {
-		t.Errorf("err:%v", err)
-	}
-	ctxByte, err := json.Marshal(*cont)
-	if err != nil {
-		t.Errorf("marshal error:%v", err)
-		return
-	}
-	t.Logf("marshal content:%s", string(ctxByte))
-	p, _ := protocol.LoadDefaultProtocol("action")
-	t.Logf("default protocol: %v", p)
-
-	req1 := apistructs.ComponentProtocolRequest{
-		Scenario: apistructs.ComponentProtocolScenario{
-			ScenarioType: "action",
-			ScenarioKey:  "git-checkout",
-		},
-	}
-
-	cont1, err := rend(&req1)
-	if err != nil {
-		t.Errorf("err:%v", err)
-	}
-	ctxByte1, err := json.Marshal(*cont1)
-	if err != nil {
-		t.Errorf("marshal error:%v", err)
-		return
-	}
-	t.Logf("marshal content:%s", string(ctxByte1))
-	p1, _ := protocol.LoadDefaultProtocol("action")
-	t.Logf("default protocol: %v", p1)
-
 }
 
 func TestStateInjectLess(t *testing.T) {

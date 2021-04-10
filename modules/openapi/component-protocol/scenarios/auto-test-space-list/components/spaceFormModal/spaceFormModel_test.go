@@ -14,30 +14,30 @@
 // ^[a-z\u4e00-\u9fa5A-Z0-9_-]*$
 package spaceFormModal
 
-import (
-	"regexp"
-	"testing"
-
-	"gotest.tools/assert"
-)
-
-func TestMatch(t *testing.T) {
-	// str := "1234daS撒_-&*("
-	// reg, _ := regexp.MatchString("[^a-z\u4e00-\u9fa5A-Z0-9_-]", str)
-	// //fmt.Println(reg.FindAllStringSubmatch(str, -1))
-	// assert.Equal(t, reg, true)
-
-	// a := regexp.MustCompile("[^a-z\u4e00-\u9fa5A-Z0-9_-]")
-	// b := regexp.MustCompile("^[a-z\u4e00-\u9fa5A-Z0-9_-]")
-	// assert.Equal(t, a, b)
-	// assert.NoError(t, err)
-	// ^[A-Za-z0-9\u4e00-\u9fa5｜\.｜_｜\-｜ ]+$
-
-	// a := regexp.MustCompile(`^[A-Za-z0-9|\\u4e00-\\u9fa5|\.|_|\-| ]+$`)
-	// a := regexp.MustCompile("^[A-Za-z0-9|\u4e00-\u9fa5|_|-]+$")
-	// matched, err := regexp.MatchString("^[a-zA-Z0-9_.|\\-|\\s|\\u4e00-\\u9fa5]+$", str)
-	// fmt.Println(matched, err)
-	a := regexp.MustCompile("^[a-zA-Z0-9_.|\\-|\\s|\u4e00-\u9fa5]+$")
-	b := a.MatchString("1234daS_.是%……&的-")
-	assert.Equal(t, b, true)
-}
+//import (
+//	"regexp"
+//	"testing"
+//
+//	"gotest.tools/assert"
+//)
+//
+//func TestMatch(t *testing.T) {
+//	// str := "1234daS撒_-&*("
+//	// reg, _ := regexp.MatchString("[^a-z\u4e00-\u9fa5A-Z0-9_-]", str)
+//	// //fmt.Println(reg.FindAllStringSubmatch(str, -1))
+//	// assert.Equal(t, reg, true)
+//
+//	// a := regexp.MustCompile("[^a-z\u4e00-\u9fa5A-Z0-9_-]")
+//	// b := regexp.MustCompile("^[a-z\u4e00-\u9fa5A-Z0-9_-]")
+//	// assert.Equal(t, a, b)
+//	// assert.NoError(t, err)
+//	// ^[A-Za-z0-9\u4e00-\u9fa5｜\.｜_｜\-｜ ]+$
+//
+//	// a := regexp.MustCompile(`^[A-Za-z0-9|\\u4e00-\\u9fa5|\.|_|\-| ]+$`)
+//	// a := regexp.MustCompile("^[A-Za-z0-9|\u4e00-\u9fa5|_|-]+$")
+//	// matched, err := regexp.MatchString("^[a-zA-Z0-9_.|\\-|\\s|\\u4e00-\\u9fa5]+$", str)
+//	// fmt.Println(matched, err)
+//	a := regexp.MustCompile("^[a-zA-Z0-9_.|\\-|\\s|\u4e00-\u9fa5]+$")
+//	b := a.MatchString("1234daS_.是%……&的-")
+//	assert.Equal(t, b, true)
+//}

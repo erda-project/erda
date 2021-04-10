@@ -15,35 +15,30 @@ package http
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os/exec"
 	"strings"
-	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestHTTP(t *testing.T) {
-	kill, err := RunAHTTPServer(12345, "content")
-	assert.Nil(t, err)
-	defer kill()
-	director := func(r *http.Request) {
-		r.URL.Scheme = "http"
-		r.URL.Host = "127.0.0.1:12345"
-		r.Header.Set("Origin", "http://127.0.0.1:12345")
-	}
-	p := NewReverseProxy(director, nil)
-	go http.ListenAndServe("127.0.0.1:6666", p)
-	time.Sleep(1000 * time.Millisecond)
-	r, err := http.Get("http://127.0.0.1:6666")
-	assert.Nil(t, err)
-	body, err := ioutil.ReadAll(r.Body)
-	assert.Nil(t, err)
-	assert.Equal(t, "content", string(body))
-
-}
+//func TestHTTP(t *testing.T) {
+//	kill, err := RunAHTTPServer(12345, "content")
+//	assert.Nil(t, err)
+//	defer kill()
+//	director := func(r *http.Request) {
+//		r.URL.Scheme = "http"
+//		r.URL.Host = "127.0.0.1:12345"
+//		r.Header.Set("Origin", "http://127.0.0.1:12345")
+//	}
+//	p := NewReverseProxy(director, nil)
+//	go http.ListenAndServe("127.0.0.1:6666", p)
+//	time.Sleep(1000 * time.Millisecond)
+//	r, err := http.Get("http://127.0.0.1:6666")
+//	assert.Nil(t, err)
+//	body, err := ioutil.ReadAll(r.Body)
+//	assert.Nil(t, err)
+//	assert.Equal(t, "content", string(body))
+//
+//}
 
 // return (kill_function, error)
 func RunAHTTPServer(port int, content string) (func() error, error) {

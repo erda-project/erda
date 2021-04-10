@@ -18,11 +18,11 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/modules/pkg/innerdomain"
 	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
 var ORCHESTRATOR_MICRO_SERVICE_PROJECTS = apis.ApiSpec{

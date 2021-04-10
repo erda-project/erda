@@ -29,8 +29,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var (

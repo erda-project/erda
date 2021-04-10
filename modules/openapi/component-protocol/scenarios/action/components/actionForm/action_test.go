@@ -14,70 +14,40 @@
 package action
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/pkg/httpclient"
 )
 
-func TestParamProps(t *testing.T) {
-	os.Setenv("DICEHUB_ADDR", "dicehub.default.svc.cluster.local:10000")
-	bundleOpts := []bundle.Option{
-		bundle.WithHTTPClient(
-			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*60),
-			)),
-		bundle.WithDiceHub(),
-	}
-	bdl := bundle.New(bundleOpts...)
-	comp := ComponentAction{
-		ctxBdl: protocol.ContextBundle{
-			Bdl:         bdl,
-			I18nPrinter: nil,
-			Identity:    apistructs.Identity{},
-			InParams:    nil,
-		},
-	}
-	err := comp.GenActionProps("git-checkout", "")
-	if err != nil {
-		t.Errorf("generate rops failed, error:%v", err)
-	}
-	t.Logf("param props: %+v", comp.Props)
-}
-
-func TestBuildPack(t *testing.T) {
-	os.Setenv("DICEHUB_ADDR", "dicehub.default.svc.cluster.local:10000")
-	bundleOpts := []bundle.Option{
-		bundle.WithHTTPClient(
-			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*60),
-			)),
-		bundle.WithDiceHub(),
-	}
-	bdl := bundle.New(bundleOpts...)
-	comp := ComponentAction{
-		ctxBdl: protocol.ContextBundle{
-			Bdl:         bdl,
-			I18nPrinter: nil,
-			Identity:    apistructs.Identity{},
-			InParams:    nil,
-		},
-	}
-	err := comp.GenActionProps("buildpack", "")
-	if err != nil {
-		t.Errorf("generate rops failed, error:%v", err)
-	}
-	t.Logf("param props: %+v", comp.Props)
-	cont, _ := json.Marshal(comp.Props)
-	t.Logf("content:%s", string(cont))
-}
+//func TestBuildPack(t *testing.T) {
+//	os.Setenv("DICEHUB_ADDR", "dicehub.default.svc.cluster.local:10000")
+//	bundleOpts := []bundle.Option{
+//		bundle.WithHTTPClient(
+//			httpclient.New(
+//				httpclient.WithTimeout(time.Second, time.Second*60),
+//			)),
+//		bundle.WithDiceHub(),
+//	}
+//	bdl := bundle.New(bundleOpts...)
+//	comp := ComponentAction{
+//		ctxBdl: protocol.ContextBundle{
+//			Bdl:         bdl,
+//			I18nPrinter: nil,
+//			Identity:    apistructs.Identity{},
+//			InParams:    nil,
+//		},
+//	}
+//	err := comp.GenActionProps("buildpack", "")
+//	if err != nil {
+//		t.Errorf("generate rops failed, error:%v", err)
+//	}
+//	t.Logf("param props: %+v", comp.Props)
+//	cont, _ := json.Marshal(comp.Props)
+//	t.Logf("content:%s", string(cont))
+//}
 
 func TestLoadProtocolFromFile(t *testing.T) {
 	path := "../../protocol.yml"

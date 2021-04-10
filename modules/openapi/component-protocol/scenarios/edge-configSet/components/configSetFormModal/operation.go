@@ -16,10 +16,11 @@ package configsetformmodal
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
 	"regexp"
+
+	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ComponentFormModal struct {

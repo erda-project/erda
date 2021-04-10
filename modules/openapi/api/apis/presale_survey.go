@@ -43,7 +43,7 @@ var PRESALE_SURVEY = ApiSpec{
 		msg := apistructs.MessageCreateRequest{
 			Sender: "survey",
 			Labels: map[apistructs.MessageLabel]interface{}{
-				apistructs.DingdingLabel: []apistructs.Target{apistructs.Target{Receiver: conf.SurveyDingding(), Secret: ""}},
+				apistructs.DingdingLabel: []apistructs.Target{{Receiver: conf.SurveyDingding(), Secret: ""}},
 			},
 			Content: content,
 		}

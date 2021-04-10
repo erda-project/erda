@@ -108,7 +108,7 @@ func (mp *MarketProto) Render(ctx context.Context, c *apistructs.Component, scen
 			return err
 		}
 		c.Data["list"] = []apistructs.APIOperationSummary{
-			apistructs.APIOperationSummary{
+			{
 				ID:          opreationData.Meta.APISpecID,
 				OperationID: apiSpec.OperationID,
 				Path:        apiSpec.Path,
@@ -142,7 +142,7 @@ func (mp *MarketProto) Render(ctx context.Context, c *apistructs.Component, scen
 			return err
 		}
 		c.Data["list"] = []apistructs.APIOperationSummary{
-			apistructs.APIOperationSummary{
+			{
 				ID:          step.APISpecID,
 				OperationID: apiSpec.OperationID,
 				Path:        apiSpec.Path,

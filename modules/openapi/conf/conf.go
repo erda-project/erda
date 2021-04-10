@@ -17,10 +17,11 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/sirupsen/logrus"
-	"github.com/erda-project/erda/modules/openapi/i18n"
 )
 
 type Conf struct {

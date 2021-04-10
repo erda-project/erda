@@ -15,10 +15,8 @@ package issueGantt
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -61,26 +59,26 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 	return
 }
 
-func TestRender(t *testing.T) {
-	req := apistructs.ComponentProtocolRequest{
-		Scenario: apistructs.ComponentProtocolScenario{
-			ScenarioKey:  "issueGantt",
-			ScenarioType: "issue-manage",
-		},
-		Event: apistructs.ComponentEvent{
-			Component: "",
-			Operation: "",
-		},
-		InParams: map[string]interface{}{"projectId": "11"},
-	}
-	content, err := rend(&req)
-	ctxByte, err := json.Marshal(*content)
-	if err != nil {
-		t.Errorf("marshal error:%v", err)
-		return
-	}
-	t.Logf("marshal content:%s", string(ctxByte))
-}
+//func TestRender(t *testing.T) {
+//	req := apistructs.ComponentProtocolRequest{
+//		Scenario: apistructs.ComponentProtocolScenario{
+//			ScenarioKey:  "issueGantt",
+//			ScenarioType: "issue-manage",
+//		},
+//		Event: apistructs.ComponentEvent{
+//			Component: "",
+//			Operation: "",
+//		},
+//		InParams: map[string]interface{}{"projectId": "11"},
+//	}
+//	content, err := rend(&req)
+//	ctxByte, err := json.Marshal(*content)
+//	if err != nil {
+//		t.Errorf("marshal error:%v", err)
+//		return
+//	}
+//	t.Logf("marshal content:%s", string(ctxByte))
+//}
 
 //func TestFilter(t *testing.T) {
 //	os.Setenv("CMDB_ADDR", "cmdb.default.svc.cluster.local:9093")

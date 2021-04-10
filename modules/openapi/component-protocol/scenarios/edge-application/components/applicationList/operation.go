@@ -17,11 +17,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	appconfigform "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/components/appConfigForm"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	appconfigform "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/components/appConfigForm"
 )
 
 type ComponentList struct {

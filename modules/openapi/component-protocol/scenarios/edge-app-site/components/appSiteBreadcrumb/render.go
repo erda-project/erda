@@ -15,9 +15,9 @@ package appsitebreadcrumb
 
 import (
 	"context"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func (c ComponentBreadCrumb) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {

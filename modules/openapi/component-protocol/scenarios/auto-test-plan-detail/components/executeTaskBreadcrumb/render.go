@@ -151,7 +151,7 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 		a.Data = map[string]interface{}{"list": lists}
 		a.State.PipelineID, err = strconv.ParseUint(ret.Meta.Key, 10, 64)
 		if err != nil {
-			logrus.Error("pipelineId ParseUint failed, err: %v", err)
+			logrus.Errorf("pipelineId ParseUint failed, err: %v", err)
 			return err
 		}
 	}

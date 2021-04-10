@@ -26,11 +26,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	apispec "github.com/erda-project/erda/modules/openapi/api/spec"
+	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	apispec "github.com/erda-project/erda/modules/openapi/api/spec"
-	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
 type GetUserState int
