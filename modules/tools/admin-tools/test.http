@@ -1,0 +1,7 @@
+@url = http://localhost:7098
+
+### envs
+GET {{url}}/api/admin/envs
+
+### indices
+GET {{url}}/api/admin/es/indices
