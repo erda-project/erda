@@ -93,11 +93,16 @@ func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db.NotifyConfig, 
 				"zh-CN",
 				"en-US",
 			},
-			Render: model.Render{
-				Formats:  c.Formats[i],
-				Title:    c.Title[i],
-				Template: c.Template[i],
-			},
+			Render: model.Render{},
+		}
+		if len(c.Formats)-1 >= i {
+			template.Render.Formats = c.Formats[i]
+		}
+		if len(c.Title)-1 >= i {
+			template.Render.Title = c.Title[i]
+		}
+		if len(c.Template)-1 >= i {
+			template.Render.Template = c.Template[i]
 		}
 		templates = append(templates, template)
 	}
