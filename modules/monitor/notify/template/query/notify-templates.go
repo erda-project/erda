@@ -23,9 +23,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//初始化解析配置文件
-
 var (
+	//notify template configuration file
 	templateMap map[string]model.Model
 )
 
@@ -36,7 +35,7 @@ func getAllNotifyTemplates() (list []model.Model) {
 	return
 }
 
-//获取告警通知的下拉列表
+//obtain notify template list
 func getNotifyTemplateList(scope, name, nType string) (list []*model.GetNotifyRes) {
 	for _, v := range templateMap {
 		if len(v.Metadata.Scope) > 0 {
@@ -60,7 +59,7 @@ func getNotifyTemplateList(scope, name, nType string) (list []*model.GetNotifyRe
 }
 
 func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db.NotifyConfig, error) {
-	//生成template_id
+	//generate template_id
 	templateID, err := utils.UUID()
 	if err != nil {
 		return nil, err

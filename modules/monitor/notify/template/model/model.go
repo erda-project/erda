@@ -20,9 +20,9 @@ import (
 	"unicode/utf8"
 )
 
-//完整的模版，ID类似于addon_elasticsearch_cpu
+//the complete template，ID just like addon_elasticsearch_cpu
 type Model struct {
-	ID        string      `json:"id" yaml:"id"` //模版id不是数据库生成的id
+	ID        string      `json:"id" yaml:"id"` //id is not the database generated auto id
 	Metadata  Metadata    `json:"metadata" yaml:"metadata"`
 	Behavior  Behavior    `json:"behavior" yaml:"behavior"`
 	Templates []Templates `json:"templates" yaml:"templates"`
@@ -82,7 +82,7 @@ type NotifyTarget struct {
 
 type TargetValue struct {
 	Receiver string `json:"receiver"`
-	// 目前只有钉钉用
+	// only dingding used
 	Secret string `json:"secret"`
 }
 

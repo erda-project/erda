@@ -65,13 +65,13 @@ type provider struct {
 
 func (p *provider) getUserDefineTemplate(scopeID, scope, name, nType string) ([]*model.GetNotifyRes, error) {
 	customizeList := make([]*model.GetNotifyRes, 0)
-	//根据scope和scopeID获取所有的自定义模版
+	//according to scope and scopeID obtain user define template
 	allCustomize, err := p.N.GetAllUserDefineNotify(scope, scopeID)
 	if err != nil {
 		return nil, err
 	}
 	allCustomizeRecords := *allCustomize
-	//遍历获取到到所有自定义通知模版，解析并筛选
+	//range all user define templates，parse and filter
 	for _, v := range allCustomizeRecords {
 		m := &model.GetNotifyRes{}
 		metadata := model.Metadata{}

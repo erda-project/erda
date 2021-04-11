@@ -15,7 +15,6 @@ package query
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -29,7 +28,8 @@ import (
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {
-	//提供给内部flink调用，不需要鉴权，获取所有的系统配置的消息通知模版
+	//provided to Flink,don't need authentication,
+	//this function provide all system's notify templates
 	routes.GET("/api/notify/all-templates", p.getAllNotifyTemplates)
 
 	routes.GET("/api/notify/templates", p.getNotifyTemplate, permission.Intercepter(
@@ -58,7 +58,6 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	return nil
 }
 
-//获取系统定义的所有消息通知模版
 func (p *provider) getAllNotifyTemplates(r *http.Request) interface{} {
 	allNotifyTemplates := getAllNotifyTemplates()
 	userDefineTemplate, err := p.N.GetAllUserDefineTemplates()
@@ -92,7 +91,7 @@ func (p *provider) getAllNotifyTemplates(r *http.Request) interface{} {
 	return api.Success(allNotifyTemplates)
 }
 
-//获取通知的下拉列表
+//get notify template list
 func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	Scope   string `query:"scope" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
@@ -100,9 +99,9 @@ func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	NType   string `query:"type"`
 }) interface{} {
 	data := make([]*model.GetNotifyRes, 0)
-	//筛选系统内置的可用通知模版
+	//filter system notify templates
 	sysNotify := getNotifyTemplateList(params.Scope, params.Name, params.NType)
-	//筛选用户自定义的通知模版
+	//filter user define templates
 	cusNotify, err := p.getUserDefineTemplate(params.ScopeID, params.Scope, params.Name, params.NType)
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -112,32 +111,25 @@ func (p *provider) getNotifyTemplate(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-//新建通知
 func (p *provider) createNotify(r *http.Request, params model.CreateNotifyReq) interface{} {
 	err := params.CheckNotify()
 	if err != nil {
-		fmt.Println(118)
 		return api.Errors.Internal(err)
 	}
 	exist, err := p.N.CheckNotifyNameExist(params.ScopeID, params.Scope, params.NotifyName)
 	if err != nil {
-		fmt.Println(123)
 		return api.Errors.Internal(err)
 	}
 	if exist {
-		fmt.Println(127)
 		return api.Errors.AlreadyExists(err)
 	}
-	//根据groupId查询类型是否为dingding，如果是获取其url
 	groupDetail, err := p.N.GetNotifyGroup(params.NotifyGroupID)
 	if err != nil {
-		fmt.Println(130)
 		return api.Errors.Internal(err)
 	}
 	var targetData []model.NotifyTarget
 	err = json.Unmarshal([]byte(groupDetail.TargetData), &targetData)
 	if err != nil {
-		fmt.Println(135)
 		return api.Errors.Internal(err)
 	}
 	t := model.Target{
@@ -149,17 +141,14 @@ func (p *provider) createNotify(r *http.Request, params model.CreateNotifyReq) i
 	}
 	target, err := json.Marshal(t)
 	if err != nil {
-		fmt.Println(147)
 		return api.Errors.Internal(err)
 	}
 	notifyId, err := json.Marshal(params.TemplateID)
 	if err != nil {
-		fmt.Println(152)
 		return api.Errors.Internal(err)
 	}
 	attribute, err := json.Marshal(params.Attribute)
 	if err != nil {
-		fmt.Println(157)
 		return api.Errors.Internal(err)
 	}
 	notifyRecord := db.Notify{
@@ -179,7 +168,6 @@ func (p *provider) createNotify(r *http.Request, params model.CreateNotifyReq) i
 	return api.Success(notifyRecord.ID)
 }
 
-//删除通知
 func (p *provider) deleteNotify(r *http.Request, params struct {
 	ID      int64  `param:"id" validate:"required"`
 	Scope   string `query:"scope" validate:"required"`
@@ -192,9 +180,7 @@ func (p *provider) deleteNotify(r *http.Request, params struct {
 	return api.Success(params.ID)
 }
 
-//更新通知
 func (p *provider) updateNotify(r *http.Request, params model.UpdateNotifyReq) interface{} {
-	//校验参数
 	err := params.CheckNotify()
 	if err != nil {
 		return api.Errors.Internal(err)
@@ -214,7 +200,7 @@ func (p *provider) updateNotify(r *http.Request, params model.UpdateNotifyReq) i
 	return api.Success(params.ID)
 }
 
-//查询用户配置的通知列表
+//query user's notify configuration
 func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	Scope   string `query:"scope" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
@@ -237,13 +223,13 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 			Enable:     v.Enable,
 			NotifyName: v.NotifyName,
 		}
-		//从target中获取到群组id
+		//get groupId from target
 		var target model.Target
 		err = json.Unmarshal([]byte(v.Target), &target)
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
-		//拼接items
+		//splice items
 		templateNames := make([]string, 0)
 		templateIds := make([]string, 0)
 		err = json.Unmarshal([]byte(v.NotifyID), &templateIds)
@@ -254,7 +240,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 			if value, ok := templateMap[v]; ok {
 				templateNames = append(templateNames, value.Metadata.Name)
 			} else {
-				//用户自定义模版
+				//user define templates
 				userDefine, err := p.N.GetUserDefine(v)
 				if err != nil {
 					return api.Errors.Internal(err)
@@ -283,7 +269,7 @@ func (p *provider) getUserNotifyList(r *http.Request, params struct {
 	return api.Success(resp)
 }
 
-//是否启用该通知项
+//whether to enable this notify
 func (p *provider) notifyEnable(r *http.Request, params struct {
 	ID      int64  `param:"id" validate:"required"`
 	ScopeID string `query:"scopeId" validate:"required"`
@@ -296,9 +282,7 @@ func (p *provider) notifyEnable(r *http.Request, params struct {
 	return api.Success(nil)
 }
 
-//新建自定义告警通知模版
 func (p *provider) createUserDefineNotifyTemplate(r *http.Request, params model.CreateUserDefineNotifyTemplate) interface{} {
-	//校验参数
 	templates, err := p.N.CheckNotifyTemplateExist(params.Scope, params.ScopeID)
 	if err != nil {
 		return api.Errors.Internal(err)

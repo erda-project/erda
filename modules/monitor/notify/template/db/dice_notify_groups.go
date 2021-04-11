@@ -50,7 +50,7 @@ func (notifyGroup *NotifyGroup) ToApiData() *apistructs.NotifyGroup {
 	if notifyGroup.TargetData != "" {
 		err := json.Unmarshal([]byte(notifyGroup.TargetData), &targets)
 		if err != nil {
-			// 老数据兼容
+			// compatible with old data
 			targets = targets[:0]
 			var oldTarget []apistructs.OldNotifyTarget
 			err = json.Unmarshal([]byte(notifyGroup.TargetData), &oldTarget)
