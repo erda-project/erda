@@ -34,7 +34,7 @@ func TestMain(t *testing.M) {
 	p.N.DB, _ = gorm.Open("mysql", "localhost:3306")
 	p.N.DB.LogMode(true)
 	p.C = new(config)
-	p.C.Files = []string{"/Users/terminus/go/src/terminus.io/github.com/erda-project/erda/pkg/dice-configs/notity/notify"}
+	p.C.Files = []string{"/pkg/dice-configs/notity/notify"}
 	initTemplateMap()
 	t.Run()
 }
