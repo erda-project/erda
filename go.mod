@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	bou.ke/monkey v1.0.2
-	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2 // indirect
+	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
 	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mholt/archiver v2.1.0+incompatible
-	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/minio/md5-simd v1.1.2
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
@@ -83,7 +83,7 @@ require (
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
-	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/pelletier/go-toml v1.8.1
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
 	github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 // indirect
@@ -120,6 +120,7 @@ require (
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/text v0.3.5
+	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

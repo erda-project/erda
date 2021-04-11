@@ -17,3 +17,26 @@ logs-query:
       replication:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+
+kafka:
+  # servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  comsumer:
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  producer:
+    options:
+      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+
+elasticsearch:
+  urls: "${ES_URL:http://localhost:9200}"
+  security: ${ES_SECURITY_ENABLE:false}
+  username: "${ES_SECURITY_USERNAME}"
+  password: "${ES_SECURITY_PASSWORD}"
+
+admin-tools:
+
+http-server@admin:
+  addr: ":7098"
+
+

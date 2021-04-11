@@ -1,0 +1,79 @@
+.trigger {
+  font-size: 18px;
+  line-height: 64px;
+  padding: 0 24px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.trigger:hover {
+  color: #1890ff;
+}
+
+.logo {
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px;
+  line-height: 32px;
+  color: white;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.site-layout .site-layout-background {
+  background: #fff;
+}
+
+.line-list {
+  display: inline-block;
+  margin: 0 10px;
+  font-size: 14px;
+  color: rgba(0,0,0,.65);  
+  float: right;
+  margin: 0 24px;
+}
+
+.line-list-item {
+  display: inline-block;
+}
+
+.line-list-split {
+  display: inline-block;
+  position: relative;
+  top: -.06em;
+  width: 1px;
+  height: .9em;
+  margin: 0 8px;
+  vertical-align: middle;
+  background-color: #dcdcdc;
+}
+
+.line-list-title {
+  font-weight: bolder;
+  margin: 0 5px 0 0;
+}
+
+/* offline machine */
+.dynamic-delete-button {
+  cursor: pointer;
+  position: relative;
+  top: 4px;
+  font-size: 24px;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.dynamic-delete-button:hover {
+  color: #777;
+}
+.dynamic-delete-button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+[data-theme="dark"] .dynamic-delete-button {
+  color: rgba(255,255,255,.45);
+}
+[data-theme="dark"] .dynamic-delete-button:hover {
+  color: rgba(255,255,255,.65);
+}

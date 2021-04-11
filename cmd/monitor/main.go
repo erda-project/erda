@@ -17,6 +17,8 @@ import (
 	// providers and modules
 
 	"github.com/erda-project/erda-infra/modcom"
+	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
+
 	// _ "github.com/erda-project/erda/modules/business/alert/alert-apis"
 	// _ "github.com/erda-project/erda/modules/business/alert/details-apis"
 	// _ "github.com/erda-project/erda/modules/business/dashboard/chart-block"
@@ -29,8 +31,7 @@ import (
 	// _ "github.com/erda-project/erda/modules/business/logs/loghub/metrics/rules"
 	// _ "github.com/erda-project/erda/modules/business/report/apis"
 	// _ "github.com/erda-project/erda/modules/business/settings"
-	// _ "github.com/erda-project/erda/modules/business/tools/admin-tools"
-	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
+	_ "github.com/erda-project/erda/modules/tools/admin-tools"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/index"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/metricq"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/metricq-example"
