@@ -32,6 +32,7 @@ import (
 	// _ "github.com/erda-project/erda/modules/business/report/apis"
 	_ "github.com/erda-project/erda/modules/monitor/settings"
 	_ "github.com/erda-project/erda/modules/tools/admin-tools"
+
 	// _ "github.com/erda-project/erda/modules/domain/metrics/index"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/metricq"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/metricq-example"
