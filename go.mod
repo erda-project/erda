@@ -19,6 +19,7 @@ require (
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bluele/gcache v0.0.2
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bndr/gotabulate v1.1.2 // indirect
 	github.com/buger/jsonparser v1.1.1
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
