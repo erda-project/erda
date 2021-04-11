@@ -15,15 +15,11 @@ package query
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/jinzhu/gorm"
-	"gopkg.in/yaml.v2"
 )
 
 var p *provider
@@ -34,38 +30,25 @@ func TestMain(t *testing.M) {
 	p.N.DB, _ = gorm.Open("mysql", "localhost:3306")
 	p.N.DB.LogMode(true)
 	p.C = new(config)
-	p.C.Files = []string{"/pkg/dice-configs/notity/notify"}
-	initTemplateMap()
-	t.Run()
-}
-
-func initTemplateMap() {
-	templateMap = make(map[string]model.Model)
-	for _, file := range p.C.Files {
-		f, err := os.Stat(file)
-		if err != nil {
-			fmt.Println(fmt.Errorf("fail to load notify file: %s", err))
-		}
-		if f.IsDir() {
-			err := filepath.Walk(file, func(p string, info os.FileInfo, err error) error {
-				if err != nil {
-					return nil
-				}
-				f, err := ioutil.ReadFile(p)
-				var model model.Model
-				err = yaml.Unmarshal(f, &model)
-				if err != nil {
-					return err
-				}
-				templateMap[model.ID] = model
-				fmt.Printf("id:%v,content:%+v", model.ID, model)
-				return nil
-			})
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
+	templateMap = map[string]model.Model{
+		"issue_create": {
+			Metadata: model.Metadata{
+				Name:   "",
+				Type:   "",
+				Module: "",
+				Scope:  []string{"project"},
+			},
+		},
+		"issue_update": {
+			Metadata: model.Metadata{
+				Name:   "",
+				Type:   "",
+				Module: "",
+				Scope:  []string{"project"},
+			},
+		},
 	}
+	t.Run()
 }
 
 func Test_getAllNotifyTemplates(t *testing.T) {
