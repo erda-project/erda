@@ -21,3 +21,12 @@ const (
 	ResourceOrgAlert  = "monitor_org_alert"
 	ResourceNotify    = "notify"
 )
+
+// monitor permission resources
+const (
+	ResourceMonitor             string = "ResourceMonitor"
+	ResourceMonitorTopology     string = "monitor_topology"
+	ResourceReport              string = "report"
+	ResourceMonitorProjectAlert string = "monitor_project_alert"
+	ResourceMicroService        string = "microservice_metric"
+)
