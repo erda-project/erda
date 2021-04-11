@@ -1,0 +1,26 @@
+
+
+http-server:
+    addr: ":7076"
+
+kafka:
+    producer:
+        options:
+            go.produce.channel.size: ${COLLECTOR_KAFKA_PRODUCE_CHANNEL_SIZE:100}
+            queue.buffering.max.kbytes: ${COLLECTOR_KAFKA_QUEUE_SIZE_KB:524288} # 500MB
+monitor-collector:
+    _enable: ${COLLECTOR_ENABLE:true}
+    ta_sampling_rate: ${COLLECTOR_BROWSER_SAMPLING_RATE:100}
+    output:
+        parallelism: ${KAFKA_PARALLELISM:3}
+        batch:
+            size: ${KAFKA_BATCH_SIZE:50}
+            timeout: "30s"
+    auth:
+        username: "${COLLECTOR_AUTH_USERNAME:collector}"
+        password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
+        force: ${COLLECTOR_AUTH_FORCE:false}
+
+http-server@admin:
+    addr: ":7098"
+pprof:
