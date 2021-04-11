@@ -16,6 +16,9 @@ package query
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common"
@@ -23,8 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"gopkg.in/yaml.v2"
-	"net/http"
-	"strconv"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {

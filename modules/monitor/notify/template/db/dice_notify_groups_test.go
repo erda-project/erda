@@ -15,9 +15,10 @@ package db
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/apistructs"
 	"testing"
 	"time"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestNotifyGroup_ToApiData(t *testing.T) {

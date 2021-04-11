@@ -27,7 +27,7 @@ import (
 	// _ "github.com/erda-project/erda/modules/business/dashboard/project-apis"
 	// _ "github.com/erda-project/erda/modules/business/dashboard/runtime-apis"
 	// _ "github.com/erda-project/erda/modules/business/dashboard/template"
-	// _ "github.com/erda-project/erda/modules/business/logs/loghub/index/query"
+	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
 	// _ "github.com/erda-project/erda/modules/business/logs/loghub/metrics/rules"
 	// _ "github.com/erda-project/erda/modules/business/report/apis"
 	_ "github.com/erda-project/erda/modules/monitor/settings"

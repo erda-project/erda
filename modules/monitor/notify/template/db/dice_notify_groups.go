@@ -15,10 +15,11 @@ package db
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type BaseModel struct {

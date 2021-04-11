@@ -15,14 +15,15 @@ package query
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/modules/monitor/notify/template/db"
-	"github.com/erda-project/erda/modules/monitor/notify/template/model"
-	"github.com/jinzhu/gorm"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/erda-project/erda/modules/monitor/notify/template/db"
+	"github.com/erda-project/erda/modules/monitor/notify/template/model"
+	"github.com/jinzhu/gorm"
+	"gopkg.in/yaml.v2"
 )
 
 var p *provider

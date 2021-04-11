@@ -15,11 +15,12 @@ package query
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"gopkg.in/yaml.v2"
-	"strings"
 )
 
 //初始化解析配置文件
@@ -29,7 +30,7 @@ var (
 )
 
 func getAllNotifyTemplates() (list []model.Model) {
-	for k, _ := range templateMap {
+	for k := range templateMap {
 		list = append(list, templateMap[k])
 	}
 	return
