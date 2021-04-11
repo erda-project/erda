@@ -403,7 +403,7 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	}
 	org, err := p.bdl.GetOrg(r.ScopeID)
 	if err != nil {
-		return "", errors.Errorf("failed to generate pipeline yaml, can not get OrgName by OrgID:%d,(%+v)", r.ScopeID, err)
+		return "", errors.Errorf("failed to generate pipeline yaml, can not get OrgName by OrgID:%v,(%+v)", r.ScopeID, err)
 	}
 	pipelineYml.Stages = [][]*dicestructs.PipelineYmlAction{{{
 		Type:    p.Cfg.Pipeline.ActionType,
