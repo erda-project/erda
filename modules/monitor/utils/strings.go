@@ -14,7 +14,7 @@
 package utils
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"encoding/base64"
 	"math/rand"
 	"unsafe"
@@ -47,7 +47,7 @@ func InString(s string, ss []string) bool {
 }
 
 func GetMD5Base64(bytes []byte) string {
-	md5Ctx := md5.New()
+	md5Ctx := sha1.New()
 	md5Ctx.Write(bytes)
 	md5Value := md5Ctx.Sum(nil)
 	return base64.RawURLEncoding.EncodeToString(md5Value)
