@@ -23,6 +23,8 @@ import (
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/olivere/elastic"
 )
@@ -239,7 +241,7 @@ func (p *provider) groupContainerAllocation(ctx httpserver.Context, params struc
 	return api.Success(resp)
 }
 
-func (p *provider) getContainerGroupAlloc(orgName, cluster string, hostIPs []string, metricType string, start, end int64, limit int, lang string) *resourceChart {
+func (p *provider) getContainerGroupAlloc(orgName, cluster string, hostIPs []string, metricType string, start, end int64, limit int, lang i18n.LanguageCodes) *resourceChart {
 	var hostIPFilter string
 	for _, hostIP := range hostIPs {
 		hostIPFilter += "&in_host_ip=" + hostIP
@@ -303,7 +305,7 @@ func (p *provider) groupContainerCount(ctx httpserver.Context, params struct {
 	return api.Success(resp)
 }
 
-func (p *provider) getContainerGroupCount(orgName, cluster string, hostIPs []string, start, end int64, limit int, lang string) *resourceChart {
+func (p *provider) getContainerGroupCount(orgName, cluster string, hostIPs []string, start, end int64, limit int, lang i18n.LanguageCodes) *resourceChart {
 	var hostIPFilter string
 	for _, hostIP := range hostIPs {
 		hostIPFilter += "&in_host_ip=" + hostIP
