@@ -2,15 +2,17 @@ package apis
 
 import (
 	"fmt"
+	"net/http"
+	"reflect"
+	"strings"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"net/http"
-	"reflect"
-	"strings"
 )
 
 func (p *provider) queryOrgCustomizeMetric(r *http.Request, params struct {
@@ -107,12 +109,17 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 	alert.AlertScopeID = orgID
 	alert.Attributes = make(map[string]interface{})
 
-	// 获取所有metric 目前只会有一种 metricName
+	// Get all metrics. Currently there is only one metricName
 	var metricNames []string
 	for _, rule := range alert.Rules {
 		metricNames = append(metricNames, rule.Metric)
 	}
-	metricMeta, err := p.metricq.MetricMeta("", alert.AlertScope, org.Name, metricNames...)
+	lang := i18n.LanguageCodes{
+		{
+			Code: "",
+		},
+	}
+	metricMeta, err := p.metricq.MetricMeta(lang, alert.AlertScope, org.Name, metricNames...)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -125,7 +132,6 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 		return api.Errors.Internal(err)
 	}
 
-	// 校验指标
 	for _, rule := range alert.Rules {
 		rule.Attributes = make(map[string]interface{})
 		rule.Attributes["alert_group"] = "{{cluster_name}}"
@@ -135,7 +141,6 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 		scope := labels["metric_scope"]
 		scopeId := labels["metric_scope_id"]
 
-		// 校验指标
 		if err := p.checkMetricMeta(rule, metricMap[rule.Metric]); err != nil {
 			return api.Errors.InvalidParameter(err)
 		}
@@ -189,19 +194,24 @@ func (p *provider) updateOrgCustomizeAlert(r *http.Request, ctx httpserver.Conte
 		return nil
 	}
 
-	// 补充数据
 	newAlert.AlertScope = alert.AlertScope
 	newAlert.AlertScopeID = alert.AlertScopeID
 	newAlert.Enable = alert.Enable
 	newAlert.ID = alert.ID
 
-	// 获取metric
+	// get metric
 	var metricNames []string
 	for _, rule := range newAlert.Rules {
 		metricNames = append(metricNames, rule.Metric)
 	}
 
-	metricMeta, err := p.metricq.MetricMeta("", alert.AlertScope, org.Name, metricNames...)
+	lang := i18n.LanguageCodes{
+		{
+			Code: "",
+		},
+	}
+
+	metricMeta, err := p.metricq.MetricMeta(lang, alert.AlertScope, org.Name, metricNames...)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -210,7 +220,6 @@ func (p *provider) updateOrgCustomizeAlert(r *http.Request, ctx httpserver.Conte
 		metricMap[metric.Name.Key] = metric
 	}
 
-	// 校验指标
 	for _, rule := range newAlert.Rules {
 		metric := metricMap[rule.Metric]
 		if err := p.checkMetricMeta(rule, metric); err != nil {
@@ -235,7 +244,6 @@ func (p *provider) updateOrgCustomizeAlert(r *http.Request, ctx httpserver.Conte
 	return api.Success(true)
 }
 
-// 校验指标
 func (p *provider) checkMetricMeta(
 	rule *adapt.CustomizeAlertRule, metric *metrics.MetricMeta) error {
 	if metric == nil {
@@ -244,7 +252,6 @@ func (p *provider) checkMetricMeta(
 		return fmt.Errorf("rule functions is empty")
 	}
 
-	// 包装select
 	selects := make(map[string]string)
 	tagRel := make(map[string]bool)
 	for _, tag := range metric.Tags {
@@ -253,16 +260,14 @@ func (p *provider) checkMetricMeta(
 			selects[tag.Key] = "#" + tag.Key
 		}
 	}
-	// for k := range metric.MetaTags {
-	// 	tagRel["_"+k] = true
-	// }
+
 	fieldRel := make(map[string]string)
 	for _, field := range metric.Fields {
 		fieldRel[field.Key] = field.Type
 	}
 
 	aliasRel := make(map[string]bool)
-	// 校验计算function
+	// Check calculation function
 	for _, function := range rule.Functions {
 		if function.Alias == "" {
 			return fmt.Errorf("function %s alias can not be empty", function.Field)
@@ -287,7 +292,7 @@ func (p *provider) checkMetricMeta(
 			return fmt.Errorf("not support rule function aggregator %s", function.Aggregator)
 		}
 
-		// 根据数据类型和操作类型转换阈值
+		// According to the data type and operation type conversion threshold
 		value, apiErr := p.formatOperatorValue(opType, dataType, function.Value)
 		if apiErr != nil {
 			return apiErr
@@ -295,7 +300,6 @@ func (p *provider) checkMetricMeta(
 		function.Value = value
 	}
 
-	// 校验过滤
 	for _, filter := range rule.Filters {
 		if ok := tagRel[filter.Tag]; !ok {
 			return fmt.Errorf(fmt.Sprintf("not support rule filter tag %s", filter.Tag))
@@ -316,20 +320,17 @@ func (p *provider) checkMetricMeta(
 		filter.Value = value
 	}
 
-	// 校验分组
 	for _, group := range rule.Group {
 		if _, ok := tagRel[group]; !ok {
 			return fmt.Errorf(fmt.Sprintf("not support rule group tag %s", group))
 		}
 	}
 
-	// 填充信息
 	rule.Outputs = []string{"alert"}
 	rule.Select = selects
 	return nil
 }
 
-// 格式化操作value
 func (p *provider) formatOperatorValue(
 	opType string, dataType string, value interface{}) (interface{}, error) {
 	if opType == "" || dataType == "" {

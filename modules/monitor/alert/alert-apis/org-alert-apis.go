@@ -1,10 +1,11 @@
 package apis
 
 import (
-	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"net/http"
 	"strconv"
+
+	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 )
 
 func (p *provider) queryOrgAlertRule(r *http.Request) interface{} {

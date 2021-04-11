@@ -1,13 +1,14 @@
 package apis
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	ext "github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"net/http"
-	"time"
 )
 
 type clusterReq struct {
@@ -30,7 +31,7 @@ type QueryOrgAlertRecordReq struct {
 	PageSize    uint     `query:"pageSize" validate:"gte=0,lte=100"`
 }
 
-// 查询企业告警记录属性（用于前端查询条件翻译）
+// Query enterprise alarm record attributes (used for translation of front-end query conditions)
 func (p *provider) getOrgAlertRecordAttr(r *http.Request) interface{} {
 	data, err := p.a.GetOrgAlertRecordAttr(api.Language(r))
 	if err != nil {
@@ -39,7 +40,6 @@ func (p *provider) getOrgAlertRecordAttr(r *http.Request) interface{} {
 	return api.Success(data)
 }
 
-// 查询企业机器告警记录
 func (p *provider) queryOrgHostsAlertRecord(r *http.Request, params queryOrgHostsAlertRecordReq) interface{} {
 	params.AlertGroup = make([]string, 0)
 	for _, cluster := range params.Clusters {
@@ -50,7 +50,6 @@ func (p *provider) queryOrgHostsAlertRecord(r *http.Request, params queryOrgHost
 	return p.queryOrgAlertRecord(r, params.QueryOrgAlertRecordReq)
 }
 
-// 查询企业告警记录
 func (p *provider) queryOrgAlertRecord(r *http.Request, params QueryOrgAlertRecordReq) interface{} {
 	if params.PageNo == 0 {
 		params.PageNo = 1
@@ -70,7 +69,6 @@ func (p *provider) queryOrgAlertRecord(r *http.Request, params QueryOrgAlertReco
 		return api.Errors.Internal(err)
 	}
 
-	// 填充userID
 	userIDMap := make(map[string]bool)
 	for _, item := range list {
 		if item.HandlerID == "" {
@@ -85,7 +83,6 @@ func (p *provider) queryOrgAlertRecord(r *http.Request, params QueryOrgAlertReco
 	return ext.SuccessExt(&listResult{list, count}, userIDs)
 }
 
-// 获取企业告警记录
 func (p *provider) getOrgAlertRecord(r *http.Request, params struct {
 	GroupID string `query:"groupId" validate:"required"`
 }) interface{} {
@@ -96,7 +93,7 @@ func (p *provider) getOrgAlertRecord(r *http.Request, params struct {
 		return api.Success(nil)
 	}
 
-	// 根据issue获取对应的projectId
+	// Obtain the corresponding projectId according to the issue
 	if data.IssueID != 0 {
 		issue, err := p.bdl.GetIssue(data.IssueID)
 		if err != nil {
@@ -108,7 +105,6 @@ func (p *provider) getOrgAlertRecord(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-// 查询企业告警历史
 func (p *provider) queryOrgAlertHistory(r *http.Request, params struct {
 	GroupID string `query:"groupId" validate:"required"`
 	Start   int64  `query:"start" validate:"gte=0"`
@@ -135,7 +131,6 @@ func (p *provider) queryOrgAlertHistory(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-// 创建企业告警工单
 func (p *provider) createOrgAlertIssue(r *http.Request, params struct {
 	apistructs.IssueCreateRequest
 	GroupID string `query:"groupId" validate:"required"`
@@ -147,7 +142,6 @@ func (p *provider) createOrgAlertIssue(r *http.Request, params struct {
 	return api.Success(issueId)
 }
 
-// 修改企业告警工单
 func (p *provider) updateOrgAlertIssue(r *http.Request, params struct {
 	apistructs.IssueUpdateRequest
 	GroupID string `query:"groupId" validate:"required"`

@@ -2,9 +2,10 @@ package apis
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
-	"net/http"
 )
 
 func (p *provider) queryCustomizeMetric(r *http.Request, params struct {

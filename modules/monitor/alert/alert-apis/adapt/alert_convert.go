@@ -1,14 +1,15 @@
 package adapt
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // FromCustomizeAlertRule .
@@ -124,18 +125,18 @@ func (n *AlertNotify) FromModel(m *db.AlertNotify, notifyGroupMap map[int64]*api
 	n.Silence = &AlertNotifySilence{Value: t, Unit: unit, Policy: m.SilencePolicy}
 	n.CreateTime = m.Created.UnixNano() / int64(time.Millisecond)
 	n.UpdateTime = m.Updated.UnixNano() / int64(time.Millisecond)
-	// 填充告警通知目标
+	// fill in the alarm notification target
 	notifyType, ok := utils.GetMapValueString(m.NotifyTarget, "type")
 	if !ok {
 		return nil
 	}
 	if notifyType == "notify_group" {
-		// 通知组ID
+		// notify group ID
 		groupID, ok := utils.GetMapValueInt64(m.NotifyTarget, "group_id")
 		if !ok {
 			return nil
 		}
-		// 通知组方式
+		// notify group method
 		groupType, ok := utils.GetMapValueString(m.NotifyTarget, "group_type")
 		if !ok {
 			return nil
@@ -145,7 +146,6 @@ func (n *AlertNotify) FromModel(m *db.AlertNotify, notifyGroupMap map[int64]*api
 		n.GroupType = groupType
 		n.NotifyGroup = notifyGroupMap[groupID]
 	} else if notifyType == "dingding" {
-		// 钉钉地址
 		dingdingURL, ok := utils.GetMapValueString(m.NotifyTarget, "dingding_url")
 		if !ok {
 			return nil
@@ -254,9 +254,6 @@ func (e *AlertExpression) FromModel(expression *db.AlertExpression) *AlertExpres
 
 // ToModel .
 func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpression, error) {
-	// if rule == nil {
-	// 	return nil, model.ErrAlert.InvalidParameter(fmt.Sprintf("expression %s no match rule", expressionDTO.AlertIndex))
-	// }
 	attributes := make(map[string]interface{})
 	for k, v := range rule.Attributes {
 		attributes[k] = v
@@ -273,14 +270,14 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 	attributes["alert_scope"] = alert.AlertScope
 	attributes["alert_scope_id"] = alert.AlertScopeID
 	attributes["recover"] = strconv.FormatBool(e.IsRecover)
-	// 去除一些flink无需的字段，避免attributes太长
+	// remove some fields that are not needed by flink to avoid too long attributes
 	for _, item := range []string{"alert_domain", "alert_dashboard_id", "alert_dashboard_path", "alert_record_path"} {
 		delete(attributes, item)
 	}
 
 	expression := rule.Template
 	expression["window"] = e.Window
-	// 填充表达式 filters
+	// fill expression filters
 	filters, _ := utils.GetMapValueArr(expression, "filters")
 	for _, filterValue := range filters {
 		filterMap, ok := filterValue.(map[string]interface{})
@@ -311,7 +308,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 	}
 	expression["filters"] = filters
 
-	// 填充表达式functions
+	// fill expression functions
 	functionMap := make(map[string]*AlertExpressionFunction)
 	for _, function := range e.Functions {
 		functionMap[function.Aggregator+"-"+function.Field] = function
@@ -353,7 +350,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 	}
 	expression["functions"] = functions
 
-	// 转换告警url
+	// transform alert url
 	alertDomain := alert.Domain
 	if alertDomain == "" {
 		if s, ok := utils.GetMapValueString(attributes, "alert_domain"); ok {
@@ -370,7 +367,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 	}
 	if dashboardID, ok := utils.GetMapValueString(rule.Attributes, "alert_dashboard_id"); ok {
 		if dashboardPath, ok := utils.GetMapValueString(alert.Attributes, "alert_dashboard_path"); ok {
-			// 获取group的值
+			// get group's value
 			var groups []string
 			group, _ := utils.GetMapValueArr(expression, "group")
 			for _, item := range group {
@@ -380,7 +377,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 		}
 	}
 
-	// 转换记录url
+	// transform record url
 	if recordPath, ok := utils.GetMapValueString(alert.Attributes, "alert_record_path"); ok {
 		attributes["record_url"] = convertRecordURL(alertDomain, recordPath)
 	}
@@ -395,7 +392,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 	}, nil
 }
 
-// 格式化操作 value
+// format operation
 func formatOperatorValue(opType string, dataType string, value interface{}) (interface{}, error) {
 	if opType == "" || dataType == "" {
 		return nil, invalidParameter("%s not support %s data type", opType, dataType)

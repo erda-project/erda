@@ -1,10 +1,11 @@
 package adapt
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 // OperatorType .
@@ -74,9 +75,9 @@ type (
 )
 
 var (
-	// 持续时间
+	// duration
 	windowKeys = []int64{1, 3, 5, 10, 15, 30}
-	// 过滤操作
+	// filter operation
 	filterOperatorRel = map[string]string{
 		"any":      OperatorTypeNone,
 		"eq":       OperatorTypeOne,

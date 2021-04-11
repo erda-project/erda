@@ -1,9 +1,10 @@
 package apis
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
-	"net/http"
 )
 
 type listResult struct {

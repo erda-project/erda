@@ -2,8 +2,9 @@ package adapt
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"net/url"
+
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 type routeFunc func(params map[string]interface{}) string
@@ -256,28 +257,28 @@ var routeMap = map[string]routeFunc{
 	),
 }
 
-// 获取key
+// get key
 func routeParamOrigin(key string) routeParamFunc {
 	return func(params map[string]interface{}) string {
 		return key
 	}
 }
 
-// 获取参数中获取key对应的值，否则则获取模板key
+// Get the value corresponding to the key in the parameter, otherwise get the template key
 func routeParamConvert(key string) routeParamFunc {
 	return func(params map[string]interface{}) string {
 		value, ok := utils.GetMapValueString(params, key)
 		if !ok {
 			value = "{{" + key + "}}"
 		} else {
-			// url 编码
+			// url coding
 			value = url.QueryEscape(value)
 		}
 		return value
 	}
 }
 
-// 转换告警url
+// transform alert url
 func convertAlertURL(domain, routeID string, params map[string]interface{}) string {
 	route, ok := routeMap[routeID]
 	if !ok {
@@ -286,7 +287,7 @@ func convertAlertURL(domain, routeID string, params map[string]interface{}) stri
 	return domain + route(params)
 }
 
-// 转换自定义大盘url
+// convert custom market url
 func convertDashboardURL(domain, path, dashboardID string, groups []string) string {
 	u := domain + path + "/" + dashboardID
 	conn := "?"
@@ -298,7 +299,7 @@ func convertDashboardURL(domain, path, dashboardID string, groups []string) stri
 	return u
 }
 
-// 转换记录url
+// transform record url
 func convertRecordURL(domain, path string) string {
 	return domain + path + "/{{alert_group_id}}"
 }

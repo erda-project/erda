@@ -14,6 +14,9 @@
 package adapt
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
@@ -21,8 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"reflect"
-	"testing"
 )
 
 func TestAdapt_newTicketAlertNotify(t *testing.T) {

@@ -2,9 +2,11 @@ package adapt
 
 import (
 	"fmt"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
@@ -215,7 +217,7 @@ func (d *dashgen) generateQuery(rule *CustomizeAlertRule) (map[string]interface{
 	res["start"] = utils.ConvertTimeToMS(time.Now().Add(-1 * time.Hour))
 	res["end"] = utils.ConvertTimeToMS(time.Now())
 
-	// 转换group
+	// transform group
 	if len(rule.Group) > 0 {
 		group := "("
 		for i, item := range rule.Group {
@@ -232,16 +234,16 @@ func (d *dashgen) generateQuery(rule *CustomizeAlertRule) (map[string]interface{
 		res["group"] = group
 	}
 
-	// 转换filter
+	// transform filter
 	for _, item := range rule.Filters {
 		res[item.Operator+"_tags."+item.Tag] = item.Value
 	}
-	// 微服务，告警预览需加强制过滤
+	// microservices, warning previews need to be strengthened and filtered
 	if d.scope == "micro_service" && d.preview {
 		res["filter_terminus_key"] = d.scopeID
 	}
 
-	// 转换function
+	// transform function
 	if rule.Functions != nil {
 		function := rule.Functions[0]
 		name := function.Field

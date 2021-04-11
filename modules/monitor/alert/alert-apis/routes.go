@@ -7,7 +7,7 @@ import (
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
-	// 自定义告警
+	// Custom alarm
 	routes.GET("/api/customize/alerts/metrics", p.queryCustomizeMetric)
 	routes.GET("/api/customize/alerts/notifies/targets", p.queryCustomizeNotifyTarget)
 	routes.GET("/api/customize/alerts", p.queryCustomizeAlert)
@@ -18,7 +18,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.PUT("/api/customize/alerts/:id/switch", p.updateCustomizeAlertEnable)
 	routes.DELETE("/api/customize/alerts/:id", p.deleteCustomizeAlert)
 
-	// 企业 自定义告警
+	// Enterprise custom alarms
 	checkListOrgAlertPermission := permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgAlert, permission.ActionList,
@@ -44,14 +44,14 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		common.ResourceOrgAlert, permission.ActionDelete,
 	))
 
-	// 告警规则生成预览大盘
+	// Alarm rule generation preview dashboard
 	routes.POST("/api/customize/alerts/dash-preview/query", p.queryDashboardByAlert)
 	routes.POST("/api/orgs/customize/alerts/dash-preview/query", p.queryOrgDashboardByAlert, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgAlert, permission.ActionCreate,
 	))
 
-	// 告警
+	// alert
 	routes.GET("/api/alerts/rules", p.queryAlertRule)
 	routes.GET("/api/alerts", p.queryAlert)
 	routes.GET("/api/alerts/:id", p.getAlert)
@@ -61,7 +61,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.PUT("/api/alerts/:id/switch", p.updateAlertEnable)
 	routes.DELETE("/api/alerts/:id", p.deleteAlert)
 
-	// 企业告警
+	// Enterprise Alert
 	routes.GET("/api/orgs/alerts/rules", p.queryOrgAlertRule, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgAlert, permission.ActionList,
@@ -91,7 +91,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 		common.ResourceOrgAlert, permission.ActionDelete,
 	))
 
-	// 告警记录
+	// Alarm record
 	routes.GET("/api/alert-record-attrs", p.getAlertRecordAttr)
 	routes.GET("/api/alert-records", p.queryAlertRecord)
 	routes.GET("/api/alert-records/:groupId", p.getAlertRecord)
@@ -99,7 +99,7 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	routes.POST("/api/alert-records/:groupId/issues", p.createAlertIssue)
 	routes.PUT("/api/alert-records/:groupId/issues/:issueId", p.updateAlertIssue)
 
-	// 企业告警记录
+	// Enterprise Alarm Record
 	routes.GET("/api/org-alert-record-attrs", p.getOrgAlertRecordAttr, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		common.ResourceOrgAlert, permission.ActionList,

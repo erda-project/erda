@@ -15,9 +15,10 @@ package details_apis
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"strconv"
 )
 
 func (p *provider) getOrgIDByClusters(ctx httpserver.Context) (string, error) {

@@ -16,8 +16,9 @@ package details_apis
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	"time"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/olivere/elastic"

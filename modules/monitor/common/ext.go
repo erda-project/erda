@@ -16,10 +16,11 @@ package common
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda-infra/providers/httpserver"
 	"io"
 	"io/ioutil"
+
+	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
 // ExtResponse .

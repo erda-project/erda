@@ -1,12 +1,13 @@
 package adapt
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/monitor/utils"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
@@ -109,7 +110,6 @@ func (r *CustomizeAlertRule) FromModel(m *db.CustomizeAlertRule) (*CustomizeAler
 
 // ToModel .
 func (r *CustomizeAlertRule) ToModel(alert *CustomizeAlertDetail, index string) *db.CustomizeAlertRule {
-	// 包装attributes
 	attributes := r.Attributes
 	if attributes == nil {
 		attributes = make(map[string]interface{})

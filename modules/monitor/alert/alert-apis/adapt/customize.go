@@ -2,9 +2,10 @@ package adapt
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"sort"
 )
 
 // FieldMeta .
@@ -259,12 +260,12 @@ func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, 
 	for _, alert := range alerts {
 		alertIDs = append(alertIDs, alert.ID)
 	}
-	// 获取告警规则
+	// get alert rule
 	rulesMap, err := a.getCustomizeAlertRulesByAlertIDs(alertIDs)
 	if err != nil {
 		return nil, 0, err
 	}
-	// 获取告警通知模板
+	// get alert notify template
 	notifyTemplatesMap, err := a.getCustomizeAlertNotifyTemplatesByAlertIDs(alertIDs)
 	if err != nil {
 		return nil, 0, err
@@ -337,13 +338,11 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		return nil, err
 	}
 	alertIDs := []uint64{id}
-	// 获取告警规则
 	rulesMap, err := a.getCustomizeAlertRulesByAlertIDs(alertIDs)
 	if err != nil {
 		return nil, err
 	}
 	rules := rulesMap[id]
-	// 获取告警通知模板
 	notifyTemplatesMap, err := a.getCustomizeAlertNotifyTemplatesByAlertIDs(alertIDs)
 	if err != nil {
 		return nil, err
@@ -354,7 +353,7 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		return nil, nil
 	}
 	for _, rule := range alertDetail.Rules {
-		// 过滤filter
+		// filter
 		filters := make([]*CustomizeAlertRuleFilter, 0)
 		for _, filter := range rule.Filters {
 			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] {
@@ -366,7 +365,7 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 			filters = append(filters, filter)
 		}
 		rule.Filters = filters
-		// 过滤group
+		// filter group
 		groups := make([]string, 0)
 		for _, group := range rule.Group {
 			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[group] {
@@ -401,13 +400,13 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 	} else if alert != nil {
 		return 0, ErrorAlreadyExists
 	}
-	// 创建告警
+	// create alert
 	index, err := a.generateCustomizeAlertIndex()
 	if err != nil {
 		return 0, err
 	}
 
-	// 关联大盘
+	// related to the dashboard
 	dashboardID, err := NewDashboard(a).CreateChartDashboard(alertDetail)
 	if err != nil {
 		return 0, err
@@ -426,7 +425,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 	}
 	alertDetail.ID = alert.ID
 
-	// 创建告警规则，只允许创建一条规则
+	// create alarm rules, only one rule is allowed
 	alertRule := alertDetail.Rules[0]
 	if alertRule.Name == "" {
 		alertRule.Name = alertDetail.Name
@@ -436,12 +435,12 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 		return 0, err
 	}
 
-	// 创建告警通知模板
+	// create an alert notification template
 	notifyTargetMap := make(map[string]bool)
 	for _, notify := range alertDetail.Notifies {
 		var notifyTemplate *CustomizeAlertNotifyTemplate
 		for _, target := range notify.Targets {
-			// 避免target重复
+			// Avoid target duplication
 			if ok := notifyTargetMap[target]; ok {
 				continue
 			}
@@ -498,7 +497,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		}
 	}
 
-	// 修改告警
+	// modify alert
 	alert, err := tx.CustomizeAlert.GetByID(alertDetail.ID)
 	if err != nil {
 		return err
@@ -524,7 +523,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 	if err := tx.CustomizeAlert.Update(alertDetail.ToModel()); err != nil {
 		return err
 	}
-	// 修改告警规则
+	// modify alert rule
 	rules, err := a.getCustomizeAlertRulesMapByAlertID(alertDetail.ID)
 	if err != nil {
 		return err
@@ -535,7 +534,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 			item.Name = alertDetail.Name
 		}
 		rule := item.ToModel(alertDetail, index)
-		// 存在则修改，不存在则新增
+		// Modify if it exists, add if it doesn't exist
 		if _, ok := rules[rule.ID]; ok {
 			if err := tx.CustomizeAlertRule.Update(rule); err != nil {
 				return err
@@ -548,7 +547,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 			}
 		}
 	}
-	// 删除存在的表达式
+	// delete exist expression
 	var deleteRuleIDs []uint64
 	for ruleID := range rules {
 		if _, ok := saveRuleIDs[ruleID]; !ok {
@@ -559,7 +558,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		return err
 	}
 
-	// 修改告警通知模板
+	//modify alert notify template
 	notifyMap, err := a.getCustomizeAlertNotifyTemplateByAlertID(alertDetail.ID)
 	if err != nil {
 		return err
@@ -590,7 +589,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 			if err != nil {
 				return err
 			}
-			// 存在则修改，不存在则新增
+			// Modify if it exists, add if it doesn't exist
 			if notify, ok := notifyTargetMap[template.Name+template.Target]; ok {
 				template.ID = notify.ID
 				if err := tx.CustomizeAlertNotifyTemplate.Update(template); err != nil {
@@ -605,7 +604,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 			}
 		}
 	}
-	// 删除存在的通知模板
+	//delete exist notify template
 	var deleteNotifyIDs []uint64
 	for notifyID := range notifyMap {
 		if _, ok := saveNotifyIDs[notifyID]; !ok {
@@ -656,7 +655,6 @@ func (a *Adapt) getCustomizeAlertNotifyTemplateByAlertID(alertID uint64) (map[ui
 
 // UpdateCustomizeAlertEnable .
 func (a *Adapt) UpdateCustomizeAlertEnable(id uint64, enable bool) (err error) {
-	// 事务
 	tx := a.db.Begin()
 	defer func() {
 		if exp := recover(); exp != nil {
@@ -668,15 +666,15 @@ func (a *Adapt) UpdateCustomizeAlertEnable(id uint64, enable bool) (err error) {
 			tx.Commit()
 		}
 	}()
-	// 关闭告警
+	// close alert
 	if err := tx.CustomizeAlert.UpdateEnable(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警表达式
+	// close alert expression
 	if err := tx.CustomizeAlertRule.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警通知
+	// close alert notify
 	if err := tx.CustomizeAlertNotifyTemplate.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
@@ -685,7 +683,6 @@ func (a *Adapt) UpdateCustomizeAlertEnable(id uint64, enable bool) (err error) {
 
 // DeleteCustomizeAlert .
 func (a *Adapt) DeleteCustomizeAlert(id uint64) (err error) {
-	// 事务
 	tx := a.db.Begin()
 	defer func() {
 		if exp := recover(); exp != nil {
@@ -697,15 +694,12 @@ func (a *Adapt) DeleteCustomizeAlert(id uint64) (err error) {
 			tx.Commit()
 		}
 	}()
-	// 物理删除告警
 	if err := tx.CustomizeAlert.DeleteByID(id); err != nil {
 		return err
 	}
-	// 物理删除告警规则
 	if err := tx.CustomizeAlertRule.DeleteByAlertID(id); err != nil {
 		return err
 	}
-	// 物理删除告警通知模板
 	if err := tx.CustomizeAlertNotifyTemplate.DeleteByAlertID(id); err != nil {
 		return err
 	}

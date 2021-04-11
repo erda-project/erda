@@ -1,8 +1,9 @@
 package db
 
 import (
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"time"
+
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // tables name

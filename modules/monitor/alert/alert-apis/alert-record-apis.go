@@ -1,15 +1,16 @@
 package apis
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"net/http"
-	"time"
 )
 
-// 查询告警记录属性（用于前端查询条件翻译）
+// Query alarm record attributes (for translation of front-end query conditions)
 func (p *provider) getAlertRecordAttr(r *http.Request, params struct {
 	Scope string `query:"scope" validate:"required"`
 }) interface{} {
@@ -20,7 +21,6 @@ func (p *provider) getAlertRecordAttr(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-// 查询告警记录
 func (p *provider) queryAlertRecord(r *http.Request, params struct {
 	Scope       string   `query:"scope" validate:"required"`
 	ScopeKey    string   `query:"scopeKey" validate:"required"`
@@ -53,7 +53,6 @@ func (p *provider) queryAlertRecord(r *http.Request, params struct {
 	return api.Success(&listResult{list, count})
 }
 
-// 获取告警记录
 func (p *provider) getAlertRecord(r *http.Request, params struct {
 	GroupID string `query:"groupId" validate:"required"`
 }) interface{} {
@@ -64,7 +63,6 @@ func (p *provider) getAlertRecord(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-// 查询告警历史
 func (p *provider) queryAlertHistory(r *http.Request, params struct {
 	GroupID string `query:"groupId" validate:"required"`
 	Start   int64  `query:"start" validate:"gte=0"`
@@ -90,7 +88,6 @@ func (p *provider) queryAlertHistory(r *http.Request, params struct {
 	return api.Success(data)
 }
 
-// 创建企业告警工单
 func (p *provider) createAlertIssue(r *http.Request, params struct {
 	apistructs.IssueCreateRequest
 	GroupID string `query:"groupId" validate:"required"`
@@ -101,7 +98,6 @@ func (p *provider) createAlertIssue(r *http.Request, params struct {
 	return api.Success(nil)
 }
 
-// 修改企业告警工单
 func (p *provider) updateAlertIssue(r *http.Request, params struct {
 	apistructs.IssueUpdateRequest
 	GroupID string `query:"groupId" validate:"required"`

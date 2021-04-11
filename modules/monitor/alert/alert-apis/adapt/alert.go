@@ -3,11 +3,12 @@ package adapt
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"strconv"
 )
 
 type (
@@ -152,7 +153,7 @@ func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (
 			Rules: rules,
 		})
 	}
-	// 只展示单值操作
+	// only show single value operation
 	var operators []*Operator
 	for _, op := range a.FunctionOperatorKeys(lang) {
 		if op.Type == OperatorTypeOne {
@@ -196,7 +197,7 @@ func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageN
 	return list, nil
 }
 
-// 根据告警ID获取告警通知
+// according to alertID get alert
 func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*AlertNotify, error) {
 	if len(alertIDs) == 0 {
 		return nil, nil
@@ -224,7 +225,7 @@ func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*Aler
 	return notifysMap, nil
 }
 
-// 获取通知组
+// get notify groups
 func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*apistructs.NotifyGroup {
 	if len(groupIDs) == 0 {
 		return nil
@@ -296,12 +297,12 @@ func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, erro
 	} else if alert == nil {
 		return nil, nil
 	}
-	// 获取告警表达式
+	// get alert expression
 	expressions, err := a.getAlertExpressionsByAlertID(alert.ID)
 	if err != nil {
 		return nil, err
 	}
-	// 过滤没有规则匹配的告警表达式
+	// filter alarm expressions that do not match the rule
 	var indices []string
 	for _, item := range expressions {
 		indices = append(indices, item.AlertIndex)
@@ -316,7 +317,7 @@ func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, erro
 			rules = append(rules, expression)
 		}
 	}
-	// 获取告警通知
+	// get alert notify
 	notifys, err := a.getAlertNotifysByAlertID(alert.ID)
 	if err != nil {
 		return nil, err
@@ -343,7 +344,6 @@ func (a *Adapt) getAlertExpressionsByAlertID(alertID uint64) ([]*AlertExpression
 	return list, nil
 }
 
-// 根据告警ID获取告警通知
 func (a *Adapt) getAlertNotifysByAlertID(alertID uint64) ([]*AlertNotify, error) {
 	if alertID == 0 {
 		return nil, nil
@@ -355,7 +355,7 @@ func (a *Adapt) getAlertNotifysByAlertID(alertID uint64) ([]*AlertNotify, error)
 	return notifysMap[alertID], nil
 }
 
-// 根据范围和索引获取开启的告警规则
+// obtain open alarm rules based on scope and index
 func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, scope, scopeID string, indices []string) (map[string]*AlertRule, error) {
 	if len(indices) == 0 {
 		return nil, nil
@@ -387,10 +387,7 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, e
 	if alert == nil {
 		return nil, nil
 	}
-	// // 数据鉴权
-	// if alert.AlertScope != "org" || alert.AlertScopeID != strconv.FormatUint(orgID, 10) {
-	// 	return nil, model.ErrAlert.AccessDenied()
-	// }
+
 	if clusterNames, ok := utils.GetMapValueArr(alert.Attributes, "cluster_name"); ok {
 		for _, v := range clusterNames {
 			if clusterName, ok := v.(string); ok {
@@ -465,7 +462,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 		return 0, errors.New("expression is not valid")
 	}
 
-	// 创建告警通知
+	// create alert notify
 	var (
 		silence   *AlertNotifySilence
 		notifyLen int
@@ -485,7 +482,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 	if notifyLen == 0 {
 		return 0, errors.New("notify is not valid")
 	}
-	// 创建ticket告警通知
+	// create ticket alert notify
 	notify := a.newTicketAlertNotify(alert.ID, silence)
 	if err := tx.AlertNotify.Insert(notify); err != nil {
 		return 0, err
@@ -493,7 +490,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 	return alert.ID, nil
 }
 
-// 新建一个 ticket 告警通知
+// crate ticket alert notify
 func (a *Adapt) newTicketAlertNotify(alertID uint64, silence *AlertNotifySilence) *db.AlertNotify {
 	if silence == nil {
 		return nil
@@ -532,7 +529,7 @@ func (a *Adapt) CreateOrgAlert(alert *Alert, orgID string) (alertID uint64, err 
 
 // UpdateOrgAlert .
 func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error {
-	// 数据鉴权
+	// data authorization
 	origin, err := a.db.Alert.GetByID(alertID)
 	if err != nil {
 		return err
@@ -544,7 +541,7 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error
 		return fmt.Errorf("permission denied")
 	}
 
-	// 补充数据
+	// supplement data
 	alert.AlertScope = origin.AlertScope
 	alert.AlertScopeID = origin.AlertScopeID
 	alert.Enable = origin.Enable
@@ -559,7 +556,6 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error
 	alert.Attributes["alert_record_path"] = recordPath
 	alert.Attributes["cluster_name"] = alert.ClusterNames
 
-	// 修改
 	return a.UpdateAlert(alertID, alert)
 }
 
@@ -607,7 +603,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		return err
 	}
 
-	// 修改告警表达式
+	// modify alert expression
 	var (
 		indexes       []string
 		expressionLen int
@@ -633,7 +629,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		if err != nil {
 			return err
 		}
-		// 存在则修改，不存在则新增
+		// if the expression is exist modify it else create
 		if _, ok := expressionMap[expression.ID]; ok {
 			if err := tx.AlertExpression.Update(expression); err != nil {
 				return err
@@ -650,7 +646,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	if expressionLen == 0 {
 		return errors.New("expression is not valid")
 	}
-	// 删除存在的表达式
+	// delete exist expression
 	var deleteExpressionIDs []uint64
 	for expressionID := range expressionMap {
 		if _, ok := saveExpressionIDs[expressionID]; !ok {
@@ -661,7 +657,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		return err
 	}
 
-	// 修改告警通知
+	// modify alert notify
 	var (
 		silence   *AlertNotifySilence
 		notifyLen int
@@ -677,7 +673,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		if alertNotify == nil {
 			continue
 		}
-		// 存在则修改，不存在则新增
+		// if the expression is exist modify it else create
 		if _, ok := notifyMap[alertNotify.ID]; ok {
 			saveNotifyIDs[alertNotify.ID] = true
 			if err := tx.AlertNotify.Update(alertNotify); err != nil {
@@ -709,7 +705,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	if notifyLen == 0 {
 		return errors.New("notify is not valid")
 	}
-	// 删除存在的通知
+	// delete exist notify
 	var (
 		deleteNotifyIDs []uint64
 		hasTicket       bool
@@ -717,7 +713,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	for notifyID, notify := range notifyMap {
 		if notifyType, ok := utils.GetMapValueString(notify.NotifyTarget, "type"); ok && notifyType == "ticket" {
 			hasTicket = true
-			// 修改ticket通知的silence
+			// modify ticket notify silence
 			t := convertMillisecondByUnit(silence.Value, silence.Unit)
 			notify.Silence = t
 			if err := tx.AlertNotify.Update(notify); err != nil {
@@ -730,7 +726,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		}
 	}
 	if !hasTicket {
-		// 创建ticket告警通知
+		// create ticket alert expression
 		notify := a.newTicketAlertNotify(alertID, silence)
 		if err := tx.AlertNotify.Insert(notify); err != nil {
 			return err
@@ -742,7 +738,6 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	return nil
 }
 
-// 根据告警ID获取告警表达式
 func (a *Adapt) getAlertExpressionsMapByAlertID(alertID uint64) (map[uint64]*db.AlertExpression, error) {
 	if alertID == 0 {
 		return nil, nil
@@ -758,7 +753,6 @@ func (a *Adapt) getAlertExpressionsMapByAlertID(alertID uint64) (map[uint64]*db.
 	return expressionsMap, nil
 }
 
-// 根据告警ID获取告警通知
 func (a *Adapt) getAlertNotifysMapByAlertID(alertID uint64) (map[uint64]*db.AlertNotify, error) {
 	if alertID == 0 {
 		return nil, nil
@@ -774,7 +768,6 @@ func (a *Adapt) getAlertNotifysMapByAlertID(alertID uint64) (map[uint64]*db.Aler
 	return notifys, nil
 }
 
-// 对比告警通知
 func (*Adapt) compareNotify(a, b *db.AlertNotify) bool {
 	if a == b {
 		return true
@@ -893,15 +886,15 @@ func (a *Adapt) UpdateAlertEnable(id uint64, enable bool) (err error) {
 			tx.Commit()
 		}
 	}()
-	// 关闭告警
+	// close alert
 	if err := a.db.Alert.UpdateEnable(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警表达式
+	// close alert expression
 	if err := a.db.AlertExpression.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警通知
+	// close alert notify
 	if err := a.db.AlertNotify.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
@@ -931,15 +924,15 @@ func (a *Adapt) UpdateOrgAlertEnable(id uint64, enable bool, orgID string) (err 
 	if alert.AlertScope != "org" || alert.AlertScopeID != orgID {
 		return fmt.Errorf("permission denied")
 	}
-	// 关闭告警
+	// close alert
 	if err := a.db.Alert.UpdateEnable(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警表达式
+	// close alert expression
 	if err := a.db.AlertExpression.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
-	// 关闭告警通知
+	// close alert notify
 	if err := a.db.AlertNotify.UpdateEnableByAlertID(id, enable); err != nil {
 		return err
 	}
