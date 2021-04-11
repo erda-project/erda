@@ -14,10 +14,10 @@
 package orgapis
 
 import (
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/pkg/errors"
 )
 
