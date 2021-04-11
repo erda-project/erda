@@ -64,59 +64,59 @@ func (p *provider) getHostTypes(req *http.Request, params struct {
 		return api.Success(make([]*groupHostTypeData, 0))
 	}
 	types := []*groupHostTypeData{
-		&groupHostTypeData{
+		{
 			Key:    cpus,
 			Values: parseTermsToList(result, tagsCPUs),
 		},
-		&groupHostTypeData{
+		{
 			Key:    mem,
 			Values: parseTermsToList(result, tagsMem),
 			Unit:   "GB",
 		},
-		&groupHostTypeData{
+		{
 			Key:    cluster,
 			Values: parseTermsToList(result, tagsClusterName),
 		},
-		&groupHostTypeData{
+		{
 			Key:    host,
 			Name:   "IP",
 			Values: parseTermsToList(result, tagsHostIP),
 		},
-		&groupHostTypeData{
+		{
 			Key:    labels,
 			Values: parseTermsToList(result, fieldsLabels),
 		},
-		&groupHostTypeData{
+		{
 			Key:    loadPercent,
 			Name:   "load",
 			Values: percents,
 			Prefix: "load",
 		},
-		&groupHostTypeData{
+		{
 			Key:    cpuUsagePercent,
 			Name:   "cpu used",
 			Values: percents,
 			Prefix: "cpu used",
 		},
-		&groupHostTypeData{
+		{
 			Key:    memUsagePercent,
 			Name:   "mem used",
 			Values: percents,
 			Prefix: "mem used",
 		},
-		&groupHostTypeData{
+		{
 			Key:    diskUsagePercent,
 			Name:   "disk used",
 			Values: percents,
 			Prefix: "disk used",
 		},
-		&groupHostTypeData{
+		{
 			Key:    cpuDispPercent,
 			Name:   "cpu dispatch",
 			Values: percents,
 			Prefix: "cpu dispatch",
 		},
-		&groupHostTypeData{
+		{
 			Key:    memDispPercent,
 			Name:   "mem dispatch",
 			Values: percents,
