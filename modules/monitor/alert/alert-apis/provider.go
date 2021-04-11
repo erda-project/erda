@@ -13,6 +13,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"strings"

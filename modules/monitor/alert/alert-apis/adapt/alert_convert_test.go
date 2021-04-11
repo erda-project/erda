@@ -96,3 +96,58 @@ func TestAlertRule_FromCustomizeAlertRule(t *testing.T) {
 		})
 	}
 }
+
+func TestAlertRule_FromCustomizeAlertRule1(t *testing.T) {
+	type fields struct {
+		ID         uint64
+		Name       string
+		AlertScope string
+		AlertType  string
+		AlertIndex *DisplayKey
+		Template   map[string]interface{}
+		Window     int64
+		Functions  []*AlertRuleFunction
+		IsRecover  bool
+		Attributes map[string]interface{}
+		Version    string
+		Enable     bool
+		CreateTime int64
+		UpdateTime int64
+	}
+	type args struct {
+		lang i18n.LanguageCodes
+		t    i18n.Translator
+		cr   *db.CustomizeAlertRule
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *AlertRule
+	}{
+		{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &AlertRule{
+				ID:         tt.fields.ID,
+				Name:       tt.fields.Name,
+				AlertScope: tt.fields.AlertScope,
+				AlertType:  tt.fields.AlertType,
+				AlertIndex: tt.fields.AlertIndex,
+				Template:   tt.fields.Template,
+				Window:     tt.fields.Window,
+				Functions:  tt.fields.Functions,
+				IsRecover:  tt.fields.IsRecover,
+				Attributes: tt.fields.Attributes,
+				Version:    tt.fields.Version,
+				Enable:     tt.fields.Enable,
+				CreateTime: tt.fields.CreateTime,
+				UpdateTime: tt.fields.UpdateTime,
+			}
+			if got := r.FromCustomizeAlertRule(tt.args.lang, tt.args.t, tt.args.cr); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FromCustomizeAlertRule() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -2,6 +2,7 @@ package adapt
 
 import (
 	"fmt"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -9,8 +10,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	//"terminus.io/dice/monitor/modules/domain/metrics/metricq"
-	//block "terminus.io/dice/monitor/modules/business/dashboard/chart-block"
 )
 
 const (

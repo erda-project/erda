@@ -16,11 +16,11 @@ package details_apis
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	"time"
+
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/olivere/elastic"
-	"strconv"
 )
 
 // PodInfoSummary .

@@ -4,6 +4,7 @@ import (
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
+	ext "github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"net/http"
 	"time"
@@ -81,7 +82,7 @@ func (p *provider) queryOrgAlertRecord(r *http.Request, params QueryOrgAlertReco
 	for key := range userIDMap {
 		userIDs = append(userIDs, key)
 	}
-	return api.SuccessExt(&listResult{list, count}, userIDs)
+	return ext.SuccessExt(&listResult{list, count}, userIDs)
 }
 
 // 获取企业告警记录

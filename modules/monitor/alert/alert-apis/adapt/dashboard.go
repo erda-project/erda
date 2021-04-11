@@ -2,6 +2,7 @@ package adapt
 
 import (
 	"fmt"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"strings"
 	"time"
 
@@ -13,9 +14,10 @@ func NewDashboard(a *Adapt) *dashgen {
 }
 
 type dashgen struct {
-	a                    *Adapt
-	preview              bool
-	lang, scope, scopeID string
+	a              *Adapt
+	preview        bool
+	lang           i18n.LanguageCodes
+	scope, scopeID string
 }
 
 func (d *dashgen) CreateChartDashboard(alertDetail *CustomizeAlertDetail) (string, error) {
@@ -146,7 +148,12 @@ func (d *dashgen) getURL(ct string, field string) (string, error) {
 
 func (d *dashgen) getChartType(f *CustomizeAlertRuleFunction) (string, error) {
 	ct := "chart:line"
-	agg, err := d.a.metricq.GetSingleAggregationMeta("en", "analysis", f.Aggregator)
+	langCode := i18n.LanguageCodes{
+		{
+			Code: "en",
+		},
+	}
+	agg, err := d.a.metricq.GetSingleAggregationMeta(langCode, "analysis", f.Aggregator)
 	if err != nil {
 		d.a.l.Errorf("cant find agg %s", f.Aggregator)
 	}
