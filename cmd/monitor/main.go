@@ -59,5 +59,5 @@ import (
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/tools/admin-tools"
 func main() {
 	// modcom.RegisterInitializer(loghub.Init)
-	modcom.RunWithCfgDir("conf/monitor/monitor", "monitor")
+	modcom.RunWithCfgDir("conf/monitor", "monitor")
 }

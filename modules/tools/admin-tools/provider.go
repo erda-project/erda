@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	_ "github.com/erda-project/erda/modules/tools/admin-tools/statik"
 	"github.com/gocql/gocql"
 	"github.com/olivere/elastic"
 )
