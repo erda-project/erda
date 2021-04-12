@@ -1,0 +1,1885 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package topology
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"math"
+	"net/http"
+	"net/url"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	apm "github.com/erda-project/erda/modules/monitor/apm/common"
+	"github.com/erda-project/erda/modules/monitor/common/db"
+	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/olivere/elastic"
+)
+
+type Vo struct {
+	StartTime   int64    `query:"startTime"`
+	EndTime     int64    `query:"endTime"`
+	TerminusKey string   `query:"terminusKey" validate:"required"`
+	Tags        []string `query:"tags"`
+	Debug       bool     `query:"debug"`
+}
+
+type Response struct {
+	Nodes []*Node `json:"nodes"`
+}
+
+func GetTopologyPermission(db *db.DB) httpserver.Interceptor {
+	return permission.Intercepter(
+		permission.ScopeProject, permission.TkFromParams(db),
+		apm.MonitorTopology, permission.ActionGet,
+	)
+}
+
+const TimeLayout = "2006-01-02 15:04:05"
+
+type Node struct {
+	Id              string  `json:"id,omitempty"`
+	Name            string  `json:"name,omitempty"`
+	Type            string  `json:"type,omitempty"`
+	AddonId         string  `json:"addonId,omitempty"`
+	AddonType       string  `json:"addonType,omitempty"`
+	ApplicationId   string  `json:"applicationId,omitempty"`
+	ApplicationName string  `json:"applicationName,omitempty"`
+	RuntimeId       string  `json:"runtimeId,omitempty"`
+	RuntimeName     string  `json:"runtimeName,omitempty"`
+	ServiceId       string  `json:"serviceId,omitempty"`
+	ServiceName     string  `json:"serviceName,omitempty"`
+	DashboardId     string  `json:"dashboardId"`
+	Metric          *Metric `json:"metric"`
+	Parents         []*Node `json:"parents"`
+}
+
+const (
+	topologyNodeService   = "topology_node_service"
+	topologyNodeGateway   = "topology_node_gateway"
+	topologyNodeDb        = "topology_node_db"
+	topologyNodeCache     = "topology_node_cache"
+	topologyNodeMq        = "topology_node_mq"
+	processAnalysisNodejs = "process_analysis_nodejs"
+	processAnalysisJava   = "process_analysis_java"
+)
+
+const (
+	JavaProcessType   = "jvm_memory"
+	NodeJsProcessType = "nodejs_memory"
+)
+
+var ProcessTypes = []string{
+	JavaProcessType,
+	NodeJsProcessType,
+}
+
+const (
+	TypeService        = "Service"
+	TypeMysql          = "Mysql"
+	TypeRedis          = "Redis"
+	TypeRocketMQ       = "RocketMQ"
+	TypeHttp           = "Http"
+	TypeDubbo          = "Dubbo"
+	TypeSidecar        = "SideCar"
+	TypeGateway        = "APIGateway"
+	TypeRegisterCenter = "RegisterCenter"
+	TypeConfigCenter   = "ConfigCenter"
+	TypeNoticeCenter   = "NoticeCenter"
+	TypeElasticsearch  = "Elasticsearch"
+)
+
+type SearchTag struct {
+	Tag   string `json:"tag"`
+	Label string `json:"label"`
+	Type  string `json:"type"`
+}
+
+var (
+	ApplicationSearchTag = SearchTag{
+		Tag:   "application",
+		Label: "应用名称",
+		Type:  "select",
+	}
+
+	ServiceSearchTag = SearchTag{
+		Tag:   "service",
+		Label: "服务名称",
+		Type:  "select",
+	}
+)
+
+var ErrorReqMetricNames = []string{
+	"application_db_error",
+	"application_http_error",
+	"application_rpc_error",
+	"application_mq_error",
+	"application_cache_error",
+}
+
+var ReqMetricNames = []string{
+	"application_http_service",
+	"application_rpc_service",
+	"application_cache_service",
+	"application_db_service",
+	"application_mq_service",
+}
+
+var ReqMetricNamesDesc = map[string]string{
+	"application_http_service":  "HTTP 请求",
+	"application_rpc_service":   "RPC 请求",
+	"application_cache_service": "缓存请求",
+	"application_db_service":    "数据库请求",
+	"application_mq_service":    "MQ 请求",
+}
+
+type Field struct {
+	ELapsedCount float64 `json:"elapsed_count,omitempty"`
+	ELapsedMax   float64 `json:"elapsed_max,omitempty"`
+	ELapsedMean  float64 `json:"elapsed_mean,omitempty"`
+	ELapsedMin   float64 `json:"elapsed_min,omitempty"`
+	ELapsedSum   float64 `json:"elapsed_sum,omitempty"`
+	CountSum     float64 `json:"count_sum,omitempty"`
+	ErrorsSum    float64 `json:"errors_sum,omitempty"`
+}
+
+type Tag struct {
+	Component             string `json:"component,omitempty"`
+	Host                  string `json:"host,omitempty"`
+	SourceProjectId       string `json:"source_project_id,omitempty"`
+	SourceProjectName     string `json:"source_project_name,omitempty"`
+	SourceWorkspace       string `json:"source_workspace,omitempty"`
+	SourceTerminusKey     string `json:"source_terminus_key,omitempty"`
+	SourceApplicationId   string `json:"source_application_id,omitempty"`
+	SourceApplicationName string `json:"source_application_name,omitempty"`
+	SourceRuntimeId       string `json:"source_runtime_id,omitempty"`
+	SourceRuntimeName     string `json:"source_runtime_name,omitempty"`
+	SourceServiceName     string `json:"source_service_name,omitempty"`
+	SourceServiceId       string `json:"source_service_id,omitempty"`
+	SourceAddonID         string `json:"source_addon_id,omitempty"`
+	SourceAddonType       string `json:"source_addon_type,omitempty"`
+	TargetInstanceId      string `json:"target_instance_id,omitempty"`
+	TargetProjectId       string `json:"target_project_id,omitempty"`
+	TargetProjectName     string `json:"target_project_name,omitempty"`
+	TargetWorkspace       string `json:"target_workspace,omitempty"`
+	TargetTerminusKey     string `json:"target_terminus_key,omitempty"`
+	TargetApplicationId   string `json:"target_application_id,omitempty"`
+	TargetApplicationName string `json:"target_application_name,omitempty"`
+	TargetRuntimeId       string `json:"target_runtime_id,omitempty"`
+	TargetRuntimeName     string `json:"target_runtime_name,omitempty"`
+	TargetServiceName     string `json:"target_service_name,omitempty"`
+	TargetServiceId       string `json:"target_service_id,omitempty"`
+	TargetAddonID         string `json:"target_addon_id,omitempty"`
+	TargetAddonType       string `json:"target_addon_type,omitempty"`
+	TerminusKey           string `json:"terminus_key,omitempty"`
+	ProjectId             string `json:"project_id,omitempty"`
+	ProjectName           string `json:"project_name,omitempty"`
+	Workspace             string `json:"workspace,omitempty"`
+	ApplicationId         string `json:"application_id,omitempty"`
+	ApplicationName       string `json:"application_name,omitempty"`
+	RuntimeId             string `json:"runtime_id,omitempty"`
+	RuntimeName           string `json:"runtime_name,omitempty"`
+	ServiceName           string `json:"service_name,omitempty"`
+	ServiceId             string `json:"service_id,omitempty"`
+	ServiceInstanceId     string `json:"service_instance_id,omitempty"`
+	ServiceIp             string `json:"service_ip,omitempty"`
+	Type                  string `json:"type,omitempty"`
+}
+
+type TopologyNodeRelation struct {
+	Name      string                  `json:"name,omitempty"`
+	Timestamp int64                   `json:"timestamp,omitempty"`
+	Tags      Tag                     `json:"tags,omitempty"`
+	Fields    Field                   `json:"fields,omitempty"`
+	Parents   []*TopologyNodeRelation `json:"parents,omitempty"`
+	Metric    *Metric                 `json:"metric,omitempty"`
+}
+
+type Metric struct {
+	Count     int64   `json:"count"`
+	HttpError int64   `json:"http_error"`
+	RT        float64 `json:"rt"`
+	ErrorRate float64 `json:"error_rate"`
+	Replicas  float64 `json:"replicas,omitempty"`
+	Running   float64 `json:"running"`
+	Stopped   float64 `json:"stopped"`
+}
+
+const (
+	Application = "application"
+	Service     = "service"
+
+	HttpIndex        = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "http" + apm.Sep3 + Service
+	RpcIndex         = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "rpc" + apm.Sep3 + Service
+	MicroIndex       = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "micro" + apm.Sep3 + Service
+	MqIndex          = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "mq" + apm.Sep3 + Service
+	DbIndex          = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "db" + apm.Sep3 + Service
+	CacheIndex       = apm.Spot + apm.Sep1 + Application + apm.Sep3 + "cache" + apm.Sep3 + Service
+	ServiceNodeIndex = apm.Spot + apm.Sep1 + "service_node"
+)
+
+var IndexPrefix = []string{
+	HttpIndex, RpcIndex, MicroIndex,
+	MqIndex, DbIndex, CacheIndex,
+	ServiceNodeIndex,
+}
+
+var NodeTypes = []string{
+	TypeService, TypeMysql, TypeRedis,
+	TypeHttp, TypeDubbo, TypeSidecar,
+	TypeGateway, TypeRegisterCenter, TypeConfigCenter,
+	TypeNoticeCenter, TypeElasticsearch,
+}
+
+type ServiceDashboard struct {
+	Id              string  `json:"service_id"`
+	Name            string  `json:"service_name"`
+	ReqCount        int64   `json:"req_count"`
+	ReqErrorCount   int64   `json:"req_error_count"`
+	ART             float64 `json:"avg_req_time"`                   // avg response time
+	RSInstanceCount string  `json:"running_stopped_instance_count"` // running / stopped
+	RuntimeId       string  `json:"runtime_id"`
+	RuntimeName     string  `json:"runtime_name"`
+	ApplicationId   string  `json:"application_id"`
+	ApplicationName string  `json:"application_name"`
+}
+
+func createTypologyIndices(startTimeMs int64, endTimeMs int64) map[string][]string {
+	//	HttpRecMircoIndexType = "http-rpc-mirco"
+	//	MQDBCacheIndexType    = "mq-db-cache"
+	//	ServiceNodeIndexType  = "service-node"
+	indices := make(map[string][]string)
+	if startTimeMs > endTimeMs {
+		indices[apm.EmptyIndex] = []string{apm.EmptyIndex}
+	}
+
+	for _, prefix := range IndexPrefix {
+		index := prefix + apm.Sep1 + apm.Sep2
+		if ReHttpRpcMicro.MatchString(prefix) {
+			fillingIndex(indices, index, HttpRecMircoIndexType)
+		}
+
+		if ReMqDbCache.MatchString(prefix) {
+			fillingIndex(indices, index, MQDBCacheIndexType)
+		}
+
+		if ReServiceNode.MatchString(prefix) {
+			fillingIndex(indices, index, ServiceNodeIndexType)
+		}
+	}
+
+	if len(indices) <= 0 {
+		indices[apm.EmptyIndex] = []string{apm.EmptyIndex}
+	}
+	return indices
+}
+
+func fillingIndex(indices map[string][]string, index string, indexType string) {
+	i := indices[indexType]
+	if i == nil {
+		indices[indexType] = []string{index}
+	} else {
+		indices[indexType] = append(i, index)
+	}
+}
+
+func (topology *provider) indexExist(indices []string) *elastic.IndicesExistsService {
+	exists := topology.es.IndexExists(indices...)
+	return exists
+}
+
+var (
+	ReServiceNode  = regexp.MustCompile("^" + ServiceNodeIndex + "(.*)$")
+	ReHttpRpcMicro = regexp.MustCompile("^(" + HttpIndex + "|" + RpcIndex + "|" + MicroIndex + ")(.*)$")
+	ReMqDbCache    = regexp.MustCompile("^(" + MqIndex + "|" + DbIndex + "|" + CacheIndex + ")(.*)$")
+)
+
+type NodeType struct {
+	Type         string
+	GroupByField *GroupByField
+	SourceFields []string
+	Filter       *elastic.BoolQuery
+	Aggregation  map[string]*elastic.SumAggregation
+}
+
+type GroupByField struct {
+	Name     string
+	SubField *GroupByField
+}
+
+var (
+	TargetServiceNodeType   *NodeType
+	SourceServiceNodeType   *NodeType
+	TargetAddonNodeType     *NodeType
+	SourceAddonNodeType     *NodeType
+	TargetComponentNodeType *NodeType
+	TargetOtherNodeType     *NodeType
+	SourceMQNodeType        *NodeType
+	TargetMQServiceNodeType *NodeType
+	OtherNodeType           *NodeType
+
+	ServiceNodeAggregation map[string]*elastic.SumAggregation
+	NodeAggregation        map[string]*elastic.SumAggregation
+)
+
+type NodeRelation struct {
+	Source []*NodeType
+	Target *NodeType
+}
+
+const (
+	TargetServiceNode   = "TargetServiceNode"
+	SourceServiceNode   = "SourceServiceNode"
+	TargetAddonNode     = "TargetAddonNode"
+	SourceAddonNode     = "SourceAddonNode"
+	TargetComponentNode = "TargetComponentNode"
+	TargetOtherNode     = "TargetOtherNode"
+	SourceMQNode        = "SourceMQNode"
+	TargetMQServiceNode = "TargetMQServiceNode"
+	OtherNode           = "OtherNode"
+)
+
+func init() {
+	ServiceNodeAggregation = map[string]*elastic.SumAggregation{
+		apm.FieldsCountSum:  elastic.NewSumAggregation().Field(apm.FieldsCountSum),
+		apm.FieldElapsedSum: elastic.NewSumAggregation().Field(apm.FieldElapsedSum),
+		apm.FieldsErrorsSum: elastic.NewSumAggregation().Field(apm.FieldsErrorsSum),
+	}
+	NodeAggregation = map[string]*elastic.SumAggregation{
+		apm.FieldsCountSum:  elastic.NewSumAggregation().Field(apm.FieldsCountSum),
+		apm.FieldElapsedSum: elastic.NewSumAggregation().Field(apm.FieldElapsedSum),
+	}
+
+	TargetServiceNodeType = &NodeType{
+		Type:         TargetServiceNode,
+		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  ServiceNodeAggregation,
+	}
+	SourceServiceNodeType = &NodeType{
+		Type:         SourceServiceNode,
+		GroupByField: &GroupByField{Name: apm.TagsSourceApplicationId, SubField: &GroupByField{Name: apm.TagsSourceRuntimeName, SubField: &GroupByField{Name: apm.TagsSourceServiceName}}},
+		SourceFields: []string{apm.TagsSourceApplicationId, apm.TagsSourceRuntimeName, apm.TagsSourceServiceName, apm.TagsSourceServiceId, apm.TagsSourceApplicationName, apm.TagsSourceRuntimeId},
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsSourceAddonType)),
+		Aggregation:  ServiceNodeAggregation,
+	}
+	TargetAddonNodeType = &NodeType{
+		Type:         TargetAddonNode,
+		GroupByField: &GroupByField{Name: apm.TagsTargetAddonType, SubField: &GroupByField{Name: apm.TagsTargetAddonId}},
+		SourceFields: []string{apm.TagsTargetAddonType, apm.TagsTargetAddonId, apm.TagsTargetAddonGroup},
+		Filter:       elastic.NewBoolQuery().Filter(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation:  NodeAggregation,
+	}
+	SourceAddonNodeType = &NodeType{
+		Type:         SourceAddonNode,
+		GroupByField: &GroupByField{Name: apm.TagsSourceAddonType, SubField: &GroupByField{Name: apm.TagsSourceAddonId}},
+		SourceFields: []string{apm.TagsSourceAddonType, apm.TagsSourceAddonId, apm.TagsSourceAddonGroup},
+		Filter:       elastic.NewBoolQuery().Filter(elastic.NewExistsQuery(apm.TagsSourceAddonType)),
+		Aggregation:  NodeAggregation,
+	}
+	TargetComponentNodeType = &NodeType{
+		Type:         TargetComponentNode,
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup},
+		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
+			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
+		Aggregation: NodeAggregation,
+	}
+	TargetOtherNodeType = &NodeType{
+		Type:         TargetOtherNode,
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		Filter: elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType),
+			elastic.NewExistsQuery(apm.TagsTargetApplicationId)),
+		Aggregation: NodeAggregation,
+	}
+	SourceMQNodeType = &NodeType{
+		Type:         SourceMQNode,
+		GroupByField: &GroupByField{Name: apm.TagsComponent, SubField: &GroupByField{Name: apm.TagsHost}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost},
+		Filter: elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "application_mq_service")).
+			MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+		Aggregation: NodeAggregation,
+	}
+	TargetMQServiceNodeType = &NodeType{
+		Type:         TargetMQServiceNode,
+		GroupByField: &GroupByField{Name: apm.TagsTargetApplicationId, SubField: &GroupByField{Name: apm.TagsTargetRuntimeName, SubField: &GroupByField{Name: apm.TagsTargetServiceName}}},
+		SourceFields: []string{apm.TagsTargetApplicationId, apm.TagsTargetRuntimeName, apm.TagsTargetServiceName, apm.TagsTargetServiceId, apm.TagsTargetApplicationName, apm.TagsTargetRuntimeId},
+		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
+	}
+	OtherNodeType = &NodeType{
+		Type:         OtherNode,
+		GroupByField: &GroupByField{Name: apm.TagsApplicationId, SubField: &GroupByField{Name: apm.TagsRuntimeName, SubField: &GroupByField{Name: apm.TagsServiceName}}},
+		SourceFields: []string{apm.TagsApplicationId, apm.TagsRuntimeName, apm.TagsServiceName, apm.TagsServiceId, apm.TagsApplicationName, apm.TagsRuntimeId},
+		Filter:       elastic.NewBoolQuery().Must(elastic.NewExistsQuery(apm.TagsApplicationId)),
+	}
+
+	NodeRelations = map[string][]*NodeRelation{
+		HttpRecMircoIndexType: {
+			// Topology Relation (Addon: ApiGateway...)
+			// 1.SourceService -> TargetService 2.SourceAddon -> TargetService
+			// SourceService -> TargetAddon
+			// SourceService -> TargetOther
+			{Source: []*NodeType{SourceServiceNodeType, SourceAddonNodeType}, Target: TargetServiceNodeType},
+			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetAddonNodeType},
+			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetOtherNodeType},
+		},
+		MQDBCacheIndexType: {
+			// Topology Relation (Component: Mysql Redis MQ)
+			// SourceMQService  -> TargetMQService
+			// SourceService    -> TargetComponent
+			{Source: []*NodeType{SourceMQNodeType}, Target: TargetMQServiceNodeType},
+			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetComponentNodeType},
+		},
+		ServiceNodeIndexType: {
+			// Topology Relation
+			// OtherNode
+			{Target: OtherNodeType},
+		},
+	}
+
+	Aggregations = map[string]*AggregationCondition{
+		HttpRecMircoIndexType: {Aggregation: toEsAggregation(NodeRelations[HttpRecMircoIndexType])},
+		MQDBCacheIndexType:    {Aggregation: toEsAggregation(NodeRelations[MQDBCacheIndexType])},
+		ServiceNodeIndexType:  {Aggregation: toEsAggregation(NodeRelations[ServiceNodeIndexType])},
+	}
+}
+
+var NodeRelations map[string][]*NodeRelation
+var Aggregations map[string]*AggregationCondition
+
+const (
+	HttpRecMircoIndexType = "http-rpc-mirco"
+	MQDBCacheIndexType    = "mq-db-cache"
+	ServiceNodeIndexType  = "service-node"
+)
+
+type RequestTransaction struct {
+	RequestType      string  `json:"requestType"`
+	RequestCount     float64 `json:"requestCount"`
+	RequestAvgTime   float64 `json:"requestAvgTime"`
+	RequestErrorRate float64 `json:"requestErrorRate"`
+}
+
+type AggregationCondition struct {
+	Aggregation map[string]*elastic.FilterAggregation
+}
+
+func toEsAggregation(nodeRelations []*NodeRelation) map[string]*elastic.FilterAggregation {
+	m := make(map[string]*elastic.FilterAggregation)
+	for _, relation := range nodeRelations {
+
+		nodeType := relation.Target
+		key := encodeTypeToKey(nodeType.Type)
+		if nodeType != nil {
+			childAggregation := elastic.NewFilterAggregation()
+			m[key] = childAggregation
+			end := overlay(nodeType, childAggregation)
+
+			sources := relation.Source
+			if sources != nil {
+				for _, source := range sources {
+					sourceKey := encodeTypeToKey(source.Type)
+					childAggregation := elastic.NewFilterAggregation()
+					overlay(source, childAggregation)
+					end.SubAggregation(sourceKey, childAggregation)
+				}
+			}
+		}
+	}
+	return m
+}
+
+// encode
+func encodeTypeToKey(nodeType string) string {
+	md := sha256.New()
+	md.Write([]byte(nodeType))
+	mdSum := md.Sum(nil)
+	key := hex.EncodeToString(mdSum)
+	//fmt.Printf("type: %s, key: %s \n", nodeType, key)
+	return key
+}
+
+func overlay(nodeType *NodeType, childAggregation *elastic.FilterAggregation) *elastic.TermsAggregation {
+
+	// filter
+	filter := nodeType.Filter
+	if filter != nil {
+		childAggregation.Filter(filter)
+	}
+
+	// groupBy
+	field := nodeType.GroupByField
+	start, end := toChildrenAggregation(nodeType.GroupByField, nil)
+	childAggregation.SubAggregation(field.Name, start)
+
+	// columns
+	sourceFields := nodeType.SourceFields
+	if sourceFields != nil {
+		end.SubAggregation(apm.Columns,
+			elastic.NewTopHitsAggregation().From(0).Size(1).Sort(apm.Timestamp, false).Explain(false).
+				FetchSourceContext(elastic.NewFetchSourceContext(true).Include(sourceFields...)))
+	}
+
+	// agg
+	aggs := nodeType.Aggregation
+	if aggs != nil {
+		for key, sumAggregation := range aggs {
+			end.SubAggregation(key, sumAggregation)
+		}
+	}
+	return end
+}
+
+func toChildrenAggregation(field *GroupByField, termEnd *elastic.TermsAggregation) (*elastic.TermsAggregation, *elastic.TermsAggregation) {
+	if field == nil {
+		log.Fatal("field can't nil")
+	}
+	termStart := elastic.NewTermsAggregation().Field(field.Name).Size(100)
+	if field.SubField != nil {
+		start, end := toChildrenAggregation(field.SubField, termEnd)
+		termStart.SubAggregation(field.SubField.Name, start).Size(100)
+		termEnd = end
+	} else {
+		termEnd = termStart
+	}
+
+	return termStart, termEnd
+}
+
+func queryConditions(indexType string, params Vo) *elastic.BoolQuery {
+	boolQuery := elastic.NewBoolQuery()
+	boolQuery.Filter(elastic.NewRangeQuery(apm.Timestamp).Gte(params.StartTime * 1e6).Lte(params.EndTime * 1e6))
+	if ServiceNodeIndexType == indexType {
+		boolQuery.Filter(elastic.NewTermQuery(apm.TagsTerminusKey, params.TerminusKey))
+	} else {
+		boolQuery.Filter(elastic.NewBoolQuery().Should(elastic.NewTermQuery(apm.TagsTargetTerminusKey, params.TerminusKey)).
+			Should(elastic.NewTermQuery(apm.TagsSourceTerminusKey, params.TerminusKey)))
+	}
+	//filter: RegisterCenter ConfigCenter NoticeCenter
+	not := elastic.NewBoolQuery().MustNot(elastic.NewTermQuery(apm.TagsComponent, "registerCenter")).
+		MustNot(elastic.NewTermQuery(apm.TagsComponent, "configCenter")).
+		MustNot(elastic.NewTermQuery(apm.TagsComponent, "noticeCenter")).
+		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "registerCenter")).
+		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "configCenter")).
+		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "noticeCenter"))
+
+	if params.Tags != nil && len(params.Tags) > 0 {
+		sbq := elastic.NewBoolQuery()
+		for _, v := range params.Tags {
+			tagInfo := strings.Split(v, ":")
+			tag := tagInfo[0]
+			value := tagInfo[1]
+			switch tag {
+			case ApplicationSearchTag.Tag:
+				sbq.Should(elastic.NewTermQuery(apm.TagsApplicationName, value)).
+					Should(elastic.NewTermQuery(apm.TagsTargetApplicationName, value)).
+					Should(elastic.NewTermQuery(apm.TagsSourceApplicationName, value))
+			}
+		}
+		boolQuery.Filter(sbq)
+	}
+
+	boolQuery.Filter(not)
+	return boolQuery
+}
+
+type ExceptionDescription struct {
+	InstanceId    string `json:"instance_id"`
+	ExceptionType string `json:"exception_type"`
+	Class         string `json:"class"`
+	Method        string `json:"method"`
+	Message       string `json:"message"`
+	Time          string `json:"time"`
+	Count         int64  `json:"count"`
+}
+
+type ExceptionDescriptionsCountSort []ExceptionDescription
+
+func (e ExceptionDescriptionsCountSort) Len() int {
+	return len(e)
+}
+
+//Less() by count
+func (e ExceptionDescriptionsCountSort) Less(i, j int) bool {
+	return e[i].Count > e[j].Count
+}
+
+//Swap()
+func (e ExceptionDescriptionsCountSort) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+type ExceptionDescriptionsTimeSort []ExceptionDescription
+
+func (e ExceptionDescriptionsTimeSort) Len() int {
+	return len(e)
+}
+
+//Less() by time
+func (e ExceptionDescriptionsTimeSort) Less(i, j int) bool {
+	iTime, err := time.Parse(TimeLayout, e[i].Time)
+	jTime, err := time.Parse(TimeLayout, e[j].Time)
+	if err != nil {
+		return false
+	}
+	return iTime.UnixNano() > jTime.UnixNano()
+}
+
+//Swap()
+func (e ExceptionDescriptionsTimeSort) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+const (
+	ExceptionTimeSortStrategy  = "time"
+	ExceptionCountSortStrategy = "count"
+)
+
+func (topology *provider) GetExceptionTypes(language i18n.LanguageCodes, params ServiceParams) ([]string, interface{}) {
+	descriptions, err := topology.GetExceptionDescription(language, params)
+	if err != nil {
+		return nil, err
+	}
+
+	typeMap := make(map[string]string)
+
+	for _, description := range descriptions {
+		if typeMap[description.ExceptionType] == "" {
+			typeMap[description.ExceptionType] = description.ExceptionType
+		}
+	}
+	types := make([]string, 0)
+	for _, _type := range typeMap {
+		types = append(types, _type)
+	}
+
+	return types, nil
+}
+
+func ExceptionOrderByTimeStrategy(exceptions ExceptionDescriptionsTimeSort) []ExceptionDescription {
+	sort.Sort(exceptions)
+	return exceptions
+}
+
+func ExceptionOrderByCountStrategy(exceptions ExceptionDescriptionsCountSort) []ExceptionDescription {
+	sort.Sort(exceptions)
+	return exceptions
+}
+
+func ExceptionOrderByStrategyExecute(exceptionType string, exceptions []ExceptionDescription) []ExceptionDescription {
+	switch exceptionType {
+	case ExceptionCountSortStrategy:
+		return ExceptionOrderByCountStrategy(exceptions)
+	case ExceptionTimeSortStrategy:
+		return ExceptionOrderByTimeStrategy(exceptions)
+	default:
+		return ExceptionOrderByTimeStrategy(exceptions)
+	}
+}
+
+func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
+	// default limit 10
+	if limit == 0 || limit > 50 {
+		limit = 10
+	}
+	// default order by time
+	if sort != ExceptionTimeSortStrategy && sort != ExceptionCountSortStrategy {
+		sort = ExceptionTimeSortStrategy
+	}
+
+	result := []ExceptionDescription{}
+	descriptions, err := topology.GetExceptionDescription(language, params)
+	if exceptionType != "" {
+		for _, description := range descriptions {
+			if description.ExceptionType == exceptionType {
+				result = append(result, description)
+			}
+		}
+	} else {
+		result = descriptions
+	}
+
+	// execute sort
+	result = ExceptionOrderByStrategyExecute(sort, result)
+
+	// execute limit
+	if len(result) > int(limit) {
+		result = result[0:limit]
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams) ([]ExceptionDescription, error) {
+	sql := "SELECT * FROM error_description_v2 WHERE terminus_key = ? AND service_name = ? ALLOW FILTERING;"
+
+	sliceMap, _ := topology.cassandraSession.Query(sql,
+		params.ScopeId, params.ServiceName).Iter().SliceMap()
+
+	countSql := "SELECT count(0) FROM error_count WHERE error_id = ? ALLOW FILTERING;"
+	var descriptions []ExceptionDescription
+	for _, row := range sliceMap {
+		timeMS := row["timestamp"].(int64) / 1e6
+		if timeMS < params.StartTime || timeMS > params.EndTime {
+			continue
+		}
+
+		tags := row["tags"].(map[string]string)
+		instanceId := tags["instance_id"]
+		var exceptionDescription ExceptionDescription
+		exceptionDescription.InstanceId = instanceId
+		exceptionDescription.Method = tags["method"]
+		exceptionDescription.Class = tags["class"]
+		exceptionDescription.Message = tags["message"]
+		exceptionDescription.ExceptionType = tags["type"]
+		exceptionDescription.Time = time.Unix(0, row["timestamp"].(int64)).Format(TimeLayout)
+		count, _ := topology.cassandraSession.Query(countSql,
+			row["error_id"]).Iter().SliceMap()
+		exceptionDescription.Count = count[0]["count"].(int64)
+		descriptions = append(descriptions, exceptionDescription)
+	}
+
+	return descriptions, nil
+}
+
+func (topology *provider) GetDashBoardByServiceType(params ProcessParams) (string, error) {
+
+	for _, processType := range ProcessTypes {
+		metricsParams := url.Values{}
+		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key=$terminus_key "+
+			"AND service_name=$service_name LIMIT 1", processType)
+		queryParams := map[string]interface{}{
+			"terminus_key": params.TerminusKey,
+			"service_name": params.ServiceName,
+		}
+		response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+		if err != nil {
+			return "", err
+		}
+		rows := response.ResultSet.Rows
+		if len(rows) == 1 {
+			return getDashboardId(processType), nil
+		}
+	}
+	return "", nil
+}
+
+func (topology *provider) GetProcessType(language string, params ServiceParams) (interface{}, error) {
+	return nil, nil
+}
+
+type InstanceInfo struct {
+	Id     string `json:"instanceId"`
+	Status bool   `json:"status"`
+}
+
+func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	instanceIds := []InstanceInfo{}
+	for _, row := range rows {
+
+		status, err := strconv.ParseBool(row[1].(string))
+		if err != nil {
+			status = false
+		}
+		instance := InstanceInfo{
+			Id:     row[0].(string),
+			Status: status,
+		}
+		instanceIds = append(instanceIds, instance)
+	}
+	return instanceIds, nil
+}
+
+func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT service_name::tag,pod_name::tag,status::field,timestamp,started_at::field FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_name=$service_name GROUP BY pod_name::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	var result []ServiceInstance
+	for _, row := range rows {
+		instance := ServiceInstance{
+			ServiceName:         row[0].(string),
+			ServiceInstanceName: row[1].(string),
+			InstanceState:       row[2].(string),
+			//StartTime:          strconv.ParseInt(rows[4].(string), 10, 64),
+			//StartTime: rows[4],
+		}
+		result = append(result, instance)
+	}
+
+	statement = "SELECT timestamp,service_agent_platform::tag FROM application_service_node WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	platformVersion := rows[0][0]
+	for _, instance := range result {
+		instance.PlatformVersion = platformVersion.(string)
+	}
+	return nil, nil
+}
+
+func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	var translations []RequestTransaction
+	for _, metricName := range ReqMetricNames {
+		translation, err := topology.serviceReqInfo(metricName, ReqMetricNamesDesc[metricName], params, metricsParams)
+		if err != nil {
+			return nil, err
+		}
+		translations = append(translations, *translation)
+	}
+	return translations, nil
+}
+
+func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	dashboardData := make([]map[string]interface{}, 0, 10)
+	serviceOverviewMap := make(map[string]interface{})
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+
+	instanceMetricsParams := url.Values{}
+	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+
+	statement := "SELECT service_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, instanceMetricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	var result []ServiceInstance
+	for _, row := range rows {
+		instance := ServiceInstance{
+			ServiceName:         row[0].(string),
+			ServiceInstanceName: row[1].(string),
+			InstanceState:       row[2].(string),
+		}
+		result = append(result, instance)
+	}
+	runningCount := 0
+	stoppedCount := 0
+	for _, instance := range result {
+		if instance.InstanceState == "running" {
+			runningCount += 1
+		} else if instance.InstanceState == "stopping" {
+			stoppedCount += 1
+		}
+	}
+	serviceOverviewMap["running_instances"] = runningCount
+	serviceOverviewMap["stopped_instances"] = stoppedCount
+
+	// error req count
+	errorCount := 0.0
+	for _, metricName := range ErrorReqMetricNames {
+		count, err := topology.serviceReqErrorCount(metricName, params, metricsParams)
+		if err != nil {
+			return nil, err
+		}
+		errorCount += count
+	}
+
+	serviceOverviewMap["service_error_req_count"] = errorCount
+
+	// exception count
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	expCount := rows[0][0]
+
+	serviceOverviewMap["service_exception_count"] = expCount
+
+	// alert count
+	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	queryParams = map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+	}
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	alertCount := rows[0][0]
+
+	serviceOverviewMap["alert_count"] = alertCount
+	dashboardData = append(dashboardData, serviceOverviewMap)
+
+	return dashboardData, nil
+}
+
+func (topology *provider) GetOverview(language i18n.LanguageCodes, params GlobalParams) (interface{}, error) {
+	result := make(map[string]interface{})
+	dashboardData := make([]map[string]interface{}, 0, 10)
+	overviewMap := make(map[string]interface{})
+
+	// 服务数
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT distinct(service_name::tag) FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	serviceCount := float64(0)
+	for _, row := range rows {
+		count := row[0].(float64)
+		serviceCount += count
+	}
+	overviewMap["service_count"] = serviceCount
+
+	// 服务实例数
+	instanceMetricsParams := url.Values{}
+	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement = "SELECT distinct(service_instance_id::tag) FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag"
+	queryParams = map[string]interface{}{
+		"terminus_key": params.ScopeId,
+	}
+	response, err = topology.metricq.Query("influxql", statement, queryParams, instanceMetricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	serviceInstanceCount := float64(0)
+	for _, row := range rows {
+		count := row[0].(float64)
+		serviceInstanceCount += count
+	}
+	overviewMap["service_instance_count"] = serviceInstanceCount
+
+	// 所有服务错误请求数
+	errorCount := 0.0
+	for _, errorReqMetricName := range ErrorReqMetricNames {
+		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
+		if err != nil {
+			return nil, err
+		}
+		errorCount += count
+	}
+	overviewMap["service_error_req_count"] = errorCount
+
+	// 服务异常
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key"
+	queryParams = map[string]interface{}{
+		"terminus_key": params.ScopeId,
+	}
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	expCount := rows[0][0]
+	overviewMap["service_exception_count"] = expCount
+
+	// 报警次数
+	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key"
+	queryParams = map[string]interface{}{
+		"terminus_key": params.ScopeId,
+	}
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows = response.ResultSet.Rows
+	alertCount := rows[0][0]
+	overviewMap["alert_count"] = alertCount
+	dashboardData = append(dashboardData, overviewMap)
+
+	result["data"] = dashboardData
+
+	return result, nil
+}
+
+func (topology *provider) globalReqCount(metricScopeName string, params GlobalParams, metricsParams url.Values) (float64, error) {
+	statement := fmt.Sprintf("SELECT count(elapsed_count) FROM %s WHERE _metric_scope_id=$terminus_key", metricScopeName)
+	queryParams := map[string]interface{}{
+		"metric":       metricScopeName,
+		"terminus_key": params.ScopeId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return 0, err
+	}
+	rows := response.ResultSet.Rows[0][0].(float64)
+	return rows, nil
+}
+
+//toTwoDecimalPlaces Two decimal places
+func toTwoDecimalPlaces(num float64) float64 {
+	temp, err := strconv.ParseFloat(fmt.Sprintf("%.2f", num), 64)
+	if err != nil {
+		temp = 0
+	}
+	return temp
+}
+
+func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc string, params ServiceParams, metricsParams url.Values) (*RequestTransaction, error) {
+	var requestTransaction RequestTransaction
+	metricType := "target_service_name"
+	tkType := "target_terminus_key"
+	serviceIdType := "target_service_id"
+	if metricScopeName == ReqMetricNames[2] || metricScopeName == ReqMetricNames[3] || metricScopeName == ReqMetricNames[4] {
+		metricType = "source_service_name"
+		serviceIdType = "source_service_id"
+		tkType = "source_terminus_key"
+	}
+	statement := fmt.Sprintf("SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+		metricScopeName, tkType, metricType, serviceIdType)
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+
+	row := response.ResultSet.Rows
+	requestTransaction.RequestCount = row[0][0].(float64)
+	if row[0][1] != nil {
+		avgTime := toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
+		requestTransaction.RequestAvgTime = avgTime
+	} else {
+		requestTransaction.RequestAvgTime = 0
+	}
+
+	errCount, err := topology.serviceReqErrorCount(metricScopeName+"_error", params, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+
+	requestTransaction.RequestType = metricScopeNameDesc
+
+	if requestTransaction.RequestCount != 0 {
+		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(errCount / requestTransaction.RequestCount)
+	} else {
+		requestTransaction.RequestErrorRate = 0
+	}
+
+	return &requestTransaction, nil
+}
+
+func (topology *provider) serviceReqErrorCount(metricScopeName string, params ServiceParams, metricsParams url.Values) (float64, error) {
+	metricType := "target_service_name"
+	tkType := "target_terminus_key"
+	serviceIdType := "target_service_id"
+	if metricScopeName == ReqMetricNames[2] || metricScopeName == ReqMetricNames[3] || metricScopeName == ReqMetricNames[4] {
+		metricType = "source_service_name"
+		serviceIdType = "source_service_id"
+		tkType = "source_terminus_key"
+	}
+	statement := fmt.Sprintf("SELECT sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+		metricScopeName, tkType, metricType, serviceIdType)
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return 0, err
+	}
+	rows := response.ResultSet.Rows[0][0].(float64)
+	return rows, nil
+}
+
+func (topology *provider) GetSearchTags(r *http.Request) []SearchTag {
+	lang := api.Language(r)
+	label := topology.t.Text(lang, ApplicationSearchTag.Tag)
+	if label != "" {
+		ApplicationSearchTag.Label = label
+	}
+	return []SearchTag{
+		ApplicationSearchTag,
+	}
+}
+
+func searchApplicationTag(topology *provider, scopeId string, startTime, endTime int64) ([]string, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(startTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(endTime, 10))
+	statement := "SELECT application_name::tag FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY application_name::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": scopeId,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	var itemResult []string
+	for _, name := range rows {
+		itemResult = append(itemResult, name[0].(string))
+	}
+	return itemResult, nil
+}
+
+func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*Node, error) {
+	nodes := topology.GetTopology(params)
+
+	// instance count info
+	instances, err := topology.GetInstances(api.Language(r), params)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodes {
+		key := node.ApplicationName + "#" + node.ServiceName
+		serviceInstances := instances[key]
+		if serviceInstances != nil {
+			for _, instance := range serviceInstances {
+				if instance.ApplicationName == node.ApplicationName {
+					if instance.InstanceState == "running" {
+						node.Metric.Running += 1
+					} else {
+						node.Metric.Stopped += 1
+					}
+				}
+			}
+		}
+	}
+	return nodes, nil
+}
+
+func (topology *provider) Services(serviceName string, nodes []*Node) []ServiceDashboard {
+	var serviceDashboards []ServiceDashboard
+	for _, node := range nodes {
+		if node.ServiceName == "" {
+			continue
+		}
+
+		if serviceName != "" && !strings.Contains(node.ServiceName, serviceName) {
+			continue
+		}
+
+		var serviceDashboard ServiceDashboard
+		serviceDashboard.Name = node.ServiceName
+		serviceDashboard.ReqCount = node.Metric.Count
+		serviceDashboard.ReqErrorCount = node.Metric.HttpError
+		serviceDashboard.ART = toTwoDecimalPlaces(node.Metric.RT)
+		serviceDashboard.RSInstanceCount = fmt.Sprintf("%v", node.Metric.Running)
+		serviceDashboard.RuntimeId = node.RuntimeId
+		serviceDashboard.Id = node.ServiceId
+		serviceDashboard.RuntimeName = node.RuntimeName
+		serviceDashboard.ApplicationId = node.ApplicationId
+		serviceDashboard.ApplicationName = node.ApplicationName
+		serviceDashboards = append(serviceDashboards, serviceDashboard)
+	}
+	return serviceDashboards
+}
+
+type ServiceInstance struct {
+	ApplicationName     string  `json:"applicationName,omitempty"`
+	ServiceName         string  `json:"serviceName,omitempty"`
+	ServiceInstanceName string  `json:"serviceInstanceName,omitempty"`
+	InstanceState       string  `json:"instanceState,omitempty"`
+	PlatformVersion     string  `json:"platformVersion,omitempty"`
+	StartTime           float64 `json:"startTime,omitempty"`
+}
+
+func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (map[string][]ServiceInstance, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement := "SELECT service_name::tag,application_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.TerminusKey,
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	var result []ServiceInstance
+	for _, row := range rows {
+		instance := ServiceInstance{
+			ServiceName:         row[0].(string),
+			ApplicationName:     row[1].(string),
+			ServiceInstanceName: row[2].(string),
+			InstanceState:       row[3].(string),
+		}
+		result = append(result, instance)
+	}
+	instanceResult := make(map[string][]ServiceInstance)
+	for _, instance := range result {
+		key := instance.ApplicationName + "#" + instance.ServiceName
+		if instanceResult[key] == nil {
+			var serviceInstance []ServiceInstance
+			serviceInstance = append(serviceInstance, instance)
+			instanceResult[key] = serviceInstance
+		} else {
+			serviceInstances := instanceResult[key]
+			serviceInstances = append(serviceInstances, instance)
+			instanceResult[key] = serviceInstances
+		}
+	}
+
+	return instanceResult, nil
+}
+
+func (topology *provider) GetSearchTagv(r *http.Request, tag, scopeId string, startTime, endTime int64) ([]string, error) {
+	switch tag {
+	case ApplicationSearchTag.Tag:
+		return searchApplicationTag(topology, scopeId, startTime, endTime)
+	default:
+		return nil, errors.New("search tag not support")
+	}
+}
+
+func (topology *provider) GetTopology(param Vo) []*Node {
+
+	indices := createTypologyIndices(param.StartTime, param.EndTime)
+	ctx := context.Background()
+
+	nodes := make([]*Node, 0)
+	for key, typeIndices := range indices {
+
+		aggregationConditions, relations := selectRelation(key)
+
+		query := queryConditions(key, param)
+		searchSource := elastic.NewSearchSource()
+		searchSource.Query(query).Size(0)
+		if aggregationConditions == nil {
+			log.Fatal("aggregation conditions can't nil")
+		}
+		for key, aggregation := range aggregationConditions.Aggregation {
+			searchSource.Aggregation(key, aggregation)
+		}
+
+		searchResult, err := topology.es.Search(typeIndices...).
+			Header("content-type", "application/json").
+			SearchSource(searchSource).
+			Do(ctx)
+		if err != nil {
+			continue
+		}
+		//debug
+		if param.Debug {
+			source, _ := searchSource.Source()
+			data, _ := json.Marshal(source)
+			fmt.Print("indices: ")
+			fmt.Println(typeIndices)
+			fmt.Println("request body: " + string(data))
+			fmt.Println()
+		}
+
+		parseToTypologyNode(searchResult, relations, &nodes)
+	}
+	//debug
+	//nodesData, _ := json.Marshal(nodes)
+	//fmt.Println(string(nodesData))
+	return nodes
+}
+
+// FilterNodeByTags
+func (topology *provider) FilterNodeByTags(tags []string, nodes []*Node) []*Node {
+	if tags != nil && len(tags) > 0 {
+		for _, v := range tags {
+			tagInfo := strings.Split(v, ":")
+			tag := tagInfo[0]
+			value := tagInfo[1]
+			switch tag {
+			case ApplicationSearchTag.Tag:
+				for i, node := range nodes {
+					if strings.ToLower(node.Name) == strings.ToLower(TypeGateway) {
+						continue
+					}
+					for _, parentNode := range node.Parents {
+						if node.ApplicationName != value && parentNode.ApplicationName != value {
+							nodes = append(nodes[:i], nodes[i+1:]...)
+							i--
+						}
+					}
+
+				}
+			case ServiceSearchTag.Tag:
+				for i, node := range nodes {
+					if node.ServiceName != value {
+						nodes = append(nodes[:i], nodes[i+1:]...)
+						i--
+					}
+				}
+			}
+		}
+	}
+	return nodes
+}
+
+func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
+	var aggregationConditions *AggregationCondition
+	var relations []*NodeRelation
+	aggregationConditions = Aggregations[indexType]
+	relations = NodeRelations[indexType]
+	return aggregationConditions, relations
+}
+
+func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
+	for _, nodeRelation := range relations {
+		targetNodeType := nodeRelation.Target
+		sourceNodeTypes := nodeRelation.Source
+
+		key := encodeTypeToKey(targetNodeType.Type) // targetNodeType key
+		aggregations := searchResult.Aggregations
+		if aggregations != nil {
+			filter, b := aggregations.Filter(key)
+			if b {
+				field := targetNodeType.GroupByField
+				buckets := findDataBuckets(&filter.Aggregations, field)
+				// handler
+				for _, item := range *buckets {
+					// node
+					target := item.Aggregations
+
+					// columns
+					termsColumns, ok := target.TopHits(apm.Columns)
+					if !ok {
+						continue
+					}
+					if len(termsColumns.Hits.Hits) <= 0 && termsColumns.Hits.Hits[0].Source != nil {
+						continue
+					}
+					targetNode := &TopologyNodeRelation{}
+					err := json.Unmarshal(*termsColumns.Hits.Hits[0].Source, &targetNode)
+					if err != nil {
+						log.Println("parser error")
+					}
+
+					node := columnsParser(targetNodeType.Type, targetNode)
+
+					// aggs
+					metric := metricParser(targetNodeType, target)
+
+					node.Metric = metric
+
+					// merge same node
+					exist := false
+					for _, n := range *topologyNodes {
+						if n.Id == node.Id {
+							n.Metric.Count += node.Metric.Count
+							n.Metric.HttpError += node.Metric.HttpError
+							n.Metric.ErrorRate += node.Metric.ErrorRate
+							n.Metric.RT += node.Metric.RT
+							if n.RuntimeId == "" {
+								n.RuntimeId = node.RuntimeId
+							}
+							exist = true
+							node = n
+							break
+						}
+					}
+					if !exist {
+						*topologyNodes = append(*topologyNodes, node)
+						node.Parents = []*Node{}
+					}
+
+					//tNode, _ := json.Marshal(node)
+					//fmt.Println("target:", string(tNode))
+
+					// sourceNodeTypes
+					for _, nodeType := range sourceNodeTypes {
+						key := encodeTypeToKey(nodeType.Type) // sourceNodeTypes key
+						bucket, found := target.Filter(key)
+						if !found {
+							continue
+						}
+						a := bucket.Aggregations
+						items := findDataBuckets(&a, nodeType.GroupByField)
+
+						for _, keyItem := range *items {
+							// node
+							source := keyItem.Aggregations
+
+							// columns
+							sourceTermsColumns, ok := source.TopHits(apm.Columns)
+							if !ok {
+								continue
+							}
+							if len(sourceTermsColumns.Hits.Hits) <= 0 && sourceTermsColumns.Hits.Hits[0].Source != nil {
+								continue
+							}
+							sourceNodeInfo := &TopologyNodeRelation{}
+							err := json.Unmarshal(*sourceTermsColumns.Hits.Hits[0].Source, &sourceNodeInfo)
+							if err != nil {
+								log.Println("parser error")
+							}
+
+							sourceNode := columnsParser(nodeType.Type, sourceNodeInfo)
+
+							// aggs
+							sourceMetric := metricParser(nodeType, source)
+
+							sourceNode.Metric = sourceMetric
+							sourceNode.Parents = []*Node{}
+
+							//sNode, _ := json.Marshal(sourceNode)
+							//fmt.Println("source:", string(sNode))
+
+							node.Parents = append(node.Parents, sourceNode)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric {
+	aggregation := targetNodeType.Aggregation
+	metric := Metric{}
+
+	inner := make(map[string]*float64)
+	field := Field{}
+	if aggregation == nil {
+		return &metric
+	}
+	for key := range aggregation {
+		sum, _ := target.Sum(key)
+		split := strings.Split(key, ".")
+		s2 := split[1]
+		value := sum.Value
+		inner[s2] = value
+	}
+	marshal, err := json.Marshal(inner)
+	if err != nil {
+		return &metric
+	}
+	err = json.Unmarshal(marshal, &field)
+	if err != nil {
+		return &metric
+	}
+
+	countSum := field.CountSum
+	metric.Count = int64(countSum)
+	metric.HttpError = int64(field.ErrorsSum)
+	if countSum != 0 { // by zero
+		metric.RT = toTwoDecimalPlaces(field.ELapsedSum / countSum / 1e6)
+		metric.ErrorRate = math.Round(float64(metric.HttpError)/countSum*1e4) / 1e2
+	}
+
+	return &metric
+}
+
+func getDashboardId(nodeType string) string {
+
+	switch strings.ToLower(nodeType) {
+	case strings.ToLower(TypeService):
+		return topologyNodeService
+	case strings.ToLower(TypeGateway):
+		return topologyNodeGateway
+	case strings.ToLower(TypeMysql):
+		return topologyNodeDb
+	case strings.ToLower(TypeRedis):
+		return topologyNodeCache
+	case strings.ToLower(TypeRocketMQ):
+		return topologyNodeMq
+	case strings.ToLower(JavaProcessType):
+		return processAnalysisJava
+	case strings.ToLower(NodeJsProcessType):
+		return processAnalysisNodejs
+	default:
+		return ""
+	}
+}
+
+func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
+	//	TypeService        = "Service"
+	//	TypeMysql          = "Mysql"
+	//	TypeRedis          = "Redis"
+	//	TypeHttp           = "Http"
+	//	TypeDubbo          = "Dubbo"
+	//	TypeSidecar        = "SideCar"
+	//	TypeGateway        = "APIGateway"
+	//	TypeRegisterCenter = "RegisterCenter"
+	//	TypeConfigCenter   = "ConfigCenter"
+	//	TypeNoticeCenter   = "NoticeCenter"
+	//	TypeElasticsearch  = "Elasticsearch"
+
+	node := Node{}
+	tags := nodeRelation.Tags
+
+	switch nodeType {
+	case TargetServiceNode:
+		node.Type = TypeService
+		node.ApplicationId = tags.TargetApplicationId
+		node.ApplicationName = tags.TargetApplicationName
+		node.ServiceName = tags.TargetServiceName
+		node.ServiceId = tags.TargetServiceId
+		node.Name = node.ServiceName
+		node.RuntimeId = tags.TargetRuntimeId
+		node.RuntimeName = tags.TargetRuntimeName
+		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+	case SourceServiceNode:
+		node.Type = TypeService
+		node.ApplicationId = tags.SourceApplicationId
+		node.ApplicationName = tags.SourceApplicationName
+		node.ServiceId = tags.SourceServiceId
+		node.ServiceName = tags.SourceServiceName
+		node.Name = node.ServiceName
+		node.RuntimeId = tags.SourceRuntimeId
+		node.RuntimeName = tags.SourceRuntimeName
+		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+	case TargetAddonNode:
+		if strings.ToLower(tags.Component) == strings.ToLower("Http") {
+			node.Type = TypeElasticsearch
+		} else {
+			node.Type = tags.TargetAddonType
+		}
+		node.AddonId = tags.TargetAddonID
+		node.Name = tags.TargetAddonID
+		node.AddonType = tags.TargetAddonType
+		node.Id = encodeTypeToKey(node.AddonId + apm.Sep1 + node.AddonType)
+	case SourceAddonNode:
+		node.Type = tags.SourceAddonType
+		node.AddonId = tags.SourceAddonID
+		node.AddonType = tags.SourceAddonType
+		node.Name = tags.SourceAddonID
+		node.Id = encodeTypeToKey(node.AddonId + apm.Sep1 + node.AddonType)
+	case TargetComponentNode:
+		node.Type = tags.Component
+		node.Name = tags.Host
+		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
+	case SourceMQNode:
+		node.Type = tags.Component
+		node.Name = tags.Host
+		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
+	case TargetMQServiceNode:
+		node.Type = TypeService
+		node.ApplicationId = tags.TargetApplicationId
+		node.ApplicationName = tags.TargetApplicationName
+		node.ServiceId = tags.TargetServiceId
+		node.ServiceName = tags.TargetServiceName
+		node.Name = node.ServiceName
+		node.RuntimeId = tags.TargetRuntimeId
+		node.RuntimeName = tags.TargetRuntimeName
+		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+	case TargetOtherNode:
+		if strings.ToLower(tags.Component) == strings.ToLower("Http") && strings.HasPrefix(tags.Host, "terminus-elasticsearch") {
+			node.Type = TypeElasticsearch
+		} else {
+			node.Type = tags.Component
+		}
+		node.Name = tags.Host
+		node.Id = encodeTypeToKey(node.Name + apm.Sep1 + node.Type)
+	case OtherNode:
+		node.Type = TypeService
+		node.ApplicationId = tags.ApplicationId
+		node.ApplicationName = tags.ApplicationName
+		node.ServiceId = tags.ServiceId
+		node.ServiceName = tags.ServiceName
+		node.Name = node.ServiceName
+		node.RuntimeId = tags.RuntimeId
+		node.RuntimeName = tags.RuntimeName
+		node.Id = encodeTypeToKey(node.ApplicationId + apm.Sep1 + node.RuntimeName + apm.Sep1 + node.ServiceName)
+	}
+	node.DashboardId = getDashboardId(node.Type)
+	return &node
+}
+
+func findDataBuckets(filter *elastic.Aggregations, field *GroupByField) *[]*elastic.AggregationBucketKeyItem {
+
+	var nodeBuckets []*elastic.AggregationBucketKeyItem
+	termAggs, _ := filter.Terms(field.Name)
+	findNodeBuckets(termAggs.Buckets, field, &nodeBuckets)
+	return &nodeBuckets
+}
+
+func findNodeBuckets(bucketKeyItems []*elastic.AggregationBucketKeyItem, field *GroupByField, nodeBuckets *[]*elastic.AggregationBucketKeyItem) {
+	for _, buckets := range bucketKeyItems {
+		if field != nil && field.SubField != nil {
+			aggregations := buckets.Aggregations
+			bucket, _ := aggregations.Terms(field.SubField.Name)
+			findNodeBuckets(bucket.Buckets, field.SubField.SubField, nodeBuckets)
+			continue
+		}
+		if field == nil {
+			*nodeBuckets = append(*nodeBuckets, buckets)
+		} else {
+			bucketsAgg := buckets.Aggregations
+			terms, _ := bucketsAgg.Terms(field.Name)
+			for _, bucket := range terms.Buckets {
+				*nodeBuckets = append(*nodeBuckets, bucket)
+			}
+		}
+	}
+}
+
+// http/rpc
+func (topology *provider) translation(r *http.Request, params translation) interface{} {
+	if params.Layer != "http" && params.Layer != "rpc" {
+		return api.Errors.Internal(errors.New("not supported layer name"))
+	}
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.Start, 10))
+	options.Set("end", strconv.FormatInt(params.End, 10))
+	var where bytes.Buffer
+	var orderby string
+	var field string
+	param := map[string]interface{}{
+		"terminusKey":       params.TerminusKey,
+		"filterServiceName": params.FilterServiceName,
+		"serviceId":         params.ServiceId,
+	}
+	switch params.Layer {
+	case "http":
+		field = "http_path::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+			where.WriteString(" AND http_path::tag=~$field")
+		}
+	case "rpc":
+		field = "dubbo_method::tag"
+		if params.Search != "" {
+			param["field"] = map[string]interface{}{
+				"regex": ".*" + params.Search + ".*",
+			}
+			where.WriteString(" AND dubbo_method::tag=~$field")
+		}
+	default:
+		return api.Errors.InvalidParameter(errors.New("not support layer name"))
+	}
+	if params.Sort == 0 {
+		orderby = " ORDER BY count(error::tag) DESC"
+	}
+	if params.Sort == 1 {
+		orderby = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
+		"FROM application_%s WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName "+
+		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderby)
+	source, err := topology.metricq.Query(
+		metricq.InfluxQL,
+		sql,
+		param,
+		options)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+
+	result := make(map[string]interface{}, 0)
+	cols := []map[string]interface{}{
+		{"flag": "tag|gropuby", "key": "translation_name", "_key": "tags.http_path"},
+		{"flag": "field|func|agg", "key": "elapsed_count", "_key": ""},
+		{"flag": "tag|func|agg", "key": "error_count", "_key": ""},
+		{"flag": "tag|func|agg", "key": "slow_elapsed_count", "_key": ""},
+		{"flag": "tag|func|agg", "key": "avg_elapsed", "_key": ""},
+	}
+	result["cols"] = cols
+	data := make([]map[string]interface{}, 0)
+	for _, r := range source.ResultSet.Rows {
+		itemResult := make(map[string]interface{})
+		itemResult["translation_name"] = r[0]
+		itemResult["elapsed_count"] = r[1]
+		itemResult["error_count"] = r[2]
+		itemResult["avg_elapsed"] = r[3]
+		sql = fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
+			"AND target_service_name::tag=$filterServiceName AND %s=$field AND target_terminus_key::tag=$terminusKey ", params.Layer, field)
+		slowElapsedCount, err := topology.metricq.Query(
+			metricq.InfluxQL,
+			sql,
+			map[string]interface{}{
+				"field":             r[0].(string),
+				"terminusKey":       params.TerminusKey,
+				"filterServiceName": params.FilterServiceName,
+				"serviceId":         params.ServiceId,
+			},
+			options)
+		if err != nil {
+			return api.Errors.Internal(err)
+		}
+		for _, item := range slowElapsedCount.ResultSet.Rows {
+			itemResult["slow_elapsed_count"] = item[0]
+		}
+		data = append(data, itemResult)
+	}
+	result["data"] = data
+	return api.Success(result)
+}
+
+// db/cache
+func (topology *provider) dbTransaction(r *http.Request, params translation) interface{} {
+	if params.Layer != "db" && params.Layer != "cache" {
+		return api.Errors.Internal(errors.New("not supported layer name"))
+	}
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.Start, 10))
+	options.Set("end", strconv.FormatInt(params.End, 10))
+	var where bytes.Buffer
+	var orderby string
+	param := make(map[string]interface{})
+	param["terminusKey"] = params.TerminusKey
+	param["filterServiceName"] = params.FilterServiceName
+	param["serviceId"] = params.ServiceId
+	if params.Search != "" {
+		where.WriteString(" AND db_statement::tag=~$field")
+		param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+	}
+	if params.Sort == 1 {
+		orderby = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
+		"source_service_name::tag=$filterServiceName AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
+		params.Layer, where.String(), orderby)
+	source, err := topology.metricq.Query(
+		metricq.InfluxQL,
+		sql,
+		param,
+		options)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+
+	result := make(map[string]interface{}, 0)
+	cols := []map[string]interface{}{
+		{"_key": "tags.db_statement", "flag": "tag|groupby", "key": "operation"},
+		{"_key": "tags.db_type", "flag": "tag", "key": "db_type"},
+		{"_key": "tags.db_instance", "flag": "tag", "key": "instance_type"},
+		{"_key": "tags.host", "flag": "tag", "key": "db_host"},
+		{"_key": "", "flag": "field|func|agg", "key": "call_count"},
+		{"_key": "", "flag": "field|func|agg", "key": "avg_elapsed"},
+		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
+	}
+	result["cols"] = cols
+	data := make([]map[string]interface{}, 0)
+	for _, r := range source.ResultSet.Rows {
+		itemResult := make(map[string]interface{})
+		itemResult["operation"] = r[0]
+		itemResult["db_type"] = r[1]
+		itemResult["db_instance"] = r[2]
+		itemResult["db_host"] = r[3]
+		itemResult["call_count"] = r[4]
+		itemResult["avg_elapsed"] = r[5]
+		sql := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
+			"AND source_service_name::tag=$filterServiceName AND db_statement::tag=$field AND target_terminus_key::tag=$terminusKey", params.Layer)
+		slowElapsedCount, err := topology.metricq.Query(
+			metricq.InfluxQL,
+			sql,
+			map[string]interface{}{
+				"field":             r[0].(string),
+				"terminusKey":       params.TerminusKey,
+				"filterServiceName": params.FilterServiceName,
+				"serviceId":         params.ServiceId,
+			},
+			options)
+		if err != nil {
+			return api.Errors.Internal(err)
+		}
+		for _, item := range slowElapsedCount.ResultSet.Rows {
+			itemResult["slow_elapsed_count"] = item[0]
+		}
+		data = append(data, itemResult)
+	}
+	result["data"] = data
+	return api.Success(result)
+}
+
+func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
+	ServiceName string `query:"serviceName" validate:"required"`
+	TerminusKey string `query:"terminusKey" validate:"required"`
+	Operation   string `query:"operation" validate:"required"`
+	ServiceId   string `query:"serviceId" validate:"required"`
+}) interface{} {
+	details, err := topology.metricq.Query(metricq.InfluxQL,
+		"SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation)",
+		map[string]interface{}{
+			"serviceName": params.ServiceName,
+			"terminusKey": params.TerminusKey,
+			"operation":   params.Operation,
+			"serviceId":   params.ServiceId,
+		},
+		nil)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	var data []map[string]interface{}
+	for _, detail := range details.ResultSet.Rows {
+		detailMap := make(map[string]interface{})
+		detailMap["requestId"] = detail[0]
+		detailMap["time"] = detail[1]
+		detailMap["avgElapsed"] = detail[2]
+		data = append(data, detailMap)
+	}
+	result := map[string]interface{}{
+		"cols": []map[string]interface{}{
+			{"title": "请求ID", "index": "requestId"},
+			{"title": "时间", "index": "time"},
+			{"title": "耗时(ms)", "index": "avgElapsed"},
+		},
+		"data": data,
+	}
+	return api.Success(result)
+}
