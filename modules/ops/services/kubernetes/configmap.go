@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ListConfigMap 获取指定集群下指定 namespace 所有 configMap
+// ListConfigMap List configMap under the specified cluster and namespace.
 func (k *Kubernetes) ListConfigMap(clusterName, namespace string) (*corev1.ConfigMapList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListConfigMap(clusterName, namespace string) (*corev1.Confi
 	return cmList, nil
 }
 
-// GetConfigMap 获取指定集群下 configMap
+// GetConfigMap Get configMap under the specified cluster and namespace.
 func (k *Kubernetes) GetConfigMap(clusterName, namespace, cmName string) (*corev1.ConfigMap, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetConfigMap(clusterName, namespace, cmName string) (*corev
 	return cm, nil
 }
 
-// CreateConfigMap 在指定集群下创建 configMap
+// CreateConfigMap Crate configMap on specified cluster and namespace.
 func (k *Kubernetes) CreateConfigMap(clusterName, namespace string, cm *corev1.ConfigMap) error {
 	if cm == nil {
 		return fmt.Errorf("configmap entity can't be nil")
@@ -69,7 +69,7 @@ func (k *Kubernetes) CreateConfigMap(clusterName, namespace string, cm *corev1.C
 	return nil
 }
 
-// DeleteConfigMap 在指定集群下删除 configMap
+// DeleteConfigMap Delete configMap on specified cluster and namespace.
 func (k *Kubernetes) DeleteConfigMap(clusterName, namespace, cmName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (k *Kubernetes) DeleteConfigMap(clusterName, namespace, cmName string) erro
 	return nil
 }
 
-// UpdateConfigMap 在指定集群下更新 configMap
+// UpdateConfigMap Update configMap on specified cluster and namespace.
 func (k *Kubernetes) UpdateConfigMap(clusterName, namespace string, cm *corev1.ConfigMap) error {
 	if cm == nil {
 		return fmt.Errorf("configmap entity can't be nil")

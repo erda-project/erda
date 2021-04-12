@@ -251,7 +251,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 				continue
 			}
 			// not begin reconcile prepare
-			if task.Extra.UUID != "" {
+			if task.Extra.UUID == "" {
 				continue
 			}
 			groupedTasks[task.Extra.ExecutorName] = append(groupedTasks[task.Extra.ExecutorName], &task)

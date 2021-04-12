@@ -278,7 +278,7 @@ func (a *Addons) UpdateAddonConfig(req apistructs.AddonConfigUpdateRequest) erro
 	return nil
 }
 
-// GetRandomId 生成随机33位uuid，并且，（首字母开头 + 32位uuid）构成Id
+// getRandomId Generate ID: random letter + uuid (length: 33)
 func (a *Addons) getRandomId() string {
 	str := "abcdefghijklmnopqrstuvwxyz"
 	bytes := []byte(str)
@@ -488,7 +488,7 @@ func (a *Addons) AddonScale(identity apistructs.Identity, req apistructs.AddonSc
 	return nil
 }
 
-var eps = 0.00000001 //设置容忍度
+var eps = 0.00000001 // Set tolerance
 func floatEquals(a, b float64) bool {
 	if math.Abs(a-b) < eps {
 		return true

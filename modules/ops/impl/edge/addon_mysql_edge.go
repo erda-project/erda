@@ -291,7 +291,7 @@ func (e *Edge) CreateEdgeMysql(req *apistructs.EdgeAppCreateRequest) error {
 		return err
 	}
 
-	//写入数据库
+	// create edge_app record
 	edgeApp := &dbclient.EdgeApp{
 		BaseModel:     dbengine.BaseModel{},
 		OrgID:         req.OrgID,
@@ -577,8 +577,8 @@ func (e *Edge) OfflineEdgeMysql(edgeApp *dbclient.EdgeApp, siteName string) erro
 		relatedApps = make([]string, 0)
 	)
 
-	// 该应用如果被其他应用引用，并且是有效引用（引用方与发布方在同一个站点下并存在引用关系），
-	// 则无法下线，需要先下线引用该应用的应用
+	// If this addon is depend by other application (effective dependence: deployed in the same site)
+	// Offline other depend application in this site first.
 	dependApps, err := e.db.ListDependsEdgeApps(edgeApp.OrgID, edgeApp.ClusterID, edgeApp.Name)
 	if err != nil {
 		return fmt.Errorf("get depend apps eror: %v", err)

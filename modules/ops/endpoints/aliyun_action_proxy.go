@@ -120,7 +120,7 @@ func (e *Endpoints) DoRemoteAction(ctx context.Context, w http.ResponseWriter, r
 	return nil
 }
 
-// GetCloudAccount 获取云账号信息
+// GetCloudAccount Get cloud account
 func (e *Endpoints) GetCloudAccount(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
 	defer func() {
 		if err != nil {

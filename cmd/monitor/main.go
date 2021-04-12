@@ -32,7 +32,6 @@ import (
 	// _ "github.com/erda-project/erda/modules/business/logs/loghub/metrics/rules"
 	// _ "github.com/erda-project/erda/modules/business/report/apis"
 	_ "github.com/erda-project/erda/modules/monitor/settings"
-	_ "github.com/erda-project/erda/modules/tools/admin-tools"
 
 	// _ "github.com/erda-project/erda/modules/domain/metrics/index"
 	// _ "github.com/erda-project/erda/modules/domain/metrics/metricq"
@@ -56,7 +55,6 @@ import (
 	// _ "github.com/erda-project/erda-infra/providers/telemetry"
 )
 
-//go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/tools/admin-tools"
 func main() {
 	// modcom.RegisterInitializer(loghub.Init)
 	modcom.RunWithCfgDir("conf/monitor", "monitor")

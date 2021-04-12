@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GetPod 获取指定集群下 Pod
+// GetPod List pod under the specified cluster and namespace.
 func (k *Kubernetes) ListPod(clusterName, namespace string) (*corev1.PodList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListPod(clusterName, namespace string) (*corev1.PodList, er
 	return po, nil
 }
 
-// GetPod 获取指定集群下 Pod
+// GetPod Get pod under the specified cluster and namespace.
 func (k *Kubernetes) GetPod(clusterName, namespace, podName string) (*corev1.Pod, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetPod(clusterName, namespace, podName string) (*corev1.Pod
 	return po, nil
 }
 
-// CreatePod 在指定集群下创建 Pod
+// CreatePod Crate pod on specified cluster and namespace.
 func (k *Kubernetes) CreatePod(clusterName, namespace string, pod *corev1.Pod) error {
 	if pod == nil {
 		return fmt.Errorf("pod entity can't be nil")
@@ -69,7 +69,7 @@ func (k *Kubernetes) CreatePod(clusterName, namespace string, pod *corev1.Pod) e
 	return nil
 }
 
-// DeletePod 在指定集群下删除 Pod
+// DeletePod Delete pod on specified cluster and namespace.
 func (k *Kubernetes) DeletePod(clusterName, namespace, podName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (k *Kubernetes) DeletePod(clusterName, namespace, podName string) error {
 	return nil
 }
 
-// UpdatePod 在指定集群下更新 Pod
+// UpdatePod Update pod on specified cluster and namespace.
 func (k *Kubernetes) UpdatePod(clusterName, namespace string, pod *corev1.Pod) error {
 	if pod == nil {
 		return fmt.Errorf("secret entity can't be nil")

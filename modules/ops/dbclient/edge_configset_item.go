@@ -26,7 +26,7 @@ const (
 	ScopePublic = "public"
 )
 
-// ListEdgeConfigSetItem 获取边缘配置集配置项
+// ListEdgeConfigSetItem List edge configSet item
 func (c *DBClient) ListEdgeConfigSetItem(param *apistructs.EdgeCfgSetItemListPageRequest) (int, *[]EdgeConfigSetItem, error) {
 	var (
 		total       int
@@ -44,7 +44,8 @@ func (c *DBClient) ListEdgeConfigSetItem(param *apistructs.EdgeCfgSetItemListPag
 
 	db = db.Where("configset_id = ?", param.ConfigSetID)
 
-	// 如果指定 Scope 则只查询 public，其余指定 siteID 可以按照站点查询
+	// If specified scope then query public type only
+	// If want to select scope site, please provider site id
 	if param.Scope == ScopePublic {
 		db = db.Where("scope = ?", ScopePublic)
 	}
@@ -53,7 +54,6 @@ func (c *DBClient) ListEdgeConfigSetItem(param *apistructs.EdgeCfgSetItemListPag
 		db = db.Where("site_id = ?", param.SiteID)
 	}
 
-	// TODO: 多字段模糊匹配优化
 	if param.Search != "" {
 		cfgSet, err := c.GetEdgeConfigSet(param.ConfigSetID)
 		if err != nil {
@@ -105,7 +105,7 @@ func (c *DBClient) ListEdgeConfigSetItem(param *apistructs.EdgeCfgSetItemListPag
 	return total, &cfgSetItems, nil
 }
 
-// GetEdgeConfigSetItem 根据 ID 获取配置项信息
+// GetEdgeConfigSetItem Get edge configSet item by id
 func (c *DBClient) GetEdgeConfigSetItem(itemID int64) (*EdgeConfigSetItem, error) {
 	var cfgSetItem EdgeConfigSetItem
 	if err := c.Where("id = ?", itemID).Find(&cfgSetItem).Error; err != nil {
@@ -117,7 +117,7 @@ func (c *DBClient) GetEdgeConfigSetItem(itemID int64) (*EdgeConfigSetItem, error
 	return &cfgSetItem, nil
 }
 
-// GetEdgeConfigSetItemsBySiteID 根据 Site ID 获取配置项信息
+// GetEdgeConfigSetItemsBySiteID Get configSet item by site id.
 func (c *DBClient) GetEdgeConfigSetItemsBySiteID(siteID int64) (*[]EdgeConfigSetItem, error) {
 	var (
 		cfgSetItem = make([]EdgeConfigSetItem, 0)
@@ -132,27 +132,27 @@ func (c *DBClient) GetEdgeConfigSetItemsBySiteID(siteID int64) (*[]EdgeConfigSet
 	return &cfgSetItem, nil
 }
 
-// CreateEdgeConfigSetItem 创建边缘配置集配置项
+// CreateEdgeConfigSetItem Create edge configSet item
 func (c *DBClient) CreateEdgeConfigSetItem(cfgSetItem *EdgeConfigSetItem) error {
 	return c.Create(cfgSetItem).Error
 }
 
-// UpdateEdgeConfigSetItem 更新边缘配置集配置项
+// UpdateEdgeConfigSetItem Update edge configSet item
 func (c *DBClient) UpdateEdgeConfigSetItem(cfgSetItem *EdgeConfigSetItem) error {
 	return c.Save(cfgSetItem).Error
 }
 
-// DeleteEdgeConfigSetItem 删除边缘配置集配置项
+// DeleteEdgeConfigSetItem Delete edge configSet item
 func (c *DBClient) DeleteEdgeConfigSetItem(cfgSetItemID int64) error {
 	return c.Where("id = ?", cfgSetItemID).Delete(&EdgeConfigSetItem{}).Error
 }
 
-// DeleteEdgeConfigSetItemBySiteID 删除指定站点下的所有配置项
+// DeleteEdgeConfigSetItemBySiteID Delete all edge configSet item under provided site id
 func (c *DBClient) DeleteEdgeConfigSetItemBySiteID(siteID int64) error {
 	return c.Where("site_id = ?", siteID).Delete(&EdgeConfigSetItem{}).Error
 }
 
-// DeleteEdgeCfgSetItemByCfgID 删除指定配置集ID下的所有配置项
+// DeleteEdgeCfgSetItemByCfgID Delete all edge configSet item under provided configSet id
 func (c *DBClient) DeleteEdgeCfgSetItemByCfgID(configSetID int64) error {
 	return c.Where("configset_id = ?", configSetID).Delete(&EdgeConfigSetItem{}).Error
 }

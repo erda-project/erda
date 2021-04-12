@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// ListEdgeConfigSet 获取所有边缘配置集
+// ListEdgeConfigSet List edge configSet
 func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		pageSize    = DefaultPageSize
@@ -74,7 +74,6 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 		}
 	}
 
-	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr != "" {
 		pageSize, err = strconv.Atoi(pageSizeStr)
@@ -83,7 +82,6 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 		}
 	}
 
-	// 获取pageNo
 	pageNoStr := r.URL.Query().Get("pageNo")
 	if pageNoStr != "" {
 		pageNo, err = strconv.Atoi(pageNoStr)
@@ -92,7 +90,7 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 		}
 	}
 
-	// 参数合法性校验
+	// parameters check
 	if orgID < 0 || clusterID < 0 || pageNo < 0 || pageSize < 0 {
 		return apierrors.ErrListEdgeConfigSet.InternalError(fmt.Errorf("illegal query param")).ToResp(), nil
 	}
@@ -105,7 +103,6 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 		PageSize:  pageSize,
 	}
 
-	// TODO: 操作鉴权
 	total, configSetInfos, err := e.edge.ListConfigSet(pageQueryParam)
 
 	if err != nil {
@@ -119,7 +116,7 @@ func (e *Endpoints) ListEdgeConfigSet(ctx context.Context, r *http.Request, vars
 	return httpserver.OkResp(rsp)
 }
 
-// GetEdgeConfigSet 获取指定边缘配置集
+// GetEdgeConfigSet Get edge configSet
 func (e *Endpoints) GetEdgeConfigSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 
@@ -142,7 +139,6 @@ func (e *Endpoints) GetEdgeConfigSet(ctx context.Context, r *http.Request, vars 
 	if internalClient == "" {
 	}
 
-	// TODO: 操作鉴权
 	cfgSetItem, err := e.edge.GetConfigSet(itemID)
 
 	if err != nil {
@@ -152,7 +148,7 @@ func (e *Endpoints) GetEdgeConfigSet(ctx context.Context, r *http.Request, vars 
 	return httpserver.OkResp(*cfgSetItem)
 }
 
-// CreateEdgeConfigSet 创建边缘配置集
+// CreateEdgeConfigSet Create edge configSet
 func (e *Endpoints) CreateEdgeConfigSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 	if r.Body == nil {
@@ -182,7 +178,7 @@ func (e *Endpoints) CreateEdgeConfigSet(ctx context.Context, r *http.Request, va
 	return httpserver.OkResp(edgeSiteID)
 }
 
-// UpdateEdgeConfigSet 更新边缘配置集
+// UpdateEdgeConfigSet Update edge configSet
 func (e *Endpoints) UpdateEdgeConfigSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 	edgeSiteID, err := strutil.Atoi64(vars["ID"])
@@ -216,7 +212,7 @@ func (e *Endpoints) UpdateEdgeConfigSet(ctx context.Context, r *http.Request, va
 	return httpserver.OkResp(edgeSiteID)
 }
 
-// DeleteEdgeConfigSet 删除指定边缘配置集
+// DeleteEdgeConfigSet Delete edge configSet
 func (e *Endpoints) DeleteEdgeConfigSet(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 	i, resp := e.GetIdentity(r)
