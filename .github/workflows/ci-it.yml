@@ -1,3 +1,16 @@
+# Copyright (c) 2021 Terminus, Inc.
+#
+# This program is free software: you can use, redistribute, and/or modify
+# it under the terms of the GNU Affero General Public License, version 3
+# or later ("AGPL"), as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 name: CI AND IT
 on:
   push:
@@ -19,6 +32,11 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.14
+      - name: Go generate files
+        run: |
+          go generate ./apistructs
+          go generate ./modules/openapi/api/generate
+          go generate ./modules/openapi/component-protocol/generate
       - name: Set up Go mod
         run: go mod tidy
       - name: Run Lint
@@ -29,11 +47,11 @@ jobs:
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
           # Optional: golangci-lint command line arguments.
-          args: --timeout=10m
+          args: --timeout=10m --out-format=colored-line-number
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true
           # Optional: if set to true then the action will use pre-installed Go.
-          # skip-go-installation: true
+          skip-go-installation: true
           # Optional: if set to true then the action don't cache or restore ~/go/pkg.
           skip-pkg-cache: true
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.

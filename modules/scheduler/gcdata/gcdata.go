@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package gcdata
 
 import (
@@ -37,7 +50,7 @@ func GCData() error {
 	}
 }
 
-// gcJobData 清理在 etcd 中的 pipeline 数据
+// gcJobData Clean up pipeline data in etcd
 func gcJobData(js jsonstore.JsonStore) error {
 	keys, err := js.ListKeys(context.Background(), "/dice/job/")
 	if err != nil {
@@ -87,7 +100,7 @@ func gcJobData(js jsonstore.JsonStore) error {
 	return nil
 }
 
-// gcServiceData 清理在 etcd 中的 service 数据
+// gcServiceData Clean up the service data in etcd
 func gcServiceData(js jsonstore.JsonStore) {
 	// TODO:
 }

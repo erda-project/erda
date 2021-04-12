@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -29,8 +42,8 @@ func newServiceAccount(name, namespace string, imageSecrets []string) *corev1.Se
 func (k *Kubernetes) updateDefaultServiceAccountForImageSecret(namespace, secretName string) error {
 	var err error
 
-	// 先尝试创建，失败后再进行更新
-	// k8s 会自动创建 default serviceaccount, 但是会有时延，导致概率更新失败。
+	// Try to create first, then update after failure
+	// k8s will automatically create the default serviceaccount, but there will be a delay, resulting in failure to update the probability.
 	if err = k.sa.Create(newServiceAccount(defaultServiceAccountName, namespace, []string{secretName})); err != nil {
 		for {
 			serviceaccount, err := k.sa.Get(namespace, defaultServiceAccountName)

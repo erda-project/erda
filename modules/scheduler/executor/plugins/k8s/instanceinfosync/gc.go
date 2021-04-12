@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package instanceinfosync
 
 import (
@@ -9,7 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// gcDeadInstancesInDB 回收 15 天前的 phase=Dead 的实例
+// gcDeadInstancesInDB Recover the instance of phase=Dead 15 days ago
 func gcDeadInstancesInDB(dbclient *instanceinfo.Client) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
@@ -28,11 +41,11 @@ func gcDeadInstancesInDB(dbclient *instanceinfo.Client) error {
 	return nil
 }
 
-// gcAliveInstancesInDB 处理一段时间内没有更新过的非 dead 实例, 将它们置为 dead.
-// 一段时间内都没有更新过的非 dead 实例说明:
-// 1. k8s集群中实际已经没有这个实例相关pod了, 已经 dead 了
-// 2. 这个实例被删除的时候的事件没有收到或者被正确处理
-// 3. 这条 db 记录再也不会被更新了
+// gcAliveInstancesInDB Handle non-dead instances that have not been updated in a period of time and set them as dead.
+// Description of non-dead instances that have not been updated in a period of time:
+// 1. There is actually no pod related to this instance in the k8s cluster, and it is dead.
+// 2. The event when this instance was deleted was not received or was processed correctly
+// 3. This db record will never be updated again
 func gcAliveInstancesInDB(dbclient *instanceinfo.Client, secs int, clustername string) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
@@ -73,7 +86,7 @@ func gcPodsInDB(dbclient *instanceinfo.Client, secs int, clustername string) err
 	return w.Delete(podIDs...)
 }
 
-// gcServicesInDB 不会定期删除 s_service_info 表里内容, 因为这个表内容应该是增长非常慢的
+// gcServicesInDB The contents of the s_service_info table will not be deleted regularly, because the contents of this table should grow very slowly
 func gcServicesInDB(dbclient *instanceinfo.Client) error {
 	return nil
 }

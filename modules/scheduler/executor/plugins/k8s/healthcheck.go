@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -26,7 +39,7 @@ func SetHealthCheck(container *apiv1.Container, service *apistructs.Service) {
 
 }
 
-// FillHealthCheckProbe 基于 service 填充出 k8s probe
+// FillHealthCheckProbe Fill out k8s probe based on service
 func FillHealthCheckProbe(service *apistructs.Service) *apiv1.Probe {
 	var (
 		probe *apiv1.Probe
@@ -39,26 +52,26 @@ func FillHealthCheckProbe(service *apistructs.Service) *apiv1.Probe {
 	} else if oldHC != nil {
 		probe = OldHealthCheck(oldHC)
 	} else {
-		// 默认健康检测
+		// Default health check
 		probe = DefaultHealthCheck(service)
 	}
 
 	return probe
 }
 
-// NewCheckProbe 创建 k8s probe 默认对象
+// NewCheckProbe Create k8s probe default object
 func NewCheckProbe() *apiv1.Probe {
 	return &apiv1.Probe{
 		InitialDelaySeconds: 0,
-		// 每次健康检查超时时间
+		// Timeout of each health check
 		TimeoutSeconds: 10,
-		// 健康检查探测间隔
+		// Health check detection interval
 		PeriodSeconds:    15,
 		FailureThreshold: int32(apistructs.HealthCheckDuration) / 15,
 	}
 }
 
-// DefaultHealthCheck 用户没有配置任何健康检查，默认对第一个端口做4层 tcp 检查
+// DefaultHealthCheck The user has not configured any health check, and the first port is checked by layer 4 tcp by default
 func DefaultHealthCheck(service *apistructs.Service) *apiv1.Probe {
 	if len(service.Ports) == 0 {
 		return nil
@@ -71,7 +84,7 @@ func DefaultHealthCheck(service *apistructs.Service) *apiv1.Probe {
 	return probe
 }
 
-// NewHealthCheck 配置 Dice 新版健康检测
+// NewHealthCheck Configure the new version of Dice health check
 func NewHealthCheck(hc *apistructs.NewHealthCheck) *apiv1.Probe {
 	if hc == nil || (hc.HttpHealthCheck == nil && hc.ExecHealthCheck == nil) {
 		return nil
@@ -101,7 +114,7 @@ func NewHealthCheck(hc *apistructs.NewHealthCheck) *apiv1.Probe {
 	return probe
 }
 
-// OldHealthCheck 兼容 Dice 老版本健康检测
+// OldHealthCheck Compatible with Dice old version health detection
 func OldHealthCheck(hc *apistructs.HealthCheck) *apiv1.Probe {
 	if hc == nil {
 		return nil
@@ -124,7 +137,7 @@ func OldHealthCheck(hc *apistructs.HealthCheck) *apiv1.Probe {
 			Scheme: apiv1.URIScheme(hc.Kind),
 		}
 	}
-	// 老的健康检查默认持续时长5分钟（连续5分钟内健康检查全部失败则杀死容器），同 dcos 配置
+	// The default duration of the old health check is 5 minutes (the container will be killed if all health checks fail within 5 minutes), the same as the dcos configuration
 	probe.FailureThreshold = 300 / 15
 	return probe
 }

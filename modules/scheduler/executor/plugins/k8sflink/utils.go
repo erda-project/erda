@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8sflink
 
 import (
@@ -99,6 +112,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1be
 			},
 			EnvVars:         data.Spec.Envs,
 			FlinkProperties: data.Spec.Properties,
+			LogConfig:       composeLogConfig(),
 		},
 	}
 
@@ -175,4 +189,56 @@ func composeOwnerReferences(versionGroup, kind, name string, uid types.UID) meta
 		Controller:         getBoolPoint(true),
 		BlockOwnerDeletion: getBoolPoint(true),
 	}
+}
+
+func composeLogConfig() map[string]string {
+	logConfig := map[string]string{
+		"log4j-console.properties": `rootLogger.level = INFO
+      rootLogger.appenderRef.file.ref = LogFile
+      rootLogger.appenderRef.console.ref = LogConsole
+      appender.file.name = LogFile
+      appender.file.type = File
+      appender.file.append = false
+      appender.file.fileName = ${sys:log.file}
+      appender.file.layout.type = PatternLayout
+      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      appender.console.name = LogConsole
+      appender.console.type = CONSOLE
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      logger.akka.name = akka
+      logger.akka.level = INFO
+      logger.kafka.name= org.apache.kafka
+      logger.kafka.level = INFO
+      logger.hadoop.name = org.apache.hadoop
+      logger.hadoop.level = INFO
+      logger.zookeeper.name = org.apache.zookeeper
+      logger.zookeeper.level = INFO
+      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
+      logger.netty.level = OFF`,
+		"logback-console.xml": `<configuration>
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <appender name="file" class="ch.qos.logback.core.FileAppender">
+          <file>${log.file}</file>
+          <append>false</append>
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <root level="INFO">
+          <appender-ref ref="console"/>
+          <appender-ref ref="file"/>
+        </root>
+        <logger name="akka" level="INFO" />
+        <logger name="org.apache.kafka" level="INFO" />
+        <logger name="org.apache.hadoop" level="INFO" />
+        <logger name="org.apache.zookeeper" level="INFO" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="INFO" />
+      </configuration>`,
+	}
+	return logConfig
 }

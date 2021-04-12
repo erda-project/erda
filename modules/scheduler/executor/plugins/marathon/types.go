@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package marathon
 
 import (
@@ -224,7 +237,7 @@ type QueueOffer struct {
 	Count int             `json:"count,omitempty"`
 	Delay QueueOfferDelay `json:"delay,omitempty"`
 	App   App             `json:"app,omitempty"`
-	// 概述 offer 处理情况
+	// Overview of offer processing
 	ProcessedOffersSummary ProcessedOffersSummary `json:"processedOffersSummary,omitempty"`
 }
 
@@ -233,12 +246,12 @@ type QueueOfferDelay struct {
 	Overdue         bool `json:"overdue,omitempty"`
 }
 
-// ProcessedOffersSummary 简要描述 offer 是否符合的情况
+// ProcessedOffersSummary Briefly describe whether the offer is in compliance
 type ProcessedOffersSummary struct {
 	RejectSummaryLastOffers []RejectSummaryLastOffer `json:"rejectSummaryLastOffers,omitempty"`
 }
 
-// RejectSummaryLastOffer 描述最近的 offer 不通过的情况
+// RejectSummaryLastOffer Describe the failure of the recent offer
 type RejectSummaryLastOffer struct {
 	Reason    string `json:"reason,omitempty"`
 	Declined  int    `json:"declined,omitempty"`

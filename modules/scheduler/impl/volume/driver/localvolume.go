@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package driver
 
 import (
@@ -99,8 +112,8 @@ func (d LocalVolumeDriver) UnAttach(ID volume.VolumeIdentity, dst volume.AttachD
 	return info, nil
 }
 
-// 对于 localvolume， Delete 什么都不做，只清除元数据，具体的清理工作由plugin提供的localvolume来实现
-// 比如对于 marathon， localpv 由它来清理
+// For localvolume, Delete does nothing, only clears the metadata. The specific cleanup work is implemented by the localvolume provided by the plugin.
+// For example, for marathon, localpv is cleaned up by it
 func (d LocalVolumeDriver) Delete(ID volume.VolumeIdentity, force bool) error {
 	_, err := defaultDelete(d.js, ID)
 	return err

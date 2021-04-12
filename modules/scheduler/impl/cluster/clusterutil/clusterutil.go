@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package clusterutil cluster utils
 package clusterutil
 
@@ -29,15 +42,15 @@ const (
 	EdasKindInK8s = "EDASINK8S"
 	// DiceCluster DICE_CLUSTER env key
 	DiceCluster = "DICE_CLUSTER"
-	// k8sKindFlink 标识 k8s flink 类型
+	// k8sKindFlink Identify k8s flink type
 	K8SKindFlink = "K8SFLINK"
-	// k8sKindSpark 标识 k8s spark 类型
+	// k8sKindSpark Identify k8s spark type
 	K8SKindSpark = "K8SSpark"
-	// k8sSparkVersion 标识 k8s spark 类型
+	// k8sSparkVersion Identify k8s flink version
 	K8SSparkVersion = "2.4.0"
 )
 
-// SetRuntimeExecutorByCluster runtime 的 executor 为空时，根据 cluster 值设置 executor
+// SetRuntimeExecutorByCluster When the runtime executor is empty, set the executor according to the cluster value
 func SetRuntimeExecutorByCluster(runtime *apistructs.ServiceGroup) error {
 	if len(runtime.Executor) > 0 {
 		return nil
@@ -52,7 +65,7 @@ func SetRuntimeExecutorByCluster(runtime *apistructs.ServiceGroup) error {
 	return nil
 }
 
-// SetJobExecutorByCluster job 的 executor 为空时，根据 cluster 值设置 executor
+// SetJobExecutorByCluster When the job executor is empty, set the executor according to the cluster value
 func SetJobExecutorByCluster(job *apistructs.Job) error {
 	if len(job.Executor) > 0 {
 		return nil
@@ -61,7 +74,7 @@ func SetJobExecutorByCluster(job *apistructs.Job) error {
 		return errors.Errorf("job(%s/%s) neither executor nor cluster is set", job.Namespace, job.Name)
 	}
 
-	if job.Kind == "" { // FIXME 兼容老的未传Kind的情况，后续可去除
+	if job.Kind == "" { // FIXME Compatible with the old untransmitted Kind situation, which can be removed later
 		job.Kind = JobKindMetronome
 	}
 
@@ -90,7 +103,7 @@ var (
 	preFetcher, _ = jsonstore.New()
 )
 
-// GenerateExecutorByCluster 根据 `cluster` 和 `executorType` 得到 executorname
+// GenerateExecutorByCluster Get executorname according to `cluster` and `executorType`
 func GenerateExecutorByCluster(cluster, executorType string) string {
 	cname := cluster
 	switch cname {
@@ -107,7 +120,7 @@ func GenerateExecutorByCluster(cluster, executorType string) string {
 		fmt.Sprintf("/dice/clustertoexecutor/%s/%s", cluster, executorType), &executor); err == nil {
 		return executor
 	}
-	// 处理 edas 的 service executor
+	// The service executor that handles edas
 	if executorType == ServiceKindEdas {
 		return "EDASFOR" + strutil.ToUpper(strings.Replace(cname, "-", "", -1))
 	}

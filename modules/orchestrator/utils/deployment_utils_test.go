@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
@@ -13,7 +26,7 @@ import (
 func TestApplyOverlay(t *testing.T) {
 	target := diceyml.Object{
 		Services: map[string]*diceyml.Service{
-			"demo": &diceyml.Service{
+			"demo": {
 				Resources: diceyml.Resources{
 					CPU:  1.0,
 					Mem:  256,
@@ -124,12 +137,12 @@ func TestBuildDiscoveryConfig(t *testing.T) {
 		{
 			Name:  "backend-1",
 			Vip:   "backend-1.marathon.dice",
-			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8080}, diceyml.ServicePort{Port: 8090}},
+			Ports: []diceyml.ServicePort{{Port: 8080}, {Port: 8090}},
 		},
 		{
 			Name:  "frontend-2",
 			Vip:   "frontend-2.marathon.dice",
-			Ports: []diceyml.ServicePort{diceyml.ServicePort{Port: 8081}},
+			Ports: []diceyml.ServicePort{{Port: 8081}},
 		},
 		{
 			Name: "empty",

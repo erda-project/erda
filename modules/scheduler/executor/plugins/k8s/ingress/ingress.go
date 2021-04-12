@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package ingress manipulates the k8s api of ingress object
 package ingress
 
@@ -74,7 +87,7 @@ func (n *Ingress) Delete(namespace, name string) error {
 
 	if !resp.IsOK() {
 		if resp.IsNotfound() {
-			// ingress 不存在，认为删除成功
+			// The ingress does not exist, the deletion is considered successful
 			logrus.Debugf("ingress not found, name: %s", name)
 			return nil
 		}

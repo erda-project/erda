@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package legacy
 
 import (
@@ -61,7 +74,7 @@ func (ro *RedisOperator) IsSupported() bool {
 	return true
 }
 
-// Validate 检查
+// Validate
 func (ro *RedisOperator) Validate(sg *apistructs.ServiceGroup) error {
 	operator, ok := sg.Labels["USE_OPERATOR"]
 	if !ok {
@@ -164,7 +177,7 @@ func (ro *RedisOperator) Create(k8syml interface{}) error {
 }
 
 func (ro *RedisOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.ServiceGroup, error) {
-	deploylist, err := ro.deployment.List(genK8SNamespace(sg.Type, sg.ID))
+	deploylist, err := ro.deployment.List(genK8SNamespace(sg.Type, sg.ID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +289,7 @@ func convertSentinel(svc apistructs.Service) SentinelSettings {
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = RedisFailoverResources{
-		Requests: CPUAndMem{ // sentinel 不超配, 因为本身就应该已经很少占用资源了
+		Requests: CPUAndMem{ // sentinel Not over-provisioned, because it should already occupy very little resources
 			CPU:    fmt.Sprintf("%dm", int(1000*svc.Resources.Cpu)),
 			Memory: fmt.Sprintf("%dMi", int(svc.Resources.Mem)),
 		},

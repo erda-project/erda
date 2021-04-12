@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package sparkapplication manipulates the k8s api of sparkapplication object
 package sparkapplication
 
@@ -126,7 +139,7 @@ func (s *SparkApplication) List(namespace string) (sparkv1beta2.SparkApplication
 func (s *SparkApplication) Update(app *sparkv1beta2.SparkApplication) error {
 	var b bytes.Buffer
 
-	// FIXME: spark operator 在 ResourceVersion 不变的情况下，不进行更新
+	// FIXME: Spark operator does not update when the ResourceVersion remains unchanged
 	oriApp, err := s.Get(app.Namespace, app.Name)
 	if err == nil {
 		app.ObjectMeta.ResourceVersion = oriApp.ObjectMeta.ResourceVersion

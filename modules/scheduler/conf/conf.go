@@ -1,21 +1,34 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package conf
 
 import (
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
-// Conf scheduler conf, 使用 envconf 加载配置
+// Conf scheduler conf, use envconf to load configuration
 type Conf struct {
-	// Debug 控制日志等级
+	// Debug Control log level
 	Debug bool `env:"DEBUG" default:"false"`
 	// PoolSize goroutine pool size
 	PoolSize int `env:"POOL_SIZE" default:"50"`
-	// ListenAddr scheduler 监听地址, eg: ":9091"
+	// ListenAddr scheduler listening address , eg: ":9091"
 	ListenAddr             string `env:"LISTEN_ADDR" default:":9091"`
 	DefaultRuntimeExecutor string `env:"DEFAULT_RUNTIME_EXECUTOR" default:"MARATHON"`
 	// TraceLogEnv shows the key of environment variable defined for tracing log
 	TraceLogEnv string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
-	// PlaceHolderImage 打散部署service时，用于占位的镜像
+	// PlaceHolderImage Image used to occupy the seat when disassembling the service deployment
 	PlaceHolderImage string `env:"PLACEHOLDER_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/terminus/busybox"`
 
 	KafkaBrokers        string `env:"BOOTSTRAP_SERVERS"`
@@ -27,7 +40,7 @@ type Conf struct {
 
 var cfg Conf
 
-// Load 加载环境变量配置.
+// Load environment variable
 func Load() {
 	envconf.MustLoad(&cfg)
 }

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package instanceinfosync
 
 import (
@@ -9,11 +22,11 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// gcAliveInstancesInDB 处理一段时间内没有更新过的非 Dead 实例.
-// 策略:
-// 1. 找出所有 SECS(参数) 内未更新的非 Dead 实例
-// 2. 检查上面找出的每个实例相应的 宿主机 上是否有其他更新过状态(1小时内)的实例
-// 3. 如果有, 将这个实例设置为 Dead. 如果没有, 则忽略
+// gcAliveInstancesInDB Process non-Dead instances that have not been updated in a period of time.
+// Strategy:
+// 1. Find all non-Dead instances that have not been updated in SECS (parameters)
+// 2. Check whether there are other instances with updated status (within 1 hour) on the corresponding host of each instance found above
+// 3. If there is, set this instance to Dead. If not, ignore
 func gcAliveInstancesInDB(dbclient *instanceinfo.Client, secs int) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()

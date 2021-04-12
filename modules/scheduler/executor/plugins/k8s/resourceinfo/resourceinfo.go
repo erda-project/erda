@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package resourceinfo
 
 import (
@@ -29,7 +42,7 @@ func New(addr string, client *httpclient.HTTPClient) *ResourceInfo {
 	return &ResourceInfo{addr: addr, client: client, podutil: podutil, nodeutil: nodeutil}
 }
 
-// PARAM brief: 不提供 cpuusage, memusage 数据, 减少调用k8sapi的开销
+// PARAM brief: Does not provide cpuusage, memusage data, reducing the overhead of calling k8sapi
 func (ri *ResourceInfo) Get(brief bool) (apistructs.ClusterResourceInfoData, error) {
 	podlist := &v1.PodList{Items: nil}
 	if !brief {

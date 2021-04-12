@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -24,7 +37,7 @@ const (
 	// local volume storageclass name
 	localStorage = "dice-local-volume"
 
-	// 默认的 sa
+	// default sa
 	defaultServiceAccountName = "default"
 )
 
@@ -37,7 +50,7 @@ type StatefulsetInfo struct {
 	annotations map[string]string
 }
 
-// OneGroupInfo 返回该group对应的statefulset的信息
+// OneGroupInfo Returns information about the statefulset corresponding to the group
 type OneGroupInfo struct {
 	sg  *apistructs.ServiceGroup
 	sts *appsv1.StatefulSet

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package elasticsearch
 
 import (
@@ -52,7 +65,7 @@ func New(k8s addon.K8SUtil,
 	}
 }
 
-// IsSupported 判断是否支持 elasticseatch operator
+// IsSupported Determine whether to support  elasticseatch operator
 func (eo *ElasticsearchOperator) IsSupported() bool {
 	resp, err := eo.client.Get(eo.k8s.GetK8SAddr()).
 		Path("/apis/elasticsearch.k8s.elastic.co/v1").
@@ -69,7 +82,7 @@ func (eo *ElasticsearchOperator) IsSupported() bool {
 	return true
 }
 
-// Validate 验证由 diceyml 转化而来的 ServiceGroup 的合法性
+// Validate Verify the legality of the ServiceGroup transformed from diceyml
 func (eo *ElasticsearchOperator) Validate(sg *apistructs.ServiceGroup) error {
 	operator, ok := sg.Labels["USE_OPERATOR"]
 	if !ok {
@@ -87,7 +100,7 @@ func (eo *ElasticsearchOperator) Validate(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-// Convert 将 sg 转换为 cr，即 kubernetes yaml
+// Convert Convert sg to cr, which is kubernetes yaml
 func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	svc0 := sg.Services[0]
 	scname := "dice-local-volume"
@@ -240,7 +253,7 @@ func (eo *ElasticsearchOperator) Remove(sg *apistructs.ServiceGroup) error {
 }
 
 // Update
-// secret 不会进行更新, 因静态密码的更新需要重启。(可以通过完善服务的用户管理机、完善多用户认证)
+// secret The update will not be performed, and a restart is required due to the update of the static password. (You can improve the multi-user authentication through the user management machine with perfect service)
 func (eo *ElasticsearchOperator) Update(k8syml interface{}) error {
 	elasticsearchAndSecret, ok := k8syml.(ElasticsearchAndSecret)
 	if !ok {
@@ -370,13 +383,13 @@ func envs(envs map[string]string) []corev1.EnvVar {
 	return r
 }
 
-// convertMiToMB 转换 MiB 至 MB
+// convertMiToMB Convert MiB to MB
 //1 MiB = 1.048576 MB
 func convertMiToMB(mem float64) float64 {
 	return mem * 1.048576
 }
 
-// convertJsontToMap 转换 json 至 map
+// convertJsontToMap Convert json to map
 func convertJsontToMap(str string) (map[string]string, error) {
 	var tempMap map[string]string
 	if str == "" {
@@ -389,7 +402,7 @@ func convertJsontToMap(str string) (map[string]string, error) {
 	return tempMap, nil
 }
 
-// Get 获取 elasticsearchs 资源信息
+// Get get elasticsearchs resource information
 func (eo *ElasticsearchOperator) Get(namespace, name string) (*Elasticsearch, error) {
 	var b bytes.Buffer
 

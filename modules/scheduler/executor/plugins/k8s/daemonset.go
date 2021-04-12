@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -60,6 +73,10 @@ func (k *Kubernetes) getDaemonSet(namespace, name string) (*appsv1.DaemonSet, er
 
 func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.ServiceGroup) (*appsv1.DaemonSet, error) {
 	deployName := getDeployName(service)
+	enableServiceLinks := false
+	if _, ok := sg.Labels[EnableServiceLinks]; ok {
+		enableServiceLinks = true
+	}
 	daemonset := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -72,7 +89,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": deployName},
+				MatchLabels: map[string]string{"app": service.Name},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -80,7 +97,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 					Labels: make(map[string]string),
 				},
 				Spec: corev1.PodSpec{
-					EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
+					EnableServiceLinks:    func(enable bool) *bool { return &enable }(enableServiceLinks),
 					ShareProcessNamespace: func(b bool) *bool { return &b }(false),
 					Tolerations:           toleration.GenTolerations(),
 				},
@@ -102,9 +119,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		{PodLabels: map[string]string{"app": deployName}}}, k).Affinity
 	daemonset.Spec.Template.Spec.Affinity = &affinity
 
-	// 1核等于1000m
 	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	// 1Mi=1024K=1024x1024字节
 	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
 
 	container := corev1.Container{
@@ -119,7 +134,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		},
 	}
 
-	//根据环境设置超分比
+	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
 	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
@@ -134,7 +149,7 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		memSubscribeRatio = k.stagingMemSubscribeRatio
 	}
 
-	// 根据超卖比，设置细粒度的CPU
+	// Set fine-grained CPU based on the oversold ratio
 	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
 		return nil, err
 	}
@@ -143,10 +158,10 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		return nil, err
 	}
 
-	// 生成 sidecars 容器配置
+	// Generate sidecars container configuration
 	sidecars := k.generateSidecarContainers(service.SideCars)
 
-	// 生成 initcontainer 配置
+	// Generate initcontainer configuration
 	initcontainers := k.generateInitContainer(service.InitContainer)
 
 	containers := []corev1.Container{container}
@@ -156,18 +171,18 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		daemonset.Spec.Template.Spec.InitContainers = initcontainers
 	}
 
-	daemonset.Spec.Selector.MatchLabels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Spec.Template.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Labels[LabelRuntimeID] = service.Env[KeyDiceRuntimeID]
-	daemonset.Labels["app"] = deployName
-	daemonset.Spec.Template.Labels["app"] = deployName
+	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Labels["app"] = service.Name
+	daemonset.Spec.Template.Labels["app"] = service.Name
 
 	if daemonset.Spec.Template.Annotations == nil {
 		daemonset.Spec.Template.Annotations = make(map[string]string)
 	}
 	podAnnotations(service, daemonset.Spec.Template.Annotations)
 
-	// 按当前的设定，一个pod中只有一个用户的容器
+	// According to the current setting, there is only one user container in a pod
 	if service.Cmd != "" {
 		for i := range containers {
 			cmds := []string{"sh", "-c", service.Cmd}

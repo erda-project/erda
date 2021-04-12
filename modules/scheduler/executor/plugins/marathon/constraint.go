@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package marathon
 
 import (
@@ -6,33 +19,33 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// Constraints 用于构建 & 生成 marathon constraints label
+// Constraints Used to build & generate marathon constraints label
 type Constraints struct {
 	//          key: tagname
 	likeRules   map[string][]*rule
 	unlikeRules map[string][]*rule
 }
 
-// NewConstraints 创建 Constraints
+// NewConstraints create Constraints
 func NewConstraints() Constraints {
 	return Constraints{likeRules: make(map[string][]*rule), unlikeRules: make(map[string][]*rule)}
 }
 
-// NewLikeRule 新增 like rule
+// NewLikeRule add like rule
 func (c *Constraints) NewLikeRule(tag string) *rule {
 	r := rule{}
 	c.likeRules[tag] = append(c.likeRules[tag], &r)
 	return &r
 }
 
-// NewUnlikeRule 新增 unlike rule
+// NewUnlikeRule add unlike rule
 func (c *Constraints) NewUnlikeRule(tag string) *rule {
 	r := rule{}
 	c.unlikeRules[tag] = append(c.unlikeRules[tag], &r)
 	return &r
 }
 
-// Generate 生成 Marathon 的 label
+// Generate Generate Marathon label
 func (c *Constraints) Generate() []Constraint {
 	r := []Constraint{}
 	for tag, likes := range c.likeRules {
@@ -57,7 +70,7 @@ type andrule struct {
 	elems []string
 }
 
-// OR 语义上等于 '|' （或）
+// Semantically equal to'|' (or)
 func (r *rule) OR(or ...*andrule) *rule {
 	r.elems = append(r.elems, or...)
 	return r
@@ -85,7 +98,7 @@ func (r *rule) generate() string {
 	return strutil.Concat(`.*\b(`, strutil.Join(andrules, "|", true), ")")
 }
 
-// AND 语义上等于 '&' (且)
+// AND Semantically equal to'&' (and)
 func AND(ss ...string) *andrule {
 	return &andrule{elems: ss}
 }

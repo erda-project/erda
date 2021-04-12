@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package driver
 
 import (
@@ -102,7 +115,7 @@ func (d NasVolumeDriver) UnAttach(ID volume.VolumeIdentity, dst volume.AttachDes
 }
 
 func (d NasVolumeDriver) Delete(ID volume.VolumeIdentity, force bool) error {
-	// TODO: 调用 soldier 来删除
+	// TODO: Call soldier to delete
 	_, err := defaultSoftDelete(d.js, ID) // soft delete
 	return err
 }

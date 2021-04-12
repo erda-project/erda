@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package events
 
 import (
@@ -61,28 +74,28 @@ func handleInstanceStatusChangedEvents(e *eventtypes.StatusEvent, lstore *sync.M
 			return errors.Errorf("instance(id:%s) wrong format in lstore", e.TaskId)
 		}
 
-		// 忽略 healthy 或者 unhealthy 后的 running 事件
+		//Ignore the running event after healthy or unhealthy
 		if (instance.InstanceStatus == HEALTHY || instance.InstanceStatus == UNHEALTHY) && e.Status == RUNNING {
 			ie.InstanceStatus = instance.InstanceStatus
 			return nil
 		}
 
-		// marathon 的健康检查事件没有 ip 信息
+		// There is no ip information in marathon's health check event
 		if e.Status == HEALTHY || e.Status == UNHEALTHY {
 			ie.IP = instance.IP
 			ie.Host = instance.Host
 		}
 
-		// marathon bug: 对于一个实例发完 running 和 healthy 后会重复发 running 和 healthy
-		// 过滤重复事件
+		// marathon bug: For an instance, after sending running and healthy, it will repeat running and healthy
+		// Filter recurring events
 		if convertInstanceStatus(e.Status) == instance.InstanceStatus {
 			return nil
 		}
 
-		// 实例如果被删除，则从本地缓存中删除对应记录。否则更新记录。
+		// If the instance is deleted, the corresponding record will be deleted from the local cache. Otherwise update the record.
 		if ie.InstanceStatus == INSTANCE_KILLED || ie.InstanceStatus == INSTANCE_FAILED || ie.InstanceStatus == INSTANCE_FINISHED {
 			lstore.Delete(e.TaskId)
-			// marathon bug: killed 事件中传过来的容器 ip 绝大多数情况下是 host ip
+			// marathon bug: The container ip passed in the killed event is host ip in most cases
 			ie.IP = instance.IP
 		} else {
 			lstore.Store(e.TaskId, ie)

@@ -1,11 +1,22 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8sjob
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -21,45 +32,35 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/event"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/namespace"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
-	executorKind          = "K8SJOB"
-	defaultAPIPrefix      = "/apis/batch/v1/namespaces/"
-	defaultNamespace      = "default"
-	jobKind               = "Job"
-	jobAPIVersion         = "batch/v1"
-	initContainerName     = "pre-fetech-container"
-	emptyDirVolumeName    = "pre-fetech-volume"
-	aliyunImagePullSecret = "aliyun-registry"
+	executorKind       = "K8SJOB"
+	jobKind            = "Job"
+	jobAPIVersion      = "batch/v1"
+	initContainerName  = "pre-fetech-container"
+	emptyDirVolumeName = "pre-fetech-volume"
 )
 
 var (
 	defaultParallelism int32 = 1
 	defaultCompletions int32 = 1
-	// k8s job 默认是有 6 次重试的机会，
-	// 基于现有业务，重试次数设置成 0 次，要么成功要么失败
+	// By default, k8s job has 6 retry opportunities.
+	// Based on the existing business, the number of retries is set to 0, either success or failure
 	defaultBackoffLimit int32 = 0
 )
 
-// k8s job plugin's configure
-//
-// EXECUTOR_K8SJOB_K8SJOBFORTERMINUS_ADDR=http://127.0.0.1:8080
-// EXECUTOR_K8SJOB_K8SJOBFORJOBTERMINUS_BASICAUTH=admin:1234
-// EXECUTOR_K8S_K8SFORSERVICE_BASICAUTH=
-// EXECUTOR_K8S_K8SFORSERVICE_CA_CRT=
-// EXECUTOR_K8S_K8SFORSERVICE_CLIENT_CRT=
-// EXECUTOR_K8S_K8SFORSERVICE_CLIENT_KEY=
-// EXECUTOR_K8S_K8SFORSERVICE_BEARER_TOKEN=
+const (
+	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
+	// Specify Image Pull Policy with IfNotPresent,Always,Never
+	SpecifyImagePullPolicy = "SPECIFY_IMAGE_PULL_POLICY"
+)
+
 func init() {
 	executortypes.Register(executorKind, func(name executortypes.Name, clusterName string, options map[string]string, optionsPlus interface{}) (
 		executortypes.Executor, error) {
@@ -67,41 +68,30 @@ func init() {
 		if !ok {
 			return nil, errors.Errorf("not found k8s address in env variables")
 		}
-
-		if !strings.HasPrefix(addr, "inet://") {
-			if !strings.HasPrefix(addr, "http") && !strings.HasPrefix(addr, "https") {
-				addr = strutil.Concat("http://", addr)
-			}
-		}
-
-		client := httpclient.New()
-		if _, ok := options["CA_CRT"]; ok {
-			logrus.Infof("k8s executor(%s) addr for https: %v", name, addr)
-			client = httpclient.New(httpclient.WithHttpsCertFromJSON([]byte(options["CLIENT_CRT"]),
-				[]byte(options["CLIENT_KEY"]),
-				[]byte(options["CA_CRT"])))
-			token, ok := options["BEARER_TOKEN"]
-			if !ok {
-				return nil, errors.Errorf("not found k8s bearer token")
-			}
-			// 默认开启了 RBAC, 需要通过 token 进行用户鉴权
-			client.BearerTokenAuth(token)
-		}
-
-		basicAuth, ok := options["BASICAUTH"]
-		if ok {
-			userPasswd := strings.Split(basicAuth, ":")
-			if len(userPasswd) == 2 {
-				client.BasicAuth(userPasswd[0], userPasswd[1])
-			}
-		}
-
-		clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client))
+		var (
+			client *kubernetes.Clientset
+			err    error
+		)
+		client, err = kubernetes.NewKubernetesClientSet("")
 		if err != nil {
 			return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 				name, clusterName, err)
 		}
-		// 同步 cluster info（10m 一次）
+		if strings.HasPrefix(addr, "inet://") {
+			client, err = kubernetes.NewKubernetesClientSet(addr)
+			if err != nil {
+				return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
+					name, clusterName, err)
+			}
+		}
+
+		clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithKubernetesClient(client))
+		if err != nil {
+			return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
+				name, clusterName, err)
+		}
+
+		// Synchronize cluster info (every 10m)
 		go clusterInfo.LoopLoadAndSync(context.Background(), false)
 
 		return &k8sJob{
@@ -109,13 +99,9 @@ func init() {
 			clusterName: clusterName,
 			options:     options,
 			addr:        addr,
-			prefix:      defaultAPIPrefix,
 			client:      client,
-			pvc:         persistentvolumeclaim.New(persistentvolumeclaim.WithCompleteParams(addr, client)),
-			namespace:   namespace.New(namespace.WithCompleteParams(addr, client)),
-			secret:      secret.New(secret.WithCompleteParams(addr, client)),
 			clusterInfo: clusterInfo,
-			event:       event.New(event.WithCompleteParams(addr, client)),
+			event:       event.New(event.WithKubernetesClient(client)),
 		}, nil
 	})
 }
@@ -125,11 +111,7 @@ type k8sJob struct {
 	clusterName string
 	options     map[string]string
 	addr        string
-	prefix      string
-	client      *httpclient.HTTPClient
-	pvc         *persistentvolumeclaim.PersistentVolumeClaim
-	namespace   *namespace.Namespace
-	secret      *secret.Secret
+	client      *kubernetes.Clientset
 	clusterInfo *clusterinfo.ClusterInfo
 	event       *event.Event
 }
@@ -144,33 +126,42 @@ func (k *k8sJob) Name() executortypes.Name {
 	return k.name
 }
 
-// Create 创建 k8s job
+// Create create k8s job
 func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, error) {
-	var b bytes.Buffer
 	job := specObj.(apistructs.Job)
 
-	if k.namespace.Exists(job.Namespace) != nil {
-		if err := k.namespace.Create(job.Namespace, nil); err != nil {
-			logrus.Errorf("failed to create namespace: %v", err)
-		}
-	}
-	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
-		return nil, err
-	}
-	_, _, pvcs := GenerateK8SVolumes(&job)
-	for _, pvc := range pvcs {
-		if pvc == nil {
-			continue
-		}
-		if err := k.pvc.Create(pvc); err != nil {
+	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+
+	if namespace == "" {
+		namespace = job.Namespace
+		err := k.createNamespace(ctx, namespace)
+		if err != nil {
 			return nil, err
 		}
 	}
-	for i := range pvcs {
-		if pvcs[i] == nil {
-			continue
+
+	if err := k.createImageSecretIfNotExist(namespace); err != nil {
+		return nil, err
+	}
+
+	if len(job.Volumes) != 0 {
+		_, _, pvcs := GenerateK8SVolumes(&job)
+		for _, pvc := range pvcs {
+			if pvc == nil {
+				continue
+			}
+			_, err := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
 		}
-		job.Volumes[i].ID = &(pvcs[i].Name)
+
+		for i := range pvcs {
+			if pvcs[i] == nil {
+				continue
+			}
+			job.Volumes[i].ID = &(pvcs[i].Name)
+		}
 	}
 
 	kubeJob, err := k.generateKubeJob(specObj)
@@ -178,28 +169,11 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 		return nil, errors.Wrapf(err, "failed to create k8s job")
 	}
 
-	ns := kubeJob.Namespace
+	_, err = k.client.BatchV1().Jobs(namespace).Create(ctx, kubeJob, metav1.CreateOptions{})
+
 	name := kubeJob.Name
-	path := strutil.Concat(k.prefix, ns, "/jobs")
-
-	// POST /apis/batch/v1/namespaces/{namespace}/jobs
-	resp, err := k.client.Post(k.addr).
-		Path(path).
-		Header("Content-Type", "application/json").
-		JSONBody(kubeJob).
-		Do().
-		Body(&b)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create k8s job, name: %s", name)
-	}
-
-	if resp == nil {
-		return nil, errors.Errorf("resp is null")
-	}
-
-	if !resp.IsOK() {
-		errMsg := fmt.Sprintf("failed to create k8s job, name: %s, statusCode: %d, resp body: %s",
-			name, resp.StatusCode(), b.String())
+		errMsg := fmt.Sprintf("failed to create k8s job, name: %s", name)
 		logrus.Errorf(errMsg)
 		return nil, errors.Errorf(errMsg)
 	}
@@ -207,57 +181,35 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 	return job, nil
 }
 
-// Destroy 等同于 Remove
+// Destroy Equivalent to Remove
 func (k *k8sJob) Destroy(ctx context.Context, specObj interface{}) error {
 	return k.Remove(ctx, specObj)
 }
 
-// Status 查询 k8s job 状态
+// Status Query k8s job status
 func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.StatusDesc, error) {
 	var (
 		statusDesc apistructs.StatusDesc
-		job        batchv1.Job
-		jobpods    corev1.PodList
+		job        *batchv1.Job
+		jobpods    *corev1.PodList
+		err        error
 	)
 
-	kubeJob, err := k.generateKubeJob(specObj)
+	kubeJob := specObj.(apistructs.Job)
+
+	namespace := kubeJob.Namespace
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+	name := strutil.Concat(kubeJob.Namespace, ".", kubeJob.Name)
+
+	job, err = k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return statusDesc, errors.Wrapf(err, "failed to get k8s job Status")
-	}
-
-	ns := kubeJob.Namespace
-	name := kubeJob.Name
-	path := strutil.Concat(k.prefix, ns, "/jobs/", name)
-
-	// GET /apis/batch/v1/namespaces/{namespace}/jobs/{name}
-	var b bytes.Buffer
-	resp, err := k.client.Get(k.addr).
-		Path(path).
-		Header("Content-Type", "application/json").
-		Do().
-		Body(&b)
-
-	if err != nil {
-		return statusDesc, errors.Wrapf(err, "failed to get k8s job status, name: %s", name)
-	}
-
-	if resp == nil {
-		return statusDesc, errors.Errorf("response is null")
-	}
-
-	if !resp.IsOK() {
-		errMsg := fmt.Sprintf("failed to get the status of job, name: %s, statusCode: %d, body: %v",
-			name, resp.StatusCode(), b.String())
-		if resp.StatusCode() == http.StatusNotFound {
+		if strings.Contains(err.Error(), "not found") {
 			statusDesc.Status = apistructs.StatusNotFoundInCluster
 			return statusDesc, nil
 		}
-		logrus.Errorf(errMsg)
-		return statusDesc, errors.Errorf(errMsg)
-	}
-
-	if err := json.NewDecoder(&b).Decode(&job); err != nil {
-		return statusDesc, err
+		return statusDesc, errors.Wrapf(err, "failed to get k8s job status, name: %s", name)
 	}
 
 	if job.Spec.Selector != nil {
@@ -266,29 +218,19 @@ func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.St
 			matchlabels = append(matchlabels, fmt.Sprintf("%s=%v", k, v))
 		}
 		selector := strutil.Join(matchlabels, ",", true)
-		var b bytes.Buffer
-		resp, err := k.client.Get(k.addr).
-			Path(fmt.Sprintf("/api/v1/namespaces/%s/pods", job.Namespace)).
-			Param("labelSelector", selector).
-			Header("Content-Type", "application/json").
-			Do().
-			Body(&b)
+
+		jobpods, err = k.client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: selector,
+		})
 		if err != nil {
 			return statusDesc, errors.Wrapf(err, "failed to get job pods, name: %s, err: %v", name, err)
 		}
-		if resp == nil || !resp.IsOK() {
-			return statusDesc, errors.Errorf("failed to get job pods, name: %s, resp: %v, body: %v", name, *resp, b.String())
-		}
-		if err := json.NewDecoder(&b).Decode(&jobpods); err != nil {
-			return statusDesc, err
-		}
-
 	}
 
-	msgList, err := k.event.AnalyzePodEvents(ns, name)
+	msgList, err := k.event.AnalyzePodEvents(namespace, name)
 	if err != nil {
 		logrus.Errorf("failed to analyze job events, namespace: %s, name: %s, (%v)",
-			ns, name, err)
+			namespace, name, err)
 	}
 
 	var lastMsg string
@@ -296,61 +238,107 @@ func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.St
 		lastMsg = msgList[len(msgList)-1].Comment
 	}
 
-	statusDesc = generateKubeJobStatus(&job, &jobpods, lastMsg)
+	statusDesc = generateKubeJobStatus(job, jobpods, lastMsg)
 
 	return statusDesc, nil
 }
 
 func (k *k8sJob) removePipelineJobs(namespace string) error {
-	return k.namespace.Delete(namespace)
+	return k.client.CoreV1().Namespaces().Delete(context.Background(), namespace, metav1.DeleteOptions{})
 }
 
-// Remove 删除 k8s job
+// Remove delete k8s job
 func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 	job, ok := specObj.(apistructs.Job)
 	if !ok {
 		return errors.New("invalid job spec")
 	}
-	if job.Name == "" {
-		return k.removePipelineJobs(job.Namespace)
+
+	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	if namespace == "" {
+		namespace = job.Namespace
 	}
-	var b bytes.Buffer
+
+	logrus.Infof("delete job name %s, namespace %s", job.Name, namespace)
 
 	kubeJob, err := k.generateKubeJob(specObj)
 	if err != nil {
 		return errors.Wrapf(err, "failed to remove k8s job")
 	}
 
-	ns := kubeJob.Namespace
 	name := kubeJob.Name
-	path := strutil.Concat(k.prefix, ns, "/jobs/", name)
+	propagationPolicy := metav1.DeletePropagationBackground
 
-	// DELETE /apis/batch/v1/namespaces/{namespace}/jobs/{name}
-	resp, err := k.client.Delete(k.addr).
-		Path(path).
-		Header("Content-Type", "application/json").
-		JSONBody(deleteOptions).
-		Do().
-		Body(&b)
+	jb, err := k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to remove k8s job, name: %s", name)
+		if !strings.Contains(err.Error(), "not found") {
+			return err
+		}
 	}
 
-	if resp == nil {
-		return errors.Errorf("response is null")
-	}
+	// when the err is nil, the job and DeletionTimestamp is not nil. scheduler should delete the job.
+	if err == nil && jb.DeletionTimestamp == nil {
+		err = k.client.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
+		if err != nil {
+			if !strings.Contains(err.Error(), "not found") {
+				return errors.Wrapf(err, "failed to remove k8s job, name: %s", name)
+			}
+			logrus.Debugf("the job %s in namespace %s is not found", name, namespace)
+		}
 
-	if !resp.IsOK() && resp.StatusCode() != 404 {
-		errMsg := fmt.Sprintf("failed to remove k8s job, name: %s, statusCode: %d, resp body: %s",
-			name, resp.StatusCode(), b.String())
-		logrus.Errorf(errMsg)
-		return errors.Errorf(errMsg)
+		for index := range job.Volumes {
+			pvcName := fmt.Sprintf("%s-%s-%d", namespace, job.Name, index)
+			err = k.client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+			if err != nil {
+				if !strings.Contains(err.Error(), "not found") {
+					return errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
+				}
+				logrus.Debugf("the pvc %s in namespace %s is not found", name, namespace)
+			}
+		}
 	}
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" {
+		jobs, err := k.client.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
+			return errMsg
+		}
+		remainCount := 0
+		if len(jobs.Items) == 0 {
+			for _, j := range jobs.Items {
+				if j.DeletionTimestamp == nil {
+					remainCount++
+				}
+			}
+		}
 
+		if remainCount < 1 {
+			ns, err := k.client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					return nil
+				}
+				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
+				return errMsg
+			}
+			if ns.DeletionTimestamp == nil {
+				logrus.Infof("delete the job's namespace %s", namespace)
+				err = k.client.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				if err != nil {
+					if !strings.Contains(err.Error(), "not found") {
+						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
+						return errMsg
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
-// Update 更新 k8s job
+// Update update k8s job
 func (k *k8sJob) Update(ctx context.Context, specObj interface{}) (interface{}, error) {
 	var (
 		kubeJob *batchv1.Job
@@ -369,23 +357,27 @@ func (k *k8sJob) Update(ctx context.Context, specObj interface{}) (interface{}, 
 	return nil, nil
 }
 
-// Inspect 查看 k8s job 详细信息
+// Inspect View k8s job details
 func (k *k8sJob) Inspect(ctx context.Context, specObj interface{}) (interface{}, error) {
 	return nil, errors.New("job(k8s) not support inspect action")
 }
 
-// Cancel 停止 k8s job
+// Cancel stop k8s job
 func (k *k8sJob) Cancel(ctx context.Context, specObj interface{}) (interface{}, error) {
 
 	job, ok := specObj.(apistructs.Job)
 	if !ok {
 		return nil, errors.New("invalid job spec")
 	}
+	var namespace = job.Namespace
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
 
-	name := strutil.Concat(job.Namespace, ".", job.Name)
+	name := strutil.Concat(namespace, ".", job.Name)
 
-	// 通过设置 job.spec.parallelism = 0 来停止 job
-	return nil, k.setJobParallelism(defaultNamespace, name, 0)
+	// Stop the job by setting job.spec.parallelism = 0
+	return nil, k.setJobParallelism(namespace, name, 0)
 }
 func (k *k8sJob) Precheck(ctx context.Context, specObj interface{}) (apistructs.ServiceGroupPrecheckData, error) {
 	return apistructs.ServiceGroupPrecheckData{Status: "ok"}, nil
@@ -399,12 +391,27 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 
 	//logrus.Debugf("input object to k8s job, body: %+v", job)
 
-	// 1核=1000m
 	cpu := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.CPU*1000)), "m"))
-	// 1Mi=1024K=1024x1024字节
 	memory := resource.MustParse(strutil.Concat(strconv.Itoa(int(job.Memory)), "Mi"))
 
-	vols, volMounts, _ := GenerateK8SVolumes(&job)
+	var (
+		vols      []corev1.Volume
+		volMounts []corev1.VolumeMount
+	)
+
+	if len(job.Volumes) != 0 {
+		vols, volMounts, _ = GenerateK8SVolumes(&job)
+	}
+
+	var imagePullPolicy corev1.PullPolicy
+	switch corev1.PullPolicy(os.Getenv(SpecifyImagePullPolicy)) {
+	case corev1.PullAlways:
+		imagePullPolicy = corev1.PullAlways
+	case corev1.PullNever:
+		imagePullPolicy = corev1.PullNever
+	default:
+		imagePullPolicy = corev1.PullIfNotPresent
+	}
 
 	backofflimit := int32(job.BackoffLimit)
 	kubeJob := &batchv1.Job{
@@ -415,12 +422,12 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      strutil.Concat(job.Namespace, ".", job.Name),
 			Namespace: job.Namespace,
-			// TODO: 现在无法直接使用job.Labels，不符合k8s labels的规则
+			// TODO: Job.Labels cannot be used directly now, which does not comply with the rules of k8s labels
 			//Labels:    job.Labels,
 		},
 		Spec: batchv1.JobSpec{
 			Parallelism: &defaultParallelism,
-			// Completions = nil, 即表示只要有一次成功，就算completed
+			// Completions = nil, It means that as long as there is one success, it will be completed
 			Completions: &defaultCompletions,
 			// TODO: add ActiveDeadlineSeconds
 			//ActiveDeadlineSeconds: &defaultActiveDeadlineSeconds,
@@ -452,7 +459,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 							},
-							ImagePullPolicy: corev1.PullAlways,
+							ImagePullPolicy: imagePullPolicy,
 							VolumeMounts:    volMounts,
 						},
 					},
@@ -466,7 +473,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 	}
 
 	pod := &kubeJob.Spec.Template
-	// 按当前业务，只支持一个 Pod 一个 Container
+	// According to the current business, only one Pod and one Container are supported
 	container := &pod.Spec.Containers[0]
 
 	// cmd
@@ -513,7 +520,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 					//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 				},
 			},
-			ImagePullPolicy: corev1.PullAlways,
+			ImagePullPolicy: imagePullPolicy,
 		}
 
 		volumeMount := corev1.VolumeMount{
@@ -592,13 +599,13 @@ func (k *k8sJob) generateContainerEnvs(job *apistructs.Job, clusterInfo map[stri
 		})
 	}
 
-	// 加上 K8S 标识
+	// add K8S label
 	env = append(env, corev1.EnvVar{
 		Name:  "IS_K8S",
 		Value: "true",
 	})
 
-	// 加上 namespace 标识
+	// add namespace label
 	env = append(env, corev1.EnvVar{
 		Name:  "DICE_NAMESPACE",
 		Value: job.Namespace,
@@ -646,28 +653,6 @@ func (k *k8sJob) generateContainerEnvs(job *apistructs.Job, clusterInfo map[stri
 		},
 	)
 
-	// Add POD_NAME
-	env = append(env, corev1.EnvVar{
-		Name: "POD_NAME",
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.name",
-			},
-		},
-	})
-
-	// Add POD_UUID
-	env = append(env, corev1.EnvVar{
-		Name: "POD_UUID",
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.uid",
-			},
-		},
-	})
-
 	if len(clusterInfo) > 0 {
 		for k, v := range clusterInfo {
 			env = append(env, corev1.EnvVar{
@@ -690,7 +675,7 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 		}
 	}
 
-	// job controller 都还未处理该 Job
+	// job controller Have not yet processed the job
 	if job.Status.StartTime == nil {
 		statusDesc.Status = apistructs.StatusUnschedulable
 		return statusDesc
@@ -705,7 +690,7 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 			statusDesc.Status = apistructs.StatusUnschedulable
 		}
 	} else {
-		// TODO: 如何判断 job 是被 stopped?
+		// TODO: How to determine if a job is stopped?
 		if job.Status.Succeeded >= *job.Spec.Completions {
 			statusDesc.Status = apistructs.StatusStoppedOnOK
 		} else {
@@ -718,59 +703,23 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 }
 
 func (k *k8sJob) inspectK8SJob(ns, name string) (*batchv1.Job, error) {
-	var kubeJob batchv1.Job
 
-	path := strutil.Concat(k.prefix, ns, "/jobs/", name)
-
-	// GET /apis/batch/v1/namespaces/{namespace}/jobs/{name}
-	resp, err := k.client.Get(k.addr).
-		Path(path).
-		Header("Content-Type", "application/json").
-		Do().
-		JSON(&kubeJob)
+	kubeJob, err := k.client.BatchV1().Jobs(ns).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to inspect k8s job, name: %s", name)
 	}
 
-	if resp == nil {
-		return nil, errors.Errorf("response is null")
-	}
-
-	if !resp.IsOK() {
-		errMsg := fmt.Sprintf("failed to inspect k8s job, name: %s, statusCode: %d",
-			name, resp.StatusCode())
-		logrus.Errorf(errMsg)
-		return nil, errors.Errorf(errMsg)
-	}
-
-	return &kubeJob, nil
+	return kubeJob, nil
 }
 
 func (k *k8sJob) updateK8SJob(job batchv1.Job) error {
 	ns := job.Namespace
 	name := job.Name
-	path := strutil.Concat(k.prefix, ns, "/jobs/", name)
 
-	// PUT /apis/batch/v1/namespaces/{namespace}/jobs/{name}
-	resp, err := k.client.Put(k.addr).
-		Path(path).
-		Header("Content-Type", "application/json").
-		JSONBody(job).
-		Do().
-		DiscardBody()
+	_, err := k.client.BatchV1().Jobs(ns).Update(context.Background(), &job, metav1.UpdateOptions{})
+
 	if err != nil {
 		return errors.Wrapf(err, "failed to update k8s job, name: %s", name)
-	}
-
-	if resp == nil {
-		return errors.Errorf("response is null")
-	}
-
-	if !resp.IsOK() {
-		errMsg := fmt.Sprintf("failed to update k8s job, name: %s, statusCode: %d",
-			name, resp.StatusCode())
-		logrus.Errorf(errMsg)
-		return errors.Errorf(errMsg)
 	}
 
 	return nil
@@ -802,7 +751,7 @@ func (k *k8sJob) CapacityInfo() apistructs.CapacityInfoData {
 	return apistructs.CapacityInfoData{}
 }
 
-// GenerateK8SVolumes 根据 job 配置，生产 volume 相关配置
+// GenerateK8SVolumes According to job configuration, production volume related configuration
 func GenerateK8SVolumes(job *apistructs.Job) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
 	vols := []corev1.Volume{}
 	volMounts := []corev1.VolumeMount{}
@@ -861,13 +810,22 @@ func whichStorageClass(tp string) string {
 }
 
 func (k *k8sJob) createImageSecretIfNotExist(namespace string) error {
-	if _, err := k.secret.Get(namespace, k8s.AliyunRegistry); err == nil {
+	var err error
+
+	if _, err = k.client.CoreV1().Secrets(namespace).Get(context.Background(), k8s.AliyunRegistry, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
-	// 集群初始化的时候会在 default namespace 下创建一个拉镜像的 secret
-	s, err := k.secret.Get("default", k8s.AliyunRegistry)
+	if !strings.Contains(err.Error(), "not found") {
+		return err
+	}
+
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
+	s, err := k.client.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), k8s.AliyunRegistry, metav1.GetOptions{})
 	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return nil
+		}
 		return err
 	}
 	mysecret := &corev1.Secret{
@@ -884,7 +842,7 @@ func (k *k8sJob) createImageSecretIfNotExist(namespace string) error {
 		Type:       s.Type,
 	}
 
-	if err := k.secret.Create(mysecret); err != nil {
+	if _, err = k.client.CoreV1().Secrets(namespace).Create(context.Background(), mysecret, metav1.CreateOptions{}); err != nil {
 		if strutil.Contains(err.Error(), "AlreadyExists") {
 			return nil
 		}
@@ -901,21 +859,19 @@ func (*k8sJob) CleanUpBeforeDelete() {}
 
 func (k *k8sJob) JobVolumeCreate(ctx context.Context, spec interface{}) (string, error) {
 	jobvolume := spec.(apistructs.JobVolume)
-	if err := k.namespace.Exists(jobvolume.Namespace); err != nil {
-		if err == k8serror.ErrNotFound {
-			if err := k.namespace.Create(jobvolume.Namespace, nil); err != nil {
-				return "", err
-			}
-		} else {
-			return "", err
-		}
+	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	if namespace == "" {
+		namespace = jobvolume.Namespace
+	}
+	if err := k.createNamespace(ctx, namespace); err != nil {
+		return "", err
 	}
 	sc := whichStorageClass(jobvolume.Type)
 	id := fmt.Sprintf("%s-%s", jobvolume.Namespace, jobvolume.Name)
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      id,
-			Namespace: jobvolume.Namespace,
+			Namespace: namespace,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -927,11 +883,50 @@ func (k *k8sJob) JobVolumeCreate(ctx context.Context, spec interface{}) (string,
 			StorageClassName: &sc,
 		},
 	}
-	if err := k.pvc.CreateIfNotExists(&pvc); err != nil {
+	if err := k.CreatePVCIfNotExists(&pvc); err != nil {
 		return "", err
 	}
 	return id, nil
 }
 func (*k8sJob) KillPod(podname string) error {
 	return fmt.Errorf("not support for k8sJob")
+}
+
+func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
+
+	_, err := k.client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			errMsg := fmt.Sprintf("failed to get k8s namespace %s", name)
+			logrus.Errorf(errMsg)
+			return errors.Errorf(errMsg)
+		}
+
+		newNamespace := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+		}
+
+		_, err = k.client.CoreV1().Namespaces().Create(ctx, newNamespace, metav1.CreateOptions{})
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to create namespace: %v", err)
+			logrus.Errorf(errMsg)
+			return errors.Errorf(errMsg)
+		}
+	}
+	return nil
+}
+
+func (k *k8sJob) CreatePVCIfNotExists(pvc *corev1.PersistentVolumeClaim) error {
+	_, err := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.Background(), pvc.Name, metav1.GetOptions{})
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return errors.Errorf("failed to get pvc, name: %s, (%v)", pvc.Name, err)
+		}
+		_, createErr := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+		if createErr != nil {
+			return errors.Errorf("failed to create pvc, name: %s, (%v)", pvc.Name, err)
+		}
+	}
+
+	return nil
 }

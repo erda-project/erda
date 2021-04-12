@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package terminal
 
 import (
@@ -48,7 +61,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// 1. 首先获取前端发送过来所要连接的容器的信息
+	// 1. First get the information of the container to be connected sent from the front end
 	t, message, err := conn.ReadMessage()
 	if err != nil {
 		logrus.Infof("failed to ReadMessage: %v", err)
@@ -63,7 +76,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if containerinfo.Name != "docker" {
-		// 不是容器控制台, 作为 proxy 走 soldier
+		// Not a container console, as a soldier as a proxy
 		SoldierTerminal(r, message, conn)
 		return
 	}
@@ -73,7 +86,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. 在实例列表中查询该 containerid
+	// 2. Query the containerid in the instance list
 	instances, err := instanceinfoClient.InstanceReader().ByContainerID(args.Container).Do()
 	if err != nil {
 		logrus.Errorf("failed to get instance by containerid: %v", err)
@@ -90,7 +103,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 	}
 	instance := instances[0]
 
-	// 3. 检查权限
+	// 3. Check permissions
 	access := false
 	if instance.OrgID != "" {
 		orgid, err := strconv.ParseUint(instance.OrgID, 10, 64)
@@ -136,13 +149,13 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 4. 判断是否为 dcos 路径
+	// 4. Determine whether it is a dcos path
 	k8snamespace, ok1 := instance.Metadata("k8snamespace")
 	k8spodname, ok2 := instance.Metadata("k8spodname")
 	k8scontainername, ok3 := instance.Metadata("k8scontainername")
 	clustername := instance.Cluster
 	if !ok1 || !ok2 || !ok3 {
-		// 如果meta中没有相应 namespace, name, containername, 则认为是dcos路径, 走原来的 soldier
+		// If there is no corresponding namespace, name, containername in the meta, it is considered to be the dcos path, and the original soldier is taken
 		SoldierTerminal(r, message, conn)
 		return
 	}

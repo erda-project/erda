@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package k8s
 
 import (
@@ -74,7 +87,7 @@ func precheck(sg *apistructs.ServiceGroup, resourceinfo apistructs.ClusterResour
 
 // extractLabels
 // return [(exist_label_list, not_exist_label_list), (exist_label_list, not_exist_label_list),...]
-// 不同元组之间为 或 关系
+// The relationship between different tuples is or
 func extractLabels(terms []v1.NodeSelectorTerm) [][2][]string {
 	r := [][2][]string{}
 	for _, t := range terms {

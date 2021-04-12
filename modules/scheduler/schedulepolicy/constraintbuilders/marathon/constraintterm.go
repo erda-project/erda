@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package marathon
 
 import (
@@ -22,7 +35,7 @@ type andrule struct {
 	elems []string
 }
 
-// OR 语义上等于 '|' （或）
+// OR is semantically equivalent to'|' (or)
 func (r *rule) or(or ...*andrule) *rule {
 	r.elems = append(r.elems, or...)
 	return r
@@ -50,7 +63,7 @@ func (r *rule) generate() string {
 	return strutil.Concat(`.*\b(`, strutil.Join(andrules, "|", true), ")")
 }
 
-// AND 语义上等于 '&' (且)
+// And is semantically equivalent to'|' (and)
 func and(ss ...string) *andrule {
 	return &andrule{elems: ss}
 }

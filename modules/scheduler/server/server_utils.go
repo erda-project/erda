@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package server
 
 import (
@@ -29,14 +42,14 @@ func getDCOSTokenAuthPeriodically() {
 				break
 			}
 
-			// 每24小时更新一次
+			// Update every 24 hours
 			waitTime = 24 * time.Hour
 
 			if len(token) > 0 {
 				os.Setenv("AUTH_TOKEN", token)
 				logrus.Debugf("get auth token: %s", token)
 			} else {
-				// err为nil且token为空表示用户没有设置token auth
+				// If err is nil and token is empty, it means that the user has not set token auth
 				os.Unsetenv("AUTH_TOKEN")
 				logrus.Debugf("clear auth token")
 			}

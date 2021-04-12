@@ -2,7 +2,9 @@
 
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
-![](./docs/files/logo.jpg)
+<div align="left">
+	<img src="./docs/files/logo.jpg" alt="Editor" width="350">
+</div>
 
 ## Introduction
 
@@ -21,7 +23,16 @@ Erda is mainly composed of the following parts, they are
 
 We will gradually open source the entire function according to the workload. The first to complete will be DevOps, multi-cloud management, followed by microservice governance, edge computing, etc. IT service is a function planned in the roadmap, and it has not yet started.
 
+## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
+![](./docs/files/vision.png)
+
+## Showcase
+
+![](./docs/files/showcase.gif)
+
 ## Architecture
+
+![](./docs/files/arch.png)
 
 We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
 
@@ -33,11 +44,10 @@ We split the codes of erda into multiple repositories according to different fun
 
 [erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
-## Quick start
-
-TODO
-
 ## User Documentation
+
+To start using Erda, please see our user documentation. Before using, you need to see the installation document to install erda.
+
 - [中文](https://dice-docs.app.terminus.io)
 - English
 
@@ -47,10 +57,17 @@ This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
 
 ## Contact Us
 
-We look forward to your connecting with us, you can ask us all questions.
+We look forward to your connecting with us, you can ask us any questions.
 
 - Email: erda@terminus.io
+- 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
+- 微信公众号:
+
+<div align="left">
+	<img src="./docs/files/wechat.jpg" alt="Editor" width="150">
+</div>
+
 
 ## License
 
-TODO
+Erda is under the AGPL 3.0 license. See the [LICENSE](/LICENSE) file for details.

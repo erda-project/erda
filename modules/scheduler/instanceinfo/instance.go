@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package instanceinfo
 
 import (
@@ -104,7 +117,7 @@ func (r *instanceReader) ByFinishedTime(beforeNday int) *instanceReader {
 	return r
 }
 func (r *instanceReader) ByUpdatedTime(beforeNSecs int) *instanceReader {
-	//使用scheduler时间查询，避免sceduler跟数据库时间不一致导致实例误GC
+	// Use scheduler time query to avoid the inconsistency between sceduler and database time and cause the instance to GC by mistake
 	now := time.Now().Format("2006-01-02 15:04:05")
 	r.conditions = append(r.conditions, fmt.Sprintf("updated_at < '%s' - interval %d second", now, beforeNSecs))
 	return r

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package instanceinfo
 
 import (
@@ -33,7 +46,7 @@ type ServiceInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName         string `gorm:"type:varchar(64);index"`
 	OrgID           string `gorm:"type:varchar(64);index"`
 	ProjectName     string `gorm:"type:varchar(64);index"`
@@ -65,7 +78,7 @@ type InstanceInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName             string `gorm:"type:varchar(64);index"`
 	OrgID               string `gorm:"type:varchar(64);index"`
 	ProjectName         string `gorm:"type:varchar(64);index"`
@@ -83,7 +96,7 @@ type InstanceInfo struct {
 	AddonID     string
 
 	Meta string
-	// 如果是k8s,值为"k8s"
+	// If it is k8s, the value is "k8s"
 	TaskID string `gorm:"type:varchar(150);index"`
 
 	Phase       InstancePhase
@@ -127,7 +140,7 @@ type PodInfo struct {
 	Namespace string `gorm:"type:varchar(64);index"`
 	Name      string `gorm:"type:varchar(64);index"`
 
-	// 从 env 中获取的信息
+	// Information obtained from env
 	OrgName         string `gorm:"type:varchar(64);index"`
 	OrgID           string `gorm:"type:varchar(64);index"`
 	ProjectName     string `gorm:"type:varchar(64);index"`

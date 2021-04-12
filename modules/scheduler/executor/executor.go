@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package executor
 
 import (
@@ -154,13 +167,13 @@ func deleteOneExecutor(m *Manager, config *conf.ExecutorConfig) {
 		executor.CleanUpBeforeDelete()
 	}
 
-	// 删除 executor 对应的创建函数
+	// Delete the creation function corresponding to the executor
 	delete(m.executors, executortypes.Name(config.Name))
-	// 删除 executor 的配置
+	// Delete the configuration of the executor
 	delete(m.executorConfigs, executortypes.Name(config.Name))
 	//
 	//delete(m.executorStopCh, executortypes.Name(config.Name))
-	// 删除 conf 中对应 executor name 与 cluster name 关系的 map
+	// Delete the map corresponding to the relationship between executor name and cluster name in conf
 	conf.GetConfStore().ExecutorStore.Delete(config.Name)
 }
 

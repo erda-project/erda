@@ -1,0 +1,96 @@
+# 场景名
+scenario: "auto-test-plan-list"
+
+# 布局
+hierarchy:
+  root: "autoTestPlan"
+  structure:
+    autoTestPlan: ["filter", "table", "topHead", "formModal"]
+    topHead: ["addButton"]
+
+rendering:
+  formModal:
+    - name: table
+
+  table:
+    - name: formModal
+      state:
+        - name: "formModalVisible"
+          value: "{{ table.formModalVisible }}"
+        - name: "formModalTestPlanID"
+          value: "{{ table.formModalTestPlanID }}"
+
+  filter:
+    - name: table
+      state:
+        - name: "name"
+          value: "{{ filter.name }}"
+
+  addButton:
+    - name: formModal
+      state:
+        - name: "addTest"
+          value: "{{ addButton.addTest }}"
+# 组件
+components:
+  autoTestPlan:
+    type: "Container"
+  filter:
+    type: "ContractiveFilter"
+    props:
+      delay: 1000
+    state:
+      conditions:
+        - key: "name"
+          label: "计划名"
+          fixed: true
+          placeholder: "输入计划名按回车键查询"
+          type: "input"
+    operations:
+      filter:
+        key: "filter"
+        reload: true
+  table:
+    type: "Table"
+    operations:
+      changePageNo:
+        key: "changePageNo"
+        reload: true
+      clickRow:
+        key: "clickRow"
+        reload: false
+        command:
+          key: "goto"
+          target: "project_test_autoTestPlanDetail"
+          jumpOut: false
+    props:
+      rowKey: "id"
+      columns:
+        - title: "计划名"
+          dataIndex: "name"
+        - title: "测试空间"
+          dataIndex: "testSpace"
+        - title: "负责人"
+          dataIndex: "owners"
+        - title: "操作"
+          dataIndex: "operate"
+          width: 150
+  topHead:
+    type: "RowContainer"
+    props:
+      isTopHead: true
+  formModal:
+    type: 'FormModal'
+    operations:
+      submit:
+        key: "submit"
+        reload: true
+  addButton:
+    type: "Button"
+    operations:
+      click:
+        key: "addTest"
+        reload: true
+    props:
+      text: "新建计划"
+      type: "primary"

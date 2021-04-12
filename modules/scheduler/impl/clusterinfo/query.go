@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package clusterinfo
 
 import (
@@ -9,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// clusterInfoPrefix 是集群配置信息在 etcd 中的路径前缀
+// clusterInfoPrefix Is the path prefix of the cluster configuration information in etcd
 const (
 	clusterInfoPrefix = "/dice/scheduler/clusterinfo/"
 	queryTimeout      = 3 * time.Second

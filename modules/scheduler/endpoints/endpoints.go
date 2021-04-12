@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package endpoints
 
 import (
@@ -6,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -65,9 +79,13 @@ func NewHTTPEndpoints(
 	}
 }
 
-// Routes scheduler 路由列表
-// TODO: 目前只有 servicegroup，volume 的 API，
-//       还有 job API 需要迁移过来
+const (
+	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
+)
+
+// Routes scheduler
+// TODO: Currently there are only servicegroup and volume APIs,，
+//       There is also job API that needs to be migrated
 func (h *HTTPEndpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/api/volumes", Method: http.MethodPost, Handler: h.VolumeCreate},
@@ -497,6 +515,12 @@ func (h *HTTPEndpoints) JobCreate(ctx context.Context, r *http.Request, vars map
 			},
 		}, nil
 	}
+
+	// specify namespace from scheduler ENV 'ENABLE_SPECIFIED_K8S_NAMESPACE'
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		req.Namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+
 	job, err := h.job.Create(req)
 	if err != nil {
 		//h.metric.ErrorCounter.WithLabelValues(metric.JobCreateError).Add(1)
@@ -540,6 +564,12 @@ func (h *HTTPEndpoints) JobStart(ctx context.Context, r *http.Request, vars map[
 			},
 		}, nil
 	}
+
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+		job.Namespace = namespace
+	}
+
 	resultJob, err := h.job.Start(namespace, name, job.Env)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to start job, err: %v", err)
@@ -600,6 +630,10 @@ func (h *HTTPEndpoints) JobStop(ctx context.Context, r *http.Request, vars map[s
 		}, nil
 	}
 
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+
 	if err := h.job.Stop(namespace, name); err != nil {
 		errstr := fmt.Sprintf("failed to stop job, err: %v", err)
 		logrus.Error(errstr)
@@ -615,11 +649,9 @@ func (h *HTTPEndpoints) JobStop(ctx context.Context, r *http.Request, vars map[s
 
 func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	name := vars["name"]
-	namespace := vars["namespace"]
-
-	if name == "" || namespace == "" {
-		errstr := "failed to delete job, empty name or namespace"
+	var job apistructs.Job
+	if err := json.NewDecoder(r.Body).Decode(&job); err != nil && r.ContentLength != 0 {
+		errstr := fmt.Sprintf("failed to decode jobStart body, err: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{
 			Status: http.StatusBadRequest,
@@ -629,41 +661,64 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 		}, nil
 	}
 
-	if err := h.job.Delete(namespace, name); err != nil {
+	var namespace = job.Namespace
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+
+	if err := h.job.Delete(job); err != nil {
 		errstr := fmt.Sprintf("failed to delete job, err: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{
 			Status: http.StatusBadRequest,
 			Content: apistructs.JobDeleteResponse{
-				Error: errstr,
+				Name:      job.Name,
+				Namespace: namespace,
+				Error:     errstr,
 			},
 		}, nil
 	}
-	return mkResponse(apistructs.JobDeleteResponse{Name: name})
+	return mkResponse(apistructs.JobDeleteResponse{Name: job.Name, Namespace: job.Namespace})
 }
 
-func (h *HTTPEndpoints) JobsDelete(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	namespace := vars["namespace"]
-	if namespace == "" {
-		errstr := "failed to delete jobs, empty namespace"
+func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var jobs []apistructs.Job
+	if err := json.NewDecoder(r.Body).Decode(&jobs); err != nil && r.ContentLength != 0 {
+		errstr := fmt.Sprintf("failed to decode jobStart body, err: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{
 			Status: http.StatusBadRequest,
-			Content: apistructs.JobDeleteResponse{
-				Error: errstr,
+			Content: []apistructs.JobDeleteResponse{
+				{
+					Error: errstr,
+				},
 			},
 		}, nil
 	}
-	if err := h.job.DeletePipelineJobs(namespace); err != nil {
-		errstr := fmt.Sprintf("failed to delete jobs, err: %v", err)
-		logrus.Error(errstr)
+	deleteResponseList := apistructs.JobsDeleteResponse{}
+	logrus.Infof("batch delete %d jobs", len(jobs))
+	for _, job := range jobs {
+		var namespace = job.Namespace
+		if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+			namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+		}
+		if err := h.job.Delete(job); err != nil {
+			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, namespace, err)
+			logrus.Error(errstr)
+			deleteResponseList = append(deleteResponseList, apistructs.JobDeleteResponse{
+				Name:      job.Name,
+				Namespace: namespace,
+				Error:     errstr,
+			})
+		}
+	}
+	if len(deleteResponseList) != 0 {
 		return httpserver.HTTPResponse{
 			Status:  http.StatusBadRequest,
-			Content: apistructs.JobDeleteResponse{Error: errstr},
+			Content: deleteResponseList,
 		}, nil
 	}
-	return mkResponse(apistructs.JobDeleteResponse{})
+	return mkResponse(apistructs.JobsDeleteResponse{})
 }
 
 func (h *HTTPEndpoints) JobInspect(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -679,6 +734,11 @@ func (h *HTTPEndpoints) JobInspect(ctx context.Context, r *http.Request, vars ma
 			Content: errstr,
 		}, nil
 	}
+
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+
 	job, err := h.job.Inspect(namespace, name)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to inspect job, err: %v", err)
@@ -701,6 +761,11 @@ func (h *HTTPEndpoints) JobList(ctx context.Context, r *http.Request, vars map[s
 			Content: errstr,
 		}, nil
 	}
+
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = ENABLE_SPECIFIED_K8S_NAMESPACE
+	}
+
 	jobs, err := h.job.List(namespace)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to list jobs, err: %v", err)
@@ -782,6 +847,11 @@ func (h *HTTPEndpoints) JobConcurrent(ctx context.Context, r *http.Request, vars
 			},
 		}, nil
 	}
+
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = ENABLE_SPECIFIED_K8S_NAMESPACE
+	}
+
 	jobs, err := h.job.Concurrent(namespace, names)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to concurrently run jobs, err: %v", err)

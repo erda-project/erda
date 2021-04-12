@@ -1,0 +1,4 @@
+dicehub:
+
+metricq-client:
+  endpoint: ${MONITOR_ADDR:http://monitor.default.svc.cluster.local:7096}

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package namespace manipulates the k8s api of namespace object
 package namespace
 
@@ -44,7 +57,7 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 }
 
 // Create creates a k8s namespace
-// TODO: 需要传入 namespace 结构体
+// TODO: Need to pass in the namespace structure
 func (n *Namespace) Create(ns string, labels map[string]string) error {
 	namespace := &apiv1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -71,7 +84,7 @@ func (n *Namespace) Create(ns string, labels map[string]string) error {
 	if !resp.IsOK() {
 		return errors.Errorf("failed to create namespace, ns: %s, statuscode: %v, body: %v", ns, resp.StatusCode(), b.String())
 	}
-	logrus.Infof("succeed to create namespace, ns: %s", ns)
+	logrus.Infof("succeed to create namespace %s", ns)
 	return nil
 }
 
@@ -147,7 +160,7 @@ func (n *Namespace) Delete(ns string) error {
 			logrus.Debugf("namespace not found, ns: %s", ns)
 			return k8serror.ErrNotFound
 		}
-		//遇到删除失败进行强制删除namespace, 将spec设置为空
+		//When the deletion fails, the namespace is forced to be deleted, and the spec is set to empty
 		if resp.StatusCode() == 409 {
 			return n.DeleteForce(ns)
 		}

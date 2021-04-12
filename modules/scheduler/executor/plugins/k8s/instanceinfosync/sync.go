@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package instanceinfosync
 
 import (
@@ -13,10 +26,10 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// 同步策略:
-// 0. 周期性的列出所有 deployment , statefulset, pod  的状态
+//Synchronization strategy:
+// 0. Periodically list all deployment, statefulset, and pod states
 // 1. watch deployment, statefulset, pod
-// TODO: 2. watch event for more detail messages(辅助信息)
+// TODO: 2. watch event for more detail messages
 
 type deploymentUtils interface {
 	// watch deployment in all namespace, use ctx to cancel
@@ -166,7 +179,7 @@ func (s *Syncer) listSyncPod(ctx context.Context) {
 		logrus.Infof("export podlist info end: %s", s.addr)
 		logrus.Infof("updatepods for: %s", s.addr)
 		// it is last part of pod list, so execute gcAliveInstancesInDB
-		// 每2次完整遍历完之后触发一次 gcAliveInstancesInDB
+		// GcAliveInstancesInDB is triggered after every 2 complete traversals
 		cost := int(time.Now().Sub(initUpdateTime).Seconds())
 		if err := gcAliveInstancesInDB(s.dbupdater, cost, s.clustername); err != nil {
 			logrus.Errorf("failed to gcAliveInstancesInDB: %v", err)

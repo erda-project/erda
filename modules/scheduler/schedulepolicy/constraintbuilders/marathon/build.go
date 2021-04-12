@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package marathon
 
 import (
@@ -24,7 +37,7 @@ type constraintTerm struct {
 // Constraints marathon or metronome constraints
 type Constraints struct {
 	terms []constraintTerm
-	// Cons marathon 所使用的约束
+	// Cons Constraints used by marathon
 	Cons [][]string
 }
 
@@ -44,7 +57,7 @@ func (Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, _
 	buildOrg(s.HasOrg, s.Org, cons)
 	buildWorkspace(s.HasWorkSpace, s.WorkSpaces, cons)
 	buildJob(s.Job, s.PreferJob, cons)
-	// metronome 不考虑 pack 标
+	// metronome Do not consider the pack standard
 	// buildPack(s.Pack, s.PreferPack, cons)
 	buildStateful(s.Stateful, s.PreferStateful, cons)
 	buildStateless(s.Stateless, s.PreferStateless, cons)
@@ -199,8 +212,8 @@ func buildProject(hasproject bool, project string, cons *Constraints) {
 	})
 }
 
-// buildAux `exist' = true 时 增加 dice_tag LIKE `label'
-// `exist' = false 时 不增加约束
+// add dice_tag LIKE `label' when buildAux `exist' = true,
+// No constraint is added when `exist' = false
 // `exist' = true && prefer = true 时 dice_tag LIKE (`label' or `any')
 func buildAux(label string, exist, prefer bool, cons *Constraints) {
 	if !exist {
