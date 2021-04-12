@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ListStatefulSet 获取指定集群下指定 namespace 所有 statefulSet
+// ListStatefulSet List statefulSet under the specified cluster and namespace.
 func (k *Kubernetes) ListStatefulSet(clusterName, namespace string) (*appsv1.StatefulSetList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListStatefulSet(clusterName, namespace string) (*appsv1.Sta
 	return cmList, nil
 }
 
-// GetStatefulSet 获取指定集群下 statefulSet
+// GetStatefulSet Get statefulSet under the specified cluster and namespace.
 func (k *Kubernetes) GetStatefulSet(clusterName, namespace, statefulSetName string) (*appsv1.StatefulSet, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetStatefulSet(clusterName, namespace, statefulSetName stri
 	return cm, nil
 }
 
-// CreateStatefulSet 在指定集群下创建 statefulSet
+// CreateStatefulSet Crate statefulSet on specified cluster and namespace.
 func (k *Kubernetes) CreateStatefulSet(clusterName, namespace string, cm *appsv1.StatefulSet) error {
 	if cm == nil {
 		return fmt.Errorf("statefulSet entity can't be nil")
@@ -69,7 +69,7 @@ func (k *Kubernetes) CreateStatefulSet(clusterName, namespace string, cm *appsv1
 	return nil
 }
 
-// DeleteStatefulSet 在指定集群下删除 statefulSet
+// DeleteStatefulSet Delete statefulSet on specified cluster and namespace.
 func (k *Kubernetes) DeleteStatefulSet(clusterName, namespace, statefulSetName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (k *Kubernetes) DeleteStatefulSet(clusterName, namespace, statefulSetName s
 	return nil
 }
 
-// UpdateStatefulSet 在指定集群下更新 statefulSet
+// UpdateStatefulSet Update statefulSet on specified cluster and namespace.
 func (k *Kubernetes) UpdateStatefulSet(clusterName, namespace string, cm *appsv1.StatefulSet) error {
 	if cm == nil {
 		return fmt.Errorf("statefulSet entity can't be nil")

@@ -22,20 +22,19 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// AddonNode addon node信息
+// AddonNode Addon node info
 type AddonNode struct {
 	ID         string `gorm:"type:varchar(64)"`
-	InstanceID string `gorm:"type:varchar(64)"` // AddonInstance 主键
+	InstanceID string `gorm:"type:varchar(64)"` // AddonInstance primary key
 	Namespace  string `gorm:"type:text"`
 	NodeName   string
 	CPU        float64
 	Mem        uint64
-	Deleted    string    `gorm:"column:is_deleted"` // Y: 已删除 N: 未删除
+	Deleted    string    `gorm:"column:is_deleted"` // Y: deleted N: not delete
 	CreatedAt  time.Time `gorm:"column:create_time"`
 	UpdatedAt  time.Time `gorm:"column:update_time"`
 }
 
-// TableName 数据库表名
 func (AddonNode) TableName() string {
 	return "tb_middle_node"
 }
@@ -51,7 +50,6 @@ type addonNodeWriter struct {
 	db *dbengine.DBEngine
 }
 
-// read condition
 func (c *DBClient) AddonNodeReader() *addonNodeReader {
 	return &addonNodeReader{db: c.DBEngine, conditions: []string{}, limit: 0, offset: -1}
 }
@@ -68,7 +66,6 @@ func (r *addonNodeReader) ByDeleteStatus(status ...string) *addonNodeReader {
 	return r
 }
 
-// read
 func (r *addonNodeReader) Do() ([]AddonNode, error) {
 	ams := []AddonNode{}
 	expr := r.db.Where(strutil.Join(r.conditions, " AND ", true)).Order("create_time desc")
@@ -86,7 +83,6 @@ func (r *addonNodeReader) Do() ([]AddonNode, error) {
 	return ams, nil
 }
 
-// write
 func (c *DBClient) AddonNodeWriter() *addonNodeWriter {
 	return &addonNodeWriter{db: c.DBEngine}
 }

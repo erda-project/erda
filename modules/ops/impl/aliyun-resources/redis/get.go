@@ -56,8 +56,8 @@ func GetInstanceFullDetailInfo(c context.Context, ctx aliyun_resources.Context, 
 			Value: content.RegionId + " " + native_strings.ToLower(content.ZoneId[len(content.ZoneId)-1:]),
 		},
 		apistructs.CloudResourceDetailItem{
-			//CLASSIC（经典网络）
-			//VPC（VPC网络）
+			//CLASSIC（classic network）
+			//VPC（vpc network）
 			Name:  i18n.Sprintf("Network Type"),
 			Value: i18n.Sprintf(content.NetworkType) + " " + fmt.Sprintf("(%s)", content.VpcId),
 		},
@@ -159,11 +159,10 @@ func NetInfo(ctx aliyun_resources.Context, instanceID string) (kvstore.InstanceN
 
 	request.InstanceId = instanceID
 
-	//DBInstanceNetType	 该网络信息所属的网络类型：
-	//
-	//0（公网）
-	//1（经典网络）
-	//2（VPC网络
+	//DBInstanceNetType	 (The type of network to which the network information belongs)：
+	//0（public network）
+	//1（classic network）
+	//2（vpc network)
 
 	response, err := client.DescribeDBInstanceNetInfo(request)
 	if err != nil {

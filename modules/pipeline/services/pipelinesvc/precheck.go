@@ -22,12 +22,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/precheck"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/release"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -51,7 +51,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
 
 	// files
 	if p.CommitDetail.RepoAbbr != "" {
-		diceymlByte, err := gittarutil.NewRepo(conf.GittarAddr(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), "dice.yml")
+		diceymlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), "dice.yml")
 		if err == nil {
 			itemsForCheck.Files["dice.yml"] = string(diceymlByte)
 		}
@@ -185,7 +185,7 @@ func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.Ite
 		}
 
 		realDiceYmlName := realDiceYmlSplit[length-1]
-		diceYmlByte, err := gittarutil.NewRepo(conf.GittarAddr(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), realDiceYmlName)
+		diceYmlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), realDiceYmlName)
 		if err != nil {
 			worn = err
 			return
