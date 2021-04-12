@@ -169,7 +169,7 @@ type NewClientRequest struct {
 	UserID                      json.RawMessage `json:"userId"`
 }
 
-// {"access_token":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsic2hpbmRhLW1hcnUiXSwic2NvcGUiOlsicHVibGljX3Byb2ZpbGUiLCJlbWFpbCJdLCJleHAiOjE1MzgzODk0NDgsImF1dGhvcml0aWVzIjpbIlJPTEVfQ0xJRU5UIl0sImp0aSI6IjdlNGZiZDkxLWVjZDQtNDJjMy1iOTU1LTNkZmU2MmM1ODcyNyIsImNsaWVudF9pZCI6ImRpY2UtdGVzdDMifQ.tmMiWzZw5TbmaBtP_BaGILvaIMjazPMUgS7512A24u2ttUMOMWaJqdRpxQXnt3PkL9KGwtXBrKEtJOReAvIY89sUqAI3fR1Ho3Yr5uW1XCwF8bJ3WPn9aPEdYWQn26xrS3aAtonWJUcfJaXi6o-Yd7PfeoPqKnZ3DcPhtg9gDBY","token_type":"bearer","refresh_token":"","expires_in":433199,"scope":"public_profile email","jti":"7e4fbd91-ecd4-42c3-b955-3dfe62c58727"}
+// {"access_token":"xxx","token_type":"bearer","refresh_token":"","expires_in":433199,"scope":"public_profile email","jti":"xxx"}
 type NewClientResponse struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`

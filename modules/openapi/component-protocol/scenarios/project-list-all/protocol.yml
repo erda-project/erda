@@ -1,0 +1,39 @@
+scenario: "project-list-all"
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      children:
+        - empty
+        - myPage
+    myPage:
+      - alert
+      - filter
+      - list
+
+components:
+  page:
+    type: Tabs
+  myPage:
+    type: Container
+  list:
+    type: List
+  filter:
+    type: ContractiveFilter
+  alert:
+    type: Alert
+rendering:
+  filter:
+    - name: list
+      state:
+        - name: "query"
+          value: "{{ filter.values }}"
+        - name: "isFirstFilter"
+          value: "{{ filter.isFirstFilter }}"
+  __DefaultRendering__:
+    - name: page
+    - name: myPage
+    - name: filter
+    - name: list
+    - name: alert

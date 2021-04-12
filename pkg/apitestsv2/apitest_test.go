@@ -119,7 +119,7 @@ func TestAssert(t *testing.T) {
 	assert.Equal(t, ret, true)
 
 	// 测试 contains
-	ss := `{"result":{"tenantId":null,"extra":null,"userId":11339,"token":"96c21d03d04928450d3861806ca763e409df9ce5eb4d9ced04504b1b8a35aa3b","expireTime":2592000},"success":true}`
+	ss := `{"result":{"tenantId":null,"extra":null,"userId":11339,"token":"xxx","expireTime":2592000},"success":true}`
 	err = json.Unmarshal([]byte(ss), &v)
 	op = "contains"
 	e = "\"userId\":11339"

@@ -1,0 +1,132 @@
+scenario: issue-manage
+
+hierarchy:
+  root: issueManage
+  structure:
+    issueManage:
+      - topHead
+      - head
+      - content
+    topHead:
+      - issueAddButton
+    head:
+      left: issueFilter
+      right: issueOperations
+    issueOperations:
+      - issueViewGroup
+      - issueExport
+      - issueImport
+    content:
+      - issueTable
+      - issueKanban
+      - issueGantt
+
+components:
+  issueManage:
+    type: Container
+  head:
+    type: LRContainer
+  content:
+    type: Container
+  topHead:
+    type: RowContainer
+  issueOperations:
+    type: RowContainer
+  issueFilter:
+    type: ContractiveFilter
+  issueExport:
+    type: Button
+  issueImport:
+    type: Button
+  issueViewGroup:
+    type: Radio
+  issueAddButton:
+    type: Button
+  issueTable:
+    type: Table
+  issueKanban:
+    type: IssueKanban
+  issueGantt:
+    type: Table
+
+rendering:
+  # 前端触发组件
+  # 先渲染前端触发组件，再渲染关联组件
+  issueViewGroup:
+    # 关联渲染组件列表
+    - name: issueFilter
+    - name: issueTable
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueKanban
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "issueViewGroupChildrenValue"
+          value: "{{ issueViewGroup.childrenValue }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueGantt
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+
+  issueFilter:
+    - name: issueViewGroup
+    - name: issueTable
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueKanban
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "issueViewGroupChildrenValue"
+          value: "{{ issueViewGroup.childrenValue }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueGantt
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+
+  __DefaultRendering__:
+    - name: issueManage
+    - name: topHead
+    - name: issueAddButton
+    - name: head
+    - name: issueFilter
+    - name: issueOperations
+    - name: issueViewGroup
+    - name: issueExport
+    - name: issueImport
+    - name: content
+    - name: issueTable
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueKanban
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "issueViewGroupChildrenValue"
+          value: "{{ issueViewGroup.childrenValue }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
+    - name: issueGantt
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "filterConditions"
+          value: "{{ issueFilter.issuePagingRequest }}"
