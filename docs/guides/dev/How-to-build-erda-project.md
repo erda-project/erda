@@ -21,11 +21,11 @@ The following command will build a specific erda module.
 ```
 make prepare && MODULE_PATH=<module_name> make build
 ```
-Note: Replace <module_name> with the name of the module to be built. All included module names can be found in the  [cmd](/cmd) directory.
+Note: Replace <module_name> with the name of the module to be build. All included module names can be found in the  [cmd](/cmd) directory.
 
 ### examples:
 - build monitor module
-   ```
+  ```
   make prepare && MODULE_PATH=monitor make build
   ```
 - build pipeline module
