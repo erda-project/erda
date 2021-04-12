@@ -39,3 +39,18 @@
 /.env
 /.env.*
 /conf/**/*.local.yml
+
+# generated files
+# openapi
+modules/openapi/api/api.go
+modules/openapi/api/generate/collectAPIs.go
+modules/openapi/api/swagger.json
+modules/openapi/api/swagger_all.json
+modules/openapi/api/generate/collectEvents.go
+modules/openapi/api/events_all.json
+modules/openapi/component-protocol/generate/auto_register/auto_register.go
+# cli
+modules/cli/generated_cmd
+modules/cli/command/generate/collectCMDs.go
+# apistructs
+apistructs/generated_desc.go

@@ -15,16 +15,17 @@ package main
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/providers/metrics/query"
-	"os"
-	"time"
 )
 
 type define struct{}
 
-func (d *define) Services() []string      { return []string{"hello"} }
+func (d *define) Services() []string     { return []string{"hello"} }
 func (d *define) Dependencies() []string { return []string{"metricq-client"} }
 func (d *define) Description() string    { return "hello for example" }
 func (d *define) Creator() servicehub.Creator {

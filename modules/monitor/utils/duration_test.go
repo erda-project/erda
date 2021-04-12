@@ -204,7 +204,7 @@ func Test_formatDuration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.args.d.formatDuration(tt.args.precision)
+			got, err := tt.args.d.FormatDuration(tt.args.precision)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("formatDuration() error = %v, wantErr %v", err, tt.wantErr)
 				return
