@@ -32,6 +32,11 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.14
+      - name: Go generate files
+        run: |
+          go generate ./apistructs
+          go generate ./modules/openapi/api/generate
+          go generate ./modules/openapi/component-protocol/generate
       - name: Set up Go mod
         run: go mod tidy
       - name: Run Lint
