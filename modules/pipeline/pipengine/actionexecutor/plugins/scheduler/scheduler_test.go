@@ -51,7 +51,7 @@ package scheduler
 //				"CONTEXTDIR":                 "/.pipeline/container/context",
 //				"METAFILE":                   "/.pipeline/container/metadata/custom-script/metadata",
 //				"DICE_OPENAPI_ADDR":          "openapi.default.svc.cluster.local:9529",
-//				"DICE_OPENAPI_TOKEN":         "c81037f8-b42f-498b-abd6-65fa867c1316",
+//				"DICE_OPENAPI_TOKEN":         "xxx",
 //			},
 //			Image:   "registry.cn-hangzhou.aliyuncs.com/dice/default-action-image:3.4.0-20190704-1765035",
 //			Cmd:     "/opt/emptydir/agent",

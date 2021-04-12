@@ -1,0 +1,246 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package uc
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apierrors"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/auth"
+	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+var UC_USER_EXPORT = apis.ApiSpec{
+	Path:          "/api/users/actions/export",
+	Scheme:        "http",
+	Method:        "GET",
+	Custom:        exportUsers,
+	RequestType:   apistructs.UserPagingRequest{},
+	CheckLogin:    false,
+	TryCheckLogin: true,
+	CheckToken:    true,
+	IsOpenAPI:     true,
+	ChunkAPI:      true,
+	Doc:           "summary: 导出用户",
+}
+
+func exportUsers(w http.ResponseWriter, r *http.Request) {
+	operatorID, err := user.GetUserID(r)
+	if err != nil {
+		apierrors.ErrAdminUser.NotLogin().Write(w)
+		return
+	}
+
+	if err := checkPermission(operatorID, apistructs.GetAction); err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+
+	token, err := auth.GetDiceClientToken()
+	if err != nil {
+		logrus.Errorf("failed to get token: %v", err)
+		apierrors.ErrListUser.InternalError(err).
+			Write(w)
+		return
+	}
+
+	// check login & permission
+	_, err = mustManageUsersPerm(r, apierrors.ErrListUser)
+	if err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+
+	req, err := getPagingUsersReq(r)
+	if err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+	req.PageSize = 1024
+
+	var users []apistructs.UserInfoExt
+	for i := 0; i < 100; i++ {
+		data, err := handlePagingUsers(req, token)
+		if err != nil {
+			errorresp.ErrWrite(err, w)
+			return
+		}
+		u := convertToUserInfoExt(data)
+		users = append(users, u.List...)
+		if len(u.List) < 1024 {
+			break
+		}
+		req.PageNo++
+	}
+
+	var withRole bool
+	if r.URL.Query().Get("withRole") == "true" || conf.ExportUserWithRole() {
+		withRole = true
+	}
+
+	reader, tablename, err := exportExcel(users, withRole)
+	if err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+
+	w.Header().Add("Content-Disposition", "attachment;fileName="+tablename+".xlsx")
+	w.Header().Add("Content-Type", "application/vnd.ms-excel")
+	if _, err := io.Copy(w, reader); err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+}
+
+func exportExcel(users []apistructs.UserInfoExt, withRole bool) (io.Reader, string, error) {
+	var (
+		tabel     [][]string
+		err       error
+		tabelName = "users"
+		buf       = bytes.NewBuffer([]byte{})
+	)
+
+	if withRole {
+		tabel, err = convertUserToExcelListWithRoles(users)
+		if err != nil {
+			return nil, "", err
+		}
+	} else {
+		tabel = convertUserToExcelList(users)
+	}
+
+	if err := excel.ExportExcel(buf, tabel, tabelName); err != nil {
+		return nil, "", err
+	}
+
+	return buf, tabelName, nil
+}
+
+func convertUserToExcelList(users []apistructs.UserInfoExt) [][]string {
+	r := [][]string{{"用户名", "昵称", "邮箱", "手机号", "登录方式", "上次登录时间", "密码过期时间", "状态"}}
+	for _, user := range users {
+		var state string
+		if user.Locked {
+			state = "冻结"
+		} else {
+			state = "未冻结"
+		}
+		r = append(r, append(append([]string{user.Name, user.Nick, user.Email, user.Phone, user.Source, user.LastLoginAt, user.PwdExpireAt, state})))
+	}
+
+	return r
+}
+
+// 生成二维数组，每个用户在他所属的最小组织单位下的角色是一行记录，之后再合并单元格
+func convertUserToExcelListWithRoles(users []apistructs.UserInfoExt) ([][]string, error) {
+	orgnazation, err := bdl.GetAllOrganizational()
+	if err != nil {
+		return nil, err
+	}
+
+	target := [][]string{{"用户名", "昵称", "邮箱", "手机号", "登录方式", "上次登录时间", "密码过期时间", "状态", "企业",
+		"企业角色", "项目", "项目角色", "应用", "应用角色"}}
+
+	for _, user := range users {
+		var state string
+		if user.Locked {
+			state = "冻结"
+		} else {
+			state = "未冻结"
+		}
+		fixedData := []string{user.Name, user.Nick, user.Email, user.Phone, user.Source, user.LastLoginAt, user.PwdExpireAt, state}
+		if _, ok := orgnazation.Members[user.ID]; !ok {
+			target = append(target, fixedData)
+			continue
+		}
+
+		// 企业级
+		for org, prjs := range orgnazation.Organization {
+			orgData := make([]string, 8, 8)
+			copy(orgData, fixedData)
+			// 未加入该企业
+			if _, ok := orgnazation.Members[user.ID]["org"][org]; !ok {
+				continue
+			}
+			orgData = append(orgData, org, strutil.Join(orgnazation.Members[user.ID]["org"][org].Roles, ","))
+			// 该企业下没有任何项目或者该用户没有加入该企业下的任何项目，该企业是该用户最小的组织单位
+			if len(prjs) == 0 || !orgnazation.IsInPrj(prjs, "prj", user.ID) {
+				target = append(target, orgData)
+				continue
+			}
+			// 项目级
+			for prj, apps := range prjs {
+				prjData := make([]string, 10, 10)
+				copy(prjData, orgData)
+				// 未加入该项目
+				if _, ok := orgnazation.Members[user.ID]["prj"][prj]; !ok {
+					continue
+				}
+				prjData = append(prjData, prj, strutil.Join(orgnazation.Members[user.ID]["prj"][prj].Roles, ","))
+				// 该项目下没有任何应用或者该用户没有加入该项目下的任何应用，该项目是该用户最小的组织单位
+				if len(apps) == 0 || !orgnazation.IsInApp(apps, "app", user.ID) {
+					target = append(target, prjData)
+					continue
+				}
+				// 应用级
+				for _, app := range apps {
+					appData := make([]string, 12, 12)
+					copy(appData, prjData)
+					// 未加入该应用
+					if _, ok := orgnazation.Members[user.ID]["app"][app]; !ok {
+						continue
+					}
+					// 该应用是该用户最小的组织单位
+					appData = append(appData, app, strutil.Join(orgnazation.Members[user.ID]["app"][app].Roles, ","))
+					target = append(target, appData)
+				}
+			}
+		}
+	}
+
+	return target, nil
+}
+
+// mergeInfo [][]int{{0, 7 ,1}, {8, 10, 2}}
+// 该行的第0列到第7列，垂直合并1个单元格
+// 该行的第8列到第10列，垂直合并2个单元格
+// func fillMergeMap(mergeMap map[int]map[int]*int, mergeInfo [][]int, row int) {
+// 	if _, ok := mergeMap[row]; !ok {
+// 		mergeMap[row] = make(map[int]int, 0)
+// 	}
+//
+// 	for _, v := range mergeInfo {
+// 		for i := v[0]; i <= v[1]; i++ {
+// 			mergeMap[row][i] = v[2]
+// 		}
+// 	}
+// }
+//
+// func genCell(data []string) []excel.Cell {
+// 	cells := make([]excel.Cell, 0)
+// 	for i, v := range data {
+// 		cells = append(cells, excel.NewCell(v))
+// 	}
+// 	return cells
+// }

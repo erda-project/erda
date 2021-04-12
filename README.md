@@ -32,6 +32,8 @@ We will gradually open source the entire function according to the workload. The
 
 ## Architecture
 
+![](./docs/files/arch.png)
+
 We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
 
 **erda** It is the main repository.
