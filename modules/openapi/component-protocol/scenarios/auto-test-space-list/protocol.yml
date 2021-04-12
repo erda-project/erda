@@ -1,0 +1,32 @@
+version: 0.2
+
+# 场景名
+scenario: "auto-test-space-list"
+
+hierarchy:
+  root: spaceManage
+  structure:
+    spaceManage:
+      - spaceList
+      - topHead
+      - spaceFormModal
+    topHead:
+      - spaceAddButton
+
+components:
+  spaceManage:
+    type: Container
+  topHead:
+    type: RowContainer
+    props:
+      isTopHead: true
+  spaceList:
+    type: Table
+  spaceAddButton:
+    type: Button
+  spaceFormModal:
+    type: FormModal
+
+rendering:
+  spaceFormModal:
+    - name: spaceList

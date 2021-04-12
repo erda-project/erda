@@ -11,6 +11,7 @@
     "pkg/clientgo/apis/flinkoperator/",
     "pkg/clientgo/apis/openyurt/",
     "pkg/clientgo/clientset/",
-    "pkg/pipe.v2/pipe.go"
+    "pkg/pipe.v2/pipe.go",
+    "modules/tools/admin-tools/statik/statik.go"
   ]
 }

@@ -25,7 +25,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string {
+func (d *define) Services() []string {
 	return []string{"hello metric_report_client"}
 }
 
@@ -71,7 +71,7 @@ func (p *provider) Run(ctx context.Context) error {
 			},
 		},
 	}
-	client := p.SendClient.CreateReportClient(os.Getenv("COLLECTOR_ADDR"), os.Getenv("USERNAME"), os.Getenv("PASSWORD"))
+	client := p.SendClient
 	err := client.Send(metric)
 	return err
 }
