@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GetService 获取指定集群下 Service
+// GetService List service resource under the specified cluster and namespace.
 func (k *Kubernetes) GetService(clusterName, namespace, svcName string) (*corev1.Service, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) GetService(clusterName, namespace, svcName string) (*corev1
 	return cm, nil
 }
 
-// CreateService 在指定集群下创建 Service
+// CreateService Crate service on specified cluster and namespace.
 func (k *Kubernetes) CreateService(clusterName, namespace string, svc *corev1.Service) error {
 	if svc == nil {
 		return fmt.Errorf("service entity can't be nil")
@@ -54,7 +54,7 @@ func (k *Kubernetes) CreateService(clusterName, namespace string, svc *corev1.Se
 	return nil
 }
 
-// DeleteService 在指定集群下删除 Service
+// DeleteService Delete service on specified cluster and namespace.
 func (k *Kubernetes) DeleteService(clusterName, namespace, svcName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -69,7 +69,7 @@ func (k *Kubernetes) DeleteService(clusterName, namespace, svcName string) error
 	return nil
 }
 
-// UpdateService 在指定集群下更新 Service
+// UpdateService Update service on specified cluster and namespace.
 func (k *Kubernetes) UpdateService(clusterName, namespace string, svc *corev1.Service) error {
 	if svc == nil {
 		return fmt.Errorf("secret entity can't be nil")

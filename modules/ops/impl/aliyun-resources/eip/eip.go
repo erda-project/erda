@@ -74,10 +74,10 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 
 	// describe resource
 	// status:
-	//	Associating：绑定中
-	//	Unassociating：解绑中
-	//	InUse：已分配
-	//	Available：可用
+	//	Associating
+	//	Unassociating
+	//	InUse
+	//	Available
 	response, err := client.DescribeEipAddresses(request)
 	if err != nil {
 		logrus.Errorf("describe eip error: %+v", err)

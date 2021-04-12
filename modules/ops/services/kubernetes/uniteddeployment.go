@@ -40,7 +40,7 @@ const (
 	HealthCheckHttpType        = "HTTP"
 )
 
-// ListUnitedDeployment 获取指定 clusterName 集群下的所有 UnitedDeployment
+// ListUnitedDeployment List unitedDeployment under the specified cluster and namespace.
 func (k *Kubernetes) ListUnitedDeployment(clusterName, namespace string) (*v1alpha1.UnitedDeploymentList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -55,7 +55,7 @@ func (k *Kubernetes) ListUnitedDeployment(clusterName, namespace string) (*v1alp
 	return unitedDeployments, nil
 }
 
-// GetUnitedDeployment 指定 clusterName 集群下获取指定 UnitedDeployment 对象
+// GetUnitedDeployment Get unitedDeployment under the specified cluster and namespace.
 func (k *Kubernetes) GetUnitedDeployment(clusterName, namespace, unitedDeploymentName string) (*v1alpha1.UnitedDeployment, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -70,7 +70,7 @@ func (k *Kubernetes) GetUnitedDeployment(clusterName, namespace, unitedDeploymen
 	return res, nil
 }
 
-// CreateUnitedDeployment 指定 clusterName 集群下创建 UnitedDeployment
+// CreateUnitedDeployment Crate unitedDeployment on specified cluster and namespace.
 func (k *Kubernetes) CreateUnitedDeployment(clusterName, namespace string, unitedDeployment *v1alpha1.UnitedDeployment) (*v1alpha1.UnitedDeployment, error) {
 	if unitedDeployment == nil {
 		return nil, fmt.Errorf("create action must give a non-nil UnitedDeployment entity")
@@ -89,7 +89,7 @@ func (k *Kubernetes) CreateUnitedDeployment(clusterName, namespace string, unite
 	return res, nil
 }
 
-// DeleteUnitedDeployment 指定 clusterName 集群下创建 UnitedDeployment
+// DeleteUnitedDeployment Delete unitedDeployment on specified cluster and namespace.
 func (k *Kubernetes) DeleteUnitedDeployment(clusterName, namespace string, unitedDeploymentName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -105,7 +105,7 @@ func (k *Kubernetes) DeleteUnitedDeployment(clusterName, namespace string, unite
 	return nil
 }
 
-// UpdateUnitedDeployment 指定 clusterName 集群下更新 UnitedDeployment
+// UpdateUnitedDeployment Update unitedDeployment on specified cluster and namespace.
 func (k *Kubernetes) UpdateUnitedDeployment(clusterName, namespace string, unitedDeployment *v1alpha1.UnitedDeployment) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -293,9 +293,9 @@ func (k *Kubernetes) GenerateHealthCheckSpec(req *apistructs.GenerateHeathCheckR
 func NewCheckProbe() *v1.Probe {
 	return &v1.Probe{
 		InitialDelaySeconds: 0,
-		// 每次健康检查超时时间
+		// Healthy check
 		TimeoutSeconds: 10,
-		// 健康检查探测间隔
+		// Healthy check interval
 		PeriodSeconds:    15,
 		FailureThreshold: int32(apistructs.HealthCheckDuration) / 15,
 	}

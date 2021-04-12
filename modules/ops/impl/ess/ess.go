@@ -45,7 +45,6 @@ const (
 	MinLimit                  = 70
 )
 
-//Ess 弹性伸缩结构体
 type Ess struct {
 	bdl    *bundle.Bundle
 	mns    *mns.Mns
@@ -68,12 +67,11 @@ type Config struct {
 	ScalePipeLineID uint64
 }
 
-//New 实例化Ess
 func New(bdl *bundle.Bundle, mns *mns.Mns, nodes *nodes.Nodes, labels *labels.Labels) *Ess {
 	return &Ess{bdl: bdl, mns: mns, nodes: nodes, labels: labels}
 }
 
-//Init 实例化Autoscale
+// Init Init auto scale
 func (e *Ess) Init(req apistructs.BasicCloudConf, m *mns.Mns, n *nodes.Nodes) (*Ess, error) {
 	accessKey := encrypt.AesDecrypt(req.AccessKeyId, apistructs.TerraformEcyKey)
 	secretKey := encrypt.AesDecrypt(req.AccessKeySecret, apistructs.TerraformEcyKey)
@@ -95,7 +93,7 @@ func (e *Ess) Init(req apistructs.BasicCloudConf, m *mns.Mns, n *nodes.Nodes) (*
 	return instance, nil
 }
 
-//CreateAutoFlow 创建auto模式的ess资源
+// CreateAutoFlow Create ess with auto mode
 func (e *Ess) CreateAutoFlow(clusterName string, vSwitchID string, ecsPassword string, sgID string) error {
 	essScaleSimpleRuleName := clusterName + EssScaleSimpleRuleSuff
 	err := e.CreateFlow(clusterName, vSwitchID, ecsPassword, sgID)
@@ -106,12 +104,12 @@ func (e *Ess) CreateAutoFlow(clusterName string, vSwitchID string, ecsPassword s
 	if err != nil {
 		return err
 	}
-	//创建ess简单伸缩规则
+	// Create ess simple scale rule
 	err = e.CreateScaleRule(essScaleSimpleRuleName, 2)
 	return err
 }
 
-//CreateSchedulerFlow 创建定时模式的ess资源
+// CreateSchedulerFlow Create ess with schedule mode
 func (e *Ess) CreateSchedulerFlow(req apistructs.SchedulerScaleReq) error {
 	essScaleSchedulerRuleName := req.ClusterName + EssScaleSchedulerRuleSuff
 	essScaleSchedulerTask := req.ClusterName + EssScaleSchedulerTaskSuff
@@ -124,7 +122,7 @@ func (e *Ess) CreateSchedulerFlow(req apistructs.SchedulerScaleReq) error {
 	if err != nil {
 		return err
 	}
-	//创建ess简单伸缩规则
+	// Create ess autoscale rules with simple model.
 	err = e.CreateScaleRule(essScaleSchedulerRuleName, req.Num)
 	if err != nil {
 		return err
@@ -139,13 +137,13 @@ func (e *Ess) CreateSchedulerFlow(req apistructs.SchedulerScaleReq) error {
 		if err != nil {
 			return err
 		}
-		//创建定时伸规则
+		// Create ess autoscale rules with schedule model.
 		err = e.CreateScheduledTask(essScaleSchedulerTask, req.RecurrenceType, req.RecurrenceValue, req.LaunchTime)
 		if err != nil {
 			return err
 		}
 	}
-	//创建定时缩规则
+	// Create autoscale rules with schedule model.
 	pTime1, err := time.Parse(TimeLayout, req.LaunchTime)
 	o, _ := time.ParseDuration(strconv.Itoa(req.ScaleDuration) + "h")
 	t := pTime1.Add(o)
@@ -174,11 +172,11 @@ func (e *Ess) CreateSchedulerFlow(req apistructs.SchedulerScaleReq) error {
 	return nil
 }
 
-//CreateFlow 开启弹性伸缩后依次创建弹性伸缩组，弹性伸缩配置，弹性伸缩规则
+// CreateFlow Create elastic scale group, elastic scale configuration, elastic scale rule in order when start autoscale
 func (e *Ess) CreateFlow(clusterName string, vSwitchID string, ecsPassword string, sgID string) error {
 	var err error
 	essGroupName := clusterName + EssGroupNameSuff
-	//先检查伸缩组是否存在
+	// First, check elastic scale group whether exists
 	flag, err := e.EnsureScaleGroupExist(essGroupName)
 	if err != nil {
 		return err
@@ -186,17 +184,17 @@ func (e *Ess) CreateFlow(clusterName string, vSwitchID string, ecsPassword strin
 	if flag {
 		return nil
 	}
-	//创建弹性伸缩组
+	// Create elastic scale group
 	err = e.CreateScaleGroup(essGroupName, vSwitchID)
 	if err != nil {
 		return err
 	}
-	//创建弹性伸缩组配置
+	// Create elastic scale configuration
 	err = e.CreateScaleConf(ecsPassword, sgID)
 	if err != nil {
 		return err
 	}
-	//创建msn队列
+	// Create mns queue
 	var r apistructs.MnsReq
 	r.Region = e.Config.Region
 	r.AccessKeyId = e.Config.AccessKeyID
@@ -217,17 +215,17 @@ func (e *Ess) CreateFlow(clusterName string, vSwitchID string, ecsPassword strin
 		e.mns.Config.AccountID,
 		"queue/" + e.mns.Config.QueueName,
 	}, ":")
-	//ess弹性伸缩组关联mns队列
+	// Related ess elastic scale group to mns queue
 	err = e.CreateNotificationConfiguration(mnsQueueName)
 	if err != nil {
 		return err
 	}
-	//启用弹性伸缩组
+	// Enable elastic scale group
 	err = e.EnableScalingGroup()
 	return err
 }
 
-//EnsureScaleGroupExist 确认伸缩组是否存在
+// EnsureScaleGroupExist Ensure elastic scale group whether exists
 func (e *Ess) EnsureScaleGroupExist(essGroupName string) (bool, error) {
 
 	request := api.CreateDescribeScalingGroupsRequest()
@@ -248,7 +246,7 @@ func (e *Ess) EnsureScaleGroupExist(essGroupName string) (bool, error) {
 	return true, nil
 }
 
-//EnsureScaleRuleExist 确认伸缩规则是否存在
+// EnsureScaleRuleExist Ensure elastic scale rule whether exists
 func (e *Ess) EnsureScaleRuleExist(name string) (bool, error) {
 
 	request := api.CreateDescribeScalingRulesRequest()
@@ -271,7 +269,7 @@ func (e *Ess) EnsureScaleRuleExist(name string) (bool, error) {
 	return true, nil
 }
 
-//DeleteScaleRule 删除弹性规则
+// DeleteScaleRule Delete elastic scale rule
 func (e *Ess) DeleteScaleRule(name string) error {
 	f, err := e.EnsureScaleRuleExist(name)
 	if err != nil {
@@ -293,7 +291,7 @@ func (e *Ess) DeleteScaleRule(name string) error {
 	return nil
 }
 
-//EnsureScaleRuleExist 确认伸缩规则是否存在
+// EnsureScheduledTasks Ensure schedule task whether exists
 func (e *Ess) EnsureScheduledTasks(name string) (bool, error) {
 
 	request := api.CreateDescribeScheduledTasksRequest()
@@ -314,7 +312,7 @@ func (e *Ess) EnsureScheduledTasks(name string) (bool, error) {
 	return true, nil
 }
 
-//DeleteScaleRule 删除弹性规则
+//DeleteScaleRule Delete scale rule
 func (e *Ess) DeleteScheduledTasks(name string) error {
 
 	f, err := e.EnsureScheduledTasks(name)
@@ -337,7 +335,7 @@ func (e *Ess) DeleteScheduledTasks(name string) error {
 	return nil
 }
 
-//CreateScaleGroup 创建弹性组
+//CreateScaleGroup Create scale group
 func (e *Ess) CreateScaleGroup(essGroupName string, vSwitchID string) error {
 	request := api.CreateCreateScalingGroupRequest()
 	request.Scheme = "https"
@@ -356,7 +354,7 @@ func (e *Ess) CreateScaleGroup(essGroupName string, vSwitchID string) error {
 	return nil
 }
 
-//CreateScaleConf  func
+// CreateScaleConf
 func (e *Ess) CreateScaleConf(ecsPassword string, sgID string) error {
 	request := api.CreateCreateScalingConfigurationRequest()
 	request.Scheme = "https"
@@ -395,7 +393,7 @@ func (e *Ess) CreateScaleConf(ecsPassword string, sgID string) error {
 	return nil
 }
 
-//CreateScaleRule 创建简单规则
+// CreateScaleRule Create simple scale rule
 func (e *Ess) CreateScaleRule(essScaleSimpleRuleName string, num int) error {
 	request := api.CreateCreateScalingRuleRequest()
 	request.Scheme = "https"
@@ -415,7 +413,7 @@ func (e *Ess) CreateScaleRule(essScaleSimpleRuleName string, num int) error {
 	return nil
 }
 
-//UpdateScheduledTasks 修改定时伸缩任务
+// UpdateScheduledTasks Update schedule task
 func (e *Ess) UpdateScheduledTasks(id string, recurrenceType string, recurrenceValue string, launchTime string) error {
 
 	d, _ := time.ParseDuration(strconv.Itoa(300*24) + "h")
@@ -441,7 +439,7 @@ func (e *Ess) UpdateScheduledTasks(id string, recurrenceType string, recurrenceV
 	return nil
 }
 
-//CreateScheduledTask 创建定时伸缩任务
+// CreateScheduledTask Create schedule task
 func (e *Ess) CreateScheduledTask(name string, recurrenceType string, recurrenceValue string, launchTime string) error {
 
 	d, _ := time.ParseDuration(strconv.Itoa(300*24) + "h")
@@ -468,7 +466,7 @@ func (e *Ess) CreateScheduledTask(name string, recurrenceType string, recurrence
 	return nil
 }
 
-//ExecScaleRule 执行伸缩规则
+// ExecScaleRule Execute scale rule
 func (e *Ess) ExecScaleRule(scaleRuleName string) error {
 	request := api.CreateExecuteScalingRuleRequest()
 	request.Scheme = "https"
@@ -484,7 +482,7 @@ func (e *Ess) ExecScaleRule(scaleRuleName string) error {
 	return nil
 }
 
-//CreateNotificationConfiguration 关联mns
+//CreateNotificationConfiguration Related configuration
 func (e *Ess) CreateNotificationConfiguration(queueName string) error {
 	request := api.CreateCreateNotificationConfigurationRequest()
 	request.Scheme = "https"
@@ -510,7 +508,7 @@ func (e *Ess) CreateNotificationConfiguration(queueName string) error {
 	return nil
 }
 
-//EnableScalingGroup 启动弹性伸缩组
+// EnableScalingGroup Enable scale group
 func (e *Ess) EnableScalingGroup() error {
 
 	request := api.CreateEnableScalingGroupRequest()
@@ -527,9 +525,8 @@ func (e *Ess) EnableScalingGroup() error {
 	return nil
 }
 
-//EnableScalingGroup 启动弹性伸缩组
 func (e *Ess) AutoScale() {
-	//弹性伸缩监听方法
+	// Listen elastic scale
 	go func() {
 		for {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -552,7 +549,7 @@ func (e *Ess) AutoScale() {
 	}()
 }
 
-//DetectResource 检测集群资源
+// DetectResource Detect cluster resource
 func (e *Ess) DetectResource(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute * DetectInterval)
 	logrus.Errorf("begin to execute autoscale...")
@@ -586,14 +583,14 @@ func (e *Ess) DetectResource(ctx context.Context) {
 				requestCPU = 0
 				requestMem = 0
 				for k, v := range resourceInfoData.Nodes {
-					//检测生产环境的dice/stateless-service标以及bigdata-标
+					// Check labels (dice/stateless-service and bigdata-) in production environment
 					if (isExistInArray("dice/stateless-service", v.Labels) && isExistInArray("dice/workspace-prod", v.Labels)) || isExistInArray("dice/bigdata-job", v.Labels) {
 						totalCPU += v.CPUAllocatable
 						totalMem += v.MemAllocatable
 						requestCPU += v.CPUReqsUsage
 						requestMem += v.MemReqsUsage
 					}
-					//标记需要下线的机器
+					// Label host which need offline
 					if isExistInArray("dice/autoscale", v.Labels) {
 						if isExistInArray("dice/locked", v.Labels) {
 							lockedNode = k
@@ -603,7 +600,7 @@ func (e *Ess) DetectResource(ctx context.Context) {
 				}
 				cpuUsage := requestCPU / totalCPU * 100
 				memUsage := float64(requestMem) / float64(totalMem) * 100
-				//资源水位大于80%执行扩容操作
+				// Expansion when resource used greater than 80%
 				if cpuUsage > MaxLimit || memUsage > MaxLimit {
 					accountInfoReq := apistructs.BasicCloudConf{
 						Region:          cluster.OpsConfig.Region,
@@ -621,7 +618,7 @@ func (e *Ess) DetectResource(ctx context.Context) {
 						logrus.Errorf("failed to execute scale rule: %v", err)
 					}
 				}
-				//资源水位小于70%执行缩容操作
+				// Reduce capacity when resource used less than 70%
 				if cpuUsage < MinLimit && memUsage < MinLimit {
 					if lockedNode != "" {
 						id, err := e.mns.GetInstancesIDByPrivateIp(apistructs.EcsInfoReq{
