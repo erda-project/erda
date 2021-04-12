@@ -16,7 +16,7 @@ package topology
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -457,7 +457,7 @@ func init() {
 			{Source: []*NodeType{SourceMQNodeType}, Target: TargetMQServiceNodeType},
 			{Source: []*NodeType{SourceServiceNodeType}, Target: TargetComponentNodeType},
 		},
-		ServiceNodeIndexType: []*NodeRelation{
+		ServiceNodeIndexType: {
 			// Topology Relation
 			// OtherNode
 			{Target: OtherNodeType},
@@ -518,7 +518,7 @@ func toEsAggregation(nodeRelations []*NodeRelation) map[string]*elastic.FilterAg
 
 // encode
 func encodeTypeToKey(nodeType string) string {
-	md := md5.New()
+	md := sha256.New()
 	md.Write([]byte(nodeType))
 	mdSum := md.Sum(nil)
 	key := hex.EncodeToString(mdSum)
@@ -1506,7 +1506,7 @@ func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric
 	if aggregation == nil {
 		return &metric
 	}
-	for key, _ := range aggregation {
+	for key := range aggregation {
 		sum, _ := target.Sum(key)
 		split := strings.Split(key, ".")
 		s2 := split[1]
