@@ -25,11 +25,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -75,7 +75,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	p.Extra.DiceWorkspace = app.Workspace
 
 	// --- repo info ---
-	repo := gittarutil.NewRepo(conf.GittarAddr(), app.GitRepoAbbrev)
+	repo := gittarutil.NewRepo(discover.Gittar(), app.GitRepoAbbrev)
 	commit, err := repo.GetCommit(req.Branch)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepo.InternalError(err)
