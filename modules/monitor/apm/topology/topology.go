@@ -1717,9 +1717,12 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	if params.Sort == 1 {
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
+	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
+		"FROM application_%s WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName "+
+		"AND target_terminus_key::tag=$terminusKey %s GROUP BY %s", field, params.Layer, where.String(), field+orderby)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
-		`SELECT `+field+`,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) FROM application_`+params.Layer+` WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName AND target_terminus_key::tag=$terminusKey`+where.String()+` GROUP BY `+field+orderby,
+		sql,
 		param,
 		options)
 	if err != nil {
@@ -1742,9 +1745,11 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 		itemResult["elapsed_count"] = r[1]
 		itemResult["error_count"] = r[2]
 		itemResult["avg_elapsed"] = r[3]
+		sql = fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
+			"AND target_service_name::tag=$filterServiceName AND %s=$field AND target_terminus_key::tag=$terminusKey ", params.Layer, field)
 		slowElapsedCount, err := topology.metricq.Query(
 			metricq.InfluxQL,
-			`SELECT sum(elapsed_count::field) FROM application_`+params.Layer+`_slow WHERE target_service_id::tag=$serviceId AND target_service_name::tag=$filterServiceName AND `+field+`=$field AND target_terminus_key::tag=$terminusKey `,
+			sql,
 			map[string]interface{}{
 				"field":             r[0].(string),
 				"terminusKey":       params.TerminusKey,
@@ -1785,10 +1790,13 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 	if params.Sort == 1 {
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
+	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
+		"source_service_name::tag=$filterServiceName AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
+		params.Layer, where.String(), orderby)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
-		`SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),format_duration(avg(elapsed_mean::field),'',2)
-FROM application_`+params.Layer+` WHERE source_service_id::tag=$serviceId AND source_service_name::tag=$filterServiceName AND source_terminus_key::tag=$terminusKey`+where.String()+` GROUP BY db_statement::tag `+orderby,
+		sql,
 		param,
 		options)
 	if err != nil {
