@@ -53,10 +53,10 @@ func ListByCluster(ctx aliyun_resources.Context,
 	request.Tags = fmt.Sprintf("[{\"key\":\"%s\",\"value\":\"%s\"}]", tagKey, tagValue)
 
 	// status:
-	//   active:     正常
-	//   activating: 生效中
-	//   inactive:   冻结
-	//   invalid:    失效
+	//   active
+	//   activating: effecting
+	//   inactive:   freeze
+	//   invalid
 	response, err := client.ListTagResources(request)
 	if err != nil {
 		return DescribeESInstancesResponse{}, err

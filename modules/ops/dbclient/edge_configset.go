@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// ListEdgeConfigSet 获取边缘配置集
+// ListEdgeConfigSet List edge configSet
 func (c *DBClient) ListEdgeConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (int, *[]EdgeConfigSet, error) {
 	var (
 		total          int
@@ -60,7 +60,7 @@ func (c *DBClient) ListEdgeConfigSet(param *apistructs.EdgeConfigSetListPageRequ
 	return total, &edgeConfigSets, nil
 }
 
-// GetEdgeConfigSet 根据ID获取边缘配置集
+// GetEdgeConfigSet Get edge configSet by configSet id
 func (c *DBClient) GetEdgeConfigSet(configSetID int64) (*EdgeConfigSet, error) {
 	var edgeConfigSet EdgeConfigSet
 
@@ -74,17 +74,17 @@ func (c *DBClient) GetEdgeConfigSet(configSetID int64) (*EdgeConfigSet, error) {
 	return &edgeConfigSet, nil
 }
 
-// CreateEdgeConfigSet 创建边缘配置集
+// CreateEdgeConfigSet Create edge configSet
 func (c *DBClient) CreateEdgeConfigSet(edgeConfigSet *EdgeConfigSet) error {
 	return c.Create(edgeConfigSet).Error
 }
 
-// UpdateEdgeConfigSet 更新边缘配置集
+// UpdateEdgeConfigSet Update edge configSet
 func (c *DBClient) UpdateEdgeConfigSet(edgeConfigSet *EdgeConfigSet) error {
 	return c.Save(edgeConfigSet).Error
 }
 
-// DeleteEdgeConfigSet 删除边缘配置集
+// DeleteEdgeConfigSet Delete edge configSet
 func (c *DBClient) DeleteEdgeConfigSet(edgeConfigSetID int64) error {
 	return c.Where("id = ?", edgeConfigSetID).Delete(&EdgeConfigSet{}).Error
 }

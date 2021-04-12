@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// ListEdgeSite 获取边缘站点列表
+// ListEdgeSite List edge site
 func (c *DBClient) ListEdgeSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]EdgeSite, error) {
 	var (
 		total     int
@@ -64,7 +64,7 @@ func (c *DBClient) ListEdgeSite(param *apistructs.EdgeSiteListPageRequest) (int,
 	return total, &edgeSites, nil
 }
 
-// GetEdgeSite 获取边缘站点详情
+// GetEdgeSite Get edge site
 func (c *DBClient) GetEdgeSite(edgeSiteID int64) (*EdgeSite, error) {
 	var (
 		edgeSite EdgeSite
@@ -78,17 +78,17 @@ func (c *DBClient) GetEdgeSite(edgeSiteID int64) (*EdgeSite, error) {
 	return &edgeSite, nil
 }
 
-// CreateEdgeSite 创建边缘站点
+// CreateEdgeSite Create edge site record
 func (c *DBClient) CreateEdgeSite(edgeSite *EdgeSite) error {
 	return c.Create(edgeSite).Error
 }
 
-// UpdateEdgeSite 更新边缘站点
+// UpdateEdgeSite Update edge site
 func (c *DBClient) UpdateEdgeSite(edgeSite *EdgeSite) error {
 	return c.Save(edgeSite).Error
 }
 
-// DeleteEdgeSite 删除边缘站点
+// DeleteEdgeSite Delete edge site
 func (c *DBClient) DeleteEdgeSite(edgeSiteID int64) error {
 	return c.Where("id = ?", edgeSiteID).Delete(&EdgeSite{}).Error
 }

@@ -143,7 +143,7 @@ func (e *Endpoints) RegistryRemoveLayers(ctx context.Context, r *http.Request, v
 
 var scriptPath string = "/app/scripts.tar.gz"
 
-// GetScriptInfo 获取脚本信息
+// GetScriptInfo Get script info
 func (e *Endpoints) GetScriptInfo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	if !strutil.Contains(r.Header.Get("Client-ID"), "soldier") {
 		return mkResponseErr("401", "unknown client access")
@@ -166,7 +166,7 @@ func (e *Endpoints) GetScriptInfo(ctx context.Context, r *http.Request, vars map
 	})
 }
 
-// ServeScript 提供脚本下载
+// ServeScript Offer script download.
 func (e *Endpoints) ServeScript(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if !strutil.Contains(r.Header.Get("Client-ID"), "soldier") {
 		colonyutil.WriteErr(w, "401", "unknown client access")

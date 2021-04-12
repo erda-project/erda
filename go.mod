@@ -48,11 +48,12 @@ require (
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.7
 	github.com/go-openapi/swag v0.19.9 // indirect
-	github.com/go-playground/validator v9.31.0+incompatible // indirect
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/builder v0.2.0 // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
@@ -68,7 +69,7 @@ require (
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/gorm v1.9.16
-	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/jinzhu/now v1.1.1
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kr/text v0.2.0 // indirect
