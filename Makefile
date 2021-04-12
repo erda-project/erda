@@ -84,6 +84,12 @@ generate:
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go generate -v -x
 
+prepare:
+	cd "${PROJ_PATH}" && \
+	${GO_BUILD_ENV} go generate ./apistructs &&\
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate &&\
+	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
+
 submodule:
 	git submodule update --init
 
