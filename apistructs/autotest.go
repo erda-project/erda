@@ -28,6 +28,18 @@ const (
 	AutoTestFileTreeNodeMetaKeyExtra         = "extra"
 )
 
+type AutoTestFileTreeNode struct {
+	Type      UnifiedFileTreeNodeType
+	Scope     string
+	ScopeID   string
+	Pinode    string `gorm:"type:bigint(20)"` // root dir 的 pinode 为 "0"，表示无 pinode
+	Inode     string `gorm:"type:bigint(20)"`
+	Name      string
+	Desc      string
+	CreatorID string
+	UpdaterID string
+}
+
 type AutoTestNodeMetaSnippetObj struct {
 	Alias  string                 `json:"alias"`
 	Params map[string]interface{} `json:"params"`
