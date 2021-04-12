@@ -356,7 +356,7 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 		if len(action.Extra.UUID) <= 0 {
 			continue
 		}
-		req = append(req, apistructs.JobFromUser{Name: action.Extra.UUID, Namespace: action.Extra.Namespace})
+		req = append(req, apistructs.JobFromUser{Name: action.Extra.UUID, Namespace: action.Extra.Namespace, ClusterName: action.Extra.ClusterName})
 	}
 	var body bytes.Buffer
 	resp, err := httpclient.New().Delete(s.addr).
