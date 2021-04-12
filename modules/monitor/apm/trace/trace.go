@@ -77,8 +77,8 @@ func (p *provider) traces(r *http.Request, params struct {
 	metricParams["limit"] = strconv.FormatInt(params.Limit, 10)
 	var where bytes.Buffer
 	if params.ApplicationId != -1 {
-		metricParams["applications_ids_distinct"] = strconv.FormatInt(params.ApplicationId, 10)
-		where.WriteString("applications_ids_distinct::field=$applications_ids_distinct AND ")
+		metricParams["applications_ids"] = strconv.FormatInt(params.ApplicationId, 10)
+		where.WriteString("applications_ids::field=$applications_ids AND ")
 	}
 	if params.Status != 0 {
 		if params.Status == -1 {
@@ -89,9 +89,9 @@ func (p *provider) traces(r *http.Request, params struct {
 			where.WriteString(" errors_sum::field>$errors_sum AND ")
 		}
 	}
-	str := fmt.Sprintf("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),trace_id::tag FROM  %s %s %s %s %s ",
-		"trace", " WHERE ", where.String(), "terminus_key::tag=$terminus_key  GROUP BY trace_id::tag ORDER BY max(start_time_min::field) LIMIT ",
-		strconv.FormatInt(params.Limit, 10))
+	str := fmt.Sprintf("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),"+
+		"trace_id::tag FROM trace WHERE terminus_key::tag=$terminus_key GROUP BY trace_id::tag ORDER BY "+
+		"max(start_time_min::field) LIMIT %s", strconv.FormatInt(params.Limit, 10))
 	response, err := p.metricq.Query(
 		metricq.InfluxQL,
 		str,
