@@ -62,6 +62,4 @@ mysql:
 
 notify-query:
   files:
-    - ${CONF_PATH}/dice-configs/notity/notify
-
-
+    - ${CONF_PATH}/pkg/dice-configs/notity/notify
