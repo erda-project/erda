@@ -47,7 +47,7 @@ func CreateInstanceWithRecord(ctx aliyun_resources.Context, req apistructs.Creat
 	detail.ClientToken = req.ClientToken
 	detail.InstanceName = req.InstanceName
 
-	// 重名检查
+	// Duplicate name check
 	regionids := aliyun_resources.ActiveRegionIDs(ctx)
 	list, _, err := List(ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 	if err != nil {
@@ -65,8 +65,8 @@ func CreateInstanceWithRecord(ctx aliyun_resources.Context, req apistructs.Creat
 		}
 	}
 
-	// 来自addon的请求，不带region，通过cluster name，查找vpc，得到region、cidr等信息
-	// 来自云管的请求，带region和vpc id，据此查询更详细的cidr，zoneID等信息
+	// request from addon: none region, get region/cidr from vpc(select by cluster name)
+	// request from cloud management:  has region and vpc id, use them to  get cidr/zoneID and more detail info
 	if req.ZoneID == "" {
 		ctx.Region = req.Region
 		ctx.VpcID = req.VpcID
@@ -184,7 +184,7 @@ func CreateDBWithRecord(ctx aliyun_resources.Context, req apistructs.CreateCloud
 	reqDB.InstanceID = req.InstanceID
 	reqDB.Databases = req.Databases
 
-	// 当前一次只支持创建一个database
+	// Only one database can create in one time currently.
 	logrus.Debugf("start to create database:%+v", reqDB)
 	err = CreateDatabases(ctx, reqDB)
 	if err != nil {
@@ -208,8 +208,9 @@ func CreateDBWithRecord(ctx aliyun_resources.Context, req apistructs.CreateCloud
 		}
 		// request come from addon
 		if req.Source == apistructs.CloudResourceSourceAddon && db.Account == "" {
-			// if request from addon and not account, auto generate on名称唯一。
-			// 以字母开头，以字母或数字结尾, 由小写字母、数字或下划线组成, 长度为2~16个字符
+			// if request from addon and not account, auto generate on
+			// Unique name: Length 2~16 characters. Must start with letter, end with letter or number,
+			// consists of lowercase letters, numbers, or underscores.
 			account := apistructs.CloudResourceMysqlAccount{
 				Account:          "ac" + uuid.UUID()[:12],
 				Password:         uuid.UUID()[:8] + "0@x" + uuid.UUID()[:8],
@@ -328,7 +329,8 @@ func CreateInstance(ctx aliyun_resources.Context, req apistructs.CreateCloudReso
 
 	request.Category = req.SpecType
 	request.DBInstanceClass = req.SpecSize
-	// 基础版只能使用cloud_ssd，高可用版使用local_ssd
+	// Basic edition: only use cloud_ssd
+	// High-availability edition: use local_ssd
 	if req.SpecType == "Basic" {
 		request.DBInstanceStorageType = "cloud_ssd"
 	} else if req.SpecType == "High-availability" {
@@ -350,12 +352,12 @@ func CreateInstance(ctx aliyun_resources.Context, req apistructs.CreateCloudReso
 	request.VPCId = req.VpcID
 	request.VSwitchId = req.VSwitchID
 	// TODO: choose zone id which contains more resource in vpc
-	// 指定了VPC和交换机时，为匹配交换机对应的可用区，该参数必填。
+	// Parameter must be supplied when VPC and switch are specified, to matching available area for switch
 	request.ZoneId = req.ZoneID
 	// TODO: get vpc cidr from vpc id
 	request.SecurityIPList = req.SecurityIPList
 
-	// 按月收费，年转换成月
+	// Billed monthly，convert year to month
 	if strings.ToLower(req.ChargeType) == aliyun_resources.ChargeTypePrepaid {
 		req.ChargeType = "Prepaid"
 	} else if strings.ToLower(req.ChargeType) == "postpaid" {

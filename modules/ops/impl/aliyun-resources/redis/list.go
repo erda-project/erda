@@ -56,7 +56,8 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 	// create request
 	request := kvstore.CreateDescribeInstancesRequest()
 	request.Scheme = "https"
-	// 需要查询的实例的ID，指定实例ID时需输入。查询多个实例ID时，使用英文半角逗号（“,”）分隔各ID；置空时默认为查询该用户名下所有实例
+	// Query multi instances, using (",") to separate the IDs
+	// If ID is empty, query all instances in this user.
 	request.InstanceIds = strings.Join(instanceIDs, ",")
 	if page.PageNumber == nil || page.PageSize == nil || *page.PageSize <= 0 || *page.PageNumber <= 0 {
 		err := fmt.Errorf("invalid page parameters: %+v", page)

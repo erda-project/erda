@@ -70,8 +70,8 @@ func ListByCluster(ctx aliyun_resources.Context, page aliyun_resources.PageOptio
 
 	// describe resource
 	// status:
-	// 	running: 运行中
-	// 	stoped:  停止
+	// 	running
+	// 	stoped
 	response, err := client.DescribeClusters(request)
 	if err != nil {
 		if response != nil && response.BaseResponse != nil && response.BaseResponse.GetHttpStatus() != 200 {

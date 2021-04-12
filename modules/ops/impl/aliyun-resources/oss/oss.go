@@ -44,7 +44,7 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	tags []string,
 	prefix string) ([]oss.BucketProperties, error) {
 	bucketList := []oss.BucketProperties{}
-	// oss, 提供一个region，就会返回所有region的bucket
+	// oss, it will return buckets in all regions when offer one region.
 	regions = []string{"cn-hangzhou"}
 	for _, region := range regions {
 		ctx.Region = region
@@ -82,7 +82,7 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 		options = append(options, prefixOption)
 	}
 	// set filter tags
-	// oss 中多个tag之间是与的关系
+	// the relationship between multiple tags is and in oss.
 	for _, v := range tags {
 		options = append(options, oss.TagKey(v))
 	}

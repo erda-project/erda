@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/pkg/dbengine"
 )
 
-// ListApp get all edge application list
+// ListApp Get all edge application list.
 func (e *Edge) ListApp(param *apistructs.EdgeAppListPageRequest) (int, *[]apistructs.EdgeAppInfo, error) {
 	var (
 		total int
@@ -40,7 +40,7 @@ func (e *Edge) ListApp(param *apistructs.EdgeAppListPageRequest) (int, *[]apistr
 		err   error
 	)
 
-	// TODO: 根据 clusterID 分页，目前 clusterID 暂无该需求，仅用于创建应用时给用户选择可依赖的应用
+	// Paging by clusterID
 	if param.ClusterID > 0 {
 		apps, err = e.db.ListAllEdgeAppByClusterID(param.OrgID, param.ClusterID)
 		if err != nil {
@@ -104,9 +104,9 @@ func (e *Edge) CreateApp(req *apistructs.EdgeAppCreateRequest) error {
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, req.Name)
 
-	// 1核等于1000m
+	// 1core=1000m
 	requestCpu := fmt.Sprintf("%.fm", req.RequestCpu*1000)
-	// 1Mi=1024K=1024x1024字节
+	// 1Mi=1024K=1024x1024B
 	requestMemory := fmt.Sprintf("%.fMi", req.RequestMem)
 	limitCpu := fmt.Sprintf("%.fm", req.LimitCpu*1000)
 	limitMemory := fmt.Sprintf("%.fMi", req.LimitMem)
@@ -329,9 +329,9 @@ func (e *Edge) UpdateApp(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) 
 
 	namespace := fmt.Sprintf("%s-%s", EdgeAppPrefix, req.Name)
 
-	// 1核等于1000m
+	// 1core=1000m
 	requestCpu := fmt.Sprintf("%.fm", req.RequestCpu*1000)
-	// 1Mi=1024K=1024x1024字节
+	// 1Mi=1024K=1024x1024B
 	requestMemory := fmt.Sprintf("%.fMi", req.RequestMem)
 	limitCpu := fmt.Sprintf("%.fm", req.LimitCpu*1000)
 	limitMemory := fmt.Sprintf("%.fMi", req.LimitMem)
@@ -422,7 +422,7 @@ func (e *Edge) UpdateApp(edgeAppID int64, req *apistructs.EdgeAppUpdateRequest) 
 				Value: tmpExtraData[k],
 			})
 		}
-		// 循环依赖判定
+		// avoid circular dependency
 		if strings.Contains(app.DependApp, fmt.Sprintf("\"%s\"", req.Name)) {
 			for _, site := range req.EdgeSites {
 				if strings.Contains(app.EdgeSites, fmt.Sprintf("\"%s\"", site)) {
@@ -691,7 +691,8 @@ func (e *Edge) OfflineAppSite(edgeApp *dbclient.EdgeApp, siteName string) error 
 		}
 	)
 
-	// 该应用如果被其他应用引用，并且是有效引用（引用方与发布方在同一个站点下），则无法下线，需要先下线引用该应用的应用
+	// If this application is depend by other application (effective dependence: deployed in the same site)
+	// Offline other depend application in this site first.
 	dependApps, err := e.db.ListDependsEdgeApps(edgeApp.OrgID, edgeApp.ClusterID, edgeApp.Name)
 	if err != nil {
 		return fmt.Errorf("get depend apps eror: %v", err)

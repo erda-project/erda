@@ -171,7 +171,6 @@ func (e *Endpoints) DeleteMysqlDatabase(ctx context.Context, r *http.Request, va
 				err = fmt.Errorf("check resource routing failed, error:%v", er)
 				return
 			}
-			// addon创建失败，但是云资源创建成功
 			if len(list) != 0 {
 				err = fmt.Errorf("create addon failed, but related cloud resource have been created successfully")
 				return

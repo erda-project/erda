@@ -287,7 +287,7 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.ClusterUpdateRequest) string
 	var as *ess.Ess
 	var isEdit bool
 	clusterInfo, err := e.bdl.GetCluster(req.Name)
-	//TODO: 检验clusterInfo信息
+	//TODO: check clusterInfo info
 	if err != nil {
 		return fmt.Sprintf("failed to get cluster info: %v", err)
 	}
@@ -338,7 +338,7 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.ClusterUpdateRequest) string
 					return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 				}
 			}
-			//基于原有的定时伸缩规则进行修改
+			// Update base on existed schedule scale rule
 			if req.OpsConfig.LaunchTime == clusterInfo.OpsConfig.LaunchTime {
 				isEdit = true
 			}
