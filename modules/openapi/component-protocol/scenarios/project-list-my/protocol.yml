@@ -1,0 +1,60 @@
+scenario: "project-list-my"
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      children:
+        - myPage
+        - empty
+    myPage:
+      - alert
+      - filter
+      - list
+      - emptyContainer
+    emptyContainer:
+      - emptyText
+
+components:
+  page:
+    type: Tabs
+  myPage:
+    type: Container
+  list:
+    type: List
+  filter:
+    type: ContractiveFilter
+  alert:
+    type: Alert
+  emptyContainer:
+    type: RowContainer
+  emptyText:
+    type: Text
+rendering:
+  filter:
+    - name: list
+      state:
+        - name: "query"
+          value: "{{ filter.values }}"
+        - name: "isFirstFilter"
+          value: "{{ filter.isFirstFilter }}"
+    - name: emptyText
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+  list:
+    - name: emptyText
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+  __DefaultRendering__:
+    - name: page
+    - name: myPage
+    - name: filter
+    - name: list
+    - name: alert
+    - name: emptyContainer
+    - name: emptyText
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
