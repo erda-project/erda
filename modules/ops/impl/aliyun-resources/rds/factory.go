@@ -124,8 +124,8 @@ func creator(ctx aliyun_resources.Context, m resource_factory.BaseResourceMateri
 		}
 		// request come from addon
 		if dbReq.Source == apistructs.CloudResourceSourceAddon && db.Account == "" {
-			// if request from addon and not account, auto generate on名称唯一。
-			// 以字母开头，以字母或数字结尾, 由小写字母、数字或下划线组成, 长度为2~16个字符
+			// Unique name: Length 2~16 characters. Must start with letter, end with letter or number,
+			// consists of lowercase letters, numbers, or underscores.
 			account := apistructs.CloudResourceMysqlAccount{
 				Account:          "ac" + uuid.UUID()[:12],
 				Password:         uuid.UUID()[:8] + "0@x" + uuid.UUID()[:8],

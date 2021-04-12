@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/ops/dbclient"
 )
 
-const NoticeContent = "「系统信息」: 您当前所属企业在 Erda 平台上使用时间已超过 1 年！！"
+const NoticeContent = "「SYSTEM INFO」: Your current company has been using the ERDA platform for more than 1 year!!"
 
 type AutoScanner struct {
 	bdl *bundle.Bundle

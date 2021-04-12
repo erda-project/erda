@@ -458,7 +458,7 @@ func (m *Mns) IsClusterLocked(clusterName string) (bool, error) {
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	// 检查失败，报错
+	// Check failed, return error
 	if notExist == nil {
 		err := fmt.Errorf("check cluster lock key failed, key: %v, error: %v", lockKey, err)
 		logrus.Errorf(err.Error())
@@ -471,7 +471,7 @@ func (m *Mns) IsClusterLocked(clusterName string) (bool, error) {
 // check latest add nodes status, if failed, lock auto scale
 func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
 
-	// 查看集群历史增加/删除节点结果，判断是否锁定集群
+	// Check the cluster's history of adding/removing nodes to determine whether the cluster is need lock
 	var req apistructs.RecordRequest
 	req.PageNo = 0
 	req.PageSize = 1
@@ -495,8 +495,8 @@ func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
 		return nil
 	}
 	// TODO: process failed status
-	// 非定时任务，可以把信息保存在ops_record的detail field中；定时任务，只需要伸缩组id就可以了
-	// 添加或删除机器失败，加锁，避免继续添加机器
+	// For non-schedule tasks, save the information in the detail field of ops_record; for schedule tasks, only need the scale group id.
+	// Failed to add or delete the machine, lock it to avoid adding machine next
 	if content.RecordType == string(dbclient.RecordTypeAddEssNodes) || content.RecordType == string(dbclient.RecordTypeDeleteEssNodes) {
 		err := m.LockCluster(info.Name)
 		if err != nil {
@@ -505,7 +505,7 @@ func (m *Mns) PreProcess(info apistructs.ClusterInfo) error {
 		}
 	}
 
-	// 添加机器失败，强制删除ess nodes
+	// Force delete ess nodes when add host failed
 	if content.RecordType == string(dbclient.RecordTypeAddEssNodes) {
 		var d apistructs.NodesRecordDetail
 		if err := json.Unmarshal([]byte(content.Detail), &d); err != nil {
@@ -575,7 +575,7 @@ func (m *Mns) Process(ctx context.Context) {
 		t += 1
 		clustersInfo := m.FetchValidClusterInfo()
 		for i, c := range clustersInfo {
-			// 每隔5分钟，分批更新ess cron job 操作记录
+			// Batch update ess/cron/job calculate records every five minutes
 			if (uint64(i)+t)%5 == 0 {
 				req := apistructs.RecordUpdateRequest{
 					ClusterName: c.Name,
@@ -589,7 +589,7 @@ func (m *Mns) Process(ctx context.Context) {
 					logrus.Errorf("update ess cron job record failed, request: %v, error: %v", req, err)
 				}
 			}
-			// 获取mns消息并处理
+			// Get the mns message and deal with it
 			m.Consume(c)
 		}
 	}

@@ -41,7 +41,7 @@ func CreateInstanceWithRecord(ctx aliyun_resources.Context, req apistructs.Creat
 	detail.InstanceName = req.InstanceName
 	detail.Steps[len(detail.Steps)-1].Name = req.InstanceName
 
-	// 重名检查
+	// Duplicate name check
 	regionids := aliyun_resources.ActiveRegionIDs(ctx)
 	list, err := List(ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 	if err != nil {
@@ -59,8 +59,8 @@ func CreateInstanceWithRecord(ctx aliyun_resources.Context, req apistructs.Creat
 		}
 	}
 
-	// 来自addon的请求，不带region，通过cluster name，查找vpc，得到region、cidr等信息
-	// 来自云管的请求，带region和vpc id，据此查询更详细的cidr，zoneID等信息
+	// request from addon: none region, get region/cidr from vpc(select by cluster name)
+	// request from cloud management:  has region and vpc id, use them to  get cidr/zoneID and more detail info
 	if req.ZoneID == "" {
 		ctx.Region = req.Region
 		ctx.VpcID = req.VpcID

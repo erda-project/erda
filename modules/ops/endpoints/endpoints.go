@@ -11,7 +11,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package endpoints 定义所有的 route handle.
 package endpoints
 
 import (
@@ -34,7 +33,6 @@ import (
 	"github.com/erda-project/erda/modules/ops/impl/nodes"
 )
 
-// Endpoints 定义 endpoint 方法
 type Endpoints struct {
 	bdl      *bundle.Bundle
 	dbclient *dbclient.DBClient
@@ -53,7 +51,6 @@ type Endpoints struct {
 
 type Option func(*Endpoints)
 
-// New 创建 Endpoints 对象.
 func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonStore, options ...Option) *Endpoints {
 	e := &Endpoints{}
 
@@ -80,14 +77,14 @@ func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonS
 	return e
 }
 
-// WithBundle 配置 bundle
+// WithBundle With bundle
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(e *Endpoints) {
 		e.bdl = bdl
 	}
 }
 
-// Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
+// Routes Return routes
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/info", Method: http.MethodGet, Handler: e.Info},

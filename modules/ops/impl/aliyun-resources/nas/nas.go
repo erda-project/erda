@@ -74,9 +74,9 @@ func ListByCluster(ctx aliyun_resources.Context,
 		request.FileSystemId = id
 
 		// status
-		//  Pending: 等待
-		//  Running: 运行
-		//  Stopped: 停止
+		//  Pending
+		//  Running
+		//  Stopped
 		resp, err := client.DescribeFileSystems(request)
 		if err != nil {
 			return DescribeFileSystemResponse{}, err

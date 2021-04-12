@@ -292,7 +292,7 @@ func (e *Endpoints) DeleteRedisResource(ctx context.Context, r *http.Request, va
 				err = fmt.Errorf("unmarshl record detail info failed, error:%v", er)
 				return
 			}
-			// addon创建失败，但是云资源创建成功
+			// Failed to create addon, but cloud resource create succeed
 			if detail.InstanceID != "" {
 				err = fmt.Errorf("create addon failed, but related cloud resource have been created successfully")
 				return

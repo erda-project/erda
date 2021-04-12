@@ -60,7 +60,7 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	}
 
 	if req.CollectorURL == "" {
-		// 通常，protocol 是http或者https, 此处是为了处理gts dice-cluster-info 中 DICE_PROTOCOL: http,https 这种情况
+		// protocol is http,https in gts dice-cluster-info (key: DICE_PROTOCOL), manual is http or https;
 		if strings.Contains(req.CentralDiceProtocol, "https") {
 			req.CentralDiceProtocol = "https"
 		} else {
@@ -200,7 +200,7 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Version: "1.0",
 			Alias:   string(apistructs.NodePhasePlan),
 			Params: map[string]interface{}{
-				// 集群基本信息
+				// base fields which create cluster
 				"org_name":      req.OrgName,
 				"dice_version":  req.DiceVersion,
 				"cluster_name":  req.ClusterName,
@@ -211,7 +211,7 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"collector_url": req.CollectorURL,
 				"open_api":      req.OpenAPI,
 
-				// vpc上创建集群相关信息
+				// fields which create cluster on vpc
 				"cloud_vendor":     req.CloudVendor,
 				"region":           req.Region,
 				"cluster_type":     req.ClusterType,
@@ -228,7 +228,7 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"forward_table_id": req.ForwardTableID,
 				"snat_table_id":    req.SnatTableID,
 
-				// 容器服务相关信息
+				// container service fields
 				"service_cidr": req.ServiceCIDR,
 				"pod_cidr":     req.PodCIDR,
 				"docker_cidr":  req.DockerCIDR,
@@ -236,17 +236,17 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"docker_root":  req.DockerRoot,
 				"exec_root":    req.ExecRoot,
 
-				// 跳板机信息
+				// jump server field
 				"installer_ip": req.InstallerIp,
 				"user":         req.User,
 				"password":     req.Password,
 				"port":         req.Port,
 
-				// 宿主机和磁盘信息
+				// host ip and disk info
 				"host_ips": req.HostIps,
 				"device":   req.Device,
 
-				// 共享存储nas/glusterfs信息
+				// nas/glusterfs fields
 				"nas_domain":    req.NasDomain,
 				"nas_path":      req.NasPath,
 				"glusterfs_ips": req.GlusterfsIps,
@@ -258,7 +258,6 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Version: "1.0",
 			Alias:   string(apistructs.NodePhaseBuyNode),
 			Params: map[string]interface{}{
-				// 集群基本信息
 				"org_name":      req.OrgName,
 				"dice_version":  req.DiceVersion,
 				"cluster_name":  req.ClusterName,
@@ -269,7 +268,6 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"collector_url": req.CollectorURL,
 				"open_api":      req.OpenAPI,
 
-				// vpc上创建集群相关信息
 				"cloud_vendor":     req.CloudVendor,
 				"region":           req.Region,
 				"cluster_type":     req.ClusterType,
@@ -286,7 +284,6 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"forward_table_id": req.ForwardTableID,
 				"snat_table_id":    req.SnatTableID,
 
-				// 容器服务相关信息
 				"service_cidr": req.ServiceCIDR,
 				"pod_cidr":     req.PodCIDR,
 				"docker_cidr":  req.DockerCIDR,
@@ -294,17 +291,14 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 				"docker_root":  req.DockerRoot,
 				"exec_root":    req.ExecRoot,
 
-				// 跳板机信息
 				"installer_ip": req.InstallerIp,
 				"user":         req.User,
 				"password":     req.Password,
 				"port":         req.Port,
 
-				// 宿主机和磁盘信息
 				"host_ips": req.HostIps,
 				"device":   req.Device,
 
-				// 共享存储nas/glusterfs信息
 				"nas_domain":    req.NasDomain,
 				"nas_path":      req.NasPath,
 				"glusterfs_ips": req.GlusterfsIps,
@@ -337,7 +331,7 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 
 func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml {
 	managed := false
-	worker_number := 0 // TODO 前端传参
+	worker_number := 0 // TODO: Get param from frontend
 	if req.CloudVendor == apistructs.CloudVendorAliCSManaged {
 		managed = true
 		worker_number = 2

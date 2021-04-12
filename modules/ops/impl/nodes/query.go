@@ -38,7 +38,7 @@ func (n *Nodes) Sync(rs []dbclient.Record) ([]dbclient.Record, error) {
 
 		dto, err := n.bdl.GetPipeline(record.PipelineID)
 		if err != nil && strutil.Contains(err.Error(), "not found") {
-			// 该 record 在 pipeline 中已经查不到了, 状态置为 unknown
+			// this record can't select in pipelines, reset to status unknown.
 			record.Status = dbclient.StatusTypeUnknown
 			if err := n.db.RecordsWriter().Update(record); err != nil {
 				logrus.Error(err.Error())

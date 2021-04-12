@@ -41,8 +41,7 @@ const (
 )
 
 var (
-	// 对象内存中映射关系目前只用于 ID/Name/调度器请求地址 等不可变参数
-	// TODO:如果涉及其他参数，可调整为每次请求查询 / 开启定时数据内存同步 goroutine
+	// Cluster ID/Name/RequestAddress which fixed param will cache in memory.
 	clusterInfos = make(map[int64]*apistructs.ClusterInfo, 0)
 	orgInfos     = make(map[int64]*apistructs.OrgDTO, 0)
 )
@@ -50,17 +49,14 @@ var (
 // NodePools
 type NodePools = map[string]*v1alpha1.NodePool
 
-// Edge 边缘站点操作封装
 type Edge struct {
 	db  *dbclient.DBClient
 	bdl *bundle.Bundle
 	k8s *kubernetes.Kubernetes
 }
 
-// Option 定义 Edge 对象的配置选项
 type Option func(*Edge)
 
-// New 新建 Edge 实例，操作应用资源
 func New(options ...Option) *Edge {
 	site := &Edge{}
 	for _, op := range options {
@@ -69,28 +65,28 @@ func New(options ...Option) *Edge {
 	return site
 }
 
-// WithDBClient 配置 db client
+// WithDBClient With db client.
 func WithDBClient(db *dbclient.DBClient) Option {
 	return func(e *Edge) {
 		e.db = db
 	}
 }
 
-// WithKubernetes 配置 k8s client
+// WithKubernetes With kubernetes client.
 func WithKubernetes(k *kubernetes.Kubernetes) Option {
 	return func(e *Edge) {
 		e.k8s = k
 	}
 }
 
-// WithBundle 配置 bundle
+// WithBundle With bundle module.
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(e *Edge) {
 		e.bdl = bdl
 	}
 }
 
-// getClusterInfo 从内存中获取 或根据 cluster id 查询 cluster info
+// getClusterInfo Get or cache clusterInfo.
 func (e *Edge) getClusterInfo(clusterID int64) (*apistructs.ClusterInfo, error) {
 
 	if clusterInfo, ok := clusterInfos[clusterID]; ok {
@@ -105,7 +101,7 @@ func (e *Edge) getClusterInfo(clusterID int64) (*apistructs.ClusterInfo, error) 
 	return clusterInfo, nil
 }
 
-// getOrgInfo 从内存中获取 或根据 org id 查询 org info
+// getOrgInfo Get or cache orgInfo.
 func (e *Edge) getOrgInfo(orgID int64) (*apistructs.OrgDTO, error) {
 
 	if orgInfo, ok := orgInfos[orgID]; ok {
@@ -128,7 +124,7 @@ func (e *Edge) IsContain(items []string, item string) bool {
 	return false
 }
 
-// 将 edgeApp 存储结构转换为API所需结构
+// ConvertToEdgeAppInfo Convert type EdgeApp to type EdgeAppInfo.
 func (e *Edge) ConvertToEdgeAppInfo(edgeApp *dbclient.EdgeApp) (*apistructs.EdgeAppInfo, error) {
 	var edgeSites []string
 	var dependApp []string

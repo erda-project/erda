@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ListDeployment 获取指定集群下指定 namespace 所有 deployment
+// ListDeployment List deployment under the specified cluster and namespace.
 func (k *Kubernetes) ListDeployment(clusterName, namespace string) (*appsv1.DeploymentList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListDeployment(clusterName, namespace string) (*appsv1.Depl
 	return cmList, nil
 }
 
-// GetDeployment 获取指定集群下 deployment
+// GetDeployment Get deployment under the specified cluster and namespace.
 func (k *Kubernetes) GetDeployment(clusterName, namespace, deploymentName string) (*appsv1.Deployment, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetDeployment(clusterName, namespace, deploymentName string
 	return cm, nil
 }
 
-// CreateDeployment 在指定集群下创建 deployment
+// CreateDeployment Crate deployment on specified cluster and namespace.
 func (k *Kubernetes) CreateDeployment(clusterName, namespace string, cm *appsv1.Deployment) error {
 	if cm == nil {
 		return fmt.Errorf("deployment entity can't be nil")
@@ -69,7 +69,7 @@ func (k *Kubernetes) CreateDeployment(clusterName, namespace string, cm *appsv1.
 	return nil
 }
 
-// DeleteDeployment 在指定集群下删除 deployment
+// DeleteDeployment Delete deployment on specified cluster and namespace.
 func (k *Kubernetes) DeleteDeployment(clusterName, namespace, deploymentName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (k *Kubernetes) DeleteDeployment(clusterName, namespace, deploymentName str
 	return nil
 }
 
-// UpdateDeployment 在指定集群下更新 deployment
+// UpdateDeployment Update deployment on specified cluster and namespace.
 func (k *Kubernetes) UpdateDeployment(clusterName, namespace string, cm *appsv1.Deployment) error {
 	if cm == nil {
 		return fmt.Errorf("deployment entity can't be nil")

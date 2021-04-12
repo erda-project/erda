@@ -20,7 +20,7 @@ import (
 )
 
 func List(ctx aliyun_resources.Context) ([]vpc.Region, error) {
-	// 这个接口不需要 regionid 参数, 所以这里写 cn-hangzhou 就行了
+	// regionid doesn't need in this interface, use "cn-hangzhou" fill it.
 	client, err := vpc.NewClientWithAccessKey("cn-hangzhou", ctx.AccessKeyID, ctx.AccessSecret)
 	if err != nil {
 		return nil, err

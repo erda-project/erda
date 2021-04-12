@@ -24,21 +24,16 @@ import (
 )
 
 var (
-	// 对象内存中映射关系目前只用于 ID/Name/调度器请求地址 等不可变参数
-	// TODO:如果涉及其他参数，可调整为每次请求查询 / 开启定时数据内存同步 goroutine
 	clusterInfos = make(map[string]*apistructs.ClusterInfo, 0)
-
-	clientSets = make(map[string]*clientgo.ClientSet, 0)
+	clientSets   = make(map[string]*clientgo.ClientSet, 0)
 )
 
 type Kubernetes struct {
 	bdl *bundle.Bundle
 }
 
-// Option Foobar 配置选项
 type Option func(*Kubernetes)
 
-// New Foobar service
 func New(options ...Option) *Kubernetes {
 	r := &Kubernetes{}
 	for _, op := range options {
@@ -47,14 +42,14 @@ func New(options ...Option) *Kubernetes {
 	return r
 }
 
-// WithBundle 配置 bundle
+// WithBundle With bundle.
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(k *Kubernetes) {
 		k.bdl = bdl
 	}
 }
 
-// getClusterInfo 从内存中获取 或根据 cluster name 查询 cluster info
+// getClusterInfo Get cluster info from cache.
 func (k *Kubernetes) getClusterInfo(clusterName string) (*apistructs.ClusterInfo, error) {
 	if clusterName == "" {
 		return nil, fmt.Errorf("empty cluster name")
@@ -71,7 +66,7 @@ func (k *Kubernetes) getClusterInfo(clusterName string) (*apistructs.ClusterInfo
 	return clusterInfo, nil
 }
 
-// getClientSet 从内存中获取 或根据 cluster addr 新建 clientSet
+// getClientSet Get or create client-go client by cluster name.
 func (k *Kubernetes) getClientSet(clusterName string) (*clientgo.ClientSet, error) {
 	if clusterName == "" {
 		return nil, fmt.Errorf("empty cluster name")

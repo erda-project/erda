@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 )
 
-// ListNodePool 获取 某个 指定 clusterName 集群下的所有 NodePool
+// ListNodePool List nodePool under the specified cluster.
 func (k *Kubernetes) ListNodePool(clusterName string) (*v1alpha1.NodePoolList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -37,7 +37,7 @@ func (k *Kubernetes) ListNodePool(clusterName string) (*v1alpha1.NodePoolList, e
 	return nodePools, nil
 }
 
-// GetNodePool 获取指定 clusterName 下的 NodePool
+// GetNodePool Get nodePool under the specified cluster.
 func (k *Kubernetes) GetNodePool(clusterName, npName string) (*v1alpha1.NodePool, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -52,7 +52,7 @@ func (k *Kubernetes) GetNodePool(clusterName, npName string) (*v1alpha1.NodePool
 	return np, nil
 }
 
-// CreateNodePool 指定 clusterName 集群下创建 NodePool
+// CreateNodePool Crate nodePool on specified cluster.
 func (k *Kubernetes) CreateNodePool(clusterName string, nodePool *v1alpha1.NodePool) (*v1alpha1.NodePool, error) {
 	if nodePool == nil {
 		return nil, fmt.Errorf("create action must give a non-nil NodePool entity")
@@ -71,7 +71,7 @@ func (k *Kubernetes) CreateNodePool(clusterName string, nodePool *v1alpha1.NodeP
 	return res, nil
 }
 
-// DeleteNodePool 指定 clusterName 集群下创建 NodePool
+// DeleteNodePool Delete node on specified cluster.
 func (k *Kubernetes) DeleteNodePool(clusterName string, nodePoolName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -87,7 +87,7 @@ func (k *Kubernetes) DeleteNodePool(clusterName string, nodePoolName string) err
 	return nil
 }
 
-// UpdateNodePool 指定 clusterName 集群下更新 NodePool
+// UpdateNodePool Update nodePool on specified cluster.
 func (k *Kubernetes) UpdateNodePool(clusterName string, nodePool *v1alpha1.NodePool) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {

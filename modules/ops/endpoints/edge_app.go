@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/ops/dbclient"
 	"github.com/erda-project/erda/modules/ops/services/apierrors"
 	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -56,15 +55,6 @@ func (e *Endpoints) ListEdgeApp(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.AccessDeny.AccessDenied().ToResp(), nil
 	}
 
-	internalClient := r.Header.Get(httputil.InternalHeader)
-	if internalClient == "" {
-		//uid, err := user.GetUserID(r)
-		//if err != nil {
-		//	return apierrors.ErrListEdgeApp.NotLogin().ToResp(), nil
-		//}
-		//userID = uid.String()
-	}
-
 	orgIDStr := r.URL.Query().Get("orgID")
 	if orgIDStr != "" {
 		if orgID, err = strutil.Atoi64(orgIDStr); err != nil {
@@ -79,7 +69,6 @@ func (e *Endpoints) ListEdgeApp(ctx context.Context, r *http.Request, vars map[s
 		}
 	}
 
-	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr == "" {
 		pageSizeStr = "20"
@@ -89,7 +78,6 @@ func (e *Endpoints) ListEdgeApp(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrListEdgeApp.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 获取pageNo
 	pageNoStr := r.URL.Query().Get("pageNo")
 	if pageNoStr == "" {
 		pageNoStr = "1"
@@ -99,7 +87,7 @@ func (e *Endpoints) ListEdgeApp(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrListEdgeApp.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 参数合法性校验
+	// parameter check
 	if orgID < 0 || pageNo < 0 || pageSize < 0 {
 		return apierrors.ErrListEdgeApp.InternalError(fmt.Errorf("illegal query param")).ToResp(), nil
 	}
@@ -111,7 +99,6 @@ func (e *Endpoints) ListEdgeApp(ctx context.Context, r *http.Request, vars map[s
 		PageSize:  pageSize,
 	}
 
-	// TODO: 操作鉴权
 	total, edgeApps, err := e.edge.ListApp(pageQueryParam)
 
 	if err != nil {
@@ -163,7 +150,6 @@ func (e *Endpoints) GetEdgeAppStatus(ctx context.Context, r *http.Request, vars 
 		}
 	}
 
-	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr != "" {
 		pageSize, err = strconv.Atoi(pageSizeStr)
@@ -172,7 +158,6 @@ func (e *Endpoints) GetEdgeAppStatus(ctx context.Context, r *http.Request, vars 
 		}
 	}
 
-	// 获取pageNo
 	pageNoStr := r.URL.Query().Get("pageNo")
 	if pageNoStr != "" {
 		pageNo, err = strconv.Atoi(pageNoStr)
@@ -180,18 +165,9 @@ func (e *Endpoints) GetEdgeAppStatus(ctx context.Context, r *http.Request, vars 
 			return apierrors.ErrListEdgeSite.InvalidParameter(err).ToResp(), nil
 		}
 	}
-	// 参数合法性校验
+	// paramters check
 	if pageNo < 0 || pageSize < 0 {
 		return apierrors.ErrListEdgeApp.InternalError(fmt.Errorf("illegal query param")).ToResp(), nil
-	}
-
-	internalClient := r.Header.Get(httputil.InternalHeader)
-	if internalClient == "" {
-		//uid, err := user.GetUserID(r)
-		//if err != nil {
-		//	return apierrors.ErrListEdgeApp.NotLogin().ToResp(), nil
-		//}
-		//userID = uid.String()
 	}
 
 	app, err = e.dbclient.GetEdgeApp(edgeAppID)
@@ -217,7 +193,7 @@ func (e *Endpoints) GetEdgeAppStatus(ctx context.Context, r *http.Request, vars 
 
 	rsp.Total = total
 
-	// 默认分页
+	// Paging default
 	if !isNotPaging {
 		startPoint := (pageNo - 1) * pageSize
 		endPoint := startPoint + pageSize
@@ -256,16 +232,6 @@ func (e *Endpoints) GetEdgeApp(ctx context.Context, r *http.Request, vars map[st
 		return apierrors.ErrListEdgeApp.InvalidParameter(err).ToResp(), nil
 	}
 
-	internalClient := r.Header.Get(httputil.InternalHeader)
-	if internalClient == "" {
-		//uid, err := user.GetUserID(r)
-		//if err != nil {
-		//	return apierrors.ErrListEdgeApp.NotLogin().ToResp(), nil
-		//}
-		//userID = uid.String()
-	}
-
-	// TODO: 操作鉴权
 	edgeApp, err = e.edge.GetApp(edgeAppID)
 
 	if err != nil {
@@ -413,7 +379,7 @@ func (e *Endpoints) DeleteEdgeApp(ctx context.Context, r *http.Request, vars map
 	return httpserver.OkResp("ok")
 }
 
-// OfflineAppSite 下线应用下的站点实例
+// OfflineAppSite Offline site which deploy specified application
 func (e *Endpoints) OfflineAppSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		req apistructs.EdgeAppSiteRequest
@@ -465,7 +431,7 @@ func (e *Endpoints) OfflineAppSite(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp("ok")
 }
 
-// RestartAppSite 重启应用下的站点实例
+// RestartAppSite Restart site which deploy specified application
 func (e *Endpoints) RestartAppSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		req apistructs.EdgeAppSiteRequest

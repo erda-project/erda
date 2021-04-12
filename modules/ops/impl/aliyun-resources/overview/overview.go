@@ -197,7 +197,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 			allResource["CLOUD_SERVICE"].ResourceTypeData["RDS"].TotalCount = 0
 		}
 		// https://www.alibabacloud.com/help/zh/doc-detail/26315.htm#reference-nyz-nnn-12b
-		// rds 状态列表
+		// rds instance status list
 		runningCount, gonnaExpiredCount, expiredCount, stoppedCount, postpaidCount, prepaidCount, err := rds.Classify(ins)
 		if err != nil {
 			logrus.Errorf("rds classify failed, error: %v", err)
@@ -230,7 +230,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 			logrus.Errorf("redis overview failed, error:%v", err)
 			allResource["CLOUD_SERVICE"].ResourceTypeData["REDIS"].TotalCount = 0
 		}
-		// redis 状态列表
+		// redis instance status list
 		// https://help.aliyun.com/document_detail/26315.html?spm=a2c4g.11186623.2.16.7aa024daPIAv9D
 		runningCount, gonnaExpiredCount, expiredCount, stoppedCount, postpaidCount, prepaidCount, err := redis.Classify(ins)
 		if err != nil {
@@ -264,7 +264,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 			allResource["CLOUD_SERVICE"].ResourceTypeData["ROCKET_MQ"].TotalCount = 0
 		}
 
-		// ons 状态列表
+		// ons instance status list
 		// https://help.aliyun.com/document_detail/106351.html?spm=a2c4g.11186623.6.693.7bf55d78YdVqGe
 		runningCount, gonnaExpiredCount, expiredCount, stoppedCount, postpaidCount, prepaidCount, err := ons.Classify(ins)
 		if err != nil {

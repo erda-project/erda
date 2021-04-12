@@ -32,7 +32,7 @@ const (
 	cmKind                 = "ConfigMap"
 )
 
-// ListConfigSetItem 根据 SiteID / Search 为条件获取配置项信息
+// ListConfigSetItem List configSet item paging or search condition.
 func (e *Edge) ListConfigSetItem(param *apistructs.EdgeCfgSetItemListPageRequest) (int, *[]apistructs.EdgeCfgSetItemInfo, error) {
 	total, cfgItems, err := e.db.ListEdgeConfigSetItem(param)
 	if err != nil {
@@ -55,7 +55,7 @@ func (e *Edge) ListConfigSetItem(param *apistructs.EdgeCfgSetItemListPageRequest
 	return total, &cfgSetItemInfos, nil
 }
 
-// GetConfigSetItem 获取单个配置项对象
+// GetConfigSetItem Get configSet item by item id.
 func (e *Edge) GetConfigSetItem(itemID int64) (*apistructs.EdgeCfgSetItemInfo, error) {
 	var (
 		itemInfo *apistructs.EdgeCfgSetItemInfo
@@ -81,7 +81,7 @@ func (e *Edge) GetConfigSetItem(itemID int64) (*apistructs.EdgeCfgSetItemInfo, e
 	return itemInfo, nil
 }
 
-// CreateConfigSetItem  创建配置项
+// CreateConfigSetItem  Create configSet item.
 func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) ([]uint64, error) {
 	var (
 		configSetItemIDs = make([]uint64, 0)
@@ -128,7 +128,7 @@ func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) 
 		if len(*res) == 0 {
 			err = e.db.CreateEdgeConfigSetItem(cfgSetItem)
 			if err != nil {
-				// 如果创建记录失败，回退已经添加至 configmap 字段
+				// If have errors when create record, rollback configMap resource.
 				err = e.deleteItemToConfigMap(clusterInfo.Name, nsName, ScopePublic, req.ItemKey)
 				if err != nil {
 					return nil, err
@@ -143,7 +143,6 @@ func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) 
 		return configSetItemIDs, nil
 	}
 
-	// TODO: ugly code
 	if req.Scope == ScopeSite {
 		for _, siteID := range req.SiteIDs {
 			site, err := e.db.GetEdgeSite(siteID)
@@ -184,7 +183,6 @@ func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) 
 			cfgSetItem.SiteID = int64(site.ID)
 
 			createError := e.db.CreateEdgeConfigSetItem(cfgSetItem)
-			// 创建过程存在错误进行回退，仍然可能导致错误，TODO 事务
 			if createError != nil {
 				backError := make([]string, 0)
 				for _, cmName := range createdCm {
@@ -214,7 +212,7 @@ func (e *Edge) CreateConfigSetItem(req *apistructs.EdgeCfgSetItemCreateRequest) 
 	return configSetItemIDs, nil
 }
 
-// createItemToConfigMap 创建配置项信息至 ConfigMap Data
+// createItemToConfigMap Create configSet item(K-V) in kubernetes configMap resource.
 func (e *Edge) createItemToConfigMap(clusterName, namespace, cmName, itemKey, itemValue string) error {
 	var (
 		defaultCM = &v1.ConfigMap{
@@ -243,7 +241,6 @@ func (e *Edge) createItemToConfigMap(clusterName, namespace, cmName, itemKey, it
 	if _, ok := cm.Data[itemKey]; ok {
 		return fmt.Errorf("item key %s already existed in %s (scope: %s), please update it", itemKey, cmName, ScopePublic)
 	} else {
-		// 对于 configmap 存在但是数据为 0 的情况
 		if cm.Data == nil {
 			cm.Data = make(map[string]string, 0)
 		}
@@ -257,7 +254,7 @@ func (e *Edge) createItemToConfigMap(clusterName, namespace, cmName, itemKey, it
 	return nil
 }
 
-// DeleteConfigSetItem 删除配置项信息
+// DeleteConfigSetItem Delete configSet item.
 func (e *Edge) DeleteConfigSetItem(itemID int64) error {
 	cfgSetItem, err := e.db.GetEdgeConfigSetItem(itemID)
 	if err != nil {
@@ -303,7 +300,7 @@ func (e *Edge) DeleteConfigSetItem(itemID int64) error {
 	return nil
 }
 
-// deleteItemToConfigMap 删除 Configmap 中指定 itemKey
+// deleteItemToConfigMap Delete configSet item in kubernetes configMap resource.
 func (e *Edge) deleteItemToConfigMap(clusterName, namespace, cmName, itemKey string) error {
 	cm, err := e.k8s.GetConfigMap(clusterName, namespace, cmName)
 	if isResourceNotFound(err) {
@@ -321,7 +318,7 @@ func (e *Edge) deleteItemToConfigMap(clusterName, namespace, cmName, itemKey str
 	return nil
 }
 
-// UpdateConfigSetItem 更新配置项
+// UpdateConfigSetItem Update configSet item.
 func (e *Edge) UpdateConfigSetItem(itemID int64, req *apistructs.EdgeCfgSetItemUpdateRequest) error {
 	var cm *v1.ConfigMap
 
@@ -377,13 +374,12 @@ func (e *Edge) UpdateConfigSetItem(itemID int64, req *apistructs.EdgeCfgSetItemU
 
 	err = e.db.UpdateEdgeConfigSetItem(cfgSetItem)
 	if err != nil {
-		// TODO: 更新回退
 		return err
 	}
 	return nil
 }
 
-// convertToEdgeCfgSetItemInfo 转换 EdgeConfigSetItem 为返回 Info 类型
+// convertToEdgeCfgSetItemInfo Convert type EdgeConfigSetItem to type EdgeCfgSetItemInfo.
 func convertToEdgeCfgSetItemInfo(item dbclient.EdgeConfigSetItem, siteName, siteDisplayName string) *apistructs.EdgeCfgSetItemInfo {
 	return &apistructs.EdgeCfgSetItemInfo{
 		ID:              int64(item.ID),
@@ -399,7 +395,7 @@ func convertToEdgeCfgSetItemInfo(item dbclient.EdgeConfigSetItem, siteName, site
 	}
 }
 
-// isResourceNotFound 判定报错是否由于资源不存在导致
+// isResourceNotFound Parse kubernetes errors response, to determine whether or not "not found" error.
 func isResourceNotFound(err error) bool {
 	if err == nil {
 		return false

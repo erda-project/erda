@@ -112,8 +112,8 @@ func DescribeVPCs(ctx aliyun_resources.Context, page aliyun_resources.PageOption
 
 	// describe resource
 	// status:
-	//	Available：可用
-	//	Pending：配置中
+	//	Available
+	//	Pending：Configuring
 	response, err := client.DescribeVpcs(request)
 	if err != nil {
 		logrus.Errorf("describe vpc error: %+v", err)

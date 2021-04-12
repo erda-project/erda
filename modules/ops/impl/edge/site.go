@@ -16,6 +16,7 @@ package edge
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +27,7 @@ import (
 	"github.com/erda-project/erda/pkg/httpclient"
 )
 
-// ListSite 获取全部边缘站点列表
+// ListSite List edge site paging.
 func (e *Edge) ListSite(param *apistructs.EdgeSiteListPageRequest) (int, *[]apistructs.EdgeSiteInfo, error) {
 	var (
 		clusterIDs []int64
@@ -93,10 +94,8 @@ func (e *Edge) GetEdgeSite(edgeSiteID int64) (*apistructs.EdgeSiteInfo, error) {
 	return siteInfo, nil
 }
 
-// CreateSite 创建边缘站点
+// CreateSite Create edge site.
 func (e *Edge) CreateSite(req *apistructs.EdgeSiteCreateRequest) (uint64, error) {
-	// 根据 origin id 以及 cluster id 可以创建唯一的站点，site name 作为 cluster 下的唯一标示，可以扩展到 origin 唯一
-	// TODO: 创建流程事务
 	var (
 		// DefaultLabelKey: [clusterID].[orgName]
 		// s.g. terminus-dev.terminus
@@ -119,8 +118,8 @@ func (e *Edge) CreateSite(req *apistructs.EdgeSiteCreateRequest) (uint64, error)
 		Status:      req.Status,
 	}
 
-	// TODO: Selector, Taints 自定义； 其他字段可操作性
-	// 先创建对应的 node pool 如果创建成功，则插入数据
+	// TODO: Field support: Selector, Taints
+	// Create node pool first, insert to database if create succeed.
 	nodePool := &v1alpha1.NodePool{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nodePoolAPIVersion,
@@ -169,7 +168,7 @@ func (e *Edge) CreateSite(req *apistructs.EdgeSiteCreateRequest) (uint64, error)
 	return edgeSite.ID, nil
 }
 
-// UpdateSite 更新边缘站点
+// UpdateSite Update edge site.
 func (e *Edge) UpdateSite(edgeSiteID int64, req *apistructs.EdgeSiteUpdateRequest) error {
 
 	edgeSite, err := e.db.GetEdgeSite(edgeSiteID)
@@ -189,7 +188,7 @@ func (e *Edge) UpdateSite(edgeSiteID int64, req *apistructs.EdgeSiteUpdateReques
 	return nil
 }
 
-// Delete 删除边缘站点
+// DeleteSite Delete edge site.
 func (e *Edge) DeleteSite(edgeSiteID int64) error {
 	edgeSite, err := e.db.GetEdgeSite(edgeSiteID)
 	if err != nil || edgeSite == nil {
@@ -210,7 +209,7 @@ func (e *Edge) DeleteSite(edgeSiteID int64) error {
 		return fmt.Errorf("can't delete noempty nodepool, offline it first %s", fmt.Sprint(np.Status.Nodes))
 	}
 
-	// 删除站点，如果站点存在使用的应用，则不允许删除，并提示用户
+	// If have application deployed in this site, can't delete it.
 	edgeSites, err := e.db.GetEdgeAppsBySiteName(edgeSite.Name, edgeSite.ClusterID)
 	if err != nil {
 		return fmt.Errorf("failed to get releated edge app error: %v", err)
@@ -221,7 +220,7 @@ func (e *Edge) DeleteSite(edgeSiteID int64) error {
 			"site %s have releated edge app, please delete it first", edgeSite.Name)
 	}
 
-	// 如果存在对应的配置项，删除掉所有配置项, 并告知通知用户
+	// If there are some configSet items bind to this site, delete items together.
 	cfgItem, err := e.db.GetEdgeConfigSetItemsBySiteID(edgeSiteID)
 	if err != nil {
 		return fmt.Errorf("failed to get releated configset item in site: %s", edgeSite.Name)
@@ -252,7 +251,7 @@ func (e *Edge) DeleteSite(edgeSiteID int64) error {
 	return nil
 }
 
-// GetInitSiteShell 获取节点初始化脚本
+// GetInitSiteShell Get edge site init shell.
 func (e *Edge) GetInitSiteShell(edgeSiteID int64) (map[string][]string, error) {
 	var (
 		result           = make(map[string][]string)
@@ -302,13 +301,15 @@ func (e *Edge) GetInitSiteShell(edgeSiteID int64) (map[string][]string, error) {
 	return result, nil
 }
 
-// OfflineEdgeHost 下线
+// OfflineEdgeHost Offline edge host and clean monitor data.
 func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 	var (
 		nodeFormatter  = "edgenode-%s-%s"
 		appAddonType   = "addon"
 		appNsFormatter = "edgeapp-%s"
 		stsLabels      = "statefulset.kubernetes.io/pod-name"
+		offlineTag     = "dice/offline"
+		cleanDelayTime = 30 * time.Second
 	)
 
 	edgeSite, err := e.db.GetEdgeSite(edgeSiteID)
@@ -374,25 +375,37 @@ func (e *Edge) OfflineEdgeHost(edgeSiteID int64, siteIP string) error {
 		return err
 	}
 
+	node.Labels[offlineTag] = "true"
+
 	delete(node.Labels, v1alpha1.LabelDesiredNodePool)
 
 	if err = e.k8s.UpdateNode(clusterInfo.Name, node); err != nil {
 		return fmt.Errorf("update node labels error: %v", err)
 	}
 
-	if err = e.k8s.DeleteNode(clusterInfo.Name, nodeName); err != nil {
-		return fmt.Errorf("delete node %s eror: %v", nodeName, err)
-	}
+	go func() {
+		ticker := time.NewTimer(cleanDelayTime)
+		select {
+		case <-ticker.C:
+			if err = e.k8s.DeleteNode(clusterInfo.Name, nodeName); err != nil {
+				logrus.Errorf("delete node %s eror: %v", nodeName, err)
+				return
+			}
 
-	// delete monitor data.
-	if err = cleanOfflineData(clusterInfo.Name, siteIP); err != nil {
-		logrus.Errorf("clean monitor data %s error: %v", siteIP, err)
-	}
-
+			// delete monitor data.
+			if err = cleanOfflineData(clusterInfo.Name, siteIP); err != nil {
+				logrus.Errorf("clean monitor data %s error: %v", siteIP, err)
+			}
+			break
+		}
+		ticker.Stop()
+		logrus.Infof("offline edge host %s in cluster %s succes", siteIP, clusterInfo.Name)
+		return
+	}()
 	return nil
 }
 
-// getNodePoolsByClusters 获取多个集群下所有 node pool 信息
+// getNodePoolsByClusters Get node pools by clusters.
 func (e *Edge) getNodePoolsByClusters(clusterIDs []int64) (map[int64]NodePools, error) {
 	var (
 		clustersNodePools = make(map[int64]NodePools, 0)
@@ -407,7 +420,7 @@ func (e *Edge) getNodePoolsByClusters(clusterIDs []int64) (map[int64]NodePools, 
 	return clustersNodePools, nil
 }
 
-// getNodePoolsByCluster 获取集群下所有 node pool 信息
+// getNodePoolsByCluster Get all node pool by clusterID.
 func (e *Edge) getNodePoolsByCluster(clusterID int64) (NodePools, error) {
 	var (
 		nodePoolList *v1alpha1.NodePoolList
@@ -427,7 +440,7 @@ func (e *Edge) getNodePoolsByCluster(clusterID int64) (NodePools, error) {
 	return convertNPListToMap(nodePoolList), nil
 }
 
-// getSitesClusterIDs 获取多集群站点的 cluster id
+// getSitesClusterIDs Get clusters by sites.
 func (e *Edge) getSitesClusterIDs(sites *[]dbclient.EdgeSite) []int64 {
 	var (
 		tmpMap     = make(map[int64]struct{}, 0)
@@ -448,7 +461,7 @@ func (e *Edge) getSitesClusterIDs(sites *[]dbclient.EdgeSite) []int64 {
 	return clusterIDs
 }
 
-// 将 edgeSite 存储结构转换为API所需结构
+// convertToEdgeSiteInfo Convert type EdgeSite to type EdgeSiteInfo.
 func convertToEdgeSiteInfo(edgeSite *dbclient.EdgeSite, nodeCount, clusterName string) *apistructs.EdgeSiteInfo {
 	return &apistructs.EdgeSiteInfo{
 		ID:          int64(edgeSite.ID),
@@ -466,7 +479,7 @@ func convertToEdgeSiteInfo(edgeSite *dbclient.EdgeSite, nodeCount, clusterName s
 	}
 }
 
-// convertNPListToMap 转换 node pool list 类型为以 node pool name 为 key 的 map
+// convertNPListToMap Convert type NodePoolList to map[string]NodePool.
 func convertNPListToMap(nodePoolList *v1alpha1.NodePoolList) map[string]*v1alpha1.NodePool {
 	var (
 		res = make(map[string]*v1alpha1.NodePool, 0)

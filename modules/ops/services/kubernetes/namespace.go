@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateNamespace 指定集群下创建 namespace
+// CreateNamespace Crate namespace on specified cluster.
 func (k *Kubernetes) CreateNamespace(clusterName string, namespace *corev1.Namespace) error {
 	if namespace == nil {
 		return fmt.Errorf("namespace entity can't be nil")
@@ -39,7 +39,7 @@ func (k *Kubernetes) CreateNamespace(clusterName string, namespace *corev1.Names
 	return nil
 }
 
-// DeleteNamespace 指定集群下删除 namespace
+// DeleteNamespace Delete namespace on specified cluster.
 func (k *Kubernetes) DeleteNamespace(clusterName string, namespace string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {

@@ -131,10 +131,10 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 		//request.Tags = fmt.Sprintf("{\"%s\": \"%s\"}", tagKey, tagValue)
 	}
 	// status:
-	//	Creating: 创建中
-	//  Running:  使用中
-	//  Deleting: 删除中
-	//  Rebooting:重启中
+	//	Creating
+	//  Running
+	//  Deleting
+	//  Rebooting
 	//  ...
 	response, err := client.DescribeDBInstances(request)
 	if err != nil {
@@ -145,7 +145,7 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 	return DescribeDBInstancesResponse{
 		ResponsePager: aliyun_resources.ResponsePager{
 			TotalCount: response.TotalRecordCount,
-			PageSize:   *page.PageSize, // response 中没有 pagesize 信息
+			PageSize:   *page.PageSize, // empty pageSize from response
 			PageNumber: response.PageNumber,
 		},
 		DBInstances: response.Items.DBInstance,

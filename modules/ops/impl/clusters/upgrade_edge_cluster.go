@@ -55,7 +55,7 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 		if records[0].Status == dbclient.StatusTypeProcessing &&
 			records[0].CreatedAt.After(time.Now().Add(-2*time.Hour)) {
 			status = 1
-			precheckHint = "集群正在升级, 是否跳转查看进度"
+			precheckHint = "The cluster is being upgraded, whether to jump to view the progress"
 			recordID = records[0].ID
 			return
 		}
@@ -68,12 +68,12 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 	}
 	if !clusterInfo.IsK8S() {
 		status = 3
-		precheckHint = "不支持非 k8s 集群升级"
+		precheckHint = "Doesn't support upgrade cluster which not k8s type"
 		return
 	}
 	if clusterInfo.Get(apistructs.DICE_IS_EDGE) != "true" {
 		status = 3
-		precheckHint = "不支持升级中心集群"
+		precheckHint = "Doesn't support upgrade central cluster"
 		return
 	}
 	centralClusterInfo, err := c.bdl.QueryClusterInfo(os.Getenv("DICE_CLUSTER_NAME"))
@@ -90,13 +90,13 @@ func (c *Clusters) UpgradeEdgeCluster(req apistructs.UpgradeEdgeClusterRequest, 
 
 	if strings.Compare(edgeVersion, centralVersion) > 0 {
 		status = 3
-		precheckHint = fmt.Sprintf("边缘集群版本[%s] 高于中心集群[%s], 不用升级", edgeVersion, centralVersion)
+		precheckHint = fmt.Sprintf("Edge cluster version [%s] above the central cluster version[%s], don't need upgrade", edgeVersion, centralVersion)
 		return
 	}
 
 	if req.PreCheck {
 		status = 2
-		precheckHint = fmt.Sprintf("将从 [%s] 升级至 [%s], 请确认", edgeVersion, centralVersion)
+		precheckHint = fmt.Sprintf("Will upgrade from version [%s] to [%s], please confirm it", edgeVersion, centralVersion)
 		return
 	}
 
@@ -243,12 +243,12 @@ func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []
 	}
 	cSet := set.New()
 	for _, v := range clusters {
-		// 企业可以关联集群，过滤掉关联的重复的集群
+		// Filter clusters which duplicate related
 		if cSet.Has(v.Name) {
 			continue
 		}
 		cSet.Insert(v.Name)
-		// 只包含关联集群时，也过滤掉
+		// Filter clusters which only contain related cluster
 		if _, ok := (orgsInfo)[uint64(v.OrgID)]; !ok {
 			continue
 		}

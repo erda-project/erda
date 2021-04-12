@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	// config-企业ID-配置集名称   e.g. edgecfg-000-democofnigset
+	// config-orgID-configSetName   e.g. edgecfg-000-democofnigset
 	defaultConfigSetFormat = "edgecfg-%s-%s"
 )
 
-// ListConfigSet 根据 OrgID/ClusterID 等条件获取 ConfigSet 信息
+// ListConfigSet List configSet by orgID or clusterID.
 func (e *Edge) ListConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (int, *[]apistructs.EdgeConfigSetInfo, error) {
 	total, configSets, err := e.db.ListEdgeConfigSet(param)
 	if err != nil {
@@ -48,7 +48,7 @@ func (e *Edge) ListConfigSet(param *apistructs.EdgeConfigSetListPageRequest) (in
 
 }
 
-// GetConfigSet 获取单个配置集信息
+// GetConfigSet Get configSet by configSetID.
 func (e *Edge) GetConfigSet(configSetID int64) (*apistructs.EdgeConfigSetInfo, error) {
 	var (
 		configSetInfo *apistructs.EdgeConfigSetInfo
@@ -69,7 +69,7 @@ func (e *Edge) GetConfigSet(configSetID int64) (*apistructs.EdgeConfigSetInfo, e
 	return configSetInfo, nil
 }
 
-// CreateConfigSet 指定集群下创建 namespace 用于存放配置集
+// CreateConfigSet Create configSet namespaces in specified cluster.
 func (e *Edge) CreateConfigSet(req *apistructs.EdgeConfigSetCreateRequest) (uint64, error) {
 	var (
 		nsAPIVersion = "v1"
@@ -117,15 +117,14 @@ func (e *Edge) CreateConfigSet(req *apistructs.EdgeConfigSetCreateRequest) (uint
 
 }
 
-// DeleteConfigSet 指定集群下删除配置集
+// DeleteConfigSet Delete configSet by configSetID in specified cluster.
 func (e *Edge) DeleteConfigSet(configSetID int64) error {
-	// TODO: 事务
 	configSet, err := e.db.GetEdgeConfigSet(configSetID)
 	if err != nil {
 		return fmt.Errorf("failed to get edge configset, configSetID: %d, err: (%v)", configSetID, err)
 	}
 
-	// 如果配置集被应用引用，则不能被删除
+	// If configSet depend on application, can't delete it.
 	edgeApps, err := e.db.GetEdgeAppByConfigset(configSet.Name, configSet.ClusterID)
 	if err != nil {
 		return fmt.Errorf("failed to get releated app")
@@ -166,7 +165,7 @@ func (e *Edge) DeleteConfigSet(configSetID int64) error {
 	return nil
 }
 
-// UpdateConfigSet 指定集群下更新配置集 （不允许更改 Name)
+// UpdateConfigSet Update configSet
 func (e *Edge) UpdateConfigSet(configSetID int64, req *apistructs.EdgeConfigSetUpdateRequest) error {
 
 	configSet, err := e.db.GetEdgeConfigSet(configSetID)
@@ -184,12 +183,12 @@ func (e *Edge) UpdateConfigSet(configSetID int64, req *apistructs.EdgeConfigSetU
 	return nil
 }
 
-// getConfigSetName 生成ConfigSet namespace 名称
+// getConfigSetName Generate configSet name by orgID and configSet name.
 func (e *Edge) getConfigSetName(orgID int64, configSetName string) (string, error) {
 	return fmt.Sprintf(defaultConfigSetFormat, fmt.Sprintf("%03d", orgID), configSetName), nil
 }
 
-// convertToEdgeConfigSetInfo 转换 EdgeConfigSet 类型为数据返回 Info 类型
+// convertToEdgeConfigSetInfo Convert type EdgeConfigSet to type EdgeConfigSetInfo.
 func convertToEdgeConfigSetInfo(configSet dbclient.EdgeConfigSet, clusterName string) *apistructs.EdgeConfigSetInfo {
 	return &apistructs.EdgeConfigSetInfo{
 		ID:          int64(configSet.ID),

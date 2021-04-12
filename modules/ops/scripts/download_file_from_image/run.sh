@@ -9,22 +9,22 @@ if [[ -z "${NETDATA_AGENT_PATH}" ]]; then
 fi
 
 # args:
-# IMAGE_NAME      镜像名
-# IMAGE_FILE_PATH 镜像内文件路径
-# FILE_NAME       复制到外部的文件名
-# EXPECT_MD5      文件 MD5
-# EXECUTABLE      文件是否可执行
+# IMAGE_NAME: image name
+# IMAGE_FILE_PATH: file path in image
+# FILE_NAME: file name copied to the outside
+# EXPECT_MD5: file md5
+# EXECUTABLE: Is file executable
 
 tempFileName=tmpfile-$RANDOM
 destPath="/netdata/${NETDATA_AGENT_PATH}/${FILE_NAME}"
 
-# destPath 可能被误创建为目录或其他非 Regular File
+# destPath may be mistakenly created as a directory or other non-regular File
 if [[ ! -f "${destPath}" ]]; then
     rm -fr "${destPath}"
     mkdir -p $(dirname "${destPath}")
 fi
 
-# 如果目标文件已存在
+# If the target file already exists
 if [[ -f "$destPath" ]]; then
     currentMD5="$(md5sum ${destPath} | cut -d ' ' -f1)"
     if [[ "${EXPECT_MD5}" == "${currentMD5}" ]]; then

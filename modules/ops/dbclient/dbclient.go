@@ -11,7 +11,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package dbclient 定义数据库操作的方法, orm 等。
 package dbclient
 
 import (

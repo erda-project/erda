@@ -166,7 +166,7 @@ func fillRoutingInfo(routing *dbclient.ResourceRouting, m BaseResourceMaterial, 
 	routing.RecordID = r.ID
 }
 
-// CreateResource 创建资源
+// CreateResource Create resource
 func (obj BaseResourceFactory) CreateResource(ctx aliyun_resources.Context, m BaseResourceMaterial) (*dbclient.Record, error) {
 	err := obj.sourceCheck(m)
 	if err != nil {
@@ -207,20 +207,20 @@ func (obj BaseResourceFactory) CreateResource(ctx aliyun_resources.Context, m Ba
 		}()
 
 		// get vpc info
-		// 来自addon的请求，不带region，通过cluster name，查找vpc，得到region、cidr等信息
-		// 来自云管的请求
-		//	有些带 region和vpc id，据此查询更详细的cidr，zoneID等信息
-		//	有些如oss，ons，则只带有region信息，只保留region就可以了
+		// request from addon: none region, get region/cidr from vpc(select by cluster name)
+		// request from cloud management:
+		//  - some has region and vpc id, use them to  get cidr/zoneID and more detail info
+		//  - some request like oss and ons, only has region
 		if m.GetZoneID() == "" {
 			ctx.Region = m.GetRegion()
 			ctx.VpcID = m.GetVpcID()
-			// 对于需要vpc信息的资源，获取vpc信息
+			// Get vpc if need it
 			v, e := vpc.GetVpcBaseInfo(ctx, m.GetClusterName(), m.GetVpcID())
 			if e != nil {
 				err = e
 				return
 			}
-			// 有些资源并不需要详细的vpc信息（返回v为空），只需要region信息
+			// Some resources doesn't need detail vpc, only need region
 			if m.GetRegion() == "" {
 				m.SetRegion(v.Region)
 			}
