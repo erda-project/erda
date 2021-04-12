@@ -41,6 +41,9 @@ issues:
       text: "G110:" # G110: Potential DoS vulnerability via decompression bomb (gosec)
     - linters:
         - gosec
+      text: "G201:" # SQL string formatting (gosec)
+    - linters:
+        - gosec
       text: "G204:" # G204: Subprocess launched with function call as argument or cmd arguments (gosec)
     - linters:
         - gosec

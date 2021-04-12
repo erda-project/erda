@@ -53,6 +53,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/builder v0.2.0 // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
