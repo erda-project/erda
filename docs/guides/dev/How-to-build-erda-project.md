@@ -26,9 +26,9 @@ Note: Replace <module_name> with the name of the module to be build. All include
 ### examples:
 - build monitor module
   ```
-  make prepare && MODULE_PATH=monitor make build
+  MODULE_PATH=monitor make build
   ```
 - build pipeline module
   ```
-  make prepare && MODULE_PATH=pipeline make build
+  MODULE_PATH=pipeline make build
   ```

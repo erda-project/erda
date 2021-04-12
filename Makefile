@@ -53,7 +53,7 @@ build-all:
 	done; \
 	echo "build all modules successfully !"
 
-build: build-version submodule tidy
+build: generate build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 
