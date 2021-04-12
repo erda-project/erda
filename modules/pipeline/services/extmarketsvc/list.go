@@ -38,25 +38,56 @@ func SearchActionWithRender(placeholders map[string]string) OpOption {
 	}
 }
 
-// each search item: ActionType 或 ActionType@version
-// output: map[item]Image
-func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+// doSearchRemoteActions search actions from dicehub.
+func (s *ExtMarketSvc) doSearchRemoteActions(items []string) (map[string]apistructs.ExtensionVersion, error) {
 	req := apistructs.ExtensionSearchRequest{Extensions: items, YamlFormat: true}
-	actions, err := s.bdl.SearchExtensions(req)
+	return s.bdl.SearchExtensions(req)
+}
+
+// SearchActions try to get from cache.
+// each search item: ActionType 或 ActionType@version
+// return: allDiceYml, allSpec, error
+func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+	// get from cache first
+	var itemsNeedSearch []string
+	cachedActionsByItem := make(map[string]apistructs.ExtensionVersion)
+	for _, item := range items {
+		ext := extCaches.getExt(item)
+		if ext == nil {
+			// not found in cache, need search later
+			itemsNeedSearch = append(itemsNeedSearch, item)
+			continue
+		}
+		// found in cache
+		cachedActionsByItem[item] = *ext
+	}
+
+	// search from dicehub
+	searchedActionsByItem, err := s.doSearchRemoteActions(itemsNeedSearch)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	so := SearchOption{
-		NeedRender:   false,
-		Placeholders: nil,
+	// update to cache
+	for item, ext := range searchedActionsByItem {
+		extCaches.updateExt(item, ext)
 	}
+
+	// merge actions
+	allActionsByItem := make(map[string]apistructs.ExtensionVersion)
+	for item, ext := range cachedActionsByItem {
+		allActionsByItem[item] = ext
+	}
+	for item, ext := range searchedActionsByItem {
+		allActionsByItem[item] = ext
+	}
+
+	// search
+	so := SearchOption{NeedRender: false, Placeholders: nil}
 	for _, op := range ops {
 		op(&so)
 	}
-
 	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
-	for nameVersion, action := range actions {
+	for nameVersion, action := range allActionsByItem {
 		if action.NotExist() {
 			errMsg := fmt.Sprintf("action %q not exist in Extension Market", nameVersion)
 			logrus.Errorf("[alert] %s", errMsg)
@@ -89,7 +120,7 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 		}
 	}
 	actionSpecMap := make(map[string]*apistructs.ActionSpec)
-	for nameVersion, action := range actions {
+	for nameVersion, action := range allActionsByItem {
 		actionSpecMap[nameVersion] = nil
 		specYmlStr, ok := action.Spec.(string)
 		if !ok {

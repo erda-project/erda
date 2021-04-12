@@ -24,5 +24,7 @@ type ExtMarketSvc struct {
 func New(bdl *bundle.Bundle) *ExtMarketSvc {
 	s := ExtMarketSvc{}
 	s.bdl = bdl
+
+	InitializeCaches(&s)
 	return &s
 }
