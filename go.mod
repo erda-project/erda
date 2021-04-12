@@ -48,6 +48,7 @@ require (
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.7
 	github.com/go-openapi/swag v0.19.9 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/builder v0.2.0 // indirect
