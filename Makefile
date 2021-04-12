@@ -51,11 +51,12 @@ build-all:
 			echo ""; \
 		fi; \
 	done; \
-	echo "build all modules successfully !"
+	echo "build all modules successfully!"
 
 build: prepare build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	echo "build the ${MODULE_PATH} module successfully!"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
