@@ -24,9 +24,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
@@ -52,8 +52,8 @@ func init() {
 		if !ok {
 			return nil, errors.Errorf("not found some config of action executor, kind [%s], name [%s], field [ADDR]", Kind, name)
 		}
-		if conf.SchedulerAddr() != "" {
-			addr = conf.SchedulerAddr()
+		if discover.Scheduler() != "" {
+			addr = discover.Scheduler()
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 		return &Sched{

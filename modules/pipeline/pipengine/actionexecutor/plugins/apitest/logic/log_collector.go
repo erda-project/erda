@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 )
 
@@ -121,7 +121,7 @@ func asyncPushCollectorLog() {
 func pushCollectorLog(logLines *[]apistructs.LogPushLine) error {
 	var respBody bytes.Buffer
 	resp, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Post(conf.CollectorAddr()).
+		Post(discover.Collector()).
 		Path("/collect/logs/job").
 		JSONBody(logLines).
 		Header("Content-Type", "application/json").
