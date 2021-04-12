@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ListSecret 获取指定集群下指定 namespace 所有 Secret
+// ListSecret List secret under the specified cluster and namespace.
 func (k *Kubernetes) ListSecret(clusterName, namespace string) (*corev1.SecretList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListSecret(clusterName, namespace string) (*corev1.SecretLi
 	return cmList, nil
 }
 
-// GetSecret 获取指定集群下 Secret
+// GetSecret Get secret under the specified cluster and namespace.
 func (k *Kubernetes) GetSecret(clusterName, namespace, secName string) (*corev1.Secret, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetSecret(clusterName, namespace, secName string) (*corev1.
 	return cm, nil
 }
 
-// CreateSecret 在指定集群下创建 Secret
+// CreateSecret Crate secret on specified cluster and namespace.
 func (k *Kubernetes) CreateSecret(clusterName, namespace string, cm *corev1.Secret) error {
 	if cm == nil {
 		return fmt.Errorf("secret entity can't be nil")
@@ -69,7 +69,7 @@ func (k *Kubernetes) CreateSecret(clusterName, namespace string, cm *corev1.Secr
 	return nil
 }
 
-// DeleteSecret 在指定集群下删除 Secret
+// DeleteSecret Delete secret on specified cluster and namespace.
 func (k *Kubernetes) DeleteSecret(clusterName, namespace, secName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (k *Kubernetes) DeleteSecret(clusterName, namespace, secName string) error 
 	return nil
 }
 
-// UpdateSecret 在指定集群下更新 Secret
+// UpdateSecret Update secret on specified cluster and namespace.
 func (k *Kubernetes) UpdateSecret(clusterName, namespace string, cm *corev1.Secret) error {
 	if cm == nil {
 		return fmt.Errorf("secret entity can't be nil")

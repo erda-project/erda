@@ -82,9 +82,9 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 
 	// describe resource
 	// status:
-	//	inactive: 无效
-	//  active:   有效
-	//  locked:   锁定
+	//	inactive
+	//  active
+	//  locked
 	response, err := client.DescribeLoadBalancers(request)
 	if err != nil {
 		logrus.Errorf("describe slb error: %+v", err)
