@@ -1,5 +1,5 @@
 {
-  "**/*.go": [
+  "**/*.{go,sh,yml}": [
     "Copyright (c) 2021 Terminus, Inc.",
     "This program is free software: you can use, redistribute, and/or modify",
     "it under the terms of the GNU Affero General Public License, version 3"
@@ -12,6 +12,8 @@
     "pkg/clientgo/apis/openyurt/",
     "pkg/clientgo/clientset/",
     "pkg/pipe.v2/pipe.go",
-    "modules/tools/admin-tools/statik/statik.go"
+    "modules/tools/admin-tools/statik/statik.go",
+    ".golangci.yml",
+    "codecov.yml"
   ]
 }
