@@ -128,6 +128,9 @@ type Snapshot struct {
 
 	// OutputValues output 定义和从 task 里采集上来的值
 	OutputValues []apistructs.PipelineOutputWithValue `json:"outputValues,omitempty"`
+
+	// AppliedResources calculated by all actions
+	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
 }
 
 // FromDB 兼容 Snapshot 老数据
