@@ -34,8 +34,6 @@ elasticsearch:
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
-admin-tools:
-
 global-settings:
 
 i18n:

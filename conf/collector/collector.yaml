@@ -18,7 +18,7 @@ monitor-collector:
             timeout: "30s"
     auth:
         username: "${COLLECTOR_AUTH_USERNAME:collector}"
-        password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
+        password: "${COLLECTOR_AUTH_PASSWORD:123456}"
         force: ${COLLECTOR_AUTH_FORCE:false}
 
 pprof:
