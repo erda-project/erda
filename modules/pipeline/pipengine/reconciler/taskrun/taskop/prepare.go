@@ -174,7 +174,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 从 extension marketplace 获取 image 和 resource limit
 	extSearchReq := make([]string, 0)
 	extSearchReq = append(extSearchReq, getActionAgentTypeVersion())
-	extSearchReq = append(extSearchReq, taskrun.GetActionTypeVersion(&task.Extra.Action))
+	extSearchReq = append(extSearchReq, extmarketsvc.MakeActionTypeVersion(&task.Extra.Action))
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq,
 		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
@@ -280,7 +280,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 所有 action，包括 custom-script，都需要在 ext market 注册；
 	// 从 ext market 获取 action 的 job dice.yml，解析 image 和 resource；
 	// 只有 custom-script 可以设置自定义镜像，优先级高于默认自定义镜像。
-	diceYmlJob, ok := actionDiceYmlJobMap[taskrun.GetActionTypeVersion(action)]
+	diceYmlJob, ok := actionDiceYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
 	if !ok || diceYmlJob == nil || diceYmlJob.Image == "" {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found image, actionType: %q, version: %q", action.Type, action.Version))
@@ -389,7 +389,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// for get action callback openapi oauth2 token
-	specYmlJob, ok := actionSpecYmlJobMap[taskrun.GetActionTypeVersion(action)]
+	specYmlJob, ok := actionSpecYmlJobMap[extmarketsvc.MakeActionTypeVersion(action)]
 	if !ok || specYmlJob == nil {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found action spec, actionType: %q, version: %q", action.Type, action.Version))

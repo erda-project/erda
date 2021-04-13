@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ListNode 获取 某个 指定 clusterName 集群下的所有 Node
+// ListNode List node under the specified cluster.
 func (k *Kubernetes) ListNode(clusterName string) (*corev1.NodeList, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -36,7 +36,7 @@ func (k *Kubernetes) ListNode(clusterName string) (*corev1.NodeList, error) {
 	return nodes, nil
 }
 
-// GetNode 获取指定 clusterName 下的 Node
+// GetNode Get node under the specified cluster.
 func (k *Kubernetes) GetNode(clusterName, nodeName string) (*corev1.Node, error) {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k *Kubernetes) GetNode(clusterName, nodeName string) (*corev1.Node, error)
 	return np, nil
 }
 
-// CreateNode 指定 clusterName 集群下创建 Node
+// CreateNode Create node on specified cluster.
 func (k *Kubernetes) CreateNode(clusterName string, node *corev1.Node) (*corev1.Node, error) {
 	if node == nil {
 		return nil, fmt.Errorf("create action must give a non-nil node entity")
@@ -70,7 +70,7 @@ func (k *Kubernetes) CreateNode(clusterName string, node *corev1.Node) (*corev1.
 	return res, nil
 }
 
-// DeleteNode 指定 clusterName 集群下创建 Node
+// DeleteNode Delete node on specified cluster.
 func (k *Kubernetes) DeleteNode(clusterName string, nodeName string) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {
@@ -85,7 +85,7 @@ func (k *Kubernetes) DeleteNode(clusterName string, nodeName string) error {
 	return nil
 }
 
-// UpdateNode 指定 clusterName 集群下更新 Node
+// UpdateNode Update node on specified cluster.
 func (k *Kubernetes) UpdateNode(clusterName string, node *corev1.Node) error {
 	clientSet, err := k.getClientSet(clusterName)
 	if err != nil {

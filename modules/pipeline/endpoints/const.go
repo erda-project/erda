@@ -38,4 +38,5 @@ const (
 	pathPipelineID    = "pipelineID"
 	pathTaskID        = "taskID"
 	pathNs            = "ns"
+	pathQueueID       = "queueID"
 )

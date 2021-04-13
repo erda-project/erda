@@ -113,8 +113,8 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
 		// gittar
-		"gittar.username":      "18000000000",
-		"gittar.password":      "123456",
+		"gittar.username":      conf.GitInnerUserName(),
+		"gittar.password":      conf.GitInnerUserPassword(),
 		"gittar.repo":          gittarRepo,
 		"gittar.branch":        p.Labels[apistructs.LabelBranch],
 		"gittar.commit":        p.GetCommitID(),
@@ -139,7 +139,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.storage.url": storageURL,
 
 		// collector 用于主动日志上报(action-agent)
-		"collector.addr":       conf.CollectorAddr(),
+		"collector.addr":       discover.Collector(),
 		"collector.public.url": conf.CollectorPublicURL(),
 
 		// others

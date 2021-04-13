@@ -51,11 +51,12 @@ build-all:
 			echo ""; \
 		fi; \
 	done; \
-	echo "build all modules successfully !"
+	echo "build all modules successfully!"
 
-build: build-version submodule tidy
+build: prepare build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	echo "build the ${MODULE_PATH} module successfully!"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
@@ -83,6 +84,12 @@ tidy:
 generate:
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go generate -v -x
+
+prepare:
+	cd "${PROJ_PATH}" && \
+	${GO_BUILD_ENV} go generate ./apistructs &&\
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate &&\
+	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
 
 submodule:
 	git submodule update --init

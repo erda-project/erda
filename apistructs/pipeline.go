@@ -143,6 +143,11 @@ type PipelineCreateRequestV2 struct {
 	// +optional
 	RunParams PipelineRunParams `json:"runParams"`
 
+	// Internal-Use below
+
+	// BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
+	BindQueue *PipelineQueue `json:"-"`
+
 	IdentityInfo
 }
 

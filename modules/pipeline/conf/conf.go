@@ -43,12 +43,12 @@ type Conf struct {
 	BuildCacheExpireIn     time.Duration `env:"BUILD_CACHE_EXPIRE_IN" default:"168h"`
 
 	// bundle
-	GittarAddr    string `env:"GITTAR_ADDR" required:"true"`
-	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"true"`
-	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"true"`
-	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"true"`
-	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"true"`
-	HepaAddr      string `env:"HEPA_ADDR" required:"true"`
+	GittarAddr    string `env:"GITTAR_ADDR" required:"false"`
+	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"false"`
+	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"false"`
+	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"false"`
+	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"false"`
+	HepaAddr      string `env:"HEPA_ADDR" required:"false"`
 	CollectorAddr string `env:"COLLECTOR_ADDR" required:"false"`
 
 	// public url
@@ -76,6 +76,10 @@ type Conf struct {
 
 	// DisablePipelineVolume default is false, means enable context volumes
 	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
+
+	// gittar inner user name and password
+	GitInnerUserName     string `env:"GIT_INNER_USER_NAME"`
+	GitInnerUserPassword string `env:"GIT_INNER_USER_PASSWORD"`
 }
 
 var cfg Conf
@@ -244,4 +248,14 @@ func OpenapiOAuth2TokenClientSecret() string {
 // DisablePipelineVolume 返回 是否关闭 pipeline volume，只有值引用.
 func DisablePipelineVolume() bool {
 	return cfg.DisablePipelineVolume
+}
+
+// GitInnerUserName gittar内部用户名
+func GitInnerUserName() string {
+	return cfg.GitInnerUserName
+}
+
+// GitInnerUserPassword gittar内部用户名密码
+func GitInnerUserPassword() string {
+	return cfg.GitInnerUserPassword
 }

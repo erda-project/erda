@@ -138,6 +138,14 @@ func (fsm *DeployFSMContext) GetProjectNamespace(workspace string) string {
 	return ""
 }
 
+// IsEnabledProjectNamespace 是否开启了项目命名空间
+func (fsm *DeployFSMContext) IsEnabledProjectNamespace() bool {
+	if len(fsm.ProjectNamespaces) != 4 {
+		return false
+	}
+	return true
+}
+
 func (fsm *DeployFSMContext) timeout() (bool, error) {
 	now := time.Now()
 	if now.Sub(fsm.Deployment.UpdatedAt) > 1*time.Hour {
@@ -722,7 +730,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		if err != nil {
 			return err
 		}
-		fsm.Runtime.InitScheduleName(cluster.Type)
+		fsm.Runtime.InitScheduleName(cluster.Type, fsm.IsEnabledProjectNamespace())
 		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
 			return err
 		}

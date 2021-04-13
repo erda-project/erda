@@ -52,7 +52,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	status := dbclient.StatusTypeSuccess
 	detail := ""
 	if !fakecluster {
-		// 检查项目是否使用集群
+		// Check project whether to use cluster
 		projectRefer := precheckResp{}
 		resp, err := httpclient.New().Get(discover.CMDB()).
 			Header("Internal-Client", "ops").
@@ -72,9 +72,9 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 		}
 		if projectRefer.Data {
 			status = dbclient.StatusTypeFailed
-			detail = "存在项目使用该集群, 无法下线该集群"
+			detail = "An existing project is using the cluster and cannot offline this cluster."
 		}
-		// 查询 cmdb api 检查没有项目设置中用到这个集群
+
 		if status == dbclient.StatusTypeSuccess {
 			runtimeRefer := precheckResp{}
 			resp, err := httpclient.New().Get(discover.Orchestrator()).
@@ -96,11 +96,11 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			}
 			if runtimeRefer.Data {
 				status = dbclient.StatusTypeFailed
-				detail = "存在runtime(addon)在该集群中, 无法下线集群"
+				detail = "There are the Runtime (Addon) in the cluster, cannot offline this cluster"
 			}
 		}
 	}
-	// 调用 cmdb api 下线集群
+	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
 		deletecluster := cmdbDeleteClusterResp{}
 		resp, err := httpclient.New().Delete(discover.CMDB()).
