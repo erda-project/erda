@@ -306,14 +306,15 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		// select by labels
 		if len(req.MustMatchLabels) > 0 || len(req.AnyMatchLabels) > 0 {
 			needFilterByLabel = true
-			labelRequest := apistructs.PipelineIDSelectByLabelRequest{
+			labelRequest := apistructs.TargetIDSelectByLabelRequest{
+				Type:                   apistructs.PipelineLabelTypeInstance,
 				PipelineSources:        req.Sources,
 				AllowNoPipelineSources: req.AllSources,
 				PipelineYmlNames:       req.YmlNames,
 				MustMatchLabels:        req.MustMatchLabels,
 				AnyMatchLabels:         req.AnyMatchLabels,
 			}
-			labelPipelineIDs, err = client.SelectPipelineIDsByLabels(labelRequest)
+			labelPipelineIDs, err = client.SelectTargetIDsByLabels(labelRequest)
 			if err != nil {
 				errs = append(errs, err.Error())
 				return
@@ -622,7 +623,7 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOpt
 	go func() {
 		defer wg.Done()
 
-		innerLabelsMap, err := client.ListPipelineLabelsByPipelineIDs(pipelineIDs, ops...)
+		innerLabelsMap, err := client.ListPipelineLabelsByTypeAndTargetIDs(apistructs.PipelineLabelTypeInstance, pipelineIDs, ops...)
 		if err != nil {
 			errs = append(errs, err.Error())
 			return

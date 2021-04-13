@@ -23,9 +23,11 @@ import (
 type PipelineLabel struct {
 	ID uint64 `json:"id" xorm:"pk autoincr"`
 
+	Type     apistructs.PipelineLabelType `json:"type,omitempty"`
+	TargetID uint64                       `json:"targetID"`
+
 	PipelineSource  apistructs.PipelineSource `json:"pipelineSource"`
 	PipelineYmlName string                    `json:"pipelineYmlName"`
-	PipelineID      uint64                    `json:"pipelineID"`
 
 	Key   string `json:"key"`
 	Value string `json:"value"`

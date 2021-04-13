@@ -11,17 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pipelinesvc
+package queuemanage
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
-func (s *PipelineSvc) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectByLabelRequest) ([]uint64, error) {
-	pipelineIDs, err := s.dbClient.SelectPipelineIDsByLabels(req)
+// GetPipelineQueue get a pipeline queue by id.
+func (qm *QueueManage) GetPipelineQueue(queueID uint64) (*apistructs.PipelineQueue, error) {
+	queue, exist, err := qm.dbClient.GetPipelineQueue(queueID)
 	if err != nil {
-		return nil, apierrors.ErrSelectPipelineByLabel.InternalError(err)
+		return nil, apierrors.ErrGetPipelineQueue.InternalError(err)
 	}
-	return pipelineIDs, nil
+	if !exist {
+		return nil, apierrors.ErrGetPipelineQueue.NotFound()
+	}
+	return queue, nil
 }

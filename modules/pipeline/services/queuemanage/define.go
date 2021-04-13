@@ -11,22 +11,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package precheck_before_pop
+package queuemanage
 
 import (
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 )
 
-type Plugin struct {
-	aoptypes.PipelineBaseTunePoint
+type QueueManage struct {
+	dbClient *dbclient.Client
 }
 
-func New() *Plugin { return &Plugin{} }
+func New(ops ...Option) *QueueManage {
+	qm := QueueManage{}
+	for _, op := range ops {
+		op(&qm)
+	}
+	return &qm
+}
 
-func (p *Plugin) Name() string { return "queue" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+type Option func(*QueueManage)
 
-	// TODO invoke fdp dependency check
-
-	return nil
+func WithDBClient(dbClient *dbclient.Client) Option {
+	return func(qm *QueueManage) {
+		qm.dbClient = dbClient
+	}
 }
