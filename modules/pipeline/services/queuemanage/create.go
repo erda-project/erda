@@ -11,22 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package precheck_before_pop
+package queuemanage
 
 import (
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
-type Plugin struct {
-	aoptypes.PipelineBaseTunePoint
-}
+// CreatePipelineQueue create a pipeline queue.
+func (qm *QueueManage) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest) (*apistructs.PipelineQueue, error) {
+	// validate
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrCreatePipelineQueue.InvalidParameter(err)
+	}
 
-func New() *Plugin { return &Plugin{} }
+	// create
+	queue, err := qm.dbClient.CreatePipelineQueue(req)
+	if err != nil {
+		return nil, apierrors.ErrCreatePipelineQueue.InternalError(err)
+	}
 
-func (p *Plugin) Name() string { return "queue" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
-
-	// TODO invoke fdp dependency check
-
-	return nil
+	return queue, nil
 }
