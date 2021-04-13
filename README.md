@@ -28,7 +28,7 @@ We will gradually open source the entire function according to the workload. The
 
 ## Screenshot
 
-![Screenshot](https://terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/04/13/0c59ed4e-2b5b-41d5-9229-7152a635b2aa.gif)
+![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
 
 
 ## Architecture
