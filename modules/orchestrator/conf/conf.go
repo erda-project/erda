@@ -28,7 +28,7 @@ type Conf struct {
 	RedisAddr            string `env:"REDIS_ADDR" default:"127.0.0.1:6379"`
 	RedisPassword        string `env:"REDIS_PASSWORD" default:""`
 	InstancesPerService  int    `env:"INSTANCES_PER_SERVICE" default:"1000"`
-	SelfAddr             string `env:"SELF_ADDR" default:"orchestrator.default.svc.cluster.local:8081"`
+	SelfAddr             string `env:"SELF_ADDR" default:"orchestrator:8081"`
 	MainClusterName      string `env:"DICE_CLUSTER_NAME" default:""`
 	TenantGroupKey       string `env:"TENANT_GROUP_KEY" default:""`
 	SoldierAddr          string `env:"SOLDIER_ADDR" default:""`
