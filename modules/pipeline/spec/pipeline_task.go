@@ -93,6 +93,8 @@ type PipelineTaskExtra struct {
 	OpenapiOAuth2TokenPayload apistructs.OpenapiOAuth2TokenPayload `json:"openapiOAuth2TokenPayload"`
 
 	LoopOptions *apistructs.PipelineTaskLoopOptions `json:"loopOptions,omitempty"` // 开始执行后保证不为空
+
+	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
 }
 
 type FlinkSparkConf struct {

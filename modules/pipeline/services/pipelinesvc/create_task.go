@@ -24,11 +24,13 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action) (*spec.PipelineTask, error) {
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, actionJobDefine *diceyml.Job) (*spec.PipelineTask, error) {
 	task := &spec.PipelineTask{}
 	task.PipelineID = p.ID
 	task.StageID = ps.ID
@@ -103,6 +105,25 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 		}
 	}
 
+	// ext resource
+	task.Extra.AppliedResources.Limits.CPU = numeral.MaxFloat64([]float64{
+		actionJobDefine.Resources.MaxCPU, actionJobDefine.Resources.CPU,
+		action.Resources.MaxCPU, action.Resources.CPU,
+	})
+	task.Extra.AppliedResources.Limits.MemoryMB = numeral.MaxFloat64([]float64{
+		float64(actionJobDefine.Resources.MaxMem), float64(actionJobDefine.Resources.Mem),
+		float64(action.Resources.Mem),
+	})
+	// no request, use limit
+	task.Extra.AppliedResources.Requests.CPU = numeral.MinFloat64([]float64{
+		actionJobDefine.Resources.MaxCPU, actionJobDefine.Resources.CPU,
+		action.Resources.MaxCPU, action.Resources.CPU,
+	}, true)
+	task.Extra.AppliedResources.Requests.MemoryMB = numeral.MinFloat64([]float64{
+		float64(actionJobDefine.Resources.MaxMem), float64(actionJobDefine.Resources.Mem),
+		float64(action.Resources.Mem),
+	}, true)
+
 	return task, nil
 }
 
@@ -131,6 +152,8 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 
 	task.CostTimeSec = -1
 	task.QueueTimeSec = -1
+
+	// ext resources set outside after created
 
 	return &task, nil
 }

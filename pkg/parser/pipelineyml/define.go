@@ -188,7 +188,11 @@ func (t ActionType) String() string {
 }
 
 func (t ActionType) IsCustom() bool {
-	return string(t) == "custom-script"
+	return string(t) == apistructs.ActionTypeCustomScript
+}
+
+func (t ActionType) IsSnippet() bool {
+	return string(t) == apistructs.ActionTypeSnippet
 }
 
 func (a ActionAlias) String() string {
