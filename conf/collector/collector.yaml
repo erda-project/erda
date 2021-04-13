@@ -21,6 +21,4 @@ monitor-collector:
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
 
-http-server@admin:
-    addr: ":7098"
 pprof:

@@ -36,9 +36,6 @@ elasticsearch:
 
 admin-tools:
 
-http-server@admin:
-  addr: ":7098"
-
 global-settings:
 
 i18n:
