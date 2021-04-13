@@ -34,10 +34,6 @@ elasticsearch:
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
-
-http-server@admin:
-  addr: ":7098"
-
 global-settings:
 
 i18n:
@@ -58,3 +54,5 @@ mysql:
 # username: "${MYSQL_USERNAME:root}"
 # password: "${MYSQL_PASSWORD:123456}"
 # database: "${MYSQL_DATABASE:dice}"
+
+
