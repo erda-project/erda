@@ -11,22 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package precheck_before_pop
+package queuemanage
 
 import (
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
-type Plugin struct {
-	aoptypes.PipelineBaseTunePoint
-}
-
-func New() *Plugin { return &Plugin{} }
-
-func (p *Plugin) Name() string { return "queue" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
-
-	// TODO invoke fdp dependency check
-
+// DeletePipelineQueue delete a pipeline queue by id.
+func (qm *QueueManage) DeletePipelineQueue(queueID uint64) error {
+	err := qm.dbClient.DeletePipelineQueue(queueID)
+	if err != nil {
+		return apierrors.ErrDeletePipelineQueue.InternalError(err)
+	}
 	return nil
 }
