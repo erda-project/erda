@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/pkg/httpserver"
@@ -50,6 +51,7 @@ type Endpoints struct {
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
 	snippetSvc       *snippetsvc.SnippetSvc
 	reportSvc        *reportsvc.ReportSvc
+	queueManage      *queuemanage.QueueManage
 
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
@@ -148,6 +150,12 @@ func WithReportSvc(svc *reportsvc.ReportSvc) Option {
 	}
 }
 
+func WithQueueManage(qm *queuemanage.QueueManage) Option {
+	return func(e *Endpoints) {
+		e.queueManage = qm
+	}
+}
+
 func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	return func(e *Endpoints) {
 		e.queryStringDecoder = decoder
@@ -204,6 +212,13 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
 		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
+
+		// pipeline queue management
+		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
+		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
+		{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
+		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
+		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
 
 		// build artifact
 		{Path: "/api/build-artifacts/{sha}", Method: http.MethodGet, Handler: e.queryBuildArtifact},

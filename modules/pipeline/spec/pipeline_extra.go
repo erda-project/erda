@@ -110,6 +110,8 @@ type PipelineExtraInfo struct {
 	DefinedOutputs []apistructs.PipelineOutput `json:"definedOutputs,omitempty"`
 
 	SnippetChain []uint64 `json:"snippetChain,omitempty"`
+
+	QueueID uint64 `json:"queueID,omitempty"`
 }
 
 type Snapshot struct {
