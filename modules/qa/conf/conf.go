@@ -25,7 +25,6 @@ type Conf struct {
 
 	DiceClusterName string `env:"DICE_CLUSTER_NAME" required:"true"`
 
-	SelfAddr     string `env:"SELF_ADDR"`
 	GittarAddr   string `env:"GITTAR_ADDR"`
 	EventboxAddr string `env:"EVENTBOX_ADDR"`
 	CMDBAddr     string `env:"CMDB_ADDR"`
@@ -55,11 +54,6 @@ func Debug() bool {
 // ListenAddr
 func ListenAddr() string {
 	return cfg.ListenAddr
-}
-
-// SelfAddr
-func SelfAddr() string {
-	return cfg.SelfAddr
 }
 
 // GittarAddr
