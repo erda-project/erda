@@ -22,12 +22,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/gittar-adaptor/conf"
 	"github.com/erda-project/erda/modules/gittar-adaptor/event"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/cdp"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/filetree"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/permission"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -207,7 +207,7 @@ func (e *Endpoints) RegisterEvents() error {
 		ev := apistructs.CreateHookRequest{
 			Name:   callback.Name,
 			Events: callback.Events,
-			URL:    strutil.Concat("http://", conf.SelfAddr(), callback.Path),
+			URL:    strutil.Concat("http://", discover.GittarAdaptor(), callback.Path),
 			Active: true,
 			HookLocation: apistructs.HookLocation{
 				Org:         "-1",

@@ -61,7 +61,6 @@ type Conf struct {
 	UIDomain              string        `env:"UI_PUBLIC_ADDR"`
 	OpenAPIDomain         string        `env:"OPENAPI_PUBLIC_ADDR"` // Deprecated: after cli refactored
 	AvatarStorageURL      string        `env:"AVATAR_STORAGE_URL"`  // file:///avatars or oss://appkey:appsecret@endpoint/bucket
-	SelfAddr              string        `env:"SELF_ADDR"`
 	LicenseKey            string        `env:"LICENSE_KEY"`
 	HostSyncInterval      time.Duration `env:"INTERVAL" default:"2m"`                    // 主机实际资源使用同步间隔
 	TaskSyncDuration      time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`          // 任务状态信息同步间隔
@@ -356,11 +355,6 @@ func OpenAPIDomain() string {
 // AvatarStorageURL 返回 OSSUsage 选项
 func AvatarStorageURL() string {
 	return cfg.AvatarStorageURL
-}
-
-// SelfAddr 返回 SelfAddr 选项.
-func SelfAddr() string {
-	return cfg.SelfAddr
 }
 
 // LicenseKey 返回 LicenseKey 选项.

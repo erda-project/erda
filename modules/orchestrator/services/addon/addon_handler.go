@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -1160,18 +1161,15 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 	}
 	// 若为 kubernetes 集群
 	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "pandora") {
-			providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
-		}
 		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
+			providerDomain = discover.TMC()
 		}
 	}
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
 
 	var resp apistructs.AddonProviderResponse
 	hc := a.hc
-	req.Callback = "http://" + conf.SelfAddr()
+	req.Callback = "http://" + discover.Orchestrator()
 	r, err := hc.Post(providerDomain).
 		Path("/"+addonName+apistructs.AddonGetResourcePath).
 		Header("USER-ID", userId).
