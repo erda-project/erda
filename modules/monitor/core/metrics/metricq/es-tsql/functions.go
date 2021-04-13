@@ -315,10 +315,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		v, err := OperateValues(args[0], LT, args[1])
-		if err != nil {
-			return nil, err
-		}
+		v, _ := OperateValues(args[0], LT, args[1])
 		if v.(bool) {
 			return args[1], nil
 		}
@@ -329,14 +326,11 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		if err != nil {
 			return nil, err
 		}
-		v, err := OperateValues(args[0], LT, args[1])
-		if err != nil {
-			return nil, err
-		}
+		v, _ := OperateValues(args[0], GT, args[1])
 		if v.(bool) {
 			return args[1], nil
 		}
-		return args[1], nil
+		return args[0], nil
 	},
 	// convert
 	"int": func(ctx Context, args ...interface{}) (interface{}, error) {
@@ -895,7 +889,7 @@ func getTimeValue(v interface{}, layouts []string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// GetTimestampValue.
+// GetTimestampValue .
 func GetTimestampValue(v interface{}) (int64, bool) {
 	switch val := v.(type) {
 	case int:
