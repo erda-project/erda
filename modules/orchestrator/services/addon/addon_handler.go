@@ -1161,11 +1161,8 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 	}
 	// 若为 kubernetes 集群
 	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "pandora") {
-			providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora:8050", -1)
-		}
 		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc:8050", -1)
+			providerDomain = discover.TMC()
 		}
 	}
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
