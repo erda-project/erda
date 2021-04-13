@@ -100,10 +100,10 @@ func Initialize() error {
 
 	// TODO:
 	// 启动消费者协程，用于消费 kafka 消息
-	go func() {
-		logrus.Info("start Consumer....")
-		ep.Consumer()
-	}()
+	// go func() {
+	// 	logrus.Info("start Consumer....")
+	// 	ep.Consumer()
+	// }()
 
 	go runContainerGC(ep.DBClient())
 

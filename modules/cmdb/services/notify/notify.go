@@ -110,8 +110,8 @@ func (o *NotifyGroup) QueryNotifiesBySource(locale *i18n.LocaleResource, sourceT
 	return result, nil
 }
 
-func (o *NotifyGroup) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifiesBySourceRequest) ([]*apistructs.NotifyDetail, error) {
-	result, err := o.db.FuzzyQueryNotifiesBySource(req)
+func (o *NotifyGroup) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifiesBySourceRequest) (*apistructs.QueryNotifyData, error) {
+	result, total, err := o.db.FuzzyQueryNotifiesBySource(req)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (o *NotifyGroup) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifi
 			o.LocaleItem(req.Locale, item)
 		}
 	}
-	return result, nil
+	return &apistructs.QueryNotifyData{List: result, Total: total}, nil
 }
 
 func (o *NotifyGroup) DeleteNotify(notifyID int64, deleteGroup bool, orgID int64) error {
