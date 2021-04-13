@@ -232,8 +232,8 @@ func (a *Adapt) newCustomizeAlertOverview(
 	code i18n.LanguageCodes,
 	alert *db.CustomizeAlert,
 	rules []*CustomizeAlertRule,
-	notifys []*CustomizeAlertNotifyTemplate) *CustomizeAlertOverview {
-	if len(rules) == 0 || len(notifys) == 0 {
+	notifies []*CustomizeAlertNotifyTemplate) *CustomizeAlertOverview {
+	if len(rules) == 0 || len(notifies) == 0 {
 		return nil
 	}
 
@@ -246,7 +246,7 @@ func (a *Adapt) newCustomizeAlertOverview(
 	}
 
 	var targets []string
-	for _, template := range notifys {
+	for _, template := range notifies {
 		targets = append(targets, a.t.Text(code, template.Target))
 	}
 
