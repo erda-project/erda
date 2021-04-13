@@ -475,7 +475,11 @@ func (a *ComponentFileTree) listBranchSubNodes(branchInode string, ctxBdl protoc
 	// subNodes
 	var subNodes []Data
 	// 将 pipeline.yml 转化为叶子节点
-	subNodes = append(subNodes, a.getDefaultChild(ctxBdl.Bdl, inParams, project.OrgID, branchInode))
+	childData, err := a.getDefaultChild(ctxBdl.Bdl, inParams, project.OrgID, branchInode)
+	if err != nil {
+		return nil, err
+	}
+	subNodes = append(subNodes, childData)
 	// .dice/pipelines 下的 yml 转化为其他叶子节点
 	for _, v := range a.getOtherFolderChild(ctxBdl.Bdl, inParams, project.OrgID, parsedBranchInode) {
 		if !strings.HasSuffix(v.Title, ".yml") {
@@ -550,14 +554,17 @@ func (a *ComponentFileTree) getOtherFolderChild(bdl *bundle.Bundle, inParams InP
 	return childSlice
 }
 
-func (a *ComponentFileTree) getDefaultChild(bdl *bundle.Bundle, inParams InParams, orgId uint64, branchInode string) Data {
+func (a *ComponentFileTree) getDefaultChild(bdl *bundle.Bundle, inParams InParams, orgId uint64, branchInode string) (Data, error) {
 	// 查询分支下的 pipeline.yml
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
 	req.Pinode = branchInode
 	req.UserID = "1"
-	pipelineYmls, _ := bdl.ListFileTreeNodes(req, orgId)
+	pipelineYmls, err := bdl.ListFileTreeNodes(req, orgId)
+	if err != nil {
+		return Data{}, err
+	}
 
 	var defaultNode *apistructs.UnifiedFileTreeNode
 	for _, v := range pipelineYmls {
@@ -568,12 +575,12 @@ func (a *ComponentFileTree) getDefaultChild(bdl *bundle.Bundle, inParams InParam
 	}
 	branchInodeDecode, err := base64.StdEncoding.DecodeString(branchInode)
 	if err != nil {
-		logrus.Errorf("error to decode inode: %v", err)
+		return Data{}, err
 	}
 
 	var defaultKey = string(branchInodeDecode) + "/pipeline.yml"
 
-	return a.getDefaultYmlByPipelineYmlNode(defaultNode, base64.StdEncoding.EncodeToString([]byte(defaultKey)))
+	return a.getDefaultYmlByPipelineYmlNode(defaultNode, base64.StdEncoding.EncodeToString([]byte(defaultKey))), nil
 }
 
 func decodeInode(inode string) (string, error) {

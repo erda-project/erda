@@ -33,7 +33,7 @@ const (
 	DefaultPageNo   = 1
 )
 
-// ListEdgeSite 获取边缘站点列表
+// ListEdgeSite List edge site
 func (e *Endpoints) ListEdgeSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		pageSize    = DefaultPageSize
@@ -82,7 +82,6 @@ func (e *Endpoints) ListEdgeSite(ctx context.Context, r *http.Request, vars map[
 		}
 	}
 
-	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr != "" {
 		pageSize, err = strconv.Atoi(pageSizeStr)
@@ -91,7 +90,6 @@ func (e *Endpoints) ListEdgeSite(ctx context.Context, r *http.Request, vars map[
 		}
 	}
 
-	// 获取pageNo
 	pageNoStr := r.URL.Query().Get("pageNo")
 	if pageNoStr != "" {
 		pageNo, err = strconv.Atoi(pageNoStr)
@@ -100,7 +98,7 @@ func (e *Endpoints) ListEdgeSite(ctx context.Context, r *http.Request, vars map[
 		}
 	}
 
-	// 参数合法性校验
+	// parameters check
 	if orgID < 0 || clusterID < 0 || pageNo < 0 || pageSize < 0 {
 		return apierrors.ErrListEdgeSite.InternalError(fmt.Errorf("illegal query param")).ToResp(), nil
 	}
@@ -154,7 +152,7 @@ func (e *Endpoints) GetEdgeSite(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(*edgeSite)
 }
 
-// CreateEdgeSite 创建边缘站点
+// CreateEdgeSite Create edge site
 func (e *Endpoints) CreateEdgeSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		req apistructs.EdgeSiteCreateRequest
@@ -179,7 +177,7 @@ func (e *Endpoints) CreateEdgeSite(ctx context.Context, r *http.Request, vars ma
 	}
 	logrus.Infof("request body: %+v", req)
 
-	// 参数合法性校验，必须携带合法企业以及集群ID
+	// parameters check
 	if req.OrgID <= 0 || req.ClusterID <= 0 {
 		return apierrors.ErrListEdgeSite.InternalError(fmt.Errorf("illegal create param")).ToResp(), nil
 	}
@@ -192,7 +190,7 @@ func (e *Endpoints) CreateEdgeSite(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(edgeSiteID)
 }
 
-// UpdateEdgeSite 更新边缘站点
+// UpdateEdgeSite Update edge site
 func (e *Endpoints) UpdateEdgeSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		req apistructs.EdgeSiteUpdateRequest
@@ -231,7 +229,7 @@ func (e *Endpoints) UpdateEdgeSite(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(edgeSiteID)
 }
 
-// DeleteEdgeSite 删除边缘站点
+// DeleteEdgeSite Delete edge site
 func (e *Endpoints) DeleteEdgeSite(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 	i, resp := e.GetIdentity(r)
@@ -249,7 +247,6 @@ func (e *Endpoints) DeleteEdgeSite(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrDeleteEdgeSite.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 删除站点
 	if err = e.edge.DeleteSite(edgeSiteID); err != nil {
 		return apierrors.ErrDeleteEdgeSite.InternalError(err).ToResp(), nil
 	}
@@ -257,7 +254,7 @@ func (e *Endpoints) DeleteEdgeSite(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(edgeSiteID)
 }
 
-// GetInitEdgeSiteShell 获取边缘站点初始化脚本
+// GetInitEdgeSiteShell Get edge site init shell
 func (e *Endpoints) GetInitEdgeSiteShell(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var err error
 	i, resp := e.GetIdentity(r)
@@ -283,7 +280,7 @@ func (e *Endpoints) GetInitEdgeSiteShell(ctx context.Context, r *http.Request, v
 	return httpserver.OkResp(res)
 }
 
-// OfflineEdgeHost 下线边缘站点
+// OfflineEdgeHost Offline edge host
 func (e *Endpoints) OfflineEdgeHost(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		offlineRequest = struct {
