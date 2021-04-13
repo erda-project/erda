@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 
-	//"github.com/erda-project/erda-infra/providers/httpserver"
-	//"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
+	// "github.com/erda-project/erda-infra/providers/httpserver"
+	// "github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
@@ -30,18 +30,18 @@ import (
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	"github.com/recallsong/go-utils/ioutil"
 
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/chartv2"  //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/dict"     //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/influxdb" //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"         //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/chartv2"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/dict"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/influxdb"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"
 
 	// v1
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chart"   //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chartv2" //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/raw"     //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/json"   //
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/params" //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chart"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chartv2"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/raw"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/json"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/params"
 )
 
 type define struct{}
@@ -81,7 +81,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	db := ctx.Service("mysql").(mysql.Interface).DB()
 	index := ctx.Service("metrics-index-manager").(indexmanager.Index)
-
 	trans := ctx.Service("i18n").(i18n.I18n).Translator("charts")
 	charts := chartmeta.NewManager(db, p.C.ChartMeta.ReloadInterval, p.C.ChartMeta.Path, trans, p.L)
 
@@ -130,7 +129,7 @@ func (p *provider) Close() error {
 }
 
 // Provide .
-func (p *provider) Provide(name string, args ...interface{}) interface{} {
+func (p *provider) Provide(ctx servicehub.DependencyContext, options ...interface{}) interface{} {
 	return p.q
 }
 
