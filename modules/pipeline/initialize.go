@@ -43,6 +43,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
@@ -119,13 +120,14 @@ func do() (*httpserver.Server, error) {
 	extMarketSvc := extmarketsvc.New(bdl)
 	pipelineCronSvc := pipelinecronsvc.New(dbClient, crondSvc)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
+	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// pipeline engine
 	engine := pipengine.New(dbClient)
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, cmSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, dbClient, bdl, publisher, engine, js, etcdctl)
+		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 
 	pipelineFun := &reconciler.PipelineSvcFunc{
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
@@ -162,6 +164,7 @@ func do() (*httpserver.Server, error) {
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithSnippetSvc(snippetSvc),
 		endpoints.WithReportSvc(reportSvc),
+		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
 	)
 
