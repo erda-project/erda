@@ -1,0 +1,6 @@
+en:
+  application: "application"
+  service: "service"
+zh:
+  application: "应用名称"
+  service: "服务名称"
