@@ -238,14 +238,17 @@ func (client *DBClient) QueryNotifiesBySource(sourceType, sourceID, itemName str
 	return result, nil
 }
 
-func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifiesBySourceRequest) ([]*apistructs.NotifyDetail, error) {
+func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNotifiesBySourceRequest) ([]*apistructs.NotifyDetail, int, error) {
 	var notifies []model.Notify
+	var total int
 	query := client.Table("dice_notify_sources").
 		Joins("inner join dice_notifies on dice_notifies.id = dice_notify_sources.notify_id").
 		Joins("inner join dice_notify_item_relation on dice_notify_item_relation.notify_id = dice_notify_sources.notify_id").
 		Joins("inner join dice_notify_items on dice_notify_items.id = dice_notify_item_relation.notify_item_id").
-		Where("dice_notifies.enabled = 1 and dice_notify_sources.source_type = ? and dice_notifies.org_id = ? "+
-			"and dice_notifies.label = ?", req.SourceType, req.OrgID, req.Label)
+		Where("dice_notifies.org_id = ? and dice_notifies.label = ?", req.OrgID, req.Label)
+	if req.SourceType != "" {
+		query = query.Where("dice_notify_sources.source_type = ?", req.SourceType)
+	}
 	if req.ClusterName != "" {
 		query = query.Where("dice_notifies.cluster_name LIKE ?", genFuzzyQuery(req.ClusterName))
 	}
@@ -263,10 +266,10 @@ func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNoti
 	}
 	query = query.Select("dice_notifies.id,dice_notifies.name,dice_notifies.scope_type,dice_notifies.scope_id,dice_notifies.notify_group_id," +
 		"dice_notifies.channels,dice_notifies.enabled,dice_notifies.updated_at,dice_notifies.created_at").Group("dice_notifies.id").
-		Order("created_at desc").Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize)
+		Order("created_at desc").Offset((req.PageNo - 1) * req.PageSize).Count(&total).Limit(req.PageSize)
 	err := query.Scan(&notifies).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	result := []*apistructs.NotifyDetail{}
@@ -286,7 +289,7 @@ func (client *DBClient) FuzzyQueryNotifiesBySource(req apistructs.FuzzyQueryNoti
 		apiNotify.NotifySources, _ = client.GetNotifySourcesByNotifyID(notify.ID)
 		result = append(result, apiNotify)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (client *DBClient) GetNotifyByGroupID(groupID int64) (*model.Notify, error) {

@@ -1,0 +1,40 @@
+FROM registry.cn-hangzhou.aliyuncs.com/dice/git-golang-image:1.1  AS build
+
+ENV HOME /root
+ENV GO111MODULE on
+
+ARG GIT_COMMIT
+ARG GIT_BRANCH
+ARG BUILD_TIME
+ARG APP_NAME
+ARG CONFIG_PATH
+ARG MODULE_PATH
+ARG DOCKER_IMAGE
+
+# build
+RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
+COPY . "$GOPATH/src/github.com/erda-project/erda/"
+WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
+RUN make build APP_NAME=${APP_NAME} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE}
+
+FROM registry.cn-hangzhou.aliyuncs.com/dice/git-image:1.1
+
+RUN mkdir -m 755 "/app"
+WORKDIR /app
+
+ARG APP_NAME
+ARG CONFIG_PATH
+ENV APP_NAME=${APP_NAME}
+ENV GITTAR_PORT 5566
+
+# build's GOPATH is "/go"
+COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
+COPY --from=build "/go/src/github.com/erda-project/erda/bin/${APP_NAME}" "/app/${APP_NAME}"
+COPY --from=build "/go/src/github.com/erda-project/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
+COPY --from=build "/go/src/github.com/erda-project/erda/pkg/dice-configs" "/app/dice-configs"
+
+LABEL commit=$GIT_COMMIT branch=$GIT_BRANCH buildTime=$BUILD_TIME
+
+EXPOSE 5566
+
+CMD ["sh", "-c", "/app/${APP_NAME}"]

@@ -19,10 +19,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
@@ -74,8 +76,12 @@ type ScheduleName struct {
 	Name      string
 }
 
-func (r *Runtime) InitScheduleName(clusterType string) {
+func (r *Runtime) InitScheduleName(clusterType string, enabledPrjNamespace bool) {
 	name := md5V(fmt.Sprintf("%d-%s-%s", r.ApplicationID, r.Workspace, r.Name))
+	if enabledPrjNamespace {
+		// 开启了项目级命名空间后，需要改成1个10位的哈希值id
+		name = fnvV(fmt.Sprintf("%d-%s-%s", r.ApplicationID, r.Workspace, r.Name))
+	}
 	if clusterType == apistructs.EDAS {
 		name = fmt.Sprintf("%s-%d", strings.ToLower(r.Workspace), r.ID)
 	}
@@ -83,6 +89,13 @@ func (r *Runtime) InitScheduleName(clusterType string) {
 		Namespace: "services",
 		Name:      name,
 	}
+}
+
+// fnvV 生成10位的哈希值
+func fnvV(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return rand.SafeEncodeString(fmt.Sprint(h.Sum32())) + rand.String(1)
 }
 
 // md5V md5加密
