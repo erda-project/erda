@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/qa/conf"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -47,7 +47,7 @@ func (e *Endpoints) RegisterWebhooks() error {
 		hook := apistructs.CreateHookRequest{
 			Name:   callback.Name,
 			Events: callback.Events,
-			URL:    strutil.Concat("http://", conf.SelfAddr(), callback.URLPath),
+			URL:    strutil.Concat("http://", discover.QA(), callback.URLPath),
 			Active: true,
 			HookLocation: apistructs.HookLocation{
 				Org:         "-1",
