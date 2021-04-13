@@ -110,11 +110,11 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
-	// send to pipengine reconciler
-	s.engine.Send(p.ID)
-
 	// aop
 	_ = aop.Handle(aop.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
+
+	// send to pipengine reconciler
+	s.engine.Send(p.ID)
 
 	return &p, nil
 }
