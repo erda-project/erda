@@ -26,9 +26,9 @@ We will gradually open source the entire function according to the workload. The
 ## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
 ![](./docs/files/vision.png)
 
-## Showcase
+## Screenshot
 
-![showcase](https://terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/04/13/0c59ed4e-2b5b-41d5-9229-7152a635b2aa.gif)
+![Screenshot](https://terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/04/13/0c59ed4e-2b5b-41d5-9229-7152a635b2aa.gif)
 
 
 ## Architecture
