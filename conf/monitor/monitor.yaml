@@ -34,11 +34,6 @@ elasticsearch:
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
-admin-tools:
-
-http-server@admin:
-  addr: ":7098"
-
 global-settings:
 
 i18n:
