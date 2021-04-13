@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
-![Erda logo](./docs/assets/logo.jpg)
+![Erda logo](./docs/assets/logo-small.jpg)
 
 ## Introduction
 
@@ -61,7 +61,7 @@ We look forward to your connecting with us, you can ask us any questions.
 - 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - 微信公众号:
 
-![Erda WeChat](./docs/assets/wechat.jpg)
+    ![Erda WeChat](./docs/assets/wechat-small.jpg)
 
 ## License
 
