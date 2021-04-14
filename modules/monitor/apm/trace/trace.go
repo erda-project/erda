@@ -15,7 +15,6 @@ package trace
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -89,12 +88,11 @@ func (p *provider) traces(r *http.Request, params struct {
 			where.WriteString(" errors_sum::field>$errors_sum AND ")
 		}
 	}
-	str := fmt.Sprintf("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),"+
-		"trace_id::tag FROM trace WHERE terminus_key::tag=$terminus_key GROUP BY trace_id::tag ORDER BY "+
-		"max(start_time_min::field) LIMIT %s", strconv.FormatInt(params.Limit, 10))
+	statement, err := metricq.BuildStatement("SELECT sum(errors_sum),min(start_time_min),max(end_time_max),last(labels_distinct),"+
+		"trace_id::tag FROM trace WHERE terminus_key::tag=$terminus_key GROUP BY trace_id::tag ORDER BY max(start_time_min::field) LIMIT ?", params.Limit)
 	response, err := p.metricq.Query(
 		metricq.InfluxQL,
-		str,
+		statement,
 		metricParams,
 		options)
 	if err != nil {
