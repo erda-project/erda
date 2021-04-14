@@ -38,15 +38,15 @@ global-settings:
 
 i18n:
   common:
-    - ${CONFIG_PATH}/i18n/common.yml
-    - ${CONFIG_PATH}/i18n/apis.yml
+    - conf/common/i18n/common.yml
+    - common/i18n/apis.yml
   files:
-    - ${CONFIG_PATH}/i18n/settings.yml
-    - ${CONFIG_PATH}/i18n/org-resource.yml
-    - ${CONFIG_PATH}/i18n/alert.yml
-    - ${CONFIG_PATH}/i18n/log-metrics.yml
-    - ${CONFIG_PATH}/i18n/charts.yml
-    - ${CONFIG_PATH}/i18n/topology.yml
+    - common/i18n/settings.yml
+    - common/i18n/org-resource.yml
+    - common/i18n/alert.yml
+    - common/i18n/log-metrics.yml
+    - common/i18n/charts.yml
+    - common/i18n/topology.yml
 
 mysql:
 # host: "${MYSQL_HOST:localhost}"
