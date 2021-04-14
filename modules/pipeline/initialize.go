@@ -51,6 +51,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -177,6 +178,9 @@ func do() (*httpserver.Server, error) {
 
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
+
+	// cache lifecycle network hook client information
+	go pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient)
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
