@@ -15,7 +15,7 @@ package metricq
 
 import "testing"
 
-func TestInterpolateParams(t *testing.T) {
+func TestBuildStatement(t *testing.T) {
 	type args struct {
 		query string
 		args  []interface{}
