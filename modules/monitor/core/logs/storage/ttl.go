@@ -38,7 +38,7 @@ type mysqlStore struct {
 func (m *mysqlStore) GetSecondByKey(key string) int {
 	m.mu.RLock()
 	ttl, ok := m.ttlValue[key]
-	m.mu.Unlock()
+	m.mu.RUnlock()
 	if ok {
 		return ttl
 	}

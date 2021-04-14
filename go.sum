@@ -350,8 +350,8 @@ github.com/emicklei/go-restful v2.9.5+incompatible h1:spTtZBk5DYEvbxMVutUuTyh1Ao
 github.com/emicklei/go-restful v2.9.5+incompatible/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
-github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474 h1:1xRoY/9z6tlgkZgfnUsEAtZJ5ljakVaqCAynP4UifBA=
-github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474/go.mod h1:1pEYBE/uOzW4h5m+cd6EWycGcJo5oSZGVRTKAv/k1sY=
+github.com/erda-project/erda-infra v0.0.0-20210410061725-e0fa1322ef38 h1:ijkJLI9U7yiHyrFbaXKywp9QgVuDFQJD07pRkIBosP0=
+github.com/erda-project/erda-infra v0.0.0-20210410061725-e0fa1322ef38/go.mod h1:ypd23/X24n98Y0sOmFWGZPJQSmD9ywTJUX7bx+nzluY=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 h1:Yzb9+7DPaBjB8zlTR87/ElzFsnQfuHnVUVqpZZIcV5Y=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
 github.com/euank/go-kmsg-parser v2.0.0+incompatible/go.mod h1:MhmAMZ8V4CYH4ybgdRwPr2TU5ThnS43puaKEMpja1uw=

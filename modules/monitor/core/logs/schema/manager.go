@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/gocql/gocql"
@@ -35,13 +36,9 @@ const (
 
 var bdl = bundle.New(bundle.WithCMDB())
 
-type config struct {
-	OrgRefreshInterval time.Duration `file:"org_refresh_interval" default:"10m" env:"CASSANDRA_MANAGER_ORG_REFRESH_INTERVAL"`
-}
-
 type LogSchema interface {
 	Name() string
-	RunDaemon(ctx context.Context, interval time.Duration)
+	RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface)
 }
 
 type CassandraSchema struct {
@@ -51,7 +48,7 @@ type CassandraSchema struct {
 	lastOrgList    []string
 }
 
-func NewCassandraSchema(cass cassandra.Interface, l logs.Logger) (LogSchema, error) {
+func NewCassandraSchema(cass cassandra.Interface, l logs.Logger) (*CassandraSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
 	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
@@ -73,17 +70,35 @@ func (cs *CassandraSchema) Name() string {
 	return "schema with Cassandra"
 }
 
-func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration) {
+func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	mu, err := muInf.New(ctx, "logs_store")
+	if err != nil {
+		cs.Logger.Errorf("create mu failed, err: %s", err)
+	}
+	defer mu.Close()
+
 	for {
+		if err := mu.Lock(ctx); err != nil {
+			cs.Logger.Errorf("lock failed, err: %s", err)
+			continue
+		}
+
+		err = cs.compareOrUpdate()
+		if err != nil {
+			cs.Logger.Errorf("refresh org info or keyspaces failed. err: %s", err)
+			continue
+		}
+
+		cs.Logger.Debug("load CassandraSchema success")
+		_ = mu.Unlock(ctx)
+
 		select {
 		case <-ticker.C:
-			err := cs.compareOrUpdate()
-			if err != nil {
-				cs.Logger.Errorf("refresh org info or keyspaces failed. err: %s", err)
-			}
+			continue
 		case <-ctx.Done():
+			return
 		}
 	}
 }
