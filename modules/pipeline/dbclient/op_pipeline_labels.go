@@ -50,9 +50,10 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 	labels := make([]spec.PipelineLabel, 0, len(p.Labels))
 	for k, v := range p.Labels {
 		label := spec.PipelineLabel{
+			Type:            apistructs.PipelineLabelTypeInstance,
 			PipelineSource:  p.PipelineSource,
 			PipelineYmlName: p.PipelineYmlName,
-			PipelineID:      p.ID,
+			TargetID:        p.ID,
 			Key:             k,
 			Value:           v,
 		}
@@ -68,16 +69,16 @@ func (client *Client) ListLabelsByPipelineID(pipelineID uint64, ops ...SessionOp
 	defer session.Close()
 
 	var labels []spec.PipelineLabel
-	if err := session.Find(&labels, spec.PipelineLabel{PipelineID: pipelineID}); err != nil {
+	if err := session.Find(&labels, spec.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID}); err != nil {
 		return nil, err
 	}
 	return labels, nil
 }
 
-func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectByLabelRequest, ops ...SessionOption) (pipelineIDs []uint64, err error) {
+func (client *Client) SelectTargetIDsByLabels(req apistructs.TargetIDSelectByLabelRequest, ops ...SessionOption) (targetIDs []uint64, err error) {
 	defer func() {
 		if err != nil {
-			err = errors.Errorf("failed to get pipelineIDs match by labels, req: %+v, err: %v", req, err)
+			err = errors.Errorf("failed to get targetIDs match by labels, req: %+v, err: %v", req, err)
 		}
 	}()
 
@@ -85,6 +86,9 @@ func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectB
 	defer session.Close()
 
 	// 校验
+	if !req.Type.Valid() {
+		return nil, fmt.Errorf("type must be specified")
+	}
 	if len(req.PipelineSources) == 0 {
 		req.PipelineSources = []apistructs.PipelineSource{apistructs.PipelineSourceDefault}
 	}
@@ -94,17 +98,17 @@ func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectB
 	if len(req.MustMatchLabels) > 0 && len(req.AnyMatchLabels) > 0 {
 		return nil, errors.Errorf("please only set one of mustMatchLabels and anyMatchLabels")
 	}
-	if len(req.MustMatchLabels) == 0 && len(req.AnyMatchLabels) == 0 {
+	if !req.AllowNoMatchLabels && (len(req.MustMatchLabels) == 0 && len(req.AnyMatchLabels) == 0) {
 		return nil, errors.Errorf("neither mustMathLabels nor anyMathLabels set")
 	}
 
 	// SQL
 	sqlSegments := []string{
-		"SELECT `pipeline_id` FROM `pipeline_labels`",
-		"FORCE INDEX (`idx_source_key_value_pipelineid`, `idx_source_ymlname_key_value_pipelineid`)",
-		"WHERE 1=1",
+		"SELECT `target_id` FROM `pipeline_labels`",
+		"FORCE INDEX (`idx_type_source_key_value_targetid`, `idx_type_source_ymlname_key_value_targetid`)",
+		"WHERE `type` = ?",
 	}
-	sqlArgs := []interface{}{}
+	sqlArgs := []interface{}{req.Type}
 
 	// segment: pipeline_source
 	if len(req.PipelineSources) > 0 {
@@ -127,7 +131,7 @@ func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectB
 	var handleResult []uint64
 
 	if len(req.MustMatchLabels) > 0 {
-		var allNeedFilterPipelineIDs [][]uint64
+		var allNeedFilterTargetIDs [][]uint64
 		for key, values := range req.MustMatchLabels {
 			if len(values) == 0 {
 				continue
@@ -143,13 +147,13 @@ func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectB
 			if err != nil {
 				return nil, err
 			}
-			allNeedFilterPipelineIDs = append(allNeedFilterPipelineIDs, innerPipelineIDs)
+			allNeedFilterTargetIDs = append(allNeedFilterTargetIDs, innerPipelineIDs)
 		}
-		handleResult = filter(allNeedFilterPipelineIDs...)
+		handleResult = filter(allNeedFilterTargetIDs...)
 	}
 
 	if len(req.AnyMatchLabels) > 0 {
-		var allNeedMergePipelineIDs [][]uint64
+		var allNeedMergeTargetIDs [][]uint64
 		for key, values := range req.AnyMatchLabels {
 			if len(values) == 0 {
 				continue
@@ -165,23 +169,23 @@ func (client *Client) SelectPipelineIDsByLabels(req apistructs.PipelineIDSelectB
 			if err != nil {
 				return nil, err
 			}
-			allNeedMergePipelineIDs = append(allNeedMergePipelineIDs, innerPipelineIDs)
+			allNeedMergeTargetIDs = append(allNeedMergeTargetIDs, innerPipelineIDs)
 		}
-		handleResult = merge(allNeedMergePipelineIDs...)
+		handleResult = merge(allNeedMergeTargetIDs...)
 	}
 
-	pipelineIDs = handleResult
+	targetIDs = handleResult
 
-	// ORDER BY `pipeline_id` DESC / ASC
-	if req.OrderByPipelineIDASC {
+	// ORDER BY `target_id` DESC / ASC
+	if req.OrderByTargetIDAsc {
 		// ASC
-		sort.Slice(pipelineIDs, func(i, j int) bool { return pipelineIDs[i] < pipelineIDs[j] })
+		sort.Slice(targetIDs, func(i, j int) bool { return targetIDs[i] < targetIDs[j] })
 	} else {
 		// DESC
-		sort.Slice(pipelineIDs, func(i, j int) bool { return pipelineIDs[i] > pipelineIDs[j] })
+		sort.Slice(targetIDs, func(i, j int) bool { return targetIDs[i] > targetIDs[j] })
 	}
 
-	return pipelineIDs, nil
+	return targetIDs, nil
 }
 
 func (client *Client) DeletePipelineLabelsByPipelineID(pipelineID uint64, ops ...SessionOption) error {
@@ -189,7 +193,7 @@ func (client *Client) DeletePipelineLabelsByPipelineID(pipelineID uint64, ops ..
 	defer session.Close()
 
 	return retry.DoWithInterval(func() error {
-		_, err := session.Delete(&spec.PipelineLabel{PipelineID: pipelineID})
+		_, err := session.Delete(&spec.PipelineLabel{Type: apistructs.PipelineLabelTypeInstance, TargetID: pipelineID})
 		return err
 	}, 3, time.Second)
 }
@@ -280,22 +284,22 @@ func questionMarks(length int) string {
 	return strutil.Join(result, ",")
 }
 
-func (client *Client) ListPipelineLabelsByPipelineIDs(pipelineIDs []uint64, ops ...SessionOption) (map[uint64][]spec.PipelineLabel, error) {
+func (client *Client) ListPipelineLabelsByTypeAndTargetIDs(_type apistructs.PipelineLabelType, targetIDs []uint64, ops ...SessionOption) (map[uint64][]spec.PipelineLabel, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	var labels []spec.PipelineLabel
-	if err := session.In("pipeline_id", pipelineIDs).Find(&labels); err != nil {
+	if err := session.Where("type = ?", _type).In("target_id", targetIDs).Find(&labels); err != nil {
 		return nil, err
 	}
 
 	pipelineLabelsMap := make(map[uint64][]spec.PipelineLabel)
 	for _, label := range labels {
-		_, ok := pipelineLabelsMap[label.PipelineID]
+		_, ok := pipelineLabelsMap[label.TargetID]
 		if !ok {
-			pipelineLabelsMap[label.PipelineID] = make([]spec.PipelineLabel, 0)
+			pipelineLabelsMap[label.TargetID] = make([]spec.PipelineLabel, 0)
 		}
-		pipelineLabelsMap[label.PipelineID] = append(pipelineLabelsMap[label.PipelineID], label)
+		pipelineLabelsMap[label.TargetID] = append(pipelineLabelsMap[label.TargetID], label)
 	}
 
 	return pipelineLabelsMap, nil

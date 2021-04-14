@@ -62,7 +62,7 @@ type ContextBundle struct {
 // scenario name: scenario default protocol
 var DefaultProtocols = make(map[string]apistructs.ComponentProtocol)
 
-// default path: libs/dice-configs/permission
+// default path: libs/erda-configs/permission
 func InitDefaultCompProtocols(path string) {
 	var err error
 	defer func() {

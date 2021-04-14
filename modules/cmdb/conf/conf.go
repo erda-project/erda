@@ -61,7 +61,6 @@ type Conf struct {
 	UIDomain              string        `env:"UI_PUBLIC_ADDR"`
 	OpenAPIDomain         string        `env:"OPENAPI_PUBLIC_ADDR"` // Deprecated: after cli refactored
 	AvatarStorageURL      string        `env:"AVATAR_STORAGE_URL"`  // file:///avatars or oss://appkey:appsecret@endpoint/bucket
-	SelfAddr              string        `env:"SELF_ADDR"`
 	LicenseKey            string        `env:"LICENSE_KEY"`
 	HostSyncInterval      time.Duration `env:"INTERVAL" default:"2m"`                    // 主机实际资源使用同步间隔
 	TaskSyncDuration      time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`          // 任务状态信息同步间隔
@@ -74,7 +73,7 @@ type Conf struct {
 	RedisAddr             string        `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
 	RedisPwd              string        `default:"anywhere" env:"REDIS_PASSWORD"`
 	ProjectStatsCacheCron string        `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
-	EnableProjectNS       bool          `env:"ENABLE_PROJECT_NS" default:"false"`
+	EnableProjectNS       bool          `env:"ENABLE_PROJECT_NS" default:"true"`
 
 	// --- 文件管理 begin ---
 	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
@@ -115,11 +114,11 @@ var (
 )
 
 func initPermissions() {
-	permissions = getAllFiles("dice-configs/permission", permissions)
+	permissions = getAllFiles("erda-configs/permission", permissions)
 }
 
 func initAuditTemplate() {
-	auditsTemplate = genTempFromFiles("dice-configs/audit/template.json")
+	auditsTemplate = genTempFromFiles("erda-configs/audit/template.json")
 }
 
 func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
@@ -356,11 +355,6 @@ func OpenAPIDomain() string {
 // AvatarStorageURL 返回 OSSUsage 选项
 func AvatarStorageURL() string {
 	return cfg.AvatarStorageURL
-}
-
-// SelfAddr 返回 SelfAddr 选项.
-func SelfAddr() string {
-	return cfg.SelfAddr
 }
 
 // LicenseKey 返回 LicenseKey 选项.

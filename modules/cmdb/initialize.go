@@ -71,6 +71,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/publisher"
 	"github.com/erda-project/erda/modules/cmdb/services/ticket"
 	"github.com/erda-project/erda/modules/cmdb/utils"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/encryption"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/httpserver"
@@ -99,10 +100,10 @@ func Initialize() error {
 
 	// TODO:
 	// 启动消费者协程，用于消费 kafka 消息
-	go func() {
-		logrus.Info("start Consumer....")
-		ep.Consumer()
-	}()
+	// go func() {
+	// 	logrus.Info("start Consumer....")
+	// 	ep.Consumer()
+	// }()
 
 	go runContainerGC(ep.DBClient())
 
@@ -580,7 +581,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	ev := apistructs.CreateHookRequest{
 		Name:   "cmdb_pipeline_tasks",
 		Events: []string{"pipeline_task", "pipeline_task_runtime"},
-		URL:    strutil.Concat("http://", conf.SelfAddr(), "/api/tasks"),
+		URL:    strutil.Concat("http://", discover.CMDB(), "/api/tasks"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",
@@ -596,7 +597,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	ev = apistructs.CreateHookRequest{
 		Name:   "cmdb_approve_status_changed",
 		Events: []string{bundle.ApprovalStatusChangedEvent},
-		URL:    strutil.Concat("http://", conf.SelfAddr(), "/api/approvals/actions/watch-status"),
+		URL:    strutil.Concat("http://", discover.CMDB(), "/api/approvals/actions/watch-status"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",

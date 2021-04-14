@@ -242,11 +242,12 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 			return match
 		}
 		if defaultValue != nil && (priorUseDefault || findValue == nil) {
-			value = defaultValue
+			// delete ":"
+			value = defaultValue[1:]
 		} else {
 			value = findValue
 		}
-		return []byte(strings.TrimSpace(string(value[1:])))
+		return []byte(strings.TrimSpace(string(value)))
 	}), nil
 
 }
