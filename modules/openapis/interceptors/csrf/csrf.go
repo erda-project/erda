@@ -11,5 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// some tools in this package
-package tools
+package csrf
+
+import "net/http"
+
+// Interceptor .
+func Interceptor(h http.HandlerFunc) http.HandlerFunc {
+	// TODO .
+	return h
+}
