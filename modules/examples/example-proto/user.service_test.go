@@ -91,23 +91,21 @@ func Test_userService_UpdateUser(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.example.UserService",
-			`
-erda.example:
-`,
-			args{
-				context.TODO(),
-				&pb.GetUserRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.UpdateUserResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		// {
+		// 	"case 1",
+		// 	"erda.example.UserService",
+		// 	`erda.example:`,
+		// 	args{
+		// 		context.TODO(),
+		// 		&pb.GetUserRequest{
+		// 			// TODO: setup fields
+		// 		},
+		// 	},
+		// 	&pb.UpdateUserResponse{
+		// 		// TODO: setup fields.
+		// 	},
+		// 	false,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
