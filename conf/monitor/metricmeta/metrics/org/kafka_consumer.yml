@@ -1,0 +1,46 @@
+name: "Kafka Consumer"
+tags:
+    addon_id:
+        name: "Addon ID"
+    addon_type:
+        name: "Addon Type"
+    cluster_name:
+        name: "Cluster Name"
+    component_name:
+        name: "Component Name"
+    group:
+        name: "Group"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    org_name:
+        name: "Org Name"
+    topic:
+        name: "Topic"
+fields:
+    consume_rate_per_sec:
+        type: "number"
+        name: "Consume Rate Per Sec"
+        uint: 
+    lag:
+        type: "number"
+        name: "Lag"
+        uint: 
+    log_size:
+        type: "number"
+        name: "Log Size"
+        uint: 
+    offset:
+        type: "number"
+        name: "Offset"
+        uint: 
+    partitions:
+        type: "number"
+        name: "Partitions"
+        uint: 
+    produce_rate_per_sec:
+        type: "number"
+        name: "Produce Rate Per Sec"
+        uint: 
+
