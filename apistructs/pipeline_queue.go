@@ -20,6 +20,8 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const PreCheckResultContextKey = "precheck_result"
+
 type PipelineQueueMode string
 
 var (
@@ -252,8 +254,13 @@ func (req *PipelineQueueUpdateRequest) Validate() error {
 
 // PipelineQueueValidateResult represents queue validate result.
 type PipelineQueueValidateResult struct {
-	Success bool   `json:"success"`
-	Reason  string `json:"reason"`
+	Success     bool                      `json:"success"`
+	Reason      string                    `json:"reason"`
+	RetryOption *QueueValidateRetryOption `json:"retryOption"`
+}
+
+type QueueValidateRetryOption struct {
+	IntervalSecond uint64 `json:"intervalSecond"`
 }
 
 func (r PipelineQueueValidateResult) IsSuccess() bool {
