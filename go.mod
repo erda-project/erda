@@ -30,7 +30,7 @@ require (
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
-	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa // indirect
+	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -39,6 +39,7 @@ require (
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210409065408-aba40978f474
+	github.com/erda-project/erda-proto-go v0.0.0-20210413092715-491fb6350e91
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -85,7 +86,6 @@ require (
 	github.com/lib/pq v1.3.0 // indirect
 	github.com/libgit2/git2go/v28 v28.4.0
 	github.com/magiconair/properties v1.8.4
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mholt/archiver v2.1.0+incompatible
@@ -96,8 +96,6 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
-	github.com/onsi/ginkgo v1.15.2 // indirect
-	github.com/onsi/gomega v1.11.0 // indirect
 	github.com/otiai10/copy v1.5.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -142,6 +140,7 @@ require (
 	golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750 // indirect
 	golang.org/x/text v0.3.5
 	golang.org/x/tools v0.1.0 // indirect
+	google.golang.org/grpc v1.31.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
@@ -164,14 +163,14 @@ require (
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
 	moul.io/http2curl v1.0.0 // indirect
 	sigs.k8s.io/controller-runtime v0.6.0
-	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0 // indirect
+	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/influxdata/influxql => ./third_party/influxql
+	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 

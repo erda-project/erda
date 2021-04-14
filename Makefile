@@ -112,6 +112,22 @@ run-g: build
 run-ps: build
 	./bin/${APP_NAME} --providers
 
+# normalize all go files before push to git repo
+normalize:
+	@go mod tidy
+	@echo "run gofmt && goimports && golint ..."
+	@if [ -z "$$MODULE_PATH" ]; then \
+		MODULE_PATH=.; \
+	fi; \
+	cd $${MODULE_PATH}; \
+	go test -test.timeout=10s ./...; \
+	GOFILES=$$(find . -name "*.go"); \
+	for path in $${GOFILES}; do \
+	 	gofmt -w -l $${path}; \
+	  	goimports -w -l $${path}; \
+	  	golint -set_exit_status=1 $${path}; \
+	done;
+
 # docker image
 build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
@@ -122,3 +138,6 @@ build-push-image: build-image push-image
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
+# init module from *.proto directory
+init-module:
+	@./build/scripts/protoc.sh ${MODULE_PATH} ${PB_PATH}

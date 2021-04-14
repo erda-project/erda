@@ -16,9 +16,11 @@ package main
 import (
 	"github.com/erda-project/erda-infra/modcom"
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/example"
+	_ "github.com/erda-project/erda-proto-go/examples/client"
+	_ "github.com/erda-project/erda/modules/examples/example-http"
+	_ "github.com/erda-project/erda/modules/examples/example-proto"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/example", "example")
+	modcom.RunWithCfgDir("conf/examples", "examples")
 }

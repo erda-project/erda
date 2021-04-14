@@ -17,6 +17,7 @@
 package example
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -26,39 +27,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
-// define Represents the definition of provider and provides some information
-type define struct{}
-
-// Declare what services the provider provides
-func (d *define) Services() []string { return []string{"example"} }
-
-// Declare which services the provider depends on
-func (d *define) Dependencies() []string { return []string{"http-server"} }
-
-// Describe information about this provider
-func (d *define) Description() string { return "example" }
-
-// Return an instance representing the configuration
-func (d *define) Config() interface{} { return &config{} }
-
-// Return a provider creator
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{
-			closeCh: make(chan struct{}),
-		}
-	}
-}
-
 type config struct {
 	Message  string        `file:"message" flag:"msg" default:"hi" desc:"message for example"`
 	Interval time.Duration `file:"interval" flag:"interval" default:"3s" desc:"interval to print message"`
 }
 
 type provider struct {
-	C       *config     // auto inject this field
-	L       logs.Logger // auto inject this field
-	closeCh chan struct{}
+	Cfg *config     // auto inject this field
+	Log logs.Logger // auto inject this field
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -82,26 +58,30 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) Start() error {
-	p.L.Info("example provider is running...")
-	tick := time.Tick(10 * time.Second)
+func (p *provider) Run(ctx context.Context) error {
+	p.Log.Info("example provider is running...")
+	tick := time.Tick(p.Cfg.Interval)
 	for {
 		select {
 		case <-tick:
 			// do something
-			p.L.Info("message: ", p.C.Message)
-		case <-p.closeCh:
+			p.Log.Info("message: ", p.Cfg.Message)
+		case <-ctx.Done():
 			return nil
 		}
 	}
 }
 
-func (p *provider) Close() error {
-	p.L.Info("example provider is closing...")
-	close(p.closeCh)
-	return nil
-}
-
 func init() {
-	servicehub.RegisterProvider("example", &define{})
+	servicehub.Register("erda.example.http", &servicehub.Spec{
+		Services:     []string{"erda.example.http"},
+		Dependencies: []string{"http-server"},
+		Description:  "example provider",
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
