@@ -1,0 +1,298 @@
+name: "Summary Docker Container Mem"
+tags:
+    cluster_name:
+        name: "Cluster Name"
+    host_ip:
+        name: "Host IP"
+    org_name:
+        name: "Org Name"
+fields:
+    Mobil-Demo_addon:
+        type: "number"
+        name: "Mobil- Demo Addon"
+        uint: 
+    Mobil-Demo_addon_allocation:
+        type: "number"
+        name: "Mobil- Demo Addon Allocation"
+        uint: 
+    Mobil-Demo_component:
+        type: "number"
+        name: "Mobil- Demo Component"
+        uint: 
+    Mobil-Demo_component_allocation:
+        type: "number"
+        name: "Mobil- Demo Component Allocation"
+        uint: 
+    Mobil-Demo_job:
+        type: "number"
+        name: "Mobil- Demo Job"
+        uint: 
+    Mobil-Demo_job_allocation:
+        type: "number"
+        name: "Mobil- Demo Job Allocation"
+        uint: 
+    Mobil-Demo_service:
+        type: "number"
+        name: "Mobil- Demo Service"
+        uint: 
+    Mobil-Demo_service_allocation:
+        type: "number"
+        name: "Mobil- Demo Service Allocation"
+        uint: 
+    addon:
+        type: "number"
+        name: "Addon"
+        uint: 
+    addon_allocation:
+        type: "number"
+        name: "Addon Allocation"
+        uint: 
+    component:
+        type: "number"
+        name: "Component"
+        uint: 
+    component_allocation:
+        type: "number"
+        name: "Component Allocation"
+        uint: 
+    deqin_addon:
+        type: "number"
+        name: "Deqin Addon"
+        uint: 
+    deqin_addon_allocation:
+        type: "number"
+        name: "Deqin Addon Allocation"
+        uint: 
+    deqin_component:
+        type: "number"
+        name: "Deqin Component"
+        uint: 
+    deqin_component_allocation:
+        type: "number"
+        name: "Deqin Component Allocation"
+        uint: 
+    deqin_job:
+        type: "number"
+        name: "Deqin Job"
+        uint: 
+    deqin_job_allocation:
+        type: "number"
+        name: "Deqin Job Allocation"
+        uint: 
+    deqin_service:
+        type: "number"
+        name: "Deqin Service"
+        uint: 
+    deqin_service_allocation:
+        type: "number"
+        name: "Deqin Service Allocation"
+        uint: 
+    icsms_addon:
+        type: "number"
+        name: "Icsms Addon"
+        uint: 
+    icsms_addon_allocation:
+        type: "number"
+        name: "Icsms Addon Allocation"
+        uint: 
+    icsms_component:
+        type: "number"
+        name: "Icsms Component"
+        uint: 
+    icsms_component_allocation:
+        type: "number"
+        name: "Icsms Component Allocation"
+        uint: 
+    icsms_job:
+        type: "number"
+        name: "Icsms Job"
+        uint: 
+    icsms_job_allocation:
+        type: "number"
+        name: "Icsms Job Allocation"
+        uint: 
+    icsms_service:
+        type: "number"
+        name: "Icsms Service"
+        uint: 
+    icsms_service_allocation:
+        type: "number"
+        name: "Icsms Service Allocation"
+        uint: 
+    innshine_addon:
+        type: "number"
+        name: "Innshine Addon"
+        uint: 
+    innshine_addon_allocation:
+        type: "number"
+        name: "Innshine Addon Allocation"
+        uint: 
+    innshine_component:
+        type: "number"
+        name: "Innshine Component"
+        uint: 
+    innshine_component_allocation:
+        type: "number"
+        name: "Innshine Component Allocation"
+        uint: 
+    innshine_job:
+        type: "number"
+        name: "Innshine Job"
+        uint: 
+    innshine_job_allocation:
+        type: "number"
+        name: "Innshine Job Allocation"
+        uint: 
+    innshine_service:
+        type: "number"
+        name: "Innshine Service"
+        uint: 
+    innshine_service_allocation:
+        type: "number"
+        name: "Innshine Service Allocation"
+        uint: 
+    isv-bjyn_addon:
+        type: "number"
+        name: "Isv-Bjyn Addon"
+        uint: 
+    isv-bjyn_addon_allocation:
+        type: "number"
+        name: "Isv-Bjyn Addon Allocation"
+        uint: 
+    isv-bjyn_component:
+        type: "number"
+        name: "Isv-Bjyn Component"
+        uint: 
+    isv-bjyn_component_allocation:
+        type: "number"
+        name: "Isv-Bjyn Component Allocation"
+        uint: 
+    isv-bjyn_job:
+        type: "number"
+        name: "Isv-Bjyn Job"
+        uint: 
+    isv-bjyn_job_allocation:
+        type: "number"
+        name: "Isv-Bjyn Job Allocation"
+        uint: 
+    isv-bjyn_service:
+        type: "number"
+        name: "Isv-Bjyn Service"
+        uint: 
+    isv-bjyn_service_allocation:
+        type: "number"
+        name: "Isv-Bjyn Service Allocation"
+        uint: 
+    isv-zhenzhi_addon:
+        type: "number"
+        name: "Isv-Zhenzhi Addon"
+        uint: 
+    isv-zhenzhi_addon_allocation:
+        type: "number"
+        name: "Isv-Zhenzhi Addon Allocation"
+        uint: 
+    isv-zhenzhi_component:
+        type: "number"
+        name: "Isv-Zhenzhi Component"
+        uint: 
+    isv-zhenzhi_component_allocation:
+        type: "number"
+        name: "Isv-Zhenzhi Component Allocation"
+        uint: 
+    isv-zhenzhi_job:
+        type: "number"
+        name: "Isv-Zhenzhi Job"
+        uint: 
+    isv-zhenzhi_job_allocation:
+        type: "number"
+        name: "Isv-Zhenzhi Job Allocation"
+        uint: 
+    isv-zhenzhi_service:
+        type: "number"
+        name: "Isv-Zhenzhi Service"
+        uint: 
+    isv-zhenzhi_service_allocation:
+        type: "number"
+        name: "Isv-Zhenzhi Service Allocation"
+        uint: 
+    job:
+        type: "number"
+        name: "Job"
+        uint: 
+    job_allocation:
+        type: "number"
+        name: "Job Allocation"
+        uint: 
+    service:
+        type: "number"
+        name: "Service"
+        uint: 
+    service_allocation:
+        type: "number"
+        name: "Service Allocation"
+        uint: 
+    terminus_addon:
+        type: "number"
+        name: "Terminus Addon"
+        uint: 
+    terminus_addon_allocation:
+        type: "number"
+        name: "Terminus Addon Allocation"
+        uint: 
+    terminus_component:
+        type: "number"
+        name: "Terminus Component"
+        uint: 
+    terminus_component_allocation:
+        type: "number"
+        name: "Terminus Component Allocation"
+        uint: 
+    terminus_job:
+        type: "number"
+        name: "Terminus Job"
+        uint: 
+    terminus_job_allocation:
+        type: "number"
+        name: "Terminus Job Allocation"
+        uint: 
+    terminus_service:
+        type: "number"
+        name: "Terminus Service"
+        uint: 
+    terminus_service_allocation:
+        type: "number"
+        name: "Terminus Service Allocation"
+        uint: 
+    trial_addon:
+        type: "number"
+        name: "Trial Addon"
+        uint: 
+    trial_addon_allocation:
+        type: "number"
+        name: "Trial Addon Allocation"
+        uint: 
+    trial_component:
+        type: "number"
+        name: "Trial Component"
+        uint: 
+    trial_component_allocation:
+        type: "number"
+        name: "Trial Component Allocation"
+        uint: 
+    trial_job:
+        type: "number"
+        name: "Trial Job"
+        uint: 
+    trial_job_allocation:
+        type: "number"
+        name: "Trial Job Allocation"
+        uint: 
+    trial_service:
+        type: "number"
+        name: "Trial Service"
+        uint: 
+    trial_service_allocation:
+        type: "number"
+        name: "Trial Service Allocation"
+        uint: 
+

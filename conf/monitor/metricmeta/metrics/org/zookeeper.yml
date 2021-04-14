@@ -1,0 +1,92 @@
+name: "Zookeeper"
+tags:
+    addon_id:
+        name: "Addon ID"
+    addon_type:
+        name: "Addon Type"
+    cluster_name:
+        name: "Cluster Name"
+    component_name:
+        name: "Component Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    org_name:
+        name: "Org Name"
+    port:
+        name: "Port"
+    server:
+        name: "Server"
+    state:
+        name: "State"
+fields:
+    approximate_data_size:
+        type: "number"
+        name: "Approximate Data Size"
+        uint: 
+    avg_latency:
+        type: "number"
+        name: "Avg Latency"
+        uint: 
+    ephemerals_count:
+        type: "number"
+        name: "Ephemerals Count"
+        uint: 
+    followers:
+        type: "number"
+        name: "Followers"
+        uint: 
+    max_file_descriptor_count:
+        type: "number"
+        name: "Maximum File Descriptor Count"
+        uint: 
+    max_latency:
+        type: "number"
+        name: "Maximum Latency"
+        uint: 
+    min_latency:
+        type: "number"
+        name: "Minimum Latency"
+        uint: 
+    num_alive_connections:
+        type: "number"
+        name: "Num Alive Connections"
+        uint: 
+    open_file_descriptor_count:
+        type: "number"
+        name: "Open File Descriptor Count"
+        uint: 
+    outstanding_requests:
+        type: "number"
+        name: "Outstanding Requests"
+        uint: 
+    packets_received:
+        type: "number"
+        name: "Packets Received"
+        uint: 
+    packets_sent:
+        type: "number"
+        name: "Packets Sent"
+        uint: 
+    pending_syncs:
+        type: "number"
+        name: "Pending Syncs"
+        uint: 
+    synced_followers:
+        type: "number"
+        name: "Synced Followers"
+        uint: 
+    version:
+        type: "string"
+        name: "Version"
+        uint: 
+    watch_count:
+        type: "number"
+        name: "Watch Count"
+        uint: 
+    znode_count:
+        type: "number"
+        name: "Znode Count"
+        uint: 
+

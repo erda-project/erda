@@ -1,0 +1,118 @@
+name: "Elasticsearch Fs"
+tags:
+    addon_id:
+        name: "Addon ID"
+    addon_type:
+        name: "Addon Type"
+    cluster_name:
+        name: "Cluster Name"
+    component_name:
+        name: "Component Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    node_host:
+        name: "Node Host"
+    node_id:
+        name: "Node ID"
+    node_name:
+        name: "Node Name"
+    node_roles:
+        name: "Node Roles"
+    org_name:
+        name: "Org Name"
+fields:
+    data_0_available_in_bytes:
+        type: "number"
+        name: "Data 0 Available In Bytes"
+        uint: 
+    data_0_free_in_bytes:
+        type: "number"
+        name: "Data 0 Free In Bytes"
+        uint: 
+    data_0_total_in_bytes:
+        type: "number"
+        name: "Data 0 Total In Bytes"
+        uint: 
+    io_stats_devices_0_operations:
+        type: "number"
+        name: "Io Stats Devices 0 Operations"
+        uint: 
+    io_stats_devices_0_read_kilobytes:
+        type: "number"
+        name: "Io Stats Devices 0 Read Kilobytes"
+        uint: 
+    io_stats_devices_0_read_operations:
+        type: "number"
+        name: "Io Stats Devices 0 Read Operations"
+        uint: 
+    io_stats_devices_0_write_kilobytes:
+        type: "number"
+        name: "Io Stats Devices 0 Write Kilobytes"
+        uint: 
+    io_stats_devices_0_write_operations:
+        type: "number"
+        name: "Io Stats Devices 0 Write Operations"
+        uint: 
+    io_stats_total_operations:
+        type: "number"
+        name: "Io Stats Total Operations"
+        uint: 
+    io_stats_total_read_kilobytes:
+        type: "number"
+        name: "Io Stats Total Read Kilobytes"
+        uint: 
+    io_stats_total_read_operations:
+        type: "number"
+        name: "Io Stats Total Read Operations"
+        uint: 
+    io_stats_total_write_kilobytes:
+        type: "number"
+        name: "Io Stats Total Write Kilobytes"
+        uint: 
+    io_stats_total_write_operations:
+        type: "number"
+        name: "Io Stats Total Write Operations"
+        uint: 
+    least_usage_estimate_available_in_bytes:
+        type: "number"
+        name: "Least Usage Estimate Available In Bytes"
+        uint: 
+    least_usage_estimate_total_in_bytes:
+        type: "number"
+        name: "Least Usage Estimate Total In Bytes"
+        uint: 
+    least_usage_estimate_used_disk_percent:
+        type: "number"
+        name: "Least Usage Estimate Used Disk Percent"
+        uint: 
+    most_usage_estimate_available_in_bytes:
+        type: "number"
+        name: "Most Usage Estimate Available In Bytes"
+        uint: 
+    most_usage_estimate_total_in_bytes:
+        type: "number"
+        name: "Most Usage Estimate Total In Bytes"
+        uint: 
+    most_usage_estimate_used_disk_percent:
+        type: "number"
+        name: "Most Usage Estimate Used Disk Percent"
+        uint: 
+    timestamp:
+        type: "number"
+        name: "Timestamp"
+        uint: 
+    total_available_in_bytes:
+        type: "number"
+        name: "Total Available In Bytes"
+        uint: 
+    total_free_in_bytes:
+        type: "number"
+        name: "Total Free In Bytes"
+        uint: 
+    total_total_in_bytes:
+        type: "number"
+        name: "Total Total In Bytes"
+        uint: 
+

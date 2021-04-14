@@ -1,0 +1,58 @@
+name: "Diskio"
+tags:
+    cluster_name:
+        name: "Cluster Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    name:
+        name: "Name"
+    org_name:
+        name: "Org Name"
+fields:
+    io_time:
+        type: "number"
+        name: "IO Time"
+        uint: 
+    iops_in_progress:
+        type: "number"
+        name: "IOPS In Progress"
+        uint: 
+    read_bytes:
+        type: "number"
+        name: "Read Bytes"
+        uint: 
+    read_rate:
+        type: "number"
+        name: "Read Rate"
+        uint: 
+    read_time:
+        type: "number"
+        name: "Read Time"
+        uint: 
+    reads:
+        type: "number"
+        name: "Reads"
+        uint: 
+    weighted_io_time:
+        type: "number"
+        name: "Weighted IO Time"
+        uint: 
+    write_bytes:
+        type: "number"
+        name: "Write Bytes"
+        uint: 
+    write_rate:
+        type: "number"
+        name: "Write Rate"
+        uint: 
+    write_time:
+        type: "number"
+        name: "Write Time"
+        uint: 
+    writes:
+        type: "number"
+        name: "Writes"
+        uint: 
+

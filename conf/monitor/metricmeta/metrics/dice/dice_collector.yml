@@ -1,0 +1,58 @@
+name: "Dice Collector"
+tags:
+    cluster_name:
+        name: "Cluster Name"
+    cluster_type:
+        name: "Cluster Type"
+    code:
+        name: "Code"
+    component:
+        name: "Component"
+    field:
+        name: "Field"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    is_edge:
+        name: "Is Edge"
+    metric_name:
+        name: "Metric Name"
+    org_name:
+        name: "Org Name"
+    version:
+        name: "Version"
+fields:
+    count:
+        type: "number"
+        name: "Count"
+        uint: 
+    quantile_0:
+        type: "number"
+        name: "Quantile 0"
+        uint: 
+    quantile_0_25:
+        type: "number"
+        name: "Quantile 0 25"
+        uint: 
+    quantile_0_5:
+        type: "number"
+        name: "Quantile 0 5"
+        uint: 
+    quantile_0_75:
+        type: "number"
+        name: "Quantile 0 75"
+        uint: 
+    quantile_1:
+        type: "number"
+        name: "Quantile 1"
+        uint: 
+    sum:
+        type: "number"
+        name: "Sum"
+        uint: 
+    value:
+        type: "number"
+        name: "Value"
+        uint: 
+

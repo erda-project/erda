@@ -1,0 +1,328 @@
+name: "Redis"
+tags:
+    addon_id:
+        name: "Addon ID"
+    cluster_name:
+        name: "Cluster Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    org_name:
+        name: "Org Name"
+    port:
+        name: "Port"
+    replication_role:
+        name: "Replication Role"
+    server:
+        name: "Server"
+fields:
+    aof_base_size:
+        type: "number"
+        name: "Aof Base Size"
+        uint: 
+    aof_buffer_length:
+        type: "number"
+        name: "Aof Buffer Length"
+        uint: 
+    aof_current_rewrite_time_sec:
+        type: "number"
+        name: "Aof Current Rewrite Time Sec"
+        uint: 
+    aof_current_size:
+        type: "number"
+        name: "Aof Current Size"
+        uint: 
+    aof_delayed_fsync:
+        type: "number"
+        name: "Aof Delayed Fsync"
+        uint: 
+    aof_enabled:
+        type: "number"
+        name: "Aof Enabled"
+        uint: 
+    aof_last_bgrewrite_status:
+        type: "string"
+        name: "Aof Last Bgrewrite Status"
+        uint: 
+    aof_last_rewrite_time_sec:
+        type: "number"
+        name: "Aof Last Rewrite Time Sec"
+        uint: 
+    aof_last_write_status:
+        type: "string"
+        name: "Aof Last Write Status"
+        uint: 
+    aof_pending_bio_fsync:
+        type: "number"
+        name: "Aof Pending Bio Fsync"
+        uint: 
+    aof_pending_rewrite:
+        type: "number"
+        name: "Aof Pending Rewrite"
+        uint: 
+    aof_rewrite_buffer_length:
+        type: "number"
+        name: "Aof Rewrite Buffer Length"
+        uint: 
+    aof_rewrite_in_progress:
+        type: "number"
+        name: "Aof Rewrite In Progress"
+        uint: 
+    aof_rewrite_scheduled:
+        type: "number"
+        name: "Aof Rewrite Scheduled"
+        uint: 
+    blocked_clients:
+        type: "number"
+        name: "Blocked Clients"
+        uint: 
+    client_biggest_input_buf:
+        type: "number"
+        name: "Client Biggest Input Buf"
+        uint: 
+    client_longest_output_list:
+        type: "number"
+        name: "Client Longest Output List"
+        uint: 
+    clients:
+        type: "number"
+        name: "Clients"
+        uint: 
+    cluster_enabled:
+        type: "number"
+        name: "Cluster Enabled"
+        uint: 
+    connected_slaves:
+        type: "number"
+        name: "Connected Slaves"
+        uint: 
+    evicted_keys:
+        type: "number"
+        name: "Evicted Keys"
+        uint: 
+    expired_keys:
+        type: "number"
+        name: "Expired Keys"
+        uint: 
+    instantaneous_input_kbps:
+        type: "number"
+        name: "Instantaneous Input Kbps"
+        uint: 
+    instantaneous_ops_per_sec:
+        type: "number"
+        name: "Instantaneous Ops Per Sec"
+        uint: 
+    instantaneous_output_kbps:
+        type: "number"
+        name: "Instantaneous Output Kbps"
+        uint: 
+    keyspace_hitrate:
+        type: "number"
+        name: "Keyspace Hitrate"
+        uint: 
+    keyspace_hits:
+        type: "number"
+        name: "Keyspace Hits"
+        uint: 
+    keyspace_misses:
+        type: "number"
+        name: "Keyspace Misses"
+        uint: 
+    latest_fork_usec:
+        type: "number"
+        name: "Latest Fork Usec"
+        uint: 
+    loading:
+        type: "number"
+        name: "Loading"
+        uint: 
+    lru_clock:
+        type: "number"
+        name: "Lru Clock"
+        uint: 
+    master_host:
+        type: "string"
+        name: "Master Host"
+        uint: 
+    master_last_io_seconds_ago:
+        type: "number"
+        name: "Master Last Io Seconds Ago"
+        uint: 
+    master_link_status:
+        type: "string"
+        name: "Master Link Status"
+        uint: 
+    master_port:
+        type: "number"
+        name: "Master Port"
+        uint: 
+    master_repl_offset:
+        type: "number"
+        name: "Master Repl Offset"
+        uint: 
+    master_sync_in_progress:
+        type: "number"
+        name: "Master Sync In Progress"
+        uint: 
+    maxmemory:
+        type: "number"
+        name: "Maxmemory"
+        uint: 
+    maxmemory_policy:
+        type: "string"
+        name: "Maxmemory Policy"
+        uint: 
+    mem_fragmentation_ratio:
+        type: "number"
+        name: "Memory Fragmentation Ratio"
+        uint: 
+    migrate_cached_sockets:
+        type: "number"
+        name: "Migrate Cached Sockets"
+        uint: 
+    pubsub_channels:
+        type: "number"
+        name: "Pubsub Channels"
+        uint: 
+    pubsub_patterns:
+        type: "number"
+        name: "Pubsub Patterns"
+        uint: 
+    rdb_bgsave_in_progress:
+        type: "number"
+        name: "Rdb Bgsave In Progress"
+        uint: 
+    rdb_changes_since_last_save:
+        type: "number"
+        name: "Rdb Changes Since Last Save"
+        uint: 
+    rdb_current_bgsave_time_sec:
+        type: "number"
+        name: "Rdb Current Bgsave Time Sec"
+        uint: 
+    rdb_last_bgsave_status:
+        type: "string"
+        name: "Rdb Last Bgsave Status"
+        uint: 
+    rdb_last_bgsave_time_sec:
+        type: "number"
+        name: "Rdb Last Bgsave Time Sec"
+        uint: 
+    rdb_last_save_time:
+        type: "number"
+        name: "Rdb Last Save Time"
+        uint: 
+    rdb_last_save_time_elapsed:
+        type: "number"
+        name: "Rdb Last Save Time Elapsed"
+        uint: 
+    redis_version:
+        type: "string"
+        name: "Redis Version"
+        uint: 
+    rejected_connections:
+        type: "number"
+        name: "Rejected Connections"
+        uint: 
+    repl_backlog_active:
+        type: "number"
+        name: "Repl Backlog Active"
+        uint: 
+    repl_backlog_first_byte_offset:
+        type: "number"
+        name: "Repl Backlog First Byte Offset"
+        uint: 
+    repl_backlog_histlen:
+        type: "number"
+        name: "Repl Backlog Histlen"
+        uint: 
+    repl_backlog_size:
+        type: "number"
+        name: "Repl Backlog Size"
+        uint: 
+    slave0:
+        type: "string"
+        name: "Slave0"
+        uint: 
+    slave_priority:
+        type: "number"
+        name: "Slave Priority"
+        uint: 
+    slave_read_only:
+        type: "number"
+        name: "Slave Read Only"
+        uint: 
+    slave_repl_offset:
+        type: "number"
+        name: "Slave Repl Offset"
+        uint: 
+    sync_full:
+        type: "number"
+        name: "Sync Full"
+        uint: 
+    sync_partial_err:
+        type: "number"
+        name: "Sync Partial Err"
+        uint: 
+    sync_partial_ok:
+        type: "number"
+        name: "Sync Partial Ok"
+        uint: 
+    total_commands_processed:
+        type: "number"
+        name: "Total Commands Processed"
+        uint: 
+    total_connections_received:
+        type: "number"
+        name: "Total Connections Received"
+        uint: 
+    total_net_input_bytes:
+        type: "number"
+        name: "Total Net Input Bytes"
+        uint: 
+    total_net_output_bytes:
+        type: "number"
+        name: "Total Net Output Bytes"
+        uint: 
+    total_system_memory:
+        type: "number"
+        name: "Total System Memory"
+        uint: 
+    uptime:
+        type: "number"
+        name: "Uptime"
+        uint: 
+    used_cpu_sys:
+        type: "number"
+        name: "Used CPU Sys"
+        uint: 
+    used_cpu_sys_children:
+        type: "number"
+        name: "Used CPU Sys Children"
+        uint: 
+    used_cpu_user:
+        type: "number"
+        name: "Used CPU User"
+        uint: 
+    used_cpu_user_children:
+        type: "number"
+        name: "Used CPU User Children"
+        uint: 
+    used_memory:
+        type: "number"
+        name: "Used Memory"
+        uint: 
+    used_memory_lua:
+        type: "number"
+        name: "Used Memory Lua"
+        uint: 
+    used_memory_peak:
+        type: "number"
+        name: "Used Memory Peak"
+        uint: 
+    used_memory_rss:
+        type: "number"
+        name: "Used Memory Rss"
+        uint: 
+
