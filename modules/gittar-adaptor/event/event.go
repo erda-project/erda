@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/gittar-adaptor/conf"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 // Event 事件结构体
@@ -76,7 +76,7 @@ func (e *Event) Register(ed *EventData) error {
 
 	e.Events[ed.Name] = &apistructs.GittarRegisterHookRequest{
 		Name:       ed.Name,
-		URL:        fmt.Sprint("http://", conf.SelfAddr(), ed.Path),
+		URL:        fmt.Sprint("http://", discover.GittarAdaptor(), ed.Path),
 		PushEvents: ed.IsPush,
 	}
 

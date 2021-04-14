@@ -118,6 +118,11 @@ func (s *PipelineSvc) validateCreateRequest(req *apistructs.PipelineCreateReques
 			delete(req.Labels, k)
 		}
 	}
+	// bind queue
+	_, err := s.validateQueueFromLabels(req)
+	if err != nil {
+		return apierrors.ErrCreatePipeline.InvalidParameter(err)
+	}
 	return nil
 }
 
@@ -283,6 +288,11 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 				Desc: output.Desc,
 				Ref:  output.Ref,
 			})
+	}
+
+	// queue
+	if req.BindQueue != nil {
+		p.Extra.QueueID = req.BindQueue.ID
 	}
 
 	return p, nil

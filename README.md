@@ -26,9 +26,10 @@ We will gradually open source the entire function according to the workload. The
 ## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
 ![](./docs/files/vision.png)
 
-## Showcase
+## Screenshot
 
-![](./docs/files/showcase.gif)
+![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
+
 
 ## Architecture
 
