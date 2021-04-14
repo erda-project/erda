@@ -24,7 +24,6 @@ var cfg Conf
 type Conf struct {
 	ListenAddr  string `env:"LISTEN_ADDR" default:":1086"`
 	Debug       bool   `env:"DEBUG" default:"false"`
-	SelfAddr    string `env:"SELF_ADDR"`
 	MonitorAddr string `env:"MONITOR_ADDR"`
 	GittarAddr  string `env:"GITTAR_ADDR"`
 }
@@ -42,11 +41,6 @@ func ListenAddr() string {
 // Debug 是否处于调试模式
 func Debug() bool {
 	return cfg.Debug
-}
-
-// SelfAddr 返回 SELF_ADDR
-func SelfAddr() string {
-	return cfg.SelfAddr
 }
 
 // MonitorAddr 返回 monitor 地址

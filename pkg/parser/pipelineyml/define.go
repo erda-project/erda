@@ -46,6 +46,9 @@ type Spec struct {
 
 	Outputs []*PipelineOutput `yaml:"outputs,omitempty"` // 流水线输出
 
+	// describe the use of network hooks in the pipeline
+	Lifecycle []*NetworkHookInfo `yaml:"lifecycle,omitempty"`
+
 	// errs collect occurred errors when parse
 	errs []error
 	// warns collect occurred warns when parse
@@ -53,6 +56,13 @@ type Spec struct {
 
 	// allActions represents all actions from all stages
 	allActions map[ActionAlias]*indexedAction
+}
+
+// describe the use of network hook in the pipeline
+type NetworkHookInfo struct {
+	Hook   string                 `json:"hook"`   // hook type
+	Client string                 `json:"client"` // use network client
+	Labels map[string]interface{} `json:"labels"` // additional information
 }
 
 type StorageConfig struct {
@@ -188,7 +198,11 @@ func (t ActionType) String() string {
 }
 
 func (t ActionType) IsCustom() bool {
-	return string(t) == "custom-script"
+	return string(t) == apistructs.ActionTypeCustomScript
+}
+
+func (t ActionType) IsSnippet() bool {
+	return string(t) == apistructs.ActionTypeSnippet
 }
 
 func (a ActionAlias) String() string {

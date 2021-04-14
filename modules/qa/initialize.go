@@ -51,7 +51,7 @@ func Initialize() error {
 	}
 
 	// TODO invoke self use service
-	_ = os.Setenv("QA_ADDR", conf.SelfAddr())
+	_ = os.Setenv("QA_ADDR", discover.QA())
 
 	// init bundle
 	bdl := bundle.New(
@@ -165,7 +165,7 @@ func registerGittarHook() error {
 		PushEvents bool   `json:"push_events"`
 	}{
 		Name:       "qa",
-		URL:        fmt.Sprint("http://", conf.SelfAddr(), "/callback/gittar"),
+		URL:        fmt.Sprint("http://", discover.QA(), "/callback/gittar"),
 		PushEvents: true,
 	}
 

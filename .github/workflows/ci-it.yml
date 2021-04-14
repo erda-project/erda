@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: sudo apt update && sudo apt install libc-dev pkg-config librdkafka-dev
+        run: sudo apt update && sudo apt install libc-dev pkg-config librdkafka-dev libgit2-dev
       - name: Set up Go
         uses: actions/setup-go@v2
         with:

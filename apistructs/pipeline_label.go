@@ -13,10 +13,33 @@
 
 package apistructs
 
-type PipelineIDSelectByLabelRequest struct {
+// PipelineLabelType defines the type of pipeline label.
+type PipelineLabelType string
+
+var (
+	PipelineLabelTypeInstance PipelineLabelType = "p_i"   // pipeline instance
+	PipelineLabelTypeQueue    PipelineLabelType = "queue" // queue
+)
+
+func (t PipelineLabelType) String() string { return string(t) }
+func (t PipelineLabelType) Valid() bool {
+	switch t {
+	case PipelineLabelTypeInstance, PipelineLabelTypeQueue:
+		return true
+	default:
+		return false
+	}
+}
+
+// TargetIDSelectByLabelRequest select target ids by labels.
+type TargetIDSelectByLabelRequest struct {
+	Type PipelineLabelType `json:"type"`
+
 	PipelineSources  []PipelineSource `json:"pipelineSource"`
 	PipelineYmlNames []string         `json:"pipelineYmlName"`
 
+	// AllowNoMatchLabels, default is false.
+	AllowNoMatchLabels bool `json:"allowNoMatchLabels,omitempty"`
 	// MUST match
 	MustMatchLabels map[string][]string `json:"mustMatchLabels"`
 	// ANY match
@@ -26,6 +49,6 @@ type PipelineIDSelectByLabelRequest struct {
 	// 默认查询必须带上 pipeline source，增加区分度
 	AllowNoPipelineSources bool `json:"allowNoPipelineSources"`
 
-	// OrderByPipelineIDASC 根据 pipeline_id 升序，默认为 false，即降序
-	OrderByPipelineIDASC bool `json:"orderByPipelineIDDesc"`
+	// OrderByTargetIDAsc 根据 target_id 升序，默认为 false，即降序
+	OrderByTargetIDAsc bool `json:"orderByTargetIDAsc"`
 }
