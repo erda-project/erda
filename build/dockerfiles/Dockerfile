@@ -14,7 +14,12 @@ RUN make build APP_NAME=${APP_NAME} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DO
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
+
+RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories \
+    && echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories
 RUN apk add --no-cache jq
+RUN apk add --update nodejs nodejs-npm
+RUN npm i -g jackson-converter@1.0.7
 
 WORKDIR /app
 

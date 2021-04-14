@@ -45,6 +45,9 @@ func (at *APITest) ParseOutParams(apiOutParams []apistructs.APIOutParam, apiResp
 		case apistructs.APIOutParamSourceBodyJsonJQ:
 			jqOrJsonPath = "jq"
 			fallthrough
+		case apistructs.APIOutParamSourceBodyJsonJacksonPath:
+			jqOrJsonPath = "jackson"
+			fallthrough
 		case apistructs.APIOutParamSourceBodyJson:
 			var (
 				body interface{}
@@ -65,11 +68,18 @@ func (at *APITest) ParseOutParams(apiOutParams []apistructs.APIOutParam, apiResp
 					val, _ = jsonpath.Get(body, express)
 				case "jq":
 					val, _ = jsonpath.JQ(apiResp.BodyStr, express)
+				case "jackson":
+					val, _ = jsonpath.Jackson(apiResp.BodyStr, express)
 				default:
-					var err error
-					val, err = jsonpath.JQ(apiResp.BodyStr, express)
-					if err != nil {
-						val, _ = jsonpath.Get(body, express)
+					if strings.HasPrefix(express, jsonpath.JacksonExpressPrefix) {
+						val, _ = jsonpath.Jackson(apiResp.BodyStr, express)
+					} else {
+						// jq The expression does not necessarily start with ., maybe like '{"ss": 1}' | .ss
+						var err error
+						val, err = jsonpath.JQ(apiResp.BodyStr, express)
+						if err != nil {
+							val, _ = jsonpath.Get(body, express)
+						}
 					}
 				}
 			} else {
