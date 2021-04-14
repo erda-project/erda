@@ -55,4 +55,6 @@ mysql:
 # password: "${MYSQL_PASSWORD:123456}"
 # database: "${MYSQL_DATABASE:dice}"
 
-
+notify-query:
+  files:
+    - ${CONF_PATH}/erda-configs/notity/notify
