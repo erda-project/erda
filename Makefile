@@ -137,7 +137,3 @@ build-push-image: build-image push-image
 
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
-
-# init module from *.proto directory
-init-module:
-	@./build/scripts/protoc.sh ${MODULE_PATH} ${PB_PATH}
