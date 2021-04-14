@@ -78,8 +78,13 @@ build-version:
 	@echo ------------ End   Build Version Details ------------
 
 tidy:
-	cd "${BUILD_PATH}" && \
-    ${GO_BUILD_ENV} go mod tidy
+	if [[ -f "${BUILD_PATH}/go.mod" ]]; then \
+		cd "${BUILD_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	elif [[ -d "${PROJ_PATH}/vendor" ]]; then \
+		echo already have vendor dir, skip go mod tidy. ; \
+	else \
+		cd "${PROJ_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	fi
 
 generate:
 	cd "${BUILD_PATH}" && \
