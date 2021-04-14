@@ -1,6 +1,6 @@
 module github.com/erda-project/erda
 
-go 1.14
+go 1.16
 
 require (
 	bou.ke/monkey v1.0.2
@@ -28,7 +28,6 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/clbanning/mxj v1.8.4 // indirect
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -68,7 +67,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v2.0.1+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/gorm v1.9.16
@@ -102,7 +100,6 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
 	github.com/pingcap/errors v0.11.5-0.20200917111840-a15ef68f753d
-	github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 // indirect
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
 	github.com/pkg/errors v0.9.1
@@ -116,7 +113,6 @@ require (
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
-	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.8.0
 	github.com/sony/sonyflake v1.0.0
 	github.com/stretchr/testify v1.7.0
