@@ -26,8 +26,8 @@ func (m *IndexManager) startClean() error {
 		return fmt.Errorf("invalid IndexCleanInterval: %v", m.cfg.IndexCleanInterval)
 	}
 	go func() {
-		m.waitAndGetIndices()                                                             // 让 indices 先加载
-		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // 尽量避免多实例同时进行
+		m.waitAndGetIndices()                                                             // Let the indices load first
+		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Try to avoid multiple instances at the same time
 		m.log.Infof("enable indices clean, interval: %v", m.cfg.IndexCleanInterval)
 		tick := time.Tick(m.cfg.IndexCleanInterval)
 		for {
@@ -111,7 +111,7 @@ func (m *IndexManager) needToDelete(entry *IndexEntry, mc *metricConfig, now tim
 }
 
 func (m *IndexManager) deleteIndices(removeList []string) error {
-	const size = 10 // 一次性删太多，请求太大会被拒绝
+	const size = 10 // Delete too much at once and the request will be rejected
 	for len(removeList) >= size {
 		err := m.deleteIndex(removeList[:size])
 		if err != nil {

@@ -11,14 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package dbclient
 
-import (
-	"github.com/erda-project/erda-infra/modcom"
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/example"
-)
+type PipelineLifecycleHookClient struct {
+	ID     uint64 `json:"id" xorm:"pk autoincr"`
+	Name   string `json:"name"`
+	Host   string `json:"host"`
+	Prefix string `json:"prefix"`
+}
 
-func main() {
-	modcom.RunWithCfgDir("conf/example", "example")
+func (ps *PipelineLifecycleHookClient) TableName() string {
+	return "dice_pipeline_lifecycle_hook_clients"
+}
+
+func (client *Client) FindLifecycleHookClientList() (clients []*PipelineLifecycleHookClient, err error) {
+
+	err = client.Find(&clients)
+	if err != nil {
+		return nil, err
+	}
+
+	return clients, err
 }
