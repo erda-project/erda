@@ -60,7 +60,7 @@ func SetInetAddr(addr string) {
 func init() {
 	inetAddr = os.Getenv(netportalAddrEnvVarName)
 	if inetAddr == "" {
-		inetAddr, _ = discover.GetEndpoint("netportal")
+		inetAddr, _ = discover.GetEndpoint("netportal.default")
 	}
 }
 
