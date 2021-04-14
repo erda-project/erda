@@ -172,7 +172,7 @@ func GetDomain(host, confDomain string) (string, error) {
 	confDomains := strings.SplitN(confDomain, ",", -1)
 	for _, v := range confDomains {
 		if strings.Contains(v, domain) {
-			return domain, nil
+			return v, nil
 		}
 	}
 
