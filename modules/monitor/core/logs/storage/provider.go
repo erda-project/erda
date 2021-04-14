@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
@@ -32,7 +33,7 @@ type define struct{}
 
 func (d *define) Services() []string { return []string{"logs-store"} }
 func (d *define) Dependencies() []string {
-	return []string{"kafka", "cassandra", "mysql"}
+	return []string{"kafka", "cassandra", "mysql", "etcd-mutex"}
 }
 func (d *define) Summary() string     { return "logs store" }
 func (d *define) Description() string { return d.Summary() }
@@ -62,14 +63,15 @@ type config struct {
 }
 
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	Mysql  mysql.Interface
-	Kafka  kafka.Interface
-	output writer.Writer
-	ttl    ttlStore
-	schema schema.LogSchema
-	cache  gcache.Cache
+	Cfg          *config
+	Log          logs.Logger
+	Mysql        mysql.Interface
+	Kafka        kafka.Interface
+	EtcdMutexInf mutex.Interface
+	output       writer.Writer
+	ttl          ttlStore
+	schema       schema.LogSchema
+	cache        gcache.Cache
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -99,7 +101,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval)
+	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval, p.EtcdMutexInf)
 	go p.ttl.Run(ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
 	go p.startStoreMetaCache(ctx)
 	if err := p.Kafka.NewConsumer(&p.Cfg.Input, p.invoke); err != nil {
