@@ -122,7 +122,7 @@ func (p *provider) Start() error {
 
 func (p *provider) Close() error { return p.m.Close() }
 
-func (p *provider) Provide(name string, args ...interface{}) interface{} {
+func (p *provider) Provide(ctx servicehub.DependencyContext, options ...interface{}) interface{} {
 	return p.m
 }
 
