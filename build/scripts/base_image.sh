@@ -14,9 +14,9 @@ fi
 
 # check parameters and print usage if need
 usage() {
-    echo "base_image.sh [ACTION]"
+    echo "base_image.sh ACTION"
     echo "ACTION: "
-    echo "    build       build docker image. this is default action."
+    echo "    build       build docker image."
     echo "    push        push docker image, and build image if image not exist."
     echo "    build-push  build and push docker image."
     echo "    image       show image name."

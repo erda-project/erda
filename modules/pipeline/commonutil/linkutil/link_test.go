@@ -14,11 +14,12 @@
 package linkutil
 
 import (
+	"testing"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetPipelineLink(t *testing.T) {

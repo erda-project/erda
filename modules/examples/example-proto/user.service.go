@@ -11,14 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package example
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/example"
+	"context"
+
+	"github.com/erda-project/erda-proto-go/examples/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func main() {
-	modcom.RunWithCfgDir("conf/example", "example")
+type userService struct {
+	p *provider
+}
+
+func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	// TODO .
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (s *userService) UpdateUser(ctx context.Context, req *pb.GetUserRequest) (*pb.UpdateUserResponse, error) {
+	// TODO .
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
 }
