@@ -30,6 +30,7 @@ require (
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
+	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa // indirect
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -154,8 +155,8 @@ require (
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
-	k8s.io/api v0.18.3
-	k8s.io/apimachinery v0.18.3
+	k8s.io/api v0.19.1
+	k8s.io/apimachinery v0.19.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubernetes v1.18.3
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
@@ -163,6 +164,7 @@ require (
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
 	moul.io/http2curl v1.0.0 // indirect
 	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
