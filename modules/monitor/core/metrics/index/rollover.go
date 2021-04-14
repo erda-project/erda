@@ -37,8 +37,8 @@ func (m *IndexManager) startRollover() error {
 	}
 	m.log.Info("load rollover body: \n", m.rolloverBody)
 	go func() {
-		m.waitAndGetIndices()                                                             // 让 indices 先加载
-		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // 尽量让 indices 先加载，并且随机值尽量避免多实例同时进行
+		m.waitAndGetIndices()                                                             // Let indices load first
+		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Indices should be loaded first, and random values should not be executed at the same time
 		m.log.Infof("enable index rollover, interval: %v", m.cfg.RolloverInterval)
 		tick := time.Tick(m.cfg.RolloverInterval)
 		for {
