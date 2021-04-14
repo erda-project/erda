@@ -30,18 +30,18 @@ import (
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	"github.com/recallsong/go-utils/ioutil"
 
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/chartv2"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/dict"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/influxdb"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/chartv2"  //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/dict"     //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/influxdb" //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"         //
 
 	// v1
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chart"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chartv2"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/raw"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/json"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/params"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chart"   //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/chartv2" //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/formats/raw"     //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/json"   //
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1/language/params" //
 )
 
 type define struct{}
