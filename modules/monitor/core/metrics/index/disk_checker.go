@@ -49,15 +49,15 @@ func (m *IndexManager) getClusterState() (*elastic.ClusterStateResponse, error) 
 // NodeDiskUsage .
 type NodeDiskUsage struct {
 	ID    string
-	Total int64 // 节点总磁盘容量
-	Used  int64 // 节点已使用磁盘容量
-	Store int64 // 索引存储量
+	Total int64 // Total disk capacity of the node
+	Used  int64 // The node is already using disk capacity
+	Store int64 // Index storage
 
-	UsedPercent  float64 // 节点已使用百分比
-	StorePercent float64 // 索引存储百分比
+	UsedPercent  float64 // The node is already using a percentage
+	StorePercent float64 // Index storage percentage
 
-	ExpectDelete int64 // 期望清理的存储量
-	Deleted      int64 // 当前清理的存储量
+	ExpectDelete int64 // Storage expected to be cleared
+	Deleted      int64 // The amount of memory currently cleared
 }
 
 func (m *IndexManager) getNodeDiskUsage(filter func(*NodeDiskUsage) bool) (map[string]*NodeDiskUsage, error) {
@@ -127,16 +127,16 @@ func (m *IndexManager) checkDiskUsage() error {
 			// 达到要求，无需再清理
 			return nil
 		}
-		// 预估删除量
+		// Estimate the number of deletes
 		for _, n := range nodes {
-			// 期望清理的量
+			// Amount of expected cleanup
 			delBytes := int64(float64(n.Used) - float64(m.cfg.DiskClean.LowDiskUsagePercent)/100*float64(n.Total))
-			// 保证的不被删除的 最小的索引占用量
+			// The minimum index usage guaranteed not to be dropped
 			minStore := int64(float64(n.Total) * m.cfg.DiskClean.MinIndicesStorePercent / 100)
 			if m.cfg.DiskClean.minIndicesStore > minStore {
 				minStore = m.cfg.DiskClean.minIndicesStore
 			}
-			// 保证索引最小存储量的前提下，清理索引
+			// Clean up the index under the premise of ensuring minimum index storage
 			if delBytes > minStore {
 				delBytes = delBytes - minStore
 			}
@@ -156,7 +156,7 @@ func (m *IndexManager) checkDiskUsage() error {
 			}
 		}
 		if len(removeList) <= 0 && len(routing) > 0 && len(nodes) > 0 {
-			// 有需要清理的节点，但没有需要删除的索引，通过 rollover 后再删除
+			// There are nodes that need to be cleaned up, but no indexes that need to be dropped, pass the rollover and then delete
 			break
 		}
 		req := &clearRequest{
@@ -164,9 +164,9 @@ func (m *IndexManager) checkDiskUsage() error {
 			waitCh: make(chan struct{}),
 		}
 		m.clearCh <- req
-		<-req.waitCh            // 等待索引删除完毕
-		m.toReloadIndices(true) // 等待索引重新加载完毕
-		// 重新获取之前磁盘容量过载的节点
+		<-req.waitCh            // Wait for index deletion to complete
+		m.toReloadIndices(true) // Wait for the index to reload
+		// Restore the node whose disk capacity was previously overloaded
 		nodes, routing, err = m.getNodeIndices(func(n *NodeDiskUsage) bool {
 			return nodes[n.ID] != nil &&
 				n.UsedPercent >= m.cfg.DiskClean.LowDiskUsagePercent &&
@@ -236,8 +236,8 @@ func (m *IndexManager) startDiskCheck(lock mutex.Mutex) error {
 		if lock != nil {
 			defer lock.Close()
 		}
-		m.waitAndGetIndices()                                                              // 让 indices 先加载
-		time.Sleep(10*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // 尽量避免多实例同时进行
+		m.waitAndGetIndices()                                                              // Let the indices load first
+		time.Sleep(10*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Try to avoid multiple instances at the same time
 		m.log.Infof("enable disk clean, interval: %v", m.cfg.DiskClean.CheckInterval)
 		for {
 			if lock != nil {
@@ -292,7 +292,7 @@ func (m *IndexManager) getSortedIndices() (map[string]*indexGroup, []*IndexEntry
 			}
 		}
 	}
-	// 按最大时间和大小升序
+	// Ascending by maximum time and size
 	sort.Slice(sortedIndices, func(i, j int) bool {
 		a, b := sortedIndices[i], sortedIndices[j]
 		at, bt := a.MaxT.Truncate(time.Hour), b.MaxT.Truncate(time.Hour)

@@ -37,7 +37,7 @@ import (
 
 var random = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-// IndexManager 加载索引, 管理索引的创建, 滚动等
+// IndexManager loading indexes, managing index creation, scrolling, etc
 type IndexManager struct {
 	client                   *elastic.Client
 	db                       *gorm.DB
@@ -47,16 +47,16 @@ type IndexManager struct {
 	rolloverBodyForDiskClean string
 	log                      logs.Logger
 
-	indices    atomic.Value          // map[string]*indexGroup, 已经加载的索引
-	reloadCh   chan chan struct{}    // 主动触发索引加载
-	timeRanges map[string]*timeRange // 缓存索引的最大时间和最小时间查询结果, 不必每次加载索引都去查
+	indices    atomic.Value          // map[string]*indexGroup, the index that has been loaded
+	reloadCh   chan chan struct{}    // Actively trigger index loading
+	timeRanges map[string]*timeRange // Cache the maximum and minimum time index query results without having to look them up every time the index is loaded
 
-	iconfig          atomic.Value // 索引配置
+	iconfig          atomic.Value // Index setting
 	namespaces       *router.Router
 	defaultNamespace string
 
-	created     map[string]bool // alias:true, 已经创建的索引&别名，但可能未被加载到 indices 中
-	createdLock sync.Mutex      // 对 created 的访问加锁
+	created     map[string]bool // When alias:true, index&alias that was created but may not have been loaded in the indices
+	createdLock sync.Mutex      // Locks access to created
 
 	clearCh chan *clearRequest
 	closeCh chan struct{}
@@ -109,10 +109,10 @@ func NewIndexManager(cfg *config, es *elastic.Client, urls string, db *gorm.DB, 
 const timeForSplitIndex int64 = 24 * int64(time.Hour)
 
 // GetWriteIndex .
-// 启用 rollover:
+// enable rollover:
 // spot-<metric>-<namespace>-r-000001
 // spot-<metric>-<namespace>.<key>-r-000001
-// 不启用 rollover:
+// unable rollover:
 // spot-<metric>-<namespace>-<timestamp>
 // spot-<metric>-<namespace>.<key>-<timestamp>
 func (m *IndexManager) GetWriteIndex(metric *metrics.Metric) (string, bool) {
@@ -122,7 +122,7 @@ func (m *IndexManager) GetWriteIndex(metric *metrics.Metric) (string, bool) {
 
 	if m.cfg.EnableRollover {
 		alias := m.indexAlias(name, suffix)
-		// 检查索引是否存在
+		// Check if the index exists
 		indices := m.waitAndGetIndices()
 		var find bool
 		metricGroup, ok := indices[name]
@@ -149,7 +149,7 @@ func (m *IndexManager) GetWriteIndex(metric *metrics.Metric) (string, bool) {
 	return m.cfg.IndexPrefix + "-" + name + "-" + suffix + "-" + strconv.FormatInt(timestamp, 10), true
 }
 
-// GetWriteFixedIndex spot-<metric>-<namespace> 获取不带时间的索引，代表永久保存数据
+// GetWriteFixedIndex spot-<metric>-<namespace> Gets a time-free index, which represents permanent storage of data
 func (m *IndexManager) GetWriteFixedIndex(metric *metrics.Metric) string {
 	return m.cfg.IndexPrefix + "-" + normalizeIndexPart(strings.ToLower(metric.Name)) + "-" +
 		m.getIndexSuffix(m.getNamespace(metric), m.getKey(metric))
@@ -231,7 +231,7 @@ func (m *IndexManager) createIndexWithRetry(index, alias string) (err error) {
 
 // Start .
 func (m *IndexManager) Start(lock mutex.Mutex) error {
-	// 加载配置
+	// Load the configuration
 	if m.cfg.LoadIndexTTLFromDatabase {
 		if int64(m.cfg.TTLReloadInterval) <= 0 {
 			return fmt.Errorf("invalid TTLReloadInterval: %v", m.cfg.TTLReloadInterval)
@@ -269,7 +269,7 @@ func (m *IndexManager) Start(lock mutex.Mutex) error {
 		}
 	}
 
-	// 加载索引任务
+	// Load index task
 	m.log.Infof("start indices reload, interval: %v", m.cfg.IndexReloadInterval)
 	tick := time.Tick(m.cfg.IndexReloadInterval)
 	var done chan struct{}
@@ -282,7 +282,7 @@ func (m *IndexManager) Start(lock mutex.Mutex) error {
 			close(done)
 			done = nil
 		}
-		// 超时或主动触发 加载索引
+		// Timeout or active trigger to load the index
 		select {
 		case ch, ok := <-m.reloadCh:
 			if !ok {
@@ -323,7 +323,7 @@ func (m *IndexManager) waitAndGetIndices() map[string]*indexGroup {
 	for {
 		v := m.indices.Load()
 		if v == nil {
-			// 等待索引加载完成
+			// Wait for the index to complete loading
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -396,7 +396,7 @@ func (m *IndexManager) reloadIndices() error {
 				}
 			}
 		} else if len(parts) == 4 {
-			// 老的索引
+			// previous index
 			t, err := strconv.ParseInt(parts[3], 10, 64)
 			if err == nil {
 				mint := time.Unix(t/1000, (t%1000)*int64(time.Millisecond))
@@ -444,14 +444,14 @@ func (m *IndexManager) reloadIndices() error {
 				keyGroup = &indexGroup{}
 				nsGroup.Groups[entry.Key] = keyGroup
 			}
-			// 保存有 key 的索引
+			// Save the index with the key
 			if entry.Fixed {
 				keyGroup.Fixed = entry
 			} else {
 				keyGroup.List = append(keyGroup.List, entry)
 			}
 		} else {
-			// 保存无 key 的索引
+			// Save the index without the key
 			if entry.Fixed {
 				nsGroup.Fixed = entry
 			} else {
@@ -462,7 +462,7 @@ func (m *IndexManager) reloadIndices() error {
 		indexNum++
 	}
 
-	// 查询每个索引的最大时间和最小时间
+	// The maximum and minimum times to query each index
 	for _, index := range indices {
 		for _, ns := range index.Groups {
 			m.initIndexGroup(ns)
@@ -477,7 +477,7 @@ func (m *IndexManager) reloadIndices() error {
 	m.indices.Store(indices)
 	m.log.Infof("load indices %d, metrics: %d", indexNum, len(indices))
 
-	// 索引已经加载，清空 created
+	// The index is already loaded, empty created
 	m.createdLock.Lock()
 	if len(m.created) > 0 {
 		m.created = make(map[string]bool)
@@ -523,11 +523,11 @@ func (m *IndexManager) initIndexGroup(ig *indexGroup) {
 	sort.Sort(sort.Reverse(IndexEntrys(ig.List)))
 }
 
-// queryTimeRange 查询索引的最大最小时间
+// The maximum and minimum time to query the index
 func (m *IndexManager) setupTimeRange(index *IndexEntry) {
 	if m.cfg.QueryIndexTimeRange && !index.Active && index.Num >= 0 {
 		ranges, ok := m.timeRanges[index.Index]
-		// 该索引没查询过时间范围, 或者 索引数量对比之前有变化，则重新查询时间范围
+		// If the index has not been queried for a time range, or if the number of indexes has changed compared to the previous time range, the time range is re-queried
 		if !ok || (index.DocsCount != ranges.DocsCount || index.DocsDeleted != ranges.DocsDeleted) {
 			searchSource := elastic.NewSearchSource()
 			searchSource.Aggregation("min_time", elastic.NewMinAggregation().Field("timestamp"))
@@ -584,7 +584,7 @@ func (m *IndexManager) cleanTimeRangeCache(indices map[string]*indexGroup) {
 			}
 		}
 	}
-	// 清理不存在的索引的时间范围缓存
+	// Clears the time-range cache for non-existent indexes
 	for index := range m.timeRanges {
 		if !set[index] {
 			delete(m.timeRanges, index)
@@ -616,7 +616,7 @@ func (m *IndexManager) GetReadIndices(metrics []string, namespaces []string, sta
 	} else {
 		indices := v.(map[string]*indexGroup)
 		startT := time.Unix(start/1000, (start%1000)*int64(time.Millisecond))
-		endT := time.Unix(end/1000, (end%1000)*int64(time.Millisecond)+999999) // 精确到纳秒, 所以加上 999999 表示 end 的最后一刻纳秒
+		endT := time.Unix(end/1000, (end%1000)*int64(time.Millisecond)+999999) // It's down to nanoseconds, so plus 999999 is the last nanosecond of end
 		for _, name := range metrics {
 			name = normalizeIndexPart(strings.ToLower(name))
 			ns, ok := indices[name]

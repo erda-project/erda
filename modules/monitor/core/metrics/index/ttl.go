@@ -97,7 +97,7 @@ func (m *IndexManager) getMetricConfig() *metricConfig {
 		for {
 			v = m.iconfig.Load()
 			if v == nil {
-				// 等待加载完成
+				// Waiting for the load to complete
 				time.Sleep(1 * time.Second)
 				continue
 			}
