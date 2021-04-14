@@ -140,7 +140,10 @@ build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
-build-push-image: build-image push-image
+build-push-image:
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 
+build-push-all:
+	./build/scripts/docker_image.sh build-push-all
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
