@@ -53,7 +53,7 @@ build-all:
 	done; \
 	echo "build all modules successfully!"
 
-build: prepare build-version submodule tidy
+build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 	echo "build the ${MODULE_PATH} module successfully!"
@@ -78,8 +78,15 @@ build-version:
 	@echo ------------ End   Build Version Details ------------
 
 tidy:
-	cd "${BUILD_PATH}" && \
-    ${GO_BUILD_ENV} go mod tidy
+	@if [[ -f "${BUILD_PATH}/go.mod" ]]; then \
+		echo "go mod tidy: use module-level go.mod" && \
+		cd "${BUILD_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	elif [[ -d "${PROJ_PATH}/vendor" ]]; then \
+		echo "go mod tidy: already have vendor dir, skip tidy" ; \
+	else \
+		echo "go mod tidy: use project-level go.mod" && \
+		cd "${PROJ_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	fi
 
 generate:
 	cd "${BUILD_PATH}" && \
@@ -87,8 +94,8 @@ generate:
 
 prepare:
 	cd "${PROJ_PATH}" && \
-	${GO_BUILD_ENV} go generate ./apistructs &&\
-	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate &&\
+	${GO_BUILD_ENV} go generate ./apistructs && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
 
 submodule:
