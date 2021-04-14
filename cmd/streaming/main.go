@@ -30,5 +30,5 @@ import (
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/monitor/streaming", "streaming")
+	modcom.RunWithCfgDir("conf/streaming", "streaming")
 }
