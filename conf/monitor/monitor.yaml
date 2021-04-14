@@ -57,4 +57,4 @@ mysql:
 
 notify-query:
   files:
-    - ${CONF_PATH}/erda-configs/notity/notify
+    - ${CONFIG_PATH}/notity/notify
