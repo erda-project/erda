@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
@@ -93,9 +92,9 @@ func (r *Runtime) InitScheduleName(clusterType string, enabledPrjNamespace bool)
 
 // fnvV 生成10位的哈希值
 func fnvV(s string) string {
-	h := fnv.New32a()
+	h := fnv.New64a()
 	h.Write([]byte(s))
-	return rand.SafeEncodeString(fmt.Sprint(h.Sum32())) + rand.String(1)
+	return hex.EncodeToString(h.Sum(nil))[:10]
 }
 
 // md5V md5加密
