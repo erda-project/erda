@@ -42,9 +42,6 @@ func (d *define) Creator() servicehub.Creator {
 type config struct {
 	// some config field
 }
-type cNode struct {
-	HostIP string
-}
 
 type provider struct {
 	Cfg     *config
@@ -54,13 +51,13 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.index = ctx.Service("metrics-index-manager").(indexmanager.Index) // 不是必须的，引用只是为了，例子查询能在索引加载后进行
+	p.index = ctx.Service("metrics-index-manager").(indexmanager.Index) // Not necessary，the reference is only so that the example query can be carried out after the index is loaded.
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	return nil
 }
 
 func (p *provider) Start() error {
-	p.index.WaitIndicesLoad() // 为了下面的查询能在索引加载后进行
+	p.index.WaitIndicesLoad() // Example query can be carried out after the index is loaded
 	p.queryExample()
 	return nil
 }
@@ -83,9 +80,9 @@ func (p *provider) queryExample() {
 		return
 	}
 	// if rs.Details != nil {
-	// 	fmt.Println(rs.Details) // debug=true时，打印调试信息
+	// 	fmt.Println(rs.Details) // When debug=true，print debug session .
 	// }
-	fmt.Println(jsonx.MarshalAndIntend(rs)) // 打印查询结果
+	fmt.Println(jsonx.MarshalAndIntend(rs)) // Print debug session .
 }
 
 func (p *provider) Close() error { return nil }
