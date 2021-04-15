@@ -54,7 +54,7 @@ func (p *MetaIndexGroupProvider) MappingsByID(id, scope, scopeID string, names [
 
 // Groups .
 func (p *MetaIndexGroupProvider) Groups(langCodes i18n.LanguageCodes, t i18n.Translator, scope, scopeID string, ms map[string]*metrics.MetricMeta) (groups []*Group, err error) {
-	if scope == "org" || scope == "dice" { // 暂时硬编码
+	if scope == "org" || scope == "dice" { // For the moment hard-coded.
 		groups = append(groups, &Group{
 			ID:    "other",
 			Name:  t.Text(langCodes, "Other"),
@@ -134,7 +134,7 @@ func (p *MetaIndexMetricMetaProvider) MetricMeta(langCodes i18n.LanguageCodes, i
 	query := elastic.NewBoolQuery().
 		Filter(elastic.NewExistsQuery("fields.fields")).
 		Filter(elastic.NewExistsQuery("fields.tags"))
-	if scope != "org" && scope != "dice" { // 暂时硬编码
+	if scope != "org" && scope != "dice" { // For the moment hard-coded.
 		query = query.Filter(elastic.NewTermQuery("tags.metric_scope", scope)).
 			Filter(elastic.NewTermQuery("tags.metric_scope_id", scopeID))
 	}

@@ -36,8 +36,8 @@ func (f *Formater) formatCardChart(ctx *query.Context, chart *chartmeta.ChartMet
 		data := map[string]interface{}{
 			"name":  key,
 			"value": value,
-			// status?: 'rise | fall', // 值的后置图标， 可选上升或下降
-			// color?: 'error | cancel | info | success | warning',  // 值的颜色
+			// status?: 'rise | fall', // Value icon, optionally rising or falling.
+			// color?: 'error | cancel | info | success | warning',  // Value color.
 		}
 		if chart != nil && chart.Defines != nil {
 			meta := chart.Defines[key]

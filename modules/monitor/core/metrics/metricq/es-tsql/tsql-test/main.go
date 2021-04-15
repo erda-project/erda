@@ -135,23 +135,6 @@ func main() {
 }
 
 func test20() error {
-	// beforePointer := 0.2137
-	// baseNum := -2.232132
-	// for b := 0; b < 7; b++ {
-	// 	p := 1.0
-	// 	for i := 1; i < 20; i++ {
-	// 		err := Query(fmt.Sprintf(`
-	// 	SELECT
-	// 	format_duration(%f,'',%d)
-	// 	FROM application_http
-	// 	LIMIT 1;
-	// 	`, baseNum*p+beforePointer, b), map[string]interface{}{})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		p *= 10
-	// 	}
-	// }
 	return Query(`
     SELECT 
     format_duration(223299999.999,'',5)

@@ -13,7 +13,7 @@
 
 package metricq
 
-// 数据导出，临时的一个方案
+//  Data export, a temporary scheme.
 
 import (
 	"io/ioutil"
@@ -28,7 +28,7 @@ import (
 // exportMetrics .
 func (p *provider) exportMetrics(r *http.Request, w http.ResponseWriter, param *QueryParams) interface{} {
 	if len(param.Query) > 0 || strings.HasPrefix(param.QL, "influxql") {
-		// 兼容老的 table sql 模式查询
+		// Compatible with old table SQL schema queries
 		err := r.ParseForm()
 		if err != nil {
 			return api.Errors.InvalidParameter(err)
@@ -158,7 +158,7 @@ func downloadExcelFile(w http.ResponseWriter, data interface{}) interface{} {
 // 			q = string(byts)
 // 		}
 // 	}
-// 	// 查询元数据
+// 	// Search metadata
 // 	metrics, err := p.q.MetricMeta(api.Language(r), params.Scope, params.ScopeID, params.Metric)
 // 	if err != nil {
 // 		return api.Errors.Internal(err)

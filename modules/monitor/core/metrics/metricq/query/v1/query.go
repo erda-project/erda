@@ -74,15 +74,15 @@ type Request struct {
 	ExistKeys  map[string]struct{}
 	Columns    map[string]*Column
 
-	TimeKey          string        // 指定时间字段
-	OriginalTimeUnit tsql.TimeUnit // 时间字段的单位
+	TimeKey          string        // Specify the time field.
+	OriginalTimeUnit tsql.TimeUnit // The unit of the time field.
 
 	EndOffset        int64
 	Interval         float64
 	Points           float64
 	AlignEnd         bool
 	ClusterNames     []string
-	LegendMap        map[string]*chartmeta.DataMeta // 图例名->图例展示名
+	LegendMap        map[string]*chartmeta.DataMeta // Legend name -> Legend display name
 	ChartType        string
 	Trans            bool
 	TransGroup       bool

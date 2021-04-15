@@ -116,7 +116,7 @@ func (p *provider) getCharts(r *http.Request, param *struct {
 }) interface{} {
 	list := p.q.Charts(api.Language(r), param.Type)
 	var result []interface{}
-	// 兼容处理
+	// Compatibility process.
 	for _, item := range list {
 		result = append(result, map[string]interface{}{
 			"type":       item.Type,

@@ -76,7 +76,7 @@ func NormalizeRequest(req *Request) error {
 		req.End = 1
 	}
 	if req.End <= req.Start {
-		// 查空数据
+		// Blank check data.
 		req.Start = 0
 		req.End = 1
 	}
@@ -222,7 +222,7 @@ func NormalizeKey(keys, typ string) string {
 	var list []string
 	for _, key := range strings.Split(keys, ",") {
 		if strings.Contains(key, ".") || key == "_name" || len(typ) == 0 {
-			if key[0] == '.' || key == "_name" { // 历史原因，兼容group=_name查询
+			if key[0] == '.' || key == "_name" { // Compatible with group=_name query for historical reasons.
 				list = append(list, key[1:])
 				continue
 			}

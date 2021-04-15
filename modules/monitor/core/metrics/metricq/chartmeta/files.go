@@ -70,7 +70,7 @@ func (m *Manager) LoadFiles() error {
 				if info.Order != nil {
 					order = *info.Order
 				}
-				// 兼容处理
+				// compatibility process
 				// for _, item := range info.Defines {
 				// 	item.ChartType = info.ChartType
 				// }

@@ -37,7 +37,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return err
 	}
 
-	if len(p.C.Output.Features.FilterPrefix) > 0 { // 暂时简单过滤一下
+	if len(p.C.Output.Features.FilterPrefix) > 0 { // Just a little filter for now.
 		if strings.HasPrefix(m.Name, p.C.Output.Features.FilterPrefix) {
 			return nil
 		}
@@ -48,7 +48,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	if p.C.Output.Features.GenerateMeta {
 		if err := p.metaProcessor.add(m); err != nil {
-			// 转换 meta 失败，不堵塞存储原始 metric
+			// Convert Meta failed, do not block stored original metric.
 			p.L.Errorf("store metric[%s] meta error", m.Name)
 		}
 	}
@@ -75,11 +75,11 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		index, ok := p.index.GetWriteIndex(m.Metric)
 		if !ok {
 			bytes, _ := json.Marshal(m)
-			// 如果索引不存在，推送到另外的 topic 中去处理
+			// If the index does not exist, push it to another topic for processing.
 			p.output.kafka.Write(&kafka.Message{
 				Topic: &p.C.Output.Kafka.Topic,
 				Data:  bytes,
-				Key:   []byte(m.Name), // 相同key会路由到相同的partition，尽量保证一种索引由一个结点创建
+				Key:   []byte(m.Name), // The same key will be routed to the same partition, so as to ensure that one index is created by one node.
 			})
 			return nil
 		}
@@ -88,7 +88,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	return p.output.es.Write(&elasticsearch.Document{Index: documentIndex, ID: documentID, Data: m})
 }
 
-// 处理索引创建，并且写入es，该处理函数比invoke的指标处理速度要慢，和invoke的指标处理分开，尽量避免索引创建等操作影响其他指标数据写入。
+// The same key will be routed to the same partition, so as to ensure that one index is created by one node.
 func (p *provider) handleCreatingIndexMetric(key []byte, value []byte, topic *string, timestamp time.Time) error {
 	m := &Metric{}
 	if err := json.Unmarshal(value, m); err != nil {
@@ -119,8 +119,8 @@ const (
 	MetricTagClusterName = "cluster_name"
 	MetricTagTTL         = "_ttl"
 	MetricTagTTLFixed    = "fixed"
-	MetricTagLifetime    = "_lt"       //lifetime
-	MetricTagTransient   = "transient" //瞬态，不存储到es
+	MetricTagLifetime    = "_lt"       // lifetime
+	MetricTagTransient   = "transient" // transient, not stored to elasticsearch.
 
 	MetricFieldTags   = "tags"
 	MetricFieldFields = "fields"

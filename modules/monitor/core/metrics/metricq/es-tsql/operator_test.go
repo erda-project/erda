@@ -30,83 +30,83 @@ type testItem struct {
 var now = time.Now()
 
 var testList = []*testItem{
-	&testItem{
+	{
 		a:       1,
 		op:      ADD,
 		b:       2,
 		reverse: true,
 		r:       int64(3),
 	},
-	&testItem{
+	{
 		a:       float32(1),
 		op:      ADD,
 		b:       2,
 		reverse: true,
 		r:       float64(3),
 	},
-	&testItem{
+	{
 		a:       uint32(1),
 		op:      ADD,
 		b:       2,
 		reverse: true,
 		r:       uint64(3),
 	},
-	&testItem{
+	{
 		a:       true,
 		op:      ADD,
 		b:       uint64(2),
 		reverse: true,
 		r:       uint64(3),
 	},
-	&testItem{
+	{
 		a:       time.Second,
 		op:      ADD,
 		b:       int64(time.Second),
 		reverse: true,
 		r:       time.Duration(2 * time.Second),
 	},
-	&testItem{
+	{
 		a:       now,
 		op:      ADD,
 		b:       time.Hour,
 		reverse: true,
 		r:       now.Add(time.Hour),
 	},
-	&testItem{
+	{
 		a:       now,
 		op:      ADD,
 		b:       int64(time.Hour),
 		reverse: true,
 		r:       now.Add(time.Hour),
 	},
-	&testItem{
+	{
 		a:       int64(time.Hour),
 		op:      ADD,
 		b:       now,
 		reverse: true,
 		r:       now.Add(time.Hour),
 	},
-	&testItem{
+	{
 		a:  now.Add(time.Hour),
 		op: SUB,
 		b:  now,
 		r:  time.Hour,
 	},
-	&testItem{
+	{
 		a:       2,
 		op:      MUL,
 		b:       time.Hour,
 		reverse: true,
 		r:       2 * time.Hour,
 	},
-	&testItem{
+	{
 		a:       "2",
 		op:      MUL,
 		b:       time.Hour,
 		reverse: true,
 		r:       2 * time.Hour,
 	},
-	&testItem{
+	{
 		a:       "2",
 		op:      MUL,
 		b:       2,

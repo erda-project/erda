@@ -734,7 +734,7 @@ func cardinalityFunction(col *Column) Function {
 	}
 }
 
-// 形如: SELECT fieldA From xxx LIMIT 10
+// Example: SELECT fieldA From xxx LIMIT 10
 func valuesFunction(col *Column) Function {
 	return &esFunction{
 		Column:         col,

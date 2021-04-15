@@ -24,7 +24,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 )
 
-// Export 暂时没用到, 待移除
+// Export not used for now, to be removed.
 func (q *queryer) Export(ql, statement string, params map[string]interface{}, options url.Values, handle func(id string, data []byte) error) error {
 	parser, start, end, _, err := q.buildTSQLParser(ql, statement, params, options)
 	if err != nil {
