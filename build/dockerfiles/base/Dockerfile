@@ -16,7 +16,7 @@ RUN apk update \
 
 RUN git clone git://github.com/libgit2/libgit2.git
 WORKDIR $GOPATH/libgit2
-RUN git checkout v1.0.1 && rm -rf build && mkdir build && cd build \
+RUN git checkout v0.28.5 && rm -rf build && mkdir build && cd build \
     && cmake .. -DCMAKE_INSTALL_PREFIX=$TARGET -DBUILD_CLAR=OFF && cmake --build . --target install
 
 RUN rm -rf /usr/local/go
