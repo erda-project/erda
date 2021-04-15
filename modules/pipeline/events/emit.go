@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func EmitPipelineEvent(p *spec.Pipeline, userID string) {
+func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	event := &PipelineEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader

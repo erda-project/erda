@@ -239,7 +239,7 @@ func (r *Reconciler) updatePipelineStatus(p *spec.Pipeline) error {
 	}
 
 	// event
-	events.EmitPipelineEvent(p, p.GetRunUserID())
+	events.EmitPipelineInstanceEvent(p, p.GetRunUserID())
 
 	return nil
 }
