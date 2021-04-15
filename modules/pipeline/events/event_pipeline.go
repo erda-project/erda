@@ -167,6 +167,10 @@ func (e *PipelineEvent) HandleHTTP() error {
 	})
 }
 
+func (e *PipelineEvent) HandleDB() error {
+	return nil
+}
+
 func getDingDingHookURL(e *PipelineEvent) (string, error) {
 	appID, err := strconv.ParseUint(e.Pipeline.Labels[apistructs.LabelAppID], 10, 64)
 	if err != nil {
