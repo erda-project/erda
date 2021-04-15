@@ -94,7 +94,7 @@ func (p *metaProcessor) add(metric *Metric) error {
 			fields := make([]string, 0)
 			if metric.Tags != nil && len(metric.Tags) > 0 {
 				for tag := range metric.Tags {
-					// 过滤系统内置的 _ 前缀的tag，如 _id  _meta
+					// Filter tags with built-in _ prefixes, such as _id _meta.
 					if !strings.HasPrefix(tag, MetricInternalPrefix) {
 						tags = append(tags, tag)
 					}
@@ -112,7 +112,7 @@ func (p *metaProcessor) add(metric *Metric) error {
 			metaTags := map[string]string{}
 			if metric.Tags != nil && len(metric.Tags) > 0 {
 				for tag, val := range metric.Tags {
-					// 过滤系统内置的 _ 前缀的tag，如 _id  _meta
+					// Filter tags with built-in _ prefixes, such as _id _meta.
 					if strings.HasPrefix(tag, MetricInternalPrefix) {
 						metaTags[tag[1:]] = val
 					}
@@ -166,13 +166,13 @@ func (p *metaProcessor) processMetricMeta(metric *metrics.Metric) error {
 	nowTimestamp := time.Now().UnixNano()
 	if metaCache.lastTimestamp == 0 || nowTimestamp > metaCache.lastTimestamp {
 		metaCache.lastTimestamp = nowTimestamp - nowTimestamp%Minute + Minute*15 - Second*int64(p.r.Intn(300))
-		//p.L.Infof("push metric meta %s at %d", metric.Name, metaCache.lastTimestamp)
-		//countMetric(p.counter, metaCache.metric)
+		// p.L.Infof("push metric meta %s at %d", metric.Name, metaCache.lastTimestamp)
+		// countMetric(p.counter, metaCache.metric)
 		m := &Metric{}
 		m.Metric = metaCache.metric.Copy()
 		processTimestampDateFormat(m)
 		return p.es.Write(&elasticsearch.Document{Index: p.index.GetWriteFixedIndex(metaCache.metric), ID: metaID, Data: m})
 	}
-	//return p.output.kafka.Write(meta)
+	// return p.output.kafka.Write(meta)
 	return nil
 }

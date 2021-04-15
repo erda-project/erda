@@ -49,7 +49,7 @@ type config struct {
 		Features struct {
 			GenerateMeta   bool   `file:"generate_meta" default:"true"`
 			Counter        bool   `file:"counter" default:"true"`
-			MachineSummary bool   `file:"machine_summary" default:"false"` // 后面要移除这段代码
+			MachineSummary bool   `file:"machine_summary" default:"false"` // This code will be removed later.
 			FilterPrefix   string `file:"filter_prefix" default:"go_" env:"METRIC_FILTER_PREFIX"`
 		} `file:"features"`
 		Elasticsearch struct {
