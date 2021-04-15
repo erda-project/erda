@@ -26,7 +26,7 @@ We will gradually open source the entire function according to the workload. The
 
 ## Screenshot
 
-![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
+![Screenshot](https://static.erda.cloud/images/erda.gif)
 
 ## Architecture
 
