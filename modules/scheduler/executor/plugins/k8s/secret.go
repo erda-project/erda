@@ -107,8 +107,8 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 	return k.updateDefaultServiceAccountForImageSecret(namespace, s.Name)
 }
 
-// CopyDiceSecrets Copy the secret under orignns namespace to dstns
-func (k *Kubernetes) CopyDiceSecrets(originns, dstns string) ([]apiv1.Secret, error) {
+// CopyErdaSecrets Copy the secret under orignns namespace to dstns
+func (k *Kubernetes) CopyErdaSecrets(originns, dstns string) ([]apiv1.Secret, error) {
 	secrets, err := k.secret.List(originns)
 	if err != nil {
 		return nil, err
