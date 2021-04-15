@@ -315,7 +315,7 @@ func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 	if strings.HasPrefix(script, "(") && strings.HasSuffix(script, ")") {
 		if keyType == query.TagKey {
 			if match, _ := regexp.Match("doc\\[\\'[a-zA-Z0-9_.]+\\'\\]", reflectx.StringToBytes(script)); match {
-				// 作为原始的es脚本
+				// As the original elasticsearch script.
 				return script, nil, nil
 			}
 		} else {

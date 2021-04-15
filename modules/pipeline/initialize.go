@@ -43,6 +43,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
+	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
@@ -50,6 +51,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -119,13 +121,14 @@ func do() (*httpserver.Server, error) {
 	extMarketSvc := extmarketsvc.New(bdl)
 	pipelineCronSvc := pipelinecronsvc.New(dbClient, crondSvc)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
+	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// pipeline engine
 	engine := pipengine.New(dbClient)
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, cmSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, dbClient, bdl, publisher, engine, js, etcdctl)
+		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 
 	pipelineFun := &reconciler.PipelineSvcFunc{
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
@@ -162,6 +165,7 @@ func do() (*httpserver.Server, error) {
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithSnippetSvc(snippetSvc),
 		endpoints.WithReportSvc(reportSvc),
+		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
 	)
 
@@ -174,6 +178,9 @@ func do() (*httpserver.Server, error) {
 
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
+
+	// cache lifecycle network hook client information
+	go pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient)
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)

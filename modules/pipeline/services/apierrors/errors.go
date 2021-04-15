@@ -72,6 +72,12 @@ var (
 	ErrReloadCrond        = err("ErrReloadCrond", "重新加载定时配置失败")
 	ErrDeletePipelineCron = err("ErrDeletePipelineCron", "删除流水线定时配置失败")
 
+	ErrCreatePipelineQueue  = err("ErrCreatePipelineQueue", "创建流水线队列失败")
+	ErrGetPipelineQueue     = err("ErrGetPipelineQueue", "查询流水线队列失败")
+	ErrPagingPipelineQueues = err("ErrPagingPipelineQueues", "分页查询流水线队列失败")
+	ErrUpdatePipelineQueue  = err("ErrUpdatePipelineQueue", "更新流水线队列失败")
+	ErrDeletePipelineQueue  = err("ErrDeletePipelineQueue", "删除流水线队列失败")
+
 	ErrQueryBuildArtifact    = err("ErrQueryBuildArtifact", "查询构建产物失败")
 	ErrRegisterBuildArtifact = err("ErrRegisterBuildArtifact", "注册构建产物失败")
 	ErrDeleteBuildArtifact   = err("ErrDeleteBuildArtifact", "删除构建产物失败")

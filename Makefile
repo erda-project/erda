@@ -53,7 +53,7 @@ build-all:
 	done; \
 	echo "build all modules successfully!"
 
-build: prepare build-version submodule tidy
+build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_MUSL_TAGS} -o "${PROJ_PATH}/bin/${APP_NAME}"
 	echo "build the ${MODULE_PATH} module successfully!"
@@ -78,8 +78,15 @@ build-version:
 	@echo ------------ End   Build Version Details ------------
 
 tidy:
-	cd "${BUILD_PATH}" && \
-    ${GO_BUILD_ENV} go mod tidy
+	@if [[ -f "${BUILD_PATH}/go.mod" ]]; then \
+		echo "go mod tidy: use module-level go.mod" && \
+		cd "${BUILD_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	elif [[ -d "${PROJ_PATH}/vendor" ]]; then \
+		echo "go mod tidy: already have vendor dir, skip tidy" ; \
+	else \
+		echo "go mod tidy: use project-level go.mod" && \
+		cd "${PROJ_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	fi
 
 generate:
 	cd "${BUILD_PATH}" && \
@@ -87,8 +94,8 @@ generate:
 
 prepare:
 	cd "${PROJ_PATH}" && \
-	${GO_BUILD_ENV} go generate ./apistructs &&\
-	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate &&\
+	${GO_BUILD_ENV} go generate ./apistructs && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
 
 submodule:
@@ -112,6 +119,22 @@ run-g: build
 run-ps: build
 	./bin/${APP_NAME} --providers
 
+# normalize all go files before push to git repo
+normalize:
+	@go mod tidy
+	@echo "run gofmt && goimports && golint ..."
+	@if [ -z "$$MODULE_PATH" ]; then \
+		MODULE_PATH=.; \
+	fi; \
+	cd $${MODULE_PATH}; \
+	go test -test.timeout=10s ./...; \
+	GOFILES=$$(find . -name "*.go"); \
+	for path in $${GOFILES}; do \
+	 	gofmt -w -l $${path}; \
+	  	goimports -w -l $${path}; \
+	  	golint -set_exit_status=1 $${path}; \
+	done;
+
 # docker image
 build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
@@ -121,4 +144,3 @@ build-push-image: build-image push-image
 
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
-
