@@ -84,12 +84,13 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 		}
 	} else {
 		// 直接更新为 running 状态
-		if p.Status == apistructs.PipelineStatusAnalyzed {
+		if p.Status == apistructs.PipelineStatusAnalyzed || p.Status == apistructs.PipelineStatusQueue {
+			oldStatus := p.Status
 			p.Status = apistructs.PipelineStatusRunning
 			if err := r.updatePipelineStatus(p); err != nil {
 				return err
 			}
-			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, apistructs.PipelineStatusAnalyzed, apistructs.PipelineStatusRunning)
+			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, oldStatus, apistructs.PipelineStatusRunning)
 			// go metrics.PipelineGaugeProcessingAdd(*p, 1)
 		}
 	}
@@ -170,7 +171,9 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				if err := r.dbClient.UpdatePipelineTaskSnippetDetail(task.ID, snippetDetail); err != nil {
 					return
 				}
-				if err = r.reconcile(ctx, sp.ID); err != nil {
+				// make context for snippet
+				snippetCtx := makeContextForPipelineReconcile(sp.ID)
+				if err = r.reconcile(snippetCtx, sp.ID); err != nil {
 					return
 				}
 				// 查询最新 task
@@ -189,7 +192,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
-				r.Throttler, executor, p, r.bdl, r.dbClient, r.js,
+				r.TaskThrottler, executor, p, r.bdl, r.dbClient, r.js,
 				r.actionAgentSvc, r.extMarketSvc)
 
 			// tear down task
