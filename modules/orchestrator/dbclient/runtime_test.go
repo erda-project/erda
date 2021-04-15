@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/stretchr/testify/assert"
 )
 
 // func TestDBClient_CreateRuntime(t *testing.T) {
@@ -117,4 +118,12 @@ func TestInitScheduleName(t *testing.T) {
 		name = fmt.Sprintf("%s-%d", strings.ToLower(r.Workspace), r.ID)
 	}
 	fmt.Println(name)
+}
+
+func TestFnvV(t *testing.T) {
+	s := "5-DEV-Srm"
+	str1 := fnvV(s)
+	str2 := fnvV(s)
+	assert.Equal(t, str1, str2)
+	assert.Equal(t, 10, len(str1))
 }
