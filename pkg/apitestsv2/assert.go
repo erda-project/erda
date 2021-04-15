@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/jsonparse"
 	"github.com/erda-project/erda/pkg/jsonpath"
 )
 
@@ -129,7 +130,7 @@ func doAssert(value interface{}, op string, expect string) (bool, error) {
 }
 
 func isEqual(value interface{}, expect string) bool {
-	if fmt.Sprint(value) == expect {
+	if jsonparse.JsonOneLine(value) == expect {
 		return true
 	}
 

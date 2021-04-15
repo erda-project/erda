@@ -14,6 +14,9 @@
 package precheck_before_pop
 
 import (
+	"context"
+
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 )
 
@@ -26,7 +29,38 @@ func New() *Plugin { return &Plugin{} }
 func (p *Plugin) Name() string { return "queue" }
 func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 
-	// TODO invoke fdp dependency check
+	var httpBeforeCheckRun = HttpBeforeCheckRun{
+		PipelineID: ctx.SDK.Pipeline.ID,
+		DBClient:   ctx.SDK.DBClient,
+		Bdl:        ctx.SDK.Bundle,
+	}
+	result, err := httpBeforeCheckRun.CheckRun()
+	if err != nil {
+		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
+			Success: false,
+			Reason:  err.Error(),
+			// add default retryOption if request is error
+			RetryOption: &apistructs.QueueValidateRetryOption{
+				IntervalSecond: 10,
+			},
+		})
+		return err
+	}
 
+	if result.CheckResult == CheckResultSuccess {
+		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
+			Success: true,
+		})
+	} else {
+		var validResult = apistructs.PipelineQueueValidateResult{Success: false}
+		// retry time should be more than the 0
+		if result.RetryOption.IntervalSecond > 0 {
+			validResult.RetryOption = &apistructs.QueueValidateRetryOption{
+				IntervalSecond: result.RetryOption.IntervalSecond,
+			}
+		}
+
+		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, validResult)
+	}
 	return nil
 }
