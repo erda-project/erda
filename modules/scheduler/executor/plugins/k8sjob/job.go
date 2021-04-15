@@ -843,7 +843,7 @@ func (k *k8sJob) createImageSecretIfNotExist(namespace string) error {
 	}
 
 	if _, err = k.client.CoreV1().Secrets(namespace).Create(context.Background(), mysecret, metav1.CreateOptions{}); err != nil {
-		if strutil.Contains(err.Error(), "AlreadyExists") {
+		if strutil.Contains(err.Error(), "already exists") {
 			return nil
 		}
 		return err
@@ -908,9 +908,11 @@ func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
 
 		_, err = k.client.CoreV1().Namespaces().Create(ctx, newNamespace, metav1.CreateOptions{})
 		if err != nil {
-			errMsg := fmt.Sprintf("failed to create namespace: %v", err)
-			logrus.Errorf(errMsg)
-			return errors.Errorf(errMsg)
+			if !strings.Contains(err.Error(), "already exists") {
+				errMsg := fmt.Sprintf("failed to create namespace: %v", err)
+				logrus.Errorf(errMsg)
+				return errors.Errorf(errMsg)
+			}
 		}
 	}
 	return nil

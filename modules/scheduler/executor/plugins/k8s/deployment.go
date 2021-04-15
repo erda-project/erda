@@ -502,7 +502,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	//Mobil temporary demand:
 	// Inject the secret under the "secret" namespace into the business container
 
-	secrets, err := k.CopyDiceSecrets("secret", service.Namespace)
+	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
 		logrus.Errorf("failed to copy secret: %v", err)
 		return nil, err
