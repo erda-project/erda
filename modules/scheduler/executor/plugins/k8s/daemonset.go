@@ -17,7 +17,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -189,13 +189,30 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 			containers[i].Command = cmds
 		}
 	}
+
 	SetHealthCheck(&daemonset.Spec.Template.Spec.Containers[0], service)
 
 	if err := k.AddContainersEnv(containers, service, sg); err != nil {
 		return nil, err
 	}
 
+	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
+	if err != nil {
+		logrus.Errorf("failed to copy secret: %v", err)
+		return nil, err
+	}
+	secretvolumes := []corev1.Volume{}
+	secretvolmounts := []corev1.VolumeMount{}
+	for _, secret := range secrets {
+		secretvol, volmount := k.SecretVolume(&secret)
+		secretvolumes = append(secretvolumes, secretvol)
+		secretvolmounts = append(secretvolmounts, volmount)
+	}
+
+	k.AddPodMountVolume(service, &daemonset.Spec.Template.Spec, secretvolmounts, secretvolumes)
 	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec)
+
+	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", deployName, daemonset)
 
 	return daemonset, nil
 }
