@@ -31,6 +31,9 @@ import (
 var hookClientMap map[string]*apistructs.PipelineLifecycleHookClient
 
 func PostLifecycleHookHttpClient(source string, req interface{}, resp interface{}) error {
+
+	logrus.Debugf("postLifecycleHookHttpClient source: %v, request: %v", source, req)
+
 	if hookClientMap == nil {
 		return fmt.Errorf("not find this source: %v client", source)
 	}
@@ -63,6 +66,7 @@ func PostLifecycleHookHttpClient(source string, req interface{}, resp interface{
 		return apierrors.ErrInvoke.InternalError(fmt.Errorf("body: %s, decode error %v", buffer.String(), err))
 	}
 
+	logrus.Debugf("postLifecycleHookHttpClient response: %v", buffer)
 	return nil
 }
 

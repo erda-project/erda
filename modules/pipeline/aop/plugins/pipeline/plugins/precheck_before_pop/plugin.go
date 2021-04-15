@@ -39,6 +39,10 @@ func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
 			Success: false,
 			Reason:  err.Error(),
+			// add default retryOption if request is error
+			RetryOption: &apistructs.QueueValidateRetryOption{
+				IntervalSecond: 10,
+			},
 		})
 		return err
 	}
@@ -48,12 +52,15 @@ func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 			Success: true,
 		})
 	} else {
-		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
-			Success: false,
-			RetryOption: &apistructs.QueueValidateRetryOption{
+		var validResult = apistructs.PipelineQueueValidateResult{Success: false}
+		// retry time should be more than the 0
+		if result.RetryOption.IntervalSecond > 0 {
+			validResult.RetryOption = &apistructs.QueueValidateRetryOption{
 				IntervalSecond: result.RetryOption.IntervalSecond,
-			},
-		})
+			}
+		}
+
+		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, validResult)
 	}
 	return nil
 }
