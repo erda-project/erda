@@ -35,7 +35,7 @@ build_image()  {
     docker build -t "${DOCKER_IMAGE}" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
         --label "alpine=3.12" \
-        --label "golang=1.15" \
+        --label "golang=1.16" \
         --label "librdkafka=1.5.0" \
         .
 }

@@ -82,12 +82,13 @@ type APIBody struct {
 type APIOutParamSource string
 
 var (
-	APIOutParamSourceStatus           APIOutParamSource = "status"
-	APIOutParamSourceBodyJson         APIOutParamSource = "body:json"
-	APIOutParamSourceBodyJsonJQ       APIOutParamSource = "body:json:jq"
-	APIOutParamSourceBodyJsonJsonPath APIOutParamSource = "body:json:jsonpath"
-	APIOutParamSourceBodyText         APIOutParamSource = "body:text"
-	APIOutParamSourceHeader           APIOutParamSource = "header"
+	APIOutParamSourceStatus              APIOutParamSource = "status"
+	APIOutParamSourceBodyJson            APIOutParamSource = "body:json"
+	APIOutParamSourceBodyJsonJQ          APIOutParamSource = "body:json:jq"
+	APIOutParamSourceBodyJsonJsonPath    APIOutParamSource = "body:json:jsonpath"
+	APIOutParamSourceBodyJsonJacksonPath APIOutParamSource = "body:json:jackson"
+	APIOutParamSourceBodyText            APIOutParamSource = "body:text"
+	APIOutParamSourceHeader              APIOutParamSource = "header"
 )
 
 func (source APIOutParamSource) String() string {

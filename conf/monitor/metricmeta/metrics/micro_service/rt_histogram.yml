@@ -1,0 +1,100 @@
+name: "Rt Histogram"
+tags:
+    application_id:
+        name: "Application ID"
+    application_name:
+        name: "Application Name"
+    cluster_name:
+        name: "Cluster Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    method:
+        name: "Method"
+    org_name:
+        name: "Org Name"
+    project_id:
+        name: "Project ID"
+    project_name:
+        name: "Project Name"
+    service_id:
+        name: "Service ID"
+    service_name:
+        name: "Service Name"
+    status_code:
+        name: "Status Code"
+    url:
+        name: "Url"
+    workspace:
+        name: "Workspace"
+fields:
+    count:
+        type: "number"
+        name: "Count"
+        uint: 
+    le_+Inf:
+        type: "number"
+        name: "Le + Inf"
+        uint: 
+    le_0_005:
+        type: "number"
+        name: "Le 0 005"
+        uint: 
+    le_0_01:
+        type: "number"
+        name: "Le 0 01"
+        uint: 
+    le_0_025:
+        type: "number"
+        name: "Le 0 025"
+        uint: 
+    le_0_05:
+        type: "number"
+        name: "Le 0 05"
+        uint: 
+    le_0_075:
+        type: "number"
+        name: "Le 0 075"
+        uint: 
+    le_0_1:
+        type: "number"
+        name: "Le 0 1"
+        uint: 
+    le_0_25:
+        type: "number"
+        name: "Le 0 25"
+        uint: 
+    le_0_5:
+        type: "number"
+        name: "Le 0 5"
+        uint: 
+    le_0_75:
+        type: "number"
+        name: "Le 0 75"
+        uint: 
+    le_10_0:
+        type: "number"
+        name: "Le 10 0"
+        uint: 
+    le_1_0:
+        type: "number"
+        name: "Le 1 0"
+        uint: 
+    le_2_5:
+        type: "number"
+        name: "Le 2 5"
+        uint: 
+    le_5_0:
+        type: "number"
+        name: "Le 5 0"
+        uint: 
+    le_7_5:
+        type: "number"
+        name: "Le 7 5"
+        uint: 
+    sum:
+        type: "number"
+        name: "Sum"
+        uint: 
+
