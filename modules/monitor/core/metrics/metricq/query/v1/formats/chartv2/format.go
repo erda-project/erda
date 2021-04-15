@@ -41,7 +41,7 @@ func (f *Formater) Format(ctx *query.Context, param string) (interface{}, error)
 			return f.formatCardChart(ctx, chart)
 		}
 	}
-	// 其他查询方式还是走 老chart 的格式
+	// Other query methods still follow the old chart format.
 	var title string
 	if chart != nil {
 		title = chart.Title
