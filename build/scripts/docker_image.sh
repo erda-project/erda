@@ -41,6 +41,7 @@ build_image()  {
         --build-arg "CONFIG_PATH=${CONFIG_PATH}" \
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
+        --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         -f "${DOCKERFILE}" .
 }
 
@@ -65,6 +66,7 @@ build_push_image() {
     build_image
     push_image
     echo "action meta: image=${DOCKER_IMAGE}"
+    echo "action meta: tag=${VERSION}"
 }
 
 # cd to root directory
@@ -76,23 +78,25 @@ VERSION="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
 
 BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 
+# Dockerfile path
+DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
+DOCKERFILE=${DOCKERFILE_DEFAULT}
+
 if [ "$1" == "build-push-all" ]; then
     DOCKER_IMAGE="erda:${VERSION}"
     if [ -n "${DOCKER_REGISTRY}" ]; then
         DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
     fi
-    DOCKERFILE="build/dockerfiles/Dockerfile-all"
+    MAKE_BUILD_CMD="build-all"
     build_push_image
     exit 0
 fi
 
+MAKE_BUILD_CMD="build"
 # module path
 MODULE_PATH=$1
 APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
 
-# Dockerfile path
-DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-DOCKERFILE=${DOCKERFILE_DEFAULT}
 if [ -f "build/dockerfiles/Dockerfile-${APP_NAME}" ];then
     DOCKERFILE="build/dockerfiles/Dockerfile-${APP_NAME}"
 elif [ -d "build/dockerfiles/${APP_NAME}" ];then

@@ -5,15 +5,20 @@ RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 
-ARG APP_NAME
 ARG CONFIG_PATH
 ARG MODULE_PATH
 ARG DOCKER_IMAGE
-RUN make build APP_NAME=${APP_NAME} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE}
+ARG MAKE_BUILD_CMD
+
+ENV PKG_CONFIG_PATH /lib/pkgconfig:$PKG_CONFIG_PATH
+
+RUN make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
+
+# use for ops
+RUN tar -zcvf ./bin/scripts.tar.gz ./modules/ops/scripts/
 
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
-
 
 RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories \
     && echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories
@@ -26,9 +31,19 @@ WORKDIR /app
 ARG APP_NAME
 ARG CONFIG_PATH
 ENV APP_NAME=${APP_NAME}
+
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/${APP_NAME}" "/app/${APP_NAME}"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/app/erda-configs"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/common"
+
+# use for gittar
+COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
+
+# use for ops
+COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/scripts.tar.gz" "/app/scripts.tar.gz"
+RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg \
+    && chmod 755 /usr/bin/orgalorg
+
 
 CMD ["sh", "-c", "/app/${APP_NAME}"]
