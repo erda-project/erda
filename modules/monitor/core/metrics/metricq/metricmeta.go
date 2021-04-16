@@ -74,7 +74,7 @@ func (p *provider) getMetricGroup(r *http.Request, params struct {
 			params.Format = metricmeta.InfluxFormat
 			params.AppendTags = true
 		} else if len(params.Format) <= 0 && params.Mode != "analysis" {
-			// 标品大盘需要点格式，但告警表达式不支持点格式，所以非告警模式的元数据查询，都用点格式。
+			// However, alarm expressions do not support dot format, so metadata queries that are not in alarm mode are all in dot format.
 			params.Format = metricmeta.DotFormat
 		}
 	}

@@ -105,7 +105,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 		} else {
 			terms = terms.Field(group.Property.Key)
 		}
-		group.ColumnAggs = make(map[string]bool) // 用于对 最里层terms的子聚合 去重
+		group.ColumnAggs = make(map[string]bool) // Used to dedouble the subaggregation of the innermost terms
 		if group.Sort != nil {
 			if group.Sort.FuncName == "count" && len(group.Sort.Property.Name) <= 0 {
 				terms.OrderByCount(group.Sort.Ascending())
