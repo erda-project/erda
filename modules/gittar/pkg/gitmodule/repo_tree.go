@@ -9,7 +9,7 @@ package gitmodule
 import (
 	"path"
 
-	git "github.com/libgit2/git2go/v28"
+	git "github.com/libgit2/git2go/v30"
 )
 
 // Find the tree object in the repository.

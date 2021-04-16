@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 
-	git "github.com/libgit2/git2go/v28"
+	git "github.com/libgit2/git2go/v30"
 	"github.com/sirupsen/logrus"
 )
 

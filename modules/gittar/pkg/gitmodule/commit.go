@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	git "github.com/libgit2/git2go/v28"
+	git "github.com/libgit2/git2go/v30"
 	"github.com/mcuadros/go-version"
 )
 

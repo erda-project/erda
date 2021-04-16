@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"strings"
 
-	git "github.com/libgit2/git2go/v28"
+	git "github.com/libgit2/git2go/v30"
 )
 
 // Tree represents a flat directory listing.
