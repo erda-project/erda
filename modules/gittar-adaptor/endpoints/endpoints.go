@@ -183,6 +183,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicd-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
 		{Path: "/api/cicd-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 
+		// project pipeline
+		{Path: "/api/cicds-project", Method: http.MethodPost, Handler: e.projectPipelineCreate},
+
 		// cms
 		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
 		{Path: "/api/cicds/configs", Method: http.MethodDelete, Handler: e.deleteCmsNsConfigs},
