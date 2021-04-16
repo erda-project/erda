@@ -23,61 +23,9 @@ if [ -z "$1" ]; then
     usage
 fi
 
-# cd to root directory
-cd $(git rev-parse --show-toplevel)
-
-# module path
-MODULE_PATH=$1
-APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
-
-# Dockerfile path
-DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
-DOCKERFILE=${DOCKERFILE_DEFAULT}
-if [ -f "build/dockerfiles/Dockerfile-${APP_NAME}" ];then
-    DOCKERFILE="build/dockerfiles/Dockerfile-${APP_NAME}"
-elif [ -d "build/dockerfiles/${APP_NAME}" ];then
-    DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
-fi
-
-# config file or directory path
-if [ -f "conf/${APP_NAME}.yaml" ];then
-    CONFIG_PATH="${APP_NAME}.yaml"
-elif [ -f "conf/${APP_NAME}.yml" ];then
-    CONFIG_PATH="${APP_NAME}.yml"
-elif [ -f "conf/${MODULE_PATH}.yaml" ];then
-    CONFIG_PATH="${MODULE_PATH}.yaml"
-elif [ -f "conf/${MODULE_PATH}.yml" ];then
-    CONFIG_PATH="${MODULE_PATH}.yml"
-elif [ -d "conf/${MODULE_PATH}" ];then
-    CONFIG_PATH="${MODULE_PATH}"
-elif [ -d "conf/${APP_NAME}" ];then
-    CONFIG_PATH="${APP_NAME}"
-else
-    CONFIG_PATH=""
-fi
-
-# image version and url
-VERSION="$(head -n 1 VERSION)"
-VERSION="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
-DOCKER_IMAGE=${APP_NAME}:${VERSION}
-if [ -n "${DOCKER_REGISTRY}" ]; then
-    DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
-fi
-BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
-
-# print details
-print_details() {
-    echo "Module Path : ${MODULE_PATH}"
-    echo "App Name    : ${APP_NAME}"
-    echo "Config Path : ${CONFIG_PATH}"
-    echo "Dockerfile  : ${DOCKERFILE}"
-    echo "Docker Image: ${DOCKER_IMAGE}"
-}
-print_details
-
 # build docker image
 build_image()  {
-    if [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
+    if [[ -n "${BUILD_BASE}" ]] || [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
         BASE_IMAGE_ID="$(docker images ${BASE_DOCKER_IMAGE} -q)"
         if [ -z "${BASE_IMAGE_ID}" ]; then
             echo "base image '${BASE_DOCKER_IMAGE}' not exist, start build base image ..."
@@ -93,6 +41,7 @@ build_image()  {
         --build-arg "CONFIG_PATH=${CONFIG_PATH}" \
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
+        --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
         -f "${DOCKERFILE}" .
 }
 
@@ -116,7 +65,75 @@ push_image() {
 build_push_image() {
     build_image
     push_image
+    echo "action meta: image=${DOCKER_IMAGE}"
+    echo "action meta: tag=${VERSION}"
 }
+
+# cd to root directory
+cd $(git rev-parse --show-toplevel)
+
+# image version and url
+VERSION="$(head -n 1 VERSION)"
+VERSION="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
+
+BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
+
+# Dockerfile path
+DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
+DOCKERFILE=${DOCKERFILE_DEFAULT}
+
+if [ "$1" == "build-push-all" ]; then
+    DOCKER_IMAGE="erda:${VERSION}"
+    if [ -n "${DOCKER_REGISTRY}" ]; then
+        DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+    fi
+    MAKE_BUILD_CMD="build-all"
+    build_push_image
+    exit 0
+fi
+
+MAKE_BUILD_CMD="build"
+# module path
+MODULE_PATH=$1
+APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
+
+if [ -f "build/dockerfiles/Dockerfile-${APP_NAME}" ];then
+    DOCKERFILE="build/dockerfiles/Dockerfile-${APP_NAME}"
+elif [ -d "build/dockerfiles/${APP_NAME}" ];then
+    DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
+fi
+
+# config file or directory path
+if [ -f "conf/${APP_NAME}.yaml" ];then
+    CONFIG_PATH="${APP_NAME}.yaml"
+elif [ -f "conf/${APP_NAME}.yml" ];then
+    CONFIG_PATH="${APP_NAME}.yml"
+elif [ -f "conf/${MODULE_PATH}.yaml" ];then
+    CONFIG_PATH="${MODULE_PATH}.yaml"
+elif [ -f "conf/${MODULE_PATH}.yml" ];then
+    CONFIG_PATH="${MODULE_PATH}.yml"
+elif [ -d "conf/${MODULE_PATH}" ];then
+    CONFIG_PATH="${MODULE_PATH}"
+elif [ -d "conf/${APP_NAME}" ];then
+    CONFIG_PATH="${APP_NAME}"
+else
+    CONFIG_PATH=""
+fi
+
+DOCKER_IMAGE=${APP_NAME}:${VERSION}
+if [ -n "${DOCKER_REGISTRY}" ]; then
+    DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+fi
+
+# print details
+print_details() {
+    echo "Module Path : ${MODULE_PATH}"
+    echo "App Name    : ${APP_NAME}"
+    echo "Config Path : ${CONFIG_PATH}"
+    echo "Dockerfile  : ${DOCKERFILE}"
+    echo "Docker Image: ${DOCKER_IMAGE}"
+}
+print_details
 
 case "$2" in
     "build")

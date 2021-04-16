@@ -50,7 +50,7 @@ jobs:
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           skip-build-cache: true
       - name: Run Build
-        run: make
+        run: make GO_BUILD_OPTIONS="-tags=musl"
       - name: Run Test
         run: |
           go test -tags=musl -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
