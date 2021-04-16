@@ -11,14 +11,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package conf 定义配置选项
+// package conf defines configurations
 package conf
 
 import (
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
-// Conf 定义基于环境变量的配置项
+// Conf define envs
 type Conf struct {
 	Debug      bool   `env:"DEBUG" default:"false"`
 	ListenAddr string `env:"LISTEN_ADDR" default:":3083"`
@@ -31,12 +31,11 @@ type Conf struct {
 
 var cfg Conf
 
-// Load 加载环境变量配置.
+// Load loads envs
 func Load() {
 	envconf.MustLoad(&cfg)
 }
 
-// ListenAddr 返回 ListenAddr 选项.
 func ListenAddr() string {
 	return cfg.ListenAddr
 }
