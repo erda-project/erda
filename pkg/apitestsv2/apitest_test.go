@@ -38,21 +38,21 @@ func TestAssert(t *testing.T) {
 		"cc": "dd",
 	}
 	op = "="
-	e = `map[aa:bb cc:dd]`
+	e = `{"aa":"bb","cc":"dd"}`
 	ret, err = doAssert(v, op, e)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, ret, true)
 
 	v = []int{1, 2, 3, 4}
 	op = "="
-	e = `[1 2 3 4]`
+	e = `[1,2,3,4]`
 	ret, err = doAssert(v, op, e)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, ret, true)
 
 	v = []string{"q1", "q2", "test"}
 	op = "="
-	e = `[q1 q2 test]`
+	e = `["q1","q2","test"]`
 	ret, err = doAssert(v, op, e)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, ret, true)

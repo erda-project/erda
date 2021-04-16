@@ -598,6 +598,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 		}
 		return args[0] != args[1], nil
 	},
+	// like sql in()
 	"include": func(ctx Context, args ...interface{}) (interface{}, error) {
 		err := MustFuncArgsMinNum("include", len(args), 2)
 		if err != nil {

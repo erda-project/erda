@@ -251,7 +251,7 @@ func (q *Query) parseAggData(resp *elastic.SearchResult, rs *tsql.ResultSet) (*t
 func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggregations, buckets []interface{}) error {
 	if terms, ok := aggs.Terms("term"); ok {
 		if len(terms.Buckets) > q.stmt.Offset {
-			// 有分组的情况下，offset的作用是跳过多少分组
+			// In the case of groupings, offset is used to skip how many groupings
 			for _, bucket := range terms.Buckets[q.stmt.Offset:] {
 				err := q.parseDimensionsAggsData(rs, bucket.Aggregations, append(buckets, bucket))
 				if err != nil {
