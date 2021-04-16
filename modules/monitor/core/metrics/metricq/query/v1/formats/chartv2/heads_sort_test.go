@@ -21,7 +21,7 @@ import (
 
 type hs []map[string]interface{}
 
-// heads根据column排序，column>0根据column大小排序，column<0则
+// Heads order by column，whern column>0,order by column size.
 func (h hs) Len() int      { return len(h) }
 func (h hs) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h hs) Less(i, j int) bool {

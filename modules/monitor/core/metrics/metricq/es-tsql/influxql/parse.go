@@ -154,15 +154,15 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 		return nil, err
 	}
 
-	// 支持 ORDER BY 的情况
-	// 1、查询原始数据：支持字段，支持表达式
-	// 2、有聚合、无分组：无需排序，因为只会有一条数据。
-	// 3、字段分组，但没按时间分组、没按值域分组：对组内数据，按聚合函数的结果对分组排序，或者每文档数
-	// 4、字段分组，有按时间排序：对组内数据，按聚合函数的结果对分组排序，或者文档数
-	// 5、字段分组，有按值域：对组内数据，按聚合函数的结果对分组排序，或者文档数
-	// 6、只有按时间分组：暂时不支持
-	// 7、只有按值域分组：暂时不支持
-	// 4 和 5 可以考虑支持 对组内的 每段时间间隔 或者 每段值范围 聚合，但目前 3、4、5 暂时统一处理
+	// Support the ORDER BY case
+	// 1、Query raw data: support fields, support expressions.
+	// 2、Aggregated, ungrouped: No sorting is required because there will only be one piece of data.
+	// 3、Group fields, but not by time, not by range: sort the groups by the results of the aggregate function, or by the number of documents per group.
+	// 4、Grouping fields by time: sorting the data within the group, grouping by the result of the aggregate function, or the number of documents.
+	// 5、Field grouping, either by value domain: sorting the data within the group, grouping by the result of the aggregate function, or the number of documents.
+	// 6、Grouping by time only: temporarily not supported.
+	// 7、Grouping by range only: temporarily not supported.
+	// 4 and 5 might consider supporting aggregation for each interval or range of values within a group, but for now 3, 4, and 5 are handled uniformly.
 
 	globalAgg := aggs
 	// group by and order by
@@ -207,7 +207,7 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 		addAgg(id, agg)
 	}
 
-	// 自动添加特殊列
+	// Automatically add special columns.
 	if flag&queryFlagGroupByTime == queryFlagGroupByTime {
 		handlers = append([]*columnHandler{
 			{
@@ -266,7 +266,7 @@ func (p *Parser) parseSelectStatement(s *influxql.SelectStatement) (*Query, erro
 						key := getKeyName(vf, influxql.AnyField)
 						searchSource.Sort(key, f.Ascending)
 					} else {
-						// 先不校验 expr, 直接交给 es 处理
+						// Don't check expr first, just hand it to elasticsearch.
 						s, err := getScriptExpression(p.ctx, expr, influxql.AnyField, nil)
 						if err != nil {
 							return nil, err
@@ -675,7 +675,7 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 			return "", nil, nil, tsql.ColumnFlagNone, err
 		}
 		scripts = append(scripts, script)
-		// 标记该表达式用于分组
+		//  Mark that the expression is used for grouping
 		if p.ctx.dimensions == nil {
 			p.ctx.dimensions = make(map[string]bool)
 		}
@@ -688,7 +688,7 @@ func (p *Parser) parseQueryDimensions(dimensions influxql.Dimensions,
 		terms = elastic.NewTermsAggregation().
 			Script(elastic.NewScript(script)).Size(offset + limit) // .Size(5000)
 		if histogram != nil || rng != nil {
-			aggs = make(map[string]elastic.Aggregation) // 如果有 histogram 或者 range，则不和 select 共享聚合
+			aggs = make(map[string]elastic.Aggregation) // If you have histogram or range, you don't share the aggregate with select.
 		}
 		if p.ctx.scopes != nil && p.ctx.scopes["terms"] != nil {
 			for id, item := range p.ctx.scopes["terms"] {
@@ -756,7 +756,7 @@ func adjustInterval(start, end, interval, points int64) int64 {
 	return interval
 }
 
-// setupTermsOrderAgg 处理用户分组排序的聚合函数
+// setupTermsOrderAgg handles aggregate functions for user grouping and sorting.
 func setupTermsOrderAgg(ctx *Context, expr influxql.Expr, aggs map[string]elastic.Aggregation,
 	terms *elastic.TermsAggregation, sort *influxql.SortField) error {
 	switch expr := expr.(type) {
@@ -807,7 +807,7 @@ func setupScopeAggg(ctx *Context, id string, field *scopeField, aggs map[string]
 	return fmt.Errorf("invalid expression for scope '%s'", scope)
 }
 
-// getLiteralValue 尝试获取常量
+// getLiteralValue try to get constants.
 func getLiteralValue(ctx *Context, expr influxql.Expr) (interface{}, bool, error) {
 	switch val := expr.(type) {
 	case *influxql.IntegerLiteral:
@@ -1081,7 +1081,7 @@ func (p *Parser) ParseRawQuery() ([]*tsql.Source, *elastic.BoolQuery, *elastic.S
 	return nil, nil, nil, fmt.Errorf("not found query statements")
 }
 
-// parseRawSelectStatement 只处理 from、where、sort
+// parseRawSelectStatement only handle from、where、sort.
 func (p *Parser) parseRawSelectStatement(s *influxql.SelectStatement) ([]*tsql.Source, *elastic.BoolQuery, *elastic.SearchSource, error) {
 	// from
 	sources, err := p.parseQuerySources(s.Sources)
