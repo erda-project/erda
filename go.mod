@@ -81,7 +81,7 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/lib/pq v1.3.0 // indirect
-	github.com/libgit2/git2go/v28 v28.8.14
+	github.com/libgit2/git2go/v30 v30.0.5
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
