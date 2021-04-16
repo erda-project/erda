@@ -17,7 +17,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// APIAsset API 资料
+// APIAsset is dice_api_assets model
 type APIAssetsModel apistructs.APIAssetsModel
 
 func (APIAssetsModel) TableName() string {
@@ -57,7 +57,7 @@ func QueryVersionLatestSpec(orgID, versionID uint64) (*apistructs.APIAssetVersio
 	return &model, nil
 }
 
-// 根据给定的 orgID 和 assetID 删除 APIAsset 表和 APIAssetVersion 表的记录
+// DeleteAPIAssetByOrgAssetID deletes the APIAsset and APIAssetVersion record for giving assetID
 func DeleteAPIAssetByOrgAssetID(orgID uint64, assetID string, cascade bool) error {
 	tx := Tx()
 	defer tx.RollbackUnlessCommitted()
@@ -67,7 +67,7 @@ func DeleteAPIAssetByOrgAssetID(orgID uint64, assetID string, cascade bool) erro
 		"asset_id": assetID,
 	}
 
-	// 如果需要级联删除, 则级联删除 实例, Spec 文本, 版本记录
+	// if cascading delete, delete instance, spce text, version records
 	if cascade {
 		if err := tx.Delete(new(apistructs.InstantiationModel), params).Error; err != nil {
 			return err

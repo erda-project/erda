@@ -41,7 +41,7 @@ func ListAccess(req *apistructs.ListAccessReq, responsibleAssetIDs []string) (ui
 		req.QueryParams.PageNo = 1
 	}
 
-	// 查出有访问管理且我负责的 asset
+	// select out the Assets what I'm responsible for
 	rows, err := Sq().Raw(DistinctAssetIDFromAccess,
 		req.OrgID,
 		req.QueryParams.Keyword, req.QueryParams.Keyword, keyword,
@@ -94,7 +94,7 @@ func ListAccess(req *apistructs.ListAccessReq, responsibleAssetIDs []string) (ui
 			Permission:     map[string]bool{"edit": false, "delete": false},
 		}
 
-		// client 计数
+		// client counts
 		var contracts []*apistructs.ContractModel
 		if err := Sq().Order("updated_at DESC, created_at DESC").
 			Find(&contracts, map[string]interface{}{

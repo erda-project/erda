@@ -15,6 +15,7 @@ package assetsvc
 
 import (
 	"encoding/json"
+	"net/url"
 
 	"github.com/jinzhu/gorm"
 
@@ -73,10 +74,24 @@ func (svc *Service) SearchOperations(req *apistructs.SearchOperationsReq) (resul
 		versionIDs []uint64
 	)
 	for _, v := range versions {
-		if _, ok := versionsM[v.SwaggerVersion]; ok {
-			continue
+		u := make(url.Values, 0)
+		u.Set("assetID", v.AssetID)
+		u.Set("swaggerVersion", v.SwaggerVersion)
+		k := u.Encode()
+		m, ok := versionsM[k]
+		switch {
+		case !ok:
+			versionsM[k] = v
+		case m.Minor > v.Minor:
+		case m.Minor < v.Minor:
+			versionsM[k] = v
+		case m.Patch > v.Patch:
+		case m.Patch < v.Patch:
+			versionsM[k] = v
 		}
-		versionsM[v.SwaggerVersion] = v
+	}
+
+	for _, v := range versionsM {
 		versionIDs = append(versionIDs, v.ID)
 	}
 

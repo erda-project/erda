@@ -47,7 +47,7 @@ func ListMyClients(req *apistructs.ListMyClientsReq, orgManager bool) (total uin
 	return total, models, nil
 }
 
-// 查询本人名下某个 Client 详情. 注意传入的 ClientID 可以是 dice_api_clients 的主键, 也可以是 client_id 字段
+// GetMyClient select a Client details
 func GetMyClient(req *apistructs.GetClientReq, orgManager bool) (*apistructs.ClientModel, error) {
 	var (
 		model apistructs.ClientModel
@@ -105,9 +105,9 @@ func ListSwaggerVersionClients(req *apistructs.ListSwaggerVersionClientsReq) ([]
 	return list, nil
 }
 
-// 给定一个 slaID, 如果为空, 返回 "";
-// 如果 slaID 对应的 slaName 已经在给定的集合中, 则返回集合中的结果;
-// 否则查询库表获取 slaName, 并将结果记录在给定的集合中
+// if salID is nil, returns "";
+// if slaID is in names, return the value;
+// otherwise, select out the slaName from database and records it in names.
 func getSLAName(slaID *uint64, names map[uint64]string) string {
 	if slaID == nil {
 		return ""

@@ -47,7 +47,7 @@ func (svc *Service) DeleteAssetByAssetID(req apistructs.APIAssetDeleteRequest) e
 	}
 
 	// 鉴权: 当前用户是否具备删除权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.IdentityInfo.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.IdentityInfo.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.DeleteAPIAsset.AccessDenied()
 	}
@@ -82,7 +82,7 @@ func (svc *Service) DeleteAssetVersionByID(orgID uint64, assetID string, version
 	}
 
 	// 鉴权 当前用户是否具有删除此 asset 下的 version 的权限
-	rolesSet := bdl.FetchRolesSet(orgID, userID)
+	rolesSet := bdl.FetchAssetRolesSet(orgID, userID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.DeleteAPIAssetVersion.AccessDenied()
 	}
@@ -151,7 +151,7 @@ func (svc *Service) DeleteClient(req *apistructs.DeleteClientReq) *errorresp.API
 	}
 
 	// 鉴权 当前用户是否可以删除此客户端 企业管理员, 当前客户端的创建者可删
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := req.Identity.UserID == clientModel.CreatorID ||
 		inSlice(strconv.FormatUint(req.OrgID, 10), rolesSet.RolesOrgs(bdl.OrgMRoles...)); !written {
 		return apierrors.DeleteClient.AccessDenied()
@@ -233,7 +233,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 	}
 
 	// 鉴权 当前用户是否具有删除此 access 的权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.DeleteAccess.AccessDenied()
 	}
@@ -333,7 +333,7 @@ func (svc *Service) DeleteContract(req *apistructs.GetContractReq) *errorresp.AP
 	}
 
 	// 鉴权 当前用户是否具备删除此 contract 的权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := req.Identity.UserID == contract.CreatorID || writePermission(rolesSet, &asset); !written {
 		return apierrors.DeleteContract.AccessDenied()
 	}
@@ -372,7 +372,7 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 	}
 
 	// SLA 的删除权限与对应的 API Asset 的 W 权限一致
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.DeleteSLA.AccessDenied()
 	}

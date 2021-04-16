@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -288,51 +289,66 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 
 // 查询应用下所有的分支, 构成节点列表
 func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	orgIDStr := strconv.FormatUint(orgID, 10)
 	appIDStr := strconv.FormatUint(appID, 10)
 
 	// 查询 application (由于不存在项目级目录树, 所以不讨论 pinode != 0 的情况)
+	branches, err := bdl.Bdl.GetAllValidBranchWorkspace(appID)
+	if err != nil {
+		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetAllValidBranchWorkspace"))
+	}
+
+	// 查询 application 数据构造目录树 node
 	app, err := bdl.Bdl.GetApp(appID)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetApp"))
 	}
-
 	proIDStr := strconv.FormatUint(app.ProjectID, 10)
-
 	ft, _ := bundle.NewGittarFileTree("")
 	ft.SetProjectIDName(proIDStr, app.ProjectName)
 	ft.SetApplicationIDName(appIDStr, app.Name)
 
-	branches, err := bdl.Bdl.GetGittarBranchesV2(ft.RepoPath(), orgIDStr, true)
-	if err != nil {
-		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetGittarBranches"))
-	}
-
 	var (
-		results []*apistructs.FileTreeNodeRspData
-		pinde   = ft.Inode()
+		results      []*apistructs.FileTreeNodeRspData
+		isManager, _ = bdl.IsManager(userID, apistructs.AppScope, appID)
+		m            = sync.Map{}
+		w            = sync.WaitGroup{}
 	)
 
-	rules, err := getRules(ft.ApplicationID())
-	if err != nil {
-		return nil, apierrors.ListChildrenNodes.InvalidParameter(err)
+	for _, branch := range branches {
+		branch := branch
+		w.Add(1)
+		go func() {
+			branchInode := ft.Clone().SetBranchName(branch.Name).Inode()
+			hasAPIDoc := branchHasAPIDoc(orgID, branchInode)
+			m.Store(&branch, hasAPIDoc)
+			w.Done()
+		}()
 	}
+	w.Wait()
 
-	for _, branchName := range branches {
-		meta := map[string]bool{"readOnly": readOnly(orgID, userID, appIDStr, branchName, rules)}
-		metaData, _ := json.Marshal(meta)
+	m.Range(func(key, value interface{}) bool {
+		branch := key.(*apistructs.ValidBranch)
+		readOnly := !isManager && branch.IsProtect
+		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly, "hasDoc": value.(bool)})
 		results = append(results, &apistructs.FileTreeNodeRspData{
 			Type:      "d",
-			Inode:     ft.Clone().SetBranchName(branchName).Inode(),
-			Pinode:    pinde,
+			Inode:     ft.Clone().SetBranchName(branch.Name).Inode(),
+			Pinode:    ft.Inode(),
 			Scope:     "application",
 			ScopeID:   appIDStr,
-			Name:      branchName,
+			Name:      branch.Name,
 			CreatorID: "",
 			UpdaterID: "",
-			Meta:      metaData,
+			Meta:      meta,
 		})
-	}
+
+		return true
+	})
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Name < results[j].Name
+	})
+
 	return results, nil
 }
 
@@ -360,6 +376,11 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 	}
 	ft.SetPathFromRepoRoot(pathFromRepoRoot)
 
+	appID, err := strconv.ParseUint(ft.ApplicationID(), 10, 64)
+	if err != nil {
+		return nil, apierrors.ListChildrenNodes.InvalidParameter(err)
+	}
+
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
 	// 查找目录下的文档. 允许错误, 错误则认为目录下没有任何文档
@@ -371,15 +392,15 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 		return nil, nil
 	}
 
-	rules, err := getRules(ft.ApplicationID())
-	if err != nil {
-		return nil, apierrors.ListChildrenNodes.InvalidParameter(err)
-	}
-	meta := map[string]bool{"readOnly": readOnly(orgID, userID, ft.ApplicationID(), ft.BranchName(), rules)}
-	metaData, _ := json.Marshal(meta)
+	// 文档是否只读: 如果用户是应用管理员, 则
+	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
+	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName())
+	meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
 
-	nodeTypeM := map[string]apistructs.NodeType{"blob": "f", "tree": "d"}
-	var results []*apistructs.FileTreeNodeRspData
+	var (
+		results   []*apistructs.FileTreeNodeRspData
+		nodeTypeM = map[string]apistructs.NodeType{"blob": "f", "tree": "d"}
+	)
 	for _, node := range nodes {
 		if !filter(node) {
 			continue
@@ -395,14 +416,14 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 			Name:      mustSuffix(node.Name, ""),
 			CreatorID: "",
 			UpdaterID: "",
-			Meta:      metaData,
+			Meta:      meta,
 		})
 	}
+
 	return results, nil
 }
 
 func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-
 	data, apiError := FetchAPIDocContent(orgID, userID, inode, oasconv.OAS3JSON)
 	if apiError != nil {
 		return nil, apiError

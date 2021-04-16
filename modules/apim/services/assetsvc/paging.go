@@ -106,7 +106,7 @@ func (svc *Service) PagingAsset(req apistructs.PagingAPIAssetsReq) (*apistructs.
 
 	// 4) 如果查询"我负责的", 则查询 我创建的 或 我有 W 权限的; 否则还可查 公开的 和有 R 权限的
 	// 用户角色权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	var (
 		proWList = rolesSet.RolesProjects(bdl.ProMRoles...) // 项目管理人员可写
 		appWList = rolesSet.RolesApps(bdl.AppMRoles...)     // 应用管理人员可写

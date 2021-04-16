@@ -93,7 +93,7 @@ func (svc *Service) PagingAPIAssetVersions(req *apistructs.PagingAPIAssetVersion
 		versionIDs []string
 		objsM      = make(map[uint64]*apistructs.PagingAPIAssetVersionRspObj)
 		list       []*apistructs.PagingAPIAssetVersionRspObj
-		permission = bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+		permission = bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 		written    = writePermission(permission, &asset)
 	)
 	for _, v := range versionsModels {
@@ -435,7 +435,7 @@ func (svc *Service) ListMyClients(req *apistructs.ListMyClientsReq) (*apistructs
 		return nil, apierrors.ListClients.MissingParameter("missing parameters")
 	}
 
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	orgManager := inSlice(strconv.FormatUint(req.OrgID, 10), rolesSet.RolesOrgs(bdl.OrgMRoles...))
 	total, models, err := dbclient.ListMyClients(req, orgManager)
 	if err != nil {
@@ -647,7 +647,7 @@ func (svc *Service) ListSwaggerVersionClients(req *apistructs.ListSwaggerVersion
 		return nil, apierrors.ListSwaggerClients.InternalError(err)
 	}
 
-	permission := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	permission := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	prove := writePermission(permission, &asset)
 	for _, v := range data {
 		v.Permission["edit"] = prove

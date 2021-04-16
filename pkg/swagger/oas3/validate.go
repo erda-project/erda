@@ -66,8 +66,7 @@ func ValidateOAS3(ctx context.Context, oas3 openapi3.Swagger) error {
 	// 校验 components
 	ve.path_ = []string{"components"}
 	if err := ValidateComponents(ctx, oas3.Components); err != nil {
-		ve.error = "invalid components"
-		return &ve
+		return ve.Wrap(err)
 	}
 
 	// 校验 info

@@ -20,8 +20,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// 检出 major 下所有版本号, 判断与给定的版本号是否冲突
-// ok == true, 表示无冲突
+// CheckVersionConflict checks out all versions of the major,
+// determines if there is a version number conflict.
+// ok is true means no conflict.
 func CheckVersionConflict(orgID uint64, assetID string, major, minor, patch uint64) (result [][3]uint64, ok bool, err error) {
 	var (
 		versions   []*apistructs.APIAssetVersionsModel
@@ -95,7 +96,7 @@ func GetAPIAssetVersion(req *apistructs.GetAPIAssetVersionReq) (*apistructs.APIA
 	return &version, nil
 }
 
-// 根据给定主键(id)删除 APIAssetVersion 表的记录
+// DeleteAPIAssetVersion deletes a APIAssetVersion record
 func DeleteAPIAssetVersion(orgID uint64, assetID string, versionID uint64, cascade bool) error {
 	tx := Tx()
 	defer tx.RollbackUnlessCommitted()
@@ -138,7 +139,7 @@ func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch
 		return errors.New("semVer is nil")
 	}
 
-	// 查找指定 swagger_version 的一个 version model
+	// select out a version model record for the giving swagger_version
 	var (
 		swaggerVersionModel apistructs.APIAssetVersionsModel
 		swaggerVerExists    bool
@@ -156,7 +157,7 @@ func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch
 	}
 
 	switch {
-	// 如果请求参数中 major 缺省, 则补全 major 并检查版本冲突; 如果不冲突, 则 minor, patch 按用户填写, 如果版本冲突, 令 minor 为最新版本 minor, patch 为最新
+	// if major defaults, set it's value and check out if there is a version conflict.
 	case *major == 0:
 		if swaggerVerExists {
 			*major = swaggerVersionModel.Major
@@ -179,7 +180,8 @@ func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch
 			*patch = versions[0][2] + 1
 		}
 
-	// 如果请求参数中的 major 正确, 则检查版本冲突; 如果不冲突, 按用户填写继续流程, 如果冲突则报错
+	// if giving major is correct, check conflict.
+	// if there is a conflict, return error.
 	case *major == swaggerVersionModel.Major:
 		_, ok, err := CheckVersionConflict(orgID, assetID, *major, *minor, *patch)
 		if err != nil {
@@ -189,13 +191,13 @@ func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch
 			return errors.New("request version(major.minor.path) already exists")
 		}
 
-	// 如果存在这样的 swaggerVersion,
+	// if the swaggerVersion is exists, return error
 	case swaggerVerExists:
 		return errors.Errorf("输入的版本号 %v.%v.%v 与 API 描述文档中 info/version 对应的 %v.*.* 不匹配, 请修改主版本号或更换文档",
 			*major, *minor, *patch, swaggerVersionModel.Major)
 
 	default:
-		// 查找特定 major 的 version model
+		// select out a version model record for the major
 		var exVersion apistructs.APIAssetVersionsModel
 		switch err := DB.First(&exVersion, map[string]interface{}{
 			"org_id":   orgID,
@@ -203,12 +205,12 @@ func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch
 			"major":    major,
 		}).Error; {
 		case err == nil:
-			// 不存在给定的 swaggerVersion, 但存在给定的 majorVersion, 说明 swaggerVersion 和 major 冲突
+			// swaggerVersion not exists, majorVersion exists: conflict between swaggerVersion and majorVersion
 			return errors.Errorf("输入的语义化版本号 %v.*.* 已存在于名称为 %s 的版本下, 请修改主版本号或更换文档",
 				*major, exVersion.SwaggerVersion)
 
 		case gorm.IsRecordNotFoundError(err):
-			// 给定的 swaggerVersion 和 majorVersion 都不存在, 则正常创建
+			// swaggerVersion and majorVersion not exists, normal process
 
 		default:
 			return err

@@ -66,6 +66,6 @@ func (svc *Service) writeAssetPermission(orgID uint64, userID string, assetID st
 		return false
 	}
 
-	rolesSet := bdl.FetchRolesSet(orgID, userID)
+	rolesSet := bdl.FetchAssetRolesSet(orgID, userID)
 	return writePermission(rolesSet, &asset)
 }

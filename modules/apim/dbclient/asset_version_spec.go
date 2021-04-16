@@ -22,8 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-// APIAssetVersionSpec API 资料版本 Spec
-// 因 Spec 为纯文本，可能很大，为了不影响查询性能，故与 APIAssetVersion 拆分
+// APIAssetVersionSpec is dice_api_asset_version_specs model
 type APIAssetVersionSpecsModel apistructs.APIAssetVersionSpecsModel
 
 func (m APIAssetVersionSpecsModel) TableName() string {

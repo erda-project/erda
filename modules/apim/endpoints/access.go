@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
 )
 
-// 创建一个访问管理条目
+// CreateAccess creates an Access
 func (e *Endpoints) CreateAccess(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -56,7 +56,7 @@ func (e *Endpoints) CreateAccess(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(data)
 }
 
-// 查询访问条目列表
+// ListAccess lists Accesses
 func (e *Endpoints) ListAccess(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {

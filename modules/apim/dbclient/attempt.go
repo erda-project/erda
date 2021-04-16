@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/cimysql"
 )
 
-// APITestEnv 存储API测试环境变量
+// APITestEnv maintains envs about API
 type APITestEnv struct {
 	ID        int64     `xorm:"pk autoincr" json:"id"`
 	CreatedAt time.Time `xorm:"created" json:"createdAt"`
@@ -35,7 +35,6 @@ type APITestEnv struct {
 	Global  string `xorm:"global" json:"global"`
 }
 
-// GetTestEnv 根据envID获取测试环境变量信息
 func GetTestEnv(envID int64) (*APITestEnv, error) {
 	testEnv := new(APITestEnv)
 	_, err := cimysql.Engine.ID(envID).Get(testEnv)
@@ -46,7 +45,6 @@ func GetTestEnv(envID int64) (*APITestEnv, error) {
 	return testEnv, nil
 }
 
-// GetTestEnvListByEnvID 根据envID获取测试环境变量信息
 func GetTestEnvListByEnvID(envID int64, envType string) ([]APITestEnv, error) {
 	testEnvList := []APITestEnv{}
 	err := cimysql.Engine.Where("env_id = ? AND env_type = ?", envID, envType).Find(&testEnvList)
