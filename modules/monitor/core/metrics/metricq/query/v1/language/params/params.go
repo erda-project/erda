@@ -176,7 +176,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 					Params:   values,
 				})
 			}
-		} else if strings.HasPrefix(key, "alias_") { // 数据别名解析。例子，alias_last.tags.host_ip=主机IP
+		} else if strings.HasPrefix(key, "alias_") { // Data alias resolution. For example，alias_last.tags.host_ip=xxxIP
 			var legend string
 			if idx := strings.Index(key, "_"); idx == -1 {
 				continue

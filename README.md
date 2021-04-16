@@ -2,9 +2,7 @@
 
 [![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
 
-<div align="left">
-	<img src="./docs/files/logo.jpg" alt="Editor" width="350">
-</div>
+![Erda logo](./docs/assets/logo-small.jpg)
 
 ## Introduction
 
@@ -12,7 +10,7 @@ Erda is an open-source platform created by [Terminus](https://www.terminus.io/) 
 
 **Functional Architecture**
 
-![](./docs/files/functional_architecture.jpg)
+![](./docs/assets/functional_architecture.jpg)
 
 Erda is mainly composed of the following parts, they are
 - DevOps
@@ -24,16 +22,15 @@ Erda is mainly composed of the following parts, they are
 We will gradually open source the entire function according to the workload. The first to complete will be DevOps, multi-cloud management, followed by microservice governance, edge computing, etc. IT service is a function planned in the roadmap, and it has not yet started.
 
 ## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
-![](./docs/files/vision.png)
+![](./docs/assets/vision.png)
 
 ## Screenshot
 
 ![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
 
-
 ## Architecture
 
-![](./docs/files/arch.png)
+![](./docs/assets/arch.png)
 
 We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
 
@@ -54,7 +51,7 @@ To start using Erda, please see our user documentation. Before using, you need t
 
 ## Contributing
 
-This section is in progress here [Contributing to Erda](/CONTRIBUTING.md)
+This section is in progress here [Contributing to Erda](CONTRIBUTING.md)
 
 ## Contact Us
 
@@ -64,11 +61,8 @@ We look forward to your connecting with us, you can ask us any questions.
 - 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - 微信公众号:
 
-<div align="left">
-	<img src="./docs/files/wechat.jpg" alt="Editor" width="150">
-</div>
-
+    ![Erda WeChat](./docs/assets/wechat-small.jpg)
 
 ## License
 
-Erda is under the AGPL 3.0 license. See the [LICENSE](/LICENSE) file for details.
+Erda is under the AGPL 3.0 license. See the [LICENSE](LICENSE) file for details.
