@@ -2,10 +2,8 @@ FROM amd64/golang:1.16.3-alpine3.12 as golang-image
 FROM unitedwardrobe/golang-librdkafka:alpine3.12-golang1.15.0-librdkafka1.5.0
 
 # use aliyun repo
-RUN echo \
-	"http://mirrors.aliyun.com/alpine/v3.12/main/" > /etc/apk/repositories
-RUN echo \
-	"http://mirrors.aliyun.com/alpine/v3.12/community/" >> /etc/apk/repositories
+RUN echo "http://mirrors.aliyun.com/alpine/v3.12/main/" > /etc/apk/repositories && \
+    echo "http://mirrors.aliyun.com/alpine/v3.12/community/" >> /etc/apk/repositories
 
 RUN apk update \
 && apk add tzdata \
@@ -14,12 +12,11 @@ RUN apk update \
 && apk add bash curl make cmake git openssh libressl-dev make curl libcurl alpine-sdk pkgconfig tzdata && \
    rm -rf /var/cache/apk/*
 
-RUN git clone git://github.com/libgit2/libgit2.git
-WORKDIR $GOPATH/libgit2
-RUN git checkout v0.28.5 && rm -rf build && mkdir build && cd build \
-    && cmake .. -DCMAKE_INSTALL_PREFIX=$TARGET -DBUILD_CLAR=OFF && cmake --build . --target install
+RUN git clone git://github.com/libgit2/libgit2.git && \
+    cd $GOPATH/libgit2 && \
+    git checkout v0.28.5 && rm -rf build && mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=$TARGET -DBUILD_CLAR=OFF && cmake --build . --target install
 
 RUN rm -rf /usr/local/go
-
 COPY --from=golang-image "/usr/local/go" "/usr/local/go"
 

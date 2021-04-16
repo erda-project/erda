@@ -4,14 +4,12 @@ FROM ${BASE_DOCKER_IMAGE} as build
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
+ENV PKG_CONFIG_PATH /lib/pkgconfig:$PKG_CONFIG_PATH
 
 ARG CONFIG_PATH
 ARG MODULE_PATH
 ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
-
-ENV PKG_CONFIG_PATH /lib/pkgconfig:$PKG_CONFIG_PATH
-
 RUN make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
 
 # use for ops
@@ -20,11 +18,11 @@ RUN tar -zcvf ./bin/scripts.tar.gz ./modules/ops/scripts/
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
-RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories \
-    && echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories
-RUN apk add --no-cache jq
-RUN apk add --update nodejs nodejs-npm
-RUN npm i -g jackson-converter@1.0.7
+RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories && \
+    echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories && \
+    apk add --no-cache jq && \
+    apk add --update nodejs nodejs-npm && \
+    npm i -g jackson-converter@1.0.7
 
 WORKDIR /app
 
@@ -42,8 +40,7 @@ COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar
 
 # use for ops
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/scripts.tar.gz" "/app/scripts.tar.gz"
-RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg \
-    && chmod 755 /usr/bin/orgalorg
-
+RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
+    chmod 755 /usr/bin/orgalorg
 
 CMD ["sh", "-c", "/app/${APP_NAME}"]
