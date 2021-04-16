@@ -37,7 +37,7 @@ func DiscoverMountPoint() (string, error) {
 		return "", err
 	}
 	reader := bufio.NewReader(mountInfo)
-	mountInfoList := []string{}
+	mountInfoList := make([]string, 0)
 	for {
 		l, err := reader.ReadString('\n')
 		if err != nil {
