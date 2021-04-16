@@ -22,6 +22,7 @@ usage() {
 if [ -z "$1" ]; then
     usage
 fi
+MODULE_PATH=$1
 ACTION=$2
 
 # cd to root directory
@@ -38,8 +39,7 @@ BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 setup_single_module_env() {
     MAKE_BUILD_CMD="build"
 
-    # module path
-    MODULE_PATH=$1
+    # application name
     APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
 
     # Dockerfile path and image name  

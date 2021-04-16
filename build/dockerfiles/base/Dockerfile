@@ -12,6 +12,8 @@ RUN apk update \
 && apk add bash curl make cmake git openssh libressl-dev make curl libcurl alpine-sdk pkgconfig tzdata && \
    rm -rf /var/cache/apk/*
 
+ENV PKG_CONFIG_PATH /lib64/pkgconfig:$PKG_CONFIG_PATH
+
 RUN git clone git://github.com/libgit2/libgit2.git && \
     cd ./libgit2 && \
     git checkout v1.0.1 && rm -rf build && mkdir build && cd build && \
