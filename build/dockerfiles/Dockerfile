@@ -18,11 +18,9 @@ RUN tar -zcvf ./bin/scripts.tar.gz ./modules/ops/scripts/
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
-RUN echo "http://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories && \
-    echo "http://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories && \
-    apk add --no-cache jq && \
+RUN apk add --no-cache jq && \
     apk add --update nodejs nodejs-npm && \
-    npm i -g jackson-converter@1.0.7
+    npm i -g jackson-converter@1.0.9
 
 WORKDIR /app
 
