@@ -47,7 +47,7 @@ build-all:
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
 			echo "build module: $$MODULE_PATH"; \
-			BUILD_PATH="cmd/$${MODULE_PATH}" MODULE_PATH=$${MODULE_PATH} APP_NAME=$${MODULE_PATH} GO_BUILD_OPTIONS="$${GO_BUILD_OPTIONS}" make build; \
+			make build MODULE_PATH=$${MODULE_PATH}; \
 			echo ""; \
 		fi; \
 	done; \
@@ -144,6 +144,6 @@ build-push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 
 build-push-all:
-	./build/scripts/docker_image.sh build-push-all
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
