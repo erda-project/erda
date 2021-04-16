@@ -13,10 +13,9 @@ RUN apk update \
    rm -rf /var/cache/apk/*
 
 RUN git clone git://github.com/libgit2/libgit2.git && \
-    cd $GOPATH/libgit2 && \
-    git checkout v1.0.1 && rm -rf build && mkdir build && cd build \
-    && cmake .. -DCMAKE_INSTALL_PREFIX=$TARGET -DBUILD_CLAR=OFF && cmake --build . --target install
+    cd ./libgit2 && \
+    git checkout v1.0.1 && rm -rf build && mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=$TARGET -DBUILD_CLAR=OFF && cmake --build . --target install
 
 RUN rm -rf /usr/local/go
 COPY --from=golang-image "/usr/local/go" "/usr/local/go"
-
