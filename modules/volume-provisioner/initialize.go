@@ -27,36 +27,47 @@ import (
 	"github.com/erda-project/erda/modules/volume-provisioner/netdatavolume"
 )
 
-const (
-	// name of local volume provisioner
-	localvolumeProvisioner = "dice/local-volume"
-	// name of netdata volume provisioner
-	netdataVolumeProvisioner = "dice/netdata-volume"
-	// namespace of volume provisioner
-	namespace = "default"
-)
+func initLocalVolumeProvisioner(config *config, csConfig *rest.Config, client kubernetes.Interface, version *version.Info) {
+	var pc *controller.ProvisionController
 
-func initLocalVolumeProvisioner(config *rest.Config, client kubernetes.Interface, version *version.Info) {
 	logrus.Infof("Creating localvolumeProvisioner...")
-	lvp := localvolume.NewLocalVolumeProvisioner(config, client, namespace)
-	pc := controller.NewProvisionController(client, localvolumeProvisioner, lvp, version.GitVersion)
+
+	lvpConfig := &localvolume.Config{
+		ModeEdge:   config.ModeEdge,
+		MatchLabel: config.LocalMatchLabel,
+		NodeName:   config.NodeName,
+		Namespace:  config.ProvisionerNamespace,
+	}
+
+	lvp := localvolume.NewLocalVolumeProvisioner(lvpConfig, csConfig, client)
+
+	if config.ModeEdge {
+		pc = controller.NewProvisionController(client, config.LocalProvisionerName, lvp, version.GitVersion,
+			controller.LeaderElection(false))
+	} else {
+		pc = controller.NewProvisionController(client, config.LocalProvisionerName, lvp, version.GitVersion)
+	}
+
 	go pc.Run(context.Background())
 }
 
-func initNetdataVolumeProvisioner(config *rest.Config, client kubernetes.Interface, version *version.Info) {
+func initNetDataVolumeProvisioner(config *config, csConfig *rest.Config, client kubernetes.Interface, version *version.Info) {
 	logrus.Infof("Creating netdatavolumeProvisioner...")
-	nvp := netdatavolume.NewNetdataVolumeProvisioner(config, client, namespace)
-	pc := controller.NewProvisionController(client, netdataVolumeProvisioner, nvp, version.GitVersion)
+
+	nvp := netdatavolume.NewNetDataVolumeProvisioner(csConfig, client)
+	pc := controller.NewProvisionController(client, config.NetProvisionerName, nvp, version.GitVersion)
+
 	go pc.Run(context.Background())
 }
 
-func initialize() error {
-	config, err := rest.InClusterConfig()
+func initialize(config *config) error {
+
+	csConfig, err := rest.InClusterConfig()
 	if err != nil {
 		logrus.Errorf("Failed to create config: %v", err)
 		return err
 	}
-	cs, err := kubernetes.NewForConfig(config)
+	cs, err := kubernetes.NewForConfig(csConfig)
 	if err != nil {
 		logrus.Errorf("Failed to create client: %v", err)
 		return err
@@ -67,8 +78,13 @@ func initialize() error {
 		return err
 	}
 
-	initLocalVolumeProvisioner(config, cs, serverVersion)
-	initNetdataVolumeProvisioner(config, cs, serverVersion)
+	if config.ModeEdge {
+		logrus.Infof("Edge mode, create localvolumeProvisioner only")
+		initLocalVolumeProvisioner(config, csConfig, cs, serverVersion)
+	} else {
+		initLocalVolumeProvisioner(config, csConfig, cs, serverVersion)
+		initNetDataVolumeProvisioner(config, csConfig, cs, serverVersion)
+	}
 
 	ch := make(chan struct{})
 	<-ch

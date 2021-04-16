@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -34,6 +35,16 @@ type CmdExecutor struct {
 
 func NewCmdExecutor(config *restclient.Config, client kubernetes.Interface, namespace string) *CmdExecutor {
 	return &CmdExecutor{config, client, namespace}
+}
+
+// OnLocal execute 'cmd' on the specified node
+func (c *CmdExecutor) OnLocal(cmd string) error {
+	cc := exec.Command("/bin/sh", "-c", cmd)
+	if _, err := cc.Output(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // OnPods execute 'cmd' on the specified pods

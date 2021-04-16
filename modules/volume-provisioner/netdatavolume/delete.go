@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (p *netdataVolumeProvisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) error {
+func (p *netDataVolumeProvisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) error {
 	logrus.Infof("Start deleting volume: %s/%s", pv.Namespace, pv.Name)
 	volPathInContainer := strutil.JoinPath("/hostfs", pv.Spec.PersistentVolumeSource.Local.Path)
 	if err := os.RemoveAll(volPathInContainer); err != nil {

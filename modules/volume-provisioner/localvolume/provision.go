@@ -15,6 +15,7 @@ package localvolume
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -32,16 +33,25 @@ import (
 type localVolumeProvisioner struct {
 	client      kubernetes.Interface
 	restClient  rest.Interface
-	config      *rest.Config
+	csConfig    *rest.Config
+	lvpConfig   *Config
 	cmdExecutor *exec.CmdExecutor
 }
 
-func NewLocalVolumeProvisioner(config *rest.Config, client kubernetes.Interface, namespace string) *localVolumeProvisioner {
+type Config struct {
+	ModeEdge   bool
+	MatchLabel string
+	NodeName   string
+	Namespace  string
+}
+
+func NewLocalVolumeProvisioner(lvpConfig *Config, csConfig *rest.Config, client kubernetes.Interface) *localVolumeProvisioner {
 	return &localVolumeProvisioner{
+		lvpConfig:   lvpConfig,
 		client:      client,
 		restClient:  client.CoreV1().RESTClient(),
-		config:      config,
-		cmdExecutor: exec.NewCmdExecutor(config, client, namespace),
+		csConfig:    csConfig,
+		cmdExecutor: exec.NewCmdExecutor(csConfig, client, lvpConfig.Namespace),
 	}
 }
 
@@ -49,26 +59,40 @@ func (p *localVolumeProvisioner) Provision(ctx context.Context, options controll
 	logrus.Infof("Start provisioning local volume: options: %v", options)
 
 	if options.SelectedNode == nil {
-		err := fmt.Errorf("Not provide selectedNode in provisionOptions")
+		err := errors.New("not provide selectedNode in provisionOptions")
 		logrus.Error(err)
 		return nil, controller.ProvisioningFinished, err
 	}
+
 	volPathOnHost, err := volumeRealPath(&options, options.PVName)
 	if err != nil {
 		return nil, controller.ProvisioningFinished, err
 	}
+
 	volPath, err := volumePath(&options, options.PVName)
 	if err != nil {
 		return nil, controller.ProvisioningFinished, err
 	}
-	nodeSelector := fmt.Sprintf("kubernetes.io/hostname=%s", options.SelectedNode.Name)
-	if err := p.cmdExecutor.OnNodesPods(fmt.Sprintf("mkdir -p %s", volPath),
-		metav1.ListOptions{
-			LabelSelector: nodeSelector,
-		}, metav1.ListOptions{
-			LabelSelector: "app=volume-provisioner",
-		}); err != nil {
-		return nil, controller.ProvisioningFinished, err
+
+	if p.lvpConfig.ModeEdge {
+		if p.lvpConfig.NodeName != options.SelectedNode.Name {
+			err = fmt.Errorf("cant't match create request, want: %s, request: %s", p.lvpConfig.NodeName, options.SelectedNode.Name)
+			return nil, controller.ProvisioningFinished, err
+		}
+		if err = p.cmdExecutor.OnLocal(fmt.Sprintf("mkdir -p %s", volPath)); err != nil {
+			logrus.Errorf("node %s mkdir %s error: %v", p.lvpConfig.NodeName, volPath, err)
+			return nil, controller.ProvisioningFinished, err
+		}
+	} else {
+		nodeSelector := fmt.Sprintf("kubernetes.io/hostname=%s", options.SelectedNode.Name)
+		if err := p.cmdExecutor.OnNodesPods(fmt.Sprintf("mkdir -p %s", volPath),
+			metav1.ListOptions{
+				LabelSelector: nodeSelector,
+			}, metav1.ListOptions{
+				LabelSelector: p.lvpConfig.MatchLabel,
+			}); err != nil {
+			return nil, controller.ProvisioningFinished, err
+		}
 	}
 
 	return &v1.PersistentVolume{
@@ -111,20 +135,20 @@ var (
 	hostPathVolumePrefixInContainer string // = "/hostfs/data/localvolume"
 )
 
-func volumePath(options *controller.ProvisionOptions, pvname string) (string, error) {
+func volumePath(options *controller.ProvisionOptions, pvName string) (string, error) {
 	mountPath, err := findLocalVolumeMountedPath(options)
 	if err != nil {
 		return "", err
 	}
-	return strutil.JoinPath(mountPath, "localvolume", pvname), nil
+	return strutil.JoinPath(mountPath, "localvolume", pvName), nil
 }
 
-func volumeRealPath(options *controller.ProvisionOptions, pvname string) (string, error) {
+func volumeRealPath(options *controller.ProvisionOptions, pvName string) (string, error) {
 	mountPath, err := findLocalVolumeMountedPath(options)
 	if err != nil {
 		return "", err
 	}
-	return strutil.JoinPath("/", strutil.TrimPrefixes(mountPath, "/hostfs"), "localvolume", pvname), nil
+	return strutil.JoinPath("/", strutil.TrimPrefixes(mountPath, "/hostfs"), "localvolume", pvName), nil
 }
 
 func findLocalVolumeMountedPath(options *controller.ProvisionOptions) (string, error) {

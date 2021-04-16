@@ -16,6 +16,7 @@ package localvolume
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -25,6 +26,8 @@ import (
 )
 
 func (p *localVolumeProvisioner) Delete(ctx context.Context, pv *v1.PersistentVolume) error {
+	var selectNodeName string
+
 	logrus.Infof("Start deleting volume: namespace: %s, pvname: %v", pv.Namespace, pv.Name)
 
 	nodeListOption, err := genListOptionFromNodeAffinity(pv.Spec.NodeAffinity)
@@ -33,9 +36,21 @@ func (p *localVolumeProvisioner) Delete(ctx context.Context, pv *v1.PersistentVo
 		return err
 	}
 
+	if values := strings.Split(nodeListOption.LabelSelector, "="); len(values) == 2 {
+		selectNodeName = values[1]
+	}
+
+	if p.lvpConfig.ModeEdge {
+		if selectNodeName != p.lvpConfig.NodeName {
+			return nil
+		}
+		return p.cmdExecutor.OnLocal(fmt.Sprintf("rm -rf %s || true",
+			strutil.JoinPath("/hostfs", pv.Spec.PersistentVolumeSource.Local.Path)))
+	}
+
 	return p.cmdExecutor.OnNodesPods(fmt.Sprintf("rm -rf %s || true",
 		strutil.JoinPath("/hostfs", pv.Spec.PersistentVolumeSource.Local.Path)),
-		nodeListOption, metav1.ListOptions{LabelSelector: "app=volume-provisioner"})
+		nodeListOption, metav1.ListOptions{LabelSelector: p.lvpConfig.MatchLabel})
 }
 
 func genListOptionFromNodeAffinity(affinity *v1.VolumeNodeAffinity) (metav1.ListOptions, error) {
@@ -50,5 +65,5 @@ func genListOptionFromNodeAffinity(affinity *v1.VolumeNodeAffinity) (metav1.List
 			}
 		}
 	}
-	return metav1.ListOptions{}, fmt.Errorf("Failed to generate ListOption from VolumeNodeAffinity: %v", affinity)
+	return metav1.ListOptions{}, fmt.Errorf("failed to generate ListOption from VolumeNodeAffinity: %v", affinity)
 }
