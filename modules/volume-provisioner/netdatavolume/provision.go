@@ -29,24 +29,21 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type netdataVolumeProvisioner struct {
+type netDataVolumeProvisioner struct {
 	client     kubernetes.Interface
 	restClient rest.Interface
 	config     *rest.Config
 }
 
-func NewNetdataVolumeProvisioner(
-	config *rest.Config,
-	client kubernetes.Interface,
-	namespace string) *netdataVolumeProvisioner {
-	return &netdataVolumeProvisioner{
+func NewNetDataVolumeProvisioner(config *rest.Config, client kubernetes.Interface) *netDataVolumeProvisioner {
+	return &netDataVolumeProvisioner{
 		client:     client,
 		restClient: client.CoreV1().RESTClient(),
 		config:     config,
 	}
 }
 
-func (p *netdataVolumeProvisioner) Provision(ctx context.Context, options controller.ProvisionOptions) (*v1.PersistentVolume, controller.ProvisioningState, error) {
+func (p *netDataVolumeProvisioner) Provision(ctx context.Context, options controller.ProvisionOptions) (*v1.PersistentVolume, controller.ProvisioningState, error) {
 	logrus.Infof("Start provisioning netdata volume: pv: %v", options.PVName)
 	volPathOnHost, err := volumeRealPath(&options, options.PVName)
 	if err != nil {
@@ -95,21 +92,21 @@ func (p *netdataVolumeProvisioner) Provision(ctx context.Context, options contro
 }
 
 // volumePath volumepath in kagent container
-func volumePath(options *controller.ProvisionOptions, pvname string) (string, error) {
+func volumePath(options *controller.ProvisionOptions, pvName string) (string, error) {
 	mountPath, err := findNetdataMountedPath(options)
 	if err != nil {
 		return "", err
 	}
-	return strutil.JoinPath(mountPath, "netdatavolume", pvname), nil
+	return strutil.JoinPath(mountPath, "netdatavolume", pvName), nil
 }
 
 // volumeRealPath volumepath in host
-func volumeRealPath(options *controller.ProvisionOptions, pvname string) (string, error) {
+func volumeRealPath(options *controller.ProvisionOptions, pvName string) (string, error) {
 	mountPath, err := findNetdataMountedPath(options)
 	if err != nil {
 		return "", err
 	}
-	return strutil.JoinPath("/", strutil.TrimPrefixes(mountPath, "/hostfs"), "netdatavolume", pvname), nil
+	return strutil.JoinPath("/", strutil.TrimPrefixes(mountPath, "/hostfs"), "netdatavolume", pvName), nil
 }
 
 var (
