@@ -108,8 +108,8 @@ func (o *DDLConverter) enterDDL(in ast.DDLNode) (out ast.Node, skip bool) {
 			var property openapiSchemaProperty
 			property.XRaw = ExtractColName(col)
 			property.Name = snake2LowerCamel(property.XRaw)
-			property.Format = ExtractColType(col)
-			property.Type = mysqlType2OpenapiType(property.Format)
+			format := ExtractColType(col)
+			property.Type = mysqlType2OpenapiType(format)
 			property.Example = genExample(property.XRaw, property.Type)
 			property.Description = ExtractColComment(col)
 			property.XSource = schema.Name
@@ -143,8 +143,8 @@ func (o *DDLConverter) enterDDL(in ast.DDLNode) (out ast.Node, skip bool) {
 				property.XSource = schemaName
 				property.XRaw = ExtractAlterTableAddColName(spec)
 				property.Name = snake2LowerCamel(property.XRaw)
-				property.Format = ExtractAlterTableAddColType(spec)
-				property.Type = mysqlType2OpenapiType(property.Format)
+				format := ExtractAlterTableAddColType(spec)
+				property.Type = mysqlType2OpenapiType(format)
 				property.Example = genExample(property.XRaw, property.Type)
 				property.Description = ExtractAlterTableAddColComment(spec)
 				schema.Properties[property.Name] = &property
@@ -160,8 +160,8 @@ func (o *DDLConverter) enterDDL(in ast.DDLNode) (out ast.Node, skip bool) {
 					property.Name = snake2LowerCamel(property.XRaw)
 				}
 				if format := ExtractAlterTableChangeColType(spec); format != "" {
-					property.Format = format
-					property.Type = mysqlType2OpenapiType(property.Format)
+					// property.Format = format
+					property.Type = mysqlType2OpenapiType(format)
 				}
 				property.Example = genExample(property.XRaw, property.Type)
 				if desc := ExtractAlterTableChangeColComment(spec); desc != "" {
@@ -177,8 +177,8 @@ func (o *DDLConverter) enterDDL(in ast.DDLNode) (out ast.Node, skip bool) {
 					continue
 				}
 				if format := ExtractAlterTableModifyColType(spec); format != "" {
-					property.Format = format
-					property.Type = mysqlType2OpenapiType(property.Format)
+					// property.Format = format
+					property.Type = mysqlType2OpenapiType(format)
 				}
 				property.Example = genExample(property.XRaw, property.Type)
 				if desc := ExtractAlterTableModifyColComment(spec); desc != "" {
@@ -245,9 +245,9 @@ func (s OpenapiSchema) getProperty(raw string) (*openapiSchemaProperty, bool) {
 }
 
 type openapiSchemaProperty struct {
-	Name        string      `json:"-" yaml:"-"`
-	Type        string      `json:"type" yaml:"type"`
-	Format      string      `json:"format" yaml:"format"`
+	Name string `json:"-" yaml:"-"`
+	Type string `json:"type" yaml:"type"`
+	// Format      string      `json:"format,omitempty" yaml:"format"`
 	Example     interface{} `json:"example" yaml:"example"`
 	Description string      `json:"description" yaml:"description"`
 	XRaw        string      `json:"x-dice-raw" yaml:"x-dice-raw"`

@@ -216,7 +216,7 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 	}
 
 	// 鉴权 {asset 创建者, 企业管理人员, 关联项目管理人员, 关联应用管理人员} 才可以创建 version
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return nil, nil, nil, apierrors.CreateAPIAssetVersion.AccessDenied()
 	}
@@ -613,7 +613,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	}
 
 	// 查询客户端详情 (一般角色只能用自己的客户端, 企业管理员可以用所有客户端)
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	rolesMOrgs := rolesSet.RolesOrgs(bdl.OrgMRoles...)
 	client, err := dbclient.GetMyClient(&apistructs.GetClientReq{
 		OrgID:     req.OrgID,
@@ -1127,7 +1127,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 	}
 
 	// 鉴权: 创建 SLA 的权限与 API Asset 的 W 权限一致
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.CreateSLA.AccessDenied()
 	}

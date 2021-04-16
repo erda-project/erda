@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package dbclient 定义数据库操作的方法, orm 等。
+// package dbclient defines operations about database
 package dbclient
 
 import (
@@ -51,7 +51,6 @@ func Close() error {
 	return DB.DBEngine.Close()
 }
 
-// TODO: 自定义初始化内容
 func (db *DBClient) initOpts() error {
 	return nil
 }

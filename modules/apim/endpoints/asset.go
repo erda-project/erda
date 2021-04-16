@@ -39,7 +39,7 @@ const (
 	urlPathSLAID           = "slaID"
 )
 
-// CreateAPIAsset 创建 API 资料
+// CreateAPIAsset creates APIAsset
 func (e *Endpoints) CreateAPIAsset(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -63,7 +63,7 @@ func (e *Endpoints) CreateAPIAsset(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(assetID)
 }
 
-// GetAPIAsset 查询 API 资料
+// GetAPIAsset selects APIAsset
 func (e *Endpoints) GetAPIAsset(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -88,7 +88,7 @@ func (e *Endpoints) GetAPIAsset(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(data, []string{data.Asset.CreatorID})
 }
 
-// PagingAPIAssets 分页查询 API 资料
+// PagingAPIAssets pages APIAssets
 func (e *Endpoints) PagingAPIAssets(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -122,7 +122,7 @@ func (e *Endpoints) PagingAPIAssets(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp(result, result.UserIDs)
 }
 
-// UpdateAPIAsset 修改 API 资料
+// UpdateAPIAsset updates APIAsset
 func (e *Endpoints) UpdateAPIAsset(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -154,7 +154,7 @@ func (e *Endpoints) UpdateAPIAsset(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(nil)
 }
 
-// DeleteAPIAsset 删除 API 资料
+// DeleteAPIAsset deletes APIAsset
 func (e *Endpoints) DeleteAPIAsset(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
