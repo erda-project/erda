@@ -4,7 +4,6 @@ FROM ${BASE_DOCKER_IMAGE} as build
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
-ENV PKG_CONFIG_PATH /lib/pkgconfig:$PKG_CONFIG_PATH
 
 ARG CONFIG_PATH
 ARG MODULE_PATH
