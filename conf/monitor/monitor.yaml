@@ -10,7 +10,7 @@ elasticsearch:
   password: "${ES_SECURITY_PASSWORD}"
 
 elasticsearch@logs:
-  urls: "${LOGS_ES_URL:http://localhost:9200}"
+  urls: "${ES_URL:http://localhost:9200}"
   security: ${LOGS_ES_SECURITY_ENABLE:false}
   username: "${LOGS_ES_SECURITY_USERNAME}"
   password: "${LOGS_ES_SECURITY_PASSWORD}"
@@ -50,7 +50,7 @@ metrics-index-manager:
 metrics-query:
   _enable: ${DASHBOARD_ENABLE:true}
   chart_meta:
-    path: ${CONF_PATH}/charts
+    path: ${CONFIG_PATH}/charts
     reload_interval: "30s"
   metric_meta:
     sources:
@@ -58,76 +58,76 @@ metrics-query:
       - "file"
       - "database"
     group_files:
-      - "${CONF_PATH}/metricmeta/groups/org.yml"
-      - "${CONF_PATH}/metricmeta/groups/micro_service.yml"
-    metric_meta_path: "${CONF_PATH}/metricmeta/metrics"
+      - "${CONFIG_PATH}/metricmeta/groups/org.yml"
+      - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
+    metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 metricq-example:
 
-logs-query:
-  _enable: ${LOGS_QUERY_ENABLE:true}
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: true # Auto create keyspace
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-logs-index-query:
-  query_back_es: ${LOGS_QUERY_BACK_ES:false}
-log-metric-rules:
-trace-query:
-  _enable: ${LOGS_QUERY_ENABLE:true}
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: true # 自动创建 keyspace
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-#apm providers
-apm-runtime:
-apm-topology:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-apm-report:
-apm-alert:
-apm-trace:
-
-alert-apis:
-  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
-  org_filter_tags: "${ORG_FILTER_TAGS:size,platform_addon,os,kernel_version,container_id,version,is_edge,login_callback,namespace,app_config_namespace,container_name,container_image,http_port,image_version,deployment,ssh_user,deployment_id,email_smtp_port,openapi_addr,ingress_version,email_smtp_is_ssl,openapi_token_for_action_bootstrap,email_smtp_host,ssh_password,email_smtp_display_user,metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,org_id,org_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key,root_domain,email_smtp_username,inside,email_smtp_username,cluster_type,protocol,email_smtp_password,storage_mountpoint,terminus_version,email_smtp_display_user,openapi_public_url}"
-  silence_policy: "${SILENCE_POLICY:fixed,doubled}"
-  cassandra:
-    session:
-      keyspace:
-        name: "spot_prod"
-    gc_grace_seconds: 86400
-alert-details-apis:
-
-report-apis:
-  pipeline:
-    version: "1.1"
-    action_type: "reportengine"
-    action_version: "1.0"
-  report_cron:
-    daily_cron: "0 9 * * *"
-    weekly_cron: "0 9 * * 1"
-    monthly_cron: "0 20 * * *"
-  cluster_name: "${DICE_CLUSTER_NAME}"
-
-org-apis:
-  offline_timeout: "${DASHBOARD_OFFLINE_TIMEOUT:3s}"
-  offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
-runtime-apis:
-project-apis:
-global-settings:
-chart-block:
-  preset_dashboards: "${CONF_PATH}/preset-dashboards"
-template:
+#logs-query:
+#  _enable: ${LOGS_QUERY_ENABLE:true}
+#  cassandra:
+#    keyspace:
+#      name: "spot_prod"
+#      auto: true # Auto create keyspace
+#      replication:
+#        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+#        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+#logs-index-query:
+#  query_back_es: ${LOGS_QUERY_BACK_ES:false}
+#log-metric-rules:
+#trace-query:
+#  _enable: ${LOGS_QUERY_ENABLE:true}
+#  cassandra:
+#    keyspace:
+#      name: "spot_prod"
+#      auto: true # 自动创建 keyspace
+#      replication:
+#        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+#        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+##apm providers
+#apm-runtime:
+#apm-topology:
+#  cassandra:
+#    keyspace:
+#      name: "spot_prod"
+#      replication:
+#        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+#        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+#apm-report:
+#apm-alert:
+#apm-trace:
+#
+#alert-apis:
+#  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
+#  org_filter_tags: "${ORG_FILTER_TAGS:size,platform_addon,os,kernel_version,container_id,version,is_edge,login_callback,namespace,app_config_namespace,container_name,container_image,http_port,image_version,deployment,ssh_user,deployment_id,email_smtp_port,openapi_addr,ingress_version,email_smtp_is_ssl,openapi_token_for_action_bootstrap,email_smtp_host,ssh_password,email_smtp_display_user,metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,org_id,org_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key,root_domain,email_smtp_username,inside,email_smtp_username,cluster_type,protocol,email_smtp_password,storage_mountpoint,terminus_version,email_smtp_display_user,openapi_public_url}"
+#  silence_policy: "${SILENCE_POLICY:fixed,doubled}"
+#  cassandra:
+#    session:
+#      keyspace:
+#        name: "spot_prod"
+#    gc_grace_seconds: 86400
+#alert-details-apis:
+#
+#report-apis:
+#  pipeline:
+#    version: "1.1"
+#    action_type: "reportengine"
+#    action_version: "1.0"
+#  report_cron:
+#    daily_cron: "0 9 * * *"
+#    weekly_cron: "0 9 * * 1"
+#    monthly_cron: "0 20 * * *"
+#  cluster_name: "${DICE_CLUSTER_NAME}"
+#
+#org-apis:
+#  offline_timeout: "${DASHBOARD_OFFLINE_TIMEOUT:3s}"
+#  offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
+#runtime-apis:
+#project-apis:
+#global-settings:
+#chart-block:
+#  preset_dashboards: "${CONFIG_PATH}/preset-dashboards"
+#template:
 i18n:
   common:
     - conf/common/i18n/common.yml
@@ -152,4 +152,4 @@ http-server@admin:
 #node-topo:
 #notify-query:
 #  files:
-#    - ${CONF_PATH}/dice-configs/notity/notify
+#    - ${CONFIG_PATH}/dice-configs/notity/notify
