@@ -86,7 +86,7 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 		params = others
 	}
 	parser.SetParams(params)
-	unit := options.Get("epoch") // 保持和 influxdb 一样的参数
+	unit := options.Get("epoch") // Keep the same parameters as the influxdb.
 	if len(unit) > 0 {
 		unit, err := tsql.ParseTimeUnit(unit)
 		if err != nil {
