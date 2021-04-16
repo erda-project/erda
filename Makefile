@@ -47,7 +47,7 @@ build-all:
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
 			echo "build module: $$MODULE_PATH"; \
-			MODULE_PATH=$${MODULE_PATH} make build; \
+			MODULE_PATH=$${MODULE_PATH} make build GO_BUILD_MUSL_TAGS="--tags musl"; \
 			echo ""; \
 		fi; \
 	done; \

@@ -12,6 +12,8 @@ run:
     - third_party
   skip-files:
     - apistructs/generated_desc.go
+  build-tags:
+    - musl
 
 linters-settings:
   goimports:
