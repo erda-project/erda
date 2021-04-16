@@ -24,14 +24,10 @@ on:
 jobs:
   CI:
     runs-on: ubuntu-latest
+    container:
+      image: letmein7788/letmein:golangci-lint
     steps:
       - uses: actions/checkout@v2
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install libc-dev pkg-config librdkafka-dev libgit2-dev
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
       - name: Go generate files
         run: make prepare
       - name: Set up Go mod
@@ -57,5 +53,5 @@ jobs:
         run: make
       - name: Run Test
         run: |
-          go test -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
-          bash <(curl -s https://codecov.io/bash)
+          go test -tags=musl -work -cpu=2 -timeout 3s -race -coverprofile=coverage.txt -covermode=atomic ./...
+          curl -s https://codecov.io/bash | bash
