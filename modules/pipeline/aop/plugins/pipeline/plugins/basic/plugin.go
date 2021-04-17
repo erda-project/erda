@@ -27,7 +27,7 @@ type Plugin struct {
 func New() *Plugin { return &Plugin{} }
 
 func (p *Plugin) Name() string { return "basic" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	pipeline := ctx.SDK.Pipeline
 
 	// make report content

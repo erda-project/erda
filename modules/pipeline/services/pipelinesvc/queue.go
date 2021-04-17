@@ -47,6 +47,7 @@ func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequ
 	if err := checkQueueValidateWithPipelineCreateReq(req, queue); err != nil {
 		return nil, err
 	}
+	req.BindQueue = queue
 
 	return queue, nil
 }
