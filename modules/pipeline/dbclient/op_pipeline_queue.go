@@ -395,6 +395,7 @@ func (client *Client) UpdatePipelineQueue(req apistructs.PipelineQueueUpdateRequ
 	if !exist {
 		return nil, fmt.Errorf("queue not found")
 	}
+	req.PipelineSource = queueIDLabel.PipelineSource
 
 	// delete old fields except __queue_id
 	_, err = session.Where("`target_id` = ?", req.ID).Where("`key` != ?", queueLabelKeyID).Delete(&spec.PipelineLabel{})

@@ -14,7 +14,6 @@
 package enhancedqueue
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -103,6 +102,20 @@ func (eq *EnhancedQueue) PopPending(dryRun ...bool) string {
 	if peeked == nil {
 		return ""
 	}
+
+	return eq.popPendingKeyWithoutLock(peeked.Key(), dryRun...)
+}
+
+// PopPendingKey pop specified key to processing queue.
+func (eq *EnhancedQueue) PopPendingKey(key string, dryRun ...bool) string {
+	eq.lock.Lock()
+	defer eq.lock.Unlock()
+
+	return eq.popPendingKeyWithoutLock(key, dryRun...)
+}
+
+// popPendingKeyWithoutLock pop specified key from pending queue, lock outside.
+func (eq *EnhancedQueue) popPendingKeyWithoutLock(popKey string, dryRun ...bool) string {
 	// 确认窗口大小
 	if int64(eq.processing.Len()) >= eq.processingWindow {
 		return ""
@@ -111,15 +124,15 @@ func (eq *EnhancedQueue) PopPending(dryRun ...bool) string {
 
 	// dryRun
 	if len(dryRun) > 0 && dryRun[0] {
-		return peeked.Key()
+		return popKey
 	}
 	// 真实处理
-	popped := eq.pending.Pop()
-	if peeked.Key() != popped.Key() {
-		panic(fmt.Errorf("should be same, peeked: %s, popped: %s", peeked.Key(), popped.Key()))
+	poppedItem := eq.pending.Remove(popKey)
+	if poppedItem == nil {
+		return ""
 	}
-	eq.processing.Add(popped)
-	return popped.Key()
+	eq.processing.Add(poppedItem)
+	return poppedItem.Key()
 }
 
 // PopProcessing 将指定 key 从 processing 队列中移除，表示完成
@@ -153,4 +166,11 @@ func (eq *EnhancedQueue) SetProcessingWindow(newWindow int64) {
 	defer eq.lock.Unlock()
 
 	eq.processingWindow = newWindow
+}
+
+func (eq *EnhancedQueue) RangePending(f func(priorityqueue.Item) bool) {
+	eq.lock.Lock()
+	defer eq.lock.Unlock()
+
+	eq.pending.Range(f)
 }

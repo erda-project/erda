@@ -174,7 +174,7 @@ func do() (*httpserver.Server, error) {
 	server.RegisterEndpoint(ep.Routes())
 
 	// 加载 event manager
-	events.Initialize(bdl, publisher)
+	events.Initialize(bdl, publisher, dbClient)
 
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()

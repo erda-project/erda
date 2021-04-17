@@ -28,7 +28,7 @@ import (
 // CDPCallback cdp hook的回调
 func (e *Endpoints) CDPCallback(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
-		req           apistructs.PipelineEvent
+		req           apistructs.PipelineInstanceEvent
 		runningTaskID int64
 	)
 	if r.Body == nil {

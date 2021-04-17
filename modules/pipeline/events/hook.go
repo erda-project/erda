@@ -18,12 +18,14 @@ type Hook interface {
 	HandleWebSocket
 	HandleDingDing
 	HandleHTTP
+	HandleDB
 }
 
 type HandleWebhook interface{ HandleWebhook() error }
 type HandleWebSocket interface{ HandleWebSocket() error }
 type HandleDingDing interface{ HandleDingDing() error }
 type HandleHTTP interface{ HandleHTTP() error }
+type HandleDB interface{ HandleDB() error }
 
 type HookType string
 
@@ -32,4 +34,5 @@ const (
 	HookTypeWebSocket HookType = "WEBSOCKET"
 	HookTypeDINGDING  HookType = "DINGDING"
 	HookTypeHTTP      HookType = "HTTP"
+	HookTypeDB        HookType = "DB"
 )

@@ -89,7 +89,7 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 	}
 
 	// event
-	events.EmitPipelineEvent(&p, req.UserID)
+	events.EmitPipelineInstanceEvent(&p, req.UserID)
 
 	return nil
 

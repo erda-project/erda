@@ -84,3 +84,13 @@ func (pq *PriorityQueue) Remove(key string) Item {
 func (pq *PriorityQueue) Len() int {
 	return pq.data.Len()
 }
+
+// Range range items and apply func to item one by one.
+func (pq *PriorityQueue) Range(f func(Item) (stopRange bool)) {
+	for _, item := range pq.data.items {
+		stopRange := f(item)
+		if stopRange {
+			break
+		}
+	}
+}

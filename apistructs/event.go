@@ -38,15 +38,15 @@ type ReleaseEvent struct {
 	Content ReleaseEventData `json:"content"`
 }
 
-// PipelineEvent 流水线状态变化时发送的事件
+// PipelineInstanceEvent 流水线状态变化时发送的事件
 // event: pipeline
 // action: status 见 internal/pipeline/spec/pipeline_status.go#Status
-type PipelineEvent struct {
+type PipelineInstanceEvent struct {
 	EventHeader
-	Content PipelineEventData `json:"content"`
+	Content PipelineInstanceEventData `json:"content"`
 }
 
-type PipelineEventData struct {
+type PipelineInstanceEventData struct {
 	PipelineID      uint64     `json:"pipelineID"`
 	Status          string     `json:"status"`
 	Branch          string     `json:"branch"`

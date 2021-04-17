@@ -111,7 +111,12 @@ type PipelineExtraInfo struct {
 
 	SnippetChain []uint64 `json:"snippetChain,omitempty"`
 
-	QueueID uint64 `json:"queueID,omitempty"`
+	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
+}
+
+type QueueInfo struct {
+	QueueID        uint64 `json:"queueID"`
+	CustomPriority int64  `json:"customPriority"`
 }
 
 type Snapshot struct {
@@ -133,6 +138,12 @@ type Snapshot struct {
 
 	// AppliedResources calculated by all actions
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
+
+	// BindQueue stores the binding queue info if have.
+	BindQueue *apistructs.PipelineQueue `json:"bindQueue,omitempty"`
+
+	// Events stores pipeline level k8s-like events
+	Events []*apistructs.PipelineEvent `json:"events,omitempty"`
 }
 
 // FromDB 兼容 Snapshot 老数据

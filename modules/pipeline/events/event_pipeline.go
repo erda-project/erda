@@ -47,7 +47,7 @@ func (e *PipelineEvent) Sender() string {
 }
 
 func (e *PipelineEvent) Content() interface{} {
-	content := apistructs.PipelineEventData{
+	content := apistructs.PipelineInstanceEventData{
 		PipelineID:      e.Pipeline.ID,
 		Status:          e.Pipeline.Status.String(),
 		Branch:          e.Pipeline.Labels[apistructs.LabelBranch],
@@ -104,7 +104,7 @@ func (e *PipelineEvent) HandleWebSocket() error {
 	payload.ProjectID = e.Pipeline.Labels[apistructs.LabelProjectID]
 	payload.OrgID = e.Pipeline.Labels[apistructs.LabelOrgID]
 	payload.Status = e.Pipeline.Status
-	payload.CostTimeSec = e.Content().(apistructs.PipelineEventData).CostTimeSec
+	payload.CostTimeSec = e.Content().(apistructs.PipelineInstanceEventData).CostTimeSec
 
 	wsEvent := websocket.Event{
 		Scope: apistructs.Scope{
@@ -165,6 +165,10 @@ func (e *PipelineEvent) HandleHTTP() error {
 		},
 		Content: e.Content(),
 	})
+}
+
+func (e *PipelineEvent) HandleDB() error {
+	return nil
 }
 
 func getDingDingHookURL(e *PipelineEvent) (string, error) {

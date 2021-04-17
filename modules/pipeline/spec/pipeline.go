@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -239,22 +237,13 @@ func (p *Pipeline) GetResourceGCTTL() uint64 {
 
 // GetPipelineQueueID return pipeline queue id if exist, or 0.
 func (p *Pipeline) GetPipelineQueueID() (uint64, bool) {
-	if p.Labels == nil {
+	if p.Extra.QueueInfo == nil {
 		return 0, false
 	}
-	queueIDStr, ok := p.Labels[apistructs.LabelBindPipelineQueueID]
-	if !ok {
-		return 0, false
-	}
-	queueID, err := strconv.ParseUint(queueIDStr, 10, 64)
-	if err != nil {
-		logrus.Errorf("failed to get pipeline queueID, queueIDStr: %s, err: %v", queueIDStr, err)
-		return 0, false
-	}
-	return queueID, true
+	return p.Extra.QueueInfo.QueueID, true
 }
 
 // GetPipelineAppliedResources return limited and min resource when pipeline run.
 func (p *Pipeline) GetPipelineAppliedResources() apistructs.PipelineAppliedResources {
-	return apistructs.PipelineAppliedResources{}
+	return p.Snapshot.AppliedResources
 }

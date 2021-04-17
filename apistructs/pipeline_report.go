@@ -20,6 +20,10 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+const (
+	PipelineReportEventMetaKey = "event"
+)
+
 // PipelineReportSet 流水线报告集，一条流水线可能会有多个报告，称为报告集
 type PipelineReportSet struct {
 	PipelineID uint64           `json:"pipelineID"`
@@ -44,6 +48,7 @@ type PipelineReportType string
 var (
 	PipelineReportTypeBasic   PipelineReportType = "basic"
 	PipelineReportTypeAPITest PipelineReportType = "api-test"
+	PipelineReportTypeEvent   PipelineReportType = "event"
 )
 
 // PipelineReportMeta 流水线报告元数据，前端根据该数据拼装报告详情界面

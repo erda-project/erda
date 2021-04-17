@@ -138,12 +138,15 @@ func (e *Endpoints) updatePipelineQueue(ctx context.Context, r *http.Request, va
 	}
 
 	// do update
-	queues, err := e.queueManage.UpdatePipelineQueue(req)
+	queue, err := e.queueManage.UpdatePipelineQueue(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(queues)
+	// update queue in manager
+	e.reconciler.QueueManager.UpdatePipelineQueue(queue)
+
+	return httpserver.OkResp(queue)
 }
 
 func (e *Endpoints) deletePipelineQueue(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

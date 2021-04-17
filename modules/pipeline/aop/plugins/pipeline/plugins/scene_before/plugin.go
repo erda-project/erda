@@ -29,7 +29,7 @@ func (p *Plugin) Name() string {
 	return "scene_before"
 }
 
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource == apistructs.PipelineSourceAutoTest && !ctx.SDK.Pipeline.IsSnippet {
 		if strings.HasPrefix(ctx.SDK.Pipeline.PipelineYmlName, apistructs.PipelineSourceAutoTestPlan.String()+"-") {

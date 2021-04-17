@@ -14,8 +14,6 @@
 package precheck_before_pop
 
 import (
-	"context"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 )
@@ -27,7 +25,7 @@ type Plugin struct {
 func New() *Plugin { return &Plugin{} }
 
 func (p *Plugin) Name() string { return "queue" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 
 	var httpBeforeCheckRun = HttpBeforeCheckRun{
 		PipelineID: ctx.SDK.Pipeline.ID,
@@ -36,7 +34,7 @@ func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 	}
 	result, err := httpBeforeCheckRun.CheckRun()
 	if err != nil {
-		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
+		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
 			Success: false,
 			Reason:  err.Error(),
 			// add default retryOption if request is error
@@ -48,7 +46,7 @@ func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 	}
 
 	if result.CheckResult == CheckResultSuccess {
-		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
+		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, apistructs.PipelineQueueValidateResult{
 			Success: true,
 		})
 	} else {
@@ -60,7 +58,7 @@ func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
 			}
 		}
 
-		context.WithValue(ctx.Context, apistructs.PreCheckResultContextKey, validResult)
+		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, validResult)
 	}
 	return nil
 }

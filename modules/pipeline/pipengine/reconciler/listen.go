@@ -19,7 +19,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -42,6 +44,26 @@ func (r *Reconciler) Listen() {
 						return
 					}
 
+					// add into queue
+					rlog.PInfof(pipelineID, "add into queue, waiting to pop from the queue")
+					popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
+					if err != nil {
+						rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
+						if needRetryIfErr {
+							r.reconcileAgain(pipelineID)
+							return
+						}
+						// no need retry, treat as failed
+						_ = r.updatePipelineStatus(&spec.Pipeline{
+							PipelineBase: spec.PipelineBase{
+								ID:     pipelineID,
+								Status: apistructs.PipelineStatusFailed,
+							}})
+						return
+					}
+					<-popCh
+					rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
+
 					// construct context for pipeline reconciler
 					pCtx := makeContextForPipelineReconcile(pipelineID)
 
@@ -51,9 +73,7 @@ func (r *Reconciler) Listen() {
 					// if reconcile failed, put and wait next reconcile
 					if reconcileErr != nil {
 						rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
-						// add to reconciler again, wait next reconcile
-						time.Sleep(time.Second * 5)
-						r.Add(pipelineID)
+						r.reconcileAgain(pipelineID)
 						return
 					}
 				}()
@@ -64,6 +84,12 @@ func (r *Reconciler) Listen() {
 	}
 }
 
+// reconcileAgain add to reconciler again, wait next reconcile
+func (r *Reconciler) reconcileAgain(pipelineID uint64) {
+	time.Sleep(time.Second * 5)
+	r.Add(pipelineID)
+}
+
 // makeContextForPipelineReconcile
 func makeContextForPipelineReconcile(pipelineID uint64) context.Context {
 	pCtx := context.WithValue(context.Background(), ctxKeyPipelineID, pipelineID)
@@ -71,6 +97,12 @@ func makeContextForPipelineReconcile(pipelineID uint64) context.Context {
 	pCtx = context.WithValue(pCtx, ctxKeyPipelineExitCh, exitCh)
 	pCtx, pCancel := context.WithCancel(pCtx)
 	pCtx = context.WithValue(pCtx, ctxKeyPipelineExitChCancelFunc, pCancel)
+	go func() {
+		select {
+		case <-exitCh:
+			// default receiver to prevent send block
+		}
+	}()
 	return pCtx
 }
 

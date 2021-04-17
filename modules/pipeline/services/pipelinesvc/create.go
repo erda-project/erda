@@ -326,7 +326,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 	s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
 
 	// events
-	events.EmitPipelineEvent(p, p.GetSubmitUserID())
+	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
 
 	// 统一处理嵌套流水线
 	// 批量查询 snippet yaml

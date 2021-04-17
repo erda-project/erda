@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const PreCheckResultContextKey = "precheck_result"
+const PipelinePreCheckResultContextKey = "precheck_result"
 
 type PipelineQueueMode string
 

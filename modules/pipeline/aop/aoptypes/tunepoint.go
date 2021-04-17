@@ -47,7 +47,7 @@ const (
 type TunePoint interface {
 	Type() TuneType
 	Name() string
-	Handle(TuneContext) error
+	Handle(*TuneContext) error
 }
 
 type PipelineBaseTunePoint struct{}
