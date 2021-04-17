@@ -19,8 +19,6 @@ Erda is mainly composed of the following parts, they are
 - Edge Computing
 - FastData Management
 
-We will gradually open source the entire function according to the workload. The first to complete will be DevOps, multi-cloud management, followed by microservice governance, edge computing, etc. IT service is a function planned in the roadmap, and it has not yet started.
-
 ## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
 ![](./docs/assets/vision.png)
 
