@@ -26,6 +26,7 @@ WORKDIR /app
 ARG APP_NAME
 ARG CONFIG_PATH
 ENV APP_NAME=${APP_NAME}
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/:/lib64
 
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/${APP_NAME}" "/app/${APP_NAME}"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
