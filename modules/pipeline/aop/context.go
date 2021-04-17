@@ -21,7 +21,7 @@ import (
 )
 
 // NewContextForPipeline 用于快速构造流水线 AOP 上下文
-func NewContextForPipeline(p spec.Pipeline, trigger aoptypes.TuneTrigger, customKVs ...map[interface{}]interface{}) aoptypes.TuneContext {
+func NewContextForPipeline(p spec.Pipeline, trigger aoptypes.TuneTrigger, customKVs ...map[interface{}]interface{}) *aoptypes.TuneContext {
 	ctx := aoptypes.TuneContext{
 		Context: context.Background(),
 		SDK:     globalSDK.Clone(),
@@ -35,11 +35,11 @@ func NewContextForPipeline(p spec.Pipeline, trigger aoptypes.TuneTrigger, custom
 			ctx.PutKV(k, v)
 		}
 	}
-	return ctx
+	return &ctx
 }
 
 // NewContextForTask 用于快速构任务 AOP 上下文
-func NewContextForTask(task spec.PipelineTask, p spec.Pipeline, trigger aoptypes.TuneTrigger, customKVs ...map[interface{}]interface{}) aoptypes.TuneContext {
+func NewContextForTask(task spec.PipelineTask, p spec.Pipeline, trigger aoptypes.TuneTrigger, customKVs ...map[interface{}]interface{}) *aoptypes.TuneContext {
 	// 先构造 pipeline 上下文
 	ctx := NewContextForPipeline(p, trigger, customKVs...)
 	// 修改 tune type

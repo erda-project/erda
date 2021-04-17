@@ -31,7 +31,7 @@ type Plugin struct {
 func New() *Plugin { return &Plugin{} }
 
 func (p *Plugin) Name() string { return "unit-test-report" }
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 
 	if ctx.SDK.Task.Type != taskType {
 		return nil
