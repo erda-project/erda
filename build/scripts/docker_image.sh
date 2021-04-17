@@ -71,7 +71,7 @@ setup_single_module_env() {
 # setup envionment variables for build all
 setup_build_all_env() {
     MAKE_BUILD_CMD="build-all"
-    DOCKER_IMAGE=$(basename "$(pwd)"):${VERSION}
+    DOCKER_IMAGE="erda:${VERSION}"
     CONFIG_PATH=""
     MODULE_PATH=""
 }
