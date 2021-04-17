@@ -24,7 +24,7 @@ Erda is mainly composed of the following parts, they are
 
 ## Screenshot
 
-![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
+![Screenshot](https://static.erda.cloud/images/erda.gif)
 
 ## Architecture
 
