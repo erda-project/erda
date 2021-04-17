@@ -16,6 +16,7 @@ package events
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 )
 
@@ -30,6 +31,7 @@ type Event interface {
 
 type DefaultEvent struct {
 	bdl      *bundle.Bundle
+	dbClient *dbclient.Client
 	wsClient *websocket.Publisher
 }
 
@@ -42,6 +44,7 @@ func (*DefaultEvent) HandleWebhook() error   { return nil }
 func (*DefaultEvent) HandleWebSocket() error { return nil }
 func (*DefaultEvent) HandleDingDing() error  { return nil }
 func (*DefaultEvent) HandleHTTP() error      { return nil }
+func (*DefaultEvent) HandleDB() error        { return nil }
 
 const (
 	SenderPipeline = "pipeline"
@@ -53,4 +56,5 @@ const (
 	EventKindPipeline            EventKind = "pipeline"
 	EventKindPipelineTask        EventKind = "pipeline_task"
 	EventKindPipelineTaskRuntime EventKind = "pipeline_task_runtime"
+	EventKindPipelineStream      EventKind = "pipeline_stream"
 )

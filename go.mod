@@ -31,6 +31,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -73,7 +74,7 @@ require (
 	github.com/jinzhu/now v1.1.1
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/json-iterator/go v1.1.10
-	github.com/kr/pty v1.1.5
+	github.com/kr/pty v1.1.8
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
@@ -81,7 +82,7 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/lib/pq v1.3.0 // indirect
-	github.com/libgit2/git2go/v28 v28.8.14
+	github.com/libgit2/git2go/v30 v30.0.5
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
@@ -131,6 +132,7 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
+	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c // indirect
 	golang.org/x/text v0.3.5
 	google.golang.org/grpc v1.36.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0

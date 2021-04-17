@@ -39,7 +39,7 @@ const (
 	LabelPipelineCronCompensated = "cronCompensated"
 
 	LabelBindPipelineQueueID             = "__bind_queue_id"
-	LabelBindPipelineQueueInsidePriority = "__bind_queue_inside_priority"
+	LabelBindPipelineQueueCustomPriority = "__bind_queue_custom_priority"
 
 	LabelUserID = "userID"
 

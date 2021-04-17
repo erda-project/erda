@@ -80,6 +80,9 @@ type Conf struct {
 	// gittar inner user name and password
 	GitInnerUserName     string `env:"GIT_INNER_USER_NAME"`
 	GitInnerUserPassword string `env:"GIT_INNER_USER_PASSWORD"`
+
+	// queue handle loop interval
+	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
 }
 
 var cfg Conf
@@ -258,4 +261,9 @@ func GitInnerUserName() string {
 // GitInnerUserPassword gittar内部用户名密码
 func GitInnerUserPassword() string {
 	return cfg.GitInnerUserPassword
+}
+
+// QueueLoopHandleIntervalSec return reconciler queueManager loop handle interval second.
+func QueueLoopHandleIntervalSec() uint64 {
+	return cfg.QueueLoopHandleIntervalSec
 }

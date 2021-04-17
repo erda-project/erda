@@ -30,19 +30,19 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET("/api/query", p.queryMetrics)  // for tsql
 	routes.POST("/api/query", p.queryMetrics) // for tsql
 
-	// 数据导出，临时方案
+	// Data export, temporary solution.
 	routes.GET("/api/metrics/:scope/export", p.exportMetrics)
 	routes.POST("/api/metrics/:scope/export", p.exportMetrics)
 
 	// metric meta
 	routes.GET("/api/metric/names", p.listMetricNames)
 	routes.GET("/api/metric/meta", p.listMetricMeta)
-	// routes.POST("/api/metric/meta", nil) // 注册指标元数据，TODO .
+	// routes.POST("/api/metric/meta", nil) // Register metric metadata，TODO .
 	routes.GET("/api/metric/groups", p.listMetricGroups)
 	routes.GET("/api/metric/groups/:id", p.getMetricGroup)
-	// routes.POST("/api/metric/groups", nil) // 注册指标分组信息，TODO .
-	routes.GET("/api/metadata/groups", p.listMetricGroups)   // 复用之前的接口路径
-	routes.GET("/api/metadata/groups/:id", p.getMetricGroup) // 复用之前的接口路径
+	// routes.POST("/api/metric/groups", nil) // Register for indicator grouping information，TODO .
+	routes.GET("/api/metadata/groups", p.listMetricGroups)   // Reuse the previous interface path.
+	routes.GET("/api/metadata/groups/:id", p.getMetricGroup) // Reuse the previous interface path.
 	return nil
 }
 
