@@ -61,7 +61,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 	}
 
 	// 鉴权
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.UpdateAPIAsset.AccessDenied()
 	}
@@ -165,7 +165,7 @@ func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) 
 	}
 
 	// 鉴权 当前用户是否具备修改实例记录的权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return nil, apierrors.UpdateInstantiation.AccessDenied()
 	}
@@ -323,7 +323,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 	}
 
 	// 鉴权 当前用户是否具备审批权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	written := writePermission(rolesSet, &asset)
 
 	// 查找相应的 access
@@ -617,7 +617,7 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	}
 
 	// 鉴权 当前用户是否具备修改 access 的权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := req.Identity.UserID == access.CreatorID || writePermission(rolesSet, &asset); !written {
 		return nil, apierrors.UpdateAccess.AccessDenied()
 	}
@@ -768,7 +768,7 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 	}
 
 	// SLA 的编辑权限与 API Asset 的 W 权限一致
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.UpdateSLA.AccessDenied()
 	}

@@ -93,7 +93,7 @@ func (svc *Service) GetAsset(req *apistructs.GetAPIAssetReq) (*apistructs.GetAPI
 	}()
 
 	// 按钮权限
-	permission := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	permission := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	written := writePermission(permission, &asset)
 
 	hasAccess := svc.assetHasAccess(req.OrgID, asset.AssetID)
@@ -467,7 +467,7 @@ func (svc *Service) GetAccess(req *apistructs.GetAccessReq) (map[string]interfac
 	}
 
 	// 按钮权限
-	rolesSet := bdl.FetchRolesSet(req.OrgID, req.Identity.UserID)
+	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	written := req.Identity.UserID == access.CreatorID || writePermission(rolesSet, &asset)
 
 	return map[string]interface{}{

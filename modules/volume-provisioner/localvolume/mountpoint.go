@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	NotFoundErr = errors.New("not found available mountpoint")
+	NotFoundErr = errors.New("not found available mount point")
 	//           key: MAJ:MIN
 	lsblkInfo map[string]lsblk
 )

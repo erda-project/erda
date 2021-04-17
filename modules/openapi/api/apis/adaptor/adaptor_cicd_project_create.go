@@ -11,46 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// package dbclient defines operations about database
-package dbclient
+package adaptor
 
 import (
-	"github.com/erda-project/erda/pkg/dbengine"
+	"net/http"
+
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var DB *DBClient
-
-type DBClient struct {
-	*dbengine.DBEngine
-}
-
-func Open() error {
-	if DB != nil {
-		return nil
-	}
-
-	engine, err := dbengine.Open()
-	if err != nil {
-		return err
-	}
-
-	DB = &DBClient{DBEngine: engine}
-
-	// custom init
-	if err := DB.initOpts(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func Close() error {
-	if DB == nil || DB.DBEngine == nil {
-		return nil
-	}
-	return DB.DBEngine.Close()
-}
-
-func (db *DBClient) initOpts() error {
-	return nil
+var ADAPTOR_CICD_PROJECT_CREATE = apis.ApiSpec{
+	Path:        "/api/cicds-project",
+	BackendPath: "/api/cicds-project",
+	Host:        "gittar-adaptor.marathon.l4lb.thisdcos.directory:1086",
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
 }

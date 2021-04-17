@@ -35,8 +35,8 @@ type Context struct {
 	originalTimeUnit tsql.TimeUnit
 	targetTimeUnit   tsql.TimeUnit
 	timeKey          string
-	maxTimePoints    int64 // 按时间间隔维度
-	interval         int64 // 实际使用的时间间隔
+	maxTimePoints    int64 // By time interval dimension
+	interval         int64 // The actual time interval used
 	scopes           map[string]map[string]*scopeField
 	aggregations     elastic.Aggregations
 	row              int64
