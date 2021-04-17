@@ -22,7 +22,7 @@ import (
 )
 
 // Handle 外部调用统一入口
-func Handle(ctx aoptypes.TuneContext) error {
+func Handle(ctx *aoptypes.TuneContext) error {
 	if !initialized {
 		return fmt.Errorf("AOP not initialized")
 	}

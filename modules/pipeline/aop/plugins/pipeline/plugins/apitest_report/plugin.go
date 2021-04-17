@@ -43,7 +43,7 @@ type ApiReportMeta struct {
 	ApiNotExecNum int `json:"apiNotExecNum"`
 }
 
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource != apistructs.PipelineSourceAutoTest {
 		return nil
