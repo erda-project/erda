@@ -33,12 +33,7 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 	if _, ing := r.teardownPipelines.LoadOrStore(p.Pipeline.ID, true); ing {
 		return
 	}
-	defer func() {
-		rlog.PDebugf(p.Pipeline.ID, "pipeline exit, send signal to exit channel")
-		exitCh := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})
-		exitCh <- struct{}{}
-		close(exitCh)
-	}()
+	defer closePipelineExitChannel(ctx, p.Pipeline)
 	defer r.doCompensateIfHave(ctx, p.Pipeline.ID)
 	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)
 	defer r.teardownPipelines.Delete(p.Pipeline.ID)
@@ -53,6 +48,7 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 		// aop
 		_ = aop.Handle(aop.NewContextForPipeline(*p.Pipeline, aoptypes.TuneTriggerPipelineAfterExec))
 	}()
+	defer r.QueueManager.PopOutPipelineFromQueue(p.Pipeline.ID)
 	defer logrus.Infof("reconciler: pipelineID: %d, pipeline is completed", p.Pipeline.ID)
 	for _, task := range p.Tasks {
 		if task.Status == apistructs.PipelineStatusAnalyzed || task.Status == apistructs.PipelineStatusBorn {
@@ -87,7 +83,8 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 
 // closePipelineExitChannel send signal to pipeline exit channel to stop other related things.
 func closePipelineExitChannel(ctx context.Context, p *spec.Pipeline) {
-	rlog.PDebugf(p.ID, "pipeline exit, send signal to exit channel to stop other related things")
+	rlog.PDebugf(p.ID, "pipeline exit, begin send signal to exit channel to stop other related things")
+	defer rlog.PDebugf(p.ID, "pipeline exit, end send signal to exit channel to stop other related things")
 	exitCh, ok := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})
 	if !ok {
 		return
