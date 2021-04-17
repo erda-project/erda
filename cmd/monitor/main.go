@@ -14,21 +14,11 @@
 package main
 
 import (
-	// providers and modules
-
 	"github.com/erda-project/erda-infra/modcom"
 
 	// log hub
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
-
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/project-apis"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/apis"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 
 	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
@@ -52,7 +42,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
 
 	// apm
-	// _ "terminus.io/dice/monitor/modules/business/apm/alert"
+	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"

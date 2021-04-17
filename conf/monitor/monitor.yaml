@@ -94,7 +94,6 @@ apm-topology:
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 apm-report:
 apm-alert:
-#apm-alert:
 apm-trace:
 
 alert-apis:

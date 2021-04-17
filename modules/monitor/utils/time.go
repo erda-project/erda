@@ -45,14 +45,6 @@ func ConvertUnitToMS(value int64, unit string) int64 {
 	}
 }
 
-func ConvertTimestampSecondToTimeString(t int64, layout string) string {
-	tm := time.Unix(t, 0)
-	if layout == "" {
-		layout = "2006-01-02 15:04:05"
-	}
-	return tm.Format(layout)
-}
-
 func ConvertMSToUnit(t int64) (value int64, unit string) {
 	ns := t * time.Millisecond.Nanoseconds()
 	if ns > time.Hour.Nanoseconds() {

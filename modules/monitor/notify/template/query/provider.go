@@ -37,7 +37,7 @@ import (
 
 type define struct{}
 
-func (d *define) Service() []string   { return []string{"notify-query"} }
+func (d *define) Services() []string  { return []string{"notify-query"} }
 func (d *define) Summary() string     { return "notify-query" }
 func (d *define) Description() string { return d.Summary() }
 func (d *define) Config() interface{} { return &config{} }
