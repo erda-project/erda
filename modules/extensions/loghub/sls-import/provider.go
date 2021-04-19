@@ -103,7 +103,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.importers = make(map[string]*Importer)
 	p.closeCh = make(chan struct{})
 
-	es := ctx.Service("elasticsearch").(elasticsearch.Elasticsearch)
+	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
 	err = p.initIndexTemplate(es.Client())
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.outputs.es = es.NewBatchWriter(&p.C.Output.Elasticsearch.WriterConfig)
 	p.outputs.indexPrefix = p.C.Output.Elasticsearch.IndexPrefix
 
-	k, err := ctx.Service("kafka").(kafka.Kafka).NewProducer(&p.C.Output.Kafka)
+	k, err := ctx.Service("kafka").(kafka.Interface).NewProducer(&p.C.Output.Kafka)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
