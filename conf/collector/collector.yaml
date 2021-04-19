@@ -1,5 +1,3 @@
-
-
 http-server:
     addr: ":7076"
 
@@ -22,3 +20,5 @@ monitor-collector:
         force: ${COLLECTOR_AUTH_FORCE:false}
 
 pprof:
+http-server@admin:
+    addr: ":7078"
