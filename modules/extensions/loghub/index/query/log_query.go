@@ -82,10 +82,10 @@ func newLogStatisticResponse(interval, total int64, name string) *LogStatisticRe
 		Total:    total,
 		Interval: interval,
 		Results: []*LogStatisticResult{
-			&LogStatisticResult{
+			{
 				Name: "count",
 				Data: []*CountHistogram{
-					&CountHistogram{
+					{
 						Count: ArrayAgg{
 							ChartType: "line",
 							Name:      name,

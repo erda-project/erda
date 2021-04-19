@@ -65,7 +65,7 @@ type AccountInfo struct {
 func (p *provider) getAccountInfo() (map[string]*AccountInfo, error) {
 	if len(p.C.Account.AccessKey) > 0 {
 		return map[string]*AccountInfo{
-			p.C.Account.OrgID + "/" + p.C.Account.AccessKey: &AccountInfo{
+			p.C.Account.OrgID + "/" + p.C.Account.AccessKey: {
 				OrgID:           p.C.Account.OrgID,
 				OrgName:         p.C.Account.OrgName,
 				AccessKey:       p.C.Account.AccessKey,

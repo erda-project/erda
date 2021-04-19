@@ -123,19 +123,19 @@ func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*metrics.Metric
 		Key:  "dice_workspace",
 		Name: "Workspace",
 		Values: []*metrics.ValueDefine{
-			&metrics.ValueDefine{
+			{
 				Value: "dev",
 				Name:  "Develop",
 			},
-			&metrics.ValueDefine{
+			{
 				Value: "test",
 				Name:  "Test",
 			},
-			&metrics.ValueDefine{
+			{
 				Value: "staging",
 				Name:  "Staging",
 			},
-			&metrics.ValueDefine{
+			{
 				Value: "prod",
 				Name:  "Production",
 			},

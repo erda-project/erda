@@ -79,12 +79,12 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 func (p *provider) getCenterESClients(indices ...string) []*ESClient {
 	if p.C.QueryBackES {
 		return []*ESClient{
-			&ESClient{Client: p.client, URLs: "-", Indices: indices},
-			&ESClient{Client: p.backClient, URLs: "-b", Indices: indices},
+			{Client: p.client, URLs: "-", Indices: indices},
+			{Client: p.backClient, URLs: "-b", Indices: indices},
 		}
 	}
 	return []*ESClient{
-		&ESClient{Client: p.client, URLs: "-", Indices: indices},
+		{Client: p.client, URLs: "-", Indices: indices},
 	}
 }
 
