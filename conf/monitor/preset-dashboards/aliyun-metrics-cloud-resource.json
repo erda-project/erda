@@ -1,5 +1,5 @@
 {
-  "id": "aliyun-metrics-dashboard-1",
+  "id": "aliyun-metrics-cloud-resource",
   "name": "阿里云云资源监控大盘",
   "desc": "展示阿里云产品RDS, WAF, APIGateway的运作情况",
   "scope": "org",

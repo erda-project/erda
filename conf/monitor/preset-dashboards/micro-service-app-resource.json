@@ -1,5 +1,5 @@
 {
-  "id": "micro-service-dashboard-1",
+  "id": "micro-service-app-resource",
   "name": "应用监控大盘",
   "desc": "应用常见的各种重点指标图表",
   "scope": "micro_service",
