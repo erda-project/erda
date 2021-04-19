@@ -31,7 +31,7 @@ func JQ(jsonInput, filter string) (interface{}, error) {
 	f.WriteString(jsonInput)
 	filter = strings.ReplaceAll(filter, `"`, `\"`)
 	filter = filter + " | select(.!=null) | tojson"
-	jq := fmt.Sprintf(`cat %s | jq -c -j "%s"`, f.Name(), filter)
+	jq := fmt.Sprintf(`jq -c -j "%s" '%s'`, filter, f.Name())
 	wrappedJQ := exec.Command("/bin/sh", "-c", jq)
 	output, err := wrappedJQ.CombinedOutput()
 	if err != nil {

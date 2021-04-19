@@ -19,7 +19,7 @@ FROM ${BASE_DOCKER_IMAGE}
 
 RUN apk add --no-cache jq && \
     apk add --update nodejs nodejs-npm && \
-    npm i -g jackson-converter@1.0.9
+    npm i -g jackson-converter@1.0.10
 
 WORKDIR /app
 
