@@ -62,6 +62,10 @@ type TagMeta struct {
 	DataType string      `json:"dataType"`
 }
 
+func (tm *TagMeta) String() string {
+	return fmt.Sprintf("FieldMeta. key: %s, dataType: %s", tm.Tag.Key, tm.DataType)
+}
+
 // TagMetaSlice .
 type TagMetaSlice []*TagMeta
 
