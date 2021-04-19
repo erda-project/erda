@@ -34,6 +34,7 @@
 
 # build output
 /bin
+/tools/cli/bin
 
 # for local debug
 /.env
@@ -50,7 +51,7 @@ modules/openapi/api/generate/collectEvents.go
 modules/openapi/api/events_all.json
 modules/openapi/component-protocol/generate/auto_register/auto_register.go
 # cli
-modules/cli/generated_cmd
-modules/cli/command/generate/collectCMDs.go
+tools/cli/generated_cmd
+tools/cli/command/generate/collectCMDs.go
 # apistructs
 apistructs/generated_desc.go
