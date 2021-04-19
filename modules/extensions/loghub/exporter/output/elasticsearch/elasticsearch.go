@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Author: recallsong
 // Email: ruiguo.srg@alibaba-inc.com
 
@@ -36,13 +49,13 @@ type provider struct {
 	C      *config
 	L      logs.Logger
 	exp    exporter.Interface
-	es     elasticsearch.Elasticsearch
+	es     elasticsearch.Interface
 	output writer.Writer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.exp = ctx.Service("logs-exporter-base").(exporter.Interface)
-	p.es = ctx.Service("elasticsearch").(elasticsearch.Elasticsearch)
+	p.es = ctx.Service("elasticsearch").(elasticsearch.Interface)
 	p.output = p.es.NewBatchWriter(&p.C.WriterConfig)
 	return nil
 }
