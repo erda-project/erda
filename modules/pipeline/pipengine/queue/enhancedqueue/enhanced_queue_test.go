@@ -100,6 +100,51 @@ func TestEnhancedQueue_PopPending(t *testing.T) {
 	assert.Equal(t, popped, "k1", "k1 popped")
 }
 
+func TestEnhancedQueue_PopPendingKey(t *testing.T) {
+	mq := NewEnhancedQueue(20)
+	mq.SetProcessingWindow(1)
+
+	mq.Add("k1", 1, time.Time{})
+	poppedKey := mq.PopPendingKey("k2")
+	assert.Empty(t, poppedKey, "k2 not in the pending queue")
+
+	poppedKey = mq.PopPendingKey("k1")
+	assert.Equal(t, "k1", poppedKey, "k1 popped")
+
+	mq.SetProcessingWindow(0)
+	mq.Add("k3", 1, time.Time{})
+	poppedKey = mq.PopPendingKey("k3")
+	assert.Empty(t, poppedKey, "processing window is 0")
+}
+
+func TestEnhancedQueue_popPendingKeyWithoutLock(t *testing.T) {
+	mq := NewEnhancedQueue(1)
+
+	const k1 = "k1"
+	const k2 = "k2"
+
+	mq.Add(k1, 1, time.Time{})
+	mq.Add(k2, 2, time.Time{})
+
+	poppedKey := mq.popPendingKeyWithoutLock(k1, true)
+	assert.Equal(t, k1, poppedKey, "k1 dry run popped")
+	poppedKey = mq.popPendingKeyWithoutLock(k1, true)
+	assert.Equal(t, k1, poppedKey, "k1 dry run popped again")
+
+	poppedKey = mq.popPendingKeyWithoutLock(k1)
+	assert.Equal(t, k1, poppedKey, "k1 popped")
+
+	poppedKey = mq.popPendingKeyWithoutLock(k1)
+	assert.Empty(t, poppedKey, "no k1 can pop")
+
+	poppedKey = mq.popPendingKeyWithoutLock(k2)
+	assert.Empty(t, poppedKey, "processing queue is full, cannot pop")
+
+	mq.SetProcessingWindow(2)
+	poppedKey = mq.popPendingKeyWithoutLock(k2)
+	assert.Equal(t, k2, poppedKey, "k2 popped")
+}
+
 func TestEnhancedQueue_SetProcessingWindow(t *testing.T) {
 	mq := NewEnhancedQueue(20)
 	assert.Equal(t, int64(20), mq.processingWindow)

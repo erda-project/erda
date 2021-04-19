@@ -292,7 +292,18 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	// queue
 	if req.BindQueue != nil {
-		p.Extra.QueueID = req.BindQueue.ID
+		customPriority := req.BindQueue.Priority
+		customPriorityStr, ok := p.MergeLabels()[apistructs.LabelBindPipelineQueueCustomPriority]
+		if ok {
+			_customPriority, err := strconv.ParseInt(customPriorityStr, 10, 64)
+			if err == nil {
+				customPriority = _customPriority
+			}
+		}
+		p.Extra.QueueInfo = &spec.QueueInfo{
+			QueueID:        req.BindQueue.ID,
+			CustomPriority: customPriority,
+		}
 	}
 
 	return p, nil

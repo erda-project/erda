@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -58,6 +57,10 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 	ft, err := bundle.NewGittarFileTree(inode)
 	if err != nil {
 		return nil, apierrors.GetNodeDetail.InternalError(err)
+	}
+	appID, err := strconv.ParseUint(ft.ApplicationID(), 10, 64)
+	if err != nil {
+		return nil, apierrors.GetNodeDetail.InvalidParameter(err)
 	}
 
 	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10))
@@ -113,16 +116,14 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 		return nil, apierrors.GetNodeDetail.InvalidParameter(errors.Errorf("invalid specProtocol: %s", specProtocol))
 	}
 
-	rules, err := getRules(ft.ApplicationID())
-	if err != nil {
-		return nil, apierrors.GetNodeDetail.InvalidParameter(err)
-	}
+	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
+	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName())
 
 	meta := apistructs.APIDocMeta{
 		Lock:     nil,
 		Tree:     nil,
 		Blob:     blob,
-		ReadOnly: readOnly(orgID, userID, ft.ApplicationID(), ft.BranchName(), rules),
+		ReadOnly: readOnly,
 	}
 	metaData, _ := json.Marshal(meta)
 
@@ -207,29 +208,20 @@ func defaultOAS3Content(title string) string {
 	return fmt.Sprintf(oas3Text, title)
 }
 
-func readOnly(orgID uint64, userID, appID, branchName string, rules []*apistructs.BranchRule) bool {
-	// 没有分支规则 ==> 非只读
-	if len(rules) == 0 {
-		logrus.Infoln("len(rules) == 0")
+func isBranchProtected(applicationID, branchName string) bool {
+	rules, err := getRules(applicationID)
+	if err != nil || len(rules) == 0 {
 		return false
 	}
 
-	// 当前用户有应用管理权限 ==> 非只读
-	rolesSet := bdl.FetchRolesSet(orgID, userID)
-	apps := rolesSet.RolesApps(bdl.AppMRoles...)
-	for _, id := range apps {
-		if id == appID {
-			return false
-		}
-	}
-
 	for _, rule := range rules {
-		if rule.IsProtect {
-			branches := strings.Split(rule.Rule, ",")
-			for _, branchPattern := range branches {
-				if match, _ := filepath.Match(branchPattern, branchName); match {
-					return true
-				}
+		if !rule.IsProtect {
+			continue
+		}
+		branches := strings.Split(rule.Rule, ",")
+		for _, pat := range branches {
+			if match, _ := filepath.Match(pat, branchName); match {
+				return true
 			}
 		}
 	}
@@ -248,4 +240,25 @@ func getRules(applicationID string) ([]*apistructs.BranchRule, error) {
 		return nil, err
 	}
 	return rules, nil
+}
+
+// 该分支下是否有 API 文档
+func branchHasAPIDoc(orgID uint64, branchInode string) bool {
+	ft, err := bundle.NewGittarFileTree(branchInode)
+	if err != nil {
+		return false
+	}
+	ft.SetPathFromRepoRoot(apiDocsPathFromRepoRoot)
+	orgIDStr := strconv.FormatUint(orgID, 10)
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	if err != nil {
+		return false
+	}
+	for _, node := range nodes {
+		// 如果 .dice/apidocs 目录下存在 .yaml 或 .yml 的文件 则认为该分支下存在文档
+		if node.Type == "blob" && matchSuffix(node.Name, suffixYaml, suffixYaml) {
+			return true
+		}
+	}
+	return false
 }
