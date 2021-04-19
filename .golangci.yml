@@ -5,8 +5,8 @@ run:
   tests: false
   allow-parallel-runners: true
   skip-dirs:
-    - modules/cli/generated_cmd
-    - modules/cli/command/generate
+    - tools/cli/generated_cmd
+    - tools/cli/command/generate
     - modules/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
     - third_party
