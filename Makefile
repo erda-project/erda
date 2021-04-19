@@ -156,15 +156,15 @@ prepare-cli:
 .PHONY: cli
 cli:
 	cd tools/cli && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o bin/erda
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
 	echo "build cli tool successfully!"
 .PHONY: cli-linux
 cli-linux:
 	cd tools/cli && \
-	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o bin/erda-linux
+	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
 	echo "build cli tool successfully!"
 
 .PHONY: upload-cli
 upload-cli: cli cli-linux
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda bin/erda
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda bin/erda-linux
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"

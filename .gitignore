@@ -34,7 +34,6 @@
 
 # build output
 /bin
-/tools/cli/bin
 
 # for local debug
 /.env
