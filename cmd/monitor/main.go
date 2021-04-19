@@ -14,47 +14,46 @@
 package main
 
 import (
-	// providers and modules
-
 	"github.com/erda-project/erda-infra/modcom"
-	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
 
-	// _ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
-	// _ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
+	// log hub
+	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
+	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/project-apis"
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
-	// _ "github.com/erda-project/erda/modules/monitor/dashboard/template"
+	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
+	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
+
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/project-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
+	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 
-	// _ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
-	// _ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
-
-	_ "github.com/erda-project/erda/modules/monitor/settings"
-
+	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
+	_ "github.com/erda-project/erda/modules/monitor/settings"
 
 	// notify
-	// _ "github.com/erda-project/erda/modules/monitor/notify/template/query"
+	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
 
 	// apm
-	// _ "github.com/erda-project/erda/modules/monitor/apm/report"
-	// _ "github.com/erda-project/erda/modules/monitor/apm/runtime"
-	// _ "github.com/erda-project/erda/modules/monitor/apm/topology"
-	// _ "github.com/erda-project/erda/modules/monitor/apm/trace"
+	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
+	_ "github.com/erda-project/erda/modules/monitor/apm/report"
+	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
+	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
+	_ "github.com/erda-project/erda/modules/monitor/apm/trace"
 
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
 	_ "github.com/erda-project/erda-infra/providers/kafka"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
-	// _ "github.com/erda-project/erda-infra/providers/redis"
-	// _ "github.com/erda-project/erda-infra/providers/telemetry"
+	_ "github.com/erda-project/erda-infra/providers/pprof"
+	_ "github.com/erda-project/erda-infra/providers/redis"
 )
 
 func main() {

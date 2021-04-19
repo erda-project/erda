@@ -27,6 +27,10 @@ type FieldMeta struct {
 	DataType string      `json:"dataType"`
 }
 
+func (fm *FieldMeta) String() string {
+	return fmt.Sprintf("FieldMeta. key: %s, dataType: %s", fm.Field.Key, fm.DataType)
+}
+
 // FieldMetaSlice .
 type FieldMetaSlice []*FieldMeta
 
@@ -56,6 +60,10 @@ func (s FieldMetaSlice) Less(i, j int) bool {
 type TagMeta struct {
 	Tag      *DisplayKey `json:"tag"`
 	DataType string      `json:"dataType"`
+}
+
+func (tm *TagMeta) String() string {
+	return fmt.Sprintf("FieldMeta. key: %s, dataType: %s", tm.Tag.Key, tm.DataType)
 }
 
 // TagMetaSlice .
@@ -571,7 +579,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		return err
 	}
 
-	//modify alert notify template
+	// modify alert notify template
 	notifyMap, err := a.getCustomizeAlertNotifyTemplateByAlertID(alertDetail.ID)
 	if err != nil {
 		return err
@@ -617,7 +625,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 			}
 		}
 	}
-	//delete exist notify template
+	// delete exist notify template
 	var deleteNotifyIDs []uint64
 	for notifyID := range notifyMap {
 		if _, ok := saveNotifyIDs[notifyID]; !ok {

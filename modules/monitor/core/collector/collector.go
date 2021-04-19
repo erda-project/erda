@@ -54,12 +54,11 @@ type collector struct {
 	Cfg    *config
 	Logger logs.Logger
 	writer writer.Writer
-	kafka  kafka.Interface
+	Kafka  kafka.Interface
 }
 
 func (c *collector) Init(ctx servicehub.Context) error {
-	c.kafka = ctx.Service("kafka-producer").(kafka.Interface)
-	w, err := c.kafka.NewProducer(&c.Cfg.Output)
+	w, err := c.Kafka.NewProducer(&c.Cfg.Output)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}

@@ -16,19 +16,18 @@ package main
 import (
 	"github.com/erda-project/erda-infra/modcom"
 	// providers and modules
-	// _ "terminus.io/dice/monitor/modules/business/metrics/browser"
-	// _ "terminus.io/dice/monitor/modules/business/trace/storage"
-	// "terminus.io/dice/monitor/modules/common"
+	_ "github.com/erda-project/erda/modules/monitor/apm/browser"
 	_ "github.com/erda-project/erda/modules/monitor/core/logs/storage"
-	// _ "terminus.io/dice/monitor/modules/domain/metrics/storage"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/storage"
+	_ "github.com/erda-project/erda/modules/monitor/trace/storage"
 
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
-	// _ "terminus.io/dice/monitor/providers/elasticsearch"
+	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
 	_ "github.com/erda-project/erda-infra/providers/kafka"
-	// _ "terminus.io/dice/monitor/providers/mysql"
-	// _ "terminus.io/dice/monitor/providers/telemetry"
+	_ "github.com/erda-project/erda-infra/providers/mysql"
+	_ "github.com/erda-project/erda-infra/providers/pprof"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/monitor/streaming", "streaming")
+	modcom.RunWithCfgDir("conf/streaming", "streaming")
 }

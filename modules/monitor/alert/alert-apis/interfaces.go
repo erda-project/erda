@@ -28,7 +28,7 @@ type (
 		// micro alert apis
 		QueryAlertRule(r *http.Request, scope, scopeId string) (*adapt.AlertTypeRuleResp, error)
 		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*adapt.Alert, error)
-		GetAlert(lang string, id uint64) (*adapt.Alert, error)
+		GetAlert(lang i18n.LanguageCodes, id uint64) (*adapt.Alert, error)
 		CountAlert(scope, scopeID string) (int, error)
 		GetAlertDetail(r *http.Request, id uint64) (*adapt.Alert, error)
 		CheckAlert(alert *adapt.Alert) interface{}
@@ -38,9 +38,9 @@ type (
 		DeleteAlert(id uint64) (err error)
 
 		// micro custom alert apis
-		CustomizeMetrics(lang string, scope, scopeID string, names []string) (*adapt.CustomizeMetrics, error)
-		NotifyTargetsKeys(lang, orgId string) []*adapt.DisplayKey
-		CustomizeAlerts(lang, scope, scopeID string, pageNo, pageSize int) ([]*adapt.CustomizeAlertOverview, int, error)
+		CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID string, names []string) (*adapt.CustomizeMetrics, error)
+		NotifyTargetsKeys(lang i18n.LanguageCodes, orgId string) []*adapt.DisplayKey
+		CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*adapt.CustomizeAlertOverview, int, error)
 		CustomizeAlert(id uint64) (*adapt.CustomizeAlertDetail, error)
 		CustomizeAlertDetail(id uint64) (*adapt.CustomizeAlertDetail, error)
 		CheckCustomizeAlert(alert *adapt.CustomizeAlertDetail) error
