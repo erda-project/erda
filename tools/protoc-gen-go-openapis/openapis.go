@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -68,7 +69,7 @@ func generateFiles(gen *protogen.Plugin, files []*protogen.File) error {
 				if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
 					continue
 				}
-				_, ok := findTag(privateTagKey, ser.Comments.Leading)
+				_, ok := findTag(privateTagKey, method.Comments.Leading)
 				if ok {
 					continue
 				}
@@ -129,17 +130,13 @@ func findTag(key string, comments protogen.Comments) (Tag, bool) {
 		line := strings.TrimSpace(list[i])
 		if strings.HasPrefix(line, "+") {
 			if strings.HasPrefix(line[1:], key) {
-				if len(line[1:]) == len(key) {
+				line = line[1+len(key):]
+				tag := strings.TrimSpace(line)
+				if len(tag) <= 0 {
 					return reflect.StructTag(""), true
-				} else {
-					line = line[1+len(key):]
-					tag := strings.TrimSpace(line)
-					if len(tag) <= 0 {
-						return reflect.StructTag(""), true
-					}
-					if tag[0] != line[0] {
-						return reflect.StructTag(tag), true
-					}
+				}
+				if unicode.IsSpace([]rune(line)[0]) {
+					return reflect.StructTag(tag), true
 				}
 			}
 		}

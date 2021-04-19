@@ -12,6 +12,7 @@
     "pkg/clientgo/clientset/",
     "pkg/pipe.v2/pipe.go",
     "modules/tools/admin-tools/statik/statik.go",
-    "modules/gittar/pkg/gitmodule"
+    "modules/gittar/pkg/gitmodule",
+    "modules/openapis/services/apis.go"
   ]
 }
