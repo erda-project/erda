@@ -364,7 +364,7 @@ var httpCmd = &cobra.Command{
 		})
 		for alert_type, group := range groups {
 			var keys []string
-			for k, _ := range group.KeySet {
+			for k := range group.KeySet {
 				if k != "" {
 					keys = append(keys, k)
 				}
