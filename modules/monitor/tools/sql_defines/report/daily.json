@@ -1,0 +1,281 @@
+{
+  "id": "daily",
+  "name": "企业运维日报模版",
+  "scope": "report",
+  "scopeId": "org",
+  "viewConfig": [
+    {
+      "w": 8,
+      "h": 3,
+      "x": 0,
+      "y": 4,
+      "i": "d11",
+      "view": {
+        "title": "异常概况",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "filter_alert_type": "machine",
+            "cardinality":"tags.host_ip",
+            "filter_trigger":"alert",
+            "format":"chartv2",
+            "align": false,
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 8,
+      "h": 3,
+      "x": 8,
+      "y": 4,
+      "i": "d12",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "match_alert_type": "app_*",
+            "cardinality":"(tags.runtime_id,tags.service_name)",
+            "filter_trigger": "alert",
+            "format":"chartv2",
+            "align": false,
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 8,
+      "h": 3,
+      "x": 16,
+      "y": 4,
+      "i": "d13",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "filter_alert_type": "addon",
+            "cardinality": "tags.addon_id",
+            "filter_trigger": "alert",
+            "format":"chartv2",
+            "align": false,
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 7,
+      "i": "d21",
+      "view": {
+        "title": "告警类别分析",
+        "description": "",
+        "chartType": "chart:pie",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "group": "alert_index",
+            "count": "tags.alert_index",
+            "filter_trigger": "alert",
+            "format":"chartv2",
+            "align": false,
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 17,
+      "i": "d31",
+      "view": {
+        "title": "机器异常时间TOP10",
+        "description": "",
+        "chartType": "chart:bar",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "points": "1",
+            "filter_alert_type": "machine",
+            "sum": "fields.trigger_duration",
+            "group": "host_ip",
+            "limit": 10,
+            "sort": "sum_fields.trigger_duration",
+            "align": false,
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 11,
+      "x": 0,
+      "y": 28,
+      "i": "d41",
+      "view": {
+        "title": "机器平均负载Top10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "group": "host_ip",
+            "filter_org_name": "",
+            "last": "tags.host_ip",
+            "avg": "load5",
+            "format":"chartv2",
+            "limit": 10,
+            "align": false,
+            "sort": "avg_load5"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 41,
+      "i": "d51",
+      "view": {
+        "title": "机器磁盘使用Top10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "group": "host_ip",
+            "filter_org_name": "",
+            "last": "tags.host_ip",
+            "max": "disk_used",
+            "format":"chartv2",
+            "limit": 10,
+            "align": false,
+            "sort": "max_disk_used"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 11,
+      "x": 0,
+      "y": 52,
+      "i": "d61",
+      "view": {
+        "title": "服务OOM次数Top10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/service_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "filter_instance_type": "service",
+            "field_eq_oomkilled":"b:true",
+            "filter_org_name": "",
+            "group": "service_id",
+            "cardinality":"tags.container_id",
+            "sort": "cardinality_tags.container_id",
+            "last": ["tags.service_name","tags.project_name","tags.application_name"],
+            "format":"chartv2",
+            "align": false,
+            "limit": 10
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 11,
+      "x": 0,
+      "y": 64,
+      "i": "d71",
+      "view": {
+        "title": "服务错误分析Top10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "api": {
+          "url":"/api/metrics/error_resource",
+          "query": {
+            "start": "before_24h",
+            "end": "now",
+            "sum": "count",
+            "sort":"sum_count",
+            "group": "(service_name,runtime_id)",
+            "last": ["tags.service_name","tags.application_name","tags.project_name"],
+            "format":"chartv2",
+            "align": false,
+            "limit": 10
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    }
+  ],
+  "desc": "企业运维日报模版"
+}

@@ -1,0 +1,43 @@
+- name: "宕机告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    last_timestamp_value: "date"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}宕机告警】
+  template: |
+    【宕机告警】
+    
+    机器{{window}}分钟内无消息, 疑似发生宕机
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    最近活跃时间: {{last_timestamp_value}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "宕机恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}宕机恢复】
+  template: |
+    【宕机恢复】
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

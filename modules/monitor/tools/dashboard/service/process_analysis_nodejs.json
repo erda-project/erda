@@ -1,0 +1,322 @@
+{
+  "id": "process_analysis_nodejs",
+  "name": "process_analysis_nodejs",
+  "desc": "",
+  "viewConfig": [
+    {
+      "w": 12,
+      "h": 10,
+      "x": 0,
+      "y": 0,
+      "i": "view-hfpm2BQF",
+      "view": {
+        "title": "Heap Memory Usage",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {
+        },
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": false,
+            "noAreaColor": true
+          },
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "nodejs_memory"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typemiYT3xEp",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "Usage",
+                "key": "value4luY4MgI",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "query": {
+            "epoch": "ms",
+            "start": "{{startTime}}",
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter_service_id": "{{serviceId}}",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "filter_service_instance_id": "{{instanceId}}",
+            "filter_service_name": "{{serviceName}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "type": "_"
+          },
+          "body": {
+            "from": [
+              "nodejs_memory"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typemiYT3xEp",
+                "expr": "time()"
+              },
+              {
+                "alias": "value4luY4MgI",
+                "expr": "round_float(avg(heap_used::field), 2)"
+              }
+            ]
+          },
+          "header": null,
+          "extraData": null,
+          "method": "post"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 10,
+      "x": 12,
+      "y": 0,
+      "i": "view-2afmeXcs",
+      "view": {
+        "title": "Non Heap Memory Usage",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": {
+        },
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": false,
+            "noAreaColor": true
+          },
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "nodejs_memory"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeCTERAG2L",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "MB",
+                "key": "value2zRwbFet",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "query": {
+            "epoch": "ms",
+            "start": "{{startTime}}",
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter_service_id": "{{serviceId}}",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_service_name": "{{serviceName}}",
+            "filter_service_instance_id": "{{instanceId}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "type": "_"
+          },
+          "body": {
+            "from": [
+              "nodejs_memory"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeCTERAG2L",
+                "expr": "time()"
+              },
+              {
+                "alias": "value2zRwbFet",
+                "expr": "round_float(avg(external::field), 2)"
+              }
+            ]
+          },
+          "header": null,
+          "extraData": null,
+          "method": "post"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 0,
+      "y": 10,
+      "i": "view-0JahfhFo",
+      "view": {
+        "title": "Cluster Count",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "noAreaColor": true
+          },
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "nodejs_cluster"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeTDo594ut",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "次数",
+                "key": "valueogVBbdfi",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "query": {
+            "epoch": "ms",
+            "start": "{{startTime}}",
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter_service_id": "{{serviceId}}",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_service_instance_id": "{{instanceId}}",
+            "format": "chartv2",
+            "filter_service_name": "{{serviceName}}",
+            "ql": "influxql:ast",
+            "type": "_"
+          },
+          "body": {
+            "from": [
+              "nodejs_cluster"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeTDo594ut",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueogVBbdfi",
+                "expr": "round_float(sum(count::field), 2)"
+              }
+            ]
+          },
+          "header": null,
+          "extraData": null,
+          "method": "post"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 12,
+      "h": 9,
+      "x": 12,
+      "y": 10,
+      "i": "view-kKuIcxbz",
+      "view": {
+        "title": "Async Resources",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "noAreaColor": true
+          },
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "nodejs_async_resource"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typezZSh0it6",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "alias": "次数",
+                "key": "valueK4VKq3YC",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "query": {
+            "epoch": "ms",
+            "start": "{{startTime}}",
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter_service_instance_id": "{{instanceId}}",
+            "filter_service_id": "{{serviceId}}",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_service_name": "{{serviceName}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "type": "_"
+          },
+          "body": {
+            "from": [
+              "nodejs_async_resource"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typezZSh0it6",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueK4VKq3YC",
+                "expr": "round_float(sum(count::field), 2)"
+              }
+            ]
+          },
+          "header": null,
+          "extraData": null,
+          "method": "post"
+        },
+        "controls": null
+      }
+    }
+  ],
+  "version": "v2"
+}

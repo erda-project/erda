@@ -1,0 +1,46 @@
+@url = http://monitor.default.svc.cluster.local:7096
+@notify_group_id = 1
+@dingding = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@org_id = 1
+@user_id = 1
+@domain = http://terminus.app.terminus.io
+
+
+### 删除 alert
+DELETE {{url}}/api/alerts/<id>
+
+
+### 应用错误次数
+# @ app_exception/app_exception_count
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用错误次数",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_exception_count",
+			"functions": [
+				{
+					"aggregator": "sum",
+					"field": "count",
+					"operator": "gte",
+					"value": 20
+				}
+			],
+			"window": 5
+		}
+	]
+}
+

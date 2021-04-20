@@ -1,0 +1,17 @@
+- name: "【事件】LOG_STORE保护器状态变化"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  title: |
+    【【事件】LOG_STORE保护器状态变化】
+  template: |
+    【【事件】LOG_STORE保护器状态变化】
+
+    集群: {{cluster_name}}
+
+    之前状态: {{pre_level}}
+
+    当前状态: {{cur_level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

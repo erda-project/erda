@@ -1,0 +1,76 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@application_name = test-app
+@call_count = 20
+@cluster_name = terminus-test
+@display_url = www.baidu.com
+@error_count = 10
+@error_percent = 50
+@host_ip = 192.168.0.1
+@http_method = GET
+@http_url = http://xxxx/xxxxxx
+@instance_id = xxxxxx
+@max_value = 1GB
+@project_name = test-project
+@runtime_name = master
+@service_name = helloworld
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage_percent = 70
+@used_value = 900MB
+@window = 5
+
+
+### 服务接口状态异常告警
+# @ app_transaction/app_transaction_http_error/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**服务接口状态异常告警**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n接口: **{{http_method}} {{http_url}}**\n\n{{window}}内: {{error_count}}次错误 / {{call_count}}次总请求， {{error_percent}} % 的错误率\n\n集群: **{{cluster_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【服务接口状态异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 服务接口状态异常恢复
+# @ app_transaction/app_transaction_http_error/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**服务接口状态异常恢复**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n接口: **{{http_method}} {{http_url}}**\n\n时间: **{{timestamp}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【服务接口状态异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### JVM堆内存使用告警
+# @ app_transaction/app_transaction_http_rt/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**JVM堆内存使用告警**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n堆内存使用率: **{{usage_percent}}**\n\n已使用: **{{used_value}}**\n\n最大使用: **{{max_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【JVM堆内存使用告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### JVM堆内存使用恢复
+# @ app_transaction/app_transaction_http_rt/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**JVM堆内存使用恢复**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n堆内存使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【JVM堆内存使用恢复】"
+	},
+	"msgtype": "markdown"
+}

@@ -1,0 +1,23 @@
+- name: "页面访问性能告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    plt: "time:s"
+  title: |
+    【页面 ({{doc_path}}) 访问性能告警】
+  template: |
+    【页面访问性能告警】
+
+    事件: {{doc_path}} 页面慢响应
+
+    域名: {{host}}
+
+    页面: {{doc_path}}
+
+    页面平均响应时间: {{plt_avg}} ms
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})

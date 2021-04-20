@@ -1,0 +1,166 @@
+@url = http://monitor.default.svc.cluster.local:7096
+@notify_group_id = 1
+@dingding = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@org_id = 1
+@user_id = 1
+@domain = http://terminus.app.terminus.io
+
+
+### 删除 alert
+DELETE {{url}}/api/alerts/<id>
+
+
+### 应用HTTP错误请求
+# @ app_transaction/app_transaction_http_path_error
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用HTTP错误请求",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_transaction_http_path_error",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "error_percent",
+					"operator": "gte",
+					"value": 30
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用HTTP请求响应时间
+# @ app_transaction/app_transaction_http_path_rt
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用HTTP请求响应时间",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_transaction_http_path_rt",
+			"functions": [
+				{
+					"aggregator": "sum",
+					"field": "elapsed_count",
+					"operator": "gte",
+					"value": 12
+				},
+				{
+					"aggregator": "value",
+					"field": "elapsed_avg",
+					"operator": "gte",
+					"value": 3000
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用HTTP服务请求错误
+# @ app_transaction/app_transaction_http_service_error
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用HTTP服务请求错误",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_transaction_http_service_error",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "error_percent",
+					"operator": "gte",
+					"value": 30
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用HTTP服务请求响应时间
+# @ app_transaction/app_transaction_http_service_rt
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用HTTP服务请求响应时间",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_transaction_http_service_rt",
+			"functions": [
+				{
+					"aggregator": "sum",
+					"field": "elapsed_count",
+					"operator": "gte",
+					"value": 12
+				},
+				{
+					"aggregator": "value",
+					"field": "elapsed_avg",
+					"operator": "gte",
+					"value": 3000
+				}
+			],
+			"window": 2
+		}
+	]
+}
+

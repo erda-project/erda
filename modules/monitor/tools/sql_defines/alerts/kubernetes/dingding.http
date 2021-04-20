@@ -1,0 +1,165 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@allocatable_cpu_cores = 10
+@allocatable_memory_bytes = 4GB
+@allocatable_pods = 10
+@capacity_cpu_cores = 32
+@capacity_memory_bytes = 32GB
+@capacity_pods = 100
+@cluster_name = terminus-test
+@component_name = openapi
+@container_id = xxxxxx
+@display_url = www.baidu.com
+@host_ip = 192.168.0.1
+@max_usage = 900MB
+@node_name = 192.179.0.1
+@not_ready = 2
+@pod_name = pod-xxx
+@ready = 10
+@resource_name = kube-proxy
+@restarts_total = 10
+@terminated_reason = oom killed
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage = 500MB
+@usage_percent = 70
+@window = 5
+
+
+### kubernetes组件实例CPU异常
+# @ kubernetes/kubernetes_instance_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件CPU告警**】\n\nPod: **{{pod_name}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【kubernetes组件CPU告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件实例CPU异常
+# @ kubernetes/kubernetes_instance_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件CPU恢复**】\n\nPod: **{{pod_name}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【kubernetes组件CPU恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件异常退出
+# @ kubernetes/kubernetes_instance_exit/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件异常退出告警**】\n\n组件: **{{component_name}}**\n\nPod重启次数: **{{restarts_total}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n退出原因: **{{terminated_reason_value}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【kubernetes组件异常退出告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件异常退出
+# @ kubernetes/kubernetes_instance_exit/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件异常退出恢复**】\n\n组件: **{{component_name}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【kubernetes组件异常退出恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件实例内存异常
+# @ kubernetes/kubernetes_instance_mem/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件内存告警**】\n\nPod: **{{pod_name}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\n已使用: **{{usage_value}}**\n\n历史最大: **{{max_usage_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【kubernetes组件内存告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件实例内存异常
+# @ kubernetes/kubernetes_instance_mem/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件内存恢复**】\n\nPod: **{{pod_name}}**\n\n使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【kubernetes组件内存恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件实例Ready状态异常
+# @ kubernetes/kubernetes_instance_ready/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件Ready状态告警**】\n\n组件: **{{resource_name}}**\n\n未就绪实例: **{{not_ready_value}}**\n\n已就绪实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【kubernetes组件Ready状态告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes组件实例Ready状态异常
+# @ kubernetes/kubernetes_instance_ready/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes组件Ready状态恢复**】\n\n组件: **{{resource_name}}**\n\n已绪数实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【kubernetes组件Ready状态恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes节点异常
+# @ kubernetes/kubernetes_node/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes节点异常告警**】\n\n原因: 节点未 Ready !\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n已分配Pod数: **{{allocatable_pods}}**\n\n最大Pod数: **{{capacity_pods}}**\n\n已分配CPU核数: **{{allocatable_cpu_cores}}**\n\n最大CPU核数: **{{capacity_cpu_cores}}**\n\n已分配内存: **{{allocatable_memory_bytes}}**\n\n最大内存: **{{capacity_memory_bytes}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【kubernetes节点异常告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### kubernetes节点异常
+# @ kubernetes/kubernetes_node/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**kubernetes节点异常恢复**】\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【kubernetes节点异常恢复】\n"
+	},
+	"msgtype": "markdown"
+}

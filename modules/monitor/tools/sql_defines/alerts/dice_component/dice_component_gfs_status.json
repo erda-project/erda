@@ -1,0 +1,42 @@
+{
+  "name": "平台组件网盘不可用告警",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "FATAL",
+    "recover": "false",
+    "alert_group": "{{cluster_name}}",
+    "tickets_metric_key": "{{cluster_name}}"
+  },
+  "template": {
+    "metric": "glusterfs",
+    "window": 5,
+    "filters": [
+      {
+        "tag": "cluster_name",
+        "operator": "in",
+        "value": ["$cluster_name"]
+      }
+    ],
+    "group": [
+      "cluster_name",
+      "host_ip"
+    ],
+    "functions": [
+      {
+        "aggregator": "values",
+        "field": "status",
+        "operator": "all",
+        "value": "Disconnected"
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "host_ip": "#host_ip",
+      "node_uuid": "#node_uuid",
+      "component_name": "#component_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

@@ -1,0 +1,1066 @@
+{
+  "id": "weekly",
+  "name": "运维周报模版",
+  "scope": "report",
+  "scopeId": "org",
+  "viewConfig": [
+    {
+      "w": 4,
+      "h": 4,
+      "x": 0,
+      "y": 1,
+      "i": "d12",
+      "view": {
+        "title": "集群资源概况",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.cluster_name",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 4,
+      "y": 1,
+      "i": "d11",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.host_ip",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 8,
+      "y": 1,
+      "i": "d13",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.n_cpus&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 12,
+      "y": 1,
+      "i": "d14",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.mem_total&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 16,
+      "y": 1,
+      "i": "d15",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.cpu_request_total&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 20,
+      "y": 1,
+      "i": "d16",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.mem_request_total&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 0,
+      "y": 5,
+      "i": "d21",
+      "view": {
+        "title": "项目资源概况",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.project_id",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 4,
+      "y": 5,
+      "i": "d22",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.service_id",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 8,
+      "y": 5,
+      "i": "d23",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.container_id",
+            "filter_instance_type": "service",
+            "filter_org_name": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 12,
+      "y": 5,
+      "i": "d24",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "cardinality": "tags.addon_id",
+            "filter_instance_type": "addon",
+            "filter_org_name": "",
+            "format": "chartv2",
+            "match_project_id": "*"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 16,
+      "y": 5,
+      "i": "d25",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_1m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.container_id&last=fields.cpu_allocation&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2",
+            "match_project_id": "*"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "x": 20,
+      "y": 5,
+      "i": "d26",
+      "view": {
+        "title": " ",
+        "description": "",
+        "chartType": "card",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.container_id&last=fields.mem_allocation&reduce=sum}",
+            "filter_org_name": "",
+            "format": "chartv2",
+            "match_project_id": "*"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 10,
+      "i": "d31",
+      "view": {
+        "title": "集群机器概况",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/cluster_resource",
+          "query": {
+            "start": "before_5m",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "cardinality": "tags.host_ip",
+            "last": "tags.cluster_name",
+            "group": "tags.cluster_name",
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 20,
+      "i": "d41",
+      "view": {
+        "title": "每日CPU分配",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/cluster_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.cpu_request_total&reduce=sum}",
+            "points": 7,
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 30,
+      "i": "d51",
+      "view": {
+        "title": "每日内存分配",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/cluster_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "group_reduce": "{group=tags.host_ip&last=fields.mem_request_total&reduce=sum}",
+            "points": 7,
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 40,
+      "i": "d61",
+      "view": {
+        "title": "机器每日CPU最大使用率",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/cluster_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "max": "cpu_usage_active",
+            "points": 7,
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 50,
+      "i": "d71",
+      "view": {
+        "title": "机器CPU使用率告警次数 TOP10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "sort": "count_tags.alert_id",
+            "group": "tags.host_ip",
+            "limit": 10,
+            "count": "tags.alert_id",
+            "last": "tags.host_ip",
+            "filter_alert_index": "machine_cpu",
+            "filter_alert_type": "machine",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 64,
+      "i": "d81",
+      "view": {
+        "title": "机器每日磁盘最大使用率",
+        "description": "不包含网盘使用率",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/cluster_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "max": "disk_used_percent",
+            "points": 7,
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 74,
+      "i": "d91",
+      "view": {
+        "title": "机器磁盘使用率告警次数 TOP10",
+        "description": "不包含网盘使用率告警次数",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "sort": "count_tags.alert_id",
+            "group": "tags.host_ip",
+            "limit": 10,
+            "count": "tags.alert_id",
+            "last": "tags.host_ip",
+            "filter_alert_index": "machine_disk",
+            "filter_alert_type": "machine",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 88,
+      "i": "d111",
+      "view": {
+        "title": "异常机器数",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "filter_alert_type": "machine",
+            "cardinality": "tags.host_ip",
+            "filter_trigger": "alert",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 98,
+      "i": "d121",
+      "view": {
+        "title": "机器异常持续时间",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "unit": "min"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "filter_alert_type": "machine",
+            "sum": "fields.trigger_duration",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 108,
+      "i": "d131",
+      "view": {
+        "title": "告警类别分析",
+        "description": "",
+        "chartType": "chart:pie",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "group": "alert_type",
+            "count": "tags.alert_type",
+            "filter_trigger": "alert",
+            "filter_dice_org_id": "",
+            "format": "chartv2"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 118,
+      "i": "d141",
+      "view": {
+        "title": "告警趋势",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "count": "tags.alert_id",
+            "filter_trigger": "alert",
+            "filter_dice_org_id": "",
+            "group":"cluster_name"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 128,
+      "i": "d151",
+      "view": {
+        "title": "中间件告警趋势",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "filter_alert_type": "addon",
+            "filter_trigger": "alert",
+            "count": "tags.alert_id",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 138,
+      "i": "d161",
+      "view": {
+        "title": "kubernetes告警量趋势",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/alert_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "match_alert_index": "kubernetes_*",
+            "filter_trigger": "alert",
+            "filter_alert_type": "kubernetes",
+            "count": "tags.alert_id",
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 148,
+      "i": "d171",
+      "view": {
+        "title": "应用JVM告警次数 TOP10",
+        "description": "以堆内存告警次数排序",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/alert_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "filter_alert_type": "app_resource",
+            "match_alert_index": "*jvm*",
+            "count": [
+              "fields.time_sum",
+              "fields.usage_percent_avg",
+              "fields.count_sum"
+            ],
+            "sort": "count_fields.usage_percent_avg",
+            "group": "tags.application_id",
+            "limit": 10,
+            "last": [
+              "tags.project_name",
+              "tags.service_name",
+              "tags.application_name"
+            ],
+            "filter_dice_org_id": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 162,
+      "i": "d181",
+      "view": {
+        "title": "应用慢事务次数 TOP10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/app_http_slow_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "sort": "count_fields.elapsed_count",
+            "group": "target_application_id",
+            "limit": 10,
+            "count": "elapsed_count",
+            "last": [
+              "tags.target_application_name",
+              "tags.target_service_name",
+              "tags.target_project_name"
+            ],
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 176,
+      "i": "d191",
+      "view": {
+        "title": "应用错误次数 TOP10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/error_resource",
+          "query": {
+            "align": false,
+            "end": "now",
+            "format": "chartv2",
+            "group": "(service_name,runtime_id)",
+            "last": [
+              "tags.service_name",
+              "tags.application_name",
+              "tags.project_name"
+            ],
+            "limit": 10,
+            "sort": "sum_count",
+            "start": "before_168h",
+            "sum": "count",
+            "filter_org_name": ""
+          },
+          "body": {},
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 190,
+      "i": "d201",
+      "view": {
+        "title": "应用慢SQL次数 TOP10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/app_db_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "sort": "count_elapsed_count",
+            "group": "source_application_id",
+            "limit": 10,
+            "count": "elapsed_count",
+            "last": [
+              "tags.source_project_name",
+              "tags.source_service_name",
+              "tags.source_application_name"
+            ],
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 204,
+      "i": "d211",
+      "view": {
+        "title": "应用http请求错误次数 TOP10",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "staticData": null,
+        "api": {
+          "url": "/api/metrics/app_http_error_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "format": "chartv2",
+            "sort": "count_elapsed_count",
+            "group": "target_application_id",
+            "limit": 10,
+            "count": "elapsed_count",
+            "last": ["tags.target_application_name","tags.target_project_name","tags.target_service_name"],
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 218,
+      "i": "d221",
+      "view": {
+        "title": "服务和Addon OOM次数",
+        "description": "",
+        "chartType": "chart:bar",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/project_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "field_eq_oomkilled": "b:true",
+            "count": [
+              "tags.service_id",
+              "tags.addon_id"
+            ],
+            "filter_org_name": "",
+            "match_project_id": "*"
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 13,
+      "x": 0,
+      "y": 228,
+      "i": "d231",
+      "view": {
+        "title": "项目OOM次数 Top10",
+        "description": "根据服务OOM次数排序",
+        "chartType": "table",
+        "dataSourceType": "static",
+        "api": {
+          "url": "/api/metrics/project_oom_resource",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "align": false,
+            "group": "tags.project_id",
+            "last": "tags.project_name",
+            "field_eq_oomkilled": "b:true",
+            "count": [
+              "tags.service_id",
+              "tags.addon_id"
+            ],
+            "filter_org_name": "",
+            "format": "chartv2",
+            "sort": "count_tags.service_id",
+            "limit": 10
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    },
+    {
+      "w": 24,
+      "h": 9,
+      "x": 0,
+      "y": 242,
+      "i": "d241",
+      "view": {
+        "title": "API网关流量",
+        "description": "",
+        "chartType": "chart:line",
+        "dataSourceType": "static",
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          }
+        },
+        "api": {
+          "url": "/api/metrics/app_resource/histogram",
+          "query": {
+            "start": "before_168h",
+            "end": "now",
+            "points": "7",
+            "align": false,
+            "filter_target_addon_id": "ApiGateway",
+            "sum": "elapsed_count",
+            "filter_org_name": ""
+          },
+          "body": {},
+          "method": "GET",
+          "header": {}
+        }
+      }
+    }
+  ],
+  "desc": "运维周报模版"
+}

@@ -1,0 +1,43 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@application_name = test-app
+@class = io.terminus.spot.Demo
+@count = 100
+@display_url = www.baidu.com
+@instance_id = xxxxxx
+@line = 10
+@method = hello
+@project_name = test-project
+@runtime_name = master
+@service_name = helloworld
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@type = RuntimeException
+@window = 5
+
+
+### 应用异常
+# @ app_exception/app_exception_count/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**应用异常告警**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n类: **{{class}}**\n\n方法: **{{method}}**\n\n行数: **{{line}}**\n\n错误: **{{type}}**\n\n{{window}} 分钟内出现 {{count}} 次\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【应用异常告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 应用异常
+# @ app_exception/app_exception_count/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**应用异常恢复**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n类: **{{class}}**\n\n方法: **{{method}}**\n\n行数: **{{line}}**\n\n错误: **{{type}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【应用异常】\n"
+	},
+	"msgtype": "markdown"
+}

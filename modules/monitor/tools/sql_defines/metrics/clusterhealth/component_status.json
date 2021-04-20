@@ -1,0 +1,47 @@
+{
+  "attributes": {},
+  "version": "3.0",
+  "expression": {
+    "metric": "leaf_component_status",
+    "window": 10,
+    "filter": {},
+    "group": [
+      "cluster_name",
+      "component_group"
+    ],
+    "functions": [
+      {
+        "field": "health_status",
+        "field_script": "function invoke(field,tag){return field.weight.toString().concat(field.health_status)};",
+        "aggregator": "values",
+        "alias": "_all_status"
+      },
+      {
+        "field": "_all_status",
+        "trigger": "aggregated",
+        "field_script": "function invoke(field,tag){var a=field._all_status;var cnt=[0,0];for(var i=0;i<a.length;i++){if(a[i]===\"00\"||a[i]===\"10\"){cnt[0]++}if(a[i]===\"12\"){cnt[1]++}}if(cnt[0]===a.length){return 0}else if(0<cnt[1]){return 3}else{return 1}}",
+        "aggregator": "value",
+        "alias": "health_status"
+      },
+      {
+        "field": "weight",
+        "aggregator": "value",
+        "field_script": "function invoke(field,tag){return 1}",
+        "alias": "weight"
+      }
+    ],
+    "select": {
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "component_name": "#component_group",
+      "cluster_name": "#cluster_name",
+      "org_name": "#org_name",
+      "component_group": "component"
+    },
+    "alias": "component_status",
+    "outputs": [
+      "metric"
+    ]
+  }
+}

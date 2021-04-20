@@ -1,0 +1,25 @@
+- name: "应用实例OOM告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats: 
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务实例OOM告警】
+  template: |
+    【应用实例OOM告警】
+
+    项目: {{project_name}}
+
+    应用: {{application_name}}
+
+    服务实例: {{runtime_name}} - {{service_name}}.{{container_id}}
+
+    事件: 服务实例发生OOM
+    
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})

@@ -1,0 +1,46 @@
+- name: "kubernetes节点异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    allocatable_memory_bytes_value: "size:byte"
+    capacity_memory_bytes_value:  "size:byte"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常告警】
+  template: |
+    【kubernetes节点状态异常告警】
+
+    集群: {{cluster_name}}
+
+    机器: {{node_name}}
+
+    可分配Pod数: {{allocatable_pods_value}}
+
+    最大Pod数: {{capacity_pods_value}}
+
+    可分配CPU核数: {{allocatable_cpu_cores_value}}
+
+    最大CPU核数: {{capacity_cpu_cores_value}}
+
+    可分配内存: {{allocatable_memory_bytes_value}}
+
+    最大内存: {{capacity_memory_bytes_value}}
+
+    时间: {{timestamp}}
+
+- name: "kubernetes节点异常"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常恢复】
+  template: |
+    【kubernetes节点状态异常恢复】
+
+    集群: {{cluster_name}}
+
+    机器: {{node_name}}
+    
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}

@@ -1,0 +1,118 @@
+@url = http://monitor.default.svc.cluster.local:7096
+@notify_group_id = 1
+@dingding = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@org_id = 1
+@user_id = 1
+@domain = http://terminus.app.terminus.io
+
+
+### 删除 alert
+DELETE {{url}}/api/alerts/<id>
+
+
+### 页面内容改变
+# @ app_status/app_status_browser
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "页面内容改变",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_status_browser",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "diff_screenshot",
+					"operator": "eq",
+					"value": false
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 业务请求状态异常
+# @ app_status/app_status_code
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "业务请求状态异常",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_status_code",
+			"functions": [
+				{
+					"aggregator": "min",
+					"field": "code",
+					"operator": "gte",
+					"value": 500
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 业务请求重试异常
+# @ app_status/app_status_retry
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "业务请求重试异常",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_status_retry",
+			"functions": [
+				{
+					"aggregator": "sum",
+					"field": "retry",
+					"operator": "gte",
+					"value": 3
+				}
+			],
+			"window": 1
+		}
+	]
+}
+

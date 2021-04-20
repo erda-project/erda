@@ -1,0 +1,165 @@
+{
+  "id": "exception_analysis",
+  "name": "exception_analysis",
+  "desc": "",
+  "viewConfig": [
+    {
+      "w": 24,
+      "h": 10,
+      "x": 0,
+      "y": 0,
+      "i": "view-1qwUXZqM",
+      "view": {
+        "title": "异常趋势",
+        "description": "",
+        "chartType": "chart:bar",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "error_count"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typejp0SuUOW",
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "sum",
+                "alias": "次数",
+                "field": "error_count-count::field",
+                "key": "value7sFuzU7F",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "query": {
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_service_name": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "filter_exception": "{{exceptionType}}",
+            "filter_service_id": "{{serviceId}}",
+            "end": "{{endTime}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "type": "_"
+          },
+          "body": {
+            "from": [
+              "error_count"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typejp0SuUOW",
+                "expr": "time()"
+              },
+              {
+                "alias": "value7sFuzU7F",
+                "expr": "round_float(sum(count::field), 2)"
+              }
+            ]
+          },
+          "header": null,
+          "extraData": null,
+          "method": "post"
+        },
+        "controls": null
+      }
+    },
+    {
+      "w": 24,
+      "h": 10,
+      "x": 0,
+      "y": 10,
+      "i": "view-7LXO3tsG",
+      "view": {
+        "title": "异常列表",
+        "description": "",
+        "chartType": "table",
+        "dataSourceType": "api",
+        "staticData": null,
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D"
+          },
+          "dataSourceConfig": {
+            "valueDimensions": [
+              {
+                "alias": "实例 ID",
+                "key": "instance_id",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "异常类型",
+                "key": "exception_type",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Class",
+                "key": "class",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "Method",
+                "key": "method",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "异常消息",
+                "key": "message",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "时间",
+                "key": "time",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "次数",
+                "key": "count",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/apm/topology/exception/message",
+          "query": {
+            "start": "{{startTime}}",
+            "end": "{{endTime}}",
+            "limit": "{{limit}}",
+            "sort": "{{sort}}",
+            "exceptionType": "{{exceptionType}}",
+            "terminusKey": "{{terminusKey}}",
+            "serviceName": "{{serviceName}}",
+            "serviceId": "{{serviceId}}"
+          },
+          "method": "get"
+        },
+        "controls": null
+      }
+    }
+  ],
+  "version": "v2"
+}
