@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
@@ -61,24 +74,27 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 		s.Stages = append(s.Stages, &Stage{Actions: actions})
 	}
 
-	params := frontendYmlSpec.Params
 	var pipelineParams []*PipelineParam
-	if params != nil {
-		for _, param := range params {
-			pipelineInput := toPipelineYamlParam(param)
-			pipelineParams = append(pipelineParams, pipelineInput)
-		}
+	for _, param := range frontendYmlSpec.Params {
+		pipelineInput := toPipelineYamlParam(param)
+		pipelineParams = append(pipelineParams, pipelineInput)
 	}
-	outputs := frontendYmlSpec.Outputs
+
 	var pipelineOutputs []*PipelineOutput
-	if outputs != nil {
-		for _, output := range outputs {
-			pipelineOutput := toPipelineYamlOutput(output)
-			pipelineOutputs = append(pipelineOutputs, pipelineOutput)
-		}
+	for _, output := range frontendYmlSpec.Outputs {
+		pipelineOutput := toPipelineYamlOutput(output)
+		pipelineOutputs = append(pipelineOutputs, pipelineOutput)
 	}
+
 	s.Params = pipelineParams
 	s.Outputs = pipelineOutputs
+
+	var lifecycle []*NetworkHookInfo
+	for _, hookInfo := range frontendYmlSpec.Lifecycle {
+		hookInfo := toPipelineYamlHookInfo(hookInfo)
+		lifecycle = append(lifecycle, hookInfo)
+	}
+	s.Lifecycle = lifecycle
 
 	return GenerateYml(s)
 }
@@ -227,5 +243,13 @@ func toPipelineYamlOutput(outputs *apistructs.PipelineOutput) (pipelineOutput *P
 		Desc: outputs.Desc,
 		Name: outputs.Name,
 		Ref:  outputs.Ref,
+	}
+}
+
+func toPipelineYamlHookInfo(hookInfo *apistructs.NetworkHookInfo) (pipelineHookInfo *NetworkHookInfo) {
+	return &NetworkHookInfo{
+		Hook:   hookInfo.Hook,
+		Client: hookInfo.Client,
+		Labels: hookInfo.Labels,
 	}
 }

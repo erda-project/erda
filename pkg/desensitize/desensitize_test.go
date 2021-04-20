@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package desensitize
 
 import (
@@ -27,6 +40,10 @@ func TestMobile(t *testing.T) {
 	require.Equal(t, "188****8888", Mobile("18888888888"))
 }
 
+func TestName(t *testing.T) {
+	require.Equal(t, "e**********t", Name("erda-project"))
+}
+
 func TestEmail(t *testing.T) {
 	require.Equal(t, "pla**b@plan.com", Email("plan-b@plan.com"))
 	require.Equal(t, "*@plan.com", Email("t@plan.com"))
@@ -34,4 +51,14 @@ func TestEmail(t *testing.T) {
 	require.Equal(t, "t*a@plan.com", Email("tba@plan.com"))
 	require.Equal(t, "oj*k@plan.com", Email("ojbk@plan.com"))
 	require.Equal(t, "dic*******s@plan.com", Email("dice.tjjtds@plan.com"))
+
+	// illegal emails
+	require.Equal(t, "@plan.com", Email("@plan.com"))
+	require.Equal(t, "pla****m", Email("plan.com"))
+	require.Equal(t, "*", Email("a"))
+	require.Equal(t, "a*", Email("ab"))
+	require.Equal(t, "a*c", Email("abc"))
+	require.Equal(t, "ab*d", Email("abcd"))
+	require.Equal(t, "abc*e", Email("abcde"))
+	require.Equal(t, "abc**f", Email("abcdef"))
 }

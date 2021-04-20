@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 const (
@@ -25,6 +38,9 @@ const (
 	LabelPipelineCronID          = "pipelineCronID"
 	LabelPipelineCronCompensated = "cronCompensated"
 
+	LabelBindPipelineQueueID             = "__bind_queue_id"
+	LabelBindPipelineQueueCustomPriority = "__bind_queue_custom_priority"
+
 	LabelUserID = "userID"
 
 	// ---------------------- snippet some global labels
@@ -42,6 +58,7 @@ const (
 	DiceApplicationName   = "DICE_APPLICATION_NAME"
 	DiceWorkspaceEnv      = "DICE_WORKSPACE"
 	GittarBranchEnv       = "GITTAR_BRANCH"
+	LabelGittarYmlPath    = "gittarYmlPath"    // app snippetConfig label in order to specify the address of yml to address
 	LabelAutotestExecType = "autotestExecType" // 新版自动化测试的snippet的执行类型
 	LabelSceneSetID       = "sceneSetID"       // 新版自动化测试的场景集的 id
 	LabelSceneID          = "sceneID"          // 新版自动化测试的场景的 id

@@ -1,0 +1,50 @@
+name: "Status Page"
+tags:
+    env:
+        name: "Env"
+    metric:
+        name: "Metric"
+    metric_name:
+        name: "Metric Name"
+    project:
+        name: "Project"
+    project_id:
+        name: "Project ID"
+    project_name:
+        name: "Project Name"
+    request_id:
+        name: "Request ID"
+    service:
+        name: "Service"
+    status:
+        name: "Status"
+    status_name:
+        name: "Status Name"
+    terminus_key:
+        name: "Terminus Key"
+    type:
+        name: "Type"
+    url:
+        name: "URL"
+fields:
+    code:
+        type: "number"
+        name: "Code"
+        uint: 
+    latency:
+        type: "number"
+        name: "Latency"
+        uint: 
+    message:
+        type: "string"
+        name: "Message"
+        uint: 
+    request_id:
+        type: "string"
+        name: "Request ID"
+        uint: 
+    retry:
+        type: "number"
+        name: "Retry"
+        uint: 
+

@@ -16,7 +16,7 @@ Optionally add one or more of the following kinds if applicable:
 /kind api-change
 /kind deprecation
 /kind failing-test
-/kind flakedd
+/kind flaked
 /kind regression
 -->
 
@@ -33,8 +33,8 @@ Fixes #
 #### Special notes for your reviewer:
 
 
-#### Reivewers List:
-@your-reviewer
+#### Specified Reivewers:
+/assgin @your-reviewer
 
 #### Does this PR introduce a user-facing change?
 <!--

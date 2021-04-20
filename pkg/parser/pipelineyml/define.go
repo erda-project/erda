@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
@@ -33,6 +46,9 @@ type Spec struct {
 
 	Outputs []*PipelineOutput `yaml:"outputs,omitempty"` // 流水线输出
 
+	// describe the use of network hooks in the pipeline
+	Lifecycle []*NetworkHookInfo `yaml:"lifecycle,omitempty"`
+
 	// errs collect occurred errors when parse
 	errs []error
 	// warns collect occurred warns when parse
@@ -40,6 +56,13 @@ type Spec struct {
 
 	// allActions represents all actions from all stages
 	allActions map[ActionAlias]*indexedAction
+}
+
+// describe the use of network hook in the pipeline
+type NetworkHookInfo struct {
+	Hook   string                 `json:"hook"`   // hook type
+	Client string                 `json:"client"` // use network client
+	Labels map[string]interface{} `json:"labels"` // additional information
 }
 
 type StorageConfig struct {
@@ -175,7 +198,11 @@ func (t ActionType) String() string {
 }
 
 func (t ActionType) IsCustom() bool {
-	return string(t) == "custom-script"
+	return string(t) == apistructs.ActionTypeCustomScript
+}
+
+func (t ActionType) IsSnippet() bool {
+	return string(t) == apistructs.ActionTypeSnippet
 }
 
 func (a ActionAlias) String() string {

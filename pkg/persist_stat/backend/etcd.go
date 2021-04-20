@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package backend
 
 import (
@@ -5,6 +18,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -30,6 +44,8 @@ type EtcdStat struct {
 	accumValueCh chan accumValue
 
 	memmetrics *persist_stat.MemMetrics
+
+	lock sync.Mutex
 }
 
 func NewEtcd(js jsonstore.JsonStore, dir string) persist_stat.PersistStoreStat {
@@ -47,11 +63,13 @@ func NewEtcd(js jsonstore.JsonStore, dir string) persist_stat.PersistStoreStat {
 }
 
 func (e *EtcdStat) SetPolicy(policy persist_stat.Policy) error {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	if policy.Interval < 60 {
 		return fmt.Errorf("SetPolicy: interval must >= 60")
 	}
 	e.accumTp = policy.AccumTp
-	e.interval = policy.Interval
+	e.interval = policy.Interval // TODO
 	if policy.PreserveDays <= 0 {
 		return fmt.Errorf("SetPolicy: bad preserveDays")
 	}
@@ -67,7 +85,9 @@ func (e *EtcdStat) Emit(tag string, value int64) error {
 
 func (e *EtcdStat) consumer() {
 	accumBuf := []accumValue{}
-	timer := time.NewTimer(time.Duration(e.interval) * time.Second)
+	e.lock.Lock()
+	timer := time.NewTimer(time.Duration(e.interval) * time.Second) // TODO
+	e.lock.Unlock()
 	for {
 		select {
 		case <-timer.C:
@@ -79,7 +99,9 @@ func (e *EtcdStat) consumer() {
 				logrus.Errorf("[alert] persist_stat: consumer prefixremove: %v", err)
 			}
 			accumBuf = []accumValue{}
+			e.lock.Lock()
 			timer.Reset(time.Duration(e.interval) * time.Second)
+			e.lock.Unlock()
 		case v := <-e.accumValueCh:
 			accumBuf = append(accumBuf, v)
 		}

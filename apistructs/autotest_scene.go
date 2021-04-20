@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import (
@@ -49,6 +62,7 @@ type AutoTestScene struct {
 	Inputs      []AutoTestSceneInput  `json:"inputs"`    // 输入参数
 	Output      []AutoTestSceneOutput `json:"output"`    // 输出参数
 	Steps       []AutoTestSceneStep   `json:"steps"`     // 步骤
+	RefSetID    uint64                `json:"refSetID"`  // 引用场景集ID
 }
 
 type AutoTestSceneInput struct {
@@ -93,6 +107,7 @@ type AutotestSceneRequest struct {
 	SceneID     uint64 `json:"sceneID,omitempty"`     // 场景ID
 	SetID       uint64 `json:"setID,omitempty"`       // 场景集ID
 	APISpecID   uint64 `json:"apiSpecID,omitempty"`   // api集市id
+	RefSetID    uint64 `json:"refSetID,omitempty"`    // 引用场景集的ID
 
 	Type     StepAPIType `json:"type,omitempty"`
 	Target   int64       `json:"target,omitempty"`   // 目标位置

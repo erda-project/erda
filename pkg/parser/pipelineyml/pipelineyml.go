@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
@@ -24,7 +37,6 @@ type PipelineYml struct {
 
 	// snippet
 	globalSnippetConfigLabels map[string]string         // 当前 pipeline 的提交信息, 用作 snippet 的 local 模式查询 gitta 中的文件
-	flatSnippet               bool                      // 是否展平 snippet
 	SnippetCaches             []SnippetPipelineYmlCache // snippet 缓存
 
 	// secrets
@@ -117,13 +129,6 @@ func New(b []byte, ops ...Option) (_ *PipelineYml, err error) {
 	// 不做 flatParams，JSON 序列化在最后进行，防止简单 render 后 JSON 无效
 	y.s.Accept(NewStageVisitor(false))
 
-	if y.flatSnippet {
-		y.s.Accept(NewSnippetVisitor(y.globalSnippetConfigLabels, y.SnippetCaches))
-		if y.s.errs != nil && len(y.s.errs) > 0 {
-			return nil, y.s.mergeErrors()
-		}
-	}
-
 	y.s.Accept(NewCronVisitor())
 	y.s.Accept(NewTimeoutVisitor())
 
@@ -171,14 +176,6 @@ func WithRefs(refs Refs) Option {
 func WithRefOpOutputs(outputs Outputs) Option {
 	return func(y *PipelineYml) {
 		y.outputs = outputs
-	}
-}
-
-func WithRenderSnippet(globalSnippetConfigLabels map[string]string, caches []SnippetPipelineYmlCache) Option {
-	return func(y *PipelineYml) {
-		y.globalSnippetConfigLabels = globalSnippetConfigLabels
-		y.SnippetCaches = caches
-		y.flatSnippet = true
 	}
 }
 

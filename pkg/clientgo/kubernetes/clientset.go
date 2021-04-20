@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package kubernetes
 
 import (
@@ -43,10 +56,12 @@ import (
 	storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
 	storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
 
-	terminusdiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
-	terminusappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
-	terminuscorev1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/core/v1"
-	terminuspolicyv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/policy/v1beta1"
+	erdadiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
+	erdaappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
+	erdabatchv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/batch/v1"
+	erdacorev1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/core/v1"
+	erdaextensionsv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/extensions/v1beta1"
+	erdapolicyv1beta1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/policy/v1beta1"
 )
 
 type Clientset struct {
@@ -304,19 +319,27 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 func NewKubernetesClientSet(addr string) (*Clientset, error) {
 	var cs Clientset
 	var err error
-	cs.DiscoveryClient, err = terminusdiscovery.NewDiscoveryClient(addr)
+	cs.coreV1, err = erdacorev1.NewCoreClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.coreV1, err = terminuscorev1.NewCoreClient(addr)
+	cs.appsV1, err = erdaappsv1.NewAppClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.appsV1, err = terminusappsv1.NewAppClient(addr)
+	cs.policyV1beta1, err = erdapolicyv1beta1.NewPolicyClient(addr)
 	if err != nil {
 		return nil, err
 	}
-	cs.policyV1beta1, err = terminuspolicyv1beta1.NewPolicyClient(addr)
+	cs.batchV1, err = erdabatchv1.NewBatchClient(addr)
+	if err != nil {
+		return nil, err
+	}
+	cs.DiscoveryClient, err = erdadiscovery.NewDiscoveryClient(addr)
+	if err != nil {
+		return nil, err
+	}
+	cs.extensionsV1beta1, err = erdaextensionsv1beta1.NewExtensionsV1beta1Client(addr)
 	if err != nil {
 		return nil, err
 	}

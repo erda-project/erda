@@ -1,7 +1,19 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package httpclient
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -70,11 +82,11 @@ func TestResponseStatusCode(t *testing.T) {
 // 	assert.Nil(t, err)
 // 	resp.
 // }
-func TestDnsCache(t *testing.T) {
-	r, err := New(WithDnsCache()).Get("www.baidu.com:80").Path("/").Do().DiscardBody()
-	assert.Nil(t, err)
-	fmt.Printf("%+v\n", r.StatusCode()) // debug print
-}
+//func TestDnsCache(t *testing.T) {
+//	r, err := New(WithDnsCache()).Get("www.baidu.com:80").Path("/").Do().DiscardBody()
+//	assert.Nil(t, err)
+//	fmt.Printf("%+v\n", r.StatusCode()) // debug print
+//}
 
 func TestTimeout(t *testing.T) {
 	_, err := New(WithTimeout(5*time.Millisecond, 5*time.Millisecond)).Get("www.baidu.com").Path("/").Do().DiscardBody()
