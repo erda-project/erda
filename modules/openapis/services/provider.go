@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/runtime"
-	discover "github.com/erda-project/erda/providers/erda-discover"
+	discover "github.com/erda-project/erda/providers/service-discover"
 )
 
 // +provider

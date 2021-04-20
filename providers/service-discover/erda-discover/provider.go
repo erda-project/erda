@@ -16,27 +16,21 @@ package discover
 import (
 	"fmt"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
-// Interface .
-type Interface interface {
-	Endpoint(service string) (string, error)
-	ServiceURL(service string) (string, error)
+type config struct {
+	URLScheme string `file:"url_scheme" default:"http"`
 }
-
-type config struct{}
 
 // +provider
 type provider struct {
 	Cfg *config
-	Log logs.Logger
 }
 
-func (p *provider) Endpoint(name string) (string, error) {
-	return discover.GetEndpoint(name)
+func (p *provider) Endpoint(service string) (string, error) {
+	return discover.GetEndpoint(service)
 }
 
 func (p *provider) ServiceURL(service string) (string, error) {
@@ -44,7 +38,7 @@ func (p *provider) ServiceURL(service string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("http://%s", endpoint), nil
+	return fmt.Sprintf("%s://%s", p.Cfg.URLScheme, endpoint), nil
 }
 
 func init() {

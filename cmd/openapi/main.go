@@ -14,12 +14,22 @@
 package main
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda/conf"
 
 	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/openapi"
+	_ "github.com/erda-project/erda/modules/openapis"
+	_ "github.com/erda-project/erda/modules/openapis/services"
+	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
+	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/openapi", "openapi")
+	modcom.Run(&servicehub.RunOptions{
+		ConfigFile: conf.OpenAPIConfigFilePath,
+		Content:    conf.OpenAPIDefaultConfig,
+	})
 }

@@ -22,7 +22,8 @@ import (
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/openapis"
 	_ "github.com/erda-project/erda/modules/openapis/services"
-	_ "github.com/erda-project/erda/providers/erda-discover"
+	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
+	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
 func main() {

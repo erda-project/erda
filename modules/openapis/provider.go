@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	discover "github.com/erda-project/erda/providers/erda-discover"
 
 	// http interceptors
 	auth "github.com/erda-project/erda/modules/openapis/interceptors/auth"
@@ -44,8 +43,7 @@ type Interceptor func(h http.HandlerFunc) http.HandlerFunc
 type provider struct {
 	Cfg          *config
 	Log          logs.Logger
-	Discover     discover.Interface `autowired:"discover"`
-	HTTP         httpserver.Router  `autowired:"http-server"`
+	HTTP         httpserver.Router `autowired:"http-server"`
 	interceptors []Interceptor
 }
 

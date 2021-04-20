@@ -1,5 +1,10 @@
 http-server:
   addr: ":80"
-erda-discover:
+
 openapis:
 openapis-services:
+
+erda-discover:
+# fixed-discover:
+#   urls:
+#     user-center: "http://localhost:8080"
