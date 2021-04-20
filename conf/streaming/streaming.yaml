@@ -30,7 +30,7 @@ mysql:
 # database: "${MYSQL_DATABASE:dice}"
 
 etcd:
-  endpoints: "http://127.0.0.1:2379"
+  endpoints: "${ETCD_ENDPOINTS:http://127.0.0.1:2379}"
   tls:
     cert: "/certs/etcd-client.pem"
     cert_key: "/certs/etcd-client-key.pem"
@@ -180,5 +180,5 @@ metrics-index-manager:
 i18n@metric:
 
 http-server@admin:
-  addr: ":7099"
+  addr: ":7098"
 pprof:

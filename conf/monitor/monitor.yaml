@@ -66,6 +66,7 @@ logs-query:
   cassandra:
     keyspace:
       name: "spot_prod"
+      auto: true
       replication:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
