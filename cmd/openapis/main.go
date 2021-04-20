@@ -16,6 +16,7 @@ package main
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda/conf"
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
@@ -26,13 +27,7 @@ import (
 
 func main() {
 	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/openapis/openapis.yaml",
-		Content: `
-http-server:
-    addr: ":80"
-erda-discover:
-openapis:
-openapis-services:
-`,
+		ConfigFile: conf.OpenAPIsConfigFilePath,
+		Content:    conf.OpenAPIsDefaultConfig,
 	})
 }

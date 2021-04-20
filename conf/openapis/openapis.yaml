@@ -1,2 +1,5 @@
 http-server:
   addr: ":80"
+erda-discover:
+openapis:
+openapis-services:
