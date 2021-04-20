@@ -46,6 +46,9 @@ issues:
       text: "G201:" # SQL string formatting (gosec)
     - linters:
         - gosec
+      text: "G201:" # G202: SQL string concatenation (gosec)
+    - linters:
+        - gosec
       text: "G204:" # G204: Subprocess launched with function call as argument or cmd arguments (gosec)
     - linters:
         - gosec
