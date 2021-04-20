@@ -46,7 +46,7 @@ func findKeys(title, content string) []string {
 		keySet[strings.TrimSpace(key)] = struct{}{}
 	}
 	var keys []string
-	for k, _ := range keySet {
+	for k := range keySet {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
