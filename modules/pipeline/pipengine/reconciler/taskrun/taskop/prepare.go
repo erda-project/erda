@@ -120,6 +120,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if err != nil {
 		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
+	pre.Ctx = context.WithValue(pre.Ctx, apistructs.NETPORTAL_URL, clusterInfo.Get(apistructs.NETPORTAL_URL))
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解
 	mountPoint := clusterInfo.MustGet(apistructs.DICE_STORAGE_MOUNTPOINT)
