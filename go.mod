@@ -16,6 +16,7 @@ require (
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
+	github.com/aliyun/aliyun-log-go-sdk v0.1.19
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/andrianbdn/iospng v0.0.0-20180730113000-dccef1992541
@@ -33,9 +34,8 @@ require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
-	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
+	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210414035235-9b3146052088
 	github.com/erda-project/erda-proto-go v0.0.0-20210413092715-491fb6350e91
@@ -43,18 +43,17 @@ require (
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
-	github.com/fatih/color v1.10.0 // indirect
+	github.com/fatih/color v1.10.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.7
-	github.com/go-openapi/swag v0.19.9 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/go-xorm/builder v0.2.0 // indirect
+	github.com/go-xorm/builder v0.3.4 // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
@@ -66,7 +65,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hpcloud/tail v1.0.0
-	github.com/igm/sockjs-go v2.0.1+incompatible // indirect
+	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
@@ -75,7 +74,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kr/pty v1.1.8
-	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
@@ -84,22 +82,18 @@ require (
 	github.com/lib/pq v1.3.0 // indirect
 	github.com/libgit2/git2go/v30 v30.0.5
 	github.com/magiconair/properties v1.8.4
-	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/minio/md5-simd v1.1.2
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
-	github.com/nwaples/rardecode v0.0.0-20181025094117-197ef08ef68c // indirect
+	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.1
-	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
-	github.com/pingcap/br v0.0.0-20200921112226-ee2e962f5e4b // indirect
 	github.com/pingcap/errors v0.11.5-0.20200917111840-a15ef68f753d
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
@@ -116,27 +110,25 @@ require (
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/sirupsen/logrus v1.8.0
 	github.com/sony/sonyflake v1.0.0
+	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.0
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/ulikunitz/xz v0.0.0-20180703112113-636d36a76670 // indirect
-	github.com/valyala/fasthttp v1.23.0 // indirect
+	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
 	github.com/xormplus/builder v0.0.0-20200331055651-240ff40009be
 	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
 	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
 	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c // indirect
 	golang.org/x/text v0.3.5
 	google.golang.org/grpc v1.36.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
 	gopkg.in/oauth2.v3 v3.12.0
@@ -144,7 +136,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gotest.tools v2.2.0+incompatible
-	honnef.co/go/tools v0.0.1-2020.1.6 // indirect
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
@@ -165,6 +156,7 @@ replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
+	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 

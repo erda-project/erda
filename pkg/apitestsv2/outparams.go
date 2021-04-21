@@ -14,13 +14,11 @@
 package apitestsv2
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/jsonparse"
 )
 
 // ParseOutParams 解析 API 执行结果的出参，存储为全局变量，供后续使用
@@ -49,45 +47,8 @@ func (at *APITest) ParseOutParams(apiOutParams []apistructs.APIOutParam, apiResp
 			jqOrJsonPath = "jackson"
 			fallthrough
 		case apistructs.APIOutParamSourceBodyJson:
-			var (
-				body interface{}
-				val  interface{}
-			)
-			// 出参取不到值，为空，忽略错误
-			d := json.NewDecoder(bytes.NewReader(apiResp.Body))
-			d.UseNumber()
-			err := d.Decode(&body)
-			if err != nil {
-				continue
-			}
-
-			express := strings.TrimSpace(t.Expression)
-			if express != "" {
-				switch jqOrJsonPath {
-				case "jsonpath":
-					val, _ = jsonpath.Get(body, express)
-				case "jq":
-					val, _ = jsonpath.JQ(apiResp.BodyStr, express)
-				case "jackson":
-					val, _ = jsonpath.Jackson(apiResp.BodyStr, express)
-				default:
-					if strings.HasPrefix(express, jsonpath.JacksonExpressPrefix) {
-						val, _ = jsonpath.Jackson(apiResp.BodyStr, express)
-					} else {
-						// jq The expression does not necessarily start with ., maybe like '{"ss": 1}' | .ss
-						var err error
-						val, err = jsonpath.JQ(apiResp.BodyStr, express)
-						if err != nil {
-							val, _ = jsonpath.Get(body, express)
-						}
-					}
-				}
-			} else {
-				val = body
-			}
-
 			pam.Type = apistructs.APIOutParamSourceStatus.String()
-			pam.Value = val
+			pam.Value = jsonparse.FilterJson(apiResp.Body, t.Expression, jqOrJsonPath)
 		case apistructs.APIOutParamSourceBodyText:
 			pam.Type = apistructs.APIOutParamSourceStatus.String()
 			pam.Value = fmt.Sprint(apiResp.Body)

@@ -1,6 +1,4 @@
-# Erda - An enterprise-grade microservice application development platform
-
-[![codecov](https://codecov.io/gh/erda-project/erda/branch/develop/graph/badge.svg?token=ZFQ3X4257K)](https://codecov.io/gh/erda-project/erda)
+# Erda - An enterprise-grade application building, development, monitoring platform
 
 ![Erda logo](./docs/assets/logo-small.jpg)
 
@@ -24,7 +22,7 @@ Erda is mainly composed of the following parts, they are
 
 ## Screenshot
 
-![Screenshot](https://erda-project.oss-cn-hangzhou.aliyuncs.com/images/erda.gif)
+![Screenshot](https://static.erda.cloud/images/erda.gif)
 
 ## Architecture
 

@@ -1,7 +1,5 @@
 http-server:
   addr: ":7096"
-#health:
-#  check_providers: ["elasticsearch", "elasticsearch@logs", "mysql"]
 
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
@@ -68,10 +66,10 @@ logs-query:
   cassandra:
     keyspace:
       name: "spot_prod"
-      auto: true # Auto create keyspace
       replication:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
 log-metric-rules:
@@ -84,6 +82,7 @@ trace-query:
       replication:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+node-topo:
 #apm providers
 apm-runtime:
 apm-topology:
@@ -145,11 +144,11 @@ i18n@metric:
   files:
     - ${CONFIG_PATH}/metricmeta/i18n
 
+notify-query:
+  files:
+    - ${CONFIG_PATH}/notity/notify
+
 # admin
 http-server@admin:
   addr: ":7098"
-#pprof:
-#node-topo:
-#notify-query:
-#  files:
-#    - ${CONFIG_PATH}/dice-configs/notity/notify
+pprof:
