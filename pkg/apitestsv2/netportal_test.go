@@ -13,24 +13,25 @@
 
 package apitestsv2
 
-type option struct {
-	tryV1RenderJsonBodyFirst bool
-	netportalURL             string
-}
+import (
+	"net/http"
+	"testing"
 
-type OpOption func(*option)
+	"github.com/stretchr/testify/assert"
 
-// WithTryV1RenderJsonBodyFirst 尝试先使用 v1 严格模式渲染 json body。不论是否打开开关，都会再使用 v2 逻辑渲染一遍。
-// 为手动测试的接口测试提供兼容处理；自动化测试无需打开该开关。
-func WithTryV1RenderJsonBodyFirst() OpOption {
-	return func(opt *option) {
-		opt.tryV1RenderJsonBodyFirst = true
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/customhttp"
+)
+
+func Test_handleCustomNetportalRequest(t *testing.T) {
+	customhttp.SetInetAddr("netportal.default")
+	req := apistructs.APIRequestInfo{
+		URL:     "inet://staging.terminus.io?ssl=on/www.erda.cloud",
+		Method:  http.MethodGet,
+		Headers: http.Header{},
 	}
-}
-
-// WithNetportal set netportal url.
-func WithNetportal(netportalURL string) OpOption {
-	return func(opt *option) {
-		opt.netportalURL = netportalURL
-	}
+	customReq, err := handleCustomNetportalRequest(&req)
+	_ = customReq
+	assert.NoError(t, err)
+	assert.NotZero(t, len(req.Headers))
 }
