@@ -50,7 +50,10 @@ type Conf struct {
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/openapi/oauth2/:/oauth2/:rw' 容器内挂载点的值
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
 
-	CSRFWhiteList string `env:"CSRF_WHITE_LIST"`
+	CSRFWhiteList        string `env:"CSRF_WHITE_LIST"`
+	OryEnabled           string `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr        string `env:"ORY_KRATOS_ADDR"`
+	OryKratosPrivateAddr string `env:"ORY_KRATOS_PRIVATE_ADDR"`
 }
 
 var cfg Conf
@@ -141,6 +144,26 @@ func OAuth2NetdataDir() string {
 
 func CSRFWhiteList() []string {
 	return strutil.Split(cfg.CSRFWhiteList, ",", true)
+}
+
+func OryEnabled() bool {
+	return cfg.OryEnabled == "true" || cfg.OryEnabled == "1"
+}
+
+func OryLoginURL() string {
+	return "/uc/auth/login"
+}
+
+func OryLogoutURL() string {
+	return "/.ory/kratos/public/self-service/browser/flows/logout"
+}
+
+func OryKratosAddr() string {
+	return cfg.OryKratosAddr
+}
+
+func OryKratosPrivateAddr() string {
+	return cfg.OryKratosPrivateAddr
 }
 
 func CustomNamespace() string {

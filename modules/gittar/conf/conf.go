@@ -47,6 +47,10 @@ type Conf struct {
 	GitInnerUserPassword     string `env:"GIT_INNER_USER_PASSWORD"`
 	GitMergeTemplatePath     string `env:"GIT_MERGE_TEMPLATE_PATH" default:".gitlab/merge_request_templates"`
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
+
+	// ory/kratos config
+	OryEnabled    string `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr string `env:"ORY_KRATOS_ADDR"`
 }
 
 var cfg Conf
@@ -162,4 +166,12 @@ func GitMergeTemplatePath() string {
 // GitTokenUserName token认证使用的用户名
 func GitTokenUserName() string {
 	return cfg.GitTokenUserName
+}
+
+func OryEnabled() bool {
+	return cfg.OryEnabled == "true" || cfg.OryEnabled == "1"
+}
+
+func OryKratosAddr() string {
+	return cfg.OryKratosAddr
 }

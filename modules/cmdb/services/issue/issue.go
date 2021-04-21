@@ -21,21 +21,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/services/filesvc"
 	"github.com/erda-project/erda/modules/cmdb/services/issuestream"
 	"github.com/erda-project/erda/modules/cmdb/services/monitor"
 	"github.com/erda-project/erda/modules/cmdb/services/permission"
-	"github.com/erda-project/erda/modules/cmdb/utils"
+	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Issue 事件操作封装
@@ -43,7 +41,7 @@ type Issue struct {
 	db      *dao.DBClient
 	bdl     *bundle.Bundle
 	stream  *issuestream.IssueStream
-	uc      *utils.UCClient
+	uc      *ucauth.UCClient
 	perm    *permission.Permission
 	fileSvc *filesvc.FileService
 }
@@ -82,7 +80,7 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *utils.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(issue *Issue) {
 		issue.uc = uc
 	}
@@ -740,7 +738,7 @@ func (svc *Issue) batchCreateAssignChaningStream(req *apistructs.IssueBatchUpdat
 	}
 	userInfo := make(map[string]string, len(users))
 	for _, v := range users {
-		userInfo[strconv.FormatUint(v.ID, 10)] = v.Nick
+		userInfo[v.ID] = v.Nick
 	}
 
 	for _, v := range issues {
