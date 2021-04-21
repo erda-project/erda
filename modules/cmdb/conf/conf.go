@@ -110,7 +110,7 @@ var (
 	// 审计模版配置
 	auditsTemplate apistructs.AuditTemplateMap
 	// 域名白名单
-	OrgWiteList map[string]bool
+	OrgWhiteList map[string]bool
 )
 
 func initPermissions() {
@@ -178,10 +178,11 @@ func Load() {
 	fmt.Println(fileMaxUploadByte.String())
 	cfg.FileMaxUploadSize = fileMaxUploadByte
 
-	OrgWiteList = map[string]bool{
+	OrgWhiteList = map[string]bool{
 		UIDomain():                          true,
 		OpenAPIDomain():                     true,
 		"openapi.default.svc.cluster.local": true,
+		"www.erda.cloud":                    true,
 	}
 }
 
