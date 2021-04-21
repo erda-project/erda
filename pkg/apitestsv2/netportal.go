@@ -13,24 +13,23 @@
 
 package apitestsv2
 
-type option struct {
-	tryV1RenderJsonBodyFirst bool
-	netportalURL             string
-}
+import (
+	"fmt"
+	"net/http"
 
-type OpOption func(*option)
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/customhttp"
+)
 
-// WithTryV1RenderJsonBodyFirst 尝试先使用 v1 严格模式渲染 json body。不论是否打开开关，都会再使用 v2 逻辑渲染一遍。
-// 为手动测试的接口测试提供兼容处理；自动化测试无需打开该开关。
-func WithTryV1RenderJsonBodyFirst() OpOption {
-	return func(opt *option) {
-		opt.tryV1RenderJsonBodyFirst = true
+func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo) (*http.Request, error) {
+	customReq, err := customhttp.NewRequest(apiReq.Method, apiReq.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to handle custom netportal request, err: %v", err)
 	}
-}
-
-// WithNetportal set netportal url.
-func WithNetportal(netportalURL string) OpOption {
-	return func(opt *option) {
-		opt.netportalURL = netportalURL
+	for k, values := range customReq.Header {
+		for _, v := range values {
+			apiReq.Headers.Add(k, v)
+		}
 	}
+	return customReq, nil
 }
