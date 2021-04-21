@@ -49,8 +49,8 @@ type Conf struct {
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
 
 	// ory/kratos config
-	OryEnabled    string `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr string `env:"ORY_KRATOS_ADDR"`
+	OryEnabled           string `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
 }
 
 var cfg Conf

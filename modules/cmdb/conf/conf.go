@@ -104,7 +104,8 @@ type Conf struct {
 
 	// ory/kratos config
 	OryEnabled           string `default:"false" env:"ORY_ENABLED"`
-	OryKratosPrivateAddr string `env:"ORY_KRATOS_PRIVATE_ADDR"`
+	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
 }
 
 var (
@@ -509,6 +510,16 @@ func OryEnabled() bool {
 	return cfg.OryEnabled == "true" || cfg.OryEnabled == "1"
 }
 
+func OryKratosAddr() string {
+	return cfg.OryKratosAddr
+}
+
 func OryKratosPrivateAddr() string {
-	return cfg.OryKratosPrivateAddr
+	if cfg.OryKratosPrivateAddr != "" {
+		return cfg.OryKratosPrivateAddr
+	} else if cfg.OryKratosAddr != "" {
+		// TODO: ugly hack!
+		return cfg.OryKratosAddr[:len(cfg.OryKratosAddr)-1] + "4"
+	}
+	return ""
 }
