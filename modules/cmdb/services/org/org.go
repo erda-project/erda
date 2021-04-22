@@ -197,7 +197,9 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 	if createReq.DisplayName == "" {
 		createReq.DisplayName = createReq.Name
 	}
-
+	if conf.RedirectPathList[strutil.Concat("/", createReq.Name)] {
+		return nil, errors.Errorf("Org name in legacy redirect paths")
+	}
 	// name 校验
 	if err := strutil.Validate(createReq.Name,
 		strutil.NoChineseValidator,

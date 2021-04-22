@@ -111,6 +111,8 @@ var (
 	auditsTemplate apistructs.AuditTemplateMap
 	// 域名白名单
 	OrgWhiteList map[string]bool
+	// legacy redirect paths
+	RedirectPathList map[string]bool
 )
 
 func initPermissions() {
@@ -182,7 +184,20 @@ func Load() {
 		UIDomain():                          true,
 		OpenAPIDomain():                     true,
 		"openapi.default.svc.cluster.local": true,
-		"www.erda.cloud":                    true,
+	}
+
+	RedirectPathList = map[string]bool{
+		"/microService": true,
+		"/workBench":    true,
+		"/dataCenter":   true,
+		"/orgCenter":    true,
+		"/edge":         true,
+		"/sysAdmin":     true,
+		"/org-list":     true,
+		"/noAuth":       true,
+		"/freshMan":     true,
+		"/inviteToOrg":  true,
+		"/perm":         true,
 	}
 }
 
