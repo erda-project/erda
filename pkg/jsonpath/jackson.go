@@ -15,18 +15,29 @@ package jsonpath
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 const JacksonExpressPrefix = "$."
 
 // use jackson-path command to parse json
 func Jackson(jsonInput, filter string) (interface{}, error) {
-	jq := fmt.Sprintf(`jackson-path -j '%s' -p '%s' -u`, jsonInput, filter)
+	f, err := ioutil.TempFile("", "input")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(f.Name())
+	f.WriteString(jsonInput)
+	jq := fmt.Sprintf(`jackson-path -f '%s' -p '%s' -u`, f.Name(), filter)
 	wrappedJQ := exec.Command("/bin/sh", "-c", jq)
 	output, err := wrappedJQ.CombinedOutput()
 	if err != nil {
+		logrus.Errorf("jackson failed, filter: %s, input: %s, err: %v", filter, jsonInput, err)
 		return "", fmt.Errorf("jackson failed, filter: %s, err: %v, reason: %s", filter, err, string(output))
 	}
 	return strings.TrimSpace(string(output)), nil
