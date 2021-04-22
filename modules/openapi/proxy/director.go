@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/erda-project/erda/modules/openapi/api"
 	"github.com/erda-project/erda/modules/openapi/conf"
@@ -24,6 +25,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
+
+const defautlFQDN string = "default.svc.cluster.local"
 
 func NewDirector() func(*http.Request) {
 	return func(r *http.Request) {
@@ -39,6 +42,12 @@ func NewDirector() func(*http.Request) {
 		if conf.UseK8S() {
 			r.Host = spec.K8SHost
 			r.URL.Host = spec.K8SHost
+			erdaSystemFQDN := conf.ErdaSystemFQDN()
+			if erdaSystemFQDN != "" && erdaSystemFQDN != defautlFQDN {
+				host := replaceServiceName(erdaSystemFQDN, spec.K8SHost)
+				r.Host = host
+				r.URL.Host = host
+			}
 		} else {
 			r.Host = spec.MarathonHost
 			r.URL.Host = spec.MarathonHost
@@ -62,4 +71,10 @@ func NewDirector() func(*http.Request) {
 		}
 		// r.Header.Set("Origin", "http://"+r.Host)
 	}
+}
+
+// genServiceName
+func replaceServiceName(confFQDN, K8SHost string) string {
+	svcName := strings.SplitN(K8SHost, ".", -1)[0]
+	return svcName + "." + confFQDN
 }
