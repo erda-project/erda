@@ -157,13 +157,7 @@ func OryKratosAddr() string {
 }
 
 func OryKratosPrivateAddr() string {
-	if cfg.OryKratosPrivateAddr != "" {
-		return cfg.OryKratosPrivateAddr
-	} else if cfg.OryKratosAddr != "" {
-		// TODO: ugly hack!
-		return cfg.OryKratosAddr[:len(cfg.OryKratosAddr)-1] + "4"
-	}
-	return ""
+	return cfg.OryKratosPrivateAddr
 }
 
 func OryLoginURL() string {
