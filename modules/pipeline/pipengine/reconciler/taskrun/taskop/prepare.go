@@ -120,6 +120,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if err != nil {
 		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
+	pre.Ctx = context.WithValue(pre.Ctx, apistructs.NETPORTAL_URL, clusterInfo.Get(apistructs.NETPORTAL_URL))
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解
 	mountPoint := clusterInfo.MustGet(apistructs.DICE_STORAGE_MOUNTPOINT)
@@ -495,20 +496,18 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
+		// --- binds ---
+		task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
+		jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
+		if err != nil {
+			return false, apierrors.ErrRunPipeline.InternalError(err)
+		}
+		for _, bind := range jobBinds {
+			task.Extra.Binds = append(task.Extra.Binds, bind)
+		}
+		// --- volumes ---
+		task.Extra.Volumes = contextVolumes(task.Context)
 	}
-
-	// --- binds ---
-	task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
-	jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
-	if err != nil {
-		return false, apierrors.ErrRunPipeline.InternalError(err)
-	}
-	for _, bind := range jobBinds {
-		task.Extra.Binds = append(task.Extra.Binds, bind)
-	}
-
-	// --- volumes ---
-	task.Extra.Volumes = contextVolumes(task.Context)
 
 	// --- preFetcher ---
 	const agentHostPath = "/devops/ci/action-agent/agent"
