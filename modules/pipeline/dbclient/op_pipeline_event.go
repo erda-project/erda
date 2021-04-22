@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -84,7 +85,7 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 			if i == 0 {
 				continue
 			}
-			if se.FirstTimestamp.Before(newSe.FirstTimestamp) {
+			if !se.FirstTimestamp.IsZero() && se.FirstTimestamp.Before(newSe.FirstTimestamp) {
 				newSe.FirstTimestamp = se.FirstTimestamp
 			}
 			if se.LastTimestamp.After(newSe.LastTimestamp) {
@@ -92,6 +93,15 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 			}
 			newSe.Count++
 		}
+		// set default
+		now := time.Now()
+		if newSe.FirstTimestamp.IsZero() {
+			newSe.FirstTimestamp = now
+		}
+		if newSe.LastTimestamp.IsZero() {
+			newSe.FirstTimestamp = now
+		}
+		// add to merged group
 		mergedGroup[key] = &newSe
 	}
 	// order message by firstTimestamp

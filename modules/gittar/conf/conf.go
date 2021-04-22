@@ -22,7 +22,7 @@ import (
 
 // Conf 定义配置对象.
 type Conf struct {
-	RepoRoot        string `env:"GITTAR_REPOSITORY_ROOT" default:"./repository"`
+	RepoRoot        string `env:"GITTAR_REPOSITORY_ROOT" default:"/repository"`
 	SelfAddr        string `env:"SELF_ADDR"`
 	SkipAuthUrlsStr string `env:"GITTAR_SKIP_AUTH_URL"`
 	SkipAuthUrls    []string
