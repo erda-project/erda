@@ -41,23 +41,14 @@ func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	mgr.ch <- event
 }
 
-func EmitPipelineStreamEvent(p *spec.Pipeline, events []*apistructs.PipelineEvent) {
+func EmitPipelineStreamEvent(pipelineID uint64, events []*apistructs.PipelineEvent) {
 	event := &PipelineStreamEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader
-	event.EventHeader.Event = string(EventKindPipeline)
-	event.EventHeader.Action = string(p.Status)
-
-	event.EventHeader.ApplicationID = p.Labels[apistructs.LabelAppID]
-	event.EventHeader.ProjectID = p.Labels[apistructs.LabelProjectID]
-	event.EventHeader.OrgID = p.Labels[apistructs.LabelOrgID]
-	event.EventHeader.Env = p.Extra.DiceWorkspace.String()
-
-	// Identity
-	event.InternalClient = p.Extra.InternalClient
+	event.EventHeader.Event = string(EventKindPipelineStream)
 
 	// Pipeline
-	event.Pipeline = p
+	event.PipelineID = pipelineID
 
 	// Stream Events
 	event.Events = events

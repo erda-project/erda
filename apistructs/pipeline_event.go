@@ -33,7 +33,7 @@ type PipelineEvent struct {
 
 	// The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 	// +optional
-	FirstTimestamp time.Time `json:"timestamp,omitempty"`
+	FirstTimestamp time.Time `json:"firstTimestamp,omitempty"`
 
 	// The time at which the most recent occurrence of this event was recorded.
 	// +optional
