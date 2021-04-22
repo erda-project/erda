@@ -24,16 +24,17 @@ import (
 )
 
 type Conf struct {
-	ListenAddr    string `default:":9528" env:"LISTEN_ADDR"`
-	PoolSize      int    `default:"100" env:"POOL_SIZE"`
-	SchedulerAddr string `default:"127.0.0.1:6666" env:"SCHEDULER_ADDR"`
-	MysqlAddr     string `default:"rm-bp17ar40w6824r8m0o.mysql.rds.aliyuncs.com" env:"MYSQL_HOST"`
-	MysqlPort     string `default:"" env:"MYSQL_PORT"`
-	DbName        string `default:"dice-test" env:"MYSQL_DATABASE"`
-	DbUser        string `default:"dice" env:"MYSQL_USERNAME"`
-	DbPWD         string `default:"Hello1234" env:"MYSQL_PASSWORD"`
-	Debug         bool   `default:"false" env:"DEBUG"`
-	UseK8S        bool   `env:"DICE_CLUSTER_TYPE"`
+	ListenAddr     string `default:":9528" env:"LISTEN_ADDR"`
+	PoolSize       int    `default:"100" env:"POOL_SIZE"`
+	SchedulerAddr  string `default:"127.0.0.1:6666" env:"SCHEDULER_ADDR"`
+	MysqlAddr      string `default:"" env:"MYSQL_HOST"`
+	MysqlPort      string `default:"" env:"MYSQL_PORT"`
+	DbName         string `default:"dice-test" env:"MYSQL_DATABASE"`
+	DbUser         string `default:"dice" env:"MYSQL_USERNAME"`
+	DbPWD          string `default:"Hello1234" env:"MYSQL_PASSWORD"`
+	Debug          bool   `default:"false" env:"DEBUG"`
+	UseK8S         bool   `env:"DICE_CLUSTER_TYPE"`
+	ErdaSystemFQDN string `env:"ERDA_SYSTEM_FQDN"`
 }
 
 var (
@@ -253,6 +254,11 @@ func AliyunVmsMonitorTtsCode() string {
 // AliyunVmsMonitorCalledShowNumber 监控的语音通知被呼显示号码
 func AliyunVmsMonitorCalledShowNumber() string {
 	return os.Getenv("ALIYUN_VMS_MONITOR_CALLED_SHOW_NUMBER")
+}
+
+// ErdaSystemFQDN
+func ErdaSystemFQDN() string {
+	return os.Getenv("ERDA_SYSTEM_FQDN")
 }
 
 func Proxy() string {
