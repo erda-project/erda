@@ -279,7 +279,12 @@ func (c *constructCtx) basenode() baseNode {
 	}
 }
 
-func newNode(ctx constructCtx, t reflect.Type) Node {
+func newNode(ctx constructCtx, t reflect.Type) (n Node) {
+	defer func() {
+		if r := recover(); r != nil {
+			n = &StructNode{baseNode: ctx.basenode(), fields: nil}
+		}
+	}()
 	if ctx.deep > 20 {
 		return &BoolNode{ctx.basenode()}
 	}

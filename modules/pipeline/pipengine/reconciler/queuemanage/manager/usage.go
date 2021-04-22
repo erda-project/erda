@@ -11,22 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package types
+package manager
 
 import (
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 )
 
-type Queue interface {
-	ID() string
-	IsStrictMode() bool
-	OccupiedResource() apistructs.PipelineAppliedResource
-	Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueUsage
-	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
-	PopOutPipeline(p *spec.Pipeline, markAsFailed ...bool)
-	Update(pq *apistructs.PipelineQueue)
-	RangePendingQueue(mgr QueueManager)
-	QueueValidator
+func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
+	mgr.qLock.Lock()
+	defer mgr.qLock.Unlock()
+
+	q, ok := mgr.queueByID[queue.New(pq).ID()]
+	if !ok {
+		return nil
+	}
+
+	mgr.pCacheLock.Lock()
+	defer mgr.pCacheLock.Unlock()
+	usage := q.Usage(mgr.pipelineCaches)
+	return &usage
 }

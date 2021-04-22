@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -56,6 +57,8 @@ type PipelineQueue struct {
 
 	TimeCreated *time.Time `json:"timeCreated,omitempty"`
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty"`
+
+	Usage *pb.QueueUsage `json:"usage"`
 }
 
 // ScheduleStrategyInsidePipelineQueue represents the schedule strategy of workflows inside a queue.
