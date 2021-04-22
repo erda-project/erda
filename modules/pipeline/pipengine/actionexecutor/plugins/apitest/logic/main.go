@@ -125,7 +125,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	printGlobalAPIConfig(ctx, apiTestEnvData)
 
 	// do apiTest
-	apiTest := apitestsv2.New(apiInfo)
+	apiTest := apitestsv2.New(apiInfo, apitestsv2.WithNetportal(getNetportalURL(ctx)))
 	apiReq, apiResp, err := apiTest.Invoke(&hc, apiTestEnvData, caseParams)
 	printRenderedHTTPReq(ctx, apiReq)
 	meta.Req = apiReq

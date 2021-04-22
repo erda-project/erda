@@ -15,6 +15,7 @@ package apitestsv2
 
 type option struct {
 	tryV1RenderJsonBodyFirst bool
+	netportalURL             string
 }
 
 type OpOption func(*option)
@@ -24,5 +25,12 @@ type OpOption func(*option)
 func WithTryV1RenderJsonBodyFirst() OpOption {
 	return func(opt *option) {
 		opt.tryV1RenderJsonBodyFirst = true
+	}
+}
+
+// WithNetportal set netportal url.
+func WithNetportal(netportalURL string) OpOption {
+	return func(opt *option) {
+		opt.netportalURL = netportalURL
 	}
 }
