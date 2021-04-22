@@ -219,7 +219,8 @@ type SwitchOrgRequest struct {
 
 // OrgGetByDomainRequest
 type OrgGetByDomainRequest struct {
-	Domain string `query:"domain"`
+	Domain  string `query:"domain"`
+	OrgName string `query:"orgName"`
 }
 
 // OrgGetByDomainResponse
