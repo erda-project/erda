@@ -37,15 +37,6 @@ func UUID() (string, error) {
 	return u.String(), nil
 }
 
-func InString(s string, ss []string) bool {
-	for _, item := range ss {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
 func GetMD5Base64(bytes []byte) string {
 	md5Ctx := sha256.New()
 	md5Ctx.Write(bytes)

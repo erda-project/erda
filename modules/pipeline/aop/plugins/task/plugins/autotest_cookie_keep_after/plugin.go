@@ -32,7 +32,7 @@ func (p *Plugin) Name() string {
 	return "autotest_cookie_keep_after"
 }
 
-func (p *Plugin) Handle(ctx aoptypes.TuneContext) error {
+func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	// task not api-test type return
 	if ctx.SDK.Task.Type != taskType {
 		return nil

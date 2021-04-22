@@ -50,7 +50,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineEvent) error {
+func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent) error {
 	pipelineData := pipelineEvent.Content
 	orgID, err := strconv.ParseInt(pipelineEvent.OrgID, 10, 64)
 	if err != nil {

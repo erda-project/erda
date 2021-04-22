@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func EmitPipelineEvent(p *spec.Pipeline, userID string) {
+func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	event := &PipelineEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader
@@ -37,6 +37,21 @@ func EmitPipelineEvent(p *spec.Pipeline, userID string) {
 
 	// Pipeline
 	event.Pipeline = p
+
+	mgr.ch <- event
+}
+
+func EmitPipelineStreamEvent(pipelineID uint64, events []*apistructs.PipelineEvent) {
+	event := &PipelineStreamEvent{DefaultEvent: defaultEvent}
+
+	// EventHeader
+	event.EventHeader.Event = string(EventKindPipelineStream)
+
+	// Pipeline
+	event.PipelineID = pipelineID
+
+	// Stream Events
+	event.Events = events
 
 	mgr.ch <- event
 }

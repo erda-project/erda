@@ -47,10 +47,11 @@ build-all:
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
 			echo "build module: $$MODULE_PATH"; \
-			BUILD_PATH="cmd/$${MODULE_PATH}" MODULE_PATH=$${MODULE_PATH} APP_NAME=$${MODULE_PATH} GO_BUILD_OPTIONS="$${GO_BUILD_OPTIONS}" make build; \
+			make build MODULE_PATH=$${MODULE_PATH}; \
 			echo ""; \
 		fi; \
 	done; \
+	make cli; \
 	echo "build all modules successfully!"
 
 build: build-version submodule tidy
@@ -97,6 +98,7 @@ prepare:
 	${GO_BUILD_ENV} go generate ./apistructs && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
+	make prepare-cli
 
 submodule:
 	git submodule update --init
@@ -144,6 +146,25 @@ build-push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 
 build-push-all:
-	./build/scripts/docker_image.sh build-push-all
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
+
+#build cli
+prepare-cli:
+	cd tools/cli/command/generate && go generate
+.PHONY: cli
+cli:
+	cd tools/cli && \
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
+	echo "build cli tool successfully!"
+.PHONY: cli-linux
+cli-linux:
+	cd tools/cli && \
+	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
+	echo "build cli tool successfully!"
+
+.PHONY: upload-cli
+upload-cli: cli cli-linux
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"

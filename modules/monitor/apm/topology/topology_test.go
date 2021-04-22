@@ -16,12 +16,13 @@ package topology
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gofrs/uuid"
-	"github.com/olivere/elastic"
 	"log"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/gofrs/uuid"
+	"github.com/olivere/elastic"
 )
 
 func TestSpliceIndexByTime(t *testing.T) {

@@ -30,6 +30,17 @@ func (client *Client) CreatePipelineReport(report *spec.PipelineReport, ops ...S
 	return err
 }
 
+func (client *Client) UpdatePipelineReport(report *spec.PipelineReport, ops ...SessionOption) error {
+	if report.ID == 0 {
+		return fmt.Errorf("cannot update report, missing report id")
+	}
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(report.ID).Update(report)
+	return err
+}
+
 func (client *Client) PagingPipelineReportSets(req apistructs.PipelineReportSetPagingRequest, ops ...SessionOption) ([]apistructs.PipelineReportSet, int, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
