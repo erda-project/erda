@@ -178,7 +178,7 @@ func (q *defaultQueue) emitEvent(p *spec.Pipeline, reason string, message string
 		Count:          1,
 		Type:           eType,
 	}
-	events.EmitPipelineStreamEvent(p, []*apistructs.PipelineEvent{&se})
+	events.EmitPipelineStreamEvent(p.ID, []*apistructs.PipelineEvent{&se})
 	msg := fmt.Sprintf("queueManager: pipelineID: %d, Type: %s, Reason: %s, Message: %s", p.ID, eType, reason, message)
 	rlog.PDebugf(p.ID, msg)
 	return msg
