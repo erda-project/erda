@@ -87,6 +87,14 @@ func (e *Endpoints) ListLabels(ctx context.Context, r *http.Request, vars map[st
 				GroupLevel: 3,
 			},
 			{
+				Name:       i18n.Sprintf("location-cluster-service"),
+				Label:      "location-cluster-service",
+				Desc:       "",
+				Group:      "service",
+				GroupName:  i18n.Sprintf("service"),
+				GroupLevel: 3,
+			},
+			{
 				Name:       i18n.Sprintf("workspace-dev"),
 				Label:      "workspace-dev",
 				Desc:       "",
