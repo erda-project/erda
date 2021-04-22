@@ -926,7 +926,9 @@ func (k *k8sJob) CreatePVCIfNotExists(pvc *corev1.PersistentVolumeClaim) error {
 		}
 		_, createErr := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
 		if createErr != nil {
-			return errors.Errorf("failed to create pvc, name: %s, (%v)", pvc.Name, err)
+			if !strings.Contains(createErr.Error(), "already exist") {
+				return errors.Errorf("failed to create pvc, name: %s, (%v)", pvc.Name, createErr)
+			}
 		}
 	}
 
