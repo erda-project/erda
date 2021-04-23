@@ -132,6 +132,9 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	}
 	detail.RunParams = pipelineParams
 
+	// events
+	detail.Events = s.getPipelineEvents(pipelineID)
+
 	return &detail, nil
 }
 
@@ -176,6 +179,15 @@ func getPipelineParams(pipelineYml string, runParams []apistructs.PipelineRunPar
 		})
 	}
 	return pipelineParamDTOs, nil
+}
+
+func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*apistructs.PipelineEvent {
+	_, events, err := s.dbClient.GetPipelineEvents(pipelineID)
+	if err != nil {
+		logrus.Errorf("failed to get pipeline events, pipelineID: %d, err: %v", pipelineID, err)
+		return nil
+	}
+	return events
 }
 
 // 给 pipelineTask 设置 action 的 logo 和 displayName 给前端展示

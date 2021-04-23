@@ -60,6 +60,8 @@ type PipelineInstanceEventData struct {
 	ClusterName     string     `json:"clusterName"`
 	TimeBegin       *time.Time `json:"timeBegin"`
 	CronExpr        string     `json:"cronExpr"`
+
+	Labels map[string]string `json:"labels"`
 }
 
 // PipelineTaskEvent 流水线任务状态变化时发送的事件
