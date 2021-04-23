@@ -124,6 +124,19 @@ func Test_calculatePipelineRequestResource(t *testing.T) {
 				MemoryMB: 7,
 			},
 		},
+		{
+			name: "test",
+			args: args{
+				allStagedTasks: [][]*spec.PipelineTask{
+					{genTaskWithRequestCPUMem(1, 1024), genTaskWithRequestCPUMem(1, 1024)},
+					{genTaskWithRequestCPUMem(2, 2049)},
+				},
+			},
+			want: apistructs.PipelineAppliedResource{
+				CPU:      2,
+				MemoryMB: 2049,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
