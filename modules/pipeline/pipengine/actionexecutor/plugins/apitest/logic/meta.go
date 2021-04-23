@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/apitest/logic/cookiejar"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/httpclient"
 )
 
