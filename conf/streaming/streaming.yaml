@@ -1,3 +1,8 @@
+http-server:
+  addr: ":7091"
+
+health:
+  path: "/api/health"
 
 cassandra:
   host: "${CASSANDRA_ADDR:localhost:9042}"
@@ -180,5 +185,5 @@ metrics-index-manager:
 i18n@metric:
 
 http-server@admin:
-  addr: ":7099"
+  addr: ":7098"
 pprof:
