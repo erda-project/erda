@@ -37,7 +37,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210414035235-9b3146052088
+	github.com/erda-project/erda-infra v0.0.0-20210423015359-ebfa6da96f42
 	github.com/erda-project/erda-proto-go v0.0.0-20210413092715-491fb6350e91
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
