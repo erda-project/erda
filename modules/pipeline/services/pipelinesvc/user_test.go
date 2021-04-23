@@ -14,17 +14,25 @@
 package pipelinesvc
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
-	"time"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpclient"
 )
 
 func TestPipelineSvc_tryGetUser(t *testing.T) {
-	s := &PipelineSvc{bdl: bundle.New(bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))}
+	bdl := &bundle.Bundle{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCurrentUser",
+		func(bdl *bundle.Bundle, userID string) (*apistructs.UserInfo, error) {
+			return nil, fmt.Errorf("fake error")
+		})
+	defer m.Unpatch()
+	s := &PipelineSvc{bdl: bdl}
 	invalidUserID := "invalid user id"
 	user := s.tryGetUser(invalidUserID)
 	assert.Equal(t, invalidUserID, user.ID)
