@@ -51,21 +51,6 @@ func (i *ComponentPage) Render(ctx context.Context, c *apistructs.Component, s a
 }
 
 func (i *ComponentPage) initProperty(s apistructs.ComponentProtocolScenario) {
-	myOrgs := Option{
-		Key:  "my",
-		Name: "我的组织",
-		Operations: map[string]interface{}{
-			"click": ClickOperation{
-				Reload: false,
-				Key:    "myOrg",
-				Command: Command{
-					Key:          "changeScenario",
-					ScenarioKey:  "org-list-my",
-					ScenarioType: "org-list-my",
-				},
-			},
-		},
-	}
 	publicOrgs := Option{
 		Key:  "public",
 		Name: "公开组织",
@@ -83,7 +68,7 @@ func (i *ComponentPage) initProperty(s apistructs.ComponentProtocolScenario) {
 	}
 
 	i.Props = Props{
-		TabMenu: []Option{myOrgs, publicOrgs},
+		TabMenu: []Option{publicOrgs},
 	}
 	i.State.ActiveKey = publicOrgs.Key
 }

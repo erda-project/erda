@@ -319,6 +319,15 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		Memory: conf.TaskDefaultMEM(),
 		Disk:   0,
 	}
+	// get from applied resource
+	if cpu := task.Extra.AppliedResources.Requests.CPU; cpu > 0 {
+		task.Extra.RuntimeResource.CPU = cpu
+	}
+	if mem := task.Extra.AppliedResources.Requests.MemoryMB; mem > 0 {
+		task.Extra.RuntimeResource.Memory = mem
+	}
+
+	// -- begin -- remove these logic when 4.1, because some already running pipelines doesn't have appliedResources fields.
 	// action 定义里的资源配置
 	if diceYmlJob.Resources.CPU > 0 {
 		task.Extra.RuntimeResource.CPU = diceYmlJob.Resources.CPU
@@ -339,6 +348,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if action.Resources.Disk > 0 {
 		task.Extra.RuntimeResource.Disk = float64(action.Resources.Disk)
 	}
+	// -- end -- remove these logic when 4.1
+
 	// resource 相关环境变量
 	task.Extra.PublicEnvs["PIPELINE_LIMITED_CPU"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.CPU)
 	task.Extra.PublicEnvs["PIPELINE_LIMITED_MEM"] = fmt.Sprintf("%g", task.Extra.RuntimeResource.Memory)
@@ -496,20 +507,18 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
+		// --- binds ---
+		task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
+		jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
+		if err != nil {
+			return false, apierrors.ErrRunPipeline.InternalError(err)
+		}
+		for _, bind := range jobBinds {
+			task.Extra.Binds = append(task.Extra.Binds, bind)
+		}
+		// --- volumes ---
+		task.Extra.Volumes = contextVolumes(task.Context)
 	}
-
-	// --- binds ---
-	task.Extra.Binds = pvolumes.GenerateTaskCommonBinds(mountPoint)
-	jobBinds, err := pvolumes.ParseDiceYmlJobBinds(diceYmlJob)
-	if err != nil {
-		return false, apierrors.ErrRunPipeline.InternalError(err)
-	}
-	for _, bind := range jobBinds {
-		task.Extra.Binds = append(task.Extra.Binds, bind)
-	}
-
-	// --- volumes ---
-	task.Extra.Volumes = contextVolumes(task.Context)
 
 	// --- preFetcher ---
 	const agentHostPath = "/devops/ci/action-agent/agent"

@@ -35,7 +35,7 @@ mysql:
 # database: "${MYSQL_DATABASE:dice}"
 
 etcd:
-  endpoints: "http://127.0.0.1:2379"
+  endpoints: "${ETCD_ENDPOINTS:http://127.0.0.1:2379}"
   tls:
     cert: "/certs/etcd-client.pem"
     cert_key: "/certs/etcd-client-key.pem"
@@ -55,7 +55,7 @@ logs-store:
   output:
     id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
     log_schema:
-      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3s}"
+      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
     cassandra:
       writer_config:
         parallelism: ${CASSANDRA_PARALLELISM:3}

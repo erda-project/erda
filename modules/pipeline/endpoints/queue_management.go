@@ -80,6 +80,9 @@ func (e *Endpoints) getPipelineQueue(ctx context.Context, r *http.Request, vars 
 		return errorresp.ErrResp(err)
 	}
 
+	// set usage
+	queue.Usage = e.reconciler.QueueManager.QueryQueueUsage(queue)
+
 	return httpserver.OkResp(queue)
 }
 

@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -26,4 +27,5 @@ type QueueManager interface {
 	EnsureQueryPipelineDetail(pipelineID uint64) *spec.Pipeline
 	UpdatePipelineQueue(pq *apistructs.PipelineQueue)
 	GetPipelineCaches() map[uint64]*spec.Pipeline
+	QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage
 }

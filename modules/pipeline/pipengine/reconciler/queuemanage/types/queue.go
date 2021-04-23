@@ -14,6 +14,7 @@
 package types
 
 import (
+	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -22,6 +23,7 @@ type Queue interface {
 	ID() string
 	IsStrictMode() bool
 	OccupiedResource() apistructs.PipelineAppliedResource
+	Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueUsage
 	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
 	PopOutPipeline(p *spec.Pipeline, markAsFailed ...bool)
 	Update(pq *apistructs.PipelineQueue)
