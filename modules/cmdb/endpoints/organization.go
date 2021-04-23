@@ -443,11 +443,12 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 func (e *Endpoints) GetOrgByDomain(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	domain := r.URL.Query().Get("domain")
+	orgName := r.URL.Query().Get("orgName")
 	if domain == "" {
 		return apierrors.ErrGetOrg.MissingParameter("domain").ToResp(), nil
 	}
 
-	org, err := e.org.GetOrgByDomain(domain)
+	org, err := e.org.GetOrgByDomainAndOrgName(domain, orgName)
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}
