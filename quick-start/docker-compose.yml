@@ -309,6 +309,20 @@ services:
       TZ: Asia/Shanghai
     restart: always
     platform: linux/amd64
+  dbmigration-4:
+    image: registry.cn-hangzhou.aliyuncs.com/dice/migrator-tool:20210423-110000
+    environment:
+      - TZ=Asia/Shanghai
+      - MIGRATION_MYSQL_HOST=mysql
+      - MIGRATION_MYSQL_PORT=3306
+      - MIGRATION_MYSQL_USERNAME=root
+      - MIGRATION_MYSQL_PASSWORD=123456
+      - MIGRATION_MYSQL_DBNAME=dice
+      - MIGRATION_DEBUGSQL=false
+      - MIGRATION_ERDA_LINT=true
+      - MIGRATION_DIR=/opt/action/migrations
+    volumes:
+      - ../.dice/migrations:/opt/action/migrations
   redis-sentinel:
     image: bitnami/redis-sentinel:6.0-debian-10
     container_name: erda-redis-sentinel
