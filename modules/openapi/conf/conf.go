@@ -46,6 +46,7 @@ type Conf struct {
 	CustomNamespace     string `env:"CUSTOM_NAMESPACE"`
 	SelfPublicURL       string `env:"SELF_PUBLIC_URL" required:"true"`
 	ExportUserWithRole  string `default:"false" env:"EXPORT_USER_WITH_ROLE"`
+	ErdaSystemFQDN      string `env:"ERDA_SYSTEM_FQDN"`
 
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/openapi/oauth2/:/oauth2/:rw' 容器内挂载点的值
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
@@ -155,6 +156,10 @@ func ExportUserWithRole() bool {
 	return cfg.ExportUserWithRole == "true"
 }
 
+func ErdaSystemFQDN() string {
+	return cfg.ErdaSystemFQDN
+}
+
 // GetDomain get a domian by request host
 func GetDomain(host, confDomain string) (string, error) {
 	if strings.Contains(host, ":") {
@@ -187,6 +192,9 @@ func GetUCRedirectHost(referer string) string {
 		l := len(domainSlice)
 		if l < 2 {
 			return ""
+		}
+		if strings.Contains(domainSlice[l-1], ":") {
+			domainSlice[l-1] = strings.SplitN(domainSlice[l-1], ":", -1)[0]
 		}
 		domain := domainSlice[l-2] + "." + domainSlice[l-1]
 		logrus.Infof("redirect domain is: %s", domain)

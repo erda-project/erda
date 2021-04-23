@@ -1,5 +1,7 @@
 http-server:
   addr: ":7096"
+health:
+  path: "/api/health"
 
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
@@ -59,7 +61,7 @@ metrics-query:
       - "${CONFIG_PATH}/metricmeta/groups/org.yml"
       - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
     metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
-metricq-example:
+#metricq-example:
 
 logs-query:
   _enable: ${LOGS_QUERY_ENABLE:true}
