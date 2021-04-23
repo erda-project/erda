@@ -37,12 +37,12 @@ mysql:
 etcd:
   endpoints: "${ETCD_ENDPOINTS:http://127.0.0.1:2379}"
   tls:
-    cert: "/certs/etcd-client.pem"
-    cert_key: "/certs/etcd-client-key.pem"
-    ca: "/certs/etcd-ca.pem"
+    cert_file: "/certs/etcd-client.pem"
+    cert_key_file: "/certs/etcd-client-key.pem"
+    ca_file: "/certs/etcd-ca.pem"
 
 etcd-mutex:
-  root_path: "/monitor"
+  root_path: "/erda/streaming"
 
 logs-store:
   _enable: ${LOGS_STORE_ENABLE:true}
