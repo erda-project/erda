@@ -928,7 +928,7 @@ func (a *Application) UpdatePublishItemRelations(request *apistructs.UpdateAppPu
 			return err
 		}
 		if len(monitorAddon.Data) == 0 {
-			return errors.Errorf("the monitor addon doesn't exit ENV: %s, projectID: %d", workspace.String(), app.ProjectID)
+			return errors.Errorf("the monitor addon doesn't exist ENV: %s, projectID: %d", workspace.String(), app.ProjectID)
 		}
 		AK, ok := monitorAddon.Data[0].Config["TERMINUS_KEY"]
 		if !ok {
