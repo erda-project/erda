@@ -104,11 +104,11 @@ func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID stri
 
 	var listResp apistructs.ApplicationListResponse
 	resp, err := hc.Get(host).
-		Path(fmt.Sprintf("/api/applications")).
+		Path("/api/applications").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
-		Param("pageSize", "100").
+		Param("pageSize", "1").
 		Param("pageNo", "1").
 		Param("name", appName).
 		Do().JSON(&listResp)
