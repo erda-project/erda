@@ -1848,20 +1848,30 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 }
 
 func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
+	Start       int64  `query:"start" validate:"required"`
+	End         int64  `query:"end" validate:"required"`
 	ServiceName string `query:"serviceName" validate:"required"`
 	TerminusKey string `query:"terminusKey" validate:"required"`
 	Operation   string `query:"operation" validate:"required"`
 	ServiceId   string `query:"serviceId" validate:"required"`
+	Sort        int64  `default:"0" query:"sort"`
 }) interface{} {
+	sort := "DESC"
+	if params.Sort == 1 {
+		sort = "ASC"
+	}
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.Start, 10))
+	options.Set("end", strconv.FormatInt(params.End, 10))
 	details, err := topology.metricq.Query(metricq.InfluxQL,
-		"SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation)",
+		"SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation) ORDER BY timestamp "+sort,
 		map[string]interface{}{
 			"serviceName": params.ServiceName,
 			"terminusKey": params.TerminusKey,
 			"operation":   params.Operation,
 			"serviceId":   params.ServiceId,
 		},
-		nil)
+		options)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
