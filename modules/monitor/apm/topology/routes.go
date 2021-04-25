@@ -218,8 +218,6 @@ func (topology *provider) topology(r *http.Request, params Vo) interface{} {
 		return api.Errors.Internal(err)
 	}
 
-	//nodes = topology.FilterNodeByTags(params.Tags, nodes)
-
 	tr := Response{
 		Nodes: nodes,
 	}
