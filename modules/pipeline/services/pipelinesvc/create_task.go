@@ -105,24 +105,8 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 		}
 	}
 
-	// ext resource
-	task.Extra.AppliedResources.Limits.CPU = numeral.MaxFloat64([]float64{
-		actionJobDefine.Resources.MaxCPU, actionJobDefine.Resources.CPU,
-		action.Resources.MaxCPU, action.Resources.CPU,
-	})
-	task.Extra.AppliedResources.Limits.MemoryMB = numeral.MaxFloat64([]float64{
-		float64(actionJobDefine.Resources.MaxMem), float64(actionJobDefine.Resources.Mem),
-		float64(action.Resources.Mem),
-	})
-	// no request, use limit
-	task.Extra.AppliedResources.Requests.CPU = numeral.MinFloat64([]float64{
-		actionJobDefine.Resources.MaxCPU, actionJobDefine.Resources.CPU,
-		action.Resources.MaxCPU, action.Resources.CPU,
-	}, true)
-	task.Extra.AppliedResources.Requests.MemoryMB = numeral.MinFloat64([]float64{
-		float64(actionJobDefine.Resources.MaxMem), float64(actionJobDefine.Resources.Mem),
-		float64(action.Resources.Mem),
-	}, true)
+	// applied resources
+	task.Extra.AppliedResources = calculateNormalTaskResources(action, actionJobDefine)
 
 	return task, nil
 }
@@ -196,4 +180,64 @@ func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action) (spec.Pipeli
 		return spec.PipelineTaskExecutorKindAPITest, spec.PipelineTaskExecutorNameAPITestDefault, nil
 	}
 	return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
+}
+
+func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
+	defaultRes := apistructs.PipelineAppliedResource{CPU: conf.TaskDefaultCPU(), MemoryMB: conf.TaskDefaultMEM()}
+	return apistructs.PipelineAppliedResources{
+		Limits:   calculateNormalTaskLimitResource(action, actionDefine, defaultRes),
+		Requests: calculateNormalTaskRequestResource(action, actionDefine, defaultRes),
+	}
+}
+
+func calculateNormalTaskLimitResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
+	// calculate
+	maxCPU := numeral.MaxFloat64([]float64{
+		actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU,
+		action.Resources.MaxCPU, action.Resources.CPU,
+	})
+	maxMemoryMB := numeral.MaxFloat64([]float64{
+		float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem),
+		float64(action.Resources.Mem),
+	})
+
+	// use default if is empty
+	if maxCPU == 0 {
+		maxCPU = defaultRes.CPU
+	}
+	if maxMemoryMB == 0 {
+		maxMemoryMB = defaultRes.MemoryMB
+	}
+
+	return apistructs.PipelineAppliedResource{
+		CPU:      maxCPU,
+		MemoryMB: maxMemoryMB,
+	}
+}
+
+func calculateNormalTaskRequestResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
+	// assign from actionDefine
+	requestCPU := numeral.MinFloat64([]float64{actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU}, true)
+	requestMemoryMB := numeral.MinFloat64([]float64{float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem)}, true)
+
+	// user explicit declaration has the highest priority, overwrite value from actionDefine
+	if c := numeral.MinFloat64([]float64{action.Resources.MaxCPU, action.Resources.CPU}, true); c > 0 {
+		requestCPU = c
+	}
+	if m := action.Resources.Mem; m > 0 {
+		requestMemoryMB = float64(m)
+	}
+
+	// use default if is empty
+	if requestCPU == 0 {
+		requestCPU = defaultRes.CPU
+	}
+	if requestMemoryMB == 0 {
+		requestMemoryMB = defaultRes.MemoryMB
+	}
+
+	return apistructs.PipelineAppliedResource{
+		CPU:      requestCPU,
+		MemoryMB: requestMemoryMB,
+	}
 }
