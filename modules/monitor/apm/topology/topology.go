@@ -1854,11 +1854,10 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	TerminusKey string `query:"terminusKey" validate:"required"`
 	Operation   string `query:"operation" validate:"required"`
 	ServiceId   string `query:"serviceId" validate:"required"`
-	Sort        int64  `default:"0" query:"sort"`
+	Sort        string `default:"DESC" query:"sort"`
 }) interface{} {
-	sort := "DESC"
-	if params.Sort == 1 {
-		sort = "ASC"
+	if params.Sort != "ASC" || params.Sort != "DESC" {
+		return api.Errors.Internal(errors.New("not supported sort name"))
 	}
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
