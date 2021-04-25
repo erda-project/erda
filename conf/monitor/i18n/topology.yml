@@ -1,6 +1,10 @@
 en:
   application: "application"
   service: "service"
+  serviceInstanceStateRunning: "running"
+  serviceInstanceStateStopped: "stopped"
 zh:
   application: "应用名称"
   service: "服务名称"
+  serviceInstanceStateRunning: "运行中"
+  serviceInstanceStateStopped: "已停止"
