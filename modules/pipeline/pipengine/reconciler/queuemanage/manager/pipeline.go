@@ -20,8 +20,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -34,13 +32,13 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 	popCh := make(chan struct{})
 
 	// query pipeline detail
-	p := mgr.EnsureQueryPipelineDetail(pipelineID)
+	p := mgr.ensureQueryPipelineDetail(pipelineID)
 	if p == nil {
 		return nil, false, fmt.Errorf("pipeline not found, pipelineID: %d", pipelineID)
 	}
 
 	// query pipeline queue detail
-	pq := mgr.EnsureQueryPipelineQueueDetail(pipelineID)
+	pq := mgr.ensureQueryPipelineQueueDetail(p)
 	if pq == nil {
 		// pipeline doesn't bind queue, can reconcile directly
 		go func() {
@@ -51,7 +49,7 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 	}
 
 	// add queue to manager
-	q := mgr.addQueueToManager(pq)
+	q := mgr.IdempotentAddQueue(pq)
 
 	// add pipeline to queue
 	q.AddPipelineIntoQueue(p, popCh)
@@ -60,40 +58,9 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 	return popCh, false, nil
 }
 
-// addQueueToManager add one queue to mgr.
-func (mgr *defaultManager) addQueueToManager(pq *apistructs.PipelineQueue) types.Queue {
-	mgr.qLock.Lock()
-	defer mgr.qLock.Unlock()
-
-	// construct newQueue first for later use
-	newQueue := queue.New(pq, queue.WithDBClient(mgr.dbClient))
-
-	existQueue, ok := mgr.queueByID[newQueue.ID()]
-	if ok {
-		// update queue
-		existQueue.Update(pq)
-		mgr.queueByID[newQueue.ID()] = existQueue
-		return existQueue
-	}
-
-	// not exist, add new queue
-	mgr.queueByID[newQueue.ID()] = newQueue
-
-	return newQueue
-}
-
-// EnsureQueryPipelineDetail handle err properly.
+// ensureQueryPipelineDetail handle err properly.
 // return: pipeline or nil
-func (mgr *defaultManager) EnsureQueryPipelineDetail(pipelineID uint64) *spec.Pipeline {
-	mgr.pCacheLock.Lock()
-	defer mgr.pCacheLock.Unlock()
-
-	// try to get from pCache
-	cachedP, ok := mgr.pipelineCaches[pipelineID]
-	if ok {
-		return cachedP
-	}
-
+func (mgr *defaultManager) ensureQueryPipelineDetail(pipelineID uint64) *spec.Pipeline {
 	// query from db
 	var p *spec.Pipeline
 	_ = loop.New(loop.WithDeclineLimit(time.Second*10), loop.WithDeclineRatio(2)).Do(func() (abort bool, err error) {
@@ -113,21 +80,12 @@ func (mgr *defaultManager) EnsureQueryPipelineDetail(pipelineID uint64) *spec.Pi
 		return nil
 	}
 
-	// add into cache
-	mgr.pipelineCaches[pipelineID] = p
-
 	return p
 }
 
-// EnsureQueryPipelineQueueDetail
+// ensureQueryPipelineQueueDetail
 // return: queue or nil
-func (mgr *defaultManager) EnsureQueryPipelineQueueDetail(pipelineID uint64) *apistructs.PipelineQueue {
-	// get pipeline detail
-	p := mgr.EnsureQueryPipelineDetail(pipelineID)
-	if p == nil {
-		return nil
-	}
-
+func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *apistructs.PipelineQueue {
 	// get queue id
 	queueID, exist := p.GetPipelineQueueID()
 	if !exist {
