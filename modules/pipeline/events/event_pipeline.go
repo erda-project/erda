@@ -61,6 +61,7 @@ func (e *PipelineEvent) Content() interface{} {
 		ClusterName:     e.Pipeline.ClusterName,
 		TimeBegin:       e.Pipeline.TimeBegin,
 		CronExpr:        e.Pipeline.PipelineExtra.Extra.CronExpr,
+		Labels:          e.Pipeline.MergeLabels(),
 	}
 	return content
 }

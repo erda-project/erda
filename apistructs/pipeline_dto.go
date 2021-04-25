@@ -134,6 +134,8 @@ type PipelineDetailDTO struct {
 	PipelineTaskActionDetails map[string]PipelineTaskActionDetail `json:"pipelineTaskActionDetails"`
 
 	RunParams []PipelineParamDTO `json:"runParams"`
+
+	Events []*PipelineEvent `json:"events,omitempty"`
 }
 
 type PipelineParamDTO struct {
