@@ -839,39 +839,55 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT service_name::tag,pod_name::tag,status::field,timestamp,started_at::field FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_name=$service_name GROUP BY pod_name::tag"
+	statement := "SELECT service_instance_id::tag,service_agent_platform::tag,format_time(start_time_mean::field*1000000,'2006-01-02 15:04:05') " +
+		"AS start_time,format_time(timestamp,'2006-01-02 15:04:05') AS last_heartbeat_time FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
-		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
 	}
 	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
 	rows := response.ResultSet.Rows
-	var result []ServiceInstance
+	var result []*ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceName:         row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
-			//StartTime:          strconv.ParseInt(rows[4].(string), 10, 64),
-			//StartTime: rows[4],
+			ServiceInstanceId: row[0].(string),
+			PlatformVersion:   row[1].(string),
+			StartTime:         row[2].(string),
+			LastHeartbeatTime: row[3].(string),
 		}
-		result = append(result, instance)
+		result = append(result, &instance)
 	}
-
-	statement = "SELECT timestamp,service_agent_platform::tag FROM application_service_node WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
 	rows = response.ResultSet.Rows
-	platformVersion := rows[0][0]
 	for _, instance := range result {
-		instance.PlatformVersion = platformVersion.(string)
+		for i, row := range rows {
+			if row[0].(string) == instance.ServiceInstanceId {
+				state, err := strconv.ParseBool(row[1].(string))
+				if err != nil {
+					return nil, err
+				}
+				if state {
+					instance.InstanceState = topology.t.Text(language, "serviceInstanceStateRunning")
+				} else {
+					instance.InstanceState = topology.t.Text(language, "serviceInstanceStateStopped")
+				}
+				rows = append(rows[:i], rows[i+1:]...)
+				break
+			}
+		}
 	}
-	return nil, nil
+	return result, nil
 }
 
 func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
@@ -1243,12 +1259,14 @@ func (topology *provider) Services(serviceName string, nodes []*Node) []ServiceD
 }
 
 type ServiceInstance struct {
-	ApplicationName     string  `json:"applicationName,omitempty"`
-	ServiceName         string  `json:"serviceName,omitempty"`
-	ServiceInstanceName string  `json:"serviceInstanceName,omitempty"`
-	InstanceState       string  `json:"instanceState,omitempty"`
-	PlatformVersion     string  `json:"platformVersion,omitempty"`
-	StartTime           float64 `json:"startTime,omitempty"`
+	ApplicationName     string `json:"applicationName,omitempty"`
+	ServiceName         string `json:"serviceName,omitempty"`
+	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
+	ServiceInstanceId   string `json:"serviceInstanceId,omitempty"`
+	InstanceState       string `json:"instanceState,omitempty"`
+	PlatformVersion     string `json:"platformVersion,omitempty"`
+	StartTime           string `json:"startTime,omitempty"`
+	LastHeartbeatTime   string `json:"lastHeartbeatTime,omitempty"`
 }
 
 func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (map[string][]ServiceInstance, error) {
