@@ -28,7 +28,7 @@ type CapacityValidator struct {
 	mgr types.QueueManager
 }
 
-func (q *defaultQueue) ValidateCapacity(pipelineCaches map[uint64]*spec.Pipeline, tryPopP *spec.Pipeline) apistructs.PipelineQueueValidateResult {
+func (q *defaultQueue) ValidateCapacity(tryPopP *spec.Pipeline) apistructs.PipelineQueueValidateResult {
 	if int64(q.eq.ProcessingQueue().Len()) >= q.pq.Concurrency {
 		var processItems []string
 		q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {

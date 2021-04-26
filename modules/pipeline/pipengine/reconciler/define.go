@@ -104,7 +104,7 @@ func (r *Reconciler) Add(pipelineID uint64) {
 			rlog.PErrorf(pipelineID, "add to reconciler failed, err: %v, try again later", err)
 			return false, err
 		}
-		rlog.PErrorf(pipelineID, "add to reconciler success")
+		rlog.PInfof(pipelineID, "add to reconciler success")
 		return true, nil
 	})
 }
