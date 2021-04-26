@@ -68,11 +68,11 @@ type SelectOption struct {
 }
 
 type BaseRow struct {
-	Id           string    `json:"id" xorm:"not null pk default '' comment('唯一id') VARCHAR(32)"`
-	IsDeleted    string    `json:"is_deleted" xorm:"not null default 'N' comment('逻辑删除') VARCHAR(1)"`
-	CreateTime   time.Time `json:"create_time" xorm:"not null default 'CURRENT_TIMESTAMP' comment('创建时间') TIMESTAMP"`
-	UpdateTime   time.Time `json:"update_time" xorm:"not null default 'CURRENT_TIMESTAMP' comment('更新时间') TIMESTAMP"`
-	mustCondCols map[string]bool
+	Id           string          `json:"id" xorm:"not null pk default '' comment('唯一id') VARCHAR(32)"`
+	IsDeleted    string          `json:"is_deleted" xorm:"not null default 'N' comment('逻辑删除') VARCHAR(1)"`
+	CreateTime   time.Time       `json:"create_time" xorm:"not null default 'CURRENT_TIMESTAMP' comment('创建时间') TIMESTAMP"`
+	UpdateTime   time.Time       `json:"update_time" xorm:"not null default 'CURRENT_TIMESTAMP' comment('更新时间') TIMESTAMP"`
+	mustCondCols map[string]bool `json:"-" xorm:"-"`
 }
 
 type BaseAbility interface {

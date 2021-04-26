@@ -53,7 +53,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/go-xorm/builder v0.3.4 // indirect
+	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
@@ -119,9 +119,9 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
-	github.com/xormplus/builder v0.0.0-20200331055651-240ff40009be
-	github.com/xormplus/core v0.0.0-20180504103859-72a33b1d155c
-	github.com/xormplus/xorm v0.0.0-20180608110450-337639a4d651
+	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
+	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
+	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758

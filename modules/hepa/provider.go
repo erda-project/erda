@@ -65,6 +65,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	config.LogConf = &p.Cfg.Log
 	common.InitLogger()
 	orm.Init()
+	logrus.Infof("server conf: %+v", config.ServerConf)
+	logrus.Infof("log conf: %+v", config.LogConf)
 	return nil
 }
 
