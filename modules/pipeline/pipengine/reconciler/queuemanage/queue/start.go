@@ -13,11 +13,31 @@
 
 package queue
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"time"
 
-func (q *defaultQueue) OccupiedResource() apistructs.PipelineAppliedResource {
-	return apistructs.PipelineAppliedResource{
-		CPU:      q.pq.MaxCPU,
-		MemoryMB: q.pq.MaxMemoryMB,
+	"github.com/erda-project/erda/modules/pipeline/conf"
+)
+
+func (q *defaultQueue) Start(stopCh chan struct{}) {
+	if q.started {
+		return
 	}
+	ticket := time.NewTicker(time.Second * time.Duration(conf.QueueLoopHandleIntervalSec()))
+	rangeAtOnce := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-rangeAtOnce:
+				q.RangePendingQueue()
+			case <-ticket.C:
+				q.RangePendingQueue()
+			case <-stopCh:
+				// stop handle
+				return
+			}
+		}
+	}()
+	q.started = true
+	rangeAtOnce <- struct{}{}
 }

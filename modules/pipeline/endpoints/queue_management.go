@@ -147,7 +147,7 @@ func (e *Endpoints) updatePipelineQueue(ctx context.Context, r *http.Request, va
 	}
 
 	// update queue in manager
-	e.reconciler.QueueManager.UpdatePipelineQueue(queue)
+	e.reconciler.QueueManager.IdempotentAddQueue(queue)
 
 	return httpserver.OkResp(queue)
 }

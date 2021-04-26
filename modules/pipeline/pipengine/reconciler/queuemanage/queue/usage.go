@@ -20,10 +20,12 @@ import (
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/priorityqueue"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueUsage {
+func (q *defaultQueue) Usage() pb.QueueUsage {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+
 	// processing
 	var (
 		inUseCPU          float64
@@ -32,7 +34,10 @@ func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueU
 	)
 	q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
-		existP := pipelineCaches[pipelineID]
+		existP := q.pipelineCaches[pipelineID]
+		if existP == nil {
+			return false
+		}
 		resources := existP.GetPipelineAppliedResources()
 		inUseCPU += resources.Requests.CPU
 		InUseMemoryMB += resources.Requests.MemoryMB
@@ -51,7 +56,10 @@ func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueU
 	var pendingDetails = make([]*pb.QueueUsageItem, 0)
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
-		existP := pipelineCaches[pipelineID]
+		existP := q.pipelineCaches[pipelineID]
+		if existP == nil {
+			return false
+		}
 		resources := existP.GetPipelineAppliedResources()
 		pendingDetails = append(pendingDetails, &pb.QueueUsageItem{
 			PipelineID:       pipelineID,
