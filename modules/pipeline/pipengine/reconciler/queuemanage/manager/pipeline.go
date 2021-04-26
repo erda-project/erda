@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -35,6 +36,15 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 	p := mgr.ensureQueryPipelineDetail(pipelineID)
 	if p == nil {
 		return nil, false, fmt.Errorf("pipeline not found, pipelineID: %d", pipelineID)
+	}
+
+	// already after queue status
+	if p.Status.AfterPipelineQueue() {
+		go func() {
+			popCh <- struct{}{}
+			close(popCh)
+		}()
+		return popCh, false, nil
 	}
 
 	// query pipeline queue detail
@@ -120,6 +130,8 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 			rlog.PErrorf(p.ID, err.Error())
 			return false, err
 		}
+		p.Status = apistructs.PipelineStatusQueue
+		events.EmitPipelineInstanceEvent(p, p.GetRunUserID())
 
 		return true, nil
 	})
