@@ -84,7 +84,7 @@ func (m *IndexManager) getNodeDiskUsage(filter func(*NodeDiskUsage) bool) (map[s
 
 func (m *IndexManager) getNodeIndices(filter func(*NodeDiskUsage) bool) (map[string]*NodeDiskUsage, map[string]map[string]*NodeDiskUsage, error) {
 	nodes, err := m.getNodeDiskUsage(filter)
-	if len(nodes) <= 0 {
+	if err!=nil || len(nodes) <= 0 {
 		return nil, nil, nil
 	}
 	state, err := m.getClusterState()
@@ -237,7 +237,7 @@ func (m *IndexManager) startDiskCheck(lock mutex.Mutex) error {
 			defer lock.Close()
 		}
 		m.waitAndGetIndices()                                                              // Let the indices load first
-		time.Sleep(10*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Try to avoid multiple instances at the same time
+		time.Sleep(10*time.Second + time.Duration(random.Int63n(9)*int64(time.Second))) // Try to avoid multiple instances at the same time
 		m.log.Infof("enable disk clean, interval: %v", m.cfg.DiskClean.CheckInterval)
 		for {
 			if lock != nil {
