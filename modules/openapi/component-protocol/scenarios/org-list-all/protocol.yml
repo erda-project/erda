@@ -7,7 +7,6 @@ hierarchy:
   structure:
     page: 
       children:
-        - empty
         - myPage
       tabBarExtraContent:
         - createButton

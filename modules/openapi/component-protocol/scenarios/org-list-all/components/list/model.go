@@ -85,8 +85,18 @@ type Meta struct {
 }
 
 type Command struct {
-	Key    string `json:"key"`
-	Target string `json:"target"`
+	Key     string       `json:"key"`
+	Target  string       `json:"target"`
+	JumpOut bool         `json:"jumpOut"`
+	State   CommandState `json:"state"`
+}
+
+type CommandState struct {
+	Params Params `json:"params"`
+}
+
+type Params struct {
+	OrgName string `json:"orgName"`
 }
 
 type Props struct {

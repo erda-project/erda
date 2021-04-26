@@ -96,21 +96,21 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 		ExtraInfos: []ExtraInfos{
 			map[bool]ExtraInfos{
 				true: {
-					Icon: "earth",
+					Icon: "unlock",
 					Text: "公开项目",
 				},
 				false: {
-					Icon: "lock2",
+					Icon: "lock",
 					Text: "私有项目",
 				},
 			}[pro.IsPublic],
 			{
-				Icon:    "yy-4",
+				Icon:    "application-one",
 				Text:    strconv.Itoa(pro.Stats.CountApplications),
 				Tooltip: "应用数",
 			},
 			{
-				Icon:    "sj",
+				Icon:    "time",
 				Text:    activeTime,
 				Tooltip: pro.ActiveTime,
 			},
@@ -126,21 +126,21 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 	// joined
 	if pro.Joined {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
-			Icon: "renyuan",
+			Icon: "user",
 			Text: "已加入",
 		})
 	}
 	// 解封状态
 	if pro.BlockStatus == "unblocking" {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
-			Icon:    "lock1",
+			Icon:    "link-cloud-faild",
 			Text:    "解封处理中，请稍等",
 			Type:    "warning",
 			Tooltip: "解封处理中，请稍等",
 		})
 	} else if pro.BlockStatus == "unblocked" {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
-			Icon: "lock1",
+			Icon: "link-cloud-sucess",
 			Text: "已解封",
 			Type: "success",
 		})
