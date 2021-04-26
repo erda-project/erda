@@ -7,6 +7,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/sirupsen/logrus"
+	"sort"
 	"strconv"
 )
 
@@ -69,6 +70,18 @@ type Operation struct {
 	Key     string  `json:"key"`
 	Reload  bool    `json:"reload"`
 	Show    bool    `json:"show"`
+}
+
+func (s Data) Less(i, j int) bool {
+	return s.List[i].Title < s.List[j].Title
+}
+
+func (s Data) Swap(i, j int) {
+	s.List[i], s.List[j] = s.List[j], s.List[i]
+}
+
+func (s Data) Len() int {
+	return len(s.List)
 }
 
 type State struct {
@@ -293,6 +306,7 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		this.State.Total = projectDTO.Total
 	}
+	sort.Sort(this.Data)
 	return nil
 }
 
