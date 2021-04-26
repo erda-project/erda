@@ -135,11 +135,11 @@ var (
 )
 
 var ErrorReqMetricNames = []string{
-	"application_db_error",
 	"application_http_error",
 	"application_rpc_error",
-	"application_mq_error",
 	"application_cache_error",
+	"application_db_error",
+	"application_mq_error",
 }
 
 var ReqMetricNames = []string{
@@ -896,7 +896,8 @@ func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params 
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 	var translations []RequestTransaction
 	for _, metricName := range ReqMetricNames {
-		translation, err := topology.serviceReqInfo(metricName, ReqMetricNamesDesc[metricName], params, metricsParams)
+
+		translation, err := topology.serviceReqInfo(metricName, topology.t.Text(language, metricName+"_request"), params, metricsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -951,7 +952,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 
 	// error req count
 	errorCount := 0.0
-	for _, metricName := range ErrorReqMetricNames {
+	for _, metricName := range ReqMetricNames {
 		count, err := topology.serviceReqErrorCount(metricName, params, metricsParams)
 		if err != nil {
 			return nil, err
@@ -962,7 +963,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	serviceOverviewMap["service_error_req_count"] = errorCount
 
 	// exception count
-	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id"
 	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
@@ -1112,7 +1113,7 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 		serviceIdType = "source_service_id"
 		tkType = "source_terminus_key"
 	}
-	statement := fmt.Sprintf("SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+	statement := fmt.Sprintf("SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
 		metricScopeName, tkType, metricType, serviceIdType)
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1127,25 +1128,16 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 	row := response.ResultSet.Rows
 	requestTransaction.RequestCount = row[0][0].(float64)
 	if row[0][1] != nil {
-		avgTime := toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
-		requestTransaction.RequestAvgTime = avgTime
+		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
 	} else {
 		requestTransaction.RequestAvgTime = 0
 	}
-
-	errCount, err := topology.serviceReqErrorCount(metricScopeName+"_error", params, metricsParams)
-	if err != nil {
-		return nil, err
-	}
-
-	requestTransaction.RequestType = metricScopeNameDesc
-
-	if requestTransaction.RequestCount != 0 {
-		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(errCount / requestTransaction.RequestCount)
+	if row[0][2] != nil {
+		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(row[0][2].(float64) * 100)
 	} else {
 		requestTransaction.RequestErrorRate = 0
 	}
-
+	requestTransaction.RequestType = metricScopeNameDesc
 	return &requestTransaction, nil
 }
 
@@ -1158,7 +1150,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 		serviceIdType = "source_service_id"
 		tkType = "source_terminus_key"
 	}
-	statement := fmt.Sprintf("SELECT sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+	statement := fmt.Sprintf("SELECT sum(errors_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
 		metricScopeName, tkType, metricType, serviceIdType)
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
