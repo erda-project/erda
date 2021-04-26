@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -108,7 +109,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	if testEnv != nil {
 		domain = testEnv.Domain
 	}
-	polishedURL, err := polishURL(at.API.URL, domain, at.opt.netportalURL)
+	polishedURL, err := polishURL(at.API.URL, domain)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -186,7 +187,8 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Body.Content = reqBody
 
 	// use netportal
-	customReq, err := handleCustomNetportalRequest(&apiReq)
+	jar, _ := httpClient.Jar.(*cookiejar.Jar)
+	customReq, cookies, err := handleCustomNetportalRequest(&apiReq, jar, at.opt.netportalURL)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,11 +197,14 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Headers = polishHeadersForCompression(apiReq.Headers)
 
 	var buffer bytes.Buffer
-	httpResp, err := httpclient.New(httpclient.WithCookieJar(httpClient.Jar), httpclient.WithCompleteRedirect()).
+	req := httpclient.New(httpclient.WithCookieJar(httpClient.Jar), httpclient.WithCompleteRedirect()).
 		Method(apiReq.Method, customReq.URL.Scheme+"://"+customReq.URL.Host, httpclient.NoRetry).
 		Path(customReq.URL.Path).
-		Headers(apiReq.Headers).
-		Params(apiReq.Params).
+		Headers(apiReq.Headers)
+	for _, cookie := range cookies {
+		req = req.Cookie(cookie)
+	}
+	httpResp, err := req.Params(apiReq.Params).
 		RawBody(bytes.NewBufferString(apiReq.Body.Content.(string))).
 		Do().Body(&buffer)
 	if err != nil {

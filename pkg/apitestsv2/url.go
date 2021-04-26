@@ -19,11 +19,10 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/pkg/httpclientutil"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // domain: schema://${prefix} + u
-func polishURL(rawurl string, domain string, netportalURL string) (string, error) {
+func polishURL(rawurl string, domain string) (string, error) {
 	if rawurl == "" {
 		return "", fmt.Errorf("empty url")
 	}
@@ -41,12 +40,6 @@ func polishURL(rawurl string, domain string, netportalURL string) (string, error
 
 	if _, err := url.Parse(rawurl); err != nil {
 		return "", fmt.Errorf("invalid url: %s, err: %v", rawurl, err)
-	}
-
-	// netportal
-	if netportalURL != "" {
-		// use netportal url
-		return strutil.Concat(netportalURL, "/", httpclientutil.RmProto(rawurl)), nil
 	}
 
 	return rawurl, nil
