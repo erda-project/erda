@@ -20,11 +20,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/qa/conf"
 	"github.com/erda-project/erda/modules/qa/dbclient"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
@@ -36,12 +38,13 @@ import (
 
 // sonar 分析结果的问题类型
 const (
-	Bugs            = "bugs"
-	Coverage        = "coverage"
-	Vulnerabilities = "vulnerabilities"
-	CodeSmells      = "codeSmells"
-	Duplications    = "duplications"
-	IssueStatistics = "issuesStatistics"
+	Bugs             = "bugs"
+	Coverage         = "coverage"
+	Vulnerabilities  = "vulnerabilities"
+	CodeSmells       = "codeSmells"
+	Duplications     = "duplications"
+	IssueStatistics  = "issuesStatistics"
+	SonarMetricsName = "sonar_metrics_statistics"
 )
 
 // 工单对应的pagesize
@@ -103,7 +106,7 @@ func (e *Endpoints) SonarIssuesStore(ctx context.Context, r *http.Request, vars 
 		}
 	}()
 
-	resp, err := storeIssues(&req)
+	resp, err := storeIssues(&req, e.bdl)
 	if err != nil {
 		return apierrors.ErrStoreSonarIssue.InternalError(err).ToResp(), nil
 	}
@@ -161,7 +164,7 @@ func (e *Endpoints) SonarIssues(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(data)
 }
 
-func storeIssues(sonarStore *apistructs.SonarStoreRequest) (dbclient.QASonar, error) {
+func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) (dbclient.QASonar, error) {
 	sonar := dbclient.QASonar{
 		Key: sonarStore.Key,
 	}
@@ -236,7 +239,86 @@ func storeIssues(sonarStore *apistructs.SonarStoreRequest) (dbclient.QASonar, er
 		}
 	}
 
+	go MetricsSonar(sonarStore, bdl)
+
 	return sonar, nil
+}
+
+func MetricsSonar(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) {
+	if sonarStore == nil || bdl == nil {
+		return
+	}
+
+	var metrics []apistructs.Metric
+	var metric = &apistructs.Metric{}
+	addDefaultTagAndField(sonarStore, metric, bdl)
+	bugs, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Bugs, 64)
+	coverage, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Coverage, 64)
+	vulnerabilities, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Vulnerabilities, 64)
+	codeSmells, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.CodeSmells, 64)
+	duplications, _ := strconv.ParseFloat(sonarStore.IssuesStatistics.Duplications, 64)
+	metric.Fields["bugs_num"] = bugs
+	metric.Fields["coverage"] = coverage
+	metric.Fields["vulnerabilities"] = vulnerabilities
+	metric.Fields["codeSmells"] = codeSmells
+	metric.Fields["duplications"] = duplications
+	metrics = append(metrics, *metric)
+
+	doMetrics(metrics, bdl)
+}
+
+func addDefaultTagAndField(sonarStore *apistructs.SonarStoreRequest, metric *apistructs.Metric, bdl *bundle.Bundle) {
+	metric.Timestamp = time.Now().UnixNano()
+	metric.Name = SonarMetricsName
+	metric.Fields = map[string]interface{}{}
+	metric.Tags = map[string]string{}
+	metric.Tags["app_id"] = strconv.Itoa(int(sonarStore.ApplicationID))
+	metric.Tags["operator_id"] = sonarStore.OperatorID
+	metric.Tags["project_id"] = strconv.Itoa(int(sonarStore.ProjectID))
+	metric.Tags["commit_id"] = sonarStore.CommitID
+	metric.Tags["branch"] = sonarStore.Branch
+	metric.Tags["git_repo"] = sonarStore.GitRepo
+	metric.Tags["build_id"] = strconv.Itoa(int(sonarStore.BuildID))
+	metric.Tags["log_id"] = sonarStore.LogID
+	metric.Tags["app_name"] = sonarStore.ApplicationName
+	metric.Tags["project_name"] = sonarStore.ProjectName
+	metric.Tags["_meta"] = "true"
+	metric.Tags["_metric_scope"] = "org"
+	metric.Fields["num"] = 1
+
+	project, err := bdl.GetProject(uint64(sonarStore.ProjectID))
+	if err != nil {
+		logrus.Errorf("addDefaultTagAndField get project err: %v", err)
+		return
+	}
+	org, err := bdl.GetOrg(project.OrgID)
+	if err != nil {
+		logrus.Errorf("addDefaultTagAndField get org err: %v", err)
+		return
+	}
+	metric.Tags["_metric_scope_id"] = org.Name
+	metric.Tags["org_name"] = org.Name
+}
+
+func doMetrics(metric []apistructs.Metric, bdl *bundle.Bundle) {
+	logrus.Info(" doMetrics CollectMetrics start ")
+	metricsObject := apistructs.Metrics{}
+	metricsObject.Metric = metric
+	var count = 1
+	for count < 3 {
+		err := bdl.CollectMetrics(&metricsObject)
+		if err != nil {
+			logrus.Errorf(" doMetrics CollectMetrics error %v", err)
+			count++
+			time.Sleep(time.Minute)
+			if count >= 3 {
+				logrus.Errorf(" doMetrics CollectMetrics lost data %+v", metricsObject)
+			}
+			continue
+		}
+		break
+	}
+	logrus.Info(" doMetrics CollectMetrics end ")
 }
 
 func statistics(sonars []dbclient.QASonar, bUTPassed bool) apistructs.TestIssuesStatistics {
