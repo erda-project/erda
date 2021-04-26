@@ -19,43 +19,26 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 )
 
-// HandleAllQueues handle queues in order.
-func (mgr *defaultManager) HandleAllQueues() {
+// IdempotentAddQueue add to to manager idempotent.
+func (mgr *defaultManager) IdempotentAddQueue(pq *apistructs.PipelineQueue) types.Queue {
 	mgr.qLock.Lock()
 	defer mgr.qLock.Unlock()
 
-	doneCh := make(chan struct{}, len(mgr.queueByID))
-
-	// iterate all queues
-	for _, q := range mgr.queueByID {
-
-		// every queue handle in one goroutine
-		go func(q types.Queue) {
-			mgr.handleOneQueue(q)
-			doneCh <- struct{}{}
-		}(q)
-	}
-
-	for i := 0; i < len(mgr.queueByID); i++ {
-		<-doneCh
-	}
-}
-
-// handleOneQueue handle all pipelines inside this queue.
-func (mgr *defaultManager) handleOneQueue(queue types.Queue) {
-	queue.RangePendingQueue(mgr)
-}
-
-func (mgr *defaultManager) UpdatePipelineQueue(pq *apistructs.PipelineQueue) {
-	mgr.qLock.Lock()
-	defer mgr.qLock.Unlock()
-
-	newQueue := queue.New(pq)
+	// construct newQueue first for later use
+	newQueue := queue.New(pq, queue.WithDBClient(mgr.dbClient))
 
 	_, ok := mgr.queueByID[newQueue.ID()]
-	if !ok {
-		mgr.queueByID[newQueue.ID()] = newQueue
-	} else {
+	if ok {
+		// update queue
 		mgr.queueByID[newQueue.ID()].Update(pq)
+		return mgr.queueByID[newQueue.ID()]
 	}
+
+	// not exist, add new queue and start
+	mgr.queueByID[newQueue.ID()] = newQueue
+	qStopCh := make(chan struct{})
+	mgr.queueStopChanByID[newQueue.ID()] = qStopCh
+	newQueue.Start(qStopCh)
+
+	return newQueue
 }

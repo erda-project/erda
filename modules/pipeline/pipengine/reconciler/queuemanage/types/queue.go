@@ -20,13 +20,13 @@ import (
 )
 
 type Queue interface {
+	QueueValidator
+	Start(stopCh chan struct{})
 	ID() string
 	IsStrictMode() bool
-	OccupiedResource() apistructs.PipelineAppliedResource
-	Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueUsage
-	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
-	PopOutPipeline(p *spec.Pipeline, markAsFailed ...bool)
+	Usage() pb.QueueUsage
 	Update(pq *apistructs.PipelineQueue)
-	RangePendingQueue(mgr QueueManager)
-	QueueValidator
+	RangePendingQueue()
+	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
+	PopOutPipeline(p *spec.Pipeline)
 }

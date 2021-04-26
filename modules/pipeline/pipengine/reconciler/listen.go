@@ -45,7 +45,6 @@ func (r *Reconciler) Listen() {
 					}
 
 					// add into queue
-					rlog.PInfof(pipelineID, "add into queue, waiting to pop from the queue")
 					popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
 					if err != nil {
 						rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
@@ -61,6 +60,7 @@ func (r *Reconciler) Listen() {
 							}})
 						return
 					}
+					rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
 					<-popCh
 					rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
 

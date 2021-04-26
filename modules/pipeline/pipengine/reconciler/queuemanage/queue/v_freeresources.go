@@ -23,17 +23,17 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (q *defaultQueue) ValidateFreeResources(pipelineCaches map[uint64]*spec.Pipeline, tryPopP *spec.Pipeline) apistructs.PipelineQueueValidateResult {
+func (q *defaultQueue) ValidateFreeResources(tryPopP *spec.Pipeline) apistructs.PipelineQueueValidateResult {
 	// get queue total resources
-	maxCPU := q.OccupiedResource().CPU
-	maxMemoryMB := q.OccupiedResource().MemoryMB
+	maxCPU := q.pq.MaxCPU
+	maxMemoryMB := q.pq.MaxMemoryMB
 
 	// calculate used resources
 	var occupiedCPU float64
 	var occupiedMemoryMB float64
 	q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
-		existP := pipelineCaches[pipelineID]
+		existP := q.pipelineCaches[pipelineID]
 		resources := existP.GetPipelineAppliedResources()
 		occupiedCPU += resources.Requests.CPU
 		occupiedMemoryMB += resources.Requests.MemoryMB
@@ -46,13 +46,13 @@ func (q *defaultQueue) ValidateFreeResources(pipelineCaches map[uint64]*spec.Pip
 	if tryPopPResources.Requests.CPU+occupiedCPU > maxCPU {
 		result.Success = false
 		result.Reason = fmt.Sprintf("Insufficient cpu: %s(current) + %s(apply) > %s(queue limited)",
-			strutil.String(occupiedCPU), strutil.String(tryPopPResources.Limits.CPU), strutil.String(maxCPU))
+			strutil.String(occupiedCPU), strutil.String(tryPopPResources.Requests.CPU), strutil.String(maxCPU))
 		return result
 	}
 	if tryPopPResources.Requests.MemoryMB+occupiedMemoryMB > maxMemoryMB {
 		result.Success = false
 		result.Reason = fmt.Sprintf("Insufficient memory: %sMB(current) + %sMB(apply) > %sMB(queue limited)",
-			strutil.String(occupiedMemoryMB), strutil.String(tryPopPResources.Limits.MemoryMB), strutil.String(maxMemoryMB))
+			strutil.String(occupiedMemoryMB), strutil.String(tryPopPResources.Requests.MemoryMB), strutil.String(maxMemoryMB))
 		return result
 	}
 

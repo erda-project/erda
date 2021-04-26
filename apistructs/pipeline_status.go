@@ -240,3 +240,7 @@ func (status PipelineStatus) ChangeStateForManualReview() PipelineStatus {
 	}
 	return status
 }
+
+func (status PipelineStatus) AfterPipelineQueue() bool {
+	return status == PipelineStatusRunning || status.IsEndStatus()
+}

@@ -40,7 +40,15 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 		now := time.Now()
 		createdTime = &now
 	}
+	// need reRangePendingQueue if already have items in pending
+	if q.eq.PendingQueue().Len() > 0 {
+		q.needReRangePendingQueue = true
+	}
 
+	// add input p to caches before add p to eq
+	q.pipelineCaches[p.ID] = p
+
+	// add to pending queue
 	q.eq.Add(itemKey, priority, *createdTime)
 	q.doneChanByPipelineID[p.ID] = doneCh
 }

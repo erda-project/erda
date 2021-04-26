@@ -20,16 +20,13 @@ import (
 )
 
 func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
-	mgr.qLock.Lock()
-	defer mgr.qLock.Unlock()
-
+	mgr.qLock.RLock()
+	defer mgr.qLock.RUnlock()
 	q, ok := mgr.queueByID[queue.New(pq).ID()]
 	if !ok {
 		return nil
 	}
 
-	mgr.pCacheLock.Lock()
-	defer mgr.pCacheLock.Unlock()
-	usage := q.Usage(mgr.pipelineCaches)
+	usage := q.Usage()
 	return &usage
 }

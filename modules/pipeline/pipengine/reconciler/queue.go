@@ -22,8 +22,5 @@ func (r *Reconciler) loadQueueManger() error {
 	// init queue manager
 	r.QueueManager = manager.New(manager.WithDBClient(r.dbClient))
 
-	// start
-	r.QueueManager.Start()
-
 	return nil
 }

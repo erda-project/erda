@@ -18,16 +18,16 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 // defaultManager is the default manager.
 type defaultManager struct {
-	queueByID map[string]types.Queue // key: pq id
-	qLock     sync.Mutex
+	queueByID         map[string]types.Queue   // key: pq id
+	queueStopChanByID map[string]chan struct{} // key: pq id
+	qLock             sync.RWMutex
 
-	pipelineCaches map[uint64]*spec.Pipeline
-	pCacheLock     sync.Mutex
+	//pipelineCaches map[uint64]*spec.Pipeline
+	//pCacheLock     sync.RWMutex
 
 	dbClient *dbclient.Client
 }
@@ -37,8 +37,9 @@ func New(ops ...Option) types.QueueManager {
 	var mgr defaultManager
 
 	mgr.queueByID = make(map[string]types.Queue)
+	mgr.queueStopChanByID = make(map[string]chan struct{})
 
-	mgr.pipelineCaches = make(map[uint64]*spec.Pipeline)
+	//mgr.pipelineCaches = make(map[uint64]*spec.Pipeline)
 
 	// apply options
 	for _, op := range ops {

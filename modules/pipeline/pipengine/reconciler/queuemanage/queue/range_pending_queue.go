@@ -14,6 +14,7 @@
 package queue
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/priorityqueue"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -42,8 +42,18 @@ const (
 	SuccessQueue         = "SuccessQueue"
 )
 
-func (q *defaultQueue) RangePendingQueue(mgr types.QueueManager) {
+func (q *defaultQueue) RangePendingQueue() {
+	usage := q.Usage()
+	usageByte, _ := json.Marshal(&usage)
+	logrus.Debugf("queueManager: queueID: %s, queueName: %s, usage: %s", q.ID(), q.pq.Name, string(usageByte))
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
+		// fast reRange
+		if q.needReRangePendingQueue {
+			q.lock.Lock()
+			q.needReRangePendingQueue = false
+			q.lock.Unlock()
+			return true
+		}
 
 		pipelineID := parsePipelineIDFromQueueItem(item)
 		if pipelineID == 0 {
@@ -52,7 +62,9 @@ func (q *defaultQueue) RangePendingQueue(mgr types.QueueManager) {
 		}
 
 		// get pipeline
-		p := mgr.EnsureQueryPipelineDetail(pipelineID)
+		q.lock.RLock()
+		p := q.pipelineCaches[pipelineID]
+		q.lock.RUnlock()
 		if p == nil {
 			// pipeline not exist, remove this invalid item, continue handle next pipeline inside the queue
 			rlog.PWarnf(pipelineID, "queueManager: failed to handle pipeline inside queue, pipeline not exist, pop from pending queue")
@@ -60,7 +72,7 @@ func (q *defaultQueue) RangePendingQueue(mgr types.QueueManager) {
 		}
 
 		// queue validate
-		validateResult := q.validatePipeline(mgr.GetPipelineCaches(), p)
+		validateResult := q.validatePipeline(p)
 		if !validateResult.Success {
 			q.emitEvent(p, PendingQueueValidate, validateResult.Reason, events.EventLevelWarning)
 			// stopRange if queue is strict mode
@@ -179,7 +191,8 @@ func (q *defaultQueue) emitEvent(p *spec.Pipeline, reason string, message string
 		Type:           eType,
 	}
 	events.EmitPipelineStreamEvent(p.ID, []*apistructs.PipelineEvent{&se})
-	msg := fmt.Sprintf("queueManager: pipelineID: %d, Type: %s, Reason: %s, Message: %s", p.ID, eType, reason, message)
+	msg := fmt.Sprintf("queueManager: queueID: %s, queueName: %s, pipelineID: %d, Type: %s, Reason: %s, Message: %s",
+		q.ID(), q.pq.Name, p.ID, eType, reason, message)
 	rlog.PDebugf(p.ID, msg)
 	return msg
 }
