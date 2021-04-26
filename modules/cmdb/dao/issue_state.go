@@ -123,6 +123,16 @@ func (client *DBClient) GetIssuesStatesByProjectID(projectID uint64, issueType a
 	return states, nil
 }
 
+// 增加一个用projectId列表来获取所有的状态
+func (client *DBClient) GetIssuesStatesByProjectIDList(projectIDS []uint64) ([]IssueState, error) {
+	var states []IssueState
+	db := client.Table("dice_issue_state").Where("project_id in (?)", projectIDS)
+	if err := db.Order("index").Find(&states).Error; err != nil {
+		return nil, err
+	}
+	return states, nil
+}
+
 func (client *DBClient) GetIssueStateByID(ID int64) (*IssueState, error) {
 	var state IssueState
 	db := client.Table("dice_issue_state").Where("id = ?", ID)

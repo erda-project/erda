@@ -14,6 +14,7 @@
 package dao
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
@@ -170,4 +171,13 @@ func (client *DBClient) GetAllApps() ([]model.Application, error) {
 		return nil, err
 	}
 	return applications, nil
+}
+
+// GetJoinedAppNumByUserId 获取用户在某个企业下的参与应用数
+func (client *DBClient) GetJoinedAppNumByUserId(userID, orgID string) (int, error) {
+	var total int
+	if err := client.Model(&model.Member{}).Where(fmt.Sprintf("user_id = %s and org_id = %s and scope_type=\"%s\"", userID, orgID, apistructs.AppScope)).Count(&total).Error; err != nil {
+		return total, err
+	}
+	return total, nil
 }

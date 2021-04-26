@@ -1,0 +1,73 @@
+package content
+
+import (
+	"context"
+	"fmt"
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/sirupsen/logrus"
+	"strconv"
+)
+
+type Content struct {
+	ctxBdl protocol.ContextBundle
+	Type string `json:"type"`
+	State State `json:"state"`
+	Props Props `json:"props"`
+}
+
+type Props struct {
+	Visible bool `json:"visible"`
+}
+
+type State struct {
+	ProsNum int `json:"prosNum"`
+}
+
+func (t *Content) getWorkbenchData() (*apistructs.WorkbenchResponse, error) {
+	orgID, err := strconv.ParseUint(t.ctxBdl.Identity.OrgID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	req := apistructs.WorkbenchRequest{
+		OrgID: orgID,
+		PageSize: 1,
+		PageNo: 1,
+		IssueSize: 1,
+	}
+	res, err := t.ctxBdl.Bdl.GetWorkbenchData(t.ctxBdl.Identity.UserID, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (this *Content) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	this.ctxBdl = bdl
+	return nil
+}
+
+func (this *Content) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	if err := this.SetCtxBundle(ctx); err != nil {
+		return err
+	}
+	if this.ctxBdl.Identity.OrgID != "" {
+		workbenchData, err := this.getWorkbenchData()
+		if err != nil {
+			return err
+		}
+		this.State.ProsNum = workbenchData.Data.Total
+	}
+	this.Type = "Container"
+	this.Props.Visible = true
+	return nil
+}
+
+func RenderCreator() protocol.CompRender {
+	return &Content{}
+}

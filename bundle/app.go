@@ -203,3 +203,33 @@ func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
 	}
 	return nil
 }
+
+// 前面的GepMyApps不支持分页，加一个支持分页的查询
+func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications/actions/list-my-applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgid, 10)).
+		Header(httputil.UserHeader, userid).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("name", req.Name).
+		Param("mode", req.Mode).
+		Param("q", req.Query).
+		Param("public", req.Public).
+		Param("projectId",  strconv.FormatUint(req.ProjectID, 10)).
+		Param("isSimple", strconv.FormatBool(req.IsSimple)).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+	return &listResp.Data, nil
+}

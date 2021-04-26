@@ -1,0 +1,69 @@
+package orgLogo
+
+import (
+	"context"
+	"fmt"
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/sirupsen/logrus"
+)
+
+type OrgLogo struct {
+	ctxBdl protocol.ContextBundle
+	Type string `json:"type"`
+	Props Props `json:"props"`
+}
+
+type Props struct {
+	Visible bool `json:"visible"`
+	Src string `json:"src"`
+	IsCircle bool `json:"isCircle"`
+	Size string `json:"size"`
+	Type string `json:"type"`
+	//StyleNames StyleNames `json:"styleNames"`
+}
+
+type StyleNames struct {
+	Small bool `json:"small"`
+	Mt8 bool `json:"mt8"`
+	Circle bool `json:"circle"`
+}
+
+func (this *OrgLogo) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	this.ctxBdl = bdl
+	return nil
+}
+
+func (e *OrgLogo) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	if err := e.SetCtxBundle(ctx); err != nil {
+		return err
+	}
+	e.Type = "Image"
+	e.Props.Type = "organization"
+	//e.Props.Src = "https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3355464299,584008140&fm=26&gp=0.jpg"
+	e.Props.IsCircle = true
+	e.Props.Size = "small"
+	if e.ctxBdl.Identity.OrgID != "" {
+		orgDTO, err := e.ctxBdl.Bdl.GetOrg(e.ctxBdl.Identity.OrgID)
+		if err != nil {
+			return err
+		}
+		if orgDTO == nil {
+			return fmt.Errorf("can not get org")
+		}
+		if orgDTO.Logo != "" {
+			e.Props.Src = fmt.Sprintf("https:%s", orgDTO.Logo)
+		}
+		e.Props.Visible = true
+	}
+	return nil
+}
+
+func RenderCreator() protocol.CompRender {
+	return &OrgLogo{}
+}

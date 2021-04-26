@@ -475,7 +475,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/actions/switch", Method: http.MethodPost, Handler: e.ChangeCurrentOrg},
 		{Path: "/api/orgs/actions/relate-cluster", Method: http.MethodPost, Handler: e.CreateOrgClusterRelation},
 		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListAllOrgClusterRelation},
-		{Path: "/api/orgs/{orgID}/nexus", Method: http.MethodGet, Handler: e.GetOrgNexus},
+		{Path: "/api/orgs/{orgID}/nexus", Method: http.MethodGet , Handler: e.GetOrgNexus},
 		{Path: "/api/orgs/{orgID}/actions/show-nexus-password", Method: http.MethodGet, Handler: e.ShowOrgNexusPassword},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodPost, Handler: e.CreateOrgPublisher},
 		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodGet, Handler: e.CreateOrgPublisher},
@@ -515,7 +515,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/actions/refer-cluster", Method: http.MethodGet, Handler: e.ReferCluster},
 		{Path: "/api/projects/actions/fill-branch-rule", Method: http.MethodGet, Handler: e.FillBranchRule},
 		{Path: "/api/projects/actions/get-project-functions", Method: http.MethodGet, Handler: e.GetFunctions},
-		{Path: "/api/projects/actions/set-project-functions", Method: http.MethodPost, Handler: e.SetFunctions},
+		{Path: "/api/projects/actions/set-xproject-functions", Method: http.MethodPost, Handler: e.SetFunctions},
 		{Path: "/api/projects/actions/update-active-time", Method: http.MethodPut, Handler: e.UpdateProjectActiveTime},
 
 		{Path: "/api/branch-rules", Method: http.MethodPost, Handler: e.CreateBranchRule},
@@ -776,5 +776,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/reviews/actions/updateReview", Method: http.MethodPut, Handler: e.UpdateApproval},
 		{Path: "/api/reviews/actions/user/create", Method: http.MethodPost, Handler: e.CreateReviewUser},
 		{Path: "/api/reviews/actions/{taskId}", Method: http.MethodGet, Handler: e.GetReviewByTaskId},
+
+		//工作台相关
+		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
+		{Path: "/api/workbench/issues/list", Method: http.MethodGet, Handler: e.GetIssuesForWorkbench},
 	}
 }

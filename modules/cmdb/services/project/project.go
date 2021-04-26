@@ -1113,3 +1113,31 @@ func genProjectNamespace(prjIDStr string) map[string]string {
 	return map[string]string{"DEV": "project-" + prjIDStr + "-dev", "TEST": "project-" + prjIDStr + "-test",
 		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
 }
+
+func (p *Project) GetMyProjectIDS(scopeType apistructs.ScopeType, parentID int64, userID string) ([]uint64, error) {
+	members, err := p.db.GetMembersByParentID(apistructs.ProjectScope, parentID, userID)
+	if err != nil {
+		return nil, errors.Errorf("failed to get permission when get projects, (%v)", err)
+	}
+
+	projectIDs := make([]uint64, 0, len(members))
+	for i := range members {
+		if members[i].ResourceKey == apistructs.RoleResourceKey {
+			projectIDs = append(projectIDs, uint64(members[i].ScopeID))
+		}
+	}
+	return projectIDs, nil
+}
+
+func (p *Project) GetProjectIDSByStates(req apistructs.IssuePagingRequest, projectIDS []uint64) (int, []apistructs.ProjectDTO, error) {
+	var res []apistructs.ProjectDTO
+	total, pros, err := p.db.GetProjectIDSByStates(req, projectIDS)
+	if err != nil {
+		return total, res, err
+	}
+	for _, v := range pros {
+		proDTO := p.convertToProjectDTO(true, &v)
+		res = append(res, proDTO)
+	}
+	return total, res, nil
+}

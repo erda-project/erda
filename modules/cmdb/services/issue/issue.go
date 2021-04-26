@@ -373,6 +373,77 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	return issues, total, nil
 }
 
+// 工作台上为了获取组织下所有未完成事项，不加projectID的判断
+func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apistructs.Issue, uint64, error) {
+	// 待办事项允许迭代id为-1即只能看未纳入迭代的事项，默认按照优先级排序
+	if (req.IterationID == -1 || (len(req.IterationIDs) == 1 && req.IterationIDs[0] == -1)) && req.OrderBy == "" {
+		// req.Type = apistructs.IssueTypeRequirement
+		req.OrderBy = "FIELD(priority, 'LOW', 'NORMAL', 'HIGH', 'URGENT')"
+	}
+	if req.IterationID != 0 {
+		req.IterationIDs = append(req.IterationIDs, req.IterationID)
+	}
+
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+
+	var (
+		labelRelationIDs, issueRelationIDs []int64
+		isLabel, isIssue                   bool
+	)
+	if len(req.Label) > 0 {
+		isLabel = true
+		// 获取标签关联关系
+		lrs, err := svc.db.GetLabelRelationsByLabels(apistructs.LabelTypeIssue, req.Label)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+		for _, v := range lrs {
+			labelRelationIDs = append(labelRelationIDs, int64(v.RefID))
+		}
+	}
+	if len(req.RelatedIssueIDs) > 0 {
+		isIssue = true
+		// 获取事件关联关系
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+		for _, v := range irs {
+			issueRelationIDs = append(issueRelationIDs, int64(v.RelatedIssue))
+		}
+	}
+	if isLabel || isIssue {
+		req.IDs = strutil.DedupInt64Slice(append(getRelatedIDs(labelRelationIDs, issueRelationIDs, isLabel, isIssue), req.IDs...))
+	}
+
+	// 该项目下全部的state信息，之后不再查询state  key: stateID value:state
+	stateMap := make(map[int64]dao.IssueState)
+	// 根据主状态过滤
+	if len(req.StateBelongs) > 0 {
+		err := svc.FilterByStateBelong(stateMap, &req)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+	}
+	// 分页
+	issueModels, total, err := svc.db.PagingIssues(req, isLabel || isIssue)
+	if err != nil {
+		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+	}
+
+	issues, err := svc.BatchConvert(issueModels, req.Type, req.IdentityInfo)
+	if err != nil {
+		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+	}
+
+	return issues, total, nil
+}
+
 func (svc *Issue) RequirementPool() ([]apistructs.Issue, error) {
 	return nil, nil
 }
@@ -1210,6 +1281,43 @@ func (svc *Issue) FilterByStateBelong(stateMap map[int64]dao.IssueState, req *ap
 	}
 	// 获取主状态下的子状态
 	projectStates, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, "")
+
+	if err != nil {
+		return err
+	}
+	for _, s := range projectStates {
+		stateMap[s.ID] = s
+		if belongMap[s.Belong] {
+			states = append(states, s.ID)
+		}
+	}
+
+	if len(req.State) == 0 {
+		req.State = states
+	} else {
+		var newState []int64
+		for _, v := range states {
+			for _, vv := range req.State {
+				if v == vv {
+					newState = append(newState, vv)
+					break
+				}
+			}
+		}
+		req.State = newState
+	}
+	return nil
+}
+
+// FilterByStateBelong 根据主状态过滤
+func (svc *Issue) FilterByStateBelongForPros(stateMap map[int64]dao.IssueState, projectIDS []uint64, req *apistructs.IssuePagingRequest) error {
+	var states []int64
+	belongMap := make(map[apistructs.IssueStateBelong]bool)
+	for _, v := range req.StateBelongs {
+		belongMap[v] = true
+	}
+	// 获取主状态下的子状态
+	projectStates, err := svc.db.GetIssuesStatesByProjectIDList(projectIDS)
 
 	if err != nil {
 		return err
