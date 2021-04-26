@@ -10,24 +10,23 @@ import (
 	"strconv"
 )
 
-
 const (
-	DefaultPageNo = 1
+	DefaultPageNo   = 1
 	DefaultPageSize = 5
 )
 
 type MyProjectList struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
-	Data Data `json:"data"`
+	ctxBdl     protocol.ContextBundle
+	Type       string                 `json:"type"`
+	Props      Props                  `json:"props"`
+	State      State                  `json:"state"`
+	Data       Data                   `json:"data"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
 type OperationData struct {
 	FillMeta string `json:"fillMeta"`
-	Meta Meta `json:"meta"`
+	Meta     Meta   `json:"meta"`
 }
 
 type Meta struct {
@@ -39,12 +38,12 @@ type PageNo struct {
 }
 
 type ProItem struct {
-	ID string `json:"id"`
-	ProjectId string `json:"projectId"`
-	Title string `json:"title"`
-	Description string `json:"description"`
-	PrefixImg string `json:"prefixImg"`
-	Operations map[string]Operation `json:"operations"`
+	ID          string               `json:"id"`
+	ProjectId   string               `json:"projectId"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	PrefixImg   string               `json:"prefixImg"`
+	Operations  map[string]Operation `json:"operations"`
 }
 
 type Data struct {
@@ -52,35 +51,35 @@ type Data struct {
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	UseLoadMore bool `json:"useLoadMore"`
-	AlignCenter bool `json:"alignCenter"`
-	Size string `json:"size"`
+	Visible     bool   `json:"visible"`
+	UseLoadMore bool   `json:"useLoadMore"`
+	AlignCenter bool   `json:"alignCenter"`
+	Size        string `json:"size"`
 	//PaginationType string `json:"paginationType"`
 }
 
 type Command struct {
-	Key string `json:"key"`
-	Target string `json:"target"`
-	State map[string]interface{} `json:"state"`
+	Key    string                 `json:"key"`
+	Target string                 `json:"target"`
+	State  map[string]interface{} `json:"state"`
 }
 
 type Operation struct {
 	Command Command `json:"command"`
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
-	Show bool `json:"show"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Show    bool    `json:"show"`
 }
 
 type State struct {
 	//HavePros bool `json:"havePros"`
 	//HaveApps bool `json:"haveApps"`
-	IsFirstFilter bool `json:"isFirstFilter"`
+	IsFirstFilter bool                   `json:"isFirstFilter"`
 	Values        map[string]interface{} `json:"values"`
-	PageNo int `json:"pageNo"`
-	PageSize int `json:"pageSize"`
-	Total int `json:"total"`
-	ProNums int `json:"prosNum"`
+	PageNo        int                    `json:"pageNo"`
+	PageSize      int                    `json:"pageSize"`
+	Total         int                    `json:"total"`
+	ProNums       int                    `json:"prosNum"`
 	//OrgID string `json:"orgID"`
 }
 
@@ -116,22 +115,23 @@ func (this *MyProjectList) GenComponentState(c *apistructs.Component) error {
 
 func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 	item := ProItem{
-		ID: strconv.Itoa(int(pro.ID)),
-		ProjectId: strconv.Itoa(int(pro.ID)),
-		Title: fmt.Sprintf("%s/%s", orgName, pro.DisplayName),
+		ID:          strconv.Itoa(int(pro.ID)),
+		ProjectId:   strconv.Itoa(int(pro.ID)),
+		Title:       fmt.Sprintf("%s/%s", orgName, pro.DisplayName),
 		Description: pro.Desc,
-		PrefixImg: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+		PrefixImg:   "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
 		Operations: map[string]Operation{
 			"click": {
-				Key: "click",
-				Show: true,
+				Key:    "click",
+				Show:   true,
 				Reload: false,
 				Command: Command{
-					Key: "goto",
+					Key:    "goto",
 					Target: "projectAllIssue",
 					State: map[string]interface{}{
 						"params": map[string]interface{}{
 							"projectId": strconv.Itoa(int(pro.ID)),
+							"orgName":   orgName,
 						},
 					},
 				},
@@ -144,16 +144,15 @@ func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 	return item
 }
 
-
 func (m *MyProjectList) getProjectDTO(orgID string, queryStr string) (*apistructs.PagingProjectDTO, error) {
 	orgIDInt, err := strconv.ParseUint(m.ctxBdl.Identity.OrgID, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: orgIDInt,
-		Query: queryStr,
-		PageNo: m.State.PageNo,
+		OrgID:    orgIDInt,
+		Query:    queryStr,
+		PageNo:   m.State.PageNo,
 		PageSize: m.State.PageSize,
 	}
 	projectDTO, err := m.ctxBdl.Bdl.ListMyProject(m.ctxBdl.Identity.UserID, req)
@@ -169,10 +168,10 @@ func (this *MyProjectList) getProjectsNum(orgID string, queryStr string) (int, e
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
-		Query: queryStr,
+		Query:    queryStr,
 	}
 
 	projectDTO, err := this.ctxBdl.Bdl.ListMyProject(this.ctxBdl.Identity.UserID, req)
@@ -222,8 +221,8 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 	this.Props.Size = "small"
 	this.Operations = map[string]interface{}{
 		"changePageNo": map[string]interface{}{
-			"key": "changePageNo",
-			"reload": true,
+			"key":      "changePageNo",
+			"reload":   true,
 			"fillMeta": "pageNo",
 		},
 	}

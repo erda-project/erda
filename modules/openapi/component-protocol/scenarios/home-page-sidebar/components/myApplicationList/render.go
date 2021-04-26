@@ -11,31 +11,31 @@ import (
 )
 
 const (
-	DefaultPageNo = 1
+	DefaultPageNo   = 1
 	DefaultPageSize = 5
 )
 
 type MyApplicationList struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
-	Data Data `json:"data"`
+	ctxBdl     protocol.ContextBundle
+	Type       string                 `json:"type"`
+	Props      Props                  `json:"props"`
+	State      State                  `json:"state"`
+	Data       Data                   `json:"data"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
 type AppItem struct {
-	ID string `json:"id"`
-	AppId string `json:"appId"`
-	Title string `json:"title"`
-	Description string `json:"description"`
-	PrefixImg string `json:"prefixImg"`
-	Operations map[string]Operation `json:"operations"`
+	ID          string               `json:"id"`
+	AppId       string               `json:"appId"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	PrefixImg   string               `json:"prefixImg"`
+	Operations  map[string]Operation `json:"operations"`
 }
 
 type OperationData struct {
 	FillMeta string `json:"fillMeta"`
-	Meta Meta `json:"meta"`
+	Meta     Meta   `json:"meta"`
 }
 
 type Meta struct {
@@ -46,18 +46,17 @@ type PageNo struct {
 	PageNo int `json:"pageNo"`
 }
 
-
 type Command struct {
-	Key string `json:"key"`
-	Target string `json:"target"`
-	State map[string]interface{} `json:"state"`
+	Key    string                 `json:"key"`
+	Target string                 `json:"target"`
+	State  map[string]interface{} `json:"state"`
 }
 
 type Operation struct {
 	Command Command `json:"command"`
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
-	Show bool `json:"show"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Show    bool    `json:"show"`
 }
 
 type Data struct {
@@ -65,22 +64,22 @@ type Data struct {
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	UseLoadMore bool `json:"useLoadMore"`
-	AlignCenter bool `json:"alignCenter"`
-	Size string `json:"size"`
+	Visible     bool   `json:"visible"`
+	UseLoadMore bool   `json:"useLoadMore"`
+	AlignCenter bool   `json:"alignCenter"`
+	Size        string `json:"size"`
 	//PaginationType string `json:"paginationType"`
 }
 
 type State struct {
 	//HaveApps bool `json:"haveApps"`
-	IsFirstFilter bool `json:"isFirstFilter"`
+	IsFirstFilter bool                   `json:"isFirstFilter"`
 	Values        map[string]interface{} `json:"values"`
-	PageNo int `json:"pageNo"`
-	PageSize int `json:"pageSize"`
-	Total int `json:"total"`
-	ProsNum int `json:"prosNum"`
-	AppsNum int `json:"appsNum"`
+	PageNo        int                    `json:"pageNo"`
+	PageSize      int                    `json:"pageSize"`
+	Total         int                    `json:"total"`
+	ProsNum       int                    `json:"prosNum"`
+	AppsNum       int                    `json:"appsNum"`
 	//OrgID string `json:"orgID"`
 }
 
@@ -116,23 +115,24 @@ func (this *MyApplicationList) GenComponentState(c *apistructs.Component) error 
 
 func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 	item := AppItem{
-		ID: strconv.Itoa(int(app.ID)),
-		AppId: strconv.Itoa(int(app.ID)),
-		Title: fmt.Sprintf("%s/%s/%s", orgName, app.ProjectDisplayName, app.DisplayName),
+		ID:          strconv.Itoa(int(app.ID)),
+		AppId:       strconv.Itoa(int(app.ID)),
+		Title:       fmt.Sprintf("%s/%s/%s", orgName, app.ProjectDisplayName, app.DisplayName),
 		Description: "",
-		PrefixImg: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+		PrefixImg:   "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
 		Operations: map[string]Operation{
 			"click": {
-				Key: "click",
-				Show: true,
+				Key:    "click",
+				Show:   true,
 				Reload: false,
 				Command: Command{
-					Key: "goto",
+					Key:    "goto",
 					Target: "app",
 					State: map[string]interface{}{
 						"params": map[string]interface{}{
 							"projectId": strconv.Itoa(int(app.ProjectID)),
-							"appId": strconv.Itoa(int(app.ID)),
+							"appId":     strconv.Itoa(int(app.ID)),
+							"orgName":   orgName,
 						},
 					},
 				},
@@ -152,8 +152,8 @@ func (this *MyApplicationList) getAppsNum(orgID string, queryStr string) (int, e
 	}
 	req := apistructs.ApplicationListRequest{
 		PageSize: 1,
-		PageNo: 1,
-		Query: queryStr,
+		PageNo:   1,
+		Query:    queryStr,
 	}
 	appsDTO, err := this.ctxBdl.Bdl.GetAllMyApps(this.ctxBdl.Identity.UserID, uint64(orgIntId), req)
 	if err != nil {
@@ -172,8 +172,8 @@ func (m *MyApplicationList) getAppDTO(orgID string, queryStr string) (*apistruct
 	}
 	req := apistructs.ApplicationListRequest{
 		PageSize: m.State.PageSize,
-		PageNo: m.State.PageNo,
-		Query: queryStr,
+		PageNo:   m.State.PageNo,
+		Query:    queryStr,
 	}
 	appsDTO, err := m.ctxBdl.Bdl.GetAllMyApps(m.ctxBdl.Identity.UserID, uint64(orgIDInt), req)
 	if err != nil {
@@ -244,8 +244,8 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 		this.State.Total = appsDTO.Total
 		this.Operations = map[string]interface{}{
 			"changePageNo": map[string]interface{}{
-				"key": "changePageNo",
-				"reload": true,
+				"key":      "changePageNo",
+				"reload":   true,
 				"fillMeta": "pageNo",
 			},
 		}

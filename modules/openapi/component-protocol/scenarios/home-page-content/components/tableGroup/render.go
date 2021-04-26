@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	DefaultPageNo = 1
-	DefaultPageSize = 5
+	DefaultPageNo    = 1
+	DefaultPageSize  = 5
 	DefaultIssueSize = 5
 )
 
 var issueTypeMap = map[string]string{
 	"REQUIREMENT": "requirement",
-	"TASK": "task",
-	"BUG": "bug",
+	"TASK":        "task",
+	"BUG":         "bug",
 }
 
 func (this *TableGroup) GenComponentState(c *apistructs.Component) error {
@@ -57,8 +57,8 @@ func (t *TableGroup) GetProsByPage() (*apistructs.PagingProjectDTO, error) {
 		return nil, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIDInt),
-		PageNo: t.State.PageNo,
+		OrgID:    uint64(orgIDInt),
+		PageNo:   t.State.PageNo,
 		PageSize: t.State.PageSize,
 	}
 	pageProDTO, err := t.ctxBdl.Bdl.ListProject(t.ctxBdl.Identity.UserID, req)
@@ -82,9 +82,9 @@ func (t *TableGroup) getWorkbenchData() (*apistructs.WorkbenchResponse, error) {
 		return nil, err
 	}
 	req := apistructs.WorkbenchRequest{
-		OrgID: orgID,
-		PageSize: t.State.PageSize,
-		PageNo: t.State.PageNo,
+		OrgID:     orgID,
+		PageSize:  t.State.PageSize,
+		PageNo:    t.State.PageNo,
 		IssueSize: 5,
 	}
 	res, err := t.ctxBdl.Bdl.GetWorkbenchData(t.ctxBdl.Identity.UserID, req)
@@ -100,8 +100,8 @@ func (this *TableGroup) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -118,13 +118,53 @@ func (this *TableGroup) getProjectsNum(orgID string) (int, error) {
 func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgName string) {
 	for _, v := range datas.Data.List {
 		pro := ProItem{}
-		pro.Title.IsPureTitle = false
+		image := "https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=3314214233,3432671412&fm=26&gp=0.jpg"
 		if v.ProjectDTO.Logo != "" {
-			pro.Title.PrefixImage = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
+			image = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
 		}
-		pro.Title.PrefixImage = ""
-		pro.Title.Title = fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName)
-		pro.Title.Level = 2
+		pro.Title.Props = TitleProps{
+			RenderType: "linkText",
+			Value: map[string]interface{}{
+				"text": []interface{}{map[string]interface{}{"image": image}, map[string]interface{}{
+					"text":         "Erda",
+					"operationKey": "toSpecificProject",
+					"styleConfig": map[string]interface{}{
+						"bold":     true,
+						"color":    "black",
+						"fontSize": "16px",
+					},
+				}},
+				"isPureText": false,
+			},
+		}
+		pro.Title.Operations = map[string]interface{}{
+			"toSpecificProject": map[string]interface{}{
+				"command": map[string]interface{}{
+					"key":     "goto",
+					"target":  "projectAllIssue",
+					"jumpOut": true,
+					"state": map[string]interface{}{
+						"query": map[string]interface{}{
+							"issueViewGroup__urlQuery": "eyJ2YWx1ZSI6ImthbmJhbiIsImNoaWxkcmVuVmFsdWUiOnsia2FuYmFuIjoiZGVhZGxpbmUifX0=",
+						},
+						"params": map[string]string{
+							"projectId": strconv.FormatInt(int64(v.ProjectDTO.ID), 10),
+							"orgName":   orgName,
+						},
+					},
+				},
+				"key":    "clieck",
+				"reload": false,
+				"show":   false,
+			},
+		}
+		//pro.Title.IsPureTitle = false
+		//if v.ProjectDTO.Logo != "" {
+		//	pro.Title.PrefixImage = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
+		//}
+		//pro.Title.PrefixImage = ""
+		//pro.Title.Title = fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName)
+		//pro.Title.Level = 2
 		pro.SubTitle.Title = "你未完成的事项"
 		pro.SubTitle.Level = 3
 		pro.Description.RenderType = "linkText"
@@ -132,22 +172,22 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		pro.Description.Value = map[string]interface{}{
 			"text": []interface{}{
 				"当前你还有", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.TotalIssueNum),
+					"text":        fmt.Sprintf(" %d ", v.TotalIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				}, "个事项待完成，已过期:", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.ExpiredIssueNum),
+					"text":        fmt.Sprintf(" %d ", v.ExpiredIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				}, "，本日到期:", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.ExpiredOneDayNum),
+					"text":        fmt.Sprintf(" %d ", v.ExpiredOneDayNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				}, "，7日内到期:", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.ExpiredSevenDayNum),
+					"text":        fmt.Sprintf(" %d ", v.ExpiredSevenDayNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				}, "，30日内到期:", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.ExpiredThirtyDayNum),
+					"text":        fmt.Sprintf(" %d ", v.ExpiredThirtyDayNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				}, "，未来:", map[string]interface{}{
-					"text": fmt.Sprintf(" %d ", v.FeatureDayNum),
+					"text":        fmt.Sprintf(" %d ", v.FeatureDayNum),
 					"styleConfig": map[string]interface{}{"bold": true},
 				},
 			},
@@ -172,13 +212,13 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		issueDatas := make([]IssueItem, 0)
 		for _, issue := range v.IssueList {
 			issueItem := IssueItem{
-				Id: issue.ID,
+				Id:        issue.ID,
 				ProjectId: v.ProjectDTO.ID,
-				Type: issueTypeMap[issue.Type.String()],
+				Type:      issueTypeMap[issue.Type.String()],
 				Name: IssueName{
 					RenderType: "textWithIcon",
 					PrefixIcon: fmt.Sprintf("ISSUE_ICON.issue.%s", issue.Type.String()),
-					Value: issue.Title,
+					Value:      issue.Title,
 				},
 				OrgName: orgName,
 			}
@@ -189,7 +229,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		}
 		pro.Table.Data.List = issueDatas
 		click := ClickOperation{
-			Key: "clickRow",
+			Key:    "clickRow",
 			Reload: false,
 		}
 		click.Command.Key = "goto"
@@ -200,9 +240,9 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		}
 		leftIssueNum := v.TotalIssueNum - len(v.IssueList)
 		projectOperation := ToSpecificProjectOperation{
-			Key: "click",
+			Key:    "click",
 			Reload: false,
-			Show: false,
+			Show:   false,
 		}
 		projectOperation.Command.Key = "goto"
 		projectOperation.Command.Target = "projectAllIssue"
@@ -232,8 +272,8 @@ func (t *TableGroup) setBaseComponentValue() {
 	t.Type = "TableGroup"
 	t.Operations = map[string]interface{}{
 		"changePageNo": ChangePageNoOperation{
-			Key: "changePageNo",
-			Reload: true,
+			Key:      "changePageNo",
+			Reload:   true,
 			FillMeta: "pageNo",
 		},
 	}
