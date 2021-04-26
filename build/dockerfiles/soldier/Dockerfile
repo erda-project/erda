@@ -15,7 +15,7 @@ ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
 RUN apk add --no-cache jq \
-    && apk add iproute2 nmap-ncat mariadb openssh-client docker \
+    && apk add iproute2 nmap-ncat mariadb mariadb-client openssh-client docker \
     && curl -o /usr/bin/registry http://terminus-dice.oss.aliyuncs.com/installer/registry-2.7.1 \
     && chmod 755 /usr/bin/registry \
     && curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg \
