@@ -19,14 +19,14 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (q *defaultQueue) validatePipeline(pipelineCaches map[uint64]*spec.Pipeline, p *spec.Pipeline) apistructs.PipelineQueueValidateResult {
+func (q *defaultQueue) validatePipeline(p *spec.Pipeline) apistructs.PipelineQueueValidateResult {
 	// capacity
-	result := q.ValidateCapacity(pipelineCaches, p)
+	result := q.ValidateCapacity(p)
 	if result.IsFailed() {
 		return result
 	}
 	// free resources
-	result = q.ValidateFreeResources(pipelineCaches, p)
+	result = q.ValidateFreeResources(p)
 	if result.IsFailed() {
 		return result
 	}

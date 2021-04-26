@@ -15,12 +15,19 @@ package queue
 
 import "github.com/erda-project/erda/modules/pipeline/spec"
 
-func (q *defaultQueue) PopOutPipeline(p *spec.Pipeline, markAsFailed ...bool) {
+func (q *defaultQueue) PopOutPipeline(p *spec.Pipeline) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
 	q.eq.PopPendingKey(makeItemKey(p))
 	q.eq.PopProcessing(makeItemKey(p))
-
-	// markAsFailed
-	if len(markAsFailed) > 0 && markAsFailed[0] {
-		q.ensureMarkPipelineFailed(p)
+	// delete from caches
+	delete(q.pipelineCaches, p.ID)
+	// send popped signal to channel
+	ch, ok := q.doneChanByPipelineID[p.ID]
+	if ok {
+		ch <- struct{}{}
+		close(ch)
+		delete(q.doneChanByPipelineID, p.ID)
 	}
 }
