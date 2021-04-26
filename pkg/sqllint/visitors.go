@@ -14,6 +14,9 @@
 package sqllint
 
 import (
+	"github.com/erda-project/erda/pkg/sqllint/linterror"
+	"github.com/erda-project/erda/pkg/sqllint/rules"
+	"github.com/erda-project/erda/pkg/sqllint/script"
 	"github.com/pingcap/parser"
 	"gopkg.in/yaml.v3"
 )
@@ -23,10 +26,10 @@ type Linter struct {
 	layer   int
 	errs    map[string][]error
 	reports map[string]map[string][]string
-	linters []NewRule
+	linters []rules.Ruler
 }
 
-func New(rules ...NewRule) *Linter {
+func New(rules ...rules.Ruler) *Linter {
 	r := &Linter{
 		stop:    false,
 		layer:   0,
@@ -47,17 +50,17 @@ func (r *Linter) Input(scriptData []byte, scriptName string) error {
 		return err
 	}
 
-	script := NewScript(scriptName, scriptData)
+	s := script.New(scriptName, scriptData)
 	r.reports[scriptName] = make(map[string][]string, 0)
 
 	var errs []error
 	for _, node := range nodes {
 		for _, f := range r.linters {
-			linter := f(script)
+			linter := f(s)
 			_, _ = node.Accept(linter)
 			if err := linter.Error(); err != nil {
 				errs = append(errs, err)
-				lintError, ok := err.(LintError)
+				lintError, ok := err.(linterror.LintError)
 				if !ok {
 					continue
 				}
