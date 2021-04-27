@@ -14,16 +14,14 @@
 package types
 
 import (
+	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 // QueueManager manage all queues and related pipelines.
 type QueueManager interface {
-	Start()
+	IdempotentAddQueue(pq *apistructs.PipelineQueue) Queue
+	QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage
 	PutPipelineIntoQueue(pipelineID uint64) (popCh <-chan struct{}, needRetryIfErr bool, err error)
-	PopOutPipelineFromQueue(pipelineID uint64, markAsFailed ...bool)
-	EnsureQueryPipelineDetail(pipelineID uint64) *spec.Pipeline
-	UpdatePipelineQueue(pq *apistructs.PipelineQueue)
-	GetPipelineCaches() map[uint64]*spec.Pipeline
+	PopOutPipelineFromQueue(pipelineID uint64)
 }

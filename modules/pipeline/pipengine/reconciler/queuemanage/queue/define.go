@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/erda-project/erda/modules/pipeline/spec"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/enhancedqueue"
@@ -33,10 +35,21 @@ type defaultQueue struct {
 	// doneChannels
 	doneChanByPipelineID map[uint64]chan struct{}
 
+	// pipeline caches
+	pipelineCaches map[uint64]*spec.Pipeline
+
 	// dbClient
 	dbClient *dbclient.Client
 
-	lock sync.Mutex
+	lock sync.RWMutex
+
+	// started represents queue started handle process
+	started bool
+
+	// ranging about
+	rangingPendingQueue         bool
+	needReRangePendingQueueFlag bool
+	rangeAtOnceCh               chan bool
 }
 
 func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
@@ -44,6 +57,8 @@ func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
 		pq:                   pq,
 		eq:                   enhancedqueue.NewEnhancedQueue(pq.Concurrency),
 		doneChanByPipelineID: make(map[uint64]chan struct{}),
+		pipelineCaches:       make(map[uint64]*spec.Pipeline),
+		rangeAtOnceCh:        make(chan bool),
 	}
 
 	// apply options
@@ -64,4 +79,28 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 
 func (q *defaultQueue) ID() string {
 	return strconv.FormatUint(q.pq.ID, 10)
+}
+
+func (q *defaultQueue) needReRangePendingQueue() bool {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+	return q.needReRangePendingQueueFlag
+}
+
+func (q *defaultQueue) unsetNeedReRangePendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.needReRangePendingQueueFlag = false
+}
+
+func (q *defaultQueue) setIsRangingPendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.rangingPendingQueue = true
+}
+
+func (q *defaultQueue) unsetIsRangingPendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.rangingPendingQueue = false
 }

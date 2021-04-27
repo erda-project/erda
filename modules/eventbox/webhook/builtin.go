@@ -47,12 +47,15 @@ func createIfNotExist(impl *WebHookImpl, req *CreateHookRequest) error {
 
 // MakeSureBuiltinHooks 创建默认 webhook (如果不存在)
 func MakeSureBuiltinHooks(impl *WebHookImpl) error {
-	domainSuffix := map[bool]string{true: ".default.svc.cluster.local", false: ".marathon.l4lb.thisdcos.directory"}
+	domain := apistructs.DefaultDomain
+	if conf.ErdaSystemFQDN() != "" {
+		domain = "." + conf.ErdaSystemFQDN()
+	}
 	hooks := []CreateHookRequest{
 		{
 			Name:   "scheduler-clusterhook",
 			Events: []string{"cluster"},
-			URL:    fmt.Sprintf("http://scheduler%s:9091/clusterhook", domainSuffix[conf.UseK8S()]),
+			URL:    fmt.Sprintf("http://scheduler%s:9091/clusterhook", domain),
 			Active: true,
 			HookLocation: apistructs.HookLocation{
 				Org:         "-1",

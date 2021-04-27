@@ -115,7 +115,9 @@ var (
 	// 审计模版配置
 	auditsTemplate apistructs.AuditTemplateMap
 	// 域名白名单
-	OrgWiteList map[string]bool
+	OrgWhiteList map[string]bool
+	// legacy redirect paths
+	RedirectPathList map[string]bool
 )
 
 func initPermissions() {
@@ -183,10 +185,24 @@ func Load() {
 	fmt.Println(fileMaxUploadByte.String())
 	cfg.FileMaxUploadSize = fileMaxUploadByte
 
-	OrgWiteList = map[string]bool{
+	OrgWhiteList = map[string]bool{
 		UIDomain():                          true,
 		OpenAPIDomain():                     true,
 		"openapi.default.svc.cluster.local": true,
+	}
+
+	RedirectPathList = map[string]bool{
+		"/microService": true,
+		"/workBench":    true,
+		"/dataCenter":   true,
+		"/orgCenter":    true,
+		"/edge":         true,
+		"/sysAdmin":     true,
+		"/org-list":     true,
+		"/noAuth":       true,
+		"/freshMan":     true,
+		"/inviteToOrg":  true,
+		"/perm":         true,
 	}
 }
 

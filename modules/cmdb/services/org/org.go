@@ -196,7 +196,9 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 	if createReq.DisplayName == "" {
 		createReq.DisplayName = createReq.Name
 	}
-
+	if conf.RedirectPathList[strutil.Concat("/", createReq.Name)] {
+		return nil, errors.Errorf("Org name in legacy redirect paths")
+	}
 	// name 校验
 	if err := strutil.Validate(createReq.Name,
 		strutil.NoChineseValidator,
@@ -464,10 +466,31 @@ func (o *Org) List() ([]model.Org, error) {
 	return o.db.GetOrgList()
 }
 
+// Get Org by domain and org name
+func (o *Org) GetOrgByDomainAndOrgName(domain, orgName string) (*model.Org, error) {
+	if orgName == "" {
+		return o.GetOrgByDomain(domain)
+	}
+	org, err := o.db.GetOrgByName(orgName)
+	if err != nil {
+		if err != dao.ErrNotFoundOrg {
+			return nil, err
+		}
+		// Not found, search by domain
+		org, err = o.GetOrgByDomain(domain)
+		if err != nil {
+			if err != dao.ErrNotFoundOrg {
+				return nil, err
+			}
+			return nil, nil
+		}
+	}
+	return org, nil
+}
+
 // GetOrgByDomain 通过域名获取企业
 func (o *Org) GetOrgByDomain(domain string) (*model.Org, error) {
-	// TODO: 返回 apistructs.OrgDTO instead of model.Org
-	if domain != "" && conf.OrgWiteList[domain] {
+	if domain != "" && conf.OrgWhiteList[domain] {
 		return nil, nil
 	}
 	suf := strutil.Concat(".", conf.RootDomain())
@@ -477,15 +500,10 @@ func (o *Org) GetOrgByDomain(domain string) (*model.Org, error) {
 		return nil, apierrors.ErrGetOrg.NotFound()
 	}
 	orgName := strutil.TrimSuffixes(domain, suf)
-	// TODO: after 3.9, we check suffix must have "-org"
 	if strutil.HasSuffixes(orgName, "-org") {
 		orgName = strutil.TrimSuffixes(orgName, "-org")
 	}
-	org, err := o.GetByName(orgName)
-	if err != nil {
-		return nil, err
-	}
-	return org, nil
+	return o.db.GetOrgByName(orgName)
 }
 
 // RelateCluster 关联集群，创建企业集群关联关系
