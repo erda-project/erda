@@ -22,13 +22,13 @@ import (
 func TestReverseSlice(t *testing.T) {
 	var cases = [][]int{
 		{1},
-		{2,3},
-		{4,9,2},
+		{2, 3},
+		{4, 9, 2},
 	}
 	var results = [][]int{
 		{1},
-		{3,2},
-		{2,9,4},
+		{3, 2},
+		{2, 9, 4},
 	}
 
 	equal := func(a, b []int) bool {
@@ -50,5 +50,3 @@ func TestReverseSlice(t *testing.T) {
 		}
 	}
 }
-
-

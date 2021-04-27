@@ -152,9 +152,7 @@ CREATE TABLE t1 (
 	alterTableRenameColumn   = "alter table t1 rename column doc_name to docname"
 	alterTableRenameTable    = "alter table t1 rename to t2"
 	alterTableRenameIndex    = "alter table t1 rename index uk_doc to uk_doc2"
-
 )
-
 
 func TestReverseAlterWithCompares(t *testing.T) {
 	node, err := parser.New().ParseOneStmt(createWithIndex, "", "")
@@ -175,7 +173,7 @@ func TestReverseAlterWithCompares(t *testing.T) {
 		alterTableRenameColumn,
 		alterTableRenameTable,
 		alterTableRenameIndex,
-	}{
+	} {
 		stmt, err := parser.New().ParseOneStmt(alter, "", "")
 		if err != nil {
 			t.Fatal("failed to ParseOneStmt", alter, err)
@@ -208,10 +206,11 @@ func TestReverseAlterWithCompares_EarlyReturn(t *testing.T) {
 	}
 }
 
-type S struct{
+type S struct {
 	nodes []ast.DDLNode
 }
-func (s S)DDLNodes() []ast.DDLNode {
+
+func (s S) DDLNodes() []ast.DDLNode {
 	return s.nodes
 }
 
@@ -263,4 +262,3 @@ func TestReverseCreateTableStmt(t *testing.T) {
 	reversing := ddlreverser.ReverseCreateTableStmt(create)
 	t.Log(reversing)
 }
-

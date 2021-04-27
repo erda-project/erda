@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	allowedStmtLinter_CreateDatabaseStmt                   = `create database some_database;`
+	allowedStmtLinter_CreateDatabaseStmt = `create database some_database;`
 	// allowedStmtLinter_AlterDatabaseStmt                    = `ALTER DATABASE mydb READ ONLY = 1;`
 	allowedStmtLinter_DropDatabaseStmt                     = `drop database some_database;`
 	allowedStmtLinter_CrateTableStmt                       = `create table some_table (	id bigint);`
