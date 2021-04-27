@@ -175,3 +175,11 @@ func OryEnabled() bool {
 func OryKratosAddr() string {
 	return cfg.OryKratosAddr
 }
+
+func OryCompatibleClientID() string {
+	return "kratos"
+}
+
+func OryCompatibleClientSecret() string {
+	return ""
+}

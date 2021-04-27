@@ -59,7 +59,7 @@ func Initialize() error {
 
 	ucUserAuth := ucauth.NewUCUserAuth("", discover.UC(), "", conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
-		ucUserAuth.ClientID = "kratos"
+		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
 	diceBundle := bundle.New(

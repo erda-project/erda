@@ -79,9 +79,11 @@ type UCUserAuth struct {
 	ClientSecret string
 }
 
+const OryCompatibleClientId = "kratos"
+
 func (a *UCUserAuth) oryEnabled() bool {
 	// TODO: it's a hack
-	return a.ClientID == "kratos"
+	return a.ClientID == OryCompatibleClientId
 }
 
 func (a *UCUserAuth) oryKratosAddr() string {

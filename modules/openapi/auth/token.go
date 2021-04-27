@@ -44,7 +44,7 @@ func GetDiceClientToken() (ucauth.OAuthToken, error) {
 	if conf.OryEnabled() {
 		return ucauth.OAuthToken{
 			AccessToken:  conf.OryKratosPrivateAddr(),
-			TokenType:    "kratos",
+			TokenType:    conf.OryCompatibleClientID(),
 		}, nil
 	}
 	once.Do(func() {

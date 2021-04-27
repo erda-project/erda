@@ -533,3 +533,11 @@ func OryKratosAddr() string {
 func OryKratosPrivateAddr() string {
 	return cfg.OryKratosPrivateAddr
 }
+
+func OryCompatibleClientID() string {
+	return "kratos"
+}
+
+func OryCompatibleClientSecret() string {
+	return ""
+}

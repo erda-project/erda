@@ -27,7 +27,7 @@ import (
 )
 
 func HandlePagingUsers(req *apistructs.UserPagingRequest, token OAuthToken) (*userPaging, error) {
-	if token.TokenType == "kratos" {
+	if token.TokenType == OryCompatibleClientId {
 		users, err := getUserPage(token.AccessToken, req.PageNo, req.PageSize)
 		if err != nil {
 			return nil, err

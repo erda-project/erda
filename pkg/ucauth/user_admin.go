@@ -45,7 +45,7 @@ type UCClient struct {
 
 // NewUCClient 初始化UC客户端
 func NewUCClient(baseURL, clientID, clientSecret string) *UCClient {
-	if clientID == "kratos" {
+	if clientID == OryCompatibleClientId {
 		// TODO: it's a hack
 		return &UCClient{
 			baseURL: baseURL,

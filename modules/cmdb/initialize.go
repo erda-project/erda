@@ -213,7 +213,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	// 初始化UC Client
 	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	if conf.OryEnabled() {
-		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), "kratos", "")
+		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 	}
 
 	// init bundle

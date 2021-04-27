@@ -169,6 +169,14 @@ func OryLogoutURL() string {
 	return "/.ory/kratos/public/self-service/browser/flows/logout"
 }
 
+func OryCompatibleClientID() string {
+	return "kratos"
+}
+
+func OryCompatibleClientSecret() string {
+	return ""
+}
+
 func CustomNamespace() string {
 	return cfg.CustomNamespace
 }
