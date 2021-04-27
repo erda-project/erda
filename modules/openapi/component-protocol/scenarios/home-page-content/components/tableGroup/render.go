@@ -183,33 +183,34 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		//pro.Title.Level = 2
 		pro.SubTitle.Title = "你未完成的事项"
 		pro.SubTitle.Level = 3
+		pro.SubTitle.Size = "small"
 		pro.Description.RenderType = "linkText"
 		pro.Description.Visible = true
 		pro.Description.Value = map[string]interface{}{
 			"text": []interface{}{
 				"当前你还有", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.TotalIssueNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "个事项待完成，已过期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredIssueNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，本日到期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredOneDayNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，7日内到期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredSevenDayNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，30日内到期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredThirtyDayNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，未来:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.FeatureDayNum),
-					"styleConfig": map[string]interface{}{"bold": true},
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				},
 			},
 		}
 		pro.Description.TextStyleName = map[string]interface{}{
-			"color-text-desc": true,
+			"color-text-sub": true,
 		}
 		//pro.Description.Value = fmt.Sprintf("当前您还有 %d 个事项待完成，其中 已过期: %d，本日到期: %d，7日内到期: %d，30日内到期: %d",
 		//	v.TotalIssueNum, v.ExpiredIssueNum, v.ExpiredOneDayNum, v.ExpiredSevenDayNum, v.ExpiredThirtyDayNum)
@@ -224,6 +225,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 			"styleNames": map[string]bool{
 				"no-border": true,
 			},
+			"size": "small",
 		}
 		issueDatas := make([]IssueItem, 0)
 		for _, issue := range v.IssueList {

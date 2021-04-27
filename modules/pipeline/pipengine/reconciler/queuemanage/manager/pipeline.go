@@ -38,8 +38,8 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 		return nil, false, fmt.Errorf("pipeline not found, pipelineID: %d", pipelineID)
 	}
 
-	// already after queue status
-	if p.Status.AfterPipelineQueue() {
+	// already end status
+	if p.Status.IsEndStatus() {
 		go func() {
 			popCh <- struct{}{}
 			close(popCh)

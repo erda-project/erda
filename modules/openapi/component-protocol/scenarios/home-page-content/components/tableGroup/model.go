@@ -67,6 +67,7 @@ type ProItem struct {
 	SubTitle struct {
 		Title string `json:"title"`
 		Level int    `json:"level"`
+		Size  string `json:"size"`
 	} `json:"subtitle"`
 	Description struct {
 		RenderType    string                 `json:"renderType"`

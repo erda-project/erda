@@ -110,7 +110,7 @@ require (
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
-	github.com/shopspring/decimal v1.2.0 // indirect
+	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.0
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/cobra v1.0.0

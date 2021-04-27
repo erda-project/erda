@@ -111,7 +111,7 @@ func (t *Title) setProps(unDoneIssueNum int) {
 	t.Props.Level = 1
 	t.Props.Title = "事件"
 	t.Props.NoMarginBottom = true
-	t.Props.Subtitle = fmt.Sprintf("你未完成的事项 %d 条", unDoneIssueNum)
+	//t.Props.Subtitle = fmt.Sprintf("你未完成的事项 %d 条", unDoneIssueNum)
 	//t.Props.TitleStyles.FontSize = "24px"
 	t.Props.Size = "big"
 }
@@ -127,11 +127,12 @@ func (t *Title) Render(ctx context.Context, c *apistructs.Component, scenario ap
 	if t.State.ProsNum == 0 {
 		t.setProps(0)
 	} else {
-		unDoneIssueNum, err := t.getUndoneIssueNum()
-		if err != nil {
-			return err
-		}
-		t.setProps(unDoneIssueNum)
+		//unDoneIssueNum, err := t.getUndoneIssueNum()
+		//if err != nil {
+		//	return err
+		//}
+		//t.setProps(unDoneIssueNum)
+		t.setProps(0)
 	}
 	if t.ctxBdl.Identity.OrgID == "" {
 		t.Props.Subtitle = ""
