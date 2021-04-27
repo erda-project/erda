@@ -98,7 +98,7 @@ func (m *IndexManager) getNodeIndices(filter func(*NodeDiskUsage) bool) (map[str
 			indices = make(map[string]*NodeDiskUsage)
 			routing[id] = indices
 		}
-		shards, _ := state.RoutingNodes.Nodes[id]
+		shards:= state.RoutingNodes.Nodes[id]
 		for _, shard := range shards {
 			if _, ok := indices[shard.Index]; !ok {
 				indices[shard.Index] = node
@@ -173,6 +173,9 @@ func (m *IndexManager) checkDiskUsage() error {
 				n.StorePercent >= m.cfg.DiskClean.MinIndicesStorePercent &&
 				n.Store >= m.cfg.DiskClean.minIndicesStore
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.cfg.EnableRollover {
 		_, sortedIndices := m.getSortedRolloverIndices()
