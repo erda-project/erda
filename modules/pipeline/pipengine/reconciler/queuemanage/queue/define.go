@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/erda-project/erda/modules/pipeline/spec"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/enhancedqueue"
@@ -33,10 +35,16 @@ type defaultQueue struct {
 	// doneChannels
 	doneChanByPipelineID map[uint64]chan struct{}
 
+	// pipeline caches
+	pipelineCaches map[uint64]*spec.Pipeline
+
 	// dbClient
 	dbClient *dbclient.Client
 
-	lock sync.Mutex
+	lock sync.RWMutex
+
+	started                 bool
+	needReRangePendingQueue bool
 }
 
 func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
@@ -44,6 +52,7 @@ func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
 		pq:                   pq,
 		eq:                   enhancedqueue.NewEnhancedQueue(pq.Concurrency),
 		doneChanByPipelineID: make(map[uint64]chan struct{}),
+		pipelineCaches:       make(map[uint64]*spec.Pipeline),
 	}
 
 	// apply options

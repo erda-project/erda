@@ -17,11 +17,8 @@ import (
 	"strconv"
 )
 
-func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64, markAsFailed ...bool) {
-	mgr.qLock.Lock()
-	defer mgr.qLock.Unlock()
-
-	p := mgr.EnsureQueryPipelineDetail(pipelineID)
+func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64) {
+	p := mgr.ensureQueryPipelineDetail(pipelineID)
 	if p == nil {
 		return
 	}
@@ -31,6 +28,11 @@ func (mgr *defaultManager) PopOutPipelineFromQueue(pipelineID uint64, markAsFail
 		return
 	}
 
+	mgr.qLock.RLock()
+	defer mgr.qLock.RUnlock()
 	q := mgr.queueByID[strconv.FormatUint(relatedQueueID, 10)]
-	q.PopOutPipeline(p, markAsFailed...)
+	if q == nil {
+		return
+	}
+	q.PopOutPipeline(p)
 }

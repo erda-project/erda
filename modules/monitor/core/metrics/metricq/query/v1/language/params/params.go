@@ -193,7 +193,7 @@ func (p *Parser) Parse(statement string) (*queryv1.Request, error) {
 			} else {
 				req.LegendMap[legend] = &chartmeta.DataMeta{Label: &vals[len(vals)-1]}
 			}
-		} else if key == "columns" { // 数据别名排序。例子，columns=last.tags.host_ip,last.tags.host_ip,last.tags.host_ip
+		} else if key == "columns" { // Data alias sorting. For example, columns=last.tags.host_ip,last.tags.host_ip,last.tags.host_ip
 			if len(vals) < 1 {
 				continue
 			}
@@ -391,7 +391,7 @@ func parseScript(script, keyType string) (string, map[string]struct{}, error) {
 	if strings.HasPrefix(script, "(") && strings.HasSuffix(script, ")") {
 		if keyType == query.TagKey {
 			if match, _ := regexp.Match("doc\\[\\'[a-zA-Z0-9_.]+\\'\\]", reflectx.StringToBytes(script)); match {
-				// 作为原始的es脚本
+				// As the original es script
 				return script, nil, nil
 			}
 		} else {

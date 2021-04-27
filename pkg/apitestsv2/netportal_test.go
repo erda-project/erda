@@ -30,7 +30,7 @@ func Test_handleCustomNetportalRequest(t *testing.T) {
 		Method:  http.MethodGet,
 		Headers: http.Header{},
 	}
-	customReq, err := handleCustomNetportalRequest(&req)
+	customReq, _, err := handleCustomNetportalRequest(&req, nil, "")
 	_ = customReq
 	assert.NoError(t, err)
 	assert.NotZero(t, len(req.Headers))
