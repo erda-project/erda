@@ -37,8 +37,8 @@ func (m *IndexManager) startRollover() error {
 	}
 	m.log.Info("load rollover body: \n", m.rolloverBody)
 	go func() {
-		m.waitAndGetIndices()                                                             // Let indices load first
-		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Indices should be loaded first, and random values should not be executed at the same time
+		m.waitAndGetIndices()                                                          // Let indices load first
+		time.Sleep(1*time.Second + time.Duration(random.Int63n(9)*int64(time.Second))) // Indices should be loaded first, and random values should not be executed at the same time
 		m.log.Infof("enable index rollover, interval: %v", m.cfg.RolloverInterval)
 		tick := time.Tick(m.cfg.RolloverInterval)
 		for {
@@ -59,7 +59,7 @@ func (m *IndexManager) RolloverIndices(filter IndexMatcher) error {
 }
 
 func (m *IndexManager) rolloverIndices(filter IndexMatcher, body string) error {
-	v := m.indices.Load()
+	v := m.indices.Load() // Load indices with kernel-level atomic operations.
 	if v == nil {
 		return nil
 	}
