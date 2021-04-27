@@ -48,8 +48,14 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	// add input p to caches before add p to eq
 	q.pipelineCaches[p.ID] = p
 
-	// add to pending queue
-	q.eq.Add(itemKey, priority, *createdTime)
+	// add p into queue:
+	//   if p is already in running (after queue), put into processing queue directly;
+	//   else add to pending queue.
+	if p.Status.AfterPipelineQueue() {
+		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
+	} else {
+		q.eq.Add(itemKey, priority, *createdTime)
+	}
 	q.doneChanByPipelineID[p.ID] = doneCh
 }
 
