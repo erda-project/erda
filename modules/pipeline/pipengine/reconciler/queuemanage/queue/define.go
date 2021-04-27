@@ -43,8 +43,13 @@ type defaultQueue struct {
 
 	lock sync.RWMutex
 
-	started                 bool
-	needReRangePendingQueue bool
+	// started represents queue started handle process
+	started bool
+
+	// ranging about
+	rangingPendingQueue         bool
+	needReRangePendingQueueFlag bool
+	rangeAtOnceCh               chan bool
 }
 
 func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
@@ -53,6 +58,7 @@ func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
 		eq:                   enhancedqueue.NewEnhancedQueue(pq.Concurrency),
 		doneChanByPipelineID: make(map[uint64]chan struct{}),
 		pipelineCaches:       make(map[uint64]*spec.Pipeline),
+		rangeAtOnceCh:        make(chan bool),
 	}
 
 	// apply options
@@ -73,4 +79,28 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 
 func (q *defaultQueue) ID() string {
 	return strconv.FormatUint(q.pq.ID, 10)
+}
+
+func (q *defaultQueue) needReRangePendingQueue() bool {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+	return q.needReRangePendingQueueFlag
+}
+
+func (q *defaultQueue) unsetNeedReRangePendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.needReRangePendingQueueFlag = false
+}
+
+func (q *defaultQueue) setIsRangingPendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.rangingPendingQueue = true
+}
+
+func (q *defaultQueue) unsetIsRangingPendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.rangingPendingQueue = false
 }

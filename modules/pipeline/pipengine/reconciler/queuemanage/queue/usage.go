@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/priorityqueue"
+	"github.com/erda-project/erda/pkg/numeral"
 )
 
 func (q *defaultQueue) Usage() pb.QueueUsage {
@@ -29,7 +30,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 	// processing
 	var (
 		inUseCPU          float64
-		InUseMemoryMB     float64
+		inUseMemoryMB     float64
 		processingDetails = make([]*pb.QueueUsageItem, 0)
 	)
 	q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
@@ -40,7 +41,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 		}
 		resources := existP.GetPipelineAppliedResources()
 		inUseCPU += resources.Requests.CPU
-		InUseMemoryMB += resources.Requests.MemoryMB
+		inUseMemoryMB += resources.Requests.MemoryMB
 		processingDetails = append(processingDetails, &pb.QueueUsageItem{
 			PipelineID:       pipelineID,
 			RequestsCPU:      resources.Requests.CPU,
@@ -74,9 +75,9 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 
 	return pb.QueueUsage{
 		InUseCPU:          inUseCPU,
-		InUseMemoryMB:     InUseMemoryMB,
-		RemainingCPU:      q.pq.MaxCPU - inUseCPU,
-		RemainingMemoryMB: q.pq.MaxMemoryMB - InUseMemoryMB,
+		InUseMemoryMB:     inUseMemoryMB,
+		RemainingCPU:      numeral.SubFloat64(q.pq.MaxCPU, inUseCPU),
+		RemainingMemoryMB: numeral.SubFloat64(q.pq.MaxMemoryMB, inUseMemoryMB),
 		ProcessingCount:   int64(len(processingDetails)),
 		PendingCount:      int64(len(pendingDetails)),
 		ProcessingDetails: processingDetails,
