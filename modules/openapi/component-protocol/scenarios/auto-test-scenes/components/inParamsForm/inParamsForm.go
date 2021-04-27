@@ -25,7 +25,7 @@ func (i *ComponentInParamsForm) SetProps() {
 	paramsNameProp := PropColumn{
 		Title: "参数名",
 		Key:   PropsKeyParamsName,
-		Width: 100,
+		Width: 150,
 		Render: PropRender{
 			Type:        "input",
 			Required:    true,
@@ -42,7 +42,7 @@ func (i *ComponentInParamsForm) SetProps() {
 	descProp := PropColumn{
 		Title: "描述",
 		Key:   PropsKeyDesc,
-		Width: 140,
+		Width: 150,
 		Render: PropRender{
 			Type:  "input",
 			Props: PropRenderProp{MaxLength: 1000},
@@ -89,7 +89,7 @@ func (i *ComponentInParamsForm) SetProps() {
 		Title:    "调试值",
 		TitleTip: "仅在当前场景执行时生效",
 		Key:      PropsKeyValue,
-		Width:    100,
+		Width:    200,
 	}
 	i.Props["temp"] = []PropColumn{paramsNameProp, descProp, defaultValueProp, valueProp}
 }
