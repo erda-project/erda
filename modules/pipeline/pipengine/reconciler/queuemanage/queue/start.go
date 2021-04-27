@@ -16,6 +16,8 @@ package queue
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/pipeline/conf"
 )
 
@@ -24,14 +26,16 @@ func (q *defaultQueue) Start(stopCh chan struct{}) {
 		return
 	}
 	ticket := time.NewTicker(time.Second * time.Duration(conf.QueueLoopHandleIntervalSec()))
-	rangeAtOnce := make(chan struct{})
 	go func() {
 		for {
 			select {
-			case <-rangeAtOnce:
+			case <-q.rangeAtOnceCh:
+				logrus.Debugf("queueManager: queueID: %s, queueName: %s, range at once", q.ID(), q.pq.Name)
 				q.RangePendingQueue()
+				logrus.Debugf("queueManager: queueID: %s, queueName: %s, complete trigger by at once", q.ID(), q.pq.Name)
 			case <-ticket.C:
 				q.RangePendingQueue()
+				logrus.Debugf("queueManager: queueID: %s, queueName: %s, complete trigger by ticker", q.ID(), q.pq.Name)
 			case <-stopCh:
 				// stop handle
 				return
@@ -39,5 +43,5 @@ func (q *defaultQueue) Start(stopCh chan struct{}) {
 		}
 	}()
 	q.started = true
-	rangeAtOnce <- struct{}{}
+	q.rangeAtOnceCh <- true
 }
