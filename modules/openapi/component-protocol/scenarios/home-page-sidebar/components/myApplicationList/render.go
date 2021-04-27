@@ -138,7 +138,7 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
-				Show:   true,
+				Show:   false,
 				Reload: false,
 				Command: Command{
 					Key:    "goto",
