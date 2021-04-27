@@ -84,7 +84,10 @@ func (m *IndexManager) getNodeDiskUsage(filter func(*NodeDiskUsage) bool) (map[s
 
 func (m *IndexManager) getNodeIndices(filter func(*NodeDiskUsage) bool) (map[string]*NodeDiskUsage, map[string]map[string]*NodeDiskUsage, error) {
 	nodes, err := m.getNodeDiskUsage(filter)
-	if err != nil || len(nodes) <= 0 {
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(nodes) <= 0 {
 		return nil, nil, nil
 	}
 	state, err := m.getClusterState()
