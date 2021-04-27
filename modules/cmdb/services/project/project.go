@@ -1114,24 +1114,24 @@ func genProjectNamespace(prjIDStr string) map[string]string {
 		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
 }
 
-func (p *Project) GetMyProjectIDS(scopeType apistructs.ScopeType, parentID int64, userID string) ([]uint64, error) {
+func (p *Project) GetMyProjectIDList(scopeType apistructs.ScopeType, parentID int64, userID string) ([]uint64, error) {
 	members, err := p.db.GetMembersByParentID(apistructs.ProjectScope, parentID, userID)
 	if err != nil {
 		return nil, errors.Errorf("failed to get permission when get projects, (%v)", err)
 	}
 
-	projectIDs := make([]uint64, 0, len(members))
+	projectIDList := make([]uint64, 0, len(members))
 	for i := range members {
 		if members[i].ResourceKey == apistructs.RoleResourceKey {
-			projectIDs = append(projectIDs, uint64(members[i].ScopeID))
+			projectIDList = append(projectIDList, uint64(members[i].ScopeID))
 		}
 	}
-	return projectIDs, nil
+	return projectIDList, nil
 }
 
-func (p *Project) GetProjectIDSByStates(req apistructs.IssuePagingRequest, projectIDS []uint64) (int, []apistructs.ProjectDTO, error) {
+func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []apistructs.ProjectDTO, error) {
 	var res []apistructs.ProjectDTO
-	total, pros, err := p.db.GetProjectIDSByStates(req, projectIDS)
+	total, pros, err := p.db.GetProjectIDListByStates(req, projectIDList)
 	if err != nil {
 		return total, res, err
 	}

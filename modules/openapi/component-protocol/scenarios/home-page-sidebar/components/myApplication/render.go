@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type MyApplication struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
@@ -43,8 +45,8 @@ func (this *MyApplication) getAppsNum(orgID string, queryStr string) (int, error
 	}
 	req := apistructs.ApplicationListRequest{
 		PageSize: 1,
-		PageNo: 1,
-		Query: queryStr,
+		PageNo:   1,
+		Query:    queryStr,
 	}
 	appsDTO, err := this.ctxBdl.Bdl.GetAllMyApps(this.ctxBdl.Identity.UserID, uint64(orgIntId), req)
 	if err != nil {
@@ -81,8 +83,8 @@ func (this *MyApplication) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 

@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type ProjectTipWithOrg struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
@@ -41,8 +43,8 @@ func (this *ProjectTipWithOrg) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 

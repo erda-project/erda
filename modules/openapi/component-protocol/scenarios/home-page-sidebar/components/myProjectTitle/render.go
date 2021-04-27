@@ -4,24 +4,28 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type MyProjectTitle struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Title string `json:"title"`
-	Level int `json:"level"`
-	NoMarginBottom bool `json:"noMarginBottom"`
+	Visible        bool   `json:"visible"`
+	Title          string `json:"title"`
+	Level          int    `json:"level"`
+	NoMarginBottom bool   `json:"noMarginBottom"`
+	ShowDivider    bool   `json:"showDivider"`
+	Size           string `json:"size"`
 }
 
 type State struct {
@@ -63,8 +67,8 @@ func (this *MyProjectTitle) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -90,6 +94,8 @@ func (t *MyProjectTitle) Render(ctx context.Context, c *apistructs.Component, sc
 	t.Props.NoMarginBottom = true
 	t.Props.Level = 1
 	t.Props.Visible = true
+	t.Props.ShowDivider = true
+	t.Props.Size = "normal"
 	return nil
 }
 

@@ -3,29 +3,30 @@ package orgLogo
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type OrgLogo struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Src string `json:"src"`
-	IsCircle bool `json:"isCircle"`
-	Size string `json:"size"`
-	Type string `json:"type"`
+	Visible  bool   `json:"visible"`
+	Src      string `json:"src"`
+	IsCircle bool   `json:"isCircle"`
+	Size     string `json:"size"`
 	//StyleNames StyleNames `json:"styleNames"`
 }
 
 type StyleNames struct {
-	Small bool `json:"small"`
-	Mt8 bool `json:"mt8"`
+	Small  bool `json:"small"`
+	Mt8    bool `json:"mt8"`
 	Circle bool `json:"circle"`
 }
 
@@ -44,8 +45,7 @@ func (e *OrgLogo) Render(ctx context.Context, c *apistructs.Component, scenario 
 		return err
 	}
 	e.Type = "Image"
-	e.Props.Type = "organization"
-	//e.Props.Src = "https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3355464299,584008140&fm=26&gp=0.jpg"
+	e.Props.Src = "/images/resources/org.png"
 	e.Props.IsCircle = true
 	e.Props.Size = "small"
 	if e.ctxBdl.Identity.OrgID != "" {

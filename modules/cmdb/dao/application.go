@@ -112,6 +112,9 @@ func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, app
 	if request.Name != "" {
 		db = db.Where("name = ?", request.Name)
 	}
+	if request.OrderBy != "" {
+		db = db.Order(fmt.Sprintf("%s", request.OrderBy))
+	}
 	if request.Query != "" {
 		db = db.Where("name LIKE ? OR display_name LIKE ?", strutil.Concat("%", request.Query, "%"), strutil.Concat("%", request.Query, "%"))
 	}
@@ -173,10 +176,10 @@ func (client *DBClient) GetAllApps() ([]model.Application, error) {
 	return applications, nil
 }
 
-// GetJoinedAppNumByUserId 获取用户在某个企业下的参与应用数
+// get joined apps num by user and org
 func (client *DBClient) GetJoinedAppNumByUserId(userID, orgID string) (int, error) {
 	var total int
-	if err := client.Model(&model.Member{}).Where(fmt.Sprintf("user_id = %s and org_id = %s and scope_type=\"%s\"", userID, orgID, apistructs.AppScope)).Count(&total).Error; err != nil {
+	if err := client.Model(&model.Member{}).Where("user_id = ? and org_id = ? and scope_type=\"?\"", userID, orgID, apistructs.AppScope).Count(&total).Error; err != nil {
 		return total, err
 	}
 	return total, nil

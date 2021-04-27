@@ -2,14 +2,15 @@ package endpoints
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
-	"net/http"
-	"time"
 )
 
 func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -23,7 +24,7 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrGetWorkBenchData.NotLogin().ToResp(), nil
 	}
 
-	projectIDs, err := e.project.GetMyProjectIDS(apistructs.ProjectScope, int64(workReq.OrgID), userID.String())
+	projectIDs, err := e.project.GetMyProjectIDList(apistructs.ProjectScope, int64(workReq.OrgID), userID.String())
 	if err != nil {
 		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
@@ -37,20 +38,20 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 	}
 	stateMap := make(map[int64]dao.IssueState)
 	stateReq := apistructs.IssuePagingRequest{
-		OrgID: int64(workReq.OrgID),
-		PageNo: uint64(workReq.PageNo),
+		OrgID:    int64(workReq.OrgID),
+		PageNo:   uint64(workReq.PageNo),
 		PageSize: uint64(workReq.PageSize),
 		IssueListRequest: apistructs.IssueListRequest{
-			StateBelongs:stateBelongs,
-			Creators: []string{userID.String()},
+			StateBelongs: stateBelongs,
+			Creators:     []string{userID.String()},
 		},
 	}
 	if err := e.issue.FilterByStateBelongForPros(stateMap, projectIDs, &stateReq); err != nil {
 		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
 
-	proTotal, unDonePros, err := e.project.GetProjectIDSByStates(stateReq, projectIDs)
-	res.Data.Total = proTotal
+	proTotal, unDonePros, err := e.project.GetProjectIDListByStates(stateReq, projectIDs)
+	res.Data.TotalProject = proTotal
 
 	nowTime := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	tomorrow := nowTime.Add(time.Hour * time.Duration(24))
@@ -58,11 +59,11 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 	sevenDay := nowTime.Add(time.Hour * time.Duration(24*7))
 	thirtyDay := nowTime.Add(time.Hour * time.Duration(24*30))
 	timeList := [][]int64{
-		{1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},                 // 已过期
-		{nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},   // 今天
-		{twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // 7天
-		{sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // 30天
-		{thirtyDay.Unix(), 0}, //未来
+		{1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},                 // expired
+		{nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},   // today expired
+		{twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // seven day expired
+		{sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // thirty day expired
+		{thirtyDay.Unix(), 0}, //feature expired
 	}
 	expireDays := []string{"expired", "oneDay", "sevenDay", "thirtyDay", "feature"}
 
@@ -71,15 +72,15 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		var issueItem apistructs.WorkbenchProjectItem
 		issueItem.IssueList = make([]apistructs.Issue, 0)
 		issueReq := apistructs.IssuePagingRequest{
-			OrgID: int64(workReq.OrgID),
-			PageNo: 1,
+			OrgID:    int64(workReq.OrgID),
+			PageNo:   1,
 			PageSize: uint64(workReq.IssueSize),
 			IssueListRequest: apistructs.IssueListRequest{
-				ProjectID: uint64(v.ID),
+				ProjectID:    uint64(v.ID),
 				StateBelongs: stateBelongs,
-				Creators: []string{userID.String()},
-				External: true,
-				OrderBy: "plan_finished_at",
+				Creators:     []string{userID.String()},
+				External:     true,
+				OrderBy:      "plan_finished_at",
 				Priority: []apistructs.IssuePriority{
 					apistructs.IssuePriorityUrgent,
 					apistructs.IssuePriorityHigh,
@@ -98,8 +99,7 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		issueItem.ProjectDTO = v
 
 		for index, et := range expireDays {
-			etIssueReq := apistructs.IssuePagingRequest{
-			}
+			etIssueReq := apistructs.IssuePagingRequest{}
 			etIssueReq.OrgID = int64(workReq.OrgID)
 			etIssueReq.StartFinishedAt = timeList[index][0] * 1000
 			if timeList[index][1] != 0 {
@@ -170,6 +170,6 @@ func (e *Endpoints) GetIssuesForWorkbench(ctx context.Context, r *http.Request, 
 	userIDs = strutil.DedupSlice(userIDs, true)
 	return httpserver.OkResp(apistructs.IssuePagingResponseData{
 		Total: total,
-		List: issues,
+		List:  issues,
 	})
 }

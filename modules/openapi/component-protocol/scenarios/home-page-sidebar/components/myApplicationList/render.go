@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"sort"
-	"strconv"
 )
 
 const (
@@ -81,6 +82,7 @@ type Props struct {
 	UseLoadMore bool   `json:"useLoadMore"`
 	AlignCenter bool   `json:"alignCenter"`
 	Size        string `json:"size"`
+	NoBorder    bool   `json:"noBorder"`
 	//PaginationType string `json:"paginationType"`
 }
 
@@ -130,9 +132,9 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 	item := AppItem{
 		ID:          strconv.Itoa(int(app.ID)),
 		AppId:       strconv.Itoa(int(app.ID)),
-		Title:       fmt.Sprintf("%s/%s/%s", orgName, app.ProjectDisplayName, app.DisplayName),
+		Title:       fmt.Sprintf("%s/%s", app.ProjectDisplayName, app.DisplayName),
 		Description: "",
-		PrefixImg:   "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+		PrefixImg:   "/images/default-app-icon.svg",
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
@@ -187,32 +189,35 @@ func (m *MyApplicationList) getAppDTO(orgID string, queryStr string) (*apistruct
 		PageSize: m.State.PageSize,
 		PageNo:   m.State.PageNo,
 		Query:    queryStr,
+		OrderBy:  "name",
 	}
 	appsDTO, err := m.ctxBdl.Bdl.GetAllMyApps(m.ctxBdl.Identity.UserID, uint64(orgIDInt), req)
 	if err != nil {
 		return nil, err
 	}
 	if appsDTO == nil {
-		return nil, fmt.Errorf("can not get applications")
+		return nil, nil
 	}
 	return appsDTO, nil
 }
 
 func (m *MyApplicationList) addAppsData(datas *apistructs.ApplicationListResponseData) error {
 	var orgName string
+	dataList := make([]AppItem, 0)
 	if len(datas.List) > 0 {
 		orgDTO, err := m.ctxBdl.Bdl.GetOrg(m.ctxBdl.Identity.OrgID)
 		if err != nil {
 			return err
 		}
 		if orgDTO == nil {
-			return fmt.Errorf("can not get org")
+			return fmt.Errorf("failed to get org")
 		}
 		orgName = orgDTO.DisplayName
 	}
 	for _, v := range datas.List {
-		m.Data.List = append(m.Data.List, RenItem(v, orgName))
+		dataList = append(dataList, RenItem(v, orgName))
 	}
+	m.Data.List = dataList
 	return nil
 }
 
@@ -235,6 +240,7 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 	this.Props.UseLoadMore = true
 	this.Props.AlignCenter = true
 	this.Props.Size = "small"
+	this.Props.NoBorder = true
 
 	queryStr := ""
 	_, ok := this.State.Values["title"]
@@ -251,10 +257,13 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 		if err != nil {
 			return err
 		}
-		if err := this.addAppsData(appsDTO); err != nil {
-			return err
+		this.State.Total = 0
+		if appsDTO != nil {
+			if err := this.addAppsData(appsDTO); err != nil {
+				return err
+			}
+			this.State.Total = appsDTO.Total
 		}
-		this.State.Total = appsDTO.Total
 		this.Operations = map[string]interface{}{
 			"changePageNo": map[string]interface{}{
 				"key":      "changePageNo",
@@ -270,10 +279,13 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 		if err != nil {
 			return err
 		}
-		if err := this.addAppsData(appsDTO); err != nil {
-			return err
+		this.State.Total = 0
+		if appsDTO != nil {
+			if err := this.addAppsData(appsDTO); err != nil {
+				return err
+			}
+			this.State.Total = appsDTO.Total
 		}
-		this.State.Total = appsDTO.Total
 	case apistructs.OnChangePageNoOperation:
 		var pageData OperationData
 		dataBody, err := json.Marshal(event.OperationData)
@@ -288,12 +300,15 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 		if err != nil {
 			return err
 		}
-		if err := this.addAppsData(appsDTO); err != nil {
-			return err
+		this.State.Total = 0
+		if appsDTO != nil {
+			if err := this.addAppsData(appsDTO); err != nil {
+				return err
+			}
+			this.State.Total = appsDTO.Total
 		}
-		this.State.Total = appsDTO.Total
 	}
-	sort.Sort(this.Data)
+	//sort.Sort(this.Data)
 	return nil
 }
 

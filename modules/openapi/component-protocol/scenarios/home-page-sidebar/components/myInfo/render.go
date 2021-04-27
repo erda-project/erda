@@ -3,19 +3,21 @@ package myInfo
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type MyInfo struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
+	Visible    bool `json:"visible"`
 	FullHeight bool `json:"fullHeight"`
 	ScrollAuto bool `json:"scrollAuto"`
 }

@@ -3,15 +3,17 @@ package emptyOrgText
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type EmptyOrgText struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
@@ -27,7 +29,6 @@ func (this *EmptyOrgText) SetCtxBundle(ctx context.Context) error {
 	this.ctxBdl = bdl
 	return nil
 }
-
 
 func (t *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	if err := t.SetCtxBundle(ctx); err != nil {

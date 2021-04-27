@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -20,6 +22,18 @@ var issueTypeMap = map[string]string{
 	"REQUIREMENT": "requirement",
 	"TASK":        "task",
 	"BUG":         "bug",
+}
+
+func (s ProData) Less(i, j int) bool {
+	return s.List[i].Title.Props.DisplayName < s.List[j].Title.Props.DisplayName
+}
+
+func (s ProData) Swap(i, j int) {
+	s.List[i], s.List[j] = s.List[j], s.List[i]
+}
+
+func (s ProData) Len() int {
+	return len(s.List)
 }
 
 func (this *TableGroup) GenComponentState(c *apistructs.Component) error {
@@ -116,17 +130,19 @@ func (this *TableGroup) getProjectsNum(orgID string) (int, error) {
 }
 
 func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgName string) {
+	dataList := make([]ProItem, 0)
 	for _, v := range datas.Data.List {
 		pro := ProItem{}
-		image := "https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=3314214233,3432671412&fm=26&gp=0.jpg"
+		image := "/images/default-project-icon.png"
 		if v.ProjectDTO.Logo != "" {
 			image = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
 		}
 		pro.Title.Props = TitleProps{
-			RenderType: "linkText",
+			DisplayName: fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
+			RenderType:  "linkText",
 			Value: map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{"image": image}, map[string]interface{}{
-					"text":         "Erda",
+					"text":         fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
 					"operationKey": "toSpecificProject",
 					"styleConfig": map[string]interface{}{
 						"bold":     true,
@@ -264,8 +280,9 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				"toSpecificProject": projectOperation,
 			},
 		}
-		t.Data.List = append(t.Data.List, pro)
+		dataList = append(dataList, pro)
 	}
+	t.Data.List = dataList
 }
 
 func (t *TableGroup) setBaseComponentValue() {
@@ -302,11 +319,12 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		if err != nil {
 			return err
 		}
-		if workDatas == nil {
-			return fmt.Errorf("can not get workbench data")
+		t.State.Total = 0
+		t.Data.List = make([]ProItem, 0)
+		if workDatas != nil {
+			t.State.Total = workDatas.Data.TotalProject
+			t.addWorkbenchData(workDatas, orgName)
 		}
-		t.State.Total = workDatas.Data.Total
-		t.addWorkbenchData(workDatas, orgName)
 	case apistructs.ChangeOrgsPageNoOperationKey:
 		if t.State.PageNo <= 0 || t.State.PageSize <= 0 {
 			return fmt.Errorf("invalid page size or no")
@@ -327,11 +345,12 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		if err != nil {
 			return err
 		}
-		if workDatas == nil {
-			return fmt.Errorf("can not get workbench data")
+		t.State.Total = 0
+		t.Data.List = make([]ProItem, 0)
+		if workDatas != nil {
+			t.State.Total = workDatas.Data.TotalProject
+			t.addWorkbenchData(workDatas, orgName)
 		}
-		t.State.Total = workDatas.Data.Total
-		t.addWorkbenchData(workDatas, orgName)
 	}
 	return nil
 }

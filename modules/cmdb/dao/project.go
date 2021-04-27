@@ -165,13 +165,13 @@ type ProjectID struct {
 	ProjectID string `json:"project_id"`
 }
 
-// GetJoinedProjectNumByUserID 根据用户和企业id查询参加的所有项目数和项目id列表
+// get projects by userID and orgID
 func (client *DBClient) GetJoinedProjectNumByUserID(userID string, orgID string) (int, []string, error) {
 	var total int
 	var proIDS []ProjectID
 	res := make([]string, 0)
 	if err := client.Model(&model.Member{}).
-		Where(fmt.Sprintf("user_id = %s and org_id = %s and scope_type = \"%s\"", userID, orgID, apistructs.ProjectScopeType)).
+		Where("user_id = ? and org_id = ? and scope_type = \"?\"", userID, orgID, apistructs.ProjectScopeType).
 		Select("project_id").Find(&proIDS).Offset(0).Limit(-1).Count(&total).Error; err != nil {
 		return total, res, err
 	}
@@ -181,19 +181,14 @@ func (client *DBClient) GetJoinedProjectNumByUserID(userID string, orgID string)
 	return total, res, nil
 }
 
-func (client *DBClient) GetProjectIDSByStates(req apistructs.IssuePagingRequest, projectIDS []uint64) (int, []model.Project, error) {
+// get states by projectID list
+func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []model.Project, error) {
 	var (
 		total int
-		res []model.Project
+		res   []model.Project
 	)
-	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and creator IN (?) and state IN (?) )", projectIDS, req.Creators, req.State)
-	//sql := client.Table("dice_issues").Where("deleted = ?", 0).Where("project_id in (?)", projectIDS)
-	//if len(req.Creators) > 0 {
-	//	sql = sql.Where("creator IN (?)", req.Creators)
-	//}
-	//if len(req.State) > 0 {
-	//	sql = sql.Where("state IN (?)", req.State)
-	//}
+	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and creator IN (?) and state IN (?) )", projectIDList, req.Creators, req.State).
+		Order("name")
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Error; err != nil {
 		return total, res, err

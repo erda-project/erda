@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"sort"
-	"strconv"
 )
 
 const (
@@ -56,6 +57,7 @@ type Props struct {
 	UseLoadMore bool   `json:"useLoadMore"`
 	AlignCenter bool   `json:"alignCenter"`
 	Size        string `json:"size"`
+	NoBorder    bool   `json:"noBorder"`
 	//PaginationType string `json:"paginationType"`
 }
 
@@ -93,7 +95,7 @@ type State struct {
 	PageSize      int                    `json:"pageSize"`
 	Total         int                    `json:"total"`
 	ProNums       int                    `json:"prosNum"`
-	//OrgID string `json:"orgID"`
+	//OrgID         string                 `json:"orgID"`
 }
 
 func (this *MyProjectList) SetCtxBundle(ctx context.Context) error {
@@ -130,9 +132,9 @@ func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 	item := ProItem{
 		ID:          strconv.Itoa(int(pro.ID)),
 		ProjectId:   strconv.Itoa(int(pro.ID)),
-		Title:       fmt.Sprintf("%s/%s", orgName, pro.DisplayName),
-		Description: pro.Desc,
-		PrefixImg:   "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+		Title:       pro.DisplayName,
+		Description: "",
+		PrefixImg:   "/images/default-project-icon.png",
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
@@ -167,6 +169,8 @@ func (m *MyProjectList) getProjectDTO(orgID string, queryStr string) (*apistruct
 		Query:    queryStr,
 		PageNo:   m.State.PageNo,
 		PageSize: m.State.PageSize,
+		OrderBy:  "name",
+		Asc:      true,
 	}
 	projectDTO, err := m.ctxBdl.Bdl.ListMyProject(m.ctxBdl.Identity.UserID, req)
 	if err != nil {
@@ -199,19 +203,21 @@ func (this *MyProjectList) getProjectsNum(orgID string, queryStr string) (int, e
 
 func (m *MyProjectList) addDataList(datas *apistructs.PagingProjectDTO) error {
 	var orgName string
+	dataList := make([]ProItem, 0)
 	if len(datas.List) > 0 {
 		orgDTO, err := m.ctxBdl.Bdl.GetOrg(m.ctxBdl.Identity.OrgID)
 		if err != nil {
 			return err
 		}
 		if orgDTO == nil {
-			return fmt.Errorf("can not get org")
+			return fmt.Errorf("failed to get org")
 		}
 		orgName = orgDTO.DisplayName
 	}
 	for _, v := range datas.List {
-		m.Data.List = append(m.Data.List, RenItem(v, orgName))
+		dataList = append(dataList, RenItem(v, orgName))
 	}
+	m.Data.List = dataList
 	return nil
 }
 
@@ -232,6 +238,7 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 	this.Props.UseLoadMore = true
 	this.Props.AlignCenter = true
 	this.Props.Size = "small"
+	this.Props.NoBorder = true
 	this.Operations = map[string]interface{}{
 		"changePageNo": map[string]interface{}{
 			"key":      "changePageNo",
@@ -262,13 +269,13 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 		if err != nil {
 			return err
 		}
-		if projectDTO == nil {
-			return fmt.Errorf("can not get projects")
+		this.State.Total = 0
+		if projectDTO != nil {
+			if err := this.addDataList(projectDTO); err != nil {
+				return err
+			}
+			this.State.Total = projectDTO.Total
 		}
-		if err := this.addDataList(projectDTO); err != nil {
-			return err
-		}
-		this.State.Total = projectDTO.Total
 	case apistructs.RenderingOperation:
 		this.Data.List = make([]ProItem, 0)
 		this.State.PageNo = DefaultPageNo
@@ -277,13 +284,13 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 		if err != nil {
 			return err
 		}
-		if projectDTO == nil {
-			return fmt.Errorf("can not get projects")
+		this.State.Total = 0
+		if projectDTO != nil {
+			if err := this.addDataList(projectDTO); err != nil {
+				return err
+			}
+			this.State.Total = projectDTO.Total
 		}
-		if err := this.addDataList(projectDTO); err != nil {
-			return err
-		}
-		this.State.Total = projectDTO.Total
 	case apistructs.OnChangePageNoOperation:
 		var pageData OperationData
 		dataBody, err := json.Marshal(event.OperationData)
@@ -298,15 +305,15 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 		if err != nil {
 			return err
 		}
-		if projectDTO == nil {
-			return fmt.Errorf("can not get projects")
+		this.State.Total = 0
+		if projectDTO != nil {
+			if err := this.addDataList(projectDTO); err != nil {
+				return err
+			}
+			this.State.Total = projectDTO.Total
 		}
-		if err := this.addDataList(projectDTO); err != nil {
-			return err
-		}
-		this.State.Total = projectDTO.Total
 	}
-	sort.Sort(this.Data)
+	//sort.Sort(this.Data)
 	return nil
 }
 

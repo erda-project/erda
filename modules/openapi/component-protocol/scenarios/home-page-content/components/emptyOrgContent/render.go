@@ -1,37 +1,38 @@
 package emptyOrgContent
 
-
 import (
-"context"
-"fmt"
-"github.com/erda-project/erda/apistructs"
-protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-"github.com/sirupsen/logrus"
+	"context"
+	"fmt"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 type EmptyOrgContent struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl     protocol.ContextBundle
+	Type       string                 `json:"type"`
+	Props      Props                  `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Value []Value `json:"value"`
+	Visible bool    `json:"visible"`
+	Value   []Value `json:"value"`
 }
 
 type Value struct {
-	Props PropValue `json:"props"`
-	GapSize string `json:"gapSize"`
+	Props   PropValue `json:"props"`
+	GapSize string    `json:"gapSize"`
 }
 
 type PropValue struct {
-	RenderType string `json:"renderType"`
-	Visible bool `json:"visible"`
-	Value string `json:"value"`
-	StyleConfig map[string]bool `json:"styleConfig,omitempty"`
+	RenderType    string          `json:"renderType"`
+	Visible       bool            `json:"visible"`
+	Value         string          `json:"value"`
+	StyleConfig   map[string]bool `json:"styleConfig,omitempty"`
 	TextStyleName map[string]bool `json:"textStyleName,omitempty"`
 }
 
@@ -84,15 +85,15 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	e.Props.Value = append(e.Props.Value, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
+			Visible:    visible,
+			Value:      fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
 		},
 		GapSize: "large",
-	},Value{
+	}, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: "* 公开组织浏览",
+			Visible:    visible,
+			Value:      "* 公开组织浏览",
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -101,15 +102,15 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: "通过左上角的浏览公开组织信息，选择公开组织可以直接进入浏览该组织公开项目的信息可（包含项目管理、应用运行信息等）",
+			Visible:    visible,
+			Value:      "通过左上角的浏览公开组织信息，选择公开组织可以直接进入浏览该组织公开项目的信息可（包含项目管理、应用运行信息等）",
 		},
 		GapSize: "large",
-	},Value{
+	}, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: "* 加入组织",
+			Visible:    visible,
+			Value:      "* 加入组织",
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -118,17 +119,17 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: "组织当前都是受邀机制，需要线下联系企业所有者进行邀请加入",
+			Visible:    visible,
+			Value:      "组织当前都是受邀机制，需要线下联系企业所有者进行邀请加入",
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
-			Visible: visible,
-			Value: "当你已经加入到任何组织后，此框将不再显示",
+			Visible:    visible,
+			Value:      "当你已经加入到任何组织后，此框将不再显示",
 			TextStyleName: map[string]bool{
-				"fz12": true,
+				"fz12":            true,
 				"color-text-desc": true,
 			},
 		},
@@ -137,8 +138,8 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	e.Operations = map[string]interface{}{
 		"toSpecificProject": map[string]interface{}{
 			"command": map[string]interface{}{
-				"key": "goto",
-				"target": "projectAllIssue",
+				"key":     "goto",
+				"target":  "projectAllIssue",
 				"jumpOut": true,
 				"state": map[string]interface{}{
 					"query": map[string]interface{}{
@@ -150,9 +151,9 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 				},
 				"visible": visible,
 			},
-			"key": "click",
+			"key":    "click",
 			"reload": false,
-			"show": false,
+			"show":   false,
 		},
 	}
 	return nil

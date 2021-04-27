@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	//"github.com/gogo/protobuf/protoc-gen-gogo/testdata/proto3"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -21,10 +22,10 @@ func RenderCreator() protocol.CompRender {
 
 type JoinedBrief struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props props `json:"props"`
-	Data data `json:"data"`
-	State State `json:"state"`
+	Type   string `json:"type"`
+	Props  props  `json:"props"`
+	Data   data   `json:"data"`
+	State  State  `json:"state"`
 }
 
 type State struct {
@@ -36,36 +37,36 @@ type State struct {
 }
 
 type column struct {
-	Title string `json:"title"`
+	Title     string `json:"title"`
 	DataIndex string `json:"dataIndex"`
-	Width int `json:"width,omitempty"`
+	Width     int    `json:"width,omitempty"`
 }
 
 type props struct {
-	Visible bool `json:"visible"`
-	RowKey string `json:"rowKey"`
-	Columns []column `json:"columns"`
-	ShowHeader bool `json:"showHeader"`
-	Pagination bool `json:"pagination"`
+	Visible    bool       `json:"visible"`
+	RowKey     string     `json:"rowKey"`
+	Columns    []column   `json:"columns"`
+	ShowHeader bool       `json:"showHeader"`
+	Pagination bool       `json:"pagination"`
 	StyleNames StyleNames `json:"styleNames"`
 }
 
 type StyleNames struct {
-	NoBorder bool `json:"no-border"`
+	NoBorder  bool `json:"no-border"`
 	LightCard bool `json:"light-card"`
 }
 
 type category struct {
-	RenderType string `json:"renderType"`
-	PrefixIcon string `json:"prefixIcon"`
-	Value string `json:"value"`
+	RenderType     string `json:"renderType"`
+	PrefixIcon     string `json:"prefixIcon"`
+	Value          string `json:"value"`
 	ColorClassName string `json:"colorClassName"`
 }
 
 type bItem struct {
-	Id int `json:"id"`
+	Id       int      `json:"id"`
 	Category category `json:"category"`
-	Number int `json:"number"`
+	Number   int      `json:"number"`
 }
 
 type data struct {
@@ -130,7 +131,7 @@ func (this *JoinedBrief) setProps() {
 	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "category"})
 	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "number", Width: 42})
 	this.Props.StyleNames = StyleNames{
-		NoBorder: true,
+		NoBorder:  true,
 		LightCard: true,
 	}
 }
@@ -146,10 +147,10 @@ func (this *JoinedBrief) setData(orgID string) error {
 	//}
 	this.Data.List = append(this.Data.List, bItem{
 		Id: 1, Category: category{
-			RenderType: "textWithIcon",
-			PrefixIcon: "project-icon",
-			Value: "参与项目数：",
-		ColorClassName: "color-primary"},
+			RenderType:     "textWithIcon",
+			PrefixIcon:     "project-icon",
+			Value:          "参与项目数：",
+			ColorClassName: "color-primary"},
 		Number: projectNum})
 	appNum, err := this.getAppsNum(orgID)
 	if err != nil {
@@ -160,10 +161,10 @@ func (this *JoinedBrief) setData(orgID string) error {
 	//}
 	this.Data.List = append(this.Data.List, bItem{
 		Id: 1, Category: category{
-			RenderType: "textWithIcon",
-			PrefixIcon: "app-icon",
-			Value: "参与应用数：",
-		ColorClassName: "color-primary"},
+			RenderType:     "textWithIcon",
+			PrefixIcon:     "app-icon",
+			Value:          "参与应用数：",
+			ColorClassName: "color-primary"},
 		Number: appNum})
 	return nil
 }
@@ -174,8 +175,8 @@ func (this *JoinedBrief) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 

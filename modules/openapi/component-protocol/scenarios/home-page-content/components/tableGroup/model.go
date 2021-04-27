@@ -50,8 +50,9 @@ type ClickOperation struct {
 }
 
 type TitleProps struct {
-	RenderType string                 `json:"renderType"`
-	Value      map[string]interface{} `json:"value"`
+	RenderType  string                 `json:"renderType"`
+	Value       map[string]interface{} `json:"value"`
+	DisplayName string                 `json:"displayName"`
 }
 
 type ProItem struct {

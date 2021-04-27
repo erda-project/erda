@@ -3,19 +3,21 @@ package myOrganization
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type MyOrganization struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
+	Visible   bool   `json:"visible"`
 	SpaceSize string `json:"spaceSize"`
 }
 

@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type EmptyProjectText struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
@@ -52,7 +54,6 @@ func (this *EmptyProjectText) GenComponentState(c *apistructs.Component) error {
 	this.State = state
 	return nil
 }
-
 
 func (t *EmptyProjectText) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	if err := t.SetCtxBundle(ctx); err != nil {

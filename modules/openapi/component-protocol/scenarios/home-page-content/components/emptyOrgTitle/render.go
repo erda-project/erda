@@ -3,21 +3,23 @@ package emptyOrgTitle
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type EmptyOrgTitle struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Title string `json:"title"`
-	Level int `json:"level"`
+	Visible bool   `json:"visible"`
+	Title   string `json:"title"`
+	Level   int    `json:"level"`
 }
 
 func (this *EmptyOrgTitle) SetCtxBundle(ctx context.Context) error {

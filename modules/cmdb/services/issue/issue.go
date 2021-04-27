@@ -373,11 +373,9 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	return issues, total, nil
 }
 
-// 工作台上为了获取组织下所有未完成事项，不加projectID的判断
+// get all undone issues by orgid
 func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apistructs.Issue, uint64, error) {
-	// 待办事项允许迭代id为-1即只能看未纳入迭代的事项，默认按照优先级排序
 	if (req.IterationID == -1 || (len(req.IterationIDs) == 1 && req.IterationIDs[0] == -1)) && req.OrderBy == "" {
-		// req.Type = apistructs.IssueTypeRequirement
 		req.OrderBy = "FIELD(priority, 'LOW', 'NORMAL', 'HIGH', 'URGENT')"
 	}
 	if req.IterationID != 0 {
@@ -397,7 +395,6 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 	)
 	if len(req.Label) > 0 {
 		isLabel = true
-		// 获取标签关联关系
 		lrs, err := svc.db.GetLabelRelationsByLabels(apistructs.LabelTypeIssue, req.Label)
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
@@ -408,7 +405,6 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 	}
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
-		// 获取事件关联关系
 		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
@@ -1309,15 +1305,14 @@ func (svc *Issue) FilterByStateBelong(stateMap map[int64]dao.IssueState, req *ap
 	return nil
 }
 
-// FilterByStateBelong 根据主状态过滤
-func (svc *Issue) FilterByStateBelongForPros(stateMap map[int64]dao.IssueState, projectIDS []uint64, req *apistructs.IssuePagingRequest) error {
+// FilterByStateBelong
+func (svc *Issue) FilterByStateBelongForPros(stateMap map[int64]dao.IssueState, projectIDList []uint64, req *apistructs.IssuePagingRequest) error {
 	var states []int64
 	belongMap := make(map[apistructs.IssueStateBelong]bool)
 	for _, v := range req.StateBelongs {
 		belongMap[v] = true
 	}
-	// 获取主状态下的子状态
-	projectStates, err := svc.db.GetIssuesStatesByProjectIDList(projectIDS)
+	projectStates, err := svc.db.GetIssuesStatesByProjectIDList(projectIDList)
 
 	if err != nil {
 		return err

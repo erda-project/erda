@@ -4,24 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type CreateProjectTip struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl     protocol.ContextBundle
+	Type       string               `json:"type"`
+	Props      Props                `json:"props"`
 	Operations map[string]Operation `json:"operations"`
-	State State `json:"state"`
+	State      State                `json:"state"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	RenderType string `json:"renderType"`
-	Value map[string]interface{} `json:"value"`
+	Visible    bool                   `json:"visible"`
+	RenderType string                 `json:"renderType"`
+	Value      map[string]interface{} `json:"value"`
 }
 
 type State struct {
@@ -29,17 +31,17 @@ type State struct {
 }
 
 type Command struct {
-	Key string `json:"key"`
-	Target string `json:"target"`
-	JumpOut bool `json:"jumpOut"`
-	Visible bool `json:"visible"`
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
+	Visible bool   `json:"visible"`
 }
 
 type Operation struct {
 	Command Command `json:"command"`
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
-	Show bool `json:"show"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Show    bool    `json:"show"`
 }
 
 func (this *CreateProjectTip) SetCtxBundle(ctx context.Context) error {
@@ -77,8 +79,8 @@ func (this *CreateProjectTip) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -109,35 +111,35 @@ func (p *CreateProjectTip) Render(ctx context.Context, c *apistructs.Component, 
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
 		"text": []interface{}{map[string]interface{}{
-			"text": "如何创建项目",
+			"text":         "如何创建项目",
 			"operationKey": "createProjectDoc",
 		}, " 或 ", map[string]interface{}{
-			"text": "通过公开组织浏览公开项目信息",
+			"text":         "通过公开组织浏览公开项目信息",
 			"operationKey": "toPublicOrgPage",
 		}},
 	}
 	p.Operations = map[string]Operation{
 		"createProjectDoc": {
 			Command: Command{
-				Key: "goto",
-				Target: "https://docs.erda.cloud/",
+				Key:     "goto",
+				Target:  "https://docs.erda.cloud/",
 				JumpOut: true,
 				Visible: visible,
 			},
-			Key: "click",
+			Key:    "click",
 			Reload: false,
-			Show: false,
+			Show:   false,
 		},
 		"toPublicOrgPage": {
 			Command: Command{
-				Key: "goto",
-				Target: "orgList",
+				Key:     "goto",
+				Target:  "orgList",
 				JumpOut: true,
 				Visible: visible,
 			},
-			Key: "click",
+			Key:    "click",
 			Reload: false,
-			Show: false,
+			Show:   false,
 		},
 	}
 	return nil

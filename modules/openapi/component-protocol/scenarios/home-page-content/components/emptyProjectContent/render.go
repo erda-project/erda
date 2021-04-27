@@ -1,21 +1,22 @@
 package emptyProjectContent
 
-
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type EmptyProjectContent struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props map[string]interface{} `json:"props"`
-	State State `json:"state"`
+	Type   string                 `json:"type"`
+	Props  map[string]interface{} `json:"props"`
+	State  State                  `json:"state"`
 }
 
 type State struct {
@@ -93,7 +94,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		createProStr = "* 创建项目"
 		createProDetail = map[string]interface{}{
 			"text": []interface{}{"通过左上角菜单快读创建或者进入", map[string]interface{}{
-				"icon": "appstore",
+				"icon":          "appstore",
 				"iconStyleName": "primary-icon",
 			}, "选择管理中心后, 进行项目的创建"},
 		}
@@ -109,16 +110,16 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
+				"visible":    visible,
+				"value":      fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
 			},
 			"gapSize": "normal",
 		},
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "* 切换组织",
+				"visible":    visible,
+				"value":      "* 切换组织",
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -128,16 +129,16 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "使用此屏幕上左上角的组织切换，快速进行组织之间切换",
+				"visible":    visible,
+				"value":      "使用此屏幕上左上角的组织切换，快速进行组织之间切换",
 			},
 			"gapSize": "large",
 		},
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "* 公开组织浏览",
+				"visible":    visible,
+				"value":      "* 公开组织浏览",
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -147,16 +148,16 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "可以通过切换组织下拉菜单中选择公开组织进行浏览",
+				"visible":    visible,
+				"value":      "可以通过切换组织下拉菜单中选择公开组织进行浏览",
 			},
 			"gapSize": "large",
 		},
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": createProStr,
+				"visible":    visible,
+				"value":      createProStr,
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -166,16 +167,16 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": createProType,
-				"visible": visible,
-				"value": createProDetail,
+				"visible":    visible,
+				"value":      createProDetail,
 			},
 			"gapSize": "large",
 		},
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "* 该组织内公开项目浏览",
+				"visible":    visible,
+				"value":      "* 该组织内公开项目浏览",
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -185,10 +186,10 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "linkText",
-				"visible": visible,
+				"visible":    visible,
 				"value": map[string]interface{}{
 					"text": []interface{}{"点击左上角菜单", map[string]interface{}{
-						"icon": "appstore",
+						"icon":          "appstore",
 						"iconStyleName": "primary-icon",
 					}, "选择 DevOps平台进入，选择我的项目可以查看该组织下公开项目的信息"},
 				},
@@ -198,10 +199,10 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		map[string]interface{}{
 			"props": map[string]interface{}{
 				"renderType": "Text",
-				"visible": visible,
-				"value": "当你已经加入到任何项目后，此框将不再显示",
+				"visible":    visible,
+				"value":      "当你已经加入到任何项目后，此框将不再显示",
 				"textStyleName": map[string]bool{
-					"fz12": true,
+					"fz12":            true,
 					"color-text-desc": true,
 				},
 			},

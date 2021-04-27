@@ -4,23 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type EmptyProjectTip struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	WhiteBg bool `json:"whiteBg"`
-	StartAlign bool `json:"startAlign"`
+	Visible        bool   `json:"visible"`
+	WhiteBg        bool   `json:"whiteBg"`
+	StartAlign     bool   `json:"startAlign"`
 	ContentSetting string `json:"contentSetting"`
 }
 
@@ -63,8 +65,8 @@ func (this *EmptyProjectTip) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -77,7 +79,6 @@ func (this *EmptyProjectTip) getProjectsNum(orgID string) (int, error) {
 	}
 	return projectDTO.Total, nil
 }
-
 
 func (t *EmptyProjectTip) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	if err := t.SetCtxBundle(ctx); err != nil {

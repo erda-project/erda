@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 //const (
@@ -18,19 +20,20 @@ import (
 //)
 
 type Title struct {
-	ctxBdl     protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Title string `json:"title"`
-	Level int `json:"level"`
-	TitleStyles TitleStyles `json:"titleStyles"`
-	Subtitle string `json:"subtitle"`
-	NoMarginBottom bool `json:"noMarginBottom"`
+	Visible bool   `json:"visible"`
+	Title   string `json:"title"`
+	Level   int    `json:"level"`
+	//TitleStyles TitleStyles `json:"titleStyles"`
+	Subtitle       string `json:"subtitle"`
+	NoMarginBottom bool   `json:"noMarginBottom"`
+	Size           string `json:"size"`
 }
 
 type TitleStyles struct {
@@ -40,7 +43,6 @@ type TitleStyles struct {
 type State struct {
 	ProsNum int `json:"prosNum"`
 }
-
 
 func (this *Title) SetCtxBundle(ctx context.Context) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
@@ -79,9 +81,9 @@ func (t *Title) getUndoneIssueNum() (int, error) {
 	}
 
 	req := apistructs.IssuePagingRequest{
-		PageNo: 1,
+		PageNo:   1,
 		PageSize: 1,
-		OrgID: int64(orgIDInt),
+		OrgID:    int64(orgIDInt),
 		IssueListRequest: apistructs.IssueListRequest{
 			Creators: []string{t.ctxBdl.Identity.UserID},
 			StateBelongs: []apistructs.IssueStateBelong{
@@ -110,7 +112,8 @@ func (t *Title) setProps(unDoneIssueNum int) {
 	t.Props.Title = "事件"
 	t.Props.NoMarginBottom = true
 	t.Props.Subtitle = fmt.Sprintf("你未完成的事项 %d 条", unDoneIssueNum)
-	t.Props.TitleStyles.FontSize = "24px"
+	//t.Props.TitleStyles.FontSize = "24px"
+	t.Props.Size = "big"
 }
 
 func (t *Title) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {

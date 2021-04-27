@@ -4,23 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type ProjectTipWithoutOrg struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl     protocol.ContextBundle
+	Type       string               `json:"type"`
+	Props      Props                `json:"props"`
 	Operations map[string]Operation `json:"operations"`
-	State State `json:"state"`
+	State      State                `json:"state"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	RenderType string `json:"renderType"`
-	Value map[string]interface{} `json:"value"`
+	Visible    bool                   `json:"visible"`
+	RenderType string                 `json:"renderType"`
+	Value      map[string]interface{} `json:"value"`
 }
 
 type State struct {
@@ -28,17 +30,17 @@ type State struct {
 }
 
 type Command struct {
-	Key string `json:"key"`
-	Target string `json:"target"`
-	JumpOut bool `json:"jumpOut"`
-	Visible bool `json:"visible"`
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
+	Visible bool   `json:"visible"`
 }
 
 type Operation struct {
 	Command Command `json:"command"`
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
-	Show bool `json:"show"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Show    bool    `json:"show"`
 }
 
 func (this *ProjectTipWithoutOrg) SetCtxBundle(ctx context.Context) error {
@@ -87,21 +89,21 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
 		"text": []interface{}{"请先加入组织或者", map[string]interface{}{
-			"text": "了解更多内容",
+			"text":         "了解更多内容",
 			"operationKey": "toJoinOrgDoc",
 		}},
 	}
 	p.Operations = map[string]Operation{
 		"toJoinOrgDoc": {
 			Command: Command{
-				Key: "goto",
-				Target: "https://docs.erda.cloud/",
+				Key:     "goto",
+				Target:  "https://docs.erda.cloud/",
 				JumpOut: true,
 				Visible: visible,
 			},
-			Key: "click",
+			Key:    "click",
 			Reload: false,
-			Show: false,
+			Show:   false,
 		},
 	}
 	return nil

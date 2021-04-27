@@ -2,10 +2,11 @@ package bundle
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/pkg/httputil"
-	"strconv"
 )
 
 func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest) (*apistructs.WorkbenchResponse, error) {
@@ -39,7 +40,7 @@ func (b *Bundle) GetIssuesForWorkbench(req apistructs.IssuePagingRequest) (*apis
 	}
 	hc := b.hc
 	var rsp apistructs.IssuePagingResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/workbench/issues/list")).
+	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/workbench/issues/actions/list")).
 		Header(httputil.UserHeader, req.UserID).
 		Params(req.UrlQueryString()).
 		Do().JSON(&rsp)

@@ -3,28 +3,29 @@ package erdaLogo
 import (
 	"context"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type ErdaLogo struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool `json:"visible"`
-	Src string `json:"src"`
-	IsCircle bool `json:"isCircle"`
-	Size string `json:"size"`
-	Type string `json:"type"`
+	Visible  bool   `json:"visible"`
+	Src      string `json:"src"`
+	IsCircle bool   `json:"isCircle"`
+	Size     string `json:"size"`
 }
 
 type StyleNames struct {
-	Small bool `json:"small"`
-	Mt8 bool `json:"mt8"`
+	Small  bool `json:"small"`
+	Mt8    bool `json:"mt8"`
 	Circle bool `json:"circle"`
 }
 
@@ -43,11 +44,10 @@ func (e *ErdaLogo) Render(ctx context.Context, c *apistructs.Component, scenario
 		return err
 	}
 	e.Type = "Image"
-	e.Props.Type = "erda"
 	if e.ctxBdl.Identity.OrgID == "" {
 		e.Props.Visible = true
 	}
-	//e.Props.Src = "https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3355464299,584008140&fm=26&gp=0.jpg"
+	e.Props.Src = "/images/favicon.ico"
 	e.Props.IsCircle = true
 	e.Props.Size = "small"
 	return nil

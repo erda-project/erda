@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -15,15 +17,15 @@ func RenderCreator() protocol.CompRender {
 
 type EmptyImage struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	Type   string `json:"type"`
+	Props  Props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type Props struct {
-	Tip string `json:"tip"`
-	Visible bool `json:"visible"`
-	Relative bool `json:"relative"`
+	Tip      string `json:"tip"`
+	Visible  bool   `json:"visible"`
+	Relative bool   `json:"relative"`
 }
 
 type State struct {

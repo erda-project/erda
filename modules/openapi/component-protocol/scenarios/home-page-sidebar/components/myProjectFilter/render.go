@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -15,42 +17,42 @@ func RenderCreator() protocol.CompRender {
 }
 
 type MyProjectFilter struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
-	State State `json:"state"`
+	ctxBdl     protocol.ContextBundle
+	Type       string                 `json:"type"`
+	Props      Props                  `json:"props"`
+	State      State                  `json:"state"`
 	Operations map[string]interface{} `json:"operations"`
 }
 
 type Props struct {
 	FullWidth bool `json:"fullWidth"`
-	Visible bool `json:"visible"`
-	Delay int `json:"delay"`
+	Visible   bool `json:"visible"`
+	Delay     int  `json:"delay"`
 }
 
 type Condition struct {
-	Key string `json:"key"`
-	Label string `json:"label"`
-	EmptyText string `json:"emptyText"`
-	Fixed bool `json:"fixed"`
-	ShowIndex int `json:"showIndex"`
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	EmptyText   string `json:"emptyText"`
+	Fixed       bool   `json:"fixed"`
+	ShowIndex   int    `json:"showIndex"`
 	Placeholder string `json:"placeholder"`
-	Type string `json:"type"`
+	Type        string `json:"type"`
 }
 
 type State struct {
 	Conditions []Condition `json:"conditions"`
 	//HavePros bool `json:"havePros"`
 	//HaveApps bool `json:"haveApps"`
-	IsFirstFilter bool  `json:"isFirstFilter"`
+	IsFirstFilter bool                   `json:"isFirstFilter"`
 	Values        map[string]interface{} `json:"values"`
-	ProsNum int `json:"prosNum"`
-	//OrgID string `json:"orgID"`
+	ProsNum       int                    `json:"prosNum"`
+	//OrgID         string                 `json:"orgID"`
 }
 
 type Operation struct {
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
 }
 
 // GenComponentState 获取state
@@ -79,19 +81,19 @@ func (this *MyProjectFilter) setComponentValue() {
 	this.Operations = map[string]interface{}{
 		apistructs.ListProjectFilterOperation.String(): Operation{
 			Reload: true,
-			Key: apistructs.ListProjectFilterOperation.String(),
+			Key:    apistructs.ListProjectFilterOperation.String(),
 		},
 	}
 	this.State.Conditions = []Condition{
 		{
-			Key: "title",
-			Label: "标题",
-			EmptyText: "全部",
-			Fixed: true,
-			ShowIndex: 2,
+			Key:         "title",
+			Label:       "标题",
+			EmptyText:   "全部",
+			Fixed:       true,
+			ShowIndex:   2,
 			Placeholder: "搜索项目",
-			Type: "input",
-			},
+			Type:        "input",
+		},
 	}
 }
 
@@ -119,8 +121,8 @@ func (this *MyProjectFilter) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 

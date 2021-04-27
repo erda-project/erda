@@ -4,28 +4,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type CreateProjectLink struct {
-	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props Props `json:"props"`
+	ctxBdl     protocol.ContextBundle
+	Type       string               `json:"type"`
+	Props      Props                `json:"props"`
 	Operations map[string]Operation `json:"operations"`
-	State State `json:"state"`
+	State      State                `json:"state"`
 }
 
 type Props struct {
 	Visible bool `json:"visible"`
 	//RenderType string `json:"renderType"`
 	//Value map[string]interface{} `json:"value"`
-	Text string `json:"text"`
-	Disabled bool `json:"disabled"`
+	Text        string `json:"text"`
+	Disabled    bool   `json:"disabled"`
 	DisabledTip string `json:"disabledTip"`
-	Type string `json:"type"`
+	Type        string `json:"type"`
 }
 
 type State struct {
@@ -33,17 +35,17 @@ type State struct {
 }
 
 type Command struct {
-	Key string `json:"key"`
-	Target string `json:"target"`
-	JumpOut bool `json:"jumpOut"`
-	Visible bool `json:"visible"`
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
+	Visible bool   `json:"visible"`
 }
 
 type Operation struct {
 	Command Command `json:"command"`
-	Key string `json:"key"`
-	Reload bool `json:"reload"`
-	Show bool `json:"show"`
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Show    bool    `json:"show"`
 }
 
 func (this *CreateProjectLink) SetCtxBundle(ctx context.Context) error {
@@ -81,8 +83,8 @@ func (this *CreateProjectLink) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -141,14 +143,14 @@ func (p *CreateProjectLink) Render(ctx context.Context, c *apistructs.Component,
 	p.Operations = map[string]Operation{
 		"click": {
 			Command: Command{
-				Key: "goto",
-				Target: "createProject",
+				Key:     "goto",
+				Target:  "createProject",
 				JumpOut: false,
 				Visible: true,
 			},
-			Key: "click",
+			Key:    "click",
 			Reload: false,
-			Show: false,
+			Show:   false,
 		},
 	}
 	return nil

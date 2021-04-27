@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -16,15 +18,15 @@ func RenderCreator() protocol.CompRender {
 
 type EmptyProject struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	Props props `json:"props"`
-	State State `json:"state"`
+	Type   string `json:"type"`
+	Props  props  `json:"props"`
+	State  State  `json:"state"`
 }
 
 type props struct {
-	Visible bool `json:"visible"`
-	Tip string `json:"tip"`
-	Relative bool `json:"relative"`
+	Visible  bool   `json:"visible"`
+	Tip      string `json:"tip"`
+	Relative bool   `json:"relative"`
 }
 
 type State struct {
@@ -89,8 +91,8 @@ func (this *EmptyProject) getProjectsNum(orgID string) (int, error) {
 		return 0, err
 	}
 	req := apistructs.ProjectListRequest{
-		OrgID: uint64(orgIntId),
-		PageNo: 1,
+		OrgID:    uint64(orgIntId),
+		PageNo:   1,
 		PageSize: 1,
 	}
 
@@ -103,5 +105,3 @@ func (this *EmptyProject) getProjectsNum(orgID string) (int, error) {
 	}
 	return projectDTO.Total, nil
 }
-
-

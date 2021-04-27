@@ -3,17 +3,19 @@ package content
 import (
 	"context"
 	"fmt"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type Content struct {
 	ctxBdl protocol.ContextBundle
-	Type string `json:"type"`
-	State State `json:"state"`
-	Props Props `json:"props"`
+	Type   string `json:"type"`
+	State  State  `json:"state"`
+	Props  Props  `json:"props"`
 }
 
 type Props struct {
@@ -30,9 +32,9 @@ func (t *Content) getWorkbenchData() (*apistructs.WorkbenchResponse, error) {
 		return nil, err
 	}
 	req := apistructs.WorkbenchRequest{
-		OrgID: orgID,
-		PageSize: 1,
-		PageNo: 1,
+		OrgID:     orgID,
+		PageSize:  1,
+		PageNo:    1,
 		IssueSize: 1,
 	}
 	res, err := t.ctxBdl.Bdl.GetWorkbenchData(t.ctxBdl.Identity.UserID, req)
@@ -61,7 +63,9 @@ func (this *Content) Render(ctx context.Context, c *apistructs.Component, scenar
 		if err != nil {
 			return err
 		}
-		this.State.ProsNum = workbenchData.Data.Total
+		if workbenchData != nil {
+			this.State.ProsNum = workbenchData.Data.TotalProject
+		}
 	}
 	this.Type = "Container"
 	this.Props.Visible = true
