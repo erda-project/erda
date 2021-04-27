@@ -495,18 +495,26 @@ func (o *Org) GetOrgByDomain(domain string) (*model.Org, error) {
 		return nil, nil
 	}
 	for _, rootDomain := range conf.RootDomainList() {
-		suf := strutil.Concat(".", rootDomain)
-		domain_and_port := strutil.Split(domain, ":", true)
-		domain = domain_and_port[0]
-		if strutil.HasSuffixes(domain, suf) {
-			orgName := strutil.TrimSuffixes(domain, suf)
-			if strutil.HasSuffixes(orgName, "-org") {
-				orgName = strutil.TrimSuffixes(orgName, "-org")
-			}
+		if orgName := orgNameRetriever(domain, rootDomain); orgName != "" {
 			return o.db.GetOrgByName(orgName)
 		}
 	}
 	return nil, apierrors.ErrGetOrg.NotFound()
+}
+
+// Search org name in domain
+func orgNameRetriever(domain, rootDomain string) string {
+	suf := strutil.Concat(".", rootDomain)
+	domain_and_port := strutil.Split(domain, ":", true)
+	domain = domain_and_port[0]
+	if strutil.HasSuffixes(domain, suf) {
+		orgName := strutil.TrimSuffixes(domain, suf)
+		if strutil.HasSuffixes(orgName, "-org") {
+			orgName = strutil.TrimSuffixes(orgName, "-org")
+		}
+		return orgName
+	}
+	return ""
 }
 
 // RelateCluster 关联集群，创建企业集群关联关系
