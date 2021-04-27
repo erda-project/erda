@@ -36,21 +36,30 @@ type OryKratosIdentity struct {
 }
 
 type OryKratosIdentityTraits struct {
-	Email string `json:"email"`
+	Email string                      `json:"email"`
+	Name  OryKratosIdentityTraitsName `json:"name"`
+}
+
+type OryKratosIdentityTraitsName struct {
+	First string `json:"first"`
+	Last  string `json:"last"`
+}
+
+func nameConversion(name OryKratosIdentityTraitsName) string {
+	// TODO: eastern name vs western name
+	return name.Last + name.First
 }
 
 func identityToUser(i OryKratosIdentity) User {
 	return User{
 		ID:    string(i.ID),
+		Nick:  nameConversion(i.Traits.Name),
 		Email: i.Traits.Email,
 	}
 }
 
 func identityToUserInfo(i OryKratosIdentity) UserInfo {
-	return UserInfo{
-		ID:    i.ID,
-		Email: i.Traits.Email,
-	}
+	return userToUserInfo(identityToUser(i))
 }
 
 func userToUserInfo(u User) UserInfo {
@@ -184,7 +193,3 @@ func getUserPage(kratosPrivateAddr string, page, perPage int) ([]User, error) {
 	}
 	return users, nil
 }
-
-//func (a *UCUserAuth) filter(f map[string]string) ([]UserInfo, error) {
-//	return nil, nil
-//}

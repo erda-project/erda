@@ -250,6 +250,8 @@ func (s *LoginServer) Logout(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if conf.OryEnabled() {
+		// no need to delete cookie
+	} else {
 		user := auth.NewUser(s.auth.RedisCli)
 		if err := user.Logout(req); err != nil {
 			errStr := fmt.Sprintf("logout: %v", err)

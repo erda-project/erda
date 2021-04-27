@@ -54,7 +54,7 @@ type Conf struct {
 	CSRFWhiteList string `env:"CSRF_WHITE_LIST"`
 
 	// ory/kratos config
-	OryEnabled           string `default:"false" env:"ORY_ENABLED"`
+	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
 	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
 	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
 }
@@ -150,7 +150,7 @@ func CSRFWhiteList() []string {
 }
 
 func OryEnabled() bool {
-	return cfg.OryEnabled == "true" || cfg.OryEnabled == "1"
+	return cfg.OryEnabled
 }
 
 func OryKratosAddr() string {

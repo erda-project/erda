@@ -49,8 +49,8 @@ type Conf struct {
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
 
 	// ory/kratos config
-	OryEnabled           string `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
+	OryEnabled    bool   `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr string `default:"kratos:4433" env:"KRATOS_ADDR"`
 }
 
 var cfg Conf
@@ -169,7 +169,7 @@ func GitTokenUserName() string {
 }
 
 func OryEnabled() bool {
-	return cfg.OryEnabled == "true" || cfg.OryEnabled == "1"
+	return cfg.OryEnabled
 }
 
 func OryKratosAddr() string {
