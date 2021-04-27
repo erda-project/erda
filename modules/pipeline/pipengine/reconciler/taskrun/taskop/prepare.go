@@ -179,7 +179,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq,
 		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
-		return true, nil
+		return true, err
 	}
 
 	// 校验 action agent
@@ -192,7 +192,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, apierrors.ErrValidateActionAgent.MissingParameter("MD5 (labels)")
 	}
 	if err := pre.ActionAgentSvc.Ensure(clusterInfo, agentDiceYmlJob.Image, agentMD5); err != nil {
-		return true, nil
+		return true, err
 	}
 
 	// action
