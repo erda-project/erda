@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/bmizerany/assert"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,4 +78,12 @@ func TestGetOrgByDomainAndOrgName(t *testing.T) {
 	res, err = o.GetOrgByDomainAndOrgName("org2", "org1")
 	require.NoError(t, err)
 	assert.Equal(t, (*model.Org)(nil), res)
+}
+
+func TestOrgNameRetriever(t *testing.T) {
+	var domains = []string{"erda-org.erda.cloud", "buzz-org.app.terminus.io", "fuzz.com"}
+	var domainRoots = []string{"erda.cloud", "app.terminus.io"}
+	assert.Equal(t, "erda", orgNameRetriever(domains[0], domainRoots[0]))
+	assert.Equal(t, "buzz", orgNameRetriever(domains[1], domainRoots[1]))
+	assert.Equal(t, "", orgNameRetriever(domains[2], domainRoots[0]))
 }
