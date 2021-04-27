@@ -37,7 +37,7 @@ func (m *IndexManager) startRollover() error {
 	}
 	m.log.Info("load rollover body: \n", m.rolloverBody)
 	go func() {
-		m.waitAndGetIndices()                                                             // Let indices load first
+		m.waitAndGetIndices()                                                          // Let indices load first
 		time.Sleep(1*time.Second + time.Duration(random.Int63n(9)*int64(time.Second))) // Indices should be loaded first, and random values should not be executed at the same time
 		m.log.Infof("enable index rollover, interval: %v", m.cfg.RolloverInterval)
 		tick := time.NewTicker(m.cfg.RolloverInterval).C
