@@ -238,7 +238,7 @@ func (m *IndexManager) Start(lock mutex.Mutex) error {
 		}
 		go func() {
 			m.log.Infof("enable indices ttl reload from database, interval: %v", m.cfg.TTLReloadInterval)
-			tick := time.NewTicker(m.cfg.TTLReloadInterval).C
+			tick := time.Tick(m.cfg.TTLReloadInterval)
 			for {
 				m.loadConfig()
 				select {
@@ -271,7 +271,7 @@ func (m *IndexManager) Start(lock mutex.Mutex) error {
 
 	// Load index task
 	m.log.Infof("start indices reload, interval: %v", m.cfg.IndexReloadInterval)
-	tick := time.NewTicker(m.cfg.IndexReloadInterval).C
+	tick := time.Tick(m.cfg.IndexReloadInterval)
 	var done chan struct{}
 	for {
 		err := m.reloadIndices()
