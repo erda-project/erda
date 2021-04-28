@@ -159,6 +159,17 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		On:          on,
 	}
 
+	var lifecycle []*apistructs.NetworkHookInfo
+	for _, hookInfo := range pipelineYml.Spec().Lifecycle {
+		hook := apistructs.NetworkHookInfo{
+			Hook:   hookInfo.Hook,
+			Client: hookInfo.Client,
+			Labels: hookInfo.Labels,
+		}
+		lifecycle = append(lifecycle, &hook)
+	}
+	result.Lifecycle = lifecycle
+
 	if result.NeedUpgrade {
 		result.YmlContent = string(pipelineYml.upgradedYmlContent)
 	} else {
