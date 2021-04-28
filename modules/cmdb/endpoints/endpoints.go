@@ -777,7 +777,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/reviews/actions/user/create", Method: http.MethodPost, Handler: e.CreateReviewUser},
 		{Path: "/api/reviews/actions/{taskId}", Method: http.MethodGet, Handler: e.GetReviewByTaskId},
 
-		//工作台相关
+		// user-workbench
 		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
 		{Path: "/api/workbench/issues/actions/list", Method: http.MethodGet, Handler: e.GetIssuesForWorkbench},
 	}

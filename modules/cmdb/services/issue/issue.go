@@ -417,16 +417,16 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 		req.IDs = strutil.DedupInt64Slice(append(getRelatedIDs(labelRelationIDs, issueRelationIDs, isLabel, isIssue), req.IDs...))
 	}
 
-	// 该项目下全部的state信息，之后不再查询state  key: stateID value:state
+	// state  key: stateID value:state
 	stateMap := make(map[int64]dao.IssueState)
-	// 根据主状态过滤
+	// filter by state
 	if len(req.StateBelongs) > 0 {
 		err := svc.FilterByStateBelong(stateMap, &req)
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
 	}
-	// 分页
+	// paging
 	issueModels, total, err := svc.db.PagingIssues(req, isLabel || isIssue)
 	if err != nil {
 		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)

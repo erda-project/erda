@@ -301,7 +301,7 @@ var (
 	ErrSaveFileTreeNodePipeline  = err("ErrSaveFileTreeNodePipeline", "保存流水线失败")
 	ErrFindFileTreeNodeAncestors = err("ErrFindFileTreeNodeAncestors", "目录树节点寻祖失败")
 
-	ErrGetWorkBenchData = err("ErrGetWorkBenchData", "查询工作台数据失败")
+	ErrGetWorkBenchData = err("ErrGetWorkBenchData", "failed to query workbench data")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

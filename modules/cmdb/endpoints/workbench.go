@@ -151,7 +151,7 @@ func (e *Endpoints) GetIssuesForWorkbench(ctx context.Context, r *http.Request, 
 		return apierrors.ErrPagingIssues.InvalidParameter("orderBy").ToResp(), nil
 	}
 
-	// 鉴权
+	// Authentication
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrPagingIssues.NotLogin().ToResp(), nil
