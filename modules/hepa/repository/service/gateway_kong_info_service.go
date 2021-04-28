@@ -182,7 +182,7 @@ func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo
 		}
 		info.KongAddr = fmt.Sprintf("%s/%s", clusterInfo.Get(apistructs.NETPORTAL_URL), info.KongAddr)
 	}
-	// 兼容海油
+	// TODO: Compatibility code, will be removed later
 	if config.ServerConf.UseAdminEndpoint && selfAz != info.Az {
 		info.KongAddr = "http://" + strings.Replace(info.Endpoint, "gateway", "gateway-admin", 1)
 	}
