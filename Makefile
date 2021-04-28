@@ -57,7 +57,7 @@ build-all:
 build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/${APP_NAME}"
-	echo "build the ${MODULE_PATH} module successfully!"
+	@ echo "build the ${MODULE_PATH} module successfully!"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \

@@ -14,7 +14,7 @@ usage() {
     echo "    push        push docker image, and build image if image not exist."
     echo "    build-push  build and push docker image."
     echo "Environment Variables: "
-    echo "    DOCKER_REGISTRY format like \"registry.example.org/username\" ."
+    echo '    DOCKER_REGISTRY format like "docker.io/<repository>". '
     echo "    DOCKER_REGISTRY_USERNAME set username for login registry if need."
     echo "    DOCKER_REGISTRY_PASSWORD set password for login registry if need."
     exit 1
@@ -33,7 +33,7 @@ VERSION="$(head -n 1 VERSION)"
 VERSION="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
- DOCKERFILE=${DOCKERFILE_DEFAULT}
+DOCKERFILE=${DOCKERFILE_DEFAULT}
 
 # setup single module envionment variables
 setup_single_module_env() {
@@ -102,6 +102,13 @@ print_details() {
 }
 print_details
 
+# login
+docker_login() {
+    if [[ -n "${DOCKER_REGISTRY_USERNAME}" ]] && [[ -n "${DOCKER_REGISTRY}" ]] && [[ -n "${DOCKER_REGISTRY_PASSWORD}" ]]; then
+        docker login -u "${DOCKER_REGISTRY_USERNAME}" -p "${DOCKER_REGISTRY_PASSWORD}" ${DOCKER_REGISTRY}
+    fi
+}
+
 # build docker image
 build_image()  {
     if [[ -n "${BUILD_BASE}" ]] || [[ -z "${DOCKER_REGISTRY}" && ${DOCKERFILE} == ${DOCKERFILE_DEFAULT} ]]; then
@@ -134,9 +141,6 @@ push_image() {
     if [ -z "${IMAGE_ID}" ]; then
         build_image
     fi
-    if [ -n "${DOCKER_REGISTRY_USERNAME}" ]; then
-        docker login -u "${DOCKER_REGISTRY_USERNAME}" -p "${DOCKER_REGISTRY_PASSWORD}" ${DOCKER_IMAGE}
-    fi
     docker push "${DOCKER_IMAGE}"
 }
 
@@ -150,16 +154,16 @@ build_push_image() {
 
 case "${ACTION}" in
     "build")
-        build_image
+        docker_login && build_image
         ;;
     "push")
-        push_image
+        docker_login && push_image
         ;;
     "build-push")
-        build_push_image
+        docker_login && build_push_image
         ;;
     "")
-        build_image
+        docker_login && build_image
         ;;
     *)
         usage

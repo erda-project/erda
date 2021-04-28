@@ -21,7 +21,7 @@ usage() {
     echo "    build-push  build and push docker image."
     echo "    image       show image name."
     echo "Environment Variables: "
-    echo "    DOCKER_REGISTRY format like \"registry.example.org/username\" ."
+    echo '    DOCKER_REGISTRY format like "docker.io/<repository>". '
     echo "    DOCKER_REGISTRY_USERNAME set username for login registry if need."
     echo "    DOCKER_REGISTRY_PASSWORD set password for login registry if need."
     exit 1
