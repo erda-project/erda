@@ -18,6 +18,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/hepa/bundle"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
@@ -114,6 +116,10 @@ func (impl *GatewayKongInfoServiceImpl) GetKongInfo(cond *orm.GatewayKongInfo) (
 	if kongInfo == nil {
 		return nil, errors.Errorf("get kong info faild, %+v", cond)
 	}
+	err = impl.adjustKongInfo(kongInfo)
+	if err != nil {
+		return nil, err
+	}
 	return kongInfo, nil
 }
 
@@ -132,6 +138,10 @@ func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*or
 	}
 	if !succ {
 		return nil, nil
+	}
+	err = impl.adjustKongInfo(dao)
+	if err != nil {
+		return nil, err
 	}
 	return dao, nil
 }
@@ -152,7 +162,7 @@ func (impl *GatewayKongInfoServiceImpl) GetTenantId(projectId, env, az string) (
 	return kongInfo.TenantId, nil
 }
 
-func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo) error {
+func (impl *GatewayKongInfoServiceImpl) adjustKongInfo(info *orm.GatewayKongInfo) error {
 	selfAz := os.Getenv("DICE_CLUSTER_NAME")
 	// 同集群不走netportal
 	if strings.HasPrefix(info.KongAddr, "inet://") {
@@ -163,10 +173,16 @@ func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo
 			}
 			info.KongAddr = "http://" + pathSlice[1]
 		}
-	} else if !strings.HasPrefix(info.KongAddr, "http://") || !strings.HasPrefix(info.KongAddr, "https://") {
-		info.KongAddr = "https://" + info.KongAddr
+	} else if selfAz != info.Az {
+		info.KongAddr = strings.TrimPrefix(info.KongAddr, "http://")
+		info.KongAddr = strings.TrimPrefix(info.KongAddr, "https://")
+		clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		info.KongAddr = fmt.Sprintf("%s/%s", clusterInfo.Get(apistructs.NETPORTAL_URL), info.KongAddr)
 	}
-	// 兼容海油
+	// TODO: Compatibility code, will be removed later
 	if config.ServerConf.UseAdminEndpoint && selfAz != info.Az {
 		info.KongAddr = "http://" + strings.Replace(info.Endpoint, "gateway", "gateway-admin", 1)
 	}
@@ -177,7 +193,7 @@ func (impl *GatewayKongInfoServiceImpl) Update(info *orm.GatewayKongInfo) error 
 	if info == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
-	err := impl.adjustKonfInfo(info)
+	err := impl.adjustKongInfo(info)
 	if err != nil {
 		return err
 	}
@@ -192,7 +208,7 @@ func (impl *GatewayKongInfoServiceImpl) Insert(info *orm.GatewayKongInfo) error 
 	if info == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
-	err := impl.adjustKonfInfo(info)
+	err := impl.adjustKongInfo(info)
 	if err != nil {
 		return err
 	}
