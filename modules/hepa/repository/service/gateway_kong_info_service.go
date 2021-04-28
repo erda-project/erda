@@ -18,6 +18,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/hepa/bundle"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
@@ -114,6 +116,10 @@ func (impl *GatewayKongInfoServiceImpl) GetKongInfo(cond *orm.GatewayKongInfo) (
 	if kongInfo == nil {
 		return nil, errors.Errorf("get kong info faild, %+v", cond)
 	}
+	err = impl.adjustKonfInfo(kongInfo)
+	if err != nil {
+		return nil, err
+	}
 	return kongInfo, nil
 }
 
@@ -132,6 +138,10 @@ func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*or
 	}
 	if !succ {
 		return nil, nil
+	}
+	err = impl.adjustKonfInfo(dao)
+	if err != nil {
+		return nil, err
 	}
 	return dao, nil
 }
@@ -163,8 +173,14 @@ func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo
 			}
 			info.KongAddr = "http://" + pathSlice[1]
 		}
-	} else if !strings.HasPrefix(info.KongAddr, "http://") || !strings.HasPrefix(info.KongAddr, "https://") {
-		info.KongAddr = "https://" + info.KongAddr
+	} else if self.Az != info.Az {
+		info.KongAddr = strings.TrimPrefix(info.KongAddr, "http://")
+		info.KongAddr = strings.TrimPrefix(info.KongAddr, "https://")
+		clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		info.KongAddr = fmt.Sprintf("%s/%s", clusterInfo.Get(apistructs.NETPORTAL_URL), info.KongAddr)
 	}
 	// 兼容海油
 	if config.ServerConf.UseAdminEndpoint && selfAz != info.Az {
