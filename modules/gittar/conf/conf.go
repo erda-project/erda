@@ -47,6 +47,8 @@ type Conf struct {
 	GitInnerUserPassword     string `env:"GIT_INNER_USER_PASSWORD"`
 	GitMergeTemplatePath     string `env:"GIT_MERGE_TEMPLATE_PATH" default:".gitlab/merge_request_templates"`
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
+	GitGCMaxNum              int    `env:"GIT_GC_MAX_NUM" default:"1"`
+	GitGCCronExpression      string `env:"GIT_GC_CRON_EXPRESSION" default:"0 0 1 * * ?"`
 }
 
 var cfg Conf
@@ -162,4 +164,14 @@ func GitMergeTemplatePath() string {
 // GitTokenUserName token认证使用的用户名
 func GitTokenUserName() string {
 	return cfg.GitTokenUserName
+}
+
+// GitGCMaxNum  git repository gc Concurrency
+func GitGCMaxNum() int {
+	return cfg.GitGCMaxNum
+}
+
+// GitGCCronExpression cron run gc
+func GitGCCronExpression() string {
+	return cfg.GitGCCronExpression
 }
