@@ -745,6 +745,8 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		isSimple = true
 	}
 
+	orderBy := r.URL.Query().Get("orderBy")
+
 	req := &apistructs.ApplicationListRequest{
 		ProjectID: uint64(projectID),
 		Mode:      mode,
@@ -754,6 +756,7 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		PageSize:  pageSize,
 		Public:    public,
 		IsSimple:  isSimple,
+		OrderBy:   orderBy,
 	}
 
 	return req, nil

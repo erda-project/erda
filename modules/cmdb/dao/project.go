@@ -160,3 +160,41 @@ func (client *DBClient) UpdateProjectQuota(clusterName string, cpuOverSellChange
 		Where("cluster_config LIKE ?", "%"+clusterName+"%").
 		Update("cpu_quota", gorm.Expr("cpu_quota * ?", cpuOverSellChangeRatio)).Error
 }
+
+type ProjectID struct {
+	ProjectID string `json:"project_id"`
+}
+
+// get projects by userID and orgID
+func (client *DBClient) GetJoinedProjectNumByUserID(userID string, orgID string) (int, []string, error) {
+	var total int
+	var proIDS []ProjectID
+	res := make([]string, 0)
+	if err := client.Model(&model.Member{}).
+		Where("user_id = ? and org_id = ? and scope_type = \"?\"", userID, orgID, apistructs.ProjectScopeType).
+		Select("project_id").Find(&proIDS).Offset(0).Limit(-1).Count(&total).Error; err != nil {
+		return total, res, err
+	}
+	for _, v := range proIDS {
+		res = append(res, v.ProjectID)
+	}
+	return total, res, nil
+}
+
+// get states by projectID list
+func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []model.Project, error) {
+	var (
+		total int
+		res   []model.Project
+	)
+	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and creator IN (?) and state IN (?) )", projectIDList, req.Creators, req.State).
+		Order("name")
+	offset := (req.PageNo - 1) * req.PageSize
+	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Error; err != nil {
+		return total, res, err
+	}
+	if err := sql.Count(&total).Error; err != nil {
+		return total, res, err
+	}
+	return total, res, nil
+}

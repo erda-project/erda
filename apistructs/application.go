@@ -127,6 +127,7 @@ type ApplicationListRequest struct {
 	PageNo   int    `query:"pageNo"`
 	PageSize int    `query:"pageSize"`
 	Public   string `query:"public"`
+	OrderBy  string `query:"orderBy"`
 
 	// 是否只返回简单信息(应用级流水线打开列表使用)
 	IsSimple bool `query:"isSimple"`
