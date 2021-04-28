@@ -116,7 +116,7 @@ func (impl *GatewayKongInfoServiceImpl) GetKongInfo(cond *orm.GatewayKongInfo) (
 	if kongInfo == nil {
 		return nil, errors.Errorf("get kong info faild, %+v", cond)
 	}
-	err = impl.adjustKonfInfo(kongInfo)
+	err = impl.adjustKongInfo(kongInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (impl *GatewayKongInfoServiceImpl) GetByAny(cond *orm.GatewayKongInfo) (*or
 	if !succ {
 		return nil, nil
 	}
-	err = impl.adjustKonfInfo(dao)
+	err = impl.adjustKongInfo(dao)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (impl *GatewayKongInfoServiceImpl) GetTenantId(projectId, env, az string) (
 	return kongInfo.TenantId, nil
 }
 
-func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo) error {
+func (impl *GatewayKongInfoServiceImpl) adjustKongInfo(info *orm.GatewayKongInfo) error {
 	selfAz := os.Getenv("DICE_CLUSTER_NAME")
 	// 同集群不走netportal
 	if strings.HasPrefix(info.KongAddr, "inet://") {
@@ -173,7 +173,7 @@ func (impl *GatewayKongInfoServiceImpl) adjustKonfInfo(info *orm.GatewayKongInfo
 			}
 			info.KongAddr = "http://" + pathSlice[1]
 		}
-	} else if self.Az != info.Az {
+	} else if selfAz != info.Az {
 		info.KongAddr = strings.TrimPrefix(info.KongAddr, "http://")
 		info.KongAddr = strings.TrimPrefix(info.KongAddr, "https://")
 		clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
@@ -193,7 +193,7 @@ func (impl *GatewayKongInfoServiceImpl) Update(info *orm.GatewayKongInfo) error 
 	if info == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
-	err := impl.adjustKonfInfo(info)
+	err := impl.adjustKongInfo(info)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (impl *GatewayKongInfoServiceImpl) Insert(info *orm.GatewayKongInfo) error 
 	if info == nil {
 		return errors.New(ERR_INVALID_ARG)
 	}
-	err := impl.adjustKonfInfo(info)
+	err := impl.adjustKongInfo(info)
 	if err != nil {
 		return err
 	}
