@@ -15,10 +15,11 @@ package dao
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/strutil"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/modules/cmdb/model"
 )
