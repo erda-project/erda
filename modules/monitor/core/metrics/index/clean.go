@@ -26,8 +26,8 @@ func (m *IndexManager) startClean() error {
 		return fmt.Errorf("invalid IndexCleanInterval: %v", m.cfg.IndexCleanInterval)
 	}
 	go func() {
-		m.waitAndGetIndices()                                                             // Let the indices load first
-		time.Sleep(1*time.Second + time.Duration((random.Int63()%10)*int64(time.Second))) // Try to avoid multiple instances at the same time
+		m.waitAndGetIndices()                                                          // Let the indices load first
+		time.Sleep(1*time.Second + time.Duration(random.Int63n(9)*int64(time.Second))) // Try to avoid multiple instances at the same time
 		m.log.Infof("enable indices clean, interval: %v", m.cfg.IndexCleanInterval)
 		tick := time.Tick(m.cfg.IndexCleanInterval)
 		for {

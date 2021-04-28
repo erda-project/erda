@@ -140,11 +140,9 @@ func (p *metaProcessor) add(metric *Metric) error {
 
 func (p *metaProcessor) process() {
 	for {
-		select {
-		case metric, ok := <-p.metrics:
-			if ok {
-				_ = p.processMetricMeta(metric)
-			}
+		metric, ok := <-p.metrics
+		if ok {
+			_ = p.processMetricMeta(metric)
 		}
 	}
 }
