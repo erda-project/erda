@@ -1367,7 +1367,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_name::tag,application_name::tag,service_instance_id::tag,if(gt(now()-Timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
+	statement := "SELECT service_name::tag,application_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}
