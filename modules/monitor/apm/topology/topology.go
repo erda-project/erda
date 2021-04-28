@@ -704,6 +704,108 @@ func ExceptionOrderByStrategyExecute(exceptionType string, exceptions []Exceptio
 	}
 }
 
+type ReadWriteBytes struct {
+	Timestamp  int64   `json:"timestamp"`  // unit: s
+	ReadBytes  float64 `json:"readBytes"`  // unit: b
+	WriteBytes float64 `json:"writeBytes"` // unit: b
+}
+type ReadWriteBytesSpeed struct {
+	Timestamp       int64   `json:"timestamp"`       // format: yyyy-MM-dd HH:mm:ss
+	ReadBytesSpeed  float64 `json:"readBytesSpeed"`  // unit: b/s
+	WriteBytesSpeed float64 `json:"writeBytesSpeed"` // unit: b/s
+}
+
+func (topology *provider) GetProcessDiskIo(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(blk_read_bytes::field), 2),round_float(avg(blk_write_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_id":   params.ServiceId,
+	}
+	if params.InstanceId != "" {
+		statement = fmt.Sprintf(statement, "AND instance_id=$instance_id")
+		queryParams["instance_id"] = params.InstanceId
+	} else {
+		statement = fmt.Sprintf(statement, "")
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	itemResultSpeed := handleSpeed(rows)
+	return itemResultSpeed, nil
+}
+
+func (topology *provider) GetProcessNetIo(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(rx_bytes::field), 2),round_float(avg(tx_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_id":   params.ServiceId,
+	}
+	if params.InstanceId != "" {
+		statement = fmt.Sprintf(statement, "AND instance_id=$instance_id")
+		queryParams["instance_id"] = params.InstanceId
+	} else {
+		statement = fmt.Sprintf(statement, "")
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	itemResultSpeed := handleSpeed(rows)
+
+	return itemResultSpeed, nil
+}
+
+// handleSpeed The result is processed into ReadWriteBytesSpeed
+func handleSpeed(rows [][]interface{}) []ReadWriteBytesSpeed {
+	var itemResult []ReadWriteBytes
+	for _, row := range rows {
+		timeMs := row[1].(time.Time).UnixNano() / 1e6
+		rxBytes := row[2].(float64)
+		txBytes := row[3].(float64)
+		writeBytes := ReadWriteBytes{
+			Timestamp:  timeMs,
+			ReadBytes:  rxBytes,
+			WriteBytes: txBytes,
+		}
+		itemResult = append(itemResult, writeBytes)
+	}
+	var itemResultSpeed []ReadWriteBytesSpeed
+	for i, curr := range itemResult {
+		if i+1 >= len(itemResult) {
+			break
+		}
+		next := itemResult[i+1]
+		speed := ReadWriteBytesSpeed{}
+		speed.Timestamp = (curr.Timestamp + next.Timestamp) / 2
+
+		speed.ReadBytesSpeed = calculateSpeed(curr.ReadBytes, next.ReadBytes, curr.Timestamp, next.Timestamp)
+		speed.WriteBytesSpeed = calculateSpeed(curr.WriteBytes, next.WriteBytes, curr.Timestamp, next.Timestamp)
+
+		itemResultSpeed = append(itemResultSpeed, speed)
+	}
+	return itemResultSpeed
+}
+
+//calculateSpeed Calculate the speed through the two metric values before and after.
+func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
+	if curr != next {
+		if next == 0 || next < curr {
+			return 0
+		}
+		return toTwoDecimalPlaces((next - curr) / (float64(nextTime) - float64(currTime)))
+	}
+	return 0
+}
+
 func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
 	// default limit 10
 	if limit == 0 || limit > 50 {
