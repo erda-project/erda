@@ -34,8 +34,8 @@ func Test_transferMustMatchLabelsToMap(t *testing.T) {
 				ss: []string{"a=b", "a=c", "b=d"},
 			},
 			want: map[string][]string{
-				"a": []string{"b", "c"},
-				"b": []string{"d"},
+				"a": {"b", "c"},
+				"b": {"d"},
 			},
 			wantErr: false,
 		},
