@@ -20,15 +20,10 @@ hierarchy:
     emptyOrganization:
       - emptyOrgText
     myProject:
-      - myProjectHeader
+      - myProjectTitle
       - myProjectFilter
       - myProjectList
       - emptyProject
-    myProjectHeader:
-      left:
-        myProjectTitle
-      right:
-        createProjectLink
     emptyProject:
       - projectTipWithoutOrg
       - projectTipWithOrg
@@ -67,8 +62,6 @@ components:
     type: Text
   projectTipWithOrg:
     type: Container
-  createProjectLink:
-    type: Text
   createProjectTip:
     type: Text
   myInfo:
@@ -78,10 +71,6 @@ components:
       scrollAuto: true
   myProject:
     type: Container
-  myProjectHeader:
-    type: LRContainer
-    props:
-      spaceSize: "none"
   myProjectTitle:
     type: Title
   myProjectFilter:
@@ -97,6 +86,7 @@ components:
       title: "应用"
       level: 1
       noMarginBottom: true
+      showDivider: true
   myApplicationFilter:
     type: ContractiveFilter
   myApplicationList:
@@ -127,7 +117,6 @@ rendering:
     - name: orgSwitch
     - name: emptyOrganization
     - name: emptyOrgText
-    - name: myProjectHeader
     - name: myProject
     - name: myProjectTitle
       state:
@@ -159,14 +148,10 @@ rendering:
       state:
         - name: "prosNum"
           value: "{{ projectTipWithOrg.prosNum }}"
-    - name: createProjectLink
-      state:
-        - name: "prosNum"
-          value: "{{ projectTipWithoutOrg.prosNum }}"
     - name: createProjectTip
       state:
         - name: "prosNum"
-          value: "{{ createProjectLink.prosNum }}"
+          value: "{{ projectTipWithoutOrg.prosNum }}"
     - name: myApplication
       state:
         - name: "prosNum"
