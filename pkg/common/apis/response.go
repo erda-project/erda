@@ -69,9 +69,13 @@ func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 
 func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		resp, err := h(ctx, req)
+		if err != nil {
+			return resp, err
+		}
 		return &Response{
 			Success: true,
-			Data:    req,
+			Data:    resp,
 		}, nil
 	}
 }
