@@ -40,6 +40,7 @@ type RetryOption struct {
 type CheckRunResult struct {
 	CheckResult string      `json:"checkResult"`
 	RetryOption RetryOption `json:"retryOption"`
+	Message     string      `json:"message"`
 }
 
 type CheckRunResultRequest struct {
