@@ -43,8 +43,8 @@ var once sync.Once
 func GetDiceClientToken() (ucauth.OAuthToken, error) {
 	if conf.OryEnabled() {
 		return ucauth.OAuthToken{
-			AccessToken:  conf.OryKratosPrivateAddr(),
-			TokenType:    conf.OryCompatibleClientID(),
+			AccessToken: conf.OryKratosPrivateAddr(),
+			TokenType:   conf.OryCompatibleClientID(),
 		}, nil
 	}
 	once.Do(func() {

@@ -49,7 +49,7 @@ func NewUCClient(baseURL, clientID, clientSecret string) *UCClient {
 		// TODO: it's a hack
 		return &UCClient{
 			baseURL: baseURL,
-			isOry:  true,
+			isOry:   true,
 		}
 	}
 	tokenAuth, err := NewUCTokenAuth(baseURL, clientID, clientSecret)
@@ -60,7 +60,7 @@ func NewUCClient(baseURL, clientID, clientSecret string) *UCClient {
 		baseURL:     baseURL,
 		client:      httpclient.New(),
 		ucTokenAuth: tokenAuth,
-		isOry: false,
+		isOry:       false,
 	}
 }
 
