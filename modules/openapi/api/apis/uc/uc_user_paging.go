@@ -14,27 +14,18 @@
 package uc
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
-
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apierrors"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/sirupsen/logrus"
 )
 
 var UC_USER_PAGING = apis.ApiSpec{
@@ -62,6 +53,7 @@ func pagingUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: nothing to do when oryEnabled
 	token, err := auth.GetDiceClientToken()
 	if err != nil {
 		logrus.Errorf("failed to get token: %v", err)
@@ -83,13 +75,13 @@ func pagingUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := handlePagingUsers(req, token)
+	data, err := ucauth.HandlePagingUsers(req, token)
 	if err != nil {
 		errorresp.ErrWrite(err, w)
 		return
 	}
 
-	httpserver.WriteData(w, convertToUserInfoExt(data))
+	httpserver.WriteData(w, ucauth.ConvertToUserInfoExt(data))
 }
 
 func getPagingUsersReq(r *http.Request) (*apistructs.UserPagingRequest, error) {
@@ -134,52 +126,6 @@ func getPagingUsersReq(r *http.Request) (*apistructs.UserPagingRequest, error) {
 	return &req, nil
 }
 
-func handlePagingUsers(req *apistructs.UserPagingRequest, token ucauth.OAuthToken) (*userPaging, error) {
-	v := httpclient.New().Get(discover.UC()).Path("/api/user/admin/paging").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken))
-	if req.Name != "" {
-		v.Param("username", req.Name)
-	}
-	if req.Nick != "" {
-		v.Param("nickname", req.Nick)
-	}
-	if req.Phone != "" {
-		v.Param("mobile", req.Phone)
-	}
-	if req.Email != "" {
-		v.Param("email", req.Email)
-	}
-	if req.Locked != nil {
-		v.Param("locked", strconv.Itoa(*req.Locked))
-	}
-	if req.Source != "" {
-		v.Param("source", req.Source)
-	}
-	if req.PageNo > 0 {
-		v.Param("pageNo", strconv.Itoa(req.PageNo))
-	}
-	if req.PageSize > 0 {
-		v.Param("pageSize", strconv.Itoa(req.PageSize))
-	}
-	// 批量查询用户
-	var resp struct {
-		Success bool        `json:"success"`
-		Result  *userPaging `json:"result"`
-		Error   string      `json:"error"`
-	}
-	r, err := v.Do().JSON(&resp)
-	if err != nil {
-		return nil, apierrors.ErrListUser.InternalError(err)
-	}
-	if !r.IsOK() {
-		return nil, apierrors.ErrListUser.InternalError(fmt.Errorf("internal status code: %v", r.StatusCode()))
-	}
-	if !resp.Success {
-		return nil, apierrors.ErrListUser.InternalError(errors.New(resp.Error))
-	}
-	return resp.Result, nil
-}
-
 func mustManageUsersPerm(r *http.Request, errBuilder *errorresp.APIError) (string, error) {
 	// check login
 	userID, err := user.GetUserID(r)
@@ -197,78 +143,4 @@ func mustManageUsersPerm(r *http.Request, errBuilder *errorresp.APIError) (strin
 func isManageUsersPerm(userID user.ID) bool {
 	// TODO: check permission
 	return true
-}
-
-func convertToUserInfoExt(user *userPaging) *apistructs.UserPagingData {
-	var ret apistructs.UserPagingData
-	ret.Total = user.Total
-	ret.List = make([]apistructs.UserInfoExt, 0)
-	for _, u := range user.Data {
-		ret.List = append(ret.List, apistructs.UserInfoExt{
-			UserInfo: apistructs.UserInfo{
-				ID:          strconv.FormatUint(u.Id, 10),
-				Name:        u.Username,
-				Nick:        u.Nickname,
-				Avatar:      u.Avatar,
-				Phone:       u.Mobile,
-				Email:       u.Email,
-				LastLoginAt: time.Time(u.LastLoginAt).Format("2006-01-02 15:04:05"),
-				PwdExpireAt: time.Time(u.PwdExpireAt).Format("2006-01-02 15:04:05"),
-				Source:      u.Source,
-			},
-			Locked: u.Locked,
-		})
-	}
-	return &ret
-}
-
-// userInPaging 用户中心分页用户数据结构
-type userInPaging struct {
-	Id            uint64      `json:"id"`            // 主键
-	Avatar        string      `json:"avatar"`        // 头像
-	Username      string      `json:"username"`      // 用户名
-	Nickname      string      `json:"nickname"`      // 昵称
-	Mobile        string      `json:"mobile"`        // 手机号
-	Email         string      `json:"email"`         // 邮箱
-	Enabled       bool        `json:"enabled"`       // 是否启用
-	UserDetail    interface{} `json:"userDetail"`    // 用户详细信息
-	Locked        bool        `json:"locked"`        // 冻结FLAG(0:NOT,1:YES)
-	PasswordExist bool        `json:"passwordExist"` // 密码是否存在
-	PwdExpireAt   timestamp   `json:"pwdExpireAt"`   // 过期时间
-	Extra         interface{} `json:"extra"`         // 扩展字段
-	Source        string      `json:"source"`        // 用户来源
-	SourceType    string      `json:"sourceType"`    // 来源类型
-	Tag           string      `json:"tag"`           // 标签
-	Channel       string      `json:"channel"`       // 注册渠道
-	ChannelType   string      `json:"channelType"`   // 渠道类型
-	TenantId      int         `json:"tenantId"`      // 租户ID
-	CreatedAt     timestamp   `json:"createdAt"`     // 创建时间
-	UpdatedAt     timestamp   `json:"updatedAt"`     // 更新时间
-	LastLoginAt   timestamp   `json:"lastLoginAt"`   // 最后登录时间
-}
-
-// millisecond epoch
-type timestamp time.Time
-
-func (t timestamp) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.FormatInt(time.Time(t).Unix(), 10)), nil
-}
-
-func (t *timestamp) UnmarshalJSON(s []byte) (err error) {
-	r := strings.Replace(string(s), `"`, ``, -1)
-	if r == "null" {
-		return
-	}
-
-	q, err := strconv.ParseInt(r, 10, 64)
-	if err != nil {
-		return err
-	}
-	*(*time.Time)(t) = time.Unix(q/1000, 0)
-	return
-}
-
-type userPaging struct {
-	Data  []userInPaging `json:"data"`
-	Total int            `json:"total"`
 }

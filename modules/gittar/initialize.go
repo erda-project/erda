@@ -59,6 +59,10 @@ func Initialize() error {
 	gitmodule.Setting.MaxGitDiffLines = conf.GitMaxDiffLines()
 
 	ucUserAuth := ucauth.NewUCUserAuth("", discover.UC(), "", conf.UCClientID(), conf.UCClientSecret())
+	if conf.OryEnabled() {
+		ucUserAuth.ClientID = conf.OryCompatibleClientID()
+		ucUserAuth.UCHost = conf.OryKratosAddr()
+	}
 	diceBundle := bundle.New(
 		bundle.WithCMDB(),
 		bundle.WithEventBox(),

@@ -11,30 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package ucauth
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/conf"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/pkg/errors"
 )
 
 // User 用户中心用户数据结构
 type User struct {
-	ID        uint64 `json:"user_id"`
+	ID        string `json:"user_id"`
 	Name      string `json:"username"`
 	Nick      string `json:"nickname"`
 	AvatarURL string `json:"avatar_url"`
@@ -45,27 +38,38 @@ type User struct {
 // UCClient UC客户端
 type UCClient struct {
 	baseURL     string
+	isOry       bool
 	client      *httpclient.HTTPClient
-	ucTokenAuth *ucauth.UCTokenAuth
+	ucTokenAuth *UCTokenAuth
 }
 
 // NewUCClient 初始化UC客户端
-func NewUCClient() *UCClient {
-	endpoint := discover.UC()
-	clientID := conf.UCClientID()
-	secret := conf.UCClientSecret()
-
-	logrus.Debugf("initialize uc client, addr: %s, clientID: %s, secret: %s", endpoint, clientID, secret)
-
-	tokenAuth, err := ucauth.NewUCTokenAuth(endpoint, clientID, secret)
+func NewUCClient(baseURL, clientID, clientSecret string) *UCClient {
+	if clientID == OryCompatibleClientId {
+		// TODO: it's a hack
+		return &UCClient{
+			baseURL: baseURL,
+			isOry:   true,
+		}
+	}
+	tokenAuth, err := NewUCTokenAuth(baseURL, clientID, clientSecret)
 	if err != nil {
 		panic(err)
 	}
 	return &UCClient{
-		baseURL:     endpoint,
+		baseURL:     baseURL,
 		client:      httpclient.New(),
 		ucTokenAuth: tokenAuth,
+		isOry:       false,
 	}
+}
+
+func (c *UCClient) oryEnabled() bool {
+	return c.isOry
+}
+
+func (c *UCClient) oryKratosPrivateAddr() string {
+	return c.baseURL
 }
 
 // InvalidateServerToken 使 server token 失效
@@ -77,6 +81,9 @@ func (c *UCClient) InvalidateServerToken() {
 func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 	if len(ids) == 0 {
 		return nil, nil
+	}
+	if c.oryEnabled() {
+		return getUserByIDs(c.oryKratosPrivateAddr(), ids)
 	}
 	parts := make([]string, len(ids))
 	for _, id := range ids {
@@ -94,6 +101,9 @@ func (c *UCClient) FindUsersByKey(key string) ([]User, error) {
 	if key == "" {
 		return nil, nil
 	}
+	if c.oryEnabled() {
+		return getUserByKey(c.oryKratosPrivateAddr(), key)
+	}
 	query := fmt.Sprintf("username:%s OR nickname:%s OR phone_number:%s OR email:%s", key, key, key, key)
 
 	return c.findUsersByQuery(query)
@@ -101,6 +111,9 @@ func (c *UCClient) FindUsersByKey(key string) ([]User, error) {
 
 // GetUser 获取用户详情
 func (c *UCClient) GetUser(userID string) (*User, error) {
+	if c.oryEnabled() {
+		return getUserByID(c.oryKratosPrivateAddr(), userID)
+	}
 	var (
 		user *User
 		err  error
@@ -115,50 +128,6 @@ func (c *UCClient) GetUser(userID string) (*User, error) {
 	}
 
 	return nil, err
-}
-
-// ListUCAuditsByLastID 根据lastID获取uc的审计事件
-func (c *UCClient) ListUCAuditsByLastID(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
-	token, err := c.ucTokenAuth.GetServerToken(false)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
-	}
-
-	var getResp apistructs.UCAuditsListResponse
-	resp, err := c.client.Post(c.baseURL).
-		Path("/api/event-log/admin/list-last-event").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-		JSONBody(&ucAuditReq).Do().JSON(&getResp)
-	if err != nil {
-		return nil, err
-	}
-	if !resp.IsOK() {
-		return nil, errors.Errorf("failed to list uc audits, status-code: %d", resp.StatusCode())
-	}
-
-	return &getResp, nil
-}
-
-// ListUCAuditsByEventTime 根据时间获取uc的审计事件
-func (c *UCClient) ListUCAuditsByEventTime(ucAuditReq apistructs.UCAuditsListRequest) (*apistructs.UCAuditsListResponse, error) {
-	token, err := c.ucTokenAuth.GetServerToken(false)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding user")
-	}
-
-	var getResp apistructs.UCAuditsListResponse
-	resp, err := c.client.Post(c.baseURL).
-		Path("/api/event-log/admin/list-event-time").
-		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
-		JSONBody(&ucAuditReq).Do().JSON(&getResp)
-	if err != nil {
-		return nil, err
-	}
-	if !resp.IsOK() {
-		return nil, errors.Errorf("failed to list uc audits, status-code: %d", resp.StatusCode())
-	}
-
-	return &getResp, nil
 }
 
 func (c *UCClient) getUser(userID string) (*User, error) {
@@ -182,7 +151,7 @@ func (c *UCClient) getUser(userID string) (*User, error) {
 		}
 		return nil, errors.Errorf("failed to find user, status code: %d", r.StatusCode())
 	}
-	if user.ID == 0 {
+	if user.ID == "" {
 		return nil, errors.Errorf("failed to find user %s", userID)
 	}
 
@@ -219,7 +188,7 @@ func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, er
 	if len(idOrder) > 0 {
 		userMap := make(map[string]User)
 		for _, user := range users {
-			userMap[strconv.FormatUint(user.ID, 10)] = user
+			userMap[user.ID] = user
 		}
 		var orderedUsers []User
 		for _, id := range idOrder {
