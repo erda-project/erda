@@ -45,6 +45,7 @@ const (
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"
 	emptyDirVolumeName = "pre-fetech-volume"
+	EnvRetainNamespace = "RETAIN_NAMESPACE"
 )
 
 var (
@@ -305,6 +306,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
 			return errMsg
 		}
+
 		remainCount := 0
 		if len(jobs.Items) == 0 {
 			for _, j := range jobs.Items {
@@ -314,7 +316,13 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			}
 		}
 
-		if remainCount < 1 {
+		retainNamespace, err := strconv.ParseBool(job.Env[EnvRetainNamespace])
+		if err != nil {
+			logrus.Debugf("parse bool err %v when delete job %s in the namespace %s", err, job.Name, job.Namespace)
+			retainNamespace = false
+		}
+
+		if remainCount < 1 && retainNamespace == false {
 			ns, err := k.client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
 				if strings.Contains(err.Error(), "not found") {
@@ -323,6 +331,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
 				return errMsg
 			}
+
 			if ns.DeletionTimestamp == nil {
 				logrus.Infof("delete the job's namespace %s", namespace)
 				err = k.client.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
