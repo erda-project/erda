@@ -801,6 +801,9 @@ func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
 		if next == 0 || next < curr {
 			return 0
 		}
+		if nextTime-currTime <= 0 { // by zero
+			return 0
+		}
 		return toTwoDecimalPlaces((next - curr) / (float64(nextTime) - float64(currTime)))
 	}
 	return 0
@@ -1099,7 +1102,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	dashboardData := make([]map[string]interface{}, 0, 10)
 	overviewMap := make(map[string]interface{})
 
-	// 服务数
+	// service count
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
@@ -1119,11 +1122,11 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	}
 	overviewMap["service_count"] = serviceCount
 
-	// 服务实例数
+	// running service instance count
 	instanceMetricsParams := url.Values{}
 	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT distinct(service_instance_id::tag) FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag"
+	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1132,14 +1135,15 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 		return nil, err
 	}
 	rows = response.ResultSet.Rows
-	serviceInstanceCount := float64(0)
+	serviceRunningInstanceCount := float64(0)
 	for _, row := range rows {
-		count := row[0].(float64)
-		serviceInstanceCount += count
+		if row[1] == "running" {
+			serviceRunningInstanceCount += 1
+		}
 	}
-	overviewMap["service_instance_count"] = serviceInstanceCount
+	overviewMap["service_running_instance_count"] = serviceRunningInstanceCount
 
-	// 所有服务错误请求数
+	// error request count
 	errorCount := 0.0
 	for _, errorReqMetricName := range ErrorReqMetricNames {
 		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
@@ -1150,7 +1154,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	}
 	overviewMap["service_error_req_count"] = errorCount
 
-	// 服务异常
+	// service exception count
 	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1163,7 +1167,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	expCount := rows[0][0]
 	overviewMap["service_exception_count"] = expCount
 
-	// 报警次数
+	// alert count
 	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
