@@ -125,25 +125,21 @@ func GenResourceProps(actionExt *apistructs.ExtensionVersion) (props []apistruct
 	}
 	// 动态注入：cpu默认值
 	resourceCpu := apistructs.FormPropItem{
-		Label:     "cpu",
-		Component: "input",
-		Key:       GroupResource + "." + "cpu",
-		Group:     GroupResource,
-		ComponentProps: map[string]interface{}{
-			"addonAfter": "核",
-		},
-		DefaultValue: job.Resources.CPU,
+		Label:          "cpu(核)",
+		Component:      "inputNumber",
+		Key:            GroupResource + "." + "cpu",
+		Group:          GroupResource,
+		ComponentProps: map[string]interface{}{},
+		DefaultValue:   job.Resources.CPU,
 	}
 	// 动态注入：mem默认值
 	resourceMem := apistructs.FormPropItem{
-		Label:     "mem",
-		Component: "input",
-		Key:       GroupResource + "." + "mem",
-		Group:     GroupResource,
-		ComponentProps: map[string]interface{}{
-			"addonAfter": "MB",
-		},
-		DefaultValue: job.Resources.Mem,
+		Label:          "mem(MB)",
+		Component:      "inputNumber",
+		Key:            GroupResource + "." + "mem",
+		Group:          GroupResource,
+		ComponentProps: map[string]interface{}{},
+		DefaultValue:   job.Resources.Mem,
 	}
 
 	props = append(props, resourceFormGroup, resourceCpu, resourceMem)

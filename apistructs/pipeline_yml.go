@@ -13,6 +13,12 @@
 
 package apistructs
 
+import (
+	"sort"
+
+	"github.com/erda-project/erda/pkg/jsonparse"
+)
+
 const (
 	SnippetActionSourceType = "action"
 
@@ -109,6 +115,44 @@ type SnippetConfig struct {
 	Source string            `json:"source,omitempty" yaml:"source,omitempty"` // 来源 gittar dice test
 	Name   string            `json:"name,omitempty" yaml:"name,omitempty"`     // 名称
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"` // 额外标签
+}
+
+type SnippetLabel struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type SnippetLabels []SnippetLabel
+
+func (p SnippetLabels) Len() int           { return len(p) }
+func (p SnippetLabels) Less(i, j int) bool { return p[i].Key > p[j].Key }
+func (p SnippetLabels) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+func (snippetConfig *SnippetConfig) ToString() string {
+	if snippetConfig == nil {
+		return ""
+	}
+
+	var snippetLabels SnippetLabels
+	if len(snippetConfig.Labels) > 0 {
+		for k, v := range snippetConfig.Labels {
+			snippetLabels = append(snippetLabels, SnippetLabel{
+				Key:   k,
+				Value: v,
+			})
+		}
+		sort.Sort(snippetLabels)
+	}
+
+	return jsonparse.JsonOneLine(struct {
+		Source        string        `json:"source,omitempty"`
+		Name          string        `json:"name,omitempty"`
+		SnippetLabels SnippetLabels `json:"labels,omitempty"`
+	}{
+		Source:        snippetConfig.Source,
+		Name:          snippetConfig.Name,
+		SnippetLabels: snippetLabels,
+	})
 }
 
 type BatchSnippetConfigYml struct {
