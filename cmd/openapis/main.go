@@ -21,6 +21,11 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/openapis"
+	_ "github.com/erda-project/erda/modules/openapis/interceptors/audit"
+	_ "github.com/erda-project/erda/modules/openapis/interceptors/auth"
+	_ "github.com/erda-project/erda/modules/openapis/interceptors/auth/legacy"
+	_ "github.com/erda-project/erda/modules/openapis/interceptors/common"
+	_ "github.com/erda-project/erda/modules/openapis/interceptors/csrf"
 	_ "github.com/erda-project/erda/modules/openapis/services"
 	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
 	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"

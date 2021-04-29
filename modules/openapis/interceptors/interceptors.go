@@ -11,18 +11,33 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package auth
+package interceptors
 
 import (
-	"fmt"
 	"net/http"
 )
 
 // Interceptor .
-func Interceptor(h http.HandlerFunc) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		// TODO: check login
-		fmt.Println("login success")
-		h(rw, r)
-	}
+type Interceptor struct {
+	Order   int
+	Wrapper func(h http.HandlerFunc) http.HandlerFunc
+}
+
+// Interface .
+type Interface interface {
+	List() []*Interceptor
+}
+
+// Interceptors .
+type Interceptors []*Interceptor
+
+func (list Interceptors) Len() int           { return len(list) }
+func (list Interceptors) Less(i, j int) bool { return list[i].Order < list[j].Order }
+func (list Interceptors) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+
+// Config .
+type Config struct {
+	Order int `file:"order"`
 }

@@ -11,10 +11,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package auth
+package common
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -22,13 +21,9 @@ import (
 	"github.com/erda-project/erda/pkg/httputil"
 )
 
-type config struct {
-	Order int `default:"10"`
-}
-
 // +provider
 type provider struct {
-	Cfg *config
+	Cfg *interceptors.Config
 }
 
 func (p *provider) List() []*interceptors.Interceptor {
@@ -37,18 +32,17 @@ func (p *provider) List() []*interceptors.Interceptor {
 
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		// TODO .
-		r.Header.Del(httputil.UserHeader)
-		r.Header.Del(httputil.OrgHeader)
-		fmt.Println("TODO auth ...")
+		r.Header.Del(httputil.InternalHeader)
+		r.Header.Del(httputil.ClientIDHeader)
+		r.Header.Del(httputil.ClientNameHeader)
 		h(rw, r)
 	}
 }
 
 func init() {
-	servicehub.Register("openapis-interceptor-auth", &servicehub.Spec{
-		Services:   []string{"openapis-interceptor-auth"},
-		ConfigFunc: func() interface{} { return &config{} },
+	servicehub.Register("openapis-interceptor-filter-client-header", &servicehub.Spec{
+		Services:   []string{"openapis-interceptor-filter-client-header"},
+		ConfigFunc: func() interface{} { return &interceptors.Config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})
 }

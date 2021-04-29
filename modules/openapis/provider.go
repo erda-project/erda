@@ -14,18 +14,17 @@
 package openapis
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
-	"time"
+	"sort"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-
-	// http interceptors
-	auth "github.com/erda-project/erda/modules/openapis/interceptors/auth"
-	csrf "github.com/erda-project/erda/modules/openapis/interceptors/csrf"
+	"github.com/erda-project/erda/modules/openapis/interceptors"
 )
 
 // Interface .
@@ -34,24 +33,31 @@ type Interface interface {
 }
 
 type config struct {
-	Timeout time.Duration `file:"timeout" default:"2m"`
+	// Timeout time.Duration `file:"timeout" default:"2m"` // TODO
 }
-
-type Interceptor func(h http.HandlerFunc) http.HandlerFunc
 
 // +provider
 type provider struct {
 	Cfg          *config
 	Log          logs.Logger
 	HTTP         httpserver.Router `autowired:"http-server"`
-	interceptors []Interceptor
+	interceptors interceptors.Interceptors
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.interceptors = append(p.interceptors,
-		csrf.Interceptor,
-		auth.Interceptor,
-	)
+	var inters interceptors.Interceptors
+	ctx.Hub().ForeachServices(func(service string) bool {
+		if strings.HasPrefix(service, "openapis-interceptor-") {
+			inter, ok := ctx.Service(service).(interceptors.Interface)
+			if !ok {
+				panic(fmt.Errorf("service %s is not interceptor", service))
+			}
+			inters = append(inters, inter.List()...)
+		}
+		return true
+	})
+	sort.Sort(inters)
+	p.interceptors = inters
 	return nil
 }
 
@@ -73,7 +79,7 @@ type service struct {
 
 func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
 	for i := len(s.p.interceptors) - 1; i >= 0; i-- {
-		handler = transhttp.HandlerFunc(s.p.interceptors[i](http.HandlerFunc(handler)))
+		handler = transhttp.HandlerFunc(s.p.interceptors[i].Wrapper(http.HandlerFunc(handler)))
 	}
 	s.router.Add(method, path, handler, httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
 }
@@ -81,10 +87,17 @@ func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
 func init() {
 	servicehub.Register("openapis", &servicehub.Spec{
 		Services: []string{"openapis"},
-		Types:    []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
-		ConfigFunc: func() interface{} {
-			return &config{}
+		DependenciesFunc: func(hub *servicehub.Hub) (list []string) {
+			hub.ForeachServices(func(service string) bool {
+				if strings.HasPrefix(service, "openapis-interceptor-") {
+					list = append(list, service)
+				}
+				return true
+			})
+			return list
 		},
+		Types:      []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

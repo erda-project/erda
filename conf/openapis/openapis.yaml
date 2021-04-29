@@ -2,9 +2,22 @@ http-server:
   addr: ":80"
 
 openapis:
+
+openapis-interceptor-csrf:
+  order: 0
+  allow_empty_referer: true
+  cookie_name: "OPENAPI-CSRF-TOKEN"
+  cookie_max_age: "12h"
+  token_lookup: "header:OPENAPI-CSRF-TOKEN"
+openapis-interceptor-filter-client-header:
+  order: 1
+openapis-interceptor-auth:
+  order: 500
+openapis-interceptor-audit:
+  order: 1000
 openapis-services:
 
-erda-discover:
-# fixed-discover:
-#   urls:
-#     user-center: "http://localhost:8080"
+# erda-discover:
+fixed-discover:
+  urls:
+    user-center: "http://localhost:8080"
