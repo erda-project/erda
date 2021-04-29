@@ -371,6 +371,73 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	return issues, total, nil
 }
 
+// get all undone issues by orgid
+func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apistructs.Issue, uint64, error) {
+	if (req.IterationID == -1 || (len(req.IterationIDs) == 1 && req.IterationIDs[0] == -1)) && req.OrderBy == "" {
+		req.OrderBy = "FIELD(priority, 'LOW', 'NORMAL', 'HIGH', 'URGENT')"
+	}
+	if req.IterationID != 0 {
+		req.IterationIDs = append(req.IterationIDs, req.IterationID)
+	}
+
+	if req.PageNo == 0 {
+		req.PageNo = 1
+	}
+	if req.PageSize == 0 {
+		req.PageSize = 20
+	}
+
+	var (
+		labelRelationIDs, issueRelationIDs []int64
+		isLabel, isIssue                   bool
+	)
+	if len(req.Label) > 0 {
+		isLabel = true
+		lrs, err := svc.db.GetLabelRelationsByLabels(apistructs.LabelTypeIssue, req.Label)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+		for _, v := range lrs {
+			labelRelationIDs = append(labelRelationIDs, int64(v.RefID))
+		}
+	}
+	if len(req.RelatedIssueIDs) > 0 {
+		isIssue = true
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+		for _, v := range irs {
+			issueRelationIDs = append(issueRelationIDs, int64(v.RelatedIssue))
+		}
+	}
+	if isLabel || isIssue {
+		req.IDs = strutil.DedupInt64Slice(append(getRelatedIDs(labelRelationIDs, issueRelationIDs, isLabel, isIssue), req.IDs...))
+	}
+
+	// state  key: stateID value:state
+	stateMap := make(map[int64]dao.IssueState)
+	// filter by state
+	if len(req.StateBelongs) > 0 {
+		err := svc.FilterByStateBelong(stateMap, &req)
+		if err != nil {
+			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+		}
+	}
+	// paging
+	issueModels, total, err := svc.db.PagingIssues(req, isLabel || isIssue)
+	if err != nil {
+		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+	}
+
+	issues, err := svc.BatchConvert(issueModels, req.Type, req.IdentityInfo)
+	if err != nil {
+		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+	}
+
+	return issues, total, nil
+}
+
 func (svc *Issue) RequirementPool() ([]apistructs.Issue, error) {
 	return nil, nil
 }
@@ -1208,6 +1275,42 @@ func (svc *Issue) FilterByStateBelong(stateMap map[int64]dao.IssueState, req *ap
 	}
 	// 获取主状态下的子状态
 	projectStates, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, "")
+
+	if err != nil {
+		return err
+	}
+	for _, s := range projectStates {
+		stateMap[s.ID] = s
+		if belongMap[s.Belong] {
+			states = append(states, s.ID)
+		}
+	}
+
+	if len(req.State) == 0 {
+		req.State = states
+	} else {
+		var newState []int64
+		for _, v := range states {
+			for _, vv := range req.State {
+				if v == vv {
+					newState = append(newState, vv)
+					break
+				}
+			}
+		}
+		req.State = newState
+	}
+	return nil
+}
+
+// FilterByStateBelong
+func (svc *Issue) FilterByStateBelongForPros(stateMap map[int64]dao.IssueState, projectIDList []uint64, req *apistructs.IssuePagingRequest) error {
+	var states []int64
+	belongMap := make(map[apistructs.IssueStateBelong]bool)
+	for _, v := range req.StateBelongs {
+		belongMap[v] = true
+	}
+	projectStates, err := svc.db.GetIssuesStatesByProjectIDList(projectIDList)
 
 	if err != nil {
 		return err

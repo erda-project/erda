@@ -19,54 +19,54 @@ func ExamplePrint() {
 	r := New()
 	r.Add("application_*", nil, "key1")
 	r.Add("application_*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxx",
 		},
 	}, "key2")
 	r.Add("application_*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "yyyy",
 		},
-		&KeyValue{
+		{
 			Key:   "env",
 			Value: "abc",
 		},
 	}, "key3")
 	r.Add("application_http", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxxxxx",
 		},
 	}, "key4")
 	r.Add("application_db", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxxxxx",
 		},
 	}, "key5")
 	r.Add("*_db", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxxxxx",
 		},
 	}, "key6")
 	r.Add("docker_container_*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxxxxx",
 		},
 	}, "key7")
 	r.Add("docker_*_mem", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "terminus_key",
 			Value: "xxxxxxx",
 		},
 	}, "key8")
 	r.Add("*", nil, "key9")
 	r.Add("*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "cluster_name",
 			Value: "c1",
 		},
@@ -154,13 +154,13 @@ func ExamplePrint_application_http() {
 	r := New()
 	key := "2068c6f11ccfa3e8"
 	r.Add("application_*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "target_terminus_key",
 			Value: "bd717ad15bc8542588bde9ff0c7b4cf78",
 		},
 	}, key)
 	r.Add("application_*", []*KeyValue{
-		&KeyValue{
+		{
 			Key:   "source_terminus_key",
 			Value: "bd717ad15bc8542588bde9ff0c7b4cf78",
 		},

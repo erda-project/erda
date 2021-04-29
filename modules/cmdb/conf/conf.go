@@ -355,7 +355,12 @@ func HepaAddr() string {
 
 // RootDomain 返回 RootDomain 选项
 func RootDomain() string {
-	return cfg.RootDomain
+	return RootDomainList()[0]
+}
+
+// Multiple domain
+func RootDomainList() []string {
+	return strutil.Split(cfg.RootDomain, ",")
 }
 
 // UIPublicURL 返回 UIPublicURL 选项

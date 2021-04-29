@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/cache"
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/models"
+	"github.com/erda-project/erda/modules/gittar/pkg/gc"
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/profiling"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
@@ -123,6 +124,9 @@ func Initialize() error {
 	// e.GET("/metrics", echo.WrapHandler(promxp.Handler("gittar")))
 
 	gitmodule.Setting.RepoStatsCache = cache.NewMysqlCache("repo-stats", dbClient)
+
+	// cron task to git gc all repository
+	go gc.ScheduledExecuteClean()
 
 	return e.Start(":" + conf.ListenPort())
 }
