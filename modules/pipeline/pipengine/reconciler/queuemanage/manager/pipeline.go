@@ -125,6 +125,11 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 		}
 
 		// update pipeline status to Queue
+		if p.Status == apistructs.PipelineStatusQueue || p.Status.AfterPipelineQueue() {
+			// no need update, already at queue or later status
+			return true, nil
+		}
+		// do update status and emit event
 		if err := mgr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusQueue); err != nil {
 			err = fmt.Errorf("failed to update pipeline status to Queue, err: %v", err)
 			rlog.PErrorf(p.ID, err.Error())
