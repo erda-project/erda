@@ -23,8 +23,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/erda-project/erda-infra/pkg/transport/http/compress"
 )
 
 type ReportClient struct {
@@ -90,7 +88,7 @@ func (c *ReportClient) serialize(group *NamedMetrics) (io.Reader, error) {
 	}
 	base64Content := make([]byte, base64.StdEncoding.EncodedLen(len(requestContent)))
 	base64.StdEncoding.Encode(base64Content, requestContent)
-	return compress.CompressWithGzip(bytes.NewBuffer(base64Content))
+	return CompressWithGzip(bytes.NewBuffer(base64Content))
 }
 
 func (c *ReportClient) group(in []*Metric) []*NamedMetrics {

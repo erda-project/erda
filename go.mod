@@ -37,7 +37,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210423015359-ebfa6da96f42
+	github.com/erda-project/erda-infra v0.0.0-20210429085145-aba847b668ea
 	github.com/erda-project/erda-proto-go v0.0.0-20210422085548-44271074c652
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
@@ -128,7 +128,7 @@ require (
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
 	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62 // indirect
+	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0

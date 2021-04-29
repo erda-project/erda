@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/examples/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -37,10 +38,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	if p.Register != nil {
 		p.greeterService = &greeterService{p}
-		pb.RegisterGreeterServiceImp(p.Register, p.greeterService)
+		pb.RegisterGreeterServiceImp(p.Register, p.greeterService, apis.Options())
 
 		p.userService = &userService{p}
-		pb.RegisterUserServiceImp(p.Register, p.userService)
+		pb.RegisterUserServiceImp(p.Register, p.userService, apis.Options())
 	}
 	return nil
 }

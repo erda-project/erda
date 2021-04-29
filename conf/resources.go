@@ -11,21 +11,14 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package conf
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda/conf"
+import _ "embed"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/openapi"
-)
+//go:embed openapi-ng/openapi-ng.yaml
+var OpenAPINGDefaultConfig string
+var OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
 
-func main() {
-	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.OpenAPIConfigFilePath,
-		Content:    conf.OpenAPIDefaultConfig,
-	})
-}
+//go:embed openapi/openapi.yaml
+var OpenAPIDefaultConfig string
+var OpenAPIConfigFilePath = "conf/openapi/openapi.yaml"
