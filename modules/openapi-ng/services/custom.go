@@ -11,5 +11,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// some tools in this package
-package tools
+package services
+
+import "net/http"
+
+func RegisterCustomAPIs(add func(method, path string, handler http.HandlerFunc)) {
+	// TODO .
+}
