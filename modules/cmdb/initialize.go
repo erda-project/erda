@@ -22,11 +22,6 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/go-redis/redis"
-	"github.com/gorilla/schema"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/conf"
@@ -79,6 +74,11 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/go-redis/redis"
+	"github.com/gorilla/schema"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	// "terminus.io/dice/telemetry/promxp"
 )
 
@@ -211,7 +211,10 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	}
 
 	// 初始化UC Client
-	uc := utils.NewUCClient()
+	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+	if conf.OryEnabled() {
+		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+	}
 
 	// init bundle
 	bundleOpts := []bundle.Option{

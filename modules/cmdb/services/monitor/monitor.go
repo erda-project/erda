@@ -21,15 +21,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/dlock"
+	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -144,7 +143,7 @@ func batchMetrics(issueMonitor []IssueMonitor, bdl *bundle.Bundle) {
 	logrus.Info(" batchMetrics CollectMetrics end ")
 }
 
-func RunIssueHistoryData(db *dao.DBClient, uc *utils.UCClient, bdl *bundle.Bundle) {
+func RunIssueHistoryData(db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle.Bundle) {
 	logrus.Infof("start RunIssueHistoryData time %v", time.Now().Unix())
 
 	allProject, err := db.GetAllProjects()
@@ -231,7 +230,7 @@ func RunHistoryData(db *dao.DBClient, bdl *bundle.Bundle) {
 	logrus.Infof("end RunHistoryData time %v", time.Now().Unix())
 }
 
-func MetricsIssueById(ID int, db *dao.DBClient, uc *utils.UCClient, bdl *bundle.Bundle) {
+func MetricsIssueById(ID int, db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle.Bundle) {
 	if db == nil {
 		logrus.Errorf("MetricsIssueById db is empty")
 		return

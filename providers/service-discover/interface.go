@@ -11,23 +11,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package discover
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
-
-var CMDB_USER_CURRENT = apis.ApiSpec{
-	Path:         "/api/users/me",
-	BackendPath:  "/api/users/current",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	ResponseType: apistructs.UserCurrentResponse{},
-	Doc:          "summary: 获取当前登录用户",
-	Group:        "users",
+// Interface .
+type Interface interface {
+	Endpoint(service string) (string, error)
+	ServiceURL(service string) (string, error)
 }
