@@ -21,24 +21,23 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/member"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Approve 资源对象操作封装
 type Approve struct {
 	db     *dao.DBClient
 	bdl    *bundle.Bundle
-	uc     *utils.UCClient
+	uc     *ucauth.UCClient
 	member *member.Member
 }
 
@@ -62,7 +61,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *utils.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(p *Approve) {
 		p.uc = uc
 	}

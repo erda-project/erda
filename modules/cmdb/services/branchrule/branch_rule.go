@@ -21,13 +21,13 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type BranchRule struct {
 	db  *dao.DBClient
-	uc  *utils.UCClient
+	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 }
 

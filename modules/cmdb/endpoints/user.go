@@ -20,12 +20,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // 限制批量查询最大用户数
@@ -35,7 +35,7 @@ const maxUserSize = 100
 func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var (
-		users []utils.User
+		users []ucauth.User
 		err   error
 	)
 
@@ -125,13 +125,13 @@ func (e *Endpoints) GetCurrentUser(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(*convertToUserInfo(user, false))
 }
 
-func convertToUserInfo(user *utils.User, plaintext bool) *apistructs.UserInfo {
+func convertToUserInfo(user *ucauth.User, plaintext bool) *apistructs.UserInfo {
 	if !plaintext {
 		user.Phone = desensitize.Mobile(user.Phone)
 		user.Email = desensitize.Email(user.Email)
 	}
 	return &apistructs.UserInfo{
-		ID:     strconv.FormatUint(user.ID, 10),
+		ID:     user.ID,
 		Name:   user.Name,
 		Nick:   user.Nick,
 		Avatar: user.AvatarURL,

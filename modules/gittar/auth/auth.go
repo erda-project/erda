@@ -338,14 +338,6 @@ func GetUserByBasicAuth(c *webcontext.Context, username string, passwd string) (
 	return &userInfo, nil
 }
 
-func GetUserByToken(c *webcontext.Context, token string) (*ucauth.UserInfo, error) {
-	if token == "" {
-		return nil, errors.New("token is null")
-	}
-	userInfo, err := c.UCAuth.GetUserInfo(ucauth.OAuthToken{AccessToken: token})
-	return &userInfo, err
-}
-
 func ValidaUserRepoWithCache(c *webcontext.Context, userId string, repo *models.Repo) (*AuthResp, error) {
 	key := userId + "-" + repo.Path
 	authResultCache, found := authCache.Get(key)

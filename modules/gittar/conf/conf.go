@@ -49,6 +49,10 @@ type Conf struct {
 	GitTokenUserName         string `env:"GIT_TOKEN_USER_NAME" default:"git"`
 	GitGCMaxNum              int    `env:"GIT_GC_MAX_NUM" default:"1"`
 	GitGCCronExpression      string `env:"GIT_GC_CRON_EXPRESSION" default:"0 0 1 * * ?"`
+
+	// ory/kratos config
+	OryEnabled    bool   `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr string `default:"kratos:4433" env:"KRATOS_ADDR"`
 }
 
 var cfg Conf
@@ -174,4 +178,20 @@ func GitGCMaxNum() int {
 // GitGCCronExpression cron run gc
 func GitGCCronExpression() string {
 	return cfg.GitGCCronExpression
+}
+
+func OryEnabled() bool {
+	return cfg.OryEnabled
+}
+
+func OryKratosAddr() string {
+	return cfg.OryKratosAddr
+}
+
+func OryCompatibleClientID() string {
+	return "kratos"
+}
+
+func OryCompatibleClientSecret() string {
+	return ""
 }

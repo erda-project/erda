@@ -46,6 +46,11 @@ func FilterCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request
 	}
 	if len(sessions) >= 1 {
 		for _, session := range sessions {
+			if conf.OryEnabled() {
+				// TODO
+				*req = *(req.WithContext(context.WithValue(req.Context(), "session", session.Value)))
+				return
+			}
 			if _, err := rediscli.Get(auth.MkSessionKey(session.Value)).Result(); err == redis.Nil {
 				continue
 			} else if err != nil {

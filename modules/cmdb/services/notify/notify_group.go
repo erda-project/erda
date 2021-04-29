@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -37,7 +36,7 @@ import (
 
 type NotifyGroup struct {
 	db  *dao.DBClient
-	uc  *utils.UCClient
+	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
 }
 

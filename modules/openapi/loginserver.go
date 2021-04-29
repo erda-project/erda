@@ -122,6 +122,10 @@ func (s *LoginServer) Login(rw http.ResponseWriter, req *http.Request) {
 		conf.UCAddrFront(),
 		conf.UCClientID(),
 		url.QueryEscape("https://"+conf.GetUCRedirectHost(referer)+"/logincb?referer="+url.QueryEscape(referer)))
+	if conf.OryEnabled() {
+		// TODO return-back page in context (mostly the referer)
+		u.URL = conf.OryLoginURL()
+	}
 	// replace HTTP(s)
 	isHTTPS, err := IsHTTPS(req)
 	if err != nil {
@@ -245,24 +249,32 @@ func (s *LoginServer) Logout(rw http.ResponseWriter, req *http.Request) {
 		referer = redirectURL
 	}
 
-	user := auth.NewUser(s.auth.RedisCli)
-	if err := user.Logout(req); err != nil {
-		errStr := fmt.Sprintf("logout: %v", err)
-		logrus.Error(errStr)
-		http.Error(rw, errStr, http.StatusBadGateway)
-		return
+	if conf.OryEnabled() {
+		// no need to delete cookie
+	} else {
+		user := auth.NewUser(s.auth.RedisCli)
+		if err := user.Logout(req); err != nil {
+			errStr := fmt.Sprintf("logout: %v", err)
+			logrus.Error(errStr)
+			http.Error(rw, errStr, http.StatusBadGateway)
+			return
+		}
+		reqDomain, err := conf.GetDomain(req.Host, conf.CookieDomain())
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		http.SetCookie(rw, &http.Cookie{Name: conf.SessionCookieName(), Value: "", Path: "/", Expires: time.Unix(0, 0), MaxAge: -1, Domain: reqDomain, HttpOnly: true, Secure: strutil.Contains(conf.DiceProtocol(), "https")})
 	}
-	reqDomain, err := conf.GetDomain(req.Host, conf.CookieDomain())
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	http.SetCookie(rw, &http.Cookie{Name: conf.SessionCookieName(), Value: "", Path: "/", Expires: time.Unix(0, 0), MaxAge: -1, Domain: reqDomain, HttpOnly: true, Secure: strutil.Contains(conf.DiceProtocol(), "https")})
 
 	var v struct {
 		URL string `json:"url"`
 	}
 	v.URL = "https://" + conf.UCAddrFront() + "/logout?redirectUrl=" + url.QueryEscape(fmt.Sprintf("https://%s/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s&scope=public_profile", conf.UCAddrFront(), conf.UCClientID(), url.QueryEscape("https://"+conf.GetUCRedirectHost(referer)+"/logincb?referer="+url.QueryEscape(referer))))
+	if conf.OryEnabled() {
+		v.URL = conf.OryLogoutURL()
+	}
+
 	isHTTPS, err := IsHTTPS(req)
 	if err != nil {
 		logrus.Errorf("Logout: no Referer Header in request")

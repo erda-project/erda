@@ -18,8 +18,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apierrors"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
@@ -29,6 +27,8 @@ import (
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
+	"github.com/sirupsen/logrus"
 )
 
 var UC_USER_EXPORT = apis.ApiSpec{
@@ -81,12 +81,12 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 
 	var users []apistructs.UserInfoExt
 	for i := 0; i < 100; i++ {
-		data, err := handlePagingUsers(req, token)
+		data, err := ucauth.HandlePagingUsers(req, token)
 		if err != nil {
 			errorresp.ErrWrite(err, w)
 			return
 		}
-		u := convertToUserInfoExt(data)
+		u := ucauth.ConvertToUserInfoExt(data)
 		users = append(users, u.List...)
 		if len(u.List) < 1024 {
 			break
