@@ -62,12 +62,12 @@ func (e *Endpoints) querySnippetYml(ctx context.Context, r *http.Request, vars m
 	if project == nil {
 		return apierrors.ErrGetSnippetYaml.InvalidParameter(fmt.Errorf("not find project: ID %v", projectIDString)).ToResp(), nil
 	}
-	apps, err := e.bdl.GetAppsByProject(project.ID, project.OrgID, project.Creator)
+
+	appName := getAppNameFromYmlPath(ymlPath)
+	apps, err := e.bdl.GetAppsByProjectAndAppName(project.ID, project.OrgID, project.Creator, appName)
 	if err != nil {
 		return apierrors.ErrGetSnippetYaml.InvalidParameter(err).ToResp(), nil
 	}
-
-	appName := getAppNameFromYmlPath(ymlPath)
 	var matchApp apistructs.ApplicationDTO
 	for _, app := range apps.List {
 		if app.Name == appName {
@@ -75,8 +75,8 @@ func (e *Endpoints) querySnippetYml(ctx context.Context, r *http.Request, vars m
 			break
 		}
 	}
-
 	appID := matchApp.ID
+
 	branch := getBranchFromYmlPath(ymlPath)
 
 	if appID <= 0 {
