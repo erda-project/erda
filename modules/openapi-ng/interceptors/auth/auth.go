@@ -11,18 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package audit
+package auth
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapis/interceptors"
+	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
+	"github.com/erda-project/erda/pkg/httputil"
 )
 
 type config struct {
-	Order int `default:"1000"`
+	Order int `default:"10"`
 }
 
 // +provider
@@ -37,14 +38,16 @@ func (p *provider) List() []*interceptors.Interceptor {
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		// TODO .
-		fmt.Println("TODO audit ...")
+		r.Header.Del(httputil.UserHeader)
+		r.Header.Del(httputil.OrgHeader)
+		fmt.Println("TODO auth ...")
 		h(rw, r)
 	}
 }
 
 func init() {
-	servicehub.Register("openapis-interceptor-audit", &servicehub.Spec{
-		Services:   []string{"openapis-interceptor-audit"},
+	servicehub.Register("openapi-interceptor-auth", &servicehub.Spec{
+		Services:   []string{"openapi-interceptor-auth"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

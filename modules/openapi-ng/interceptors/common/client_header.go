@@ -17,7 +17,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapis/interceptors"
+	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
 	"github.com/erda-project/erda/pkg/httputil"
 )
 
@@ -40,8 +40,8 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func init() {
-	servicehub.Register("openapis-interceptor-filter-client-header", &servicehub.Spec{
-		Services:   []string{"openapis-interceptor-filter-client-header"},
+	servicehub.Register("openapi-interceptor-filter-client-header", &servicehub.Spec{
+		Services:   []string{"openapi-interceptor-filter-client-header"},
 		ConfigFunc: func() interface{} { return &interceptors.Config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

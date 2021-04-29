@@ -30,7 +30,7 @@ import (
 // +provider
 type provider struct {
 	Log      logs.Logger
-	Router   transhttp.Router   `autowired:"openapis"`
+	Router   transhttp.Router   `autowired:"openapi-ng"`
 	Discover discover.Interface `autowired:"discover"`
 	err      error
 }
@@ -191,8 +191,8 @@ func buildPathToSegments(path string) (segs []*pathSegment) {
 }
 
 func init() {
-	servicehub.Register("openapis-services", &servicehub.Spec{
-		Services: []string{"openapis-services"},
+	servicehub.Register("openapi-services", &servicehub.Spec{
+		Services: []string{"openapi-services"},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

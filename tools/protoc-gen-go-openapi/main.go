@@ -23,7 +23,7 @@ import (
 
 const (
 	version       = "v1.0.0"
-	genName       = "protoc-gen-go-openapis"
+	genName       = "protoc-gen-go-openapi"
 	publishTagKey = "publish"
 	privateTagKey = "private"
 )

@@ -20,20 +20,20 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/openapis"
-	_ "github.com/erda-project/erda/modules/openapis/interceptors/audit"
-	_ "github.com/erda-project/erda/modules/openapis/interceptors/auth"
-	_ "github.com/erda-project/erda/modules/openapis/interceptors/auth/legacy"
-	_ "github.com/erda-project/erda/modules/openapis/interceptors/common"
-	_ "github.com/erda-project/erda/modules/openapis/interceptors/csrf"
-	_ "github.com/erda-project/erda/modules/openapis/services"
+	_ "github.com/erda-project/erda/modules/openapi-ng"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/audit"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/legacy"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/common"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/csrf"
+	_ "github.com/erda-project/erda/modules/openapi-ng/services"
 	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
 	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
 func main() {
 	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.OpenAPIsConfigFilePath,
-		Content:    conf.OpenAPIsDefaultConfig,
+		ConfigFile: conf.OpenAPINGConfigFilePath,
+		Content:    conf.OpenAPINGDefaultConfig,
 	})
 }

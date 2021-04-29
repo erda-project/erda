@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapis/common"
-	"github.com/erda-project/erda/modules/openapis/interceptors"
+	"github.com/erda-project/erda/modules/openapi-ng/common"
+	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/random"
 )
@@ -225,8 +225,8 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 }
 
 func init() {
-	servicehub.Register("openapis-interceptor-csrf", &servicehub.Spec{
-		Services:   []string{"openapis-interceptor-csrf"},
+	servicehub.Register("openapi-interceptor-csrf", &servicehub.Spec{
+		Services:   []string{"openapi-interceptor-csrf"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

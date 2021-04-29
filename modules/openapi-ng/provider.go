@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package openapis
+package openapi
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/openapis/interceptors"
+	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
 )
 
 // Interface .
@@ -47,7 +47,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	var inters interceptors.Interceptors
 	ctx.Hub().ForeachServices(func(service string) bool {
-		if strings.HasPrefix(service, "openapis-interceptor-") {
+		if strings.HasPrefix(service, "openapi-interceptor-") {
 			inter, ok := ctx.Service(service).(interceptors.Interface)
 			if !ok {
 				panic(fmt.Errorf("service %s is not interceptor", service))
@@ -85,11 +85,11 @@ func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
 }
 
 func init() {
-	servicehub.Register("openapis", &servicehub.Spec{
-		Services: []string{"openapis"},
+	servicehub.Register("openapi-ng", &servicehub.Spec{
+		Services: []string{"openapi-ng"},
 		DependenciesFunc: func(hub *servicehub.Hub) (list []string) {
 			hub.ForeachServices(func(service string) bool {
-				if strings.HasPrefix(service, "openapis-interceptor-") {
+				if strings.HasPrefix(service, "openapi-interceptor-") {
 					list = append(list, service)
 				}
 				return true

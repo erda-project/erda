@@ -15,10 +15,9 @@ package conf
 
 import _ "embed"
 
-// TODO rename
-//go:embed openapis/openapis.yaml
-var OpenAPIsDefaultConfig string
-var OpenAPIsConfigFilePath = "conf/openapis/openapis.yaml"
+//go:embed openapi-ng/openapi-ng.yaml
+var OpenAPINGDefaultConfig string
+var OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
 
 //go:embed openapi/openapi.yaml
 var OpenAPIDefaultConfig string
