@@ -11,5 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// some tools in this package
-package tools
+package monitor
+
+import "github.com/erda-project/erda/modules/openapi/api/apis"
+
+var MONITOR_APM_TOPOLOGY_PROCESS_NETIO = apis.ApiSpec{
+	Path:        "/api/apm/topology/process/netio",
+	BackendPath: "/api/apm/topology/process/netio",
+	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "Network io speed.",
+}

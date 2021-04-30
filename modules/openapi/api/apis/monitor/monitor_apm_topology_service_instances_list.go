@@ -11,5 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// some tools in this package
-package tools
+package monitor
+
+import "github.com/erda-project/erda/modules/openapi/api/apis"
+
+var MONITOR_APM_TOPOLOGY_SERVICE_INSTANCES_LIST = apis.ApiSpec{
+	Path:        "/api/apm/topology/service/instances",
+	BackendPath: "/api/apm/topology/service/instances",
+	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "The number of running instances.",
+}
