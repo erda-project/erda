@@ -70,7 +70,12 @@ func DB() *gorm.DB {
 		}
 		db.Logger = logger.New(
 			log.New(os.Stdout, "\r\n", log.Ltime),
-			logger.Config{SlowThreshold: 200 * time.Millisecond, LogLevel: logger.Error, Colorful: true},
+			logger.Config{
+				SlowThreshold:             200 * time.Millisecond,
+				Colorful:                  true,
+				IgnoreRecordNotFoundError: true,
+				LogLevel:                  logger.Error,
+			},
 		)
 
 		if debugSQL {
@@ -79,6 +84,13 @@ func DB() *gorm.DB {
 	}
 
 	return db
+}
+
+// ClearSandbox
+// if you want to do a new migration in a clean sandbox,
+// you should ClearSandbox to clear all changes on last migration
+func ClearSandbox() {
+	sandbox = nil
 }
 
 func SandBox() *gorm.DB {
