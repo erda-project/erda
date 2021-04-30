@@ -20,13 +20,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	rules2 "github.com/erda-project/erda/pkg/sqllint/rules"
+	"github.com/erda-project/erda/pkg/sqllint"
+	"github.com/erda-project/erda/pkg/sqllint/rules"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/erda-project/erda/pkg/sqllint"
 )
 
 // Scripts is the set of Module
@@ -36,7 +35,7 @@ type Scripts struct {
 	ServicesNames []string
 	Services      map[string]Module
 
-	rules       []rules2.Ruler
+	rulers      []rules.Ruler
 	markPending bool
 	destructive int
 }
@@ -95,7 +94,7 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 		Dirname:       parameters.MigrationDir(),
 		ServicesNames: modulesNames,
 		Services:      services,
-		rules:         parameters.Rules(),
+		rulers:        parameters.Rules(),
 		markPending:   false,
 		destructive:   0,
 	}, nil
@@ -111,7 +110,7 @@ func (s *Scripts) Lint() error {
 		s.MarkPending(DB())
 	}
 
-	linter := sqllint.New(s.rules...)
+	linter := sqllint.New(s.rulers...)
 	for serviceName, scripts := range s.Services {
 		for _, script_ := range scripts {
 			if !script_.isBase && script_.Pending {
