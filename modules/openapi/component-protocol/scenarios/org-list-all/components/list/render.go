@@ -163,7 +163,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 				Reload: false,
 				Command: Command{
 					Key:     "goto",
-					Target:  "orgRoot",
+					Target:  "workBenchRoot",
 					JumpOut: false,
 					State: CommandState{
 						Params{

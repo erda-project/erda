@@ -28,13 +28,7 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 		return nil, err
 	}
 	report.TestPlan = *tp
-
-	// 查询关联关系列表
-	relsCountMap, err := t.db.ListTestPlanCaseRelsCount([]uint64{testPlanID})
-	if err != nil {
-		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
-	}
-	report.RelsCount = relsCountMap[testPlanID]
+	report.RelsCount = tp.RelsCount
 
 	// 接口总数
 	rels, err := t.db.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{
