@@ -187,7 +187,7 @@ func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingReque
 		total int
 		res   []model.Project
 	)
-	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and creator IN (?) and state IN (?) )", projectIDList, req.Creators, req.State).
+	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and assignee IN (?) and state IN (?) )", projectIDList, req.Assignees, req.State).
 		Order("name")
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Error; err != nil {

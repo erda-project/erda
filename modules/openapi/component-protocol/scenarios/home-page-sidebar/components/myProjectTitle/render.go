@@ -33,12 +33,13 @@ type MyProjectTitle struct {
 }
 
 type Props struct {
-	Visible        bool   `json:"visible"`
-	Title          string `json:"title"`
-	Level          int    `json:"level"`
-	NoMarginBottom bool   `json:"noMarginBottom"`
-	ShowDivider    bool   `json:"showDivider"`
-	Size           string `json:"size"`
+	Visible        bool          `json:"visible"`
+	Title          string        `json:"title"`
+	Level          int           `json:"level"`
+	NoMarginBottom bool          `json:"noMarginBottom"`
+	ShowDivider    bool          `json:"showDivider"`
+	Size           string        `json:"size"`
+	Operations     []interface{} `json:"operations"`
 }
 
 type State struct {
@@ -109,6 +110,55 @@ func (t *MyProjectTitle) Render(ctx context.Context, c *apistructs.Component, sc
 	t.Props.Visible = true
 	t.Props.ShowDivider = true
 	t.Props.Size = "normal"
+	if t.ctxBdl.Identity.OrgID == "" {
+		return nil
+	}
+	orgIntId, err := strconv.Atoi(t.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	req := &apistructs.PermissionCheckRequest{
+		UserID:   t.ctxBdl.Identity.UserID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  uint64(orgIntId),
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.CreateAction,
+	}
+	permissionRes, err := t.ctxBdl.Bdl.CheckPermission(req)
+	if err != nil {
+		return err
+	}
+	if permissionRes == nil {
+		return fmt.Errorf("can not check permission for create project")
+	}
+	var visible bool
+	if permissionRes.Access {
+		visible = true
+	}
+	t.Props.Operations = []interface{}{
+		map[string]interface{}{
+			"props": map[string]interface{}{
+				"text":        "创建",
+				"visible":     visible,
+				"disabled":    false,
+				"disabledTip": "暂无创建项目权限",
+				"type":        "link",
+			},
+			"operations": map[string]interface{}{
+				"click": map[string]interface{}{
+					"command": map[string]interface{}{
+						"key":     "goto",
+						"target":  "createProject",
+						"jumpOut": false,
+						"visible": visible,
+					},
+					"key":    "click",
+					"reload": false,
+					"show":   false,
+				},
+			},
+		},
+	}
 	return nil
 }
 

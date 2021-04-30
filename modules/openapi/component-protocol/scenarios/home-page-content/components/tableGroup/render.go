@@ -204,11 +204,17 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				"当前你还有", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.TotalIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, "个事项待完成，已过期:", map[string]interface{}{
+				}, "个事项待完成，未指定:", map[string]interface{}{
+					"text":        fmt.Sprintf(" %d ", v.UnSpecialIssueNum),
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
+				}, "，已过期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，本日到期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredOneDayNum),
+					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
+				}, "，明天到期:", map[string]interface{}{
+					"text":        fmt.Sprintf(" %d ", v.ExpiredTomorrowNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				}, "，7日内到期:", map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredSevenDayNum),

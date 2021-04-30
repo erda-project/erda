@@ -56,7 +56,7 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		PageSize: uint64(workReq.PageSize),
 		IssueListRequest: apistructs.IssueListRequest{
 			StateBelongs: stateBelongs,
-			Creators:     []string{userID.String()},
+			Assignees:    []string{userID.String()},
 		},
 	}
 	if err := e.issue.FilterByStateBelongForPros(stateMap, projectIDs, &stateReq); err != nil {
@@ -72,13 +72,15 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 	sevenDay := nowTime.Add(time.Hour * time.Duration(24*7))
 	thirtyDay := nowTime.Add(time.Hour * time.Duration(24*30))
 	timeList := [][]int64{
+		{0, 0}, // not specified
 		{1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},                 // expired
 		{nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},   // today expired
+		{tomorrow.Unix(), twoDay.Add(time.Second * time.Duration(-1)).Unix()},    // tomorrow expired
 		{twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // seven day expired
 		{sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // thirty day expired
 		{thirtyDay.Unix(), 0}, //feature expired
 	}
-	expireDays := []string{"expired", "oneDay", "sevenDay", "thirtyDay", "feature"}
+	expireDays := []string{"unspecified", "expired", "oneDay", "tomorrow", "sevenDay", "thirtyDay", "feature"}
 
 	res.Data.List = make([]apistructs.WorkbenchProjectItem, 0)
 	for _, v := range unDonePros {
@@ -91,9 +93,9 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 			IssueListRequest: apistructs.IssueListRequest{
 				ProjectID:    uint64(v.ID),
 				StateBelongs: stateBelongs,
-				Creators:     []string{userID.String()},
+				Assignees:    []string{userID.String()},
 				External:     true,
-				OrderBy:      "plan_finished_at",
+				OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
 				Priority: []apistructs.IssuePriority{
 					apistructs.IssuePriorityUrgent,
 					apistructs.IssuePriorityHigh,
@@ -115,24 +117,32 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 			etIssueReq := apistructs.IssuePagingRequest{}
 			etIssueReq.OrgID = int64(workReq.OrgID)
 			etIssueReq.StartFinishedAt = timeList[index][0] * 1000
-			if timeList[index][1] != 0 {
-				etIssueReq.EndFinishedAt = timeList[index][1] * 1000
+			if et == "unspecified" {
+				etIssueReq.IsEmptyPlanFinishedAt = true
+			} else {
+				if timeList[index][1] != 0 {
+					etIssueReq.EndFinishedAt = timeList[index][1] * 1000
+				}
 			}
 			etIssueReq.StateBelongs = stateBelongs
 			etIssueReq.ProjectID = uint64(v.ID)
 			etIssueReq.PageNo = 1
 			etIssueReq.PageSize = 1
 			etIssueReq.External = true
-			etIssueReq.Creators = []string{userID.String()}
+			etIssueReq.Assignees = []string{userID.String()}
 			_, total, err := e.issue.Paging(etIssueReq)
 			if err != nil {
 				return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 			}
 			switch et {
+			case "unspecified":
+				issueItem.UnSpecialIssueNum = int(total)
 			case "expired":
 				issueItem.ExpiredIssueNum = int(total)
 			case "oneDay":
 				issueItem.ExpiredOneDayNum = int(total)
+			case "tomorrow":
+				issueItem.ExpiredTomorrowNum = int(total)
 			case "sevenDay":
 				issueItem.ExpiredSevenDayNum = int(total)
 			case "thirtyDay":

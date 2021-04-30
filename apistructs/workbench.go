@@ -34,8 +34,10 @@ type WorkbenchResponseData struct {
 type WorkbenchProjectItem struct {
 	ProjectDTO          ProjectDTO `json:"projectDTO"`
 	TotalIssueNum       int        `json:"totalIssueNum"`
+	UnSpecialIssueNum   int        `json:"unSpecialIssueNum"`
 	ExpiredIssueNum     int        `json:"expiredIssueNum"`
 	ExpiredOneDayNum    int        `json:"expiredOneDayNum"`
+	ExpiredTomorrowNum  int        `json:"expiredTomorrowNum"`
 	ExpiredSevenDayNum  int        `json:"expiredSevenDayNum"`
 	ExpiredThirtyDayNum int        `json:"expiredThirtyDayNum"`
 	FeatureDayNum       int        `json:"featureDayNum"`
