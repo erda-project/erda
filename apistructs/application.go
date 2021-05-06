@@ -169,6 +169,7 @@ type ApplicationDTO struct {
 	Stats              ApplicationStats       `json:"stats"`
 	GitRepo            string                 `json:"gitRepo"`
 	GitRepoAbbrev      string                 `json:"gitRepoAbbrev"`
+	GitRepoNew         string                 `json:"gitRepoNew"`
 	Token              string                 `json:"token"`
 	OrgID              uint64                 `json:"orgId"`
 	OrgName            string                 `json:"orgName"`

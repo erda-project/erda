@@ -38,7 +38,9 @@ func (m HistoryModel) TableName() string {
 }
 
 func (m HistoryModel) create() {
-	_ = DB().Migrator().CreateTable(new(HistoryModel))
+	if ok := DB().Migrator().HasTable(m.TableName()); !ok {
+		_ = DB().Migrator().CreateTable(&m)
+	}
 }
 
 func (m *HistoryModel) insert() error {
