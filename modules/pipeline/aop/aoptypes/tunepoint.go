@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package aoptypes
 
 // TuneType 调节的类型
@@ -12,8 +25,9 @@ const (
 type TuneTrigger string
 
 const (
-	TuneTriggerPipelineBeforeExec TuneTrigger = "pipeline_before_exec"
-	TuneTriggerPipelineAfterExec  TuneTrigger = "pipeline_after_exec"
+	TuneTriggerPipelineBeforeExec               TuneTrigger = "pipeline_before_exec"
+	TuneTriggerPipelineInQueuePrecheckBeforePop TuneTrigger = "pipeline_in_queue_precheck_before_pop"
+	TuneTriggerPipelineAfterExec                TuneTrigger = "pipeline_after_exec"
 
 	TuneTriggerTaskBeforeExec    TuneTrigger = "task_before_exec"
 	TuneTriggerTaskAfterExec     TuneTrigger = "task_after_exec"
@@ -33,7 +47,7 @@ const (
 type TunePoint interface {
 	Type() TuneType
 	Name() string
-	Handle(TuneContext) error
+	Handle(*TuneContext) error
 }
 
 type PipelineBaseTunePoint struct{}

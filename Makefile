@@ -1,5 +1,15 @@
-# Author: recallsong
-# Email: songruiguo@qq.com
+# Copyright (c) 2021 Terminus, Inc.
+#
+# This program is free software: you can use, redistribute, and/or modify
+# it under the terms of the GNU Affero General Public License, version 3
+# or later ("AGPL"), as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # project info
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -32,24 +42,26 @@ build-all:
 	@set -o errexit; \
 	MODULES=$$(find "cmd" -maxdepth 10 -type d); \
 	for path in $${MODULES}; \
-    do \
+	do \
 		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
 			echo "build module: $$MODULE_PATH"; \
-			MODULE_PATH=$${MODULE_PATH} make build; \
+			make build MODULE_PATH=$${MODULE_PATH}; \
 			echo ""; \
 		fi; \
-    done; \
-	echo "build all modules successfully !"
+	done; \
+	make cli; \
+	echo "build all modules successfully!"
 
 build: build-version submodule tidy
 	cd "${BUILD_PATH}" && \
-	${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/${APP_NAME}"
+	@ echo "build the ${MODULE_PATH} module successfully!"
 
 build-cross: build-version submodule
 	cd "${BUILD_PATH}" && \
-	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} ${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/${GOOS}-${GOARCH}-${APP_NAME}"
 
 build-for-linux:
 	GOOS=linux GOARCH=amd64 make build-cross
@@ -67,12 +79,26 @@ build-version:
 	@echo ------------ End   Build Version Details ------------
 
 tidy:
-	cd "${BUILD_PATH}" && \
-    ${GO_BUILD_ENV} go mod tidy
+	@if [[ -f "${BUILD_PATH}/go.mod" ]]; then \
+		echo "go mod tidy: use module-level go.mod" && \
+		cd "${BUILD_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	elif [[ -d "${PROJ_PATH}/vendor" ]]; then \
+		echo "go mod tidy: already have vendor dir, skip tidy" ; \
+	else \
+		echo "go mod tidy: use project-level go.mod" && \
+		cd "${PROJ_PATH}" && ${GO_BUILD_ENV} go mod tidy; \
+	fi
 
 generate:
 	cd "${BUILD_PATH}" && \
 	${GO_BUILD_ENV} go generate -v -x
+
+prepare:
+	cd "${PROJ_PATH}" && \
+	${GO_BUILD_ENV} go generate ./apistructs && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
+	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
+	make prepare-cli
 
 submodule:
 	git submodule update --init
@@ -95,9 +121,50 @@ run-g: build
 run-ps: build
 	./bin/${APP_NAME} --providers
 
+# normalize all go files before push to git repo
+normalize:
+	@go mod tidy
+	@echo "run gofmt && goimports && golint ..."
+	@if [ -z "$$MODULE_PATH" ]; then \
+		MODULE_PATH=.; \
+	fi; \
+	cd $${MODULE_PATH}; \
+	go test -test.timeout=10s ./...; \
+	GOFILES=$$(find . -name "*.go"); \
+	for path in $${GOFILES}; do \
+	 	gofmt -w -l $${path}; \
+	  	goimports -w -l $${path}; \
+	  	golint -set_exit_status=1 $${path}; \
+	done;
+
 # docker image
 build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
-build-push-image: build-image push-image
+build-push-image:
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
+
+build-push-all:
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
+build-push-base-image:
+	./build/scripts/base_image.sh build-push
+
+#build cli
+prepare-cli:
+	cd tools/cli/command/generate && go generate
+.PHONY: cli
+cli:
+	cd tools/cli && \
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli"
+	echo "build cli tool successfully!"
+.PHONY: cli-linux
+cli-linux:
+	cd tools/cli && \
+	GOOS=linux GOARCH=amd64	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin/erda-cli-linux"
+	echo "build cli tool successfully!"
+
+.PHONY: upload-cli
+upload-cli: cli cli-linux
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
+	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"

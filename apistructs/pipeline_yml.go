@@ -1,4 +1,23 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
+
+import (
+	"sort"
+
+	"github.com/erda-project/erda/pkg/jsonparse"
+)
 
 const (
 	SnippetActionSourceType = "action"
@@ -41,6 +60,15 @@ type PipelineYml struct {
 	//    2) 用户传入的为 YAML(spec.PipelineYml) 时，返回优化后的 YAML(spec.PipelineYml)
 	YmlContent string         `json:"ymlContent,omitempty"`
 	On         *TriggerConfig `json:"on,omitempty"`
+
+	// describe the use of network hooks in the pipeline
+	Lifecycle []*NetworkHookInfo `json:"lifecycle"`
+}
+
+type NetworkHookInfo struct {
+	Hook   string                 `json:"hook"`   // hook type
+	Client string                 `json:"client"` // use network client
+	Labels map[string]interface{} `json:"labels"` // additional information
 }
 
 type TriggerConfig struct {
@@ -87,6 +115,44 @@ type SnippetConfig struct {
 	Source string            `json:"source,omitempty" yaml:"source,omitempty"` // 来源 gittar dice test
 	Name   string            `json:"name,omitempty" yaml:"name,omitempty"`     // 名称
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"` // 额外标签
+}
+
+type SnippetLabel struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type SnippetLabels []SnippetLabel
+
+func (p SnippetLabels) Len() int           { return len(p) }
+func (p SnippetLabels) Less(i, j int) bool { return p[i].Key > p[j].Key }
+func (p SnippetLabels) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+func (snippetConfig *SnippetConfig) ToString() string {
+	if snippetConfig == nil {
+		return ""
+	}
+
+	var snippetLabels SnippetLabels
+	if len(snippetConfig.Labels) > 0 {
+		for k, v := range snippetConfig.Labels {
+			snippetLabels = append(snippetLabels, SnippetLabel{
+				Key:   k,
+				Value: v,
+			})
+		}
+		sort.Sort(snippetLabels)
+	}
+
+	return jsonparse.JsonOneLine(struct {
+		Source        string        `json:"source,omitempty"`
+		Name          string        `json:"name,omitempty"`
+		SnippetLabels SnippetLabels `json:"labels,omitempty"`
+	}{
+		Source:        snippetConfig.Source,
+		Name:          snippetConfig.Name,
+		SnippetLabels: snippetLabels,
+	})
 }
 
 type BatchSnippetConfigYml struct {

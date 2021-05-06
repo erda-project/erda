@@ -5,16 +5,19 @@ run:
   tests: false
   allow-parallel-runners: true
   skip-dirs:
-    - internal/cli/generated_cmd
-    - internal/cli/command/generate
-    - internal/openapi/api/generate
+    - tools/cli/generated_cmd
+    - tools/cli/command/generate
+    - modules/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
+    - third_party
   skip-files:
     - apistructs/generated_desc.go
+  build-tags:
+    - musl
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/erda-project/erda
+    #local-prefixes: github.com/erda-project/erda
 
 linters:
   disable-all: true
@@ -38,6 +41,9 @@ issues:
     - linters:
         - gosec
       text: "G110:" # G110: Potential DoS vulnerability via decompression bomb (gosec)
+    - linters:
+        - gosec
+      text: "G201:" # SQL string formatting (gosec)
     - linters:
         - gosec
       text: "G204:" # G204: Subprocess launched with function call as argument or cmd arguments (gosec)

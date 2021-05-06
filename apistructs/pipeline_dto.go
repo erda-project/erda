@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import (
@@ -90,12 +103,6 @@ type (
 	}
 )
 
-// original mount mode
-// will open network storage mounting, and close share storage
-func (conf StorageConfig) EnablePipelineVolume() bool {
-	return conf.EnableNFSVolume() && !conf.EnableShareVolume()
-}
-
 // whether to close the mounting of the network storage
 // after closing, some special pipeline syntax ( ${{ dirs.xxx }} or old ${xxx} ) will not be available
 func (conf StorageConfig) EnableNFSVolume() bool {
@@ -121,6 +128,8 @@ type PipelineDetailDTO struct {
 	PipelineTaskActionDetails map[string]PipelineTaskActionDetail `json:"pipelineTaskActionDetails"`
 
 	RunParams []PipelineParamDTO `json:"runParams"`
+
+	Events []*PipelineEvent `json:"events,omitempty"`
 }
 
 type PipelineParamDTO struct {

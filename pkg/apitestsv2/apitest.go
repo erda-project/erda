@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apitestsv2
 
 import (
@@ -172,7 +185,8 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	}
 	apiReq.Body.Content = reqBody
 
-	_url, err := url.ParseRequestURI(apiReq.URL)
+	// use netportal
+	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalOption)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -181,11 +195,11 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Headers = polishHeadersForCompression(apiReq.Headers)
 
 	var buffer bytes.Buffer
-	httpResp, err := httpclient.New(httpclient.WithCookieJar(httpClient.Jar), httpclient.WithCompleteRedirect()).
-		Method(apiReq.Method, _url.Scheme+"://"+_url.Host, httpclient.NoRetry).
-		Path(_url.Path).
-		Headers(apiReq.Headers).
-		Params(apiReq.Params).
+	req := httpclient.New(httpclient.WithCompleteRedirect()).
+		Method(apiReq.Method, customReq.URL.Scheme+"://"+customReq.URL.Host, httpclient.NoRetry).
+		Path(customReq.URL.Path).
+		Headers(apiReq.Headers)
+	httpResp, err := req.Params(apiReq.Params).
 		RawBody(bytes.NewBufferString(apiReq.Body.Content.(string))).
 		Do().Body(&buffer)
 	if err != nil {

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package spec
 
 import (
@@ -220,4 +233,17 @@ func (p *Pipeline) GetResourceGCTTL() uint64 {
 		resourceGCTTL = *p.Extra.GC.ResourceGC.SuccessTTLSecond
 	}
 	return resourceGCTTL
+}
+
+// GetPipelineQueueID return pipeline queue id if exist, or 0.
+func (p *Pipeline) GetPipelineQueueID() (uint64, bool) {
+	if p.Extra.QueueInfo == nil {
+		return 0, false
+	}
+	return p.Extra.QueueInfo.QueueID, true
+}
+
+// GetPipelineAppliedResources return limited and min resource when pipeline run.
+func (p *Pipeline) GetPipelineAppliedResources() apistructs.PipelineAppliedResources {
+	return p.Snapshot.AppliedResources
 }

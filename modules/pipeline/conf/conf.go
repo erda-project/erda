@@ -1,11 +1,24 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 // Package conf 定义了 pipeline 所需要的配置选项，这些配置选项都是通过环境变量加载.
 package conf
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
@@ -31,12 +44,12 @@ type Conf struct {
 	BuildCacheExpireIn     time.Duration `env:"BUILD_CACHE_EXPIRE_IN" default:"168h"`
 
 	// bundle
-	GittarAddr    string `env:"GITTAR_ADDR" required:"true"`
-	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"true"`
-	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"true"`
-	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"true"`
-	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"true"`
-	HepaAddr      string `env:"HEPA_ADDR" required:"true"`
+	GittarAddr    string `env:"GITTAR_ADDR" required:"false"`
+	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"false"`
+	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"false"`
+	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"false"`
+	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"false"`
+	HepaAddr      string `env:"HEPA_ADDR" required:"false"`
 	CollectorAddr string `env:"COLLECTOR_ADDR" required:"false"`
 
 	// public url
@@ -51,24 +64,6 @@ type Conf struct {
 	ActionTypeMappingStr string `env:"ACTION_TYPE_MAPPING"` // git:git-checkout,dicehub:release
 	ActionTypeMapping    map[string]string
 
-	// 流水线自动清理策略，JSON 格式配置。
-	// 1. 提供默认策略
-	// 2. 自定义 source 级别策略只需填写需要覆盖的字段即可，未填写的自动使用默认值。
-	// e.g.
-	// {
-	//    "default": {
-	//        "maxFinishedStoreTime": "720h", # 已完成的 默认保留 30 天
-	//        "minFinishedStoreCount": 100,   # 已完成的 至少保留 100 条
-	//        "maxAnalyzedStoreTime": "24h",  # 未开始的 默认保留 1 天
-	//        "minAnalyzedStoreCount": 10     # 未开始的 至少保留 10 条
-	//    },
-	//    "ops": {                            # ops 场景自定义策略
-	//        "minFinishedStoreCount": 5      # ops 场景下，已完成的 至少保留 5 条
-	//    }                                   # 其他未声明字段使用默认值
-	//}
-	PipelineAutoCleanupStrategy PipelineAutoCleanupStrategy `env:"PIPELINE_AUTO_CLEANUP_STRATEGY"`
-	PipelineAutoCleanupJobCron  string                      `env:"PIPELINE_AUTO_CLEANUP_JOB_CRON" default:"0 30 5 * * ?"`
-
 	// 默认用户 ID，用于鉴权
 	InternalUserID string `env:"INTERNAL_USER_ID" default:"1103"`
 
@@ -82,6 +77,16 @@ type Conf struct {
 
 	// DisablePipelineVolume default is false, means enable context volumes
 	DisablePipelineVolume bool `env:"DISABLE_PIPELINE_VOLUME" default:"false"`
+
+	// gittar inner user name and password
+	GitInnerUserName     string `env:"GIT_INNER_USER_NAME"`
+	GitInnerUserPassword string `env:"GIT_INNER_USER_PASSWORD"`
+
+	// queue handle loop interval
+	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
+
+	// API-Test
+	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
 }
 
 var cfg Conf
@@ -92,9 +97,6 @@ func Load() {
 
 	// actionTypeMapping
 	checkActionTypeMapping(&cfg)
-
-	// pipelineAutoCleanupStrategy
-	handlePipelineAutoCleanupStrategy(&cfg)
 }
 
 // ListenAddr 返回 pipeline 服务监听地址.
@@ -225,16 +227,6 @@ func ActionTypeMapping() map[string]string {
 	return cfg.ActionTypeMapping
 }
 
-// GetPipelineAutoCleanupSourceStrategy 获取 source 级别流水线自动清理策略
-func GetPipelineAutoCleanupSourceStrategy(source apistructs.PipelineSource) PipelineAutoCleanupSourceStrategyItem {
-	return cfg.PipelineAutoCleanupStrategy.GetSourceStrategy(source)
-}
-
-// PipelineAutoCleanupJobCron 返回 流水线自动清理 定时任务 的定时设置.
-func PipelineAutoCleanupJobCron() string {
-	return cfg.PipelineAutoCleanupJobCron
-}
-
 // InternalUserID 返回 pipeline 组件在内部调用时默认分配的 用户 ID
 func InternalUserID() string {
 	return cfg.InternalUserID
@@ -263,4 +255,24 @@ func OpenapiOAuth2TokenClientSecret() string {
 // DisablePipelineVolume 返回 是否关闭 pipeline volume，只有值引用.
 func DisablePipelineVolume() bool {
 	return cfg.DisablePipelineVolume
+}
+
+// GitInnerUserName gittar内部用户名
+func GitInnerUserName() string {
+	return cfg.GitInnerUserName
+}
+
+// GitInnerUserPassword gittar内部用户名密码
+func GitInnerUserPassword() string {
+	return cfg.GitInnerUserPassword
+}
+
+// QueueLoopHandleIntervalSec return reconciler queueManager loop handle interval second.
+func QueueLoopHandleIntervalSec() uint64 {
+	return cfg.QueueLoopHandleIntervalSec
+}
+
+// APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
+func APITestNetportalAccessK8sNamespaceBlacklist() []string {
+	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
 }

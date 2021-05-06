@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package actionagent
 
 import (
@@ -51,8 +64,8 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 			return err
 		}
 		logrus.Debugf("监听到了 METAFILE 改动，时间: %v，全量内容: %s", time.Now().Format(time.RFC3339), string(b))
-		cb := &callback{}
-		err = cb.handleMetaFile(b)
+		cb := &Callback{}
+		err = cb.HandleMetaFile(b)
 		if err != nil {
 			return err
 		}

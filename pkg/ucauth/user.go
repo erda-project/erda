@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package ucauth
 
 import (
@@ -10,9 +23,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/pkg/errors"
 )
 
 type USERID string
@@ -67,6 +79,17 @@ type UCUserAuth struct {
 	ClientSecret string
 }
 
+const OryCompatibleClientId = "kratos"
+
+func (a *UCUserAuth) oryEnabled() bool {
+	// TODO: it's a hack
+	return a.ClientID == OryCompatibleClientId
+}
+
+func (a *UCUserAuth) oryKratosAddr() string {
+	return a.UCHost
+}
+
 func NewUCUserAuth(UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret string) *UCUserAuth {
 	return &UCUserAuth{UCHostFront, UCHost, RedirectURI, ClientID, ClientSecret}
 }
@@ -83,6 +106,10 @@ func (a *UCUserAuth) LoginURL(https bool) string {
 
 // (登陆) 从uc回调回来，会有uccode，用于得到token
 func (a *UCUserAuth) Login(uccode string) (OAuthToken, error) {
+	if a.oryEnabled() {
+		// TODO:
+		return OAuthToken{}, fmt.Errorf("not supported Login")
+	}
 	basic := "Basic " + base64.StdEncoding.EncodeToString([]byte(a.ClientID+":"+a.ClientSecret))
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "authorization_code")
@@ -112,6 +139,10 @@ func (a *UCUserAuth) Login(uccode string) (OAuthToken, error) {
 }
 
 func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
+	if a.oryEnabled() {
+		// TODO:
+		return OAuthToken{}, fmt.Errorf("not supported PwdAuth")
+	}
 	basic := "Basic " + base64.StdEncoding.EncodeToString([]byte(a.ClientID+":"+a.ClientSecret))
 	formBody := make(url.Values)
 	formBody.Set("grant_type", "password")
@@ -142,6 +173,10 @@ func (a *UCUserAuth) PwdAuth(username, password string) (OAuthToken, error) {
 
 //
 func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
+	if a.oryEnabled() {
+		// sessionID as token
+		return whoami(a.oryKratosAddr(), oauthToken.AccessToken)
+	}
 	bearer := "Bearer " + oauthToken.AccessToken
 	var me bytes.Buffer
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).

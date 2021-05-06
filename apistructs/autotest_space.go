@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import "time"
@@ -37,6 +50,15 @@ type AutoTestSpace struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	// DeletedAt 删除时间
 	DeletedAt *time.Time `json:"deletedAt"`
+}
+
+// record the structure of the information before and after the scene collection is copied
+// to update those scenes that refer to the old scene set to refer to the new scene set
+type AutoTestSceneCopyRef struct {
+	PreSetID     uint64 // the id of the copied scene set
+	PreSpaceID   uint64 // the id of the copied space
+	AfterSetID   uint64 // id of the scene set to be copied
+	AfterSpaceID uint64 // id of the space to be copied
 }
 
 // AutoTestSpaceCopy 测试空间复制

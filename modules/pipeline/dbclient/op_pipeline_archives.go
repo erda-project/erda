@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package dbclient
 
 import (
@@ -5,8 +18,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/version"
 )
 
 func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...SessionOption) error {
@@ -152,7 +165,7 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 		PipelineSource:  p.PipelineSource,
 		PipelineYmlName: p.PipelineYmlName,
 		Status:          p.Status,
-		DiceVersion:     version.DiceVersion,
+		DiceVersion:     version.Version,
 		Content: spec.PipelineArchiveContent{
 			Pipeline:        p,
 			PipelineLabels:  labels,

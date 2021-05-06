@@ -1,0 +1,207 @@
+### filetree - 创建根目录
+POST {{qa}}/api/autotests/filetree
+User-ID: 2
+Content-Type: application/json
+
+{
+  "type": "d",
+  "scope": "project",
+  "scopeID": "1",
+  "name": "root-dir",
+  "desc": "root-dir"
+}
+
+### filetree - 创建普通目录
+POST {{qa}}/api/autotests/filetree
+User-ID: 2
+Content-Type: application/json
+
+{
+  "type": "d",
+  "pinode": "327058253957576322",
+  "name": "dir2",
+  "desc": "dir2"
+}
+
+### filetree - 创建普通文件
+POST {{qa}}/api/autotests/filetree
+User-ID: 2
+Content-Type: application/json
+
+{
+  "type": "f",
+  "pinode": "327058267396126338",
+  "name": "f1"
+}
+
+### filetree - 删除目录
+DELETE {{qa}}/api/autotests/filetree/326972784762697346
+User-ID: 2
+
+### filetree - 删除普通文件
+DELETE {{qa}}/api/autotests/filetree/326972784762697346
+User-ID: 2
+
+### filetree - 更新节点基础信息
+PUT {{qa}}/api/autotests/filetree/326975807111050882
+User-ID: 2
+Content-Type: application/json
+
+{
+  "name": "new-name-4",
+  "desc": ""
+}
+
+### filetree - 查询目录详情
+GET {{qa}}/api/autotests/filetree/327330589344544386
+User-ID: 2
+
+### filetree - 查询文件详情
+GET {{qa}}/api/autotests/filetree/326975805768873602
+User-ID: 2
+
+### filetree - 移动节点目录
+POST {{qa}}/api/autotests/filetree/326979116752451202/actions/move
+User-ID: 2
+Content-Type: application/json
+
+{
+  "pinode": "326975789041989250"
+}
+
+### filetree - 复制文件 / 目录
+POST {{qa}}/api/autotests/filetree/327058267396126338/actions/copy
+User-ID: 2
+Content-Type: application/json
+
+{
+  "pinode": "327058237885003394"
+}
+
+### filetree - 列表
+GET {{qa}}/api/autotests/filetree?pinode=327058307174905474
+User-ID: 2
+
+### filetree - 模糊搜索
+GET {{qa}}/api/autotests/filetree/actions/fuzzy-search?scope=project&scopeID=35&fuzzy=oo&recursive=true&fromPinode=327926058424742698
+User-ID: 2
+
+### 查询 snippet
+GET {{qa}}/api/autotests/pipeline-snippets/actions/query-snippet-yml
+User-ID: 2
+Content-Type: application/json
+
+{
+  "source": "autotest",
+  "name": "327059871549634178"
+}
+
+### filetree - 用例节点保存流水线
+POST {{qa}}/api/autotests/filetree/327330589344544386/actions/save-pipeline
+User-ID: 2
+Content-Type: application/json
+
+{
+  "pipelineYml": "version: 1.1\nstages: []"
+}
+
+### filetree - 用例节点保存运行时参数
+POST {{qa}}/api/autotests/filetree/327817692390109749/actions/save-pipeline
+User-ID: 2
+Content-Type: application/json
+
+# {"runParams": []} 可置空 runParams
+
+{
+  "runParams": [
+    {
+      "name": "name",
+      "value": "hello"
+    },
+    {
+      "name": "age",
+      "value": 20
+    }
+  ]
+}
+
+### filetree - 寻祖
+GET {{qa}}/api/autotests/filetree/327926095569498922/actions/find-ancestors
+User-ID: 2
+
+### global config - 创建
+POST {{qa}}/api/autotests/global-configs
+User-ID: 1
+Content-Type: application/json
+
+{
+  "apiConfig": {
+    "name": "开发环境全局配置",
+    "domain": "https://123",
+    "header": {
+      "Cache-Control": "123"
+    },
+    "global": {
+      "key1": {
+        "value": "1234",
+        "type": "string"
+      }
+    }
+  },
+  "scope": "project",
+  "scopeID": "1",
+  "displayName": "name"
+}
+
+### global config - 更新
+PUT {{qa}}/api/autotests/global-configs/autotest%5Escope-project%5Escopeid-1%5E327355342180595330
+User-ID: 2
+Content-Type: application/json
+
+{
+  "apiConfig": {
+    "name": "xxx环境全局配置",
+    "domain": "https://1234",
+    "header": {
+      "Cache-Control": "123"
+    },
+    "global": {
+      "key1": {
+        "value": "1234",
+        "type": "string"
+      }
+    }
+  },
+  "displayName": "new-name",
+  "desc": "xxxxxxxx"
+}
+
+### global config - 删除
+DELETE {{qa}}/api/autotests/global-configs/autotest---scope---project---scopeid---1---327221739555665538
+User-ID: 2
+
+### global config - 全局配置列表
+GET {{qa}}/api/autotests/global-configs?scope=project&scopeID=1
+User-ID: 2
+
+### testplan - 创建
+POST {{qa}}/api/testplans
+User-ID: 2
+Content-Type: application/json
+
+{
+  "name": "autotest tp 1",
+  "ownerID": "2",
+  "partnerIDs": [
+    "1",
+    "2",
+    "3"
+  ],
+  "projectID": 1,
+  "isAutoTest": true
+}
+
+### testplan - 列表
+GET {{qa}}/api/testplans?projectID=1
+User-ID: 2
+Content-Type: application/json

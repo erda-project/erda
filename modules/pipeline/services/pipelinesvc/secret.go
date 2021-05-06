@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelinesvc
 
 import (
@@ -10,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -18,7 +32,6 @@ import (
 	"github.com/erda-project/erda/pkg/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/version"
 )
 
 const (
@@ -75,7 +88,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 
 	r = map[string]string{
 		// dice version
-		"dice.version": version.DiceVersion,
+		"dice.version": version.Version,
 		// dice
 		"dice.org.id":              p.Labels[apistructs.LabelOrgID],
 		"dice.org.name":            p.GetOrgName(),
@@ -100,8 +113,8 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
 		// gittar
-		"gittar.username":      "18000000000",
-		"gittar.password":      "123456",
+		"gittar.username":      conf.GitInnerUserName(),
+		"gittar.password":      conf.GitInnerUserPassword(),
 		"gittar.repo":          gittarRepo,
 		"gittar.branch":        p.Labels[apistructs.LabelBranch],
 		"gittar.commit":        p.GetCommitID(),
@@ -126,7 +139,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.storage.url": storageURL,
 
 		// collector 用于主动日志上报(action-agent)
-		"collector.addr":       conf.CollectorAddr(),
+		"collector.addr":       discover.Collector(),
 		"collector.public.url": conf.CollectorPublicURL(),
 
 		// others

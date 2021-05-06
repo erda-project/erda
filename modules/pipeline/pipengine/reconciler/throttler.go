@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package reconciler
 
 import (
@@ -19,17 +32,17 @@ func makeThrottlerBackupKey(name string) string {
 // loadThrottler 从存储中加载 throttler
 func (r *Reconciler) loadThrottler() error {
 	// init throttler
-	r.Throttler = throttler.NewNamedThrottler("default", nil)
+	r.TaskThrottler = throttler.NewNamedThrottler("default", nil)
 
 	ctx := context.Background()
 	var backup json.RawMessage
-	if err := r.js.Get(ctx, makeThrottlerBackupKey(r.Throttler.Name()), &backup); err != nil {
+	if err := r.js.Get(ctx, makeThrottlerBackupKey(r.TaskThrottler.Name()), &backup); err != nil {
 		if err == jsonstore.NotFoundErr {
 			return nil
 		}
 		return fmt.Errorf("reconciler: failed to load throttler from etcd, err: %v", err)
 	}
-	err := r.Throttler.Import(backup)
+	err := r.TaskThrottler.Import(backup)
 	if err == nil {
 		return nil
 	}
@@ -52,10 +65,10 @@ func (r *Reconciler) ContinueBackupThrottler() {
 		go func() {
 			// 执行 loading
 			begin := time.Now()
-			backup := r.Throttler.Export()
+			backup := r.TaskThrottler.Export()
 			end := time.Now()
 			costTime = end.Sub(begin)
-			if err := r.js.Put(context.Background(), makeThrottlerBackupKey(r.Throttler.Name()), backup); err != nil {
+			if err := r.js.Put(context.Background(), makeThrottlerBackupKey(r.TaskThrottler.Name()), backup); err != nil {
 				errDone <- err
 				return
 			}

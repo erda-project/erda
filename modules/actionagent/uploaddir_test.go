@@ -1,21 +1,34 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package actionagent
 
-import (
-	"fmt"
-	"os"
-	"testing"
-)
-
-func TestAgent_UploadDir(t *testing.T) {
-	os.Setenv("DICE_OPENAPI_TOKEN", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJwaXBlbGluZSIsInBheWxvYWQiOnsiYWNjZXNzVG9rZW5FeHBpcmVkSW4iOiIwIiwiYWNjZXNzaWJsZUFQSXMiOlt7InBhdGgiOiIvYXBpL3BpcGVsaW5lcy9cdTAwM2NwaXBlbGluZUlEXHUwMDNlL3Rhc2tzL1x1MDAzY3Rhc2tJRFx1MDAzZS9hY3Rpb25zL2dldC1ib290c3RyYXAtaW5mbyIsIm1ldGhvZCI6IkdFVCIsInNjaGVtYSI6Imh0dHAifSx7InBhdGgiOiIvYXBpL3BpcGVsaW5lcy9cdTAwM2NwaXBlbGluZUlEXHUwMDNlL2FjdGlvbnMvcnVuIiwibWV0aG9kIjoiUE9TVCIsInNjaGVtYSI6Imh0dHAifSx7InBhdGgiOiIvYXBpL2ZpbGVzIiwibWV0aG9kIjoiUE9TVCIsInNjaGVtYSI6Imh0dHAifV0sIm1ldGFkYXRhIjp7IlVzZXItSUQiOiIyIiwicGlwZWxpbmVJRCI6IjEwMDAwMDk4IiwidGFza0lEIjoiMzQwIn19fQ.g2Ht8F-Rs3ly2BAYdjZFCxxDjAblK-xRAfbnbtx4P2iXcxxm4FxsZHukz33yAXXZHeNlkOuOiooBfPQk-KyORQ")
-	agent := Agent{
-		EasyUse: EasyUse{
-			ContainerUploadDir: "/tmp/uploaddir",
-			OpenAPIAddr:        "openapi.default.svc.cluster.local:9529",
-		},
-	}
-	agent.uploadDir()
-	for _, err := range agent.Errs {
-		fmt.Println(err)
-	}
-}
+//import (
+//	"fmt"
+//	"os"
+//	"testing"
+//)
+//
+//func TestAgent_UploadDir(t *testing.T) {
+//	os.Setenv("DICE_OPENAPI_TOKEN", "fake_token")
+//	agent := Agent{
+//		EasyUse: EasyUse{
+//			ContainerUploadDir: "/tmp/uploaddir",
+//			OpenAPIAddr:        "openapi.default.svc.cluster.local:9529",
+//		},
+//	}
+//	agent.uploadDir()
+//	for _, err := range agent.Errs {
+//		fmt.Println(err)
+//	}
+//}

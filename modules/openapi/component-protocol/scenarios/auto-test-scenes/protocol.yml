@@ -1,0 +1,946 @@
+# 场景名
+scenario: "auto-test-scenes"
+
+hierarchy:
+  root: autoTestScenes
+  structure:
+    autoTestScenes:
+      left: leftPage
+      right: rightPage
+    leftPage:
+      - leftHead
+      - fileSearch
+      - fileTree
+      - fileFormModal
+    leftHead:
+      left: leftHeadTitle
+      right: leftHeadButton
+    rightPage:
+      - folderDetail
+      - fileDetail
+    folderDetail:
+      - folderDetailTitle
+      - folderDetailTable
+    fileDetail:
+      children:
+        - fileConfig
+        - fileExecute
+      tabBarExtraContent:
+        - tabExecuteButton
+    fileConfig:
+      - fileInfoHead
+      - fileInfo
+      - inParamsTitle
+      - inParamsForm
+      - stagesTitle
+      - stages
+      - stagesOperations
+      - outPutTitle
+      - outPutForm
+    fileInfoHead:
+      left: fileInfoTitle
+    #      right: fileHistory
+    #    fileHistory:
+    #      children: fileHistoryButton
+    #      content: fileHistoryTable
+    stagesOperations:
+      - addApiButton
+      - addConfigSheetButton
+      - addWaitButton
+      - apiEditorDrawer
+      - waitEditorDrawer
+      - configSheetDrawer
+      - nestedSceneDrawer
+    fileExecute:
+      - executeHead
+      - executeInfo
+      - executeTaskTitle
+      - executeTaskBreadcrumb
+      - executeTaskTable
+      - resultDrawer
+      - executeAlertInfo
+    apiEditorDrawer:
+      content: apiEditorContainer
+    waitEditorDrawer:
+      content: waitEditor
+    configSheetDrawer:
+      content:
+        - configSheetSelect
+        - configSheetInParams
+    nestedSceneDrawer:
+      content:
+        - nestedSceneSelect
+        - nestedSceneInParams
+    resultDrawer:
+      content:
+        resultPreview
+    apiEditorContainer:
+      - marketProtoTitle
+      - marketProto
+      - apiEditor
+    #      - apiExecuteContent
+    executeHead:
+      left: executeInfoTitle
+      right:
+        - refreshButton
+        - cancelExecuteButton
+        - executeHistory
+    executeHistory:
+      children: executeHistoryButton
+      content: executeHistoryPop
+    apiExecuteContent:
+      right: apiExecute
+    executeHistoryPop:
+      - executeHistoryRefresh
+      - executeHistoryTable
+
+components:
+  refreshButton:
+    type: Button
+  cancelExecuteButton:
+    type: Button
+  waitEditor:
+    type: Form
+  configSheetSelect:
+    type: TreeSelect
+  configSheetInParams:
+    type: Form
+  nestedSceneSelect:
+    type: TreeSelect
+  nestedSceneInParams:
+    type: Form
+  autoTestScenes:
+    type: SplitPage
+  fileSearch:
+    type: Input
+  leftPage:
+    type: Container
+  rightPage:
+    type: Container
+  leftHead:
+    type: LRContainer
+  fileInfoHead:
+    type: LRContainer
+  apiExecuteContent:
+    type: LRContainer
+  apiExecute:
+    type: Button
+  fileExecute:
+    type: Container
+  apiEditorContainer:
+    type: Container
+  executeHead:
+    type: LRContainer
+  executeHistoryPop:
+    type: Container
+  executeTaskBreadcrumb:
+    type: Breadcrumb
+  executeHistoryRefresh:
+    type: Button
+  executeHistoryTable:
+    type: Table
+  executeAlertInfo:
+    type: Alert
+  leftHeadTitle:
+    type: Title
+  leftHeadButton:
+    type: Button
+    props:
+      text: 添加
+      type: primary
+  fileTree:
+    type: FileTree
+  fileFormModal:
+    type: FormModal
+  folderDetail:
+    type: Container
+  folderDetailTitle:
+    type: Title
+  folderDetailTable:
+    type: Table
+  fileDetail:
+    type: Tabs
+  stages:
+    type: SortGroup
+  apiEditor:
+    type: "APIEditor"
+    operations:
+      onChange:
+        key: "onChange"
+        reload: true
+      close:
+        key: "closeApiEdit"
+        reload: false
+        command:
+          key: "set"
+          target: "apiEditorDrawer"
+          state:
+            visible: false
+  marketProtoTitle:
+    type: Title
+    props:
+      title: "市场原型"
+      level: 3
+      tips: "当前主要通过api集市引入接口，请搜索选择使用"
+  marketProto:
+    type: 'SelectPro'
+    props:
+      renderType: "apiProto"
+      optionLabelProp: "label"
+      showSearch: true
+      placeholder: "请选择接口名称或路径进行搜索"
+      allowClear: true
+    operations:
+      onChange:
+        reload: true
+        key: changeAPISpec
+        confirm:
+          title: "确认覆盖当前接口定义"
+          subTitle: "接口定义覆盖后无法恢复, 确认覆盖？"
+        fillMeta: "selectApiSpecId"
+        meta:
+          selectApiSpecId: ""
+      onSearch:
+        reload: true
+        key: searchAPISpec
+        fillMeta: "keyWord"
+        meta:
+          keyWord: ""
+  fileInfo:
+    type: Panel
+  fileConfig:
+    type: Container
+  fileInfoTitle:
+    type: Title
+  executeInfoTitle:
+    type: Title
+  inParamsTitle:
+    type: Title
+  stagesTitle:
+    type: Title
+  outPutTitle:
+    type: Title
+  stagesOperations:
+    type: RowContainer
+  fileHistory:
+    type: Popover
+  fileHistoryButton:
+    type: Button
+  fileHistoryTable:
+    type: Table
+  executeHistoryButton:
+    type: Button
+  addApiButton:
+    type: Button
+  waitEditorDrawer:
+    type: Drawer
+    state:
+      visible: false
+    props:
+      title: "等待信息"
+      size: "l"
+  nestedSceneDrawer:
+    type: Drawer
+    state:
+      visible: false
+    props:
+      title: "嵌套场景信息"
+      size: "l"
+  configSheetDrawer:
+    type: Drawer
+    state:
+      visible: false
+    props:
+      title: "配置单信息"
+      size: "l"
+  apiEditorDrawer:
+    type: Drawer
+    state:
+      visible: false
+    props:
+      title: "接口信息"
+      size: "l"
+      closable: false
+      maskClosable: false
+  resultDrawer:
+    type: Drawer
+  addConfigSheetButton:
+    type: Button
+  addWaitButton:
+    type: Button
+  inParamsForm:
+    type: EditList
+  outPutForm:
+    type: EditList
+  executeInfo:
+    type: Panel
+  executeHistory:
+    type: Popover
+  executeTaskTitle:
+    type: Title
+  executeTaskTable:
+    type: Table
+  tabExecuteButton:
+    type: Button
+  resultPreview:
+    type: APIPreview
+rendering:
+  # 前端触发组件
+  # 先渲染前端触发组件，再渲染关联组件
+  inParamsForm:
+    - name: fileInfo
+  outPutForm:
+    - name: fileInfo
+  fileFormModal:
+    - name: fileTree
+      state:
+        - name: "sceneSetKey"
+          value: "{{ fileFormModal.sceneSetKey }}"
+    - name: folderDetailTable
+    - name: fileInfo
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+  folderDetailTable:
+    - name: fileFormModal
+      state:
+        - name: "visible"
+          value: "{{ folderDetailTable.visible }}"
+        - name: "sceneId"
+          value: "{{ folderDetailTable.sceneId }}"
+        - name: "actionType"
+          value: "{{ folderDetailTable.actionType }}"
+    - name: fileTree
+      state:
+        - name: "clickFolderTableSceneID"
+          value: "{{ folderDetailTable.clickFolderTableRowID }}"
+        - name: "isClickFolderTable"
+          value: "{{ folderDetailTable.isClickFolderTableRow }}"
+    - name: tabExecuteButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: fileDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "isChangeScene"
+          value: "{{ fileTree.isClickScene }}"
+    - name: fileConfig
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+    - name: fileInfo
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: inParamsForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: stages
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: outPutForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addApiButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addConfigSheetButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addWaitButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: folderDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: executeHead
+    - name: executeHistoryTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "chooseScenesID"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTitle
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: resultDrawer
+  fileTree:
+    - name: tabExecuteButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: fileFormModal
+      state:
+        - name: "visible"
+          value: "{{ fileTree.formVisible }}"
+        - name: "sceneSetKey"
+          value: "{{ fileTree.sceneSetKey }}"
+        - name: "actionType"
+          value: "{{ fileTree.actionType }}"
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: fileDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "isChangeScene"
+          value: "{{ fileTree.isClickScene }}"
+    - name: fileConfig
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+    - name: fileInfo
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: inParamsForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: stages
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: outPutForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addApiButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addConfigSheetButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addWaitButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: folderDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: folderDetailTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+        - name: "pageNo"
+          value: "{{ fileTree.pageNo }}"
+    - name: executeHead
+    - name: executeHistoryTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "chooseScenesID"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTitle
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: resultDrawer
+  leftHeadButton:
+    - name: "fileFormModal"
+      state:
+        - name: "visible"
+          value: "{{ leftHeadButton.formVisible }}"
+        - name: "actionType"
+          value: "{{ leftHeadButton.actionType }}"
+  fileDetail:
+    - name: fileConfig
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+    - name: fileExecute
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+  addApiButton:
+    - name: fileInfo
+    - name: stages
+    - name: apiEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ addApiButton.showApiEditorDrawer }}"
+    - name: apiEditor
+      state:
+        - name: "stepId"
+          value: "{{ addApiButton.createStepID }}"
+        - name: "isFirstIn"
+          value: "{{ addApiButton.isClick }}"
+    - name: marketProtoTitle
+    - name: marketProto
+      state:
+        - name: "stepId"
+          value: "{{ addApiButton.createStepID }}"
+  addConfigSheetButton:
+    - name: fileInfo
+    - name: stages
+    - name: configSheetDrawer
+      state:
+        - name: "visible"
+          value: "{{ addConfigSheetButton.showConfigSheetDrawer }}"
+    - name: configSheetSelect
+      state:
+        - name: "visible"
+          value: "{{ configSheetDrawer.visible }}"
+        - name: "stepId"
+          value: "{{ addConfigSheetButton.createStepID }}"
+    - name: configSheetInParams
+      state:
+        - name: "stepId"
+          value: "{{ addConfigSheetButton.createStepID }}"
+        - name: "configSheetId"
+          value: "{{ addConfigSheetButton.configSheetId }}"
+  addWaitButton:
+    - name: fileInfo
+    - name: stages
+    - name: waitEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ addWaitButton.showWaitEditorDrawer }}"
+    - name: waitEditor
+      state:
+        - name: "stepId"
+          value: "{{ addWaitButton.createStepID }}"
+  stages:
+    - name: fileInfo
+    - name: apiEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ stages.showApiEditorDrawer }}"
+    - name: apiEditor
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+        - name: "isFirstIn"
+          value: "{{ stages.isClickItem }}"
+    - name: marketProtoTitle
+    - name: marketProto
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+    - name: configSheetDrawer
+      state:
+        - name: "visible"
+          value: "{{ stages.showConfigSheetDrawer }}"
+    - name: configSheetSelect
+      state:
+        - name: "visible"
+          value: "{{ stages.showConfigSheetDrawer }}"
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+    - name: configSheetInParams
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+        - name: "visible"
+          value: "{{ configSheetDrawer.visible }}"
+        - name: "configSheetId"
+          value: "{{ stages.configSheetId }}"
+    - name: waitEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ stages.showWaitEditorDrawer }}"
+    - name: waitEditor
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+    - name: nestedSceneDrawer
+      state:
+        - name: "visible"
+          value: "{{ stages.showNestedSceneDrawer }}"
+    - name: nestedSceneSelect
+      state:
+        - name: "visible"
+          value: "{{ stages.showNestedSceneDrawer }}"
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+    - name: nestedSceneInParams
+      state:
+        - name: "stepId"
+          value: "{{ stages.stepId }}"
+        - name: "visible"
+          value: "{{ stages.showNestedSceneDrawer }}"
+
+  waitEditor:
+    - name: fileInfo
+    - name: waitEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ waitEditor.drawVisible }}"
+    - name: stages
+  marketProto:
+    - name: fileInfo
+    - name: apiEditor
+      state:
+        - name: "changeApiSpecId"
+          value: "{{ marketProto.apiSpecId }}"
+    - name: stages
+  apiEditor:
+    - name: fileInfo
+    - name: stages
+    - name: apiEditorDrawer
+      state:
+        - name: "visible"
+          value: "{{ apiEditor.apiEditorDrawerVisible }}"
+    - name: outPutForm
+  configSheetDrawer:
+    - name: configSheetInParams
+      state:
+        - name: "visible"
+          value: "{{ configSheetDrawer.visible }}"
+  configSheetSelect:
+    - name: configSheetInParams
+      state:
+        - name: "configSheetId"
+          value: "{{ configSheetSelect.configSheetId }}"
+        - name: "stepId"
+          value: "{{ configSheetSelect.stepId }}"
+        - name: "visible"
+          value: "{{ configSheetSelect.visible }}"
+    - name: stages
+  nestedSceneInParams:
+    - name: fileInfo
+    - name: nestedSceneDrawer
+      state:
+        - name: "visible"
+          value: "{{ configSheetInParams.visible }}"
+    - name: stages
+  configSheetInParams:
+    - name: fileInfo
+    - name: configSheetDrawer
+      state:
+        - name: "visible"
+          value: "{{ configSheetInParams.visible }}"
+    - name: stages
+
+  executeHistoryTable:
+    - name: executeTaskTable
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+  executeTaskTable:
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "name"
+          value: "{{ executeTaskTable.name }}"
+        - name: "pipelineId"
+          value: "{{ executeTaskTable.pipelineId }}"
+        - name: "unfold"
+          value: "{{ executeTaskTable.unfold }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: refreshButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeTaskTable.pipelineId }}"
+  executeTaskBreadcrumb:
+    - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeTaskBreadcrumb.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeTaskBreadcrumb.pipelineId }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: refreshButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+  refreshButton:
+    - name: executeHistoryTable
+    - name: executeTaskTable
+    - name: executeInfo
+    - name: cancelExecuteButton
+    - name: executeAlertInfo
+  executeHistoryRefresh:
+    - name: executeHistoryTable
+      state:
+        - name: pageNo
+          value: "{{ executeHistoryRefresh.pageNo }}"
+    - name: executeTaskTable
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+  cancelExecuteButton:
+    - name: executeHistoryTable
+    - name: executeTaskTable
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+  tabExecuteButton:
+    - name: executeHistoryTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: executeTaskTable
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeInfo
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: fileDetail
+      state:
+        - name: activeKey
+          value: "{{ tabExecuteButton.activeKey }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+
+  __DefaultRendering__:
+    - name: autoTestScenes
+    - name: leftPage
+    - name: leftHead
+    - name: leftHeadTitle
+    - name: leftHeadButton
+    - name: fileSearch
+    - name: fileTree
+    - name: rightPage
+    - name: fileDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: tabExecuteButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: fileConfig
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+    - name: fileExecute
+      state:
+        - name: activeKey
+          value: "{{ fileDetail.activeKey }}"
+    - name: fileInfoHead
+    - name: fileInfoTitle
+    - name: fileInfo
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: inParamsTitle
+    - name: inParamsForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: stagesTitle
+    - name: stages
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: outPutTitle
+    - name: outPutForm
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: stagesOperations
+    - name: addApiButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addConfigSheetButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: addWaitButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+
+    - name: folderDetail
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: folderDetailTitle
+    - name: folderDetailTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "setId"
+          value: "{{ fileTree.sceneSetKey }}"
+    - name: executeHistory
+    - name: executeHistoryPop
+    - name: executeHistoryRefresh
+    - name: executeHistoryTable
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: resultDrawer
+    - name: executeInfoTitle
+    - name: refreshButton
+    - name: cancelExecuteButton
+      state:
+        - name: "chooseScenesID"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: tabExecuteButton
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+    - name: executeHead
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTitle
+    - name: executeTaskBreadcrumb
+      state:
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeHistoryButton
+      state:
+        - name: "visible"
+          value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package spec
 
 import (
@@ -97,6 +110,13 @@ type PipelineExtraInfo struct {
 	DefinedOutputs []apistructs.PipelineOutput `json:"definedOutputs,omitempty"`
 
 	SnippetChain []uint64 `json:"snippetChain,omitempty"`
+
+	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
+}
+
+type QueueInfo struct {
+	QueueID        uint64 `json:"queueID"`
+	CustomPriority int64  `json:"customPriority"`
 }
 
 type Snapshot struct {
@@ -115,6 +135,15 @@ type Snapshot struct {
 
 	// OutputValues output 定义和从 task 里采集上来的值
 	OutputValues []apistructs.PipelineOutputWithValue `json:"outputValues,omitempty"`
+
+	// AppliedResources calculated by all actions
+	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
+
+	// BindQueue stores the binding queue info if have.
+	BindQueue *apistructs.PipelineQueue `json:"bindQueue,omitempty"`
+
+	// Events stores pipeline level k8s-like events
+	Events []*apistructs.PipelineEvent `json:"events,omitempty"`
 }
 
 // FromDB 兼容 Snapshot 老数据

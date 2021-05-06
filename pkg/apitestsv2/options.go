@@ -1,7 +1,26 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apitestsv2
 
 type option struct {
 	tryV1RenderJsonBodyFirst bool
+	netportalOption          *netportalOption
+}
+
+type netportalOption struct {
+	url                           string
+	blacklistOfK8sNamespaceAccess []string
 }
 
 type OpOption func(*option)
@@ -11,5 +30,15 @@ type OpOption func(*option)
 func WithTryV1RenderJsonBodyFirst() OpOption {
 	return func(opt *option) {
 		opt.tryV1RenderJsonBodyFirst = true
+	}
+}
+
+// WithNetportalConfigs set netportal url, whitelist and others.
+func WithNetportalConfigs(netportalURL string, blacklistOfK8sNamespaceAccess []string) OpOption {
+	return func(opt *option) {
+		opt.netportalOption = &netportalOption{
+			url:                           netportalURL,
+			blacklistOfK8sNamespaceAccess: blacklistOfK8sNamespaceAccess,
+		}
 	}
 }

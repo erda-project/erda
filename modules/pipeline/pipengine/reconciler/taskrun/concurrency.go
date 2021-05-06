@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package taskrun
 
 import (
@@ -8,10 +21,10 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/loop"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 const (
@@ -114,11 +127,11 @@ func (tr *TaskRun) GetActionSpec() apistructs.ActionSpec {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "begin get action spec")
 	var actionSpec apistructs.ActionSpec
 	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
-		_, actionSpecYmlJobMap, err := tr.ExtMarketSvc.SearchActions([]string{GetActionTypeVersion(&tr.Task.Extra.Action)})
+		_, actionSpecYmlJobMap, err := tr.ExtMarketSvc.SearchActions([]string{extmarketsvc.MakeActionTypeVersion(&tr.Task.Extra.Action)})
 		if err != nil {
 			return false, err
 		}
-		_spec, ok := actionSpecYmlJobMap[GetActionTypeVersion(&tr.Task.Extra.Action)]
+		_spec, ok := actionSpecYmlJobMap[extmarketsvc.MakeActionTypeVersion(&tr.Task.Extra.Action)]
 		if !ok {
 			rlog.TErrorf(tr.P.ID, tr.Task.ID, "not found action spec, actionType: %s", tr.Task.Type)
 			return false, fmt.Errorf("err for decline ratio")
@@ -129,15 +142,6 @@ func (tr *TaskRun) GetActionSpec() apistructs.ActionSpec {
 	b, _ := json.Marshal(actionSpec)
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "end get action spec, %s", string(b))
 	return actionSpec
-}
-
-// example: git, git@1.0, git@1.1
-func GetActionTypeVersion(action *pipelineyml.Action) string {
-	r := action.Type.String()
-	if action.Version != "" {
-		r = r + "@" + action.Version
-	}
-	return r
 }
 
 // -1 代表无限制

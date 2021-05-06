@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelinesvc
 
 import (
@@ -104,6 +117,11 @@ func (s *PipelineSvc) validateCreateRequest(req *apistructs.PipelineCreateReques
 			req.NormalLabels[k] = v
 			delete(req.Labels, k)
 		}
+	}
+	// bind queue
+	_, err := s.validateQueueFromLabels(req)
+	if err != nil {
+		return apierrors.ErrCreatePipeline.InvalidParameter(err)
 	}
 	return nil
 }
@@ -270,6 +288,22 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 				Desc: output.Desc,
 				Ref:  output.Ref,
 			})
+	}
+
+	// queue
+	if req.BindQueue != nil {
+		customPriority := req.BindQueue.Priority
+		customPriorityStr, ok := p.MergeLabels()[apistructs.LabelBindPipelineQueueCustomPriority]
+		if ok {
+			_customPriority, err := strconv.ParseInt(customPriorityStr, 10, 64)
+			if err == nil {
+				customPriority = _customPriority
+			}
+		}
+		p.Extra.QueueInfo = &spec.QueueInfo{
+			QueueID:        req.BindQueue.ID,
+			CustomPriority: customPriority,
+		}
 	}
 
 	return p, nil

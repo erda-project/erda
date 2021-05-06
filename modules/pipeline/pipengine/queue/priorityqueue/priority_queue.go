@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package priorityqueue
 
 import (
@@ -70,4 +83,14 @@ func (pq *PriorityQueue) Remove(key string) Item {
 // Len 返回队列长度
 func (pq *PriorityQueue) Len() int {
 	return pq.data.Len()
+}
+
+// Range range items and apply func to item one by one.
+func (pq *PriorityQueue) Range(f func(Item) (stopRange bool)) {
+	for _, item := range pq.data.items {
+		stopRange := f(item)
+		if stopRange {
+			break
+		}
+	}
 }

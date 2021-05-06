@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package reconciler
 
 import (
@@ -71,12 +84,13 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 		}
 	} else {
 		// 直接更新为 running 状态
-		if p.Status == apistructs.PipelineStatusAnalyzed {
+		if p.Status == apistructs.PipelineStatusAnalyzed || p.Status == apistructs.PipelineStatusQueue {
+			oldStatus := p.Status
 			p.Status = apistructs.PipelineStatusRunning
 			if err := r.updatePipelineStatus(p); err != nil {
 				return err
 			}
-			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, apistructs.PipelineStatusAnalyzed, apistructs.PipelineStatusRunning)
+			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, oldStatus, apistructs.PipelineStatusRunning)
 			// go metrics.PipelineGaugeProcessingAdd(*p, 1)
 		}
 	}
@@ -157,7 +171,9 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				if err := r.dbClient.UpdatePipelineTaskSnippetDetail(task.ID, snippetDetail); err != nil {
 					return
 				}
-				if err = r.reconcile(ctx, sp.ID); err != nil {
+				// make context for snippet
+				snippetCtx := makeContextForPipelineReconcile(sp.ID)
+				if err = r.reconcile(snippetCtx, sp.ID); err != nil {
 					return
 				}
 				// 查询最新 task
@@ -176,7 +192,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
-				r.Throttler, executor, p, r.bdl, r.dbClient, r.js,
+				r.TaskThrottler, executor, p, r.bdl, r.dbClient, r.js,
 				r.actionAgentSvc, r.extMarketSvc)
 
 			// tear down task
@@ -226,7 +242,7 @@ func (r *Reconciler) updatePipelineStatus(p *spec.Pipeline) error {
 	}
 
 	// event
-	events.EmitPipelineEvent(p, p.GetRunUserID())
+	events.EmitPipelineInstanceEvent(p, p.GetRunUserID())
 
 	return nil
 }

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package reconciler
 
 import (
@@ -9,6 +22,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -33,7 +47,8 @@ type Reconciler struct {
 	bdl      *bundle.Bundle
 	dbClient *dbclient.Client
 
-	Throttler throttler.Throttler
+	QueueManager  types.QueueManager
+	TaskThrottler throttler.Throttler
 
 	// processingTasks store task id which is in processing
 	processingTasks sync.Map
@@ -73,6 +88,9 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 	if err := r.loadThrottler(); err != nil {
 		return nil, err
 	}
+	if err := r.loadQueueManger(); err != nil {
+		return nil, err
+	}
 	return &r, nil
 }
 
@@ -86,7 +104,7 @@ func (r *Reconciler) Add(pipelineID uint64) {
 			rlog.PErrorf(pipelineID, "add to reconciler failed, err: %v, try again later", err)
 			return false, err
 		}
-		rlog.PErrorf(pipelineID, "add to reconciler success")
+		rlog.PInfof(pipelineID, "add to reconciler success")
 		return true, nil
 	})
 }

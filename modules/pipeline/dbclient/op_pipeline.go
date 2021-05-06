@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package dbclient
 
 import (
@@ -293,14 +306,15 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		// select by labels
 		if len(req.MustMatchLabels) > 0 || len(req.AnyMatchLabels) > 0 {
 			needFilterByLabel = true
-			labelRequest := apistructs.PipelineIDSelectByLabelRequest{
+			labelRequest := apistructs.TargetIDSelectByLabelRequest{
+				Type:                   apistructs.PipelineLabelTypeInstance,
 				PipelineSources:        req.Sources,
 				AllowNoPipelineSources: req.AllSources,
 				PipelineYmlNames:       req.YmlNames,
 				MustMatchLabels:        req.MustMatchLabels,
 				AnyMatchLabels:         req.AnyMatchLabels,
 			}
-			labelPipelineIDs, err = client.SelectPipelineIDsByLabels(labelRequest)
+			labelPipelineIDs, err = client.SelectTargetIDsByLabels(labelRequest)
 			if err != nil {
 				errs = append(errs, err.Error())
 				return
@@ -609,7 +623,7 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOpt
 	go func() {
 		defer wg.Done()
 
-		innerLabelsMap, err := client.ListPipelineLabelsByPipelineIDs(pipelineIDs, ops...)
+		innerLabelsMap, err := client.ListPipelineLabelsByTypeAndTargetIDs(apistructs.PipelineLabelTypeInstance, pipelineIDs, ops...)
 		if err != nil {
 			errs = append(errs, err.Error())
 			return

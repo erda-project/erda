@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelinesvc
 
 import (
@@ -12,11 +25,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
-	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -62,7 +77,7 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	p.Extra.DiceWorkspace = app.Workspace
 
 	// --- repo info ---
-	repo := gittarutil.NewRepo(conf.GittarAddr(), app.GitRepoAbbrev)
+	repo := gittarutil.NewRepo(discover.Gittar(), app.GitRepoAbbrev)
 	commit, err := repo.GetCommit(req.Branch)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepo.InternalError(err)
@@ -166,7 +181,21 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	return p, nil
 }
 
-func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
+// passedDataWhenCreate stores data passed recursively when create graph.
+type passedDataWhenCreate struct {
+	actionJobDefines map[string]*diceyml.Job
+}
+
+// createPipelineGraph recursively create pipeline graph.
+// passedData stores data passed recursively.
+func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...passedDataWhenCreate) (err error) {
+	var passedData passedDataWhenCreate
+	if len(passedDataOpt) > 0 {
+		passedData = passedDataOpt[0]
+	}
+	if passedData.actionJobDefines == nil {
+		passedData.actionJobDefines = make(map[string]*diceyml.Job)
+	}
 
 	// tx
 	txSession := s.dbClient.NewSession()
@@ -185,13 +214,6 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 		}
 		// metrics.PipelineCounterTotalAdd(*p, 1)
 	}()
-
-	//// 给 pipeline 设置上历史的 snippet caches 记录
-	//caches, err := getSnippetCaches(p)
-	//if err != nil {
-	//	return err
-	//}
-	//p.Snippets = caches
 
 	// 创建 pipeline
 	if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(txSession.Session)); err != nil {
@@ -213,8 +235,36 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
 
+	// batch search extensions
+	var extItems []string
+	for _, stage := range pipelineYml.Spec().Stages {
+		for _, typedAction := range stage.Actions {
+			for _, action := range typedAction {
+				if action.Type.IsSnippet() {
+					continue
+				}
+				extItem := extmarketsvc.MakeActionTypeVersion(action)
+				// extension already searched, skip
+				if _, ok := passedData.actionJobDefines[extItem]; ok {
+					continue
+				}
+				extItems = append(extItems, extmarketsvc.MakeActionTypeVersion(action))
+			}
+		}
+	}
+	extItems = strutil.DedupSlice(extItems, true)
+	actionJobDefines, _, err := s.extMarketSvc.SearchActions(extItems)
+	if err != nil {
+		return apierrors.ErrCreatePipelineGraph.InternalError(err)
+	}
+	for extItem, actionJobDefine := range actionJobDefines {
+		passedData.actionJobDefines[extItem] = actionJobDefine
+	}
+
 	var snippetTasks []*spec.PipelineTask
+	var allStagedTasks [][]*spec.PipelineTask
 	for si, stage := range pipelineYml.Spec().Stages {
+		var stagedTasks []*spec.PipelineTask
 		ps := &spec.PipelineStage{
 			PipelineID:  p.ID,
 			Name:        "",
@@ -226,6 +276,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 			return apierrors.ErrCreatePipelineGraph.InternalError(err)
 		}
 
+		// create tasks
 		for _, typedAction := range stage.Actions {
 			for actionType, action := range typedAction {
 				var pt *spec.PipelineTask
@@ -244,7 +295,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 						}
 						snippetTasks = append(snippetTasks, pt)
 					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action)
+						pt, err = s.makeNormalPipelineTask(p, ps, action, actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
 						if err != nil {
 							return apierrors.ErrCreatePipelineTask.InternalError(err)
 						}
@@ -255,8 +306,10 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 					logrus.Errorf("[alert] failed to create pipeline task when create pipeline graph: %v", err)
 					return apierrors.ErrCreatePipelineTask.InternalError(err)
 				}
+				stagedTasks = append(stagedTasks, pt)
 			}
 		}
+		allStagedTasks = append(allStagedTasks, stagedTasks)
 	}
 
 	// commit transaction
@@ -273,11 +326,11 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 	s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
 
 	// events
-	events.EmitPipelineEvent(p, p.GetSubmitUserID())
+	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
 
 	// 统一处理嵌套流水线
 	// 批量查询 snippet yaml
-	sourceSnippetConfigMap := make(map[string]map[string]apistructs.SnippetConfig) // key: source, value: type
+	var sourceSnippetConfigs []apistructs.SnippetConfig
 	for _, snippetTask := range snippetTasks {
 		yamlSnippetConfig := snippetTask.Extra.Action.SnippetConfig
 		snippetConfig := apistructs.SnippetConfig{
@@ -285,12 +338,9 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 			Name:   yamlSnippetConfig.Name,
 			Labels: yamlSnippetConfig.Labels,
 		}
-		if _, ok := sourceSnippetConfigMap[snippetConfig.Source]; !ok {
-			sourceSnippetConfigMap[snippetConfig.Source] = make(map[string]apistructs.SnippetConfig)
-		}
-		sourceSnippetConfigMap[snippetConfig.Source][snippetConfig.Name] = snippetConfig
+		sourceSnippetConfigs = append(sourceSnippetConfigs, snippetConfig)
 	}
-	sourceSnippetConfigYamls, err := s.handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigMap)
+	sourceSnippetConfigYamls, err := s.handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
 	if err != nil {
 		return apierrors.ErrQuerySnippetYaml.InternalError(err)
 	}
@@ -301,12 +351,16 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 	var wg sync.WaitGroup
 	for i := range snippetTasks {
 		snippet := snippetTasks[i]
-		snippetConfig := snippet.Extra.Action.SnippetConfig
+		snippetConfig := apistructs.SnippetConfig{
+			Source: snippet.Extra.Action.SnippetConfig.Source,
+			Name:   snippet.Extra.Action.SnippetConfig.Name,
+			Labels: snippet.Extra.Action.SnippetConfig.Labels,
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			// snippetTask 转换为 pipeline 结构体
-			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.Source][snippetConfig.Name])
+			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.ToString()])
 			if err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)
@@ -314,7 +368,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 				return
 			}
 			// 创建嵌套流水线
-			if err := s.createPipelineGraph(snippetPipeline); err != nil {
+			if err := s.createPipelineGraph(snippetPipeline, passedData); err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)
 				sLock.Unlock()
@@ -322,6 +376,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 			}
 			// 创建好的流水线数据塞回 snippetTask
 			snippet.SnippetPipelineID = &snippetPipeline.ID
+			snippet.Extra.AppliedResources = snippetPipeline.Snapshot.AppliedResources
 			if err := s.dbClient.UpdatePipelineTask(snippet.ID, snippet); err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)
@@ -337,6 +392,14 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline) (err error) {
 			errMsgs = append(errMsgs, err.Error())
 		}
 		return apierrors.ErrCreatePipelineGraph.InternalError(fmt.Errorf(strutil.Join(errMsgs, "; ")))
+	}
+
+	// calculate pipeline applied resource after all snippetTask created
+	pipelineAppliedResources := s.calculatePipelineResources(allStagedTasks)
+	p.Snapshot.AppliedResources = pipelineAppliedResources
+	if err := s.dbClient.UpdatePipelineExtraSnapshot(p.ID, p.Snapshot); err != nil {
+		return apierrors.ErrCreatePipelineGraph.InternalError(
+			fmt.Errorf("failed to update pipeline snapshot for applied resources, err: %v", err))
 	}
 
 	return nil

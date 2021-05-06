@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package throttler
 
 import (
@@ -101,38 +114,38 @@ func TestThrottler_AddKeyToQueues(t *testing.T) {
 	assert.Equal(t, int64(20), _th.queueByName["q2"].ProcessingWindow(), "q2's window is 20, changed when add key to queues")
 }
 
-func TestThrottler_PopPending(t *testing.T) {
-	th := NewNamedThrottler("t1", nil)
-
-	th.AddQueue("q1", 1)
-	th.AddQueue("q2", 0)
-	th.AddKeyToQueues("k1", []AddKeyToQueueRequest{
-		{
-			QueueName:    "q1",
-			Priority:     1,
-			CreationTime: time.Now(),
-		},
-		{
-			QueueName:    "q2",
-			Priority:     1,
-			CreationTime: time.Now(),
-		},
-	})
-	popSuccess, popDetail := th.PopPending("k1")
-	assert.False(t, popSuccess, "k1 cannot pop, q2's window is 0")
-	assert.True(t, popDetail[0].CanPop, "q1 can pop k1")
-	assert.False(t, popDetail[1].CanPop, "q2 cannot pop k1")
-	fmt.Printf("%+v\n", popDetail)
-
-	th.AddQueue("q2", 2) // enlarge q2's window, so item can pop
-	popSuccess, popDetail = th.PopPending("k1")
-	assert.True(t, popSuccess, "k1 can pop")
-	fmt.Printf("%+v\n", popDetail)
-
-	popSuccess, popDetail = th.PopPending("kkkkkk")
-	assert.True(t, popSuccess, "no kkkkkk")
-	fmt.Printf("%+v\n", popDetail)
-}
+//func TestThrottler_PopPending(t *testing.T) {
+//	th := NewNamedThrottler("t1", nil)
+//
+//	th.AddQueue("q1", 1)
+//	th.AddQueue("q2", 0)
+//	th.AddKeyToQueues("k1", []AddKeyToQueueRequest{
+//		{
+//			QueueName:    "q1",
+//			Priority:     1,
+//			CreationTime: time.Now(),
+//		},
+//		{
+//			QueueName:    "q2",
+//			Priority:     1,
+//			CreationTime: time.Now(),
+//		},
+//	})
+//	popSuccess, popDetail := th.PopPending("k1")
+//	assert.False(t, popSuccess, "k1 cannot pop, q2's window is 0")
+//	assert.True(t, popDetail[0].CanPop, "q1 can pop k1")
+//	assert.False(t, popDetail[1].CanPop, "q2 cannot pop k1")
+//	fmt.Printf("%+v\n", popDetail)
+//
+//	th.AddQueue("q2", 2) // enlarge q2's window, so item can pop
+//	popSuccess, popDetail = th.PopPending("k1")
+//	assert.True(t, popSuccess, "k1 can pop")
+//	fmt.Printf("%+v\n", popDetail)
+//
+//	popSuccess, popDetail = th.PopPending("kkkkkk")
+//	assert.True(t, popSuccess, "no kkkkkk")
+//	fmt.Printf("%+v\n", popDetail)
+//}
 
 func TestThrottler_PopProcessing(t *testing.T) {
 	th := NewNamedThrottler("t1", nil)

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelinesvc
 
 import (
@@ -9,25 +22,22 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-const (
-	defaultExecutorScheduler = "scheduler"
-)
-
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action) (*spec.PipelineTask, error) {
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, actionJobDefine *diceyml.Job) (*spec.PipelineTask, error) {
 	task := &spec.PipelineTask{}
 	task.PipelineID = p.ID
 	task.StageID = ps.ID
 	task.Name = action.Alias.String()
 	// task.OpType
 	task.Type = action.Type.String()
-	task.ExecutorKind = spec.PipelineTaskExecutorKindScheduler
 	task.Extra.Namespace = p.Extra.Namespace
-	task.Extra.ExecutorName = "scheduler"
 	task.Extra.ClusterName = p.ClusterName
 	task.Extra.AllowFailure = false
 	task.Extra.Pause = false
@@ -39,6 +49,14 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.Extra.Envs
 	// task.Extra.Labels
 	// task.Extra.Image
+
+	// set executor
+	executorKind, executorName, err := s.judgeTaskExecutor(action)
+	if err != nil {
+		return nil, apierrors.ErrCreatePipelineTask.InvalidParameter(err)
+	}
+	task.ExecutorKind = executorKind
+	task.Extra.ExecutorName = executorName
 
 	// default task resource limit
 	task.Extra.RuntimeResource = spec.RuntimeResource{
@@ -87,6 +105,9 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 		}
 	}
 
+	// applied resources
+	task.Extra.AppliedResources = calculateNormalTaskResources(action, actionJobDefine)
+
 	return task, nil
 }
 
@@ -116,13 +137,15 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 	task.CostTimeSec = -1
 	task.QueueTimeSec = -1
 
+	// ext resources set outside after created
+
 	return &task, nil
 }
 
 func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) (spec.PipelineTaskExtra, error) {
 	var ex spec.PipelineTaskExtra
 	ex.Namespace = p.Extra.Namespace
-	ex.ExecutorName = defaultExecutorScheduler
+	ex.ExecutorName = spec.PipelineTaskExecutorNameEmpty
 	ex.ClusterName = p.ClusterName
 	ex.AllowFailure = false
 	ex.Pause = false
@@ -149,4 +172,72 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 		runAfters = append(runAfters, need.String())
 	}
 	return runAfters
+}
+
+// judgeTaskExecutor judge task executor by action info
+func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action) (spec.PipelineTaskExecutorKind, string, error) {
+	if action.Type == apistructs.ActionTypeAPITest {
+		return spec.PipelineTaskExecutorKindAPITest, spec.PipelineTaskExecutorNameAPITestDefault, nil
+	}
+	return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
+}
+
+func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
+	defaultRes := apistructs.PipelineAppliedResource{CPU: conf.TaskDefaultCPU(), MemoryMB: conf.TaskDefaultMEM()}
+	return apistructs.PipelineAppliedResources{
+		Limits:   calculateNormalTaskLimitResource(action, actionDefine, defaultRes),
+		Requests: calculateNormalTaskRequestResource(action, actionDefine, defaultRes),
+	}
+}
+
+func calculateNormalTaskLimitResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
+	// calculate
+	maxCPU := numeral.MaxFloat64([]float64{
+		actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU,
+		action.Resources.MaxCPU, action.Resources.CPU,
+	})
+	maxMemoryMB := numeral.MaxFloat64([]float64{
+		float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem),
+		float64(action.Resources.Mem),
+	})
+
+	// use default if is empty
+	if maxCPU == 0 {
+		maxCPU = defaultRes.CPU
+	}
+	if maxMemoryMB == 0 {
+		maxMemoryMB = defaultRes.MemoryMB
+	}
+
+	return apistructs.PipelineAppliedResource{
+		CPU:      maxCPU,
+		MemoryMB: maxMemoryMB,
+	}
+}
+
+func calculateNormalTaskRequestResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
+	// assign from actionDefine
+	requestCPU := numeral.MinFloat64([]float64{actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU}, true)
+	requestMemoryMB := numeral.MinFloat64([]float64{float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem)}, true)
+
+	// user explicit declaration has the highest priority, overwrite value from actionDefine
+	if c := numeral.MinFloat64([]float64{action.Resources.MaxCPU, action.Resources.CPU}, true); c > 0 {
+		requestCPU = c
+	}
+	if m := action.Resources.Mem; m > 0 {
+		requestMemoryMB = float64(m)
+	}
+
+	// use default if is empty
+	if requestCPU == 0 {
+		requestCPU = defaultRes.CPU
+	}
+	if requestMemoryMB == 0 {
+		requestMemoryMB = defaultRes.MemoryMB
+	}
+
+	return apistructs.PipelineAppliedResource{
+		CPU:      requestCPU,
+		MemoryMB: requestMemoryMB,
+	}
 }

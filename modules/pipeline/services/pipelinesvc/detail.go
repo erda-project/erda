@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelinesvc
 
 import (
@@ -119,6 +132,9 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	}
 	detail.RunParams = pipelineParams
 
+	// events
+	detail.Events = s.getPipelineEvents(pipelineID)
+
 	return &detail, nil
 }
 
@@ -163,6 +179,15 @@ func getPipelineParams(pipelineYml string, runParams []apistructs.PipelineRunPar
 		})
 	}
 	return pipelineParamDTOs, nil
+}
+
+func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*apistructs.PipelineEvent {
+	_, events, err := s.dbClient.GetPipelineEvents(pipelineID)
+	if err != nil {
+		logrus.Errorf("failed to get pipeline events, pipelineID: %d, err: %v", pipelineID, err)
+		return nil
+	}
+	return events
 }
 
 // 给 pipelineTask 设置 action 的 logo 和 displayName 给前端展示

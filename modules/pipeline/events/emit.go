@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package events
 
 import (
@@ -6,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func EmitPipelineEvent(p *spec.Pipeline, userID string) {
+func EmitPipelineInstanceEvent(p *spec.Pipeline, userID string) {
 	event := &PipelineEvent{DefaultEvent: defaultEvent}
 
 	// EventHeader
@@ -24,6 +37,21 @@ func EmitPipelineEvent(p *spec.Pipeline, userID string) {
 
 	// Pipeline
 	event.Pipeline = p
+
+	mgr.ch <- event
+}
+
+func EmitPipelineStreamEvent(pipelineID uint64, events []*apistructs.PipelineEvent) {
+	event := &PipelineStreamEvent{DefaultEvent: defaultEvent}
+
+	// EventHeader
+	event.EventHeader.Event = string(EventKindPipelineStream)
+
+	// Pipeline
+	event.PipelineID = pipelineID
+
+	// Stream Events
+	event.Events = events
 
 	mgr.ch <- event
 }
