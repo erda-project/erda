@@ -81,6 +81,8 @@ func NewHTTPEndpoints(
 
 const (
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
+	RetainNamespace                = "RETAIN_NAMESPACE"
+	QueryRetainNamespace           = "retainNamespace"
 )
 
 // Routes scheduler
@@ -630,11 +632,16 @@ func (h *HTTPEndpoints) JobStop(ctx context.Context, r *http.Request, vars map[s
 		}, nil
 	}
 
+	var retainNamespace = true
+	if r.URL.Query().Get(QueryRetainNamespace) == "false" {
+		retainNamespace = false
+	}
+
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 
-	if err := h.job.Stop(namespace, name); err != nil {
+	if err := h.job.Stop(namespace, name, retainNamespace); err != nil {
 		errstr := fmt.Sprintf("failed to stop job, err: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{
@@ -666,6 +673,16 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 
+	var retainNamespace = false
+	if r.URL.Query().Get(QueryRetainNamespace) != "" {
+		retainNamespace = true
+	}
+
+	if job.Env == nil {
+		job.Env = make(map[string]string, 0)
+	}
+	job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
+
 	if err := h.job.Delete(job); err != nil {
 		errstr := fmt.Sprintf("failed to delete job, err: %v", err)
 		logrus.Error(errstr)
@@ -695,13 +712,25 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 			},
 		}, nil
 	}
+	var retainNamespace = false
+	if r.URL.Query().Get(QueryRetainNamespace) != "false" {
+		retainNamespace = true
+	}
+
 	deleteResponseList := apistructs.JobsDeleteResponse{}
 	logrus.Infof("batch delete %d jobs", len(jobs))
+
 	for _, job := range jobs {
+		if job.Env == nil {
+			job.Env = make(map[string]string, 0)
+		}
+		job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
+
 		var namespace = job.Namespace
 		if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 			namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 		}
+
 		if err := h.job.Delete(job); err != nil {
 			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, namespace, err)
 			logrus.Error(errstr)
@@ -712,6 +741,7 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 			})
 		}
 	}
+
 	if len(deleteResponseList) != 0 {
 		return httpserver.HTTPResponse{
 			Status:  http.StatusBadRequest,

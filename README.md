@@ -44,6 +44,7 @@ To start using Erda, please see our user documentation. Before using, you need t
 
 - [中文](https://dice-docs.app.terminus.io)
 - English
+- [erda-release](https://github.com/erda-project/erda-release)
 
 ## Contributing
 
