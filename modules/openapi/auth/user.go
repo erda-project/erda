@@ -140,7 +140,7 @@ func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (i
 		orgHeader := req.Header.Get("ORG")
 		var orgID uint64
 		var noOrgID bool
-		if orgHeader != "" {
+		if orgHeader != "" && orgHeader != "-" {
 			org, err := u.bundle.GetOrg(orgHeader)
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}
