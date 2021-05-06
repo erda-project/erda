@@ -678,6 +678,9 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 		retainNamespace = true
 	}
 
+	if job.Env == nil {
+		job.Env = make(map[string]string, 0)
+	}
 	job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
 
 	if err := h.job.Delete(job); err != nil {
@@ -718,6 +721,9 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 	logrus.Infof("batch delete %d jobs", len(jobs))
 
 	for _, job := range jobs {
+		if job.Env == nil {
+			job.Env = make(map[string]string, 0)
+		}
 		job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
 
 		var namespace = job.Namespace

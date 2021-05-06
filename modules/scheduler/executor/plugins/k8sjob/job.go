@@ -906,7 +906,7 @@ func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
 	_, err := k.client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !strings.Contains(err.Error(), "not found") {
-			errMsg := fmt.Sprintf("failed to get k8s namespace %s", name)
+			errMsg := fmt.Sprintf("failed to get k8s namespace %s: %v", name, err)
 			logrus.Errorf(errMsg)
 			return errors.Errorf(errMsg)
 		}

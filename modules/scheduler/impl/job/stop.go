@@ -35,7 +35,9 @@ func (j *JobImpl) Stop(namespace, name string, retainNamespace bool) error {
 		}
 		return err
 	}
-
+	if job.Env == nil {
+		job.Env = make(map[string]string, 0)
+	}
 	job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
 
 	if _, err := j.handleJobTask(ctx, &job, task.TaskDestroy); err != nil {
