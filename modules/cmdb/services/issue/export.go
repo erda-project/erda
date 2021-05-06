@@ -71,11 +71,11 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 	}
 	tablename := "issuetable"
 	if len(issues) > 0 {
-		tablename = issues[0].Type.GetZhName()
-	}
-
-	if issues[0].IterationID == -1 {
-		tablename = "待办事项"
+		if issues[0].IterationID == -1 {
+			tablename = "待办事项"
+		} else {
+			tablename = issues[0].Type.GetZhName()
+		}
 	}
 
 	buf := bytes.NewBuffer([]byte{})
