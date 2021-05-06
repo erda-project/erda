@@ -16,6 +16,8 @@ package apitestsv2
 import "net/http"
 
 const headerAcceptEncoding = "Accept-Encoding"
+const HeaderSetCookie = "Set-Cookie"
+const HeaderCookie = "Cookie"
 
 // polishHeadersForCompression 优化用于压缩的 header
 func polishHeadersForCompression(headers http.Header) http.Header {

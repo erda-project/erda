@@ -16,13 +16,13 @@ package autotest_cookie_keep_after
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/pkg/apitestsv2"
 )
 
 const taskType = "api-test"
-const cookieMetafileName = "api_set_cookies"
+const metaKeySetCookie = "api_set_cookie"
 const AutotestApiGlobalConfig = "AUTOTEST_API_GLOBAL_CONFIG"
 const ReportTypeAutotestSetCookie = "autotest_set_cookie"
-const CookieJar = "cookieJar"
 
 type Plugin struct {
 	aoptypes.TaskBaseTunePoint
@@ -43,14 +43,14 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	if metadata == nil {
 		return nil
 	}
-	var cookieJar string
+	var setCookieJSON string
 	for _, field := range metadata {
-		if field.Name == cookieMetafileName {
-			cookieJar = field.Value
+		if field.Name == metaKeySetCookie {
+			setCookieJSON = field.Value
 			break
 		}
 	}
-	if len(cookieJar) <= 0 {
+	if setCookieJSON == "" {
 		return nil
 	}
 
@@ -63,7 +63,7 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 		PipelineID: ctx.SDK.Pipeline.ID,
 		Type:       ReportTypeAutotestSetCookie,
 		Meta: map[string]interface{}{
-			CookieJar: cookieJar,
+			apitestsv2.HeaderSetCookie: setCookieJSON,
 		},
 	})
 	return err
