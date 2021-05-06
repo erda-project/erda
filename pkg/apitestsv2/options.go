@@ -15,7 +15,12 @@ package apitestsv2
 
 type option struct {
 	tryV1RenderJsonBodyFirst bool
-	netportalURL             string
+	netportalOption          *netportalOption
+}
+
+type netportalOption struct {
+	url                           string
+	blacklistOfK8sNamespaceAccess []string
 }
 
 type OpOption func(*option)
@@ -28,9 +33,12 @@ func WithTryV1RenderJsonBodyFirst() OpOption {
 	}
 }
 
-// WithNetportal set netportal url.
-func WithNetportal(netportalURL string) OpOption {
+// WithNetportalConfigs set netportal url, whitelist and others.
+func WithNetportalConfigs(netportalURL string, blacklistOfK8sNamespaceAccess []string) OpOption {
 	return func(opt *option) {
-		opt.netportalURL = netportalURL
+		opt.netportalOption = &netportalOption{
+			url:                           netportalURL,
+			blacklistOfK8sNamespaceAccess: blacklistOfK8sNamespaceAccess,
+		}
 	}
 }

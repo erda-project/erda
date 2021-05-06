@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
@@ -125,7 +126,7 @@ func Do(ctx context.Context, task *spec.PipelineTask) {
 	printGlobalAPIConfig(ctx, apiTestEnvData)
 
 	// do apiTest
-	apiTest := apitestsv2.New(apiInfo, apitestsv2.WithNetportal(getNetportalURL(ctx)))
+	apiTest := apitestsv2.New(apiInfo, apitestsv2.WithNetportalConfigs(getNetportalURL(ctx), conf.APITestNetportalAccessK8sNamespaceBlacklist()))
 	apiReq, apiResp, err := apiTest.Invoke(&hc, apiTestEnvData, caseParams)
 	printRenderedHTTPReq(ctx, apiReq)
 	meta.Req = apiReq

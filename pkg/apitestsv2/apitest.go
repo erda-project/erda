@@ -186,7 +186,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Body.Content = reqBody
 
 	// use netportal
-	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalURL)
+	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalOption)
 	if err != nil {
 		return nil, nil, err
 	}
