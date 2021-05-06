@@ -780,7 +780,7 @@ var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 
 // IsFunction check function is exist.
 func IsFunction(name string) bool {
-	if _, ok := LiteralFunctions[name];ok{
+	if _, ok := LiteralFunctions[name]; ok {
 		return true
 	}
 	_, ok := BuildInFunctions[name]

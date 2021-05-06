@@ -19,21 +19,21 @@ import (
 )
 
 var (
-	ctx Context
+	ctx      Context
 	testTime time.Time
 )
 
 const (
-	timeFormat="2006-01-02 15:04:05"
-	strTestTime="1970-01-01 00:00:01"
+	timeFormat  = "2006-01-02 15:04:05"
+	strTestTime = "1970-01-01 00:00:01"
 )
 
-func prepare(){
-	testTime,_=time.Parse(timeFormat,strTestTime)
+func prepare() {
+	testTime, _ = time.Parse(timeFormat, strTestTime)
 }
 
 func Test_BuildInFunctions(t *testing.T) {
-    prepare()
+	prepare()
 	tests := []struct {
 		name    string
 		args    []interface{}
@@ -120,7 +120,7 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"int", []interface{}{float32(1)}, int64(1), false},
 		{"int", []interface{}{float64(1)}, int64(1), false},
 		{"int", []interface{}{"1"}, int64(1), false},
-		{"int", []interface{}{1*time.Nanosecond}, int64(1), false},
+		{"int", []interface{}{1 * time.Nanosecond}, int64(1), false},
 		{"int", []interface{}{testTime}, int64(1000000000), false},
 		{"int", []interface{}{map[string]string{}}, int64(0), true},
 		{"bool", []interface{}{}, "error", true},
@@ -128,8 +128,8 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"bool", []interface{}{false}, false, false},
 		{"bool", []interface{}{int(1)}, true, false},
 		{"bool", []interface{}{int8(1)}, true, false},
-		{"bool", []interface{}{int16(1)},true, false},
-		{"bool", []interface{}{int32(1)},true, false},
+		{"bool", []interface{}{int16(1)}, true, false},
+		{"bool", []interface{}{int32(1)}, true, false},
 		{"bool", []interface{}{int64(1)}, true, false},
 		{"bool", []interface{}{uint(1)}, true, false},
 		{"bool", []interface{}{uint8(1)}, true, false},
@@ -139,7 +139,7 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"bool", []interface{}{float32(1)}, true, false},
 		{"bool", []interface{}{float64(1)}, true, false},
 		{"bool", []interface{}{"test"}, true, false},
-		{"bool", []interface{}{1*time.Nanosecond}, true, false},
+		{"bool", []interface{}{1 * time.Nanosecond}, true, false},
 		{"bool", []interface{}{testTime}, true, false},
 		{"bool", []interface{}{map[string]string{}}, true, false},
 		{"float", []interface{}{}, "error", true},
@@ -158,7 +158,7 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"float", []interface{}{float32(1)}, float64(1), false},
 		{"float", []interface{}{float64(1)}, float64(1), false},
 		{"float", []interface{}{"1.0"}, float64(1), false},
-		{"float", []interface{}{1*time.Nanosecond}, float64(1), false},
+		{"float", []interface{}{1 * time.Nanosecond}, float64(1), false},
 		{"float", []interface{}{testTime}, float64(1000000000), false},
 		{"float", []interface{}{map[string]string{}}, float64(0), true},
 		{"string", []interface{}{}, "error", true},
@@ -180,7 +180,7 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"duration", []interface{}{float64(1)}, time.Duration(1), false},
 		{"duration", []interface{}{"1ns"}, time.Duration(1), false},
 		{"duration", []interface{}{"z"}, time.Duration(0), true},
-		{"duration", []interface{}{1*time.Nanosecond}, time.Duration(1), false},
+		{"duration", []interface{}{1 * time.Nanosecond}, time.Duration(1), false},
 		{"duration", []interface{}{map[string]string{}}, time.Duration(0), true},
 		{"parse_time", []interface{}{}, "error", true},
 		{"parse_time", []interface{}{"2021-01-02 20:07:08", "2006-01"}, "error", true},
