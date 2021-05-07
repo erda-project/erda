@@ -1,12 +1,8 @@
 scenario: "project-list-my"
 
 hierarchy:
-  root: page
+  root: myPage
   structure:
-    page:
-      children:
-        - myPage
-        - empty
     myPage:
       - alert
       - filter
@@ -16,8 +12,6 @@ hierarchy:
       - emptyText
 
 components:
-  page:
-    type: Tabs
   myPage:
     type: Container
   list:
@@ -48,7 +42,6 @@ rendering:
         - name: "isEmpty"
           value: "{{ list.isEmpty }}"
   __DefaultRendering__:
-    - name: page
     - name: myPage
     - name: filter
     - name: list

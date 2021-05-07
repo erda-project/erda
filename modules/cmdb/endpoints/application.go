@@ -745,6 +745,8 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		isSimple = true
 	}
 
+	orderBy := r.URL.Query().Get("orderBy")
+
 	req := &apistructs.ApplicationListRequest{
 		ProjectID: uint64(projectID),
 		Mode:      mode,
@@ -754,6 +756,7 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		PageSize:  pageSize,
 		Public:    public,
 		IsSimple:  isSimple,
+		OrderBy:   orderBy,
 	}
 
 	return req, nil
@@ -840,6 +843,8 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 
 	gitRepo := strutil.Concat(conf.GittarOutterURL(), "/", application.GitRepoAbbrev)
 
+	gitRepoNew := strutil.Concat(orgName, "-org.", conf.RootDomain(), "/wb/", application.ProjectName, "/", application.Name)
+
 	var repoConfig apistructs.GitRepoConfig
 	if application.IsExternalRepo {
 		json.Unmarshal([]byte(application.RepoConfig), &repoConfig)
@@ -894,6 +899,7 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 		Creator:        application.UserID,
 		GitRepo:        gitRepo,
 		GitRepoAbbrev:  application.GitRepoAbbrev,
+		GitRepoNew:     gitRepoNew,
 		Token:          token,
 		Workspaces:     workspaces,
 		Stats: apistructs.ApplicationStats{

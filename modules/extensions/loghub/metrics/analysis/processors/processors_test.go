@@ -35,7 +35,7 @@ func ExampleProcessors() {
 	cfg, _ := json.Marshal(map[string]interface{}{
 		"pattern": "(d+)",
 		"keys": []*metrics.FieldDefine{
-			&metrics.FieldDefine{
+			{
 				Key:  "ip",
 				Type: "string",
 			},

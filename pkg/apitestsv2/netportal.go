@@ -16,24 +16,30 @@ package apitestsv2
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/apitestsv2/cookiejar"
 	"github.com/erda-project/erda/pkg/customhttp"
 	"github.com/erda-project/erda/pkg/httpclientutil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, jar *cookiejar.Jar, netPortalURL string) (*http.Request, []*http.Cookie, error) {
-	var url = apiReq.URL
+const k8sServiceSuffix = ".svc.cluster.local"
 
-	if netPortalURL != "" {
-		apiReq.URL = strutil.Concat(netPortalURL, "/", httpclientutil.RmProto(apiReq.URL))
+func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOpt *netportalOption) (*http.Request, error) {
+	useNetportal := useNetportal(apiReq.URL, netportalOpt)
+	if !useNetportal {
+		return http.NewRequest(apiReq.Method, apiReq.URL, nil)
 	}
+	// use netportal
+	apiReq.URL = strutil.Concat(netportalOpt.url, "/", httpclientutil.RmProto(apiReq.URL))
 
 	customReq, err := customhttp.NewRequest(apiReq.Method, apiReq.URL, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to handle custom netportal request, err: %v", err)
+		return nil, fmt.Errorf("failed to handle custom netportal request, err: %v", err)
 	}
 	for k, values := range customReq.Header {
 		for _, v := range values {
@@ -41,11 +47,41 @@ func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, jar *cookie
 		}
 	}
 
-	var cookies []*http.Cookie
-	if jar != nil {
-		request, _ := http.NewRequest(apiReq.Method, url, nil)
-		u := request.URL
-		cookies = jar.Cookies(u)
+	return customReq, nil
+}
+
+// useNetportal return true or false to represent use netportal or not.
+func useNetportal(inputURL string, netportalOpt *netportalOption) bool {
+	// cannot use if no netportal url
+	if netportalOpt == nil || netportalOpt.url == "" {
+		return false
 	}
-	return customReq, cookies, nil
+	// only host have k8s service suffix will use netportal
+	r, err := url.ParseRequestURI(inputURL)
+	if err != nil {
+		logrus.Errorf("failed to parse apitest url, url: %s, err: %v", inputURL, err)
+		// if err, not use netportal
+		return false
+	}
+	hostport := r.Host
+	ss := strings.SplitN(hostport, ":", 2)
+	host := ss[0]
+	// doesn't have k8s svc suffix, do not use nerportal
+	if !strings.HasSuffix(host, k8sServiceSuffix) {
+		return false
+	}
+	// if parsed k8s namespace is blacklist, do not use netportal
+	ns := getK8sNamespace(host)
+	inBlacklist := strutil.Exist(netportalOpt.blacklistOfK8sNamespaceAccess, ns)
+	if inBlacklist {
+		return false
+	}
+	return true
+}
+
+func getK8sNamespace(k8sHost string) string {
+	hostWithoutSuf := strings.TrimSuffix(k8sHost, k8sServiceSuffix)
+	ss := strings.Split(hostWithoutSuf, ".")
+	ns := ss[len(ss)-1]
+	return ns
 }

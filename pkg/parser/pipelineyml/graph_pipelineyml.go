@@ -127,25 +127,29 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 
 	var on *apistructs.TriggerConfig
 	if pipelineYml.Spec().On != nil {
-		on = &apistructs.TriggerConfig{}
-		if pipelineYml.Spec().On.Merge != nil {
-			var branches []string
-			if pipelineYml.Spec().On.Merge.Branches != nil {
-				branches = pipelineYml.Spec().On.Merge.Branches
+		merge := pipelineYml.Spec().On.Merge
+		push := pipelineYml.Spec().On.Push
+		if merge != nil || push != nil {
+			on = &apistructs.TriggerConfig{}
+			if merge != nil {
+				var branches []string
+				if merge.Branches != nil {
+					branches = merge.Branches
+				}
+				on.Merge = &apistructs.MergeTrigger{Branches: branches}
 			}
-			on.Merge = &apistructs.MergeTrigger{Branches: branches}
-		}
-		if pipelineYml.Spec().On.Push != nil {
-			var branches, tags []string
-			if pipelineYml.Spec().On.Push.Branches != nil {
-				branches = pipelineYml.Spec().On.Push.Branches
-			}
-			if pipelineYml.Spec().On.Push.Tags != nil {
-				tags = pipelineYml.Spec().On.Push.Tags
-			}
-			on.Push = &apistructs.PushTrigger{
-				Branches: branches,
-				Tags:     tags,
+			if push != nil {
+				var branches, tags []string
+				if push.Branches != nil {
+					branches = push.Branches
+				}
+				if push.Tags != nil {
+					tags = push.Tags
+				}
+				on.Push = &apistructs.PushTrigger{
+					Branches: branches,
+					Tags:     tags,
+				}
 			}
 		}
 	}
@@ -158,6 +162,17 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		Outputs:     pipelineOutputs,
 		On:          on,
 	}
+
+	var lifecycle []*apistructs.NetworkHookInfo
+	for _, hookInfo := range pipelineYml.Spec().Lifecycle {
+		hook := apistructs.NetworkHookInfo{
+			Hook:   hookInfo.Hook,
+			Client: hookInfo.Client,
+			Labels: hookInfo.Labels,
+		}
+		lifecycle = append(lifecycle, &hook)
+	}
+	result.Lifecycle = lifecycle
 
 	if result.NeedUpgrade {
 		result.YmlContent = string(pipelineYml.upgradedYmlContent)

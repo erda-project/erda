@@ -38,8 +38,8 @@ func (mgr *defaultManager) PutPipelineIntoQueue(pipelineID uint64) (<-chan struc
 		return nil, false, fmt.Errorf("pipeline not found, pipelineID: %d", pipelineID)
 	}
 
-	// already after queue status
-	if p.Status.AfterPipelineQueue() {
+	// already end status
+	if p.Status.IsEndStatus() {
 		go func() {
 			popCh <- struct{}{}
 			close(popCh)
@@ -125,6 +125,11 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 		}
 
 		// update pipeline status to Queue
+		if p.Status == apistructs.PipelineStatusQueue || p.Status.AfterPipelineQueue() {
+			// no need update, already at queue or later status
+			return true, nil
+		}
+		// do update status and emit event
 		if err := mgr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusQueue); err != nil {
 			err = fmt.Errorf("failed to update pipeline status to Queue, err: %v", err)
 			rlog.PErrorf(p.ID, err.Error())

@@ -43,17 +43,27 @@ const (
 )
 
 func (q *defaultQueue) RangePendingQueue() {
+	q.setIsRangingPendingQueueFlag()
+	defer q.unsetIsRangingPendingQueueFlag()
 	usage := q.Usage()
 	usageByte, _ := json.Marshal(&usage)
 	logrus.Debugf("queueManager: queueID: %s, queueName: %s, usage: %s", q.ID(), q.pq.Name, string(usageByte))
+	// fast reRange
+	defer func() {
+		if q.needReRangePendingQueue() {
+			logrus.Debugf("queueManager: queueID: %s, queueName: %s, unset need reRange pending queue flag", q.ID(), q.pq.Name)
+			// unset flag for next use
+			q.unsetNeedReRangePendingQueueFlag()
+		}
+	}()
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		// fast reRange
-		if q.needReRangePendingQueue {
-			q.lock.Lock()
-			q.needReRangePendingQueue = false
-			q.lock.Unlock()
-			return true
-		}
+		defer func() {
+			if q.needReRangePendingQueue() {
+				// stop current range
+				stopRange = true
+			}
+		}()
 
 		pipelineID := parsePipelineIDFromQueueItem(item)
 		if pipelineID == 0 {
@@ -117,8 +127,12 @@ func (q *defaultQueue) RangePendingQueue() {
 			}
 			// need retry, sleep specific time
 			q.emitEvent(p, PendingQueueValidate,
-				fmt.Sprintf("validate failed(need retry), waiting for retry(%dsec)", checkResult.RetryOption.IntervalSecond),
+				fmt.Sprintf("validate failed(need retry), waiting for retry(%dsec), reason: %s", checkResult.RetryOption.IntervalSecond, checkResult.Reason),
 				events.EventLevelNormal)
+			// judge whether need reRange before sleep
+			if q.needReRangePendingQueue() {
+				return true
+			}
 			time.Sleep(time.Second * time.Duration(checkResult.RetryOption.IntervalSecond))
 			// according to queue mode, check next pipeline or skip
 			return q.IsStrictMode()
