@@ -14,11 +14,12 @@
 package adapt
 
 import (
-	"github.com/erda-project/erda/bundle"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda/bundle"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
