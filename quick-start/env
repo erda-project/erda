@@ -72,7 +72,7 @@ REDIS_MASTER_NAME=mymaster
 #ZOOKEEPER_ADDR=zookeeper:2181
 
 ES_SECURITY_USERNAME=undefined
-ES_URL=http://addon-elasticsearch.default.svc.cluster.local:9200
+ES_URL=http://elasticsearch:9200
 ES_SECURITY_ENABLE=false
 
 SONAR_PUBLIC_URL=http://sonar-sys.dice.local
