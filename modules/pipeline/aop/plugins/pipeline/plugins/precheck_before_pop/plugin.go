@@ -57,6 +57,7 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 				IntervalSecond: result.RetryOption.IntervalSecond,
 			}
 		}
+		validResult.Reason = result.Message
 
 		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, validResult)
 	}

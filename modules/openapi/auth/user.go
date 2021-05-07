@@ -76,6 +76,10 @@ type User struct {
 
 func NewUser(redisCli *redis.Client) *User {
 	ucUserAuth := ucauth.NewUCUserAuth(conf.UCAddrFront(), discover.UC(), "http://"+conf.UCRedirectHost()+"/logincb", conf.UCClientID(), conf.UCClientSecret())
+	if conf.OryEnabled() {
+		ucUserAuth.ClientID = conf.OryCompatibleClientID()
+		ucUserAuth.UCHost = conf.OryKratosAddr()
+	}
 	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: bundle.New(bundle.WithCMDB())}
 }
 
@@ -91,6 +95,11 @@ func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (i
 		fallthrough
 	case GotSessionID:
 		token, err := u.redisCli.Get(MkSessionKey(u.sessionID)).Result()
+		if conf.OryEnabled() {
+			// TODO: remove useless `token`
+			token = u.sessionID
+			err = nil
+		}
 		if err == redis.Nil {
 			return nil, AuthResult{AuthFail,
 				errors.Wrap(ErrNotExist, "User:GetInfo:GotSessionID:not exist: "+u.sessionID).Error()}
@@ -131,7 +140,7 @@ func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (i
 		orgHeader := req.Header.Get("ORG")
 		var orgID uint64
 		var noOrgID bool
-		if orgHeader != "" {
+		if orgHeader != "" && orgHeader != "-" {
 			org, err := u.bundle.GetOrg(orgHeader)
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}

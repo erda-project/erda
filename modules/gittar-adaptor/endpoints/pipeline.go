@@ -134,7 +134,6 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 		Sources:                    []apistructs.PipelineSource{apistructs.PipelineSource(oriReq.Sources)},
 		Statuses:                   []string{oriReq.Statuses},
 		MustMatchLabelsQueryParams: queryParams,
-		AllSources:                 true, // TODO: 后续前端需要传具体的 source
 	}
 
 	if oriReq.YmlNames != "" {

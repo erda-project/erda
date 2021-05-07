@@ -127,6 +127,7 @@ type ApplicationListRequest struct {
 	PageNo   int    `query:"pageNo"`
 	PageSize int    `query:"pageSize"`
 	Public   string `query:"public"`
+	OrderBy  string `query:"orderBy"`
 
 	// 是否只返回简单信息(应用级流水线打开列表使用)
 	IsSimple bool `query:"isSimple"`
@@ -168,6 +169,7 @@ type ApplicationDTO struct {
 	Stats              ApplicationStats       `json:"stats"`
 	GitRepo            string                 `json:"gitRepo"`
 	GitRepoAbbrev      string                 `json:"gitRepoAbbrev"`
+	GitRepoNew         string                 `json:"gitRepoNew"`
 	Token              string                 `json:"token"`
 	OrgID              uint64                 `json:"orgId"`
 	OrgName            string                 `json:"orgName"`

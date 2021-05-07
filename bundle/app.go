@@ -94,6 +94,34 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 	return &listResp.Data, nil
 }
 
+// get applications by projectID and app name
+func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
+		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Param("pageSize", "1").
+		Param("pageNo", "1").
+		Param("name", appName).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+
+	return &listResp.Data, nil
+}
+
 // GetAppsByProjectSimple 根据 projectID 获取应用列表简单信息
 func (b *Bundle) GetAppsByProjectSimple(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CMDB()
@@ -202,4 +230,35 @@ func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
 		return toAPIError(resp.StatusCode(), getResp.Error)
 	}
 	return nil
+}
+
+// get my apps by paging
+func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications/actions/list-my-applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgid, 10)).
+		Header(httputil.UserHeader, userid).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("name", req.Name).
+		Param("mode", req.Mode).
+		Param("q", req.Query).
+		Param("public", req.Public).
+		Param("projectId", strconv.FormatUint(req.ProjectID, 10)).
+		Param("isSimple", strconv.FormatBool(req.IsSimple)).
+		Param("orderBy", req.OrderBy).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+	return &listResp.Data, nil
 }

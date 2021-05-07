@@ -22,26 +22,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/types"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Project 资源对象操作封装
 type Project struct {
 	db                *dao.DBClient
-	uc                *utils.UCClient
+	uc                *ucauth.UCClient
 	bdl               *bundle.Bundle
 	ProjectStatsCache *sync.Map
 }
@@ -70,7 +69,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *utils.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(p *Project) {
 		p.uc = uc
 	}
@@ -1112,4 +1111,32 @@ func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpac
 func genProjectNamespace(prjIDStr string) map[string]string {
 	return map[string]string{"DEV": "project-" + prjIDStr + "-dev", "TEST": "project-" + prjIDStr + "-test",
 		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
+}
+
+func (p *Project) GetMyProjectIDList(scopeType apistructs.ScopeType, parentID int64, userID string) ([]uint64, error) {
+	members, err := p.db.GetMembersByParentID(apistructs.ProjectScope, parentID, userID)
+	if err != nil {
+		return nil, errors.Errorf("failed to get permission when get projects, (%v)", err)
+	}
+
+	projectIDList := make([]uint64, 0, len(members))
+	for i := range members {
+		if members[i].ResourceKey == apistructs.RoleResourceKey {
+			projectIDList = append(projectIDList, uint64(members[i].ScopeID))
+		}
+	}
+	return projectIDList, nil
+}
+
+func (p *Project) GetProjectIDListByStates(req apistructs.IssuePagingRequest, projectIDList []uint64) (int, []apistructs.ProjectDTO, error) {
+	var res []apistructs.ProjectDTO
+	total, pros, err := p.db.GetProjectIDListByStates(req, projectIDList)
+	if err != nil {
+		return total, res, err
+	}
+	for _, v := range pros {
+		proDTO := p.convertToProjectDTO(true, &v)
+		res = append(res, proDTO)
+	}
+	return total, res, nil
 }

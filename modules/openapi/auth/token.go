@@ -41,6 +41,12 @@ var once sync.Once
 
 // 获取 dice 自己的token
 func GetDiceClientToken() (ucauth.OAuthToken, error) {
+	if conf.OryEnabled() {
+		return ucauth.OAuthToken{
+			AccessToken: conf.OryKratosPrivateAddr(),
+			TokenType:   conf.OryCompatibleClientID(),
+		}, nil
+	}
 	once.Do(func() {
 		ucTokenAuth, _ = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
 	})

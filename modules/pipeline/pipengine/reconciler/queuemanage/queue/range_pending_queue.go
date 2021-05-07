@@ -127,7 +127,7 @@ func (q *defaultQueue) RangePendingQueue() {
 			}
 			// need retry, sleep specific time
 			q.emitEvent(p, PendingQueueValidate,
-				fmt.Sprintf("validate failed(need retry), waiting for retry(%dsec)", checkResult.RetryOption.IntervalSecond),
+				fmt.Sprintf("validate failed(need retry), waiting for retry(%dsec), reason: %s", checkResult.RetryOption.IntervalSecond, checkResult.Reason),
 				events.EventLevelNormal)
 			// judge whether need reRange before sleep
 			if q.needReRangePendingQueue() {

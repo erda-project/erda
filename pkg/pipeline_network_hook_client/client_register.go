@@ -66,7 +66,7 @@ func PostLifecycleHookHttpClient(source string, req interface{}, resp interface{
 		return apierrors.ErrInvoke.InternalError(fmt.Errorf("body: %s, decode error %v", buffer.String(), err))
 	}
 
-	logrus.Debugf("postLifecycleHookHttpClient response: %v", buffer)
+	logrus.Debugf("postLifecycleHookHttpClient response: %v", buffer.String())
 	return nil
 }
 

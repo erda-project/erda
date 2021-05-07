@@ -606,6 +606,8 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		orderBy = "mem_quota"
 	case "activeTime":
 		orderBy = "active_time"
+	case "name":
+		orderBy = "name"
 	default:
 		orderBy = ""
 	}
