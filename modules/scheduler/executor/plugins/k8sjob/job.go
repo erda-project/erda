@@ -78,7 +78,9 @@ func init() {
 			return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 				name, clusterName, err)
 		}
-		if strings.HasPrefix(addr, "inet://") {
+
+		// Determine whether existed an http protocol to adapt to the edas platform
+		if strings.HasPrefix(addr, "inet://") || strings.HasPrefix(addr, "http") {
 			client, err = kubernetes.NewKubernetesClientSet(addr)
 			if err != nil {
 				return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
