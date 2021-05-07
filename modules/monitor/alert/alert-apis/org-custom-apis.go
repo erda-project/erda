@@ -68,13 +68,13 @@ func (p *provider) queryOrgCustomizeMetric(r *http.Request, params struct {
 	if lang == nil {
 		cms.NotifySample = adapt.OrgNotifyTemplateSample
 	} else {
-		if lang[0].Code == "zh" {
-			cms.NotifySample = adapt.OrgNotifyTemplateSample
-		} else {
-			cms.NotifySample = adapt.OrgNotifyTemplateSampleEn
+		cms.NotifySample = adapt.OrgNotifyTemplateSampleEn
+		for _, v := range lang {
+			if strings.HasPrefix(v.Code, "zh") {
+				cms.NotifySample = adapt.OrgNotifyTemplateSample
+			}
 		}
 	}
-
 	return api.Success(cms)
 }
 
