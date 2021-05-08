@@ -19,13 +19,13 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-const serviceSoldier = "ucAdaptor"
+const serviceUCAdaptor = "uc-adaptor"
 
 type provider struct{}
 
-func init() { servicehub.RegisterProvider(serviceSoldier, &provider{}) }
+func init() { servicehub.RegisterProvider(serviceUCAdaptor, &provider{}) }
 
-func (p *provider) Service() []string                 { return []string{serviceSoldier} }
+func (p *provider) Service() []string                 { return []string{serviceUCAdaptor} }
 func (p *provider) Dependencies() []string            { return []string{} }
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
 func (p *provider) Run(ctx context.Context) error     { return Initialize() }
