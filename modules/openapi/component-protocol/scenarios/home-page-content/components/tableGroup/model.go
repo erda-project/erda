@@ -105,9 +105,10 @@ type IssueData struct {
 }
 
 type IssueName struct {
-	RenderType string `json:"renderType"`
-	PrefixIcon string `json:"prefixIcon"`
-	Value      string `json:"value"`
+	RenderType  string `json:"renderType"`
+	PrefixIcon  string `json:"prefixIcon"`
+	Value       string `json:"value"`
+	HoverActive string `json:"hoverActive"`
 }
 
 type IssueItem struct {
@@ -136,6 +137,7 @@ type Value struct {
 type ValueText struct {
 	Text         string `json:"text"`
 	OperationKey string `json:"operationKey"`
+	Icon         string `json:"icon,omitempty"`
 }
 
 type ToSpecificProjectOperation struct {

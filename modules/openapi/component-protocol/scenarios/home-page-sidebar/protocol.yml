@@ -43,7 +43,6 @@ components:
     props:
       whiteBg: true
       fullHeight: true
-      className: "pa16"
   myOrganization:
     type: Container
   emptyOrganization:
