@@ -135,11 +135,11 @@ var (
 )
 
 var ErrorReqMetricNames = []string{
-	"application_db_error",
 	"application_http_error",
 	"application_rpc_error",
-	"application_mq_error",
 	"application_cache_error",
+	"application_db_error",
+	"application_mq_error",
 }
 
 var ReqMetricNames = []string{
@@ -704,6 +704,111 @@ func ExceptionOrderByStrategyExecute(exceptionType string, exceptions []Exceptio
 	}
 }
 
+type ReadWriteBytes struct {
+	Timestamp  int64   `json:"timestamp"`  // unit: s
+	ReadBytes  float64 `json:"readBytes"`  // unit: b
+	WriteBytes float64 `json:"writeBytes"` // unit: b
+}
+type ReadWriteBytesSpeed struct {
+	Timestamp       int64   `json:"timestamp"`       // format: yyyy-MM-dd HH:mm:ss
+	ReadBytesSpeed  float64 `json:"readBytesSpeed"`  // unit: b/s
+	WriteBytesSpeed float64 `json:"writeBytesSpeed"` // unit: b/s
+}
+
+func (topology *provider) GetProcessDiskIo(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(blk_read_bytes::field), 2),round_float(avg(blk_write_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_id":   params.ServiceId,
+	}
+	if params.InstanceId != "" {
+		statement = fmt.Sprintf(statement, "AND instance_id=$instance_id")
+		queryParams["instance_id"] = params.InstanceId
+	} else {
+		statement = fmt.Sprintf(statement, "")
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	itemResultSpeed := handleSpeed(rows)
+	return itemResultSpeed, nil
+}
+
+func (topology *provider) GetProcessNetIo(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+	statement := "SELECT parse_time(time(),'2006-01-02T15:04:05Z'),round_float(avg(rx_bytes::field), 2),round_float(avg(tx_bytes::field), 2) FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_id=$service_id %s GROUP BY time()"
+	queryParams := map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_id":   params.ServiceId,
+	}
+	if params.InstanceId != "" {
+		statement = fmt.Sprintf(statement, "AND instance_id=$instance_id")
+		queryParams["instance_id"] = params.InstanceId
+	} else {
+		statement = fmt.Sprintf(statement, "")
+	}
+	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, err
+	}
+	rows := response.ResultSet.Rows
+	itemResultSpeed := handleSpeed(rows)
+
+	return itemResultSpeed, nil
+}
+
+// handleSpeed The result is processed into ReadWriteBytesSpeed
+func handleSpeed(rows [][]interface{}) []ReadWriteBytesSpeed {
+	var itemResult []ReadWriteBytes
+	for _, row := range rows {
+		timeMs := row[1].(time.Time).UnixNano() / 1e6
+		rxBytes := row[2].(float64)
+		txBytes := row[3].(float64)
+		writeBytes := ReadWriteBytes{
+			Timestamp:  timeMs,
+			ReadBytes:  rxBytes,
+			WriteBytes: txBytes,
+		}
+		itemResult = append(itemResult, writeBytes)
+	}
+	var itemResultSpeed []ReadWriteBytesSpeed
+	for i, curr := range itemResult {
+		if i+1 >= len(itemResult) {
+			break
+		}
+		next := itemResult[i+1]
+		speed := ReadWriteBytesSpeed{}
+		speed.Timestamp = (curr.Timestamp + next.Timestamp) / 2
+
+		speed.ReadBytesSpeed = calculateSpeed(curr.ReadBytes, next.ReadBytes, curr.Timestamp, next.Timestamp)
+		speed.WriteBytesSpeed = calculateSpeed(curr.WriteBytes, next.WriteBytes, curr.Timestamp, next.Timestamp)
+
+		itemResultSpeed = append(itemResultSpeed, speed)
+	}
+	return itemResultSpeed
+}
+
+//calculateSpeed Calculate the speed through the two metric values before and after.
+func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
+	if curr != next {
+		if next == 0 || next < curr {
+			return 0
+		}
+		if nextTime-currTime <= 0 { // by zero
+			return 0
+		}
+		return toTwoDecimalPlaces((next - curr) / (float64(nextTime) - float64(currTime)))
+	}
+	return 0
+}
+
 func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
 	// default limit 10
 	if limit == 0 || limit > 50 {
@@ -839,39 +944,55 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT service_name::tag,pod_name::tag,status::field,timestamp,started_at::field FROM docker_container_summary WHERE terminus_key=$terminus_key AND service_name=$service_name GROUP BY pod_name::tag"
+	statement := "SELECT service_instance_id::tag,service_agent_platform::tag,format_time(start_time_mean::field*1000000,'2006-01-02 15:04:05') " +
+		"AS start_time,format_time(timestamp,'2006-01-02 15:04:05') AS last_heartbeat_time FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
-		"service_name": params.ServiceName,
+		"service_id":   params.ServiceId,
 	}
 	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
 	rows := response.ResultSet.Rows
-	var result []ServiceInstance
+	var result []*ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceName:         row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
-			//StartTime:          strconv.ParseInt(rows[4].(string), 10, 64),
-			//StartTime: rows[4],
+			ServiceInstanceId: row[0].(string),
+			PlatformVersion:   row[1].(string),
+			StartTime:         row[2].(string),
+			LastHeartbeatTime: row[3].(string),
 		}
-		result = append(result, instance)
+		result = append(result, &instance)
 	}
-
-	statement = "SELECT timestamp,service_agent_platform::tag FROM application_service_node WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') AS state FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
 	rows = response.ResultSet.Rows
-	platformVersion := rows[0][0]
 	for _, instance := range result {
-		instance.PlatformVersion = platformVersion.(string)
+		for i, row := range rows {
+			if row[0].(string) == instance.ServiceInstanceId {
+				state, err := strconv.ParseBool(row[1].(string))
+				if err != nil {
+					return nil, err
+				}
+				if state {
+					instance.InstanceState = topology.t.Text(language, "serviceInstanceStateRunning")
+				} else {
+					instance.InstanceState = topology.t.Text(language, "serviceInstanceStateStopped")
+				}
+				rows = append(rows[:i], rows[i+1:]...)
+				break
+			}
+		}
 	}
-	return nil, nil
+	return result, nil
 }
 
 func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params ServiceParams) (interface{}, error) {
@@ -880,7 +1001,8 @@ func (topology *provider) GetServiceRequest(language i18n.LanguageCodes, params 
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 	var translations []RequestTransaction
 	for _, metricName := range ReqMetricNames {
-		translation, err := topology.serviceReqInfo(metricName, ReqMetricNamesDesc[metricName], params, metricsParams)
+
+		translation, err := topology.serviceReqInfo(metricName, topology.t.Text(language, metricName+"_request"), params, metricsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -935,7 +1057,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 
 	// error req count
 	errorCount := 0.0
-	for _, metricName := range ErrorReqMetricNames {
+	for _, metricName := range ReqMetricNames {
 		count, err := topology.serviceReqErrorCount(metricName, params, metricsParams)
 		if err != nil {
 			return nil, err
@@ -946,7 +1068,7 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	serviceOverviewMap["service_error_req_count"] = errorCount
 
 	// exception count
-	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name"
+	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id"
 	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
@@ -980,7 +1102,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	dashboardData := make([]map[string]interface{}, 0, 10)
 	overviewMap := make(map[string]interface{})
 
-	// 服务数
+	// service count
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
@@ -1000,11 +1122,11 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	}
 	overviewMap["service_count"] = serviceCount
 
-	// 服务实例数
+	// running service instance count
 	instanceMetricsParams := url.Values{}
 	instanceMetricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	instanceMetricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT distinct(service_instance_id::tag) FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag"
+	statement = "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_instance_id::tag"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
 	}
@@ -1013,14 +1135,15 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 		return nil, err
 	}
 	rows = response.ResultSet.Rows
-	serviceInstanceCount := float64(0)
+	serviceRunningInstanceCount := float64(0)
 	for _, row := range rows {
-		count := row[0].(float64)
-		serviceInstanceCount += count
+		if row[1] == "running" {
+			serviceRunningInstanceCount += 1
+		}
 	}
-	overviewMap["service_instance_count"] = serviceInstanceCount
+	overviewMap["service_running_instance_count"] = serviceRunningInstanceCount
 
-	// 所有服务错误请求数
+	// error request count
 	errorCount := 0.0
 	for _, errorReqMetricName := range ErrorReqMetricNames {
 		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
@@ -1031,7 +1154,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	}
 	overviewMap["service_error_req_count"] = errorCount
 
-	// 服务异常
+	// service exception count
 	statement = "SELECT sum(count) FROM error_count WHERE terminus_key=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1044,7 +1167,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	expCount := rows[0][0]
 	overviewMap["service_exception_count"] = expCount
 
-	// 报警次数
+	// alert count
 	statement = "SELECT count(alert_id::tag) FROM analyzer_alert WHERE terminus_key=$terminus_key"
 	queryParams = map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1096,7 +1219,7 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 		serviceIdType = "source_service_id"
 		tkType = "source_terminus_key"
 	}
-	statement := fmt.Sprintf("SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+	statement := fmt.Sprintf("SELECT sum(count_sum),sum(elapsed_sum)/sum(count_sum),sum(errors_sum)/sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
 		metricScopeName, tkType, metricType, serviceIdType)
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1111,25 +1234,16 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 	row := response.ResultSet.Rows
 	requestTransaction.RequestCount = row[0][0].(float64)
 	if row[0][1] != nil {
-		avgTime := toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
-		requestTransaction.RequestAvgTime = avgTime
+		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
 	} else {
 		requestTransaction.RequestAvgTime = 0
 	}
-
-	errCount, err := topology.serviceReqErrorCount(metricScopeName+"_error", params, metricsParams)
-	if err != nil {
-		return nil, err
-	}
-
-	requestTransaction.RequestType = metricScopeNameDesc
-
-	if requestTransaction.RequestCount != 0 {
-		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(errCount / requestTransaction.RequestCount)
+	if row[0][2] != nil {
+		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(row[0][2].(float64) * 100)
 	} else {
 		requestTransaction.RequestErrorRate = 0
 	}
-
+	requestTransaction.RequestType = metricScopeNameDesc
 	return &requestTransaction, nil
 }
 
@@ -1142,7 +1256,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 		serviceIdType = "source_service_id"
 		tkType = "source_terminus_key"
 	}
-	statement := fmt.Sprintf("SELECT sum(count_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
+	statement := fmt.Sprintf("SELECT sum(errors_sum) FROM %s WHERE %s=$terminus_key AND %s=$service_name AND %s=$service_id",
 		metricScopeName, tkType, metricType, serviceIdType)
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1243,12 +1357,14 @@ func (topology *provider) Services(serviceName string, nodes []*Node) []ServiceD
 }
 
 type ServiceInstance struct {
-	ApplicationName     string  `json:"applicationName,omitempty"`
-	ServiceName         string  `json:"serviceName,omitempty"`
-	ServiceInstanceName string  `json:"serviceInstanceName,omitempty"`
-	InstanceState       string  `json:"instanceState,omitempty"`
-	PlatformVersion     string  `json:"platformVersion,omitempty"`
-	StartTime           float64 `json:"startTime,omitempty"`
+	ApplicationName     string `json:"applicationName,omitempty"`
+	ServiceName         string `json:"serviceName,omitempty"`
+	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
+	ServiceInstanceId   string `json:"serviceInstanceId,omitempty"`
+	InstanceState       string `json:"instanceState,omitempty"`
+	PlatformVersion     string `json:"platformVersion,omitempty"`
+	StartTime           string `json:"startTime,omitempty"`
+	LastHeartbeatTime   string `json:"lastHeartbeatTime,omitempty"`
 }
 
 func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (map[string][]ServiceInstance, error) {
@@ -1848,20 +1964,30 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 }
 
 func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
+	Start       int64  `query:"start" validate:"required"`
+	End         int64  `query:"end" validate:"required"`
 	ServiceName string `query:"serviceName" validate:"required"`
 	TerminusKey string `query:"terminusKey" validate:"required"`
 	Operation   string `query:"operation" validate:"required"`
 	ServiceId   string `query:"serviceId" validate:"required"`
+	Sort        string `default:"DESC" query:"sort"`
 }) interface{} {
+	if params.Sort != "ASC" && params.Sort != "DESC" {
+		return api.Errors.Internal(errors.New("not supported sort name"))
+	}
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.Start, 10))
+	options.Set("end", strconv.FormatInt(params.End, 10))
+	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation) ORDER BY timestamp %s", params.Sort)
 	details, err := topology.metricq.Query(metricq.InfluxQL,
-		"SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation)",
+		sql,
 		map[string]interface{}{
 			"serviceName": params.ServiceName,
 			"terminusKey": params.TerminusKey,
 			"operation":   params.Operation,
 			"serviceId":   params.ServiceId,
 		},
-		nil)
+		options)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}

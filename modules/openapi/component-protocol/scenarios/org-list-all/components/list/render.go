@@ -140,7 +140,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 			PrefixImg:   defaultOrgImage,
 			ExtraInfos: []ExtraInfo{
 				{
-					Icon: "earth",
+					Icon: "unlock",
 					Text: "公开组织",
 				},
 			},
@@ -151,7 +151,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 
 		if _, ok := orgMap[org.ID]; ok {
 			item.ExtraInfos = append(item.ExtraInfos, ExtraInfo{
-				Icon: "renyuan",
+				Icon: "user",
 				Text: "已加入",
 			})
 		}
@@ -162,8 +162,14 @@ func (i *ComponentList) RenderPublicOrgs() error {
 				Show:   false,
 				Reload: false,
 				Command: Command{
-					Key:    "goto",
-					Target: "https://" + org.Domain + "/workBench/projects",
+					Key:     "goto",
+					Target:  "workBenchRoot",
+					JumpOut: false,
+					State: CommandState{
+						Params{
+							OrgName: org.Name,
+						},
+					},
 				},
 			},
 		}

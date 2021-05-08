@@ -179,7 +179,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	actionDiceYmlJobMap, actionSpecYmlJobMap, err := pre.ExtMarketSvc.SearchActions(extSearchReq,
 		extmarketsvc.SearchActionWithRender(map[string]string{"storageMountPoint": mountPoint}))
 	if err != nil {
-		return true, nil
+		return true, err
 	}
 
 	// 校验 action agent
@@ -192,7 +192,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, apierrors.ErrValidateActionAgent.MissingParameter("MD5 (labels)")
 	}
 	if err := pre.ActionAgentSvc.Ensure(clusterInfo, agentDiceYmlJob.Image, agentMD5); err != nil {
-		return true, nil
+		return true, err
 	}
 
 	// action
@@ -360,7 +360,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, nil
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if p.Extra.StorageConfig.EnableNFSVolume() &&
+		!p.Extra.StorageConfig.EnableShareVolume() &&
+		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
@@ -478,7 +480,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		}
 
 	}
-	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if p.Extra.StorageConfig.EnableNFSVolume() &&
+		!p.Extra.StorageConfig.EnableShareVolume() &&
+		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -504,7 +508,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if p.Extra.StorageConfig.EnablePipelineVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 		// --- binds ---

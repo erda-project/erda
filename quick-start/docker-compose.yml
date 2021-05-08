@@ -1,7 +1,7 @@
 version: "3"
 services:
   ui:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/ui:3.21-20210420-faefdfb9f381500ad332db3ee93e10c1c43f4fa5
+    image: registry.cn-hangzhou.aliyuncs.com/terminus/erda-ui:1.0-20210423-72e31a0
     container_name: erda-ui
     env_file:
       - ./env
@@ -95,6 +95,7 @@ services:
       - "3082:3082"
     restart: always
     platform: linux/amd64
+
   eventbox:
     image: registry.cn-hangzhou.aliyuncs.com/dice/eventbox:4.0-20210420-29519ae
     container_name: erda-eventbox
@@ -104,6 +105,7 @@ services:
       - "9528:9528"
     restart: always
     platform: linux/amd64
+
   pipeline:
     image: registry.cn-hangzhou.aliyuncs.com/dice/pipeline:3.21-20210416-2c8b9419e
     # todo delete this command when pipeline update to the 4.0
@@ -118,6 +120,7 @@ services:
       - "3081:3081"
     restart: always
     platform: linux/amd64
+
   ops:
     image: registry.cn-hangzhou.aliyuncs.com/dice/ops:20210402-43057c555f3875d432ce4eb9f1675ca79c0857bc
     container_name: erda-ops
@@ -125,6 +128,7 @@ services:
       - ./env
     restart: always
     platform: linux/amd64
+
   qa:
     image: registry.cn-hangzhou.aliyuncs.com/dice/qa:4.0-20210416-ceb9858
     container_name: erda-qa
@@ -138,6 +142,7 @@ services:
       - cmdb
     restart: always
     platform: linux/amd64
+
   scheduler:
     image: registry.cn-hangzhou.aliyuncs.com/dice/scheduler:3.19-20201020-055111f
     container_name: erda-scheduler
@@ -151,6 +156,7 @@ services:
       - "9091:9091"
     restart: always
     platform: linux/amd64
+
   apim:
     image: registry.cn-hangzhou.aliyuncs.com/dice/apim:20201022-d6f4f42f0697b4d206888f5ee33b072f61ef5de3
     container_name: erda-apim
@@ -160,14 +166,22 @@ services:
       - "3083:3083"
     restart: always
     platform: linux/amd64
+
   cmdb:
     image: registry.cn-hangzhou.aliyuncs.com/dice/cmdb:4.0-20210421-a9391cc
     container_name: erda-cmdb
     env_file:
       - ./env
     volumes:
-      - ./data/dice/avatars:/avatars
-      - ./data/dice/cmdb/files:/files
+      - type: volume
+        source: erda-files
+        target: /files
+        read_only: false
+    volumes:
+      - type: volume
+        source: erda-avatars
+        target: /avatars
+        read_only: false
     environment:
       DEBUG: "false"
       ORY_ENABLED: "true"
@@ -181,13 +195,17 @@ services:
       - eventbox
     restart: always
     platform: linux/amd64
+
   gittar:
     image: registry.cn-hangzhou.aliyuncs.com/dice/gittar:4.0-20210420-29519ae
     container_name: erda-gittar
     env_file:
       - ./env
     volumes:
-      - ./data/repository:/repository
+      - type: volume
+        source: erda-gittar
+        target: /repository
+        read_only: false
     ports:
        - "5566:5566"
     environment:
@@ -199,6 +217,7 @@ services:
       ORY_KRATOS_PRIVATE_ADDR: "kratos:4434"
     restart: always
     platform: linux/amd64
+
   gittar-adaptor:
     image: registry.cn-hangzhou.aliyuncs.com/dice/gittar-adaptor:4.0-20210420-29519ae
     container_name: erda-gittar-adaptor
@@ -208,6 +227,7 @@ services:
       - "1086:1086"
     restart: always
     platform: linux/amd64
+
   dicehub:
     image: registry.cn-hangzhou.aliyuncs.com/dice/dicehub:4.0-20210420-29519ae
     container_name: erda-dicehub
@@ -221,6 +241,7 @@ services:
       RELEASE_MAX_TIME_RESERVED: "72"
     restart: always
     platform: linux/amd64
+
   openapi:
     image: registry.cn-hangzhou.aliyuncs.com/dice/openapi:4.0-20210421-a9391cc
     container_name: erda-openapi
@@ -239,6 +260,7 @@ services:
       - "9529:9529"
     restart: always
     platform: linux/amd64
+
   hepa:
     image: registry.cn-hangzhou.aliyuncs.com/dice/hepa:4.0.0-20210324-2638ccf
     container_name: erda-hepa
@@ -246,6 +268,7 @@ services:
       - ./env
     restart: always
     platform: linux/amd64
+
   orchestrator:
     image: registry.cn-hangzhou.aliyuncs.com/dice/orchestrator:4.0-20210414-f806769
     container_name: erda-orchestrator
@@ -258,6 +281,7 @@ services:
       - "8081:8081"
     restart: always
     platform: linux/amd64
+
   monitor:
     image: registry.cn-hangzhou.aliyuncs.com/dice/monitor:4.0-20210421-a2d7e5d
     container_name: erda-monitor
@@ -269,46 +293,79 @@ services:
       - "7096:7096"
       - "7098:7098"
     platform: linux/amd64
+
   etcd:
     image: bitnami/etcd:3
     container_name: erda-etcd
     volumes:
-      - ./data/etcd:/bitnami/etcd/data
+      - type: volume
+        source: erda-etcd
+        target: /bitnami/etcd/data
+        read_only: false
     environment:
       ALLOW_NONE_AUTHENTICATION: "yes"
     restart: always
     platform: linux/amd64
+
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
-    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+    container_name: erda-elasticsearch
     environment:
-      discovery.type: "single-node"
-      ELASTIC_PASSWORD: "123456"
-        # - ES_JAVA_OPTS="-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
     volumes:
-        - ./data/es:/usr/share/elasticsearch/data
+      - type: volume
+        source: erda-elasticsearch
+        target: /usr/share/elasticsearch/data
+        read_only: false
     ports:
         - "9200:9200"
         - "9300:9300"
-    labels:
-        - co.elastic.logs/module=elasticsearch
-        - co.elastic.metrics/module=elasticsearch
     platform: linux/amd64
+
   mysql:
     image: registry.cn-hangzhou.aliyuncs.com/dice-third-party/mysql:5.7-quickstart
     container_name: erda-mysql
     ports:
       - "3306:3306"
     volumes:
-      - ./data/mysql:/var/lib/mysql/:rw
-      # - ./init/dice.sql:/docker-entrypoint-initdb.d/init.sql
-      # - ./init/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      # - ./init/sql:/opt/sql
+      - type: volume
+        source: erda-mysql
+        target: /var/lib/mysql
+        read_only: false
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
       TZ: Asia/Shanghai
     restart: always
     platform: linux/amd64
+
+  dbmigration-4:
+    image: registry.cn-hangzhou.aliyuncs.com/dice/migrator-tool:20210423-110000
+    container_name: erda-db-migration
+    environment:
+      - TZ=Asia/Shanghai
+      - MIGRATION_MYSQL_HOST=mysql
+      - MIGRATION_MYSQL_PORT=3306
+      - MIGRATION_MYSQL_USERNAME=root
+      - MIGRATION_MYSQL_PASSWORD=123456
+      - MIGRATION_MYSQL_DBNAME=dice
+      - MIGRATION_DEBUGSQL=false
+      - MIGRATION_ERDA_LINT=true
+      - MIGRATION_DIR=/opt/action/migrations
+    volumes:
+      - ../.dice/migrations:/opt/action/migrations
+    restart: on-failure
+    platform: linux/amd64
+
   redis-sentinel:
     image: bitnami/redis-sentinel:6.0-debian-10
     container_name: erda-redis-sentinel
@@ -316,6 +373,7 @@ services:
       REDIS_MASTER_PASSWORD: "123456"
     restart: always
     platform: linux/amd64
+
   redis:
     image: bitnami/redis:6.0-debian-10
     container_name: erda-redis
@@ -328,7 +386,12 @@ services:
   # zookeeper:
   #   image: zookeeper:3.4
 volumes:
-  logvolume01: {}
+  erda-mysql: {}
+  erda-elasticsearch: {}
+  erda-etcd: {}
+  erda-gittar: {}
+  erda-avatars: {}
+  erda-files: {}
   kratos-sqlite: {}
 
 networks:

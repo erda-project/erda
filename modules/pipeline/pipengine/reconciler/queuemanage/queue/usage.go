@@ -20,22 +20,28 @@ import (
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/priorityqueue"
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/numeral"
 )
 
-func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueUsage {
+func (q *defaultQueue) Usage() pb.QueueUsage {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+
 	// processing
 	var (
 		inUseCPU          float64
-		InUseMemoryMB     float64
+		inUseMemoryMB     float64
 		processingDetails = make([]*pb.QueueUsageItem, 0)
 	)
 	q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
-		existP := pipelineCaches[pipelineID]
+		existP := q.pipelineCaches[pipelineID]
+		if existP == nil {
+			return false
+		}
 		resources := existP.GetPipelineAppliedResources()
 		inUseCPU += resources.Requests.CPU
-		InUseMemoryMB += resources.Requests.MemoryMB
+		inUseMemoryMB += resources.Requests.MemoryMB
 		processingDetails = append(processingDetails, &pb.QueueUsageItem{
 			PipelineID:       pipelineID,
 			RequestsCPU:      resources.Requests.CPU,
@@ -51,7 +57,10 @@ func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueU
 	var pendingDetails = make([]*pb.QueueUsageItem, 0)
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
-		existP := pipelineCaches[pipelineID]
+		existP := q.pipelineCaches[pipelineID]
+		if existP == nil {
+			return false
+		}
 		resources := existP.GetPipelineAppliedResources()
 		pendingDetails = append(pendingDetails, &pb.QueueUsageItem{
 			PipelineID:       pipelineID,
@@ -66,9 +75,9 @@ func (q *defaultQueue) Usage(pipelineCaches map[uint64]*spec.Pipeline) pb.QueueU
 
 	return pb.QueueUsage{
 		InUseCPU:          inUseCPU,
-		InUseMemoryMB:     InUseMemoryMB,
-		RemainingCPU:      q.pq.MaxCPU - inUseCPU,
-		RemainingMemoryMB: q.pq.MaxMemoryMB - InUseMemoryMB,
+		InUseMemoryMB:     inUseMemoryMB,
+		RemainingCPU:      numeral.SubFloat64(q.pq.MaxCPU, inUseCPU),
+		RemainingMemoryMB: numeral.SubFloat64(q.pq.MaxMemoryMB, inUseMemoryMB),
 		ProcessingCount:   int64(len(processingDetails)),
 		PendingCount:      int64(len(pendingDetails)),
 		ProcessingDetails: processingDetails,

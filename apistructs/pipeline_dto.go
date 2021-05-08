@@ -103,12 +103,6 @@ type (
 	}
 )
 
-// original mount mode
-// will open network storage mounting, and close share storage
-func (conf StorageConfig) EnablePipelineVolume() bool {
-	return conf.EnableNFSVolume() && !conf.EnableShareVolume()
-}
-
 // whether to close the mounting of the network storage
 // after closing, some special pipeline syntax ( ${{ dirs.xxx }} or old ${xxx} ) will not be available
 func (conf StorageConfig) EnableNFSVolume() bool {
@@ -134,6 +128,8 @@ type PipelineDetailDTO struct {
 	PipelineTaskActionDetails map[string]PipelineTaskActionDetail `json:"pipelineTaskActionDetails"`
 
 	RunParams []PipelineParamDTO `json:"runParams"`
+
+	Events []*PipelineEvent `json:"events,omitempty"`
 }
 
 type PipelineParamDTO struct {

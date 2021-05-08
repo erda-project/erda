@@ -33,6 +33,8 @@ func (topology *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET("/api/apm/topology/service/instances", topology.serviceInstances)
 	routes.GET("/api/apm/topology/service/instance/ids", topology.serviceInstanceIds)
 	routes.GET("/api/apm/topology/process/dashboardId", topology.processDashboardId)
+	routes.GET("/api/apm/topology/process/diskio", topology.processDiskIo)
+	routes.GET("/api/apm/topology/process/netio", topology.processNetIo)
 	routes.GET("/api/apm/topology/exception/message", topology.exceptionMessage)
 	routes.GET("/api/apm/topology/exception/types", topology.exceptionTypes)
 	routes.GET("/api/apm/topology/translation", topology.translation)
@@ -67,6 +69,7 @@ type ServiceParams struct {
 	EndTime     int64  `query:"end" validate:"required"`
 	ServiceName string `query:"serviceName" validate:"required"`
 	ServiceId   string `query:"serviceId" validate:"required"`
+	InstanceId  string `query:"instanceId"`
 }
 
 type translation struct {
@@ -89,6 +92,28 @@ func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) 
 
 	return api.Success(map[string]interface{}{
 		"data": types,
+	})
+}
+
+func (topology *provider) processDiskIo(r *http.Request, params ServiceParams) interface{} {
+	processDiskIo, err := topology.GetProcessDiskIo(api.Language(r), params)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+
+	return api.Success(map[string]interface{}{
+		"data": processDiskIo,
+	})
+}
+
+func (topology *provider) processNetIo(r *http.Request, params ServiceParams) interface{} {
+	processNetIo, err := topology.GetProcessDiskIo(api.Language(r), params)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+
+	return api.Success(map[string]interface{}{
+		"data": processNetIo,
 	})
 }
 
@@ -217,8 +242,6 @@ func (topology *provider) topology(r *http.Request, params Vo) interface{} {
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-
-	//nodes = topology.FilterNodeByTags(params.Tags, nodes)
 
 	tr := Response{
 		Nodes: nodes,

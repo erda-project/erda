@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/appscode/go/strings"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -25,81 +27,76 @@ import (
 )
 
 // handleQueryPipelineYamlBySnippetConfigs 统一查询 snippetConfigs
-func (s *PipelineSvc) handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs map[string]map[string]apistructs.SnippetConfig) (map[string]map[string]string, error) {
-	// 支持批量查询的 source
+func (s *PipelineSvc) handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error) {
+
 	sourceSupportAsyncBatch := map[string]struct{}{
 		apistructs.PipelineSourceAutoTest.String(): {},
 	}
 
-	// 不同 source 并行处理
-	batchSourceSnippetConfigs := make(map[string]map[string]apistructs.SnippetConfig)
-	singleSourceSnippetConfigs := make(map[string]map[string]apistructs.SnippetConfig)
-	for source, snippetConfigMap := range sourceSnippetConfigs {
-		// 若 source 支持批量查询，则批量查询
-		if _, supportAsync := sourceSupportAsyncBatch[source]; supportAsync {
-			batchSourceSnippetConfigs[source] = snippetConfigMap
-		} else { // 不支持，则单个查询
-			singleSourceSnippetConfigs[source] = snippetConfigMap
+	batchSourceSnippetConfigs := []apistructs.SnippetConfig{}
+	singleSourceSnippetConfigs := []apistructs.SnippetConfig{}
+	for _, snippetConfig := range sourceSnippetConfigs {
+		if _, supportAsync := sourceSupportAsyncBatch[snippetConfig.Source]; supportAsync {
+			batchSourceSnippetConfigs = append(batchSourceSnippetConfigs, snippetConfig)
+		} else {
+			singleSourceSnippetConfigs = append(singleSourceSnippetConfigs, snippetConfig)
 		}
 	}
 
-	// TODO 同一 source 考虑全局并发度，防止把客户端打满造成 timeout
-
-	yamlResults := make(map[string]map[string]string)
-
-	// 异步批量查询异步调用
-	var wg sync.WaitGroup
-	var batchErrs []error
+	var wait sync.WaitGroup
 	var lock sync.Mutex
-	for i := range batchSourceSnippetConfigs {
-		wg.Add(1)
+	var errInfo error
+	var yamlResults = make(map[string]string)
 
-		batchConfigs := batchSourceSnippetConfigs[i]
-		go func() {
-			defer wg.Done()
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		batchResults, err := s.batchQueryPipelineYAMLBySnippetConfigs(batchSourceSnippetConfigs)
+		if err != nil {
+			errInfo = err
+			return
+		}
 
-			var snippetConfigs []apistructs.SnippetConfig
-			for _, cfg := range batchConfigs {
-				snippetConfigs = append(snippetConfigs, cfg)
-			}
-			batchResults, err := s.batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs)
+		lock.Lock()
+		defer lock.Unlock()
+		for k, v := range batchResults {
+			yamlResults[k] = v
+		}
+	}()
+
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		for _, singleConfig := range singleSourceSnippetConfigs {
+			yml, err := s.queryPipelineYAMLBySnippetConfig(&singleConfig)
 			if err != nil {
-				lock.Lock()
-				batchErrs = append(batchErrs, err)
-				lock.Unlock()
+				errInfo = err
 				return
 			}
 
 			lock.Lock()
-			for source, nameYamls := range batchResults {
-				for name, yml := range nameYamls {
-					if _, ok := yamlResults[source]; !ok {
-						yamlResults[source] = make(map[string]string)
-					}
-					yamlResults[source][name] = yml
-				}
-			}
+			yamlResults[singleConfig.ToString()] = yml
 			lock.Unlock()
-		}()
-	}
-	wg.Wait()
-	if len(batchErrs) > 0 {
-		return nil, strutil.FlatErrors(batchErrs, ", ")
+		}
+	}()
+
+	wait.Wait()
+	if errInfo != nil {
+		return nil, errInfo
 	}
 
-	// 不支持批量查询的仍单个调用
-	for i := range singleSourceSnippetConfigs {
-		singleConfigs := singleSourceSnippetConfigs[i]
-		for _, sc := range singleConfigs {
-			yml, err := s.queryPipelineYAMLBySnippetConfig(&sc)
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := yamlResults[sc.Source]; !ok {
-				yamlResults[sc.Source] = make(map[string]string)
-			}
-			yamlResults[sc.Source][sc.Name] = yml
+	var errMsgs []string
+	for _, snippetConfig := range sourceSnippetConfigs {
+		yml, ok := yamlResults[snippetConfig.ToString()]
+		if !ok {
+			errMsgs = append(errMsgs, "source: %s, name: %s", snippetConfig.Source, snippetConfig.Name)
 		}
+		if strings.IsEmpty(&yml) {
+			errMsgs = append(errMsgs, "source: %s, name: %s", snippetConfig.Source, snippetConfig.Name)
+		}
+	}
+	if len(errMsgs) > 0 {
+		return nil, fmt.Errorf("not found yaml for snippet configs: %s", strutil.Join(errMsgs, ", ", true))
 	}
 
 	return yamlResults, nil
@@ -115,39 +112,16 @@ func (s *PipelineSvc) queryPipelineYAMLBySnippetConfig(cfg *apistructs.SnippetCo
 }
 
 // batchQueryPipelineYAMLBySnippetConfigs 根据 source snippetConfig 批量查询对应的 pipeline yaml
-func (s *PipelineSvc) batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs []apistructs.SnippetConfig) (map[string]map[string]string, error) {
+func (s *PipelineSvc) batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs []apistructs.SnippetConfig) (map[string]string, error) {
 	yamlResults, err := pipeline_snippet_client.BatchGetSnippetPipelineYml(snippetConfigs)
 	if err != nil {
 		return nil, err
 	}
-	sourceSnippetConfigMap := make(map[string]map[string]string)
+	result := make(map[string]string)
 	for _, yamlResult := range yamlResults {
-		source := yamlResult.Config.Source
-		if sourceSnippetConfigMap[source] == nil {
-			sourceSnippetConfigMap[source] = make(map[string]string)
-		}
-		name := yamlResult.Config.Name
-		sourceSnippetConfigMap[source][name] = yamlResult.Yml
+		result[yamlResult.Config.ToString()] = yamlResult.Yml
 	}
-	// 校验传入的请求是否都有返回，没有则报错
-	notFoundMap := make(map[string]string) // key: source, value: name
-	for _, sc := range snippetConfigs {
-		if m, ok := sourceSnippetConfigMap[sc.Source]; !ok {
-			notFoundMap[sc.Source] = sc.Name
-		} else {
-			if _, ok := m[sc.Name]; !ok {
-				notFoundMap[sc.Source] = sc.Name
-			}
-		}
-	}
-	if len(notFoundMap) > 0 {
-		var errMsgs []string
-		for source, name := range notFoundMap {
-			errMsgs = append(errMsgs, "source: %s, name: %s", source, name)
-		}
-		return nil, fmt.Errorf("not found yaml for snippet configs: %s", strutil.Join(errMsgs, ", ", true))
-	}
-	return sourceSnippetConfigMap, nil
+	return result, nil
 }
 
 // createSnippetPipeline4Create 为 snippetTask 创建流水线对象

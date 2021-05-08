@@ -108,7 +108,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	if testEnv != nil {
 		domain = testEnv.Domain
 	}
-	polishedURL, err := polishURL(at.API.URL, domain, at.opt.netportalURL)
+	polishedURL, err := polishURL(at.API.URL, domain)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -186,7 +186,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Body.Content = reqBody
 
 	// use netportal
-	customReq, err := handleCustomNetportalRequest(&apiReq)
+	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalOption)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,11 +195,11 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Headers = polishHeadersForCompression(apiReq.Headers)
 
 	var buffer bytes.Buffer
-	httpResp, err := httpclient.New(httpclient.WithCookieJar(httpClient.Jar), httpclient.WithCompleteRedirect()).
+	req := httpclient.New(httpclient.WithCompleteRedirect()).
 		Method(apiReq.Method, customReq.URL.Scheme+"://"+customReq.URL.Host, httpclient.NoRetry).
 		Path(customReq.URL.Path).
-		Headers(apiReq.Headers).
-		Params(apiReq.Params).
+		Headers(apiReq.Headers)
+	httpResp, err := req.Params(apiReq.Params).
 		RawBody(bytes.NewBufferString(apiReq.Body.Content.(string))).
 		Do().Body(&buffer)
 	if err != nil {

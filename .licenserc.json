@@ -7,12 +7,12 @@
   "ignore": [
     "vendor/",
     "third_party/",
-    "modules/pipeline/pipengine/actionexecutor/plugins/apitest/logic/cookiejar/jar.go",
     "pkg/clientgo/apis/flinkoperator/",
     "pkg/clientgo/apis/openyurt/",
     "pkg/clientgo/clientset/",
     "pkg/pipe.v2/pipe.go",
     "modules/tools/admin-tools/statik/statik.go",
-    "modules/gittar/pkg/gitmodule"
+    "modules/gittar/pkg/gitmodule",
+    "modules/openapi-ng/services/apis.go"
   ]
 }
