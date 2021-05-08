@@ -61,15 +61,16 @@ func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars 
 		return
 	}
 
+	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
+	if resp != nil {
+		return errorresp.ErrResp(fmt.Errorf("gte cloud resource context failed, err:%v", err))
+	}
+	req.AccessKey = ak_ctx.AccessKeyID
+	req.SecretKey = ak_ctx.AccessSecret
+	ak_ctx.Region = req.Region
+
 	// add cluster using cloud resource, vpc already exist
 	if req.VpcID != "" {
-		ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
-		if resp != nil {
-			return errorresp.ErrResp(fmt.Errorf("gte cloud resource context failed, err:%v", err))
-		}
-		req.AccessKey = ak_ctx.AccessKeyID
-		req.SecretKey = ak_ctx.AccessSecret
-		ak_ctx.Region = req.Region
 		rsp, er := vpc.DescribeVPCs(ak_ctx, aliyun_resources.DefaultPageOption, "", req.VpcID)
 		if er != nil {
 			err = fmt.Errorf("describe vpc failed, error:%v", er)
