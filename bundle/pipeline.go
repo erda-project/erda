@@ -16,11 +16,13 @@ package bundle
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -36,7 +38,6 @@ func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error
 	if err != nil {
 		return nil, err
 	}
-	hc := b.hc
 
 	var apiPath string
 	var headerUserID string
@@ -53,7 +54,9 @@ func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error
 	}
 
 	var createResp apistructs.PipelineCreateResponse
-	resp, err := hc.Post(host).Path(apiPath).
+	resp, err := httpclient.New(httpclient.WithTimeout(10*time.Second, 120*time.Second)).
+		Post(host, httpclient.RetryOption{MaxTime: 1}).
+		Path(apiPath).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, headerUserID).
 		JSONBody(req).Do().JSON(&createResp)
 	if err != nil {

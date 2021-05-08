@@ -91,6 +91,9 @@ type Conf struct {
 	// initialize send running pipeline interval
 	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
 	InitializeSendRunningIntervalNum uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_NUM" default:"20"`
+
+	// search snippet yml concurrent number
+	SearchSnippetConcurrentNumber int `env:"SEARCH_SNIPPET_CONCURRENT_NUMBER" default:"50"`
 }
 
 var cfg Conf
@@ -289,4 +292,8 @@ func InitializeSendRunningIntervalSec() uint64 {
 // InitializeSendIntervalNum return initialize send running pipeline id interval num
 func InitializeSendRunningIntervalNum() uint64 {
 	return cfg.InitializeSendRunningIntervalNum
+}
+
+func SearchSnippetConcurrentNumber() int {
+	return cfg.SearchSnippetConcurrentNumber
 }

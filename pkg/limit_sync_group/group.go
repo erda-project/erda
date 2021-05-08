@@ -17,27 +17,30 @@ import "sync"
 
 // encapsulate sync.WaitGroup
 // realize a controllable number of WaitGroup
-type limitSyncGroup struct {
+type LimitSyncGroup struct {
 	c  chan struct{}
 	wg *sync.WaitGroup
 }
 
-func NewSemaphore(maxSize int) *limitSyncGroup {
-	return &limitSyncGroup{
+func NewSemaphore(maxSize int) *LimitSyncGroup {
+	return &LimitSyncGroup{
 		c:  make(chan struct{}, maxSize),
 		wg: new(sync.WaitGroup),
 	}
 }
-func (s *limitSyncGroup) Add(delta int) {
+
+func (s *LimitSyncGroup) Add(delta int) {
 	s.wg.Add(delta)
 	for i := 0; i < delta; i++ {
 		s.c <- struct{}{}
 	}
 }
-func (s *limitSyncGroup) Done() {
+
+func (s *LimitSyncGroup) Done() {
 	<-s.c
 	s.wg.Done()
 }
-func (s *limitSyncGroup) Wait() {
+
+func (s *LimitSyncGroup) Wait() {
 	s.wg.Wait()
 }

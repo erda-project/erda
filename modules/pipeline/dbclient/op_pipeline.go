@@ -51,6 +51,46 @@ func (client *Client) CreatePipeline(p *spec.Pipeline, ops ...SessionOption) err
 	return nil
 }
 
+// BatchCreatePipeline: base + extra + labels
+func (client *Client) BatchCreatePipelines(pipelines []*spec.Pipeline, ops ...SessionOption) error {
+	var bases []*spec.PipelineBase
+	for _, v := range pipelines {
+		base := v.PipelineBase
+		bases = append(bases, &base)
+	}
+
+	// base
+	if err := client.BatchCreatePipelineBases(bases, ops...); err != nil {
+		return errors.Errorf("failed to create pipeline base, err: %v", err)
+	}
+	for index := range bases {
+		pipelines[index].PipelineBase = *bases[index]
+	}
+
+	// extras
+	var extras []*spec.PipelineExtra
+	for _, p := range pipelines {
+		p.PipelineExtra.PipelineID = p.ID
+		if p.Extra.Namespace == "" {
+			p.Extra.Namespace = fmt.Sprintf("pipeline-%d", p.ID)
+		}
+		extras = append(extras, &p.PipelineExtra)
+	}
+	if err := client.BatchCreatePipelineExtras(extras, ops...); err != nil {
+		return errors.Errorf("failed to create pipeline extra, err: %v", err)
+	}
+	for index := range extras {
+		pipelines[index].PipelineExtra = *extras[index]
+	}
+
+	// labels
+	if err := client.BatchCreatePipelineLabels(pipelines, ops...); err != nil {
+		return errors.Errorf("failed to create pipeline labels, err: %v", err)
+	}
+
+	return nil
+}
+
 // GetPipeline: base + extra + labels
 func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pipeline, error) {
 	session := client.NewSession(ops...)

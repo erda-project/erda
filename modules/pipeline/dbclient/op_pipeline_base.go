@@ -15,6 +15,8 @@ package dbclient
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -41,6 +43,144 @@ func (client *Client) CreatePipelineBase(base *spec.PipelineBase, ops ...Session
 
 	_, err := session.InsertOne(base)
 	return err
+}
+
+// use insert into on duplicate key update to batch update, id absolutely exit, so it always update
+func (client *Client) BatchUpdatePipelineBaseParentID(bases []*spec.PipelineBase, ops ...SessionOption) (err error) {
+	if len(bases) <= 0 {
+		return nil
+	}
+
+	// tx
+	session := client.NewSession(ops...)
+
+	updateSql := "insert into pipeline_bases (id, parent_task_id, parent_pipeline_id, is_snippet) values %s " +
+		"on duplicate key update parent_task_id=values(parent_task_id), parent_pipeline_id=values(parent_pipeline_id), is_snippet=values(is_snippet);"
+
+	var baseIndex = 0
+	var batchInsertNum = 500 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(bases) / batchInsertNum
+
+	var sql []string
+	var sqlArgs []interface{}
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(bases) - batchInsertNum*sqlWillRunTimes
+		}
+
+		for index := 0; index < forNum; index++ {
+			base := bases[baseIndex]
+			sql = append(sql, "(?, ?, ?, ?)")
+			sqlArgs = append(sqlArgs, base.ID)
+			sqlArgs = append(sqlArgs, base.ParentTaskID)
+			sqlArgs = append(sqlArgs, base.ParentPipelineID)
+			sqlArgs = append(sqlArgs, 1)
+			baseIndex++
+		}
+
+		if len(sqlArgs) <= 0 {
+			continue
+		}
+
+		stmt := fmt.Sprintf(updateSql, strings.Join(sql, ","))
+		sqlExec := append([]interface{}{stmt}, sqlArgs...)
+		res, err := session.Exec(sqlExec...)
+		if err != nil {
+			return err
+		}
+		lastID, err := res.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		// decreasingly set the id of the task
+		for i := 0; i < forNum; i++ {
+			bases[baseIndex-forNum+i].ID = uint64(lastID)
+			lastID++
+		}
+
+		sql = nil
+		sqlArgs = nil
+	}
+	return nil
+}
+
+// this batch insert is set to insert in batches, because mysql batch inserts will have a length limit
+func (client *Client) BatchCreatePipelineBases(bases []*spec.PipelineBase, ops ...SessionOption) (err error) {
+	if len(bases) <= 0 {
+		return nil
+	}
+
+	// tx
+	session := client.NewSession(ops...)
+
+	insertSql := "INSERT INTO `pipeline_bases`(`pipeline_source`, `pipeline_yml_name`, `cluster_name`, " +
+		"`status`, `type`, `trigger_mode`, `cron_id`, `is_snippet`, `parent_pipeline_id`, `parent_task_id`, `cost_time_sec`, " +
+		"`time_begin`, `time_end`, `time_created`, `time_updated`) VALUES %s"
+
+	var baseIndex = 0
+	var batchInsertNum = 300 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(bases) / batchInsertNum
+
+	var sql []string
+	var sqlArgs []interface{}
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(bases) - batchInsertNum*sqlWillRunTimes
+		}
+
+		for index := 0; index < forNum; index++ {
+			base := bases[baseIndex]
+			sql = append(sql, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			sqlArgs = append(sqlArgs, base.PipelineSource)
+			sqlArgs = append(sqlArgs, base.PipelineYmlName)
+			sqlArgs = append(sqlArgs, base.ClusterName)
+			sqlArgs = append(sqlArgs, base.Status)
+			sqlArgs = append(sqlArgs, base.Type.String())
+			sqlArgs = append(sqlArgs, base.TriggerMode)
+			sqlArgs = append(sqlArgs, base.CronID)
+			sqlArgs = append(sqlArgs, base.IsSnippet)
+			sqlArgs = append(sqlArgs, base.ParentPipelineID)
+			sqlArgs = append(sqlArgs, base.ParentTaskID)
+			sqlArgs = append(sqlArgs, base.CostTimeSec)
+			sqlArgs = append(sqlArgs, base.TimeBegin)
+			sqlArgs = append(sqlArgs, base.TimeEnd)
+			sqlArgs = append(sqlArgs, time.Now())
+			sqlArgs = append(sqlArgs, time.Now())
+			baseIndex++
+		}
+
+		if len(sqlArgs) <= 0 {
+			continue
+		}
+
+		stmt := fmt.Sprintf(insertSql, strings.Join(sql, ","))
+		sqlExec := append([]interface{}{stmt}, sqlArgs...)
+		res, err := session.Exec(sqlExec...)
+		if err != nil {
+			return err
+		}
+		lastID, err := res.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		// decreasingly set the id of the task
+		for i := 0; i < forNum; i++ {
+			bases[baseIndex-forNum+i].ID = uint64(lastID)
+			lastID++
+		}
+
+		sql = nil
+		sqlArgs = nil
+	}
+	return nil
 }
 
 func (client *Client) UpdatePipelineBase(id uint64, base *spec.PipelineBase, ops ...SessionOption) error {

@@ -15,6 +15,8 @@ package dbclient
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,8 +25,11 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/retry"
 )
+
+const BatchInsertTaskNum = 15
 
 func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
@@ -32,6 +37,83 @@ func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOp
 
 	_, err = session.InsertOne(pt)
 	return err
+}
+
+// this batch insert is set to insert in batches, because mysql batch inserts will have a length limit
+func (client *Client) BatchCreatePipelineTasks(tasks []*spec.PipelineTask, ops ...SessionOption) (err error) {
+	if len(tasks) <= 0 {
+		return nil
+	}
+
+	// tx
+	session := client.NewSession(ops...)
+
+	insertSql := "INSERT INTO `pipeline_tasks`( `pipeline_id`, `stage_id`, `name`, `op_type`, `type`," +
+		" `executor_kind`, `status`, `extra`, `context`, `result`, `is_snippet`, `snippet_pipeline_id`, `snippet_pipeline_detail`, " +
+		"`cost_time_sec`, `queue_time_sec`, `time_created`, `time_updated`) VALUES %s"
+
+	var taskIndex = 0
+	var batchInsertNum = BatchInsertTaskNum // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(tasks) / batchInsertNum
+
+	var sql []string
+	var sqlArgs []interface{}
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(tasks) - batchInsertNum*sqlWillRunTimes
+		}
+
+		for index := 0; index < forNum; index++ {
+			task := tasks[taskIndex]
+			sql = append(sql, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			sqlArgs = append(sqlArgs, task.PipelineID)
+			sqlArgs = append(sqlArgs, task.StageID)
+			sqlArgs = append(sqlArgs, task.Name)
+			sqlArgs = append(sqlArgs, task.OpType)
+			sqlArgs = append(sqlArgs, task.Type)
+			sqlArgs = append(sqlArgs, task.ExecutorKind)
+			sqlArgs = append(sqlArgs, task.Status)
+			sqlArgs = append(sqlArgs, jsonparse.JsonOneLine(task.Extra))
+			sqlArgs = append(sqlArgs, jsonparse.JsonOneLine(task.Context))
+			sqlArgs = append(sqlArgs, jsonparse.JsonOneLine(task.Result))
+			sqlArgs = append(sqlArgs, task.IsSnippet)
+			sqlArgs = append(sqlArgs, task.SnippetPipelineID)
+			sqlArgs = append(sqlArgs, jsonparse.JsonOneLine(task.SnippetPipelineDetail))
+			sqlArgs = append(sqlArgs, task.CostTimeSec)
+			sqlArgs = append(sqlArgs, task.QueueTimeSec)
+			sqlArgs = append(sqlArgs, time.Now())
+			sqlArgs = append(sqlArgs, time.Now())
+			taskIndex++
+		}
+
+		if len(sqlArgs) <= 0 {
+			continue
+		}
+
+		stmt := fmt.Sprintf(insertSql, strings.Join(sql, ","))
+		sqlExec := append([]interface{}{stmt}, sqlArgs...)
+		res, err := session.Exec(sqlExec...)
+		if err != nil {
+			return err
+		}
+		lastID, err := res.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		// decreasingly set the id of the task
+		for i := 0; i < forNum; i++ {
+			tasks[taskIndex-forNum+i].ID = uint64(lastID)
+			lastID++
+		}
+
+		sql = nil
+		sqlArgs = nil
+	}
+	return nil
 }
 
 // FindCauseFailedPipelineTasks 寻找导致失败的节点
