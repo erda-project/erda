@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 var err4EnableDeclineRatio = errors.New("enable decline ratio")
@@ -114,7 +115,8 @@ func (w *wait) WhenDone(data interface{}) error {
 		}
 	}
 	w.Task.Status = endStatus
-	w.Task.TimeEnd = time.Now()
+	var nowTime = time.Now()
+	w.Task.TimeEnd = &nowTime
 	w.Task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(w.Task)
 	logrus.Infof("reconciler: pipelineID: %d, task %q end wait (%s -> %s, wait: %ds)",
 		w.P.ID, w.Task.Name, apistructs.PipelineStatusRunning, data.(apistructs.PipelineStatusDesc).Status, w.Task.CostTimeSec)
@@ -138,8 +140,9 @@ func (w *wait) WhenTimeout() error {
 
 	w.QuitWaitTimeout = true
 	w.Task.Status = apistructs.PipelineStatusTimeout
-	w.Task.TimeEnd = time.Now()
-	w.Task.CostTimeSec = int64(w.Task.TimeEnd.Sub(w.Task.TimeBegin).Seconds())
+	var nowTime = time.Now()
+	w.Task.TimeEnd = &nowTime
+	w.Task.CostTimeSec = int64(w.Task.TimeEnd.Sub(time_util.PointerTimeToValue(w.Task.TimeBegin)).Seconds())
 	_, err = w.Executor.Cancel(w.Ctx, w.Task)
 	return err
 }
@@ -163,7 +166,7 @@ func (w *wait) TimeoutConfig() (<-chan struct{}, context.CancelFunc, time.Durati
 	default:
 		// set timeout
 		var deadline time.Time
-		if w.Task.TimeBegin.IsZero() {
+		if w.Task.TimeBegin == nil || w.Task.TimeBegin.IsZero() {
 			deadline = time.Now().Add(taskTimeout)
 		} else {
 			deadline = w.Task.TimeBegin.Add(taskTimeout)

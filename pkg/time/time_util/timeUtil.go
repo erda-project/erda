@@ -11,36 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package limit_sync_group
+package time_util
 
-import "sync"
+import "time"
 
-// encapsulate sync.WaitGroup
-// realize a controllable number of WaitGroup
-type LimitSyncGroup struct {
-	c  chan struct{}
-	wg *sync.WaitGroup
-}
-
-func NewSemaphore(maxSize int) *LimitSyncGroup {
-	return &LimitSyncGroup{
-		c:  make(chan struct{}, maxSize),
-		wg: new(sync.WaitGroup),
+func PointerTimeToValue(pointerTime *time.Time) time.Time {
+	if pointerTime == nil {
+		return time.Time{}
 	}
-}
-
-func (s *LimitSyncGroup) Add(delta int) {
-	s.wg.Add(delta)
-	for i := 0; i < delta; i++ {
-		s.c <- struct{}{}
-	}
-}
-
-func (s *LimitSyncGroup) Done() {
-	<-s.c
-	s.wg.Done()
-}
-
-func (s *LimitSyncGroup) Wait() {
-	s.wg.Wait()
+	return *pointerTime
 }

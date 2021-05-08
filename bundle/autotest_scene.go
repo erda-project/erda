@@ -16,9 +16,11 @@ package bundle
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -48,9 +50,10 @@ func (b *Bundle) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteSceneReq
 	if err != nil {
 		return nil, err
 	}
-	hc := b.hc
 	var rsp apistructs.AutotestExecuteSceneResponse
-	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/autotests/scenes/%v/actions/execute", req.AutoTestScene.ID)).
+	httpResp, err := httpclient.New(httpclient.WithTimeout(10*time.Second, 120*time.Second)).
+		Post(host, httpclient.RetryOption{MaxTime: 1}).
+		Path(fmt.Sprintf("/api/autotests/scenes/%v/actions/execute", req.AutoTestScene.ID)).
 		Header(httputil.UserHeader, req.UserID).
 		JSONBody(&req).
 		Do().JSON(&rsp)

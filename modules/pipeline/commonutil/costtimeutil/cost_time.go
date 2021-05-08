@@ -17,22 +17,23 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 func CalculateTaskCostTimeSec(task *spec.PipelineTask) (cost int64) {
 	if task.CostTimeSec >= 0 {
 		return task.CostTimeSec
 	}
-	if task.TimeBegin.IsZero() {
+	if task.TimeBegin == nil || task.TimeBegin.IsZero() {
 		return -1
 	}
-	if task.TimeEnd.IsZero() && task.Status.IsEndStatus() { // 终态，但 timeEnd 异常为空
+	if task.TimeEnd == nil || task.TimeEnd.IsZero() && task.Status.IsEndStatus() { // 终态，但 timeEnd 异常为空
 		task.TimeEnd = task.TimeUpdated
 	}
-	if task.TimeEnd.IsZero() { // 正在运行中
-		return int64(time.Now().Sub(task.TimeBegin).Seconds())
+	if task.TimeEnd == nil || task.TimeEnd.IsZero() { // 正在运行中
+		return int64(time.Now().Sub(time_util.PointerTimeToValue(task.TimeBegin)).Seconds())
 	}
-	return int64(task.TimeEnd.Sub(task.TimeBegin).Seconds())
+	return int64(task.TimeEnd.Sub(time_util.PointerTimeToValue(task.TimeBegin)).Seconds())
 }
 
 func CalculateTaskQueueTimeSec(task *spec.PipelineTask) (cost int64) {

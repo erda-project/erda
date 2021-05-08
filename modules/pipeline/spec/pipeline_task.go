@@ -14,15 +14,18 @@
 package spec
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 type PipelineTask struct {
-	ID         uint64 `json:"id" xorm:"pk autoincr"`
+	ID         uint64 `json:"id" xorm:"pk autoincr" gorm:"primaryKey,autoIncrement"`
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
@@ -31,20 +34,20 @@ type PipelineTask struct {
 	Type         string                        `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
 	ExecutorKind PipelineTaskExecutorKind      `json:"executorKind"`   // scheduler, memory
 	Status       apistructs.PipelineStatus     `json:"status"`
-	Extra        PipelineTaskExtra             `json:"extra" xorm:"json"`
-	Context      PipelineTaskContext           `json:"context" xorm:"json"`
-	Result       apistructs.PipelineTaskResult `json:"result" xorm:"json"`
+	Extra        PipelineTaskExtra             `json:"extra" xorm:"json" gorm:"type:json"`
+	Context      PipelineTaskContext           `json:"context" xorm:"json" gorm:"type:json"`
+	Result       apistructs.PipelineTaskResult `json:"result" xorm:"json" gorm:"type:json"`
 
-	IsSnippet             bool                                  `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
-	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                 // 嵌套的流水线 id
-	SnippetPipelineDetail *apistructs.PipelineTaskSnippetDetail `json:"snippetPipelineDetail" xorm:"json"` // 嵌套的流水线详情
+	IsSnippet             bool                                  `json:"isSnippet"`                                          // 该节点是否是嵌套流水线节点
+	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                                  // 嵌套的流水线 id
+	SnippetPipelineDetail *apistructs.PipelineTaskSnippetDetail `json:"snippetPipelineDetail" xorm:"json" gorm:"type:json"` // 嵌套的流水线详情
 
-	CostTimeSec  int64     `json:"costTimeSec"`                // -1 表示暂无耗时信息, 0 表示确实是0s结束
-	QueueTimeSec int64     `json:"queueTimeSec"`               // 等待调度的耗时, -1 暂无耗时信息, 0 表示确实是0s结束 TODO 赋值
-	TimeBegin    time.Time `json:"timeBegin"`                  // 执行开始时间
-	TimeEnd      time.Time `json:"timeEnd"`                    // 执行结束时间
-	TimeCreated  time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间
-	TimeUpdated  time.Time `json:"timeUpdated" xorm:"updated"` // 记录更新时间
+	CostTimeSec  int64      `json:"costTimeSec"`                                      // -1 表示暂无耗时信息, 0 表示确实是0s结束
+	QueueTimeSec int64      `json:"queueTimeSec"`                                     // 等待调度的耗时, -1 暂无耗时信息, 0 表示确实是0s结束 TODO 赋值
+	TimeBegin    *time.Time `json:"timeBegin"`                                        // 执行开始时间
+	TimeEnd      *time.Time `json:"timeEnd"`                                          // 执行结束时间
+	TimeCreated  *time.Time `json:"timeCreated" xorm:"created" gorm:"autoCreateTime"` // 记录创建时间
+	TimeUpdated  *time.Time `json:"timeUpdated" xorm:"updated" gorm:"autoUpdateTime"` // 记录更新时间
 }
 
 func (pt *PipelineTask) NodeName() string {
@@ -97,6 +100,17 @@ type PipelineTaskExtra struct {
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
 }
 
+func (p PipelineTaskExtra) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineTaskExtra) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
+}
+
 type FlinkSparkConf struct {
 	// 该部分在 action 的 source 里声明
 	Depend    string   `json:"depends,omitempty"`
@@ -113,6 +127,17 @@ type PipelineTaskContext struct {
 	OutStorages apistructs.Metadata `json:"outStorages,omitempty"`
 
 	CmsDiceFiles apistructs.Metadata `json:"cmsDiceFiles,omitempty"`
+}
+
+func (p PipelineTaskContext) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineTaskContext) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 func (c *PipelineTaskContext) Dedup() {
@@ -201,15 +226,16 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		Result:       pt.Result,
 		CostTimeSec:  pt.CostTimeSec,
 		QueueTimeSec: pt.QueueTimeSec,
-		TimeBegin:    pt.TimeBegin,
-		TimeEnd:      pt.TimeEnd,
-		TimeCreated:  pt.TimeCreated,
-		TimeUpdated:  pt.TimeUpdated,
+		TimeBegin:    time_util.PointerTimeToValue(pt.TimeBegin),
+		TimeEnd:      time_util.PointerTimeToValue(pt.TimeEnd),
+		TimeCreated:  time_util.PointerTimeToValue(pt.TimeCreated),
+		TimeUpdated:  time_util.PointerTimeToValue(pt.TimeUpdated),
 
 		IsSnippet:             pt.IsSnippet,
 		SnippetPipelineID:     pt.SnippetPipelineID,
 		SnippetPipelineDetail: pt.SnippetPipelineDetail,
 	}
+
 	// handle metadata
 	for _, field := range task.Result.Metadata {
 		field.Level = field.GetLevel()

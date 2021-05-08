@@ -118,8 +118,8 @@ func (tr *TaskRun) resetTaskForLoop() {
 	tr.Task.QueueTimeSec = -1
 	tr.Task.Extra.TimeBeginQueue = time.Time{}
 	tr.Task.Extra.TimeEndQueue = time.Time{}
-	tr.Task.TimeBegin = time.Time{}
-	tr.Task.TimeEnd = time.Time{}
+	tr.Task.TimeBegin = &time.Time{}
+	tr.Task.TimeEnd = &time.Time{}
 	// reset task result
 	tr.Task.Result = apistructs.PipelineTaskResult{}
 	// reset volume

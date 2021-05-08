@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -29,6 +30,41 @@ func (client *Client) CreatePipelineStage(ps *spec.PipelineStage, ops ...Session
 
 	_, err = session.InsertOne(ps)
 	return err
+}
+
+// this batch insert is set to insert in batches, because mysql batch inserts will have a length limit
+func (client *Client) BatchCreatePipelineStages(stages []*spec.PipelineStage, tx *gorm.DB) (err error) {
+	if len(stages) <= 0 {
+		return nil
+	}
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+
+	var stageIndex = 0
+	var batchInsertNum = 300 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(stages) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(stages) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var batchStages []*spec.PipelineStage
+		for index := 0; index < forNum; index++ {
+			batchStages = append(batchStages, stages[stageIndex])
+			stageIndex++
+		}
+		if err := gormClient.CreateInBatches(&batchStages, len(batchStages)).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (client *Client) GetPipelineStage(id interface{}, ops ...SessionOption) (spec.PipelineStage, error) {

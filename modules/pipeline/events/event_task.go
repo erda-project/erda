@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/websocket"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 type PipelineTaskEvent struct {
@@ -51,7 +52,7 @@ func (e *PipelineTaskEvent) Content() interface{} {
 		ClusterName:     e.Pipeline.ClusterName,
 		Status:          string(e.Task.Status),
 		UserID:          e.UserID,
-		CreatedAt:       e.Task.TimeCreated,
+		CreatedAt:       time_util.PointerTimeToValue(e.Task.TimeCreated),
 		QueueTimeSec:    costtimeutil.CalculateTaskQueueTimeSec(e.Task),
 		CostTimeSec:     costtimeutil.CalculateTaskCostTimeSec(e.Task),
 		OrgName:         e.Pipeline.GetOrgName(),

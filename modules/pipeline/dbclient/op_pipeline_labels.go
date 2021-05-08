@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -69,6 +70,39 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 	}
 	_, err = session.InsertMulti(labels)
 	return err
+}
+
+func (client *Client) BatchCreatePipelineLabels(pipelines []*spec.Pipeline, tx *gorm.DB) (err error) {
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+
+	defer func() { err = errors.Wrap(err, "failed to create pipeline label") }()
+	var labels []spec.PipelineLabel
+	for _, p := range pipelines {
+		for k, v := range p.Labels {
+			label := spec.PipelineLabel{
+				Type:            apistructs.PipelineLabelTypeInstance,
+				PipelineSource:  p.PipelineSource,
+				PipelineYmlName: p.PipelineYmlName,
+				TargetID:        p.ID,
+				Key:             k,
+				Value:           v,
+			}
+			labels = append(labels, label)
+		}
+	}
+	if len(labels) <= 0 {
+		return nil
+	}
+	err = gormClient.CreateInBatches(&labels, len(labels)).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListRequest, ops ...SessionOption) ([]spec.PipelineLabel, int64, error) {

@@ -171,7 +171,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	// identity
 	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+		p.Extra.SubmitUser = &apistructs.PipelineUser{ID: req.UserID}
 	}
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo

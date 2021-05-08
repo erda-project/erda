@@ -14,29 +14,43 @@
 package spec
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 type PipelineStage struct {
-	ID         uint64 `json:"id" xorm:"pk autoincr"`
+	ID         uint64 `json:"id" xorm:"pk autoincr" gorm:"primaryKey,autoIncrement"`
 	PipelineID uint64 `json:"pipelineID"`
 
 	Name   string                    `json:"name"`
-	Extra  PipelineStageExtra        `json:"extra" xorm:"json"`
+	Extra  PipelineStageExtra        `json:"extra" xorm:"json" gorm:"type:json"`
 	Status apistructs.PipelineStatus `json:"status"`
 
-	CostTimeSec int64     `json:"costTimeSec"`
-	TimeBegin   time.Time `json:"timeBegin"`                  // 执行开始时间
-	TimeEnd     time.Time `json:"timeEnd"`                    // 执行结束时间
-	TimeCreated time.Time `json:"timeCreated" xorm:"created"` // 记录创建时间
-	TimeUpdated time.Time `json:"timeUpdated" xorm:"updated"` // 记录更新时间
+	CostTimeSec int64      `json:"costTimeSec"`
+	TimeBegin   *time.Time `json:"timeBegin"`                                        // 执行开始时间
+	TimeEnd     *time.Time `json:"timeEnd"`                                          // 执行结束时间
+	TimeCreated *time.Time `json:"timeCreated" xorm:"created" gorm:"autoCreateTime"` // 记录创建时间
+	TimeUpdated *time.Time `json:"timeUpdated" xorm:"updated" gorm:"autoUpdateTime"` // 记录更新时间
 }
 
 type PipelineStageExtra struct {
 	PreStage   *PreStageSimple `json:"preStage,omitempty"`
 	StageOrder int             `json:"stageOrder"` // 0,1,2,...
+}
+
+func (p PipelineStageExtra) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineStageExtra) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 type PreStageSimple struct {
@@ -58,9 +72,9 @@ func (ps *PipelineStage) Convert2DTO() *apistructs.PipelineStageDTO {
 		Name:        ps.Name,
 		Status:      ps.Status,
 		CostTimeSec: ps.CostTimeSec,
-		TimeBegin:   ps.TimeBegin,
-		TimeEnd:     ps.TimeEnd,
-		TimeCreated: ps.TimeCreated,
-		TimeUpdated: ps.TimeUpdated,
+		TimeBegin:   time_util.PointerTimeToValue(ps.TimeBegin),
+		TimeEnd:     time_util.PointerTimeToValue(ps.TimeEnd),
+		TimeCreated: time_util.PointerTimeToValue(ps.TimeCreated),
+		TimeUpdated: time_util.PointerTimeToValue(ps.TimeUpdated),
 	}
 }

@@ -15,8 +15,10 @@ package dbclient
 
 import (
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 func (client *Client) GetPipelineExtraByPipelineID(pipelineID uint64, ops ...SessionOption) (spec.PipelineExtra, bool, error) {
@@ -35,6 +37,95 @@ func (client *Client) CreatePipelineExtra(extra *spec.PipelineExtra, ops ...Sess
 
 	_, err := session.InsertOne(extra)
 	return err
+}
+
+// use insert into on duplicate key update to batch update, pipeline_id absolutely exit, so it always update
+func (client *Client) BatchUpdatePipelineExtra(extras []*spec.PipelineExtra, tx *gorm.DB) (err error) {
+	if len(extras) <= 0 {
+		return nil
+	}
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+	updateSql := "UPDATE pipeline_extras set "
+
+	var extraIndex = 0
+	var batchInsertNum = 50 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(extras) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(extras) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var sqlArgs []interface{}
+
+		var setExtraIndex = extraIndex
+		var setExtraSql = " extra = case pipeline_id "
+		for index := 0; index < forNum; index++ {
+			extra := extras[setExtraIndex]
+			setExtraSql += " when ? then ? "
+			sqlArgs = append(sqlArgs, extra.PipelineID)
+			sqlArgs = append(sqlArgs, jsonparse.JsonOneLine(extra.Extra))
+			setExtraIndex++
+		}
+
+		var whereSql = ""
+		for index := 0; index < forNum; index++ {
+			extra := extras[extraIndex]
+			whereSql += "?,"
+			sqlArgs = append(sqlArgs, extra.PipelineID)
+			extraIndex++
+		}
+		whereSql = whereSql[:len(whereSql)-1]
+
+		if len(sqlArgs) <= 0 {
+			continue
+		}
+		err := gormClient.Raw(updateSql+setExtraSql+" END "+"where pipeline_id in ("+whereSql+")", sqlArgs...).Row().Err()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (client *Client) BatchCreatePipelineExtras(extras []*spec.PipelineExtra, tx *gorm.DB) (err error) {
+	if len(extras) <= 0 {
+		return nil
+	}
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+
+	var extraIndex = 0
+	var batchInsertNum = 15 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(extras) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(extras) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var batchExtras []*spec.PipelineExtra
+		for index := 0; index < forNum; index++ {
+			batchExtras = append(batchExtras, extras[extraIndex])
+			extraIndex++
+		}
+
+		if err := gormClient.CreateInBatches(&batchExtras, len(batchExtras)).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (client *Client) UpdatePipelineExtraByPipelineID(pipelineID uint64, extra *spec.PipelineExtra, ops ...SessionOption) error {

@@ -109,6 +109,9 @@ type Conf struct {
 
 	// scheduler executor refresh interval
 	ExecutorRefreshIntervalHour uint64 `env:"EXECUTOR_REFRESH_INTERVAL_HOUR" default:"1"`
+
+	// search snippet yml concurrent number
+	SearchSnippetConcurrentNumber int `env:"SEARCH_SNIPPET_CONCURRENT_NUMBER" default:"50"`
 }
 
 var cfg Conf
@@ -349,4 +352,8 @@ func FailedPipelineDefaultResourceGCTTLSec() uint64 {
 // ExecutorRefreshIntervalHour return default executor refresh interval
 func ExecutorRefreshIntervalHour() uint64 {
 	return cfg.ExecutorRefreshIntervalHour
+}
+
+func SearchSnippetConcurrentNumber() int {
+	return cfg.SearchSnippetConcurrentNumber
 }

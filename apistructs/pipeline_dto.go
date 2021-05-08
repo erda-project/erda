@@ -14,6 +14,8 @@
 package apistructs
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 )
 
@@ -66,6 +68,17 @@ type CommitDetail struct {
 	Email    string     `json:"email,omitempty"`
 	Time     *time.Time `json:"time,omitempty"`
 	Comment  string     `json:"comment,omitempty"`
+}
+
+func (p CommitDetail) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *CommitDetail) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 type (

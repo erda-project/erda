@@ -21,7 +21,7 @@ import (
 
 // PipelineLabel 标签
 type PipelineLabel struct {
-	ID uint64 `json:"id" xorm:"pk autoincr"`
+	ID uint64 `json:"id" xorm:"pk autoincr" gorm:"primaryKey,autoIncrement"`
 
 	Type     apistructs.PipelineLabelType `json:"type,omitempty"`
 	TargetID uint64                       `json:"targetID"`
@@ -32,8 +32,8 @@ type PipelineLabel struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 
-	TimeCreated time.Time `json:"timeCreated" xorm:"created"`
-	TimeUpdated time.Time `json:"timeUpdated" xorm:"updated"`
+	TimeCreated time.Time `json:"timeCreated" xorm:"created" gorm:"autoCreateTime"`
+	TimeUpdated time.Time `json:"timeUpdated" xorm:"updated" gorm:"autoCreateTime"`
 }
 
 func (p PipelineLabel) TableName() string {

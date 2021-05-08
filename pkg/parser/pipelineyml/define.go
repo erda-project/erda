@@ -14,6 +14,8 @@
 package pipelineyml
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -168,6 +170,19 @@ type SnippetConfig struct {
 type SnippetPipelineYmlCache struct {
 	SnippetConfig SnippetConfig
 	PipelineYaml  *apistructs.PipelineYml
+}
+
+type SnippetPipelineYmlCaches []SnippetPipelineYmlCache
+
+func (p SnippetPipelineYmlCaches) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *SnippetPipelineYmlCaches) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 func (v *SnippetConfig) toApiSnippetConfig() (config *apistructs.SnippetConfig) {

@@ -21,7 +21,7 @@ import (
 
 // PipelineBase represents `pipeline_bases` table.
 type PipelineBase struct {
-	ID uint64 `json:"id" xorm:"pk autoincr"`
+	ID uint64 `json:"id" xorm:"pk autoincr" gorm:"primaryKey,autoIncrement"`
 
 	PipelineSource  apistructs.PipelineSource `json:"pipelineSource"`
 	PipelineYmlName string                    `json:"pipelineYmlName"`
@@ -49,8 +49,8 @@ type PipelineBase struct {
 	// TimeEnd 执行结束时间
 	TimeEnd *time.Time `json:"timeEnd,omitempty"` // 执行结束时间
 
-	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created"`
-	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated"`
+	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created" gorm:"autoCreateTime"`
+	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated" gorm:"autoUpdateTime"`
 }
 
 func (*PipelineBase) TableName() string {

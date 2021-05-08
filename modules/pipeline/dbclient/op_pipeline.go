@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
@@ -45,6 +46,46 @@ func (client *Client) CreatePipeline(p *spec.Pipeline, ops ...SessionOption) err
 
 	// labels
 	if err := client.CreatePipelineLabels(p, ops...); err != nil {
+		return errors.Errorf("failed to create pipeline labels, err: %v", err)
+	}
+
+	return nil
+}
+
+// BatchCreatePipeline: base + extra + labels
+func (client *Client) BatchCreatePipelines(pipelines []*spec.Pipeline, tx *gorm.DB) error {
+	var bases []*spec.PipelineBase
+	for _, v := range pipelines {
+		base := v.PipelineBase
+		bases = append(bases, &base)
+	}
+
+	// base
+	if err := client.BatchCreatePipelineBases(bases, tx); err != nil {
+		return errors.Errorf("failed to create pipeline base, err: %v", err)
+	}
+	for index := range bases {
+		pipelines[index].PipelineBase.ID = bases[index].ID
+	}
+
+	// extras
+	var extras []*spec.PipelineExtra
+	for _, p := range pipelines {
+		p.PipelineExtra.PipelineID = p.ID
+		if p.Extra.Namespace == "" {
+			p.Extra.Namespace = fmt.Sprintf("pipeline-%d", p.ID)
+		}
+		extras = append(extras, &p.PipelineExtra)
+	}
+	if err := client.BatchCreatePipelineExtras(extras, tx); err != nil {
+		return errors.Errorf("failed to create pipeline extra, err: %v", err)
+	}
+	for index := range extras {
+		pipelines[index].PipelineExtra = *extras[index]
+	}
+
+	// labels
+	if err := client.BatchCreatePipelineLabels(pipelines, tx); err != nil {
 		return errors.Errorf("failed to create pipeline labels, err: %v", err)
 	}
 
@@ -232,10 +273,10 @@ func (client *Client) UpdateWholeStatusCancel(p *spec.Pipeline, ops ...SessionOp
 				continue
 			}
 			task.Status = apistructs.PipelineStatusStopByUser
-			task.TimeEnd = cancelTime
-			if task.TimeBegin.IsZero() {
+			task.TimeEnd = &cancelTime
+			if task.TimeBegin == nil || task.TimeBegin.IsZero() {
 				task.Status = apistructs.PipelineStatusNoNeedBySystem
-				task.TimeBegin = cancelTime
+				task.TimeBegin = &cancelTime
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(task)
 			if err = client.UpdatePipelineTask(task.ID, task); err != nil {

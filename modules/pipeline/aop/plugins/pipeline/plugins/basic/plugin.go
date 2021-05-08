@@ -18,6 +18,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/pkg/time/time_util"
 )
 
 type Plugin struct {
@@ -51,8 +52,8 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 			ActionVersion:    task.Extra.Action.Version,
 			ExecutorType:     string(task.ExecutorKind),
 			ClusterName:      task.Extra.ClusterName,
-			TimeBegin:        getTimeOrNil(task.TimeBegin),
-			TimeEnd:          getTimeOrNil(task.TimeEnd),
+			TimeBegin:        getTimeOrNil(time_util.PointerTimeToValue(task.TimeBegin)),
+			TimeEnd:          getTimeOrNil(time_util.PointerTimeToValue(task.TimeEnd)),
 			TimeBeginQueue:   getTimeOrNil(task.Extra.TimeBeginQueue),
 			TimeEndQueue:     getTimeOrNil(task.Extra.TimeEndQueue),
 			QueueCostTimeSec: task.QueueTimeSec,

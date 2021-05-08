@@ -16,6 +16,8 @@ package dbclient
 import (
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -41,6 +43,119 @@ func (client *Client) CreatePipelineBase(base *spec.PipelineBase, ops ...Session
 
 	_, err := session.InsertOne(base)
 	return err
+}
+
+// use insert into on duplicate key update to batch update, id absolutely exit, so it always update
+func (client *Client) BatchUpdatePipelineBaseParentID(bases []*spec.PipelineBase, tx *gorm.DB) (err error) {
+	if len(bases) <= 0 {
+		return nil
+	}
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+
+	updateSql := "UPDATE pipeline_bases set "
+
+	var baseIndex = 0
+	var batchInsertNum = 4000 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(bases) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(bases) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var sqlArgs []interface{}
+
+		var setParentTaskIndex = baseIndex
+		var setParentTaskSql = " parent_task_id = case id "
+		for index := 0; index < forNum; index++ {
+			base := bases[setParentTaskIndex]
+			if base.ID <= 0 {
+				continue
+			}
+			setParentTaskSql += " when ? then ? "
+
+			sqlArgs = append(sqlArgs, base.ID)
+			sqlArgs = append(sqlArgs, base.ParentTaskID)
+			setParentTaskIndex++
+		}
+
+		var setParentPipelineIndex = baseIndex
+		var setParentPipelineSql = " parent_pipeline_id = case id "
+		for index := 0; index < forNum; index++ {
+			base := bases[setParentPipelineIndex]
+			if base.ID <= 0 {
+				continue
+			}
+			setParentPipelineSql += " when ? then ? "
+
+			sqlArgs = append(sqlArgs, base.ID)
+			sqlArgs = append(sqlArgs, base.ParentPipelineID)
+			setParentPipelineIndex++
+		}
+
+		var whereSql = ""
+		for index := 0; index < forNum; index++ {
+			base := bases[baseIndex]
+			if base.ID <= 0 {
+				continue
+			}
+			whereSql += "?,"
+
+			sqlArgs = append(sqlArgs, base.ID)
+			baseIndex++
+		}
+		whereSql = whereSql[:len(whereSql)-1]
+
+		if len(sqlArgs) <= 0 {
+			continue
+		}
+
+		err := gormClient.Raw(updateSql+setParentTaskSql+"END ,"+setParentPipelineSql+" END "+"where id in ("+whereSql+")", sqlArgs...).Row().Err()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// this batch insert is set to insert in batches, because mysql batch inserts will have a length limit
+func (client *Client) BatchCreatePipelineBases(bases []*spec.PipelineBase, tx *gorm.DB) (err error) {
+	if len(bases) <= 0 {
+		return nil
+	}
+
+	var dbclient = tx
+	if tx == nil {
+		dbclient = client.DB
+	}
+
+	var baseIndex = 0
+	var batchInsertNum = 300 // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(bases) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(bases) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var batchCreatePipelineBases []*spec.PipelineBase
+		for index := 0; index < forNum; index++ {
+			batchCreatePipelineBases = append(batchCreatePipelineBases, bases[baseIndex])
+			baseIndex++
+		}
+		if err := dbclient.CreateInBatches(&batchCreatePipelineBases, len(batchCreatePipelineBases)).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (client *Client) UpdatePipelineBase(id uint64, base *spec.PipelineBase, ops ...SessionOption) error {

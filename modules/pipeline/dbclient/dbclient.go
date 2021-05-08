@@ -17,6 +17,9 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+
 	"github.com/caarlos0/env"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -24,8 +27,11 @@ import (
 	"github.com/xormplus/xorm"
 )
 
+const DIALECT = "mysql"
+
 type Client struct {
 	*xorm.Engine
+	DB *gorm.DB
 }
 
 type Session struct {
@@ -86,6 +92,22 @@ var (
 	ErrRecordNotFound   = errors.New("not found")
 )
 
+func (that *Client) InitGorm() error {
+
+	var cfg clientConfig
+	if err := env.Parse(&cfg); err != nil {
+		return errors.Wrap(err, "failed to get mysql configuration from env")
+	}
+
+	db, err := gorm.Open(mysql.Open(cfg.url()), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+
+	that.DB = db
+	return nil
+}
+
 func New() (*Client, error) {
 	var cfg clientConfig
 	if err := env.Parse(&cfg); err != nil {
@@ -106,7 +128,12 @@ func New() (*Client, error) {
 	engine.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	engine.SetDisableGlobalCache(true)
 
-	return &Client{engine}, nil
+	var client = &Client{Engine: engine}
+	if err := client.InitGorm(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 type clientConfig struct {

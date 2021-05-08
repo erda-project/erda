@@ -31,7 +31,7 @@ import (
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedData passedDataWhenCreate) (*spec.PipelineTask, error) {
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedData *passedDataWhenCreate) (*spec.PipelineTask, error) {
 	var actionJobDefine = passedData.getActionJobDefine(extmarketsvc.MakeActionTypeVersion(action))
 	var actionJobSpec = passedData.getActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action))
 

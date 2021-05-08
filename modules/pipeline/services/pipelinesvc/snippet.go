@@ -297,6 +297,5 @@ func (s *PipelineSvc) makeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *
 	snippetP.IsSnippet = true
 	snippetP.ParentPipelineID = &p.ID
 	snippetP.ParentTaskID = &snippetTask.ID
-	snippetP.Extra.SnippetChain = append(p.Extra.SnippetChain, p.ID)
 	return snippetP, nil
 }

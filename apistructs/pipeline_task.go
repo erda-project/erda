@@ -14,6 +14,8 @@
 package apistructs
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 )
 
@@ -53,6 +55,17 @@ type PipelineTaskResult struct {
 	MachineStat *PipelineTaskMachineStat `json:"machineStat,omitempty"`
 }
 
+func (p PipelineTaskResult) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineTaskResult) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
+}
+
 type PipelineTaskSnippetDetail struct {
 	Outputs []PipelineOutputWithValue `json:"outputs"`
 
@@ -62,6 +75,17 @@ type PipelineTaskSnippetDetail struct {
 	// 递归子任务数，即该节点下所有子任务数
 	// -1 表示未知，具体数据由 aop 上报
 	RecursiveSnippetTasksNum int `json:"recursiveSnippetTasksNum"`
+}
+
+func (p PipelineTaskSnippetDetail) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineTaskSnippetDetail) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 type PipelineTaskGetResponse struct {

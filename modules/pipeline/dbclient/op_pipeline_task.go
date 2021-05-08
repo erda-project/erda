@@ -19,6 +19,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
@@ -26,12 +27,48 @@ import (
 	"github.com/erda-project/erda/pkg/retry"
 )
 
+const BatchInsertTaskNum = 15
+
 func (client *Client) CreatePipelineTask(pt *spec.PipelineTask, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	_, err = session.InsertOne(pt)
 	return err
+}
+
+// this batch insert is set to insert in batches, because mysql batch inserts will have a length limit
+func (client *Client) BatchCreatePipelineTasks(tasks []*spec.PipelineTask, tx *gorm.DB) (err error) {
+	if len(tasks) <= 0 {
+		return nil
+	}
+
+	var gormClient = tx
+	if gormClient == nil {
+		gormClient = client.DB
+	}
+
+	var taskIndex = 0
+	var batchInsertNum = BatchInsertTaskNum // batchInsertNum to limit sql length
+	var sqlWillRunTimes = len(tasks) / batchInsertNum
+
+	for sqlRunFrequency := 1; sqlRunFrequency <= sqlWillRunTimes+1; sqlRunFrequency++ {
+
+		var forNum = batchInsertNum
+		if sqlRunFrequency == sqlWillRunTimes+1 {
+			forNum = len(tasks) - batchInsertNum*sqlWillRunTimes
+		}
+
+		var batchTasks []*spec.PipelineTask
+		for index := 0; index < forNum; index++ {
+			batchTasks = append(batchTasks, tasks[taskIndex])
+			taskIndex++
+		}
+		if err := gormClient.CreateInBatches(&batchTasks, len(batchTasks)).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // FindCauseFailedPipelineTasks 寻找导致失败的节点

@@ -14,6 +14,7 @@
 package spec
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"time"
 
@@ -21,40 +22,53 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
+type NormalLabels map[string]string
+
+func (p NormalLabels) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *NormalLabels) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
+}
+
 // PipelineExtra represents `pipeline_extras` table.
 // `pipeline_extras` 与 `pipeline_bases` 一一对应
 type PipelineExtra struct {
-	PipelineID uint64 `json:"pipelineID,omitempty" xorm:"pk 'pipeline_id'"`
+	PipelineID uint64 `json:"pipelineID,omitempty" xorm:"pk 'pipeline_id'" gorm:"primaryKey"`
 
 	// PipelineYml 流水线定义文件
 	PipelineYml string `json:"pipelineYml"`
 
 	// Extra 额外信息
-	Extra PipelineExtraInfo `json:"extra" xorm:"json"`
+	Extra PipelineExtraInfo `json:"extra" xorm:"json" gorm:"type:json"`
 
 	// NormalLabels 普通标签，仅展示，不可过滤
-	NormalLabels map[string]string `json:"normalLabels" xorm:"json"`
+	NormalLabels NormalLabels `json:"normalLabels" xorm:"json" gorm:"type:json"`
 
 	// Snapshot 运行时的快照
-	Snapshot Snapshot `json:"snapshot" xorm:"json"`
+	Snapshot Snapshot `json:"snapshot" xorm:"json" gorm:"type:json"`
 
 	// CommitDetail 提交详情
-	CommitDetail apistructs.CommitDetail `json:"commitDetail" xorm:"json"`
+	CommitDetail apistructs.CommitDetail `json:"commitDetail" xorm:"json" gorm:"type:json"`
 
 	// Progress 流水线整体执行进度，0-100
 	// -1 表示未设置
 	// progress 只存最终结果，若 >= 0，直接返回，无需再计算
 	Progress int `json:"progress"`
 
-	ExtraTimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created 'time_created'"`
-	ExtraTimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated 'time_updated'"`
+	ExtraTimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created 'time_created'" gorm:"column:time_created;autoCreateTime"`
+	ExtraTimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated 'time_updated'" gorm:"column:time_updated;autoUpdateTime"`
 
 	// 以下为冗余字段，因为使用 sql 迁移时，无法将 应用相关字段 迁移到 labels 中，所以要先做冗余
 	// 新建的流水线，不会插入以下字段
 	Commit  string `json:"commit"`
 	OrgName string `json:"orgName"`
 
-	Snippets []pipelineyml.SnippetPipelineYmlCache `json:"snippets" xorm:"snippets"`
+	Snippets pipelineyml.SnippetPipelineYmlCaches `json:"snippets" xorm:"snippets" gorm:"type:json"`
 }
 
 func (*PipelineExtra) TableName() string {
@@ -114,6 +128,17 @@ type PipelineExtraInfo struct {
 	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
 }
 
+func (p PipelineExtraInfo) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PipelineExtraInfo) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
+}
+
 type QueueInfo struct {
 	QueueID        uint64 `json:"queueID"`
 	CustomPriority int64  `json:"customPriority"`
@@ -144,6 +169,17 @@ type Snapshot struct {
 
 	// Events stores pipeline level k8s-like events
 	Events []*apistructs.PipelineEvent `json:"events,omitempty"`
+}
+
+func (p Snapshot) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *Snapshot) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	return json.Unmarshal(input.([]byte), p)
 }
 
 // FromDB 兼容 Snapshot 老数据

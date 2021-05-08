@@ -21,12 +21,11 @@ import (
 
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -188,130 +187,253 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	return p, nil
 }
 
-// createPipelineGraph recursively create pipeline graph.
-// passedData stores data passed recursively.
-func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...passedDataWhenCreate) (err error) {
-	var passedData passedDataWhenCreate
-	if len(passedDataOpt) > 0 {
-		passedData = passedDataOpt[0]
-	}
-	passedData.initData(s.extMarketSvc)
+type Graph struct {
+	sLock              sync.Mutex
+	s                  *PipelineSvc
+	pipelines          []*GraphPipeline
+	actionDiceYmlCache *passedDataWhenCreate
+}
 
-	// tx
-	txSession := s.dbClient.NewSession()
-	defer txSession.Close()
-	if err := txSession.Begin(); err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
-	defer func() {
-		if err != nil {
-			rbErr := txSession.Rollback()
-			if rbErr != nil {
-				logrus.Errorf("[alert] failed to rollback when createPipelineGraph failed, pipeline: %+v, rollbackErr: %v",
-					p, rbErr)
-			}
-			return
-		}
-		// metrics.PipelineCounterTotalAdd(*p, 1)
-	}()
+type GraphPipeline struct {
+	p      *spec.Pipeline
+	stages []*GraphStage
+}
 
-	// 创建 pipeline
-	if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(txSession.Session)); err != nil {
-		return apierrors.ErrCreatePipeline.InternalError(err)
-	}
+type GraphStage struct {
+	stage *spec.PipelineStage
+	tasks []*GraphTask
+}
 
-	// 创建 stage -> task
-	pipelineYml, err := pipelineyml.New(
-		[]byte(p.PipelineYml),
-		//pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams), // runParams 在执行时才渲染，提前渲染在嵌套流水线中会导致渲染为 outputs 占位符，会引起歧义
-		//pipelineyml.WithRenderSnippet(p.Labels, caches),
-	)
-	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
-	}
+type GraphTask struct {
+	task           *spec.PipelineTask
+	pipeline       *spec.Pipeline
+	parentPipeline *spec.Pipeline
+}
 
-	// search and cache action define and spec
-	if err := passedData.putPassedDataByPipelineYml(pipelineYml); err != nil {
+func (graph *Graph) Create(p *spec.Pipeline) (err error) {
+
+	if err := graph.parsePipelineAndTask(p); err != nil {
 		return err
 	}
 
-	lastSuccessTaskMap, _, err := s.dbClient.ParseRerunFailedDetail(p.Extra.RerunFailedDetail)
+	err = graph.s.dbClient.DB.Transaction(func(tx *gorm.DB) error {
+
+		err = graph.batchCreatePipelinesAndTasks(tx)
+		if err != nil {
+			return fmt.Errorf("batchCreatePipelinesAndTasks error: %v", err)
+		}
+
+		err = graph.batchUpdatePipelines(tx)
+		if err != nil {
+			return fmt.Errorf("batchUpdatePipelines error: %v", err)
+		}
+		return nil
+	})
 	if err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
+		return err
 	}
 
-	var snippetTasks []*spec.PipelineTask
-	var allStagedTasks [][]*spec.PipelineTask
+	//graph.batchGc()
+
+	graph.batchSendEvent()
+
+	return nil
+}
+
+func (graph *Graph) batchSendEvent() {
+	for _, graphPipeline := range graph.pipelines {
+		go func(p spec.Pipeline) {
+			events.EmitPipelineInstanceEvent(&p, p.GetSubmitUserID())
+		}(*graphPipeline.p)
+	}
+}
+
+func (graph *Graph) batchGc() {
+	//for index := range graph.pipelines {
+	//	go func(index int) {
+	//		p := graph.pipelines[index].p
+	//		//_ = graph.s.PreCheck(p)
+	//
+	//		// put into db gc
+	//		//p.EnsureGC()
+	//		//graph.s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
+	//	}(index)
+	//}
+}
+
+// update some snippet info after insert
+// pipelineBase or pipelineExtra need snippet pipeline ID or need parent pipeline ID
+func (graph *Graph) batchUpdatePipelines(tx *gorm.DB) (err error) {
+
+	var bases []*spec.PipelineBase
+	for _, graphPipeline := range graph.pipelines {
+		for _, stage := range graphPipeline.stages {
+			for _, graphTask := range stage.tasks {
+
+				if !graphTask.task.IsSnippet || graphTask.pipeline == nil {
+					continue
+				}
+
+				graphTask.pipeline.ParentTaskID = &graphTask.task.ID
+				graphTask.pipeline.ParentPipelineID = &graphTask.parentPipeline.ID
+				bases = append(bases, &graphTask.pipeline.PipelineBase)
+			}
+		}
+	}
+
+	if err := graph.s.dbClient.BatchUpdatePipelineBaseParentID(bases, tx); err != nil {
+		return err
+	}
+
+	var extras []*spec.PipelineExtra
+	for _, graphPipeline := range graph.pipelines {
+		for _, stage := range graphPipeline.stages {
+			for _, graphTask := range stage.tasks {
+				if !graphTask.task.IsSnippet || graphTask.pipeline == nil {
+					continue
+				}
+				graphTask.pipeline.Extra.SnippetChain = append(graphTask.pipeline.Extra.SnippetChain, graphTask.parentPipeline.ID)
+				extras = append(extras, &graphTask.pipeline.PipelineExtra)
+			}
+		}
+	}
+
+	if err := graph.s.dbClient.BatchUpdatePipelineExtra(extras, tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (graph *Graph) batchCreatePipelinesAndTasks(tx *gorm.DB) (err error) {
+
+	// batchCreate all pipeline
+	var pipelines []*spec.Pipeline
+	for _, v := range graph.pipelines {
+		pipelines = append(pipelines, v.p)
+	}
+	if err := graph.s.dbClient.BatchCreatePipelines(pipelines, tx); err != nil {
+		return err
+	}
+
+	// all stage and task add pipelineID and namespace
+	for _, graphPipeline := range graph.pipelines {
+		pipelineID := graphPipeline.p.PipelineID
+		for _, stage := range graphPipeline.stages {
+			stage.stage.PipelineID = pipelineID
+			for _, graphTask := range stage.tasks {
+				graphTask.task.PipelineID = pipelineID
+				graphTask.task.Extra.Namespace = graphPipeline.p.Extra.Namespace
+				if graphTask.task.IsSnippet && graphTask.pipeline != nil {
+					graphTask.task.SnippetPipelineID = &graphTask.pipeline.PipelineID
+				}
+			}
+		}
+	}
+
+	// batchCreate all stages
+	var stages []*spec.PipelineStage
+	for _, graphPipeline := range graph.pipelines {
+		for _, graphStage := range graphPipeline.stages {
+			stages = append(stages, graphStage.stage)
+		}
+	}
+	if err := graph.s.dbClient.BatchCreatePipelineStages(stages, tx); err != nil {
+		return err
+	}
+
+	// all task add stageID
+	for _, graphPipeline := range graph.pipelines {
+		for _, stage := range graphPipeline.stages {
+			for _, graphTask := range stage.tasks {
+				graphTask.task.StageID = stage.stage.ID
+			}
+		}
+	}
+
+	// batchCreate all task
+	var tasks []*spec.PipelineTask
+	for _, graphPipeline := range graph.pipelines {
+		for _, stage := range graphPipeline.stages {
+			for _, graphTask := range stage.tasks {
+				tasks = append(tasks, graphTask.task)
+			}
+		}
+	}
+	if err := graph.s.dbClient.BatchCreatePipelineTasks(tasks, tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (graph *Graph) initPipelineAndSnippet(p *spec.Pipeline, pipelineYml *pipelineyml.PipelineYml) ([]*GraphTask, *GraphPipeline, error) {
+	// init graphPipeline
+	var graphPipeline = GraphPipeline{p: p}
+	var snippetGraphTasks []*GraphTask
+	lastSuccessTaskMap, _, err := graph.s.dbClient.ParseRerunFailedDetail(p.Extra.RerunFailedDetail)
+	if err != nil {
+		return nil, nil, apierrors.ErrCreatePipelineGraph.InternalError(err)
+	}
 	for si, stage := range pipelineYml.Spec().Stages {
-		var stagedTasks []*spec.PipelineTask
+
+		// init stage
+		var graphStage GraphStage
 		ps := &spec.PipelineStage{
-			PipelineID:  p.ID,
 			Name:        "",
 			Status:      apistructs.PipelineStatusAnalyzed,
 			CostTimeSec: -1,
 			Extra:       spec.PipelineStageExtra{StageOrder: si},
 		}
-		if err := s.dbClient.CreatePipelineStage(ps, dbclient.WithTxSession(txSession.Session)); err != nil {
-			return apierrors.ErrCreatePipelineGraph.InternalError(err)
-		}
+		graphStage.stage = ps
 
-		// create tasks
+		// init tasks
+		var graphTasks []*GraphTask
 		for _, typedAction := range stage.Actions {
 			for actionType, action := range typedAction {
 				var pt *spec.PipelineTask
+				var task GraphTask
 				lastSuccessTask, ok := lastSuccessTaskMap[string(action.Alias)]
 				if ok {
 					pt = lastSuccessTask
 					pt.ID = 0
-					pt.PipelineID = p.ID
-					pt.StageID = ps.ID
 				} else {
 					switch actionType {
-					case apistructs.ActionTypeSnippet: // 生成嵌套流水线任务
-						pt, err = s.makeSnippetPipelineTask(p, ps, action)
+					case apistructs.ActionTypeSnippet:
+						pt, err = graph.s.makeSnippetPipelineTask(p, ps, action)
 						if err != nil {
-							return apierrors.ErrCreatePipelineTask.InternalError(err)
+							return nil, nil, apierrors.ErrCreatePipelineTask.InternalError(err)
 						}
-						snippetTasks = append(snippetTasks, pt)
-					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData)
+					default:
+						pt, err = graph.s.makeNormalPipelineTask(p, ps, action, graph.actionDiceYmlCache)
 						if err != nil {
-							return apierrors.ErrCreatePipelineTask.InternalError(err)
+							return nil, nil, apierrors.ErrCreatePipelineTask.InternalError(err)
 						}
 					}
 				}
-				// 创建当前节点
-				if err := s.dbClient.CreatePipelineTask(pt, dbclient.WithTxSession(txSession.Session)); err != nil {
-					logrus.Errorf("[alert] failed to create pipeline task when create pipeline graph: %v", err)
-					return apierrors.ErrCreatePipelineTask.InternalError(err)
+				task.task = pt
+				if actionType == apistructs.ActionTypeSnippet {
+					snippetGraphTasks = append(snippetGraphTasks, &task)
 				}
-				stagedTasks = append(stagedTasks, pt)
+				graphTasks = append(graphTasks, &task)
 			}
 		}
-		allStagedTasks = append(allStagedTasks, stagedTasks)
+
+		graphStage.tasks = graphTasks
+		graphPipeline.stages = append(graphPipeline.stages, &graphStage)
 	}
+	graph.sLock.Lock()
+	graph.pipelines = append(graph.pipelines, &graphPipeline)
+	graph.sLock.Unlock()
 
-	// commit transaction
-	if err := txSession.Commit(); err != nil {
-		logrus.Errorf("[alert] failed to commit when createPipelineGraph success, pipeline: %+v, commitErr: %v",
-			p, err)
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
+	return snippetGraphTasks, &graphPipeline, nil
+}
 
-	_ = s.PreCheck(p)
-
-	// put into db gc
-	p.EnsureGC()
-	//s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
-
-	// events
-	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
-
-	// 统一处理嵌套流水线
-	// 批量查询 snippet yaml
+func (graph *Graph) searchSnippetPipelineYml(snippetGraphTasks []*GraphTask) (map[string]string, error) {
+	// search snippetConfig pipeline yml
 	var sourceSnippetConfigs []apistructs.SnippetConfig
-	for _, snippetTask := range snippetTasks {
-		yamlSnippetConfig := snippetTask.Extra.Action.SnippetConfig
+	for _, snippetTask := range snippetGraphTasks {
+		yamlSnippetConfig := snippetTask.task.Extra.Action.SnippetConfig
 		snippetConfig := apistructs.SnippetConfig{
 			Source: yamlSnippetConfig.Source,
 			Name:   yamlSnippetConfig.Name,
@@ -319,50 +441,74 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 		}
 		sourceSnippetConfigs = append(sourceSnippetConfigs, snippetConfig)
 	}
-	sourceSnippetConfigYamls, err := s.HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
+	sourceSnippetConfigYmls, err := graph.s.HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
+	if err != nil {
+		return nil, apierrors.ErrQuerySnippetYaml.InternalError(err)
+	}
+	return sourceSnippetConfigYmls, nil
+}
+
+func (graph *Graph) parsePipelineAndTask(p *spec.Pipeline) (err error) {
+
+	var (
+		snippetGraphTasks        []*GraphTask
+		graphPipeline            *GraphPipeline
+		sourceSnippetConfigYamls map[string]string
+	)
+
+	pipelineYml, err := pipelineyml.New(
+		[]byte(p.PipelineYml),
+	)
+	if err != nil {
+		return apierrors.ErrParsePipelineYml.InternalError(err)
+	}
+
+	err = graph.actionDiceYmlCache.putPassedDataByPipelineYml(pipelineYml)
+	if err != nil {
+		return err
+	}
+
+	snippetGraphTasks, graphPipeline, err = graph.initPipelineAndSnippet(p, pipelineYml)
+	if err != nil {
+		return err
+	}
+
+	sourceSnippetConfigYamls, err = graph.searchSnippetPipelineYml(snippetGraphTasks)
 	if err != nil {
 		return apierrors.ErrQuerySnippetYaml.InternalError(err)
 	}
 
-	// 创建嵌套流水线
+	// create snippet pipeline
 	var sErrs []error
 	var sLock sync.Mutex
 	var wg sync.WaitGroup
-	for i := range snippetTasks {
-		snippet := snippetTasks[i]
-		snippetConfig := apistructs.SnippetConfig{
-			Source: snippet.Extra.Action.SnippetConfig.Source,
-			Name:   snippet.Extra.Action.SnippetConfig.Name,
-			Labels: snippet.Extra.Action.SnippetConfig.Labels,
-		}
+	for i := range snippetGraphTasks {
 		wg.Add(1)
-		go func() {
+		go func(index int) {
 			defer wg.Done()
-			// snippetTask 转换为 pipeline 结构体
-			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.ToString()])
+			snippet := snippetGraphTasks[index].task
+			snippetConfig := apistructs.SnippetConfig{
+				Source: snippet.Extra.Action.SnippetConfig.Source,
+				Name:   snippet.Extra.Action.SnippetConfig.Name,
+				Labels: snippet.Extra.Action.SnippetConfig.Labels,
+			}
+			snippetPipeline, err := graph.s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.ToString()])
 			if err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)
 				sLock.Unlock()
 				return
 			}
-			// 创建嵌套流水线
-			if err := s.createPipelineGraph(snippetPipeline, passedData); err != nil {
+			if err := graph.parsePipelineAndTask(snippetPipeline); err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)
 				sLock.Unlock()
 				return
 			}
-			// 创建好的流水线数据塞回 snippetTask
-			snippet.SnippetPipelineID = &snippetPipeline.ID
+			snippetGraphTasks[index].pipeline = snippetPipeline
+			snippetGraphTasks[index].parentPipeline = p
 			snippet.Extra.AppliedResources = snippetPipeline.Snapshot.AppliedResources
-			if err := s.dbClient.UpdatePipelineTask(snippet.ID, snippet); err != nil {
-				sLock.Lock()
-				sErrs = append(sErrs, err)
-				sLock.Unlock()
-				return
-			}
-		}()
+		}(i)
 	}
 	wg.Wait()
 	if len(sErrs) > 0 {
@@ -373,15 +519,29 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 		return apierrors.ErrCreatePipelineGraph.InternalError(fmt.Errorf(strutil.Join(errMsgs, "; ")))
 	}
 
-	// calculate pipeline applied resource after all snippetTask created
-	pipelineAppliedResources := s.calculatePipelineResources(allStagedTasks)
-	p.Snapshot.AppliedResources = pipelineAppliedResources
-	if err := s.dbClient.UpdatePipelineExtraSnapshot(p.ID, p.Snapshot); err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(
-			fmt.Errorf("failed to update pipeline snapshot for applied resources, err: %v", err))
+	// calculation task resources
+	var allStagedTasks [][]*spec.PipelineTask
+	for _, stage := range graphPipeline.stages {
+		var tasks []*spec.PipelineTask
+		for _, graphTask := range stage.tasks {
+			tasks = append(tasks, graphTask.task)
+		}
+		allStagedTasks = append(allStagedTasks, tasks)
 	}
+	pipelineAppliedResources := graph.s.calculatePipelineResources(allStagedTasks)
+	p.Snapshot.AppliedResources = pipelineAppliedResources
 
 	return nil
+}
+
+// createPipelineGraph recursively create pipeline graph.
+// passedData stores data passed recursively.
+func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...passedDataWhenCreate) (err error) {
+	var graph Graph
+	graph.s = s
+	graph.actionDiceYmlCache = &passedDataWhenCreate{}
+	graph.actionDiceYmlCache.initData(s.extMarketSvc)
+	return graph.Create(p)
 }
 
 func getString(v interface{}) string {

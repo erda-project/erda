@@ -16,6 +16,7 @@ package apitest
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
@@ -57,6 +58,7 @@ func (d *define) Create(ctx context.Context, task *spec.PipelineTask) (interface
 
 func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
 	logic.Do(ctx, task)
+	time.Sleep(100 * time.Millisecond)
 	return nil, nil
 }
 
