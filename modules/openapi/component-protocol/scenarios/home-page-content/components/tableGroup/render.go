@@ -229,7 +229,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 			},
 		}
 		pro.Description.TextStyleName = map[string]interface{}{
-			"color-text-sub": true,
+			"color-text-light-desc": true,
 		}
 		//pro.Description.Value = fmt.Sprintf("当前您还有 %d 个事项待完成，其中 已过期: %d，本日到期: %d，7日内到期: %d，30日内到期: %d",
 		//	v.TotalIssueNum, v.ExpiredIssueNum, v.ExpiredOneDayNum, v.ExpiredSevenDayNum, v.ExpiredThirtyDayNum)
@@ -253,9 +253,10 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				ProjectId: v.ProjectDTO.ID,
 				Type:      issueTypeMap[issue.Type.String()],
 				Name: IssueName{
-					RenderType: "textWithIcon",
-					PrefixIcon: fmt.Sprintf("ISSUE_ICON.issue.%s", issue.Type.String()),
-					Value:      issue.Title,
+					RenderType:  "textWithIcon",
+					PrefixIcon:  fmt.Sprintf("ISSUE_ICON.issue.%s", issue.Type.String()),
+					Value:       issue.Title,
+					HoverActive: "hover-active",
 				},
 				OrgName: orgName,
 			}
@@ -293,7 +294,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				RenderType: "linkText",
 				Value: Value{
 					Text: []ValueText{
-						{Text: fmt.Sprintf("查看剩余%d条事件 >>", leftIssueNum), OperationKey: "toSpecificProject"},
+						{Text: fmt.Sprintf("查看剩余%d条事件 ", leftIssueNum), OperationKey: "toSpecificProject", Icon: "double-right"},
 					},
 				},
 			},

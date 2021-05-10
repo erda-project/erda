@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda/bundle"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
@@ -268,6 +270,11 @@ func (e *AlertExpression) FromModel(expression *db.AlertExpression) *AlertExpres
 // ToModel .
 func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpression, error) {
 	attributes := make(map[string]interface{})
+	org, err := new(bundle.Bundle).GetOrg(alert.AlertScopeID)
+	if err != nil {
+		return nil, err
+	}
+	attributes["org_name"] = org.Name
 	for k, v := range rule.Attributes {
 		attributes[k] = v
 	}
@@ -374,7 +381,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 		alertDomain = alertDomain[0 : len(alertDomain)-1]
 	}
 	if routeID, ok := utils.GetMapValueString(rule.Attributes, "display_url_id"); ok {
-		if alertURL := convertAlertURL(alertDomain, routeID, attributes); alertURL != "" {
+		if alertURL := convertAlertURL(alertDomain, org.Name, routeID, attributes); alertURL != "" {
 			attributes["display_url"] = alertURL
 		}
 	}
@@ -392,7 +399,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 
 	// transform record url
 	if recordPath, ok := utils.GetMapValueString(alert.Attributes, "alert_record_path"); ok {
-		attributes["record_url"] = convertRecordURL(alertDomain, recordPath)
+		attributes["record_url"] = convertRecordURL(alertDomain, org.Name, recordPath)
 	}
 
 	return &db.AlertExpression{
