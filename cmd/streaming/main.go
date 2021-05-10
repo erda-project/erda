@@ -23,6 +23,7 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
+	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/kafka"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/pprof"

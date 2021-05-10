@@ -122,6 +122,7 @@ func Test_isJSONArray(t *testing.T) {
 	}{
 		{"", args{b: []byte(`[{"a":1}]`)}, true},
 		{"", args{b: []byte(`{"a":1}`)}, false},
+		{"", args{b: []byte(`[]`)}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
