@@ -29,7 +29,8 @@ func (tr *TaskRun) Teardown() {
 	defer logrus.Infof("reconciler: pipelineID: %d, task %q end tear down", tr.P.ID, tr.Task.Name)
 	defer tr.TeardownConcurrencyCount()
 	defer tr.TeardownPriorityQueue()
-	defer aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
+	// handle aop synchronously, then do subsequent tasks
+	_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
 
 	// invalidate openapi oauth2 token
 	tokens := strutil.DedupSlice([]string{

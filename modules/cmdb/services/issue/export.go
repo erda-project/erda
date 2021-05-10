@@ -17,14 +17,12 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"strconv"
-
-	"github.com/pkg/errors"
-	"github.com/tealeg/xlsx/v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/pkg/errors"
+	"github.com/tealeg/xlsx/v3"
 )
 
 func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool) (io.Reader, string, error) {
@@ -52,7 +50,7 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 	}
 	usernames := map[string]string{}
 	for _, u := range users {
-		usernames[strconv.FormatUint(u.ID, 10)] = u.Nick
+		usernames[u.ID] = u.Nick
 	}
 	for i := 1; i < len(table); i++ {
 		if table[i][4] != "" {
@@ -73,11 +71,11 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 	}
 	tablename := "issuetable"
 	if len(issues) > 0 {
-		tablename = issues[0].Type.GetZhName()
-	}
-
-	if issues[0].IterationID == -1 {
-		tablename = "待办事项"
+		if issues[0].IterationID == -1 {
+			tablename = "待办事项"
+		} else {
+			tablename = issues[0].Type.GetZhName()
+		}
 	}
 
 	buf := bytes.NewBuffer([]byte{})

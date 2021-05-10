@@ -19,26 +19,25 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/go-redis/redis"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/types"
-	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/go-redis/redis"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Member 成员操作封装
 type Member struct {
 	db       *dao.DBClient
-	uc       *utils.UCClient
+	uc       *ucauth.UCClient
 	redisCli *redis.Client
 }
 
@@ -62,7 +61,7 @@ func WithDBClient(db *dao.DBClient) Option {
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *utils.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(m *Member) {
 		m.uc = uc
 	}
@@ -188,7 +187,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 	parentIDMap := make(map[int64]int64)
 	for _, user := range users {
 		for _, targetScopeID := range targetScopeIDs {
-			members, err := m.db.GetMemberByScopeAndUserID(strconv.FormatUint(user.ID, 10), targetScopeType, targetScopeID)
+			members, err := m.db.GetMemberByScopeAndUserID(user.ID, targetScopeType, targetScopeID)
 			if err != nil {
 				logrus.Infof("failed to get members, (%v)", err)
 				continue
@@ -203,7 +202,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					ScopeID:       targetScopeID,
 					ScopeName:     m.db.GetScopeNameByScope(req.Scope.Type, targetScopeID),
 					ParentID:      parentID,
-					UserID:        strconv.FormatUint(user.ID, 10),
+					UserID:        user.ID,
 					Email:         user.Email,
 					Mobile:        user.Phone,
 					Name:          user.Name,
@@ -221,7 +220,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 			}
 		}
 
-		userIDStrs = append(userIDStrs, strconv.FormatUint(user.ID, 10))
+		userIDStrs = append(userIDStrs, user.ID)
 	}
 
 	// 更新member的extra
@@ -522,10 +521,10 @@ func (m *Member) syncReqExtra2DB(userIDs []string, scopeType apistructs.ScopeTyp
 
 // 在判断最大管理员数量时，若是成员原本就有manager的角色，这次更新只是添加一个非管理员的角色，
 // 则不应该算作占用最大管理员数量中的一个
-func (m *Member) getMemberManagerCount(users []utils.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberManagerCount(users []ucauth.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, strconv.FormatUint(user.ID, 10))
+		userIDs = append(userIDs, user.ID)
 	}
 
 	count, err := m.db.GetManagerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -538,10 +537,10 @@ func (m *Member) getMemberManagerCount(users []utils.User, scopeID int64, scopeT
 
 // 在判断最大管理员数量时，若是成员原本就有owner的角色，这次更新只是添加一个非owner的角色，
 // 则不应该算作占用最大所有者数量中的一个
-func (m *Member) getMemberOwnerCount(users []utils.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
+func (m *Member) getMemberOwnerCount(users []ucauth.User, scopeID int64, scopeType apistructs.ScopeType) (uint64, error) {
 	var userIDs []string
 	for _, user := range users {
-		userIDs = append(userIDs, strconv.FormatUint(user.ID, 10))
+		userIDs = append(userIDs, user.ID)
 	}
 
 	count, err := m.db.GetOwnerMemberCountByUserID(userIDs, scopeID, scopeType)
@@ -723,12 +722,39 @@ func (m *Member) IsAdmin(userID string) bool {
 	var member model.Member
 	if err := m.db.Where("scope_type = ?", apistructs.SysScope).
 		Where("user_id = ?", userID).Find(&member).Error; err != nil {
-		return false
+		if err != gorm.ErrRecordNotFound {
+			return false
+		}
 	}
 	if member.ID == 0 {
+		logrus.Warnf("CAUTION: user(%s) current no admin, will become soon", userID)
+		// TODO: some risk
+		if m.noOneAdmin() && len(userID) > 11 {
+			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
+			if err := m.firstUserBecomeAdmin(userID); err != nil {
+				return false
+			}
+			return true
+		}
 		return false
 	}
 	return true
+}
+
+func (m *Member) noOneAdmin() bool {
+	cnt := 1
+	if err := m.db.Model(&model.Member{}).Where("scope_type = ?", apistructs.SysScope).Count(&cnt).Error; err != nil {
+		return false
+	}
+	logrus.Warnf("CAUTION: there are %d admins", cnt)
+	return cnt == 0
+}
+
+func (m *Member) firstUserBecomeAdmin(userID string) error {
+	return m.db.Create(&model.Member{
+		ScopeType: apistructs.SysScope,
+		UserID:    userID,
+	}).Error
 }
 
 // ListByScopeTypeAndUser 根据scopeType & user 获取成员

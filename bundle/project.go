@@ -97,6 +97,7 @@ func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest)
 		Param("pageSize", strconv.Itoa(req.PageSize)).
 		Param("isPublic", strconv.FormatBool(req.IsPublic)).
 		Param("orderBy", req.OrderBy).
+		Param("asc", strconv.FormatBool(req.Asc)).
 		Header("User-ID", userID).
 		Header("Org-ID", strconv.FormatUint(req.OrgID, 10)).
 		Do().JSON(&rsp)

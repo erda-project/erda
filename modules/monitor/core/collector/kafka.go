@@ -26,7 +26,7 @@ var (
 		"container_log": topicPrefix + "container-log",
 		"job_log":       topicPrefix + "job-log",
 		"analytics":     topicPrefix + "analytics",
-		// 白名单过滤
+		// white list
 		"alert":                topicPrefix + "alert",
 		"alert-event":          topicPrefix + "alert-event",
 		"error":                topicPrefix + "error",

@@ -40,7 +40,7 @@ var jobFormater *regexp.Regexp = regexp.MustCompile(jobNameNamespaceFormat)
 type Job interface {
 	Create(apistructs.JobCreateRequest) (apistructs.Job, error)
 	Start(namespace, name string, env map[string]string) (apistructs.Job, error)
-	Stop(namespace, name string) error
+	Stop(namespace, name string, retainNamespace bool) error
 	Delete(job apistructs.Job) error
 	Inspect(namespace, name string) (apistructs.Job, error)
 	List(namespace string) ([]apistructs.Job, error)
