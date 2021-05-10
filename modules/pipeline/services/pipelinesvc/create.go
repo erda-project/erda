@@ -295,7 +295,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 						}
 						snippetTasks = append(snippetTasks, pt)
 					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action, actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
+						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData.actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
 						if err != nil {
 							return apierrors.ErrCreatePipelineTask.InternalError(err)
 						}
@@ -330,7 +330,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 
 	// 统一处理嵌套流水线
 	// 批量查询 snippet yaml
-	sourceSnippetConfigMap := make(map[string]map[string]apistructs.SnippetConfig) // key: source, value: type
+	var sourceSnippetConfigs []apistructs.SnippetConfig
 	for _, snippetTask := range snippetTasks {
 		yamlSnippetConfig := snippetTask.Extra.Action.SnippetConfig
 		snippetConfig := apistructs.SnippetConfig{
@@ -338,12 +338,9 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 			Name:   yamlSnippetConfig.Name,
 			Labels: yamlSnippetConfig.Labels,
 		}
-		if _, ok := sourceSnippetConfigMap[snippetConfig.Source]; !ok {
-			sourceSnippetConfigMap[snippetConfig.Source] = make(map[string]apistructs.SnippetConfig)
-		}
-		sourceSnippetConfigMap[snippetConfig.Source][snippetConfig.Name] = snippetConfig
+		sourceSnippetConfigs = append(sourceSnippetConfigs, snippetConfig)
 	}
-	sourceSnippetConfigYamls, err := s.handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigMap)
+	sourceSnippetConfigYamls, err := s.handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
 	if err != nil {
 		return apierrors.ErrQuerySnippetYaml.InternalError(err)
 	}
@@ -354,12 +351,16 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 	var wg sync.WaitGroup
 	for i := range snippetTasks {
 		snippet := snippetTasks[i]
-		snippetConfig := snippet.Extra.Action.SnippetConfig
+		snippetConfig := apistructs.SnippetConfig{
+			Source: snippet.Extra.Action.SnippetConfig.Source,
+			Name:   snippet.Extra.Action.SnippetConfig.Name,
+			Labels: snippet.Extra.Action.SnippetConfig.Labels,
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			// snippetTask 转换为 pipeline 结构体
-			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.Source][snippetConfig.Name])
+			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.ToString()])
 			if err != nil {
 				sLock.Lock()
 				sErrs = append(sErrs, err)

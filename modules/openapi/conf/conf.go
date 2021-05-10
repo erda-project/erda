@@ -52,6 +52,11 @@ type Conf struct {
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
 
 	CSRFWhiteList string `env:"CSRF_WHITE_LIST"`
+
+	// ory/kratos config
+	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
 }
 
 var cfg Conf
@@ -142,6 +147,34 @@ func OAuth2NetdataDir() string {
 
 func CSRFWhiteList() []string {
 	return strutil.Split(cfg.CSRFWhiteList, ",", true)
+}
+
+func OryEnabled() bool {
+	return cfg.OryEnabled
+}
+
+func OryKratosAddr() string {
+	return cfg.OryKratosAddr
+}
+
+func OryKratosPrivateAddr() string {
+	return cfg.OryKratosPrivateAddr
+}
+
+func OryLoginURL() string {
+	return "/uc/auth/login"
+}
+
+func OryLogoutURL() string {
+	return "/.ory/kratos/public/self-service/browser/flows/logout"
+}
+
+func OryCompatibleClientID() string {
+	return "kratos"
+}
+
+func OryCompatibleClientSecret() string {
+	return ""
 }
 
 func CustomNamespace() string {

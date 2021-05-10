@@ -1,0 +1,255 @@
+version: 1.0
+scenario: home-page-sidebar
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - sidebar
+    sidebar:
+      - myOrganization
+      - myInfo
+    myInfo:
+      - myProject
+      - myApplication
+    myOrganization:
+      - orgImage
+      - orgSwitch
+      - joinedBrief
+      - emptyOrganization
+    emptyOrganization:
+      - emptyOrgText
+    myProject:
+      - myProjectTitle
+      - myProjectFilter
+      - myProjectList
+      - emptyProject
+    emptyProject:
+      - projectTipWithoutOrg
+      - projectTipWithOrg
+    projectTipWithOrg:
+      - createProjectTip
+    myApplication:
+      - myApplicationTitle
+      - myApplicationFilter
+      - myApplicationList
+      - emptyApplication
+
+components:
+  page:
+    type: Container
+  sidebar:
+    type: Container
+    props:
+      whiteBg: true
+      fullHeight: true
+  myOrganization:
+    type: Container
+  emptyOrganization:
+    type: Container
+  emptyOrgText:
+    type: TextGroup
+  orgImage:
+    type: Image
+  orgSwitch:
+    type: DropdownSelect
+  joinedBrief:
+    type: Table
+  emptyProject:
+    type: Container
+  projectTipWithoutOrg:
+    type: Text
+  projectTipWithOrg:
+    type: Container
+  createProjectTip:
+    type: Text
+  myInfo:
+    type: Container
+    props:
+      fullHeight: true
+      scrollAuto: true
+  myProject:
+    type: Container
+  myProjectTitle:
+    type: Title
+  myProjectFilter:
+    type: ContractiveFilter
+  myProjectList:
+    type: List
+  myApplication:
+    type: Container
+  myApplicationTitle:
+    type: Title
+    props:
+      visible: true
+      title: "应用"
+      level: 1
+      noMarginBottom: true
+      showDivider: true
+  myApplicationFilter:
+    type: ContractiveFilter
+  myApplicationList:
+    type: List
+  emptyApplication:
+    type: EmptyHolder
+
+rendering:
+  myProjectFilter:
+    - name: myProjectList
+      state:
+        - name: "values"
+          value: "{{ myProjectFilter.values }}"
+        - name: "isFirstFilter"
+          value: "{{ myProjectFilter.isFirstFilter }}"
+  myApplicationFilter:
+    - name: myApplicationList
+      state:
+        - name: "values"
+          value: "{{ myApplicationFilter.values }}"
+        - name: "isFirstFilter"
+          value: "{{ myApplicationFilter.isFirstFilter }}"
+  __DefaultRendering__:
+    - name: page
+    - name: orgImage
+    - name: myOrganization
+    - name: myInfo
+    - name: orgSwitch
+    - name: emptyOrganization
+    - name: emptyOrgText
+    - name: myProject
+    - name: myProjectTitle
+      state:
+        - name: "prosNum"
+          value: "{{ myProject.prosNum }}"
+    - name: joinedBrief
+      state:
+        - name: "prosNum"
+          value: "{{ myProjectTitle.prosNum }}"
+    - name: myProjectFilter
+      state:
+        - name: "prosNum"
+          value: "{{ myProjectTitle.prosNum }}"
+    - name: myProjectList
+      state:
+        - name: "prosNum"
+          value: "{{ myProjectFilter.prosNum }}"
+        - name: "values"
+          value: "{{ myProjectFilter.values }}"
+    - name: emptyProject
+      state:
+        - name: "prosNum"
+          value: "{{ myProjectList.prosNum }}"
+    - name: projectTipWithOrg
+      state:
+        - name: "prosNum"
+          value: "{{ emptyProject.prosNum }}"
+    - name: projectTipWithoutOrg
+      state:
+        - name: "prosNum"
+          value: "{{ projectTipWithOrg.prosNum }}"
+    - name: createProjectTip
+      state:
+        - name: "prosNum"
+          value: "{{ projectTipWithoutOrg.prosNum }}"
+    - name: myApplication
+      state:
+        - name: "prosNum"
+          value: "{{ createProjectTip.prosNum }}"
+    - name: myApplicationTitle
+      state:
+        - name: "prosNum"
+          value: "{{ myApplication.prosNum }}"
+        - name: "appsNum"
+          value: "{{ myApplication.appsNum }}"
+    - name: myApplicationFilter
+      state:
+        - name: "prosNum"
+          value: "{{ myApplicationTitle.prosNum }}"
+        - name: "appsNum"
+          value: "{{ myApplicationTitle.appsNum }}"
+    - name: myApplicationList
+      state:
+        - name: "prosNum"
+          value: "{{ myApplicationFilter.prosNum }}"
+        - name: "appsNum"
+          value: "{{ myApplicationFilter.appsNum }}"
+    - name: emptyApplication
+      state:
+        - name: "prosNum"
+          value: "{{ myApplicationList.prosNum }}"
+        - name: "appsNum"
+          value: "{{ myApplicationList.appsNum }}"
+#    - name: orgSwitch
+#    - name: emptyImage
+#      state:
+#        - name: "orgID"
+#          value: "{{ orgSwitch.orgID }}"
+#    - name: emptyOrgText
+#      state:
+#        - name: "orgID"
+#          value: "{{ emptyImage.orgID }}"
+#    - name: orgImage
+#      state:
+#        - name: "orgID"
+#          value: "{{ orgSwitch.orgID }}"
+#        - name: "prefixImage"
+#          value: "{{ emptyOrgText.prefixImage }}"
+#    - name: brief
+#      state:
+#        - name: "orgID"
+#          value: "{{ orgImage.orgID }}"
+#    - name: emptyProject
+#      state:
+#        - name: "joinedOrg"
+#          value: "{{ brief.joinedOrg }}"
+#        - name: "havePros"
+#          value: "{{ brief.havePros }}"
+#        - name: "haveApps"
+#          value: "{{ brief.haveApps }}"
+#        - name: "orgID"
+#          value: "{{ brief.orgID }}"
+#    - name: myProjectFilter
+#      state:
+#        - name: "havePros"
+#          value: "{{ emptyProject.havePros }}"
+#        - name: "orgID"
+#          value: "{{ emptyProject.orgID }}"
+#        - name: "haveApps"
+#          value: "{{ emptyProject.haveApps }}"
+#    - name: myProjectList
+#      state:
+#        - name: "projectName"
+#          value: "{{ myProjectFilter.projectName }}"
+#        - name: "orgID"
+#          value: "{{ myProjectFilter.orgID }}"
+#        - name: "havePros"
+#          value: "{{ myProjectFilter.havePros }}"
+#        - name: "haveApps"
+#          value: "{{ myProjectFilter.haveApps }}"
+#    - name: moreProject
+#      state:
+#        - name: "orgID"
+#          value: "{{ myProjectList.orgID }}"
+#        - name: "havePros"
+#          value: "{{ myProjectList.havePros }}"
+#        - name: "haveApps"
+#          value: "{{ myProjectList.haveApps }}"
+#    - name: myApplicationFilter
+#      state:
+#        - name: "orgID"
+#          value: "{{ moreProject.orgID }}"
+#        - name: "haveApps"
+#          value: "{{ moreProject.haveApps }}"
+#    - name: myApplicationList
+#      state:
+#        - name: "orgID"
+#          value: "{{ myApplicationFilter.orgID }}"
+#        - name: "appName"
+#          value: "{{ myApplicationFilter.appName }}"
+#        - name: "haveApps"
+#          value: "{{ myApplicationFilter.haveApps }}"
+#    - name: moreApplication
+#      state:
+#        - name: "haveApps"
+#          value: "{{ myApplicationList.haveApps }}"
+

@@ -45,6 +45,7 @@ const (
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"
 	emptyDirVolumeName = "pre-fetech-volume"
+	EnvRetainNamespace = "RETAIN_NAMESPACE"
 )
 
 var (
@@ -77,7 +78,9 @@ func init() {
 			return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 				name, clusterName, err)
 		}
-		if strings.HasPrefix(addr, "inet://") {
+
+		// Determine whether existed an http protocol to adapt to the edas platform
+		if strings.HasPrefix(addr, "inet://") || strings.HasPrefix(addr, "http") {
 			client, err = kubernetes.NewKubernetesClientSet(addr)
 			if err != nil {
 				return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
@@ -305,6 +308,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
 			return errMsg
 		}
+
 		remainCount := 0
 		if len(jobs.Items) == 0 {
 			for _, j := range jobs.Items {
@@ -314,7 +318,13 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			}
 		}
 
-		if remainCount < 1 {
+		retainNamespace, err := strconv.ParseBool(job.Env[EnvRetainNamespace])
+		if err != nil {
+			logrus.Debugf("parse bool err %v when delete job %s in the namespace %s", err, job.Name, job.Namespace)
+			retainNamespace = false
+		}
+
+		if remainCount < 1 && retainNamespace == false {
 			ns, err := k.client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
 				if strings.Contains(err.Error(), "not found") {
@@ -323,6 +333,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
 				return errMsg
 			}
+
 			if ns.DeletionTimestamp == nil {
 				logrus.Infof("delete the job's namespace %s", namespace)
 				err = k.client.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
@@ -897,7 +908,7 @@ func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
 	_, err := k.client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !strings.Contains(err.Error(), "not found") {
-			errMsg := fmt.Sprintf("failed to get k8s namespace %s", name)
+			errMsg := fmt.Sprintf("failed to get k8s namespace %s: %v", name, err)
 			logrus.Errorf(errMsg)
 			return errors.Errorf(errMsg)
 		}

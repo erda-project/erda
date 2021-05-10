@@ -14,12 +14,18 @@
 package main
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda/conf"
 
 	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/openapi"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/openapi", "openapi")
+	modcom.Run(&servicehub.RunOptions{
+		ConfigFile: conf.OpenAPIConfigFilePath,
+		Content:    conf.OpenAPIDefaultConfig,
+	})
 }

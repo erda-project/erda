@@ -1,20 +1,14 @@
 scenario: "project-list-all"
 
 hierarchy:
-  root: page
+  root: myPage
   structure:
-    page:
-      children:
-        - empty
-        - myPage
     myPage:
       - alert
       - filter
       - list
 
 components:
-  page:
-    type: Tabs
   myPage:
     type: Container
   list:
@@ -32,7 +26,6 @@ rendering:
         - name: "isFirstFilter"
           value: "{{ filter.isFirstFilter }}"
   __DefaultRendering__:
-    - name: page
     - name: myPage
     - name: filter
     - name: list
