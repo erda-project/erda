@@ -24,7 +24,6 @@ var DefaultRulers = map[string]rules.Ruler{
 	"CharsetLinter":               linters.NewCharsetLinter,
 	"ColumnNameLinter":            linters.NewColumnNameLinter,
 	"ColumnCommentLinter":         linters.NewColumnCommentLinter,
-	"DDLDMLLinter":                linters.NewDDLDMLLinter,
 	"DestructLinter":              linters.NewDestructLinter,
 	"FloatDoubleLinter":           linters.NewFloatDoubleLinter,
 	"ForeignKeyLinter":            linters.NewForeignKeyLinter,
