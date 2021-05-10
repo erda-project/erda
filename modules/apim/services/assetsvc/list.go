@@ -260,8 +260,40 @@ func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersion
 		return nil, err
 	}
 
-	var m = make(map[string]*apistructs.ListSwaggerVersionRspObj)
+	sort.Slice(versions, func(i, j int) bool {
+		if versions[i].Major < versions[j].Major {
+			return false
+		}
+		if versions[i].Major > versions[j].Major {
+			return true
+		}
+		if versions[i].Minor > versions[j].Minor {
+			return false
+		}
+		if versions[i].Minor < versions[j].Minor {
+			return true
+		}
+		if versions[i].Patch < versions[j].Patch {
+			return false
+		}
+		return true
+	})
+
+	var (
+		m = make(map[string]*apistructs.ListSwaggerVersionRspObj)
+		group = make(map[string]bool)
+	)
+
 	for _, version := range versions {
+		if version.Deprecated {
+			continue
+		}
+		num := strconv.FormatUint(version.Major, 10) + "." + strconv.FormatUint(version.Minor, 10)
+		if _, ok := group[num]; ok {
+			continue
+		}
+		group[num] = true
+
 		record := map[string]interface{}{
 			"major":      version.Major,
 			"minor":      version.Minor,
@@ -271,7 +303,7 @@ func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersion
 		}
 
 		if obj, ok := m[version.SwaggerVersion]; ok {
-			obj.Versions = append(obj.Versions, record)
+			m[version.SwaggerVersion].Versions = append(obj.Versions, record)
 			continue
 		}
 		m[version.SwaggerVersion] = &apistructs.ListSwaggerVersionRspObj{

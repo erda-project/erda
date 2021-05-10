@@ -386,7 +386,7 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 			versionsIDs = append(versionsIDs, versions[i].ID)
 		}
 		if err := dbclient.Sq().Where(where).
-			Where("version_id IN (?)", versionsIDs).
+			Where("id IN (?)", versionsIDs).
 			Delete(new(apistructs.APIAssetVersionsModel)).Error; err != nil {
 			logrus.Errorf("failed to delete old versions: %+v", err)
 		}
@@ -403,6 +403,8 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 
 	return &updatedAsset, version, spec, nil
 }
+
+
 
 func (svc *Service) CreateInstantiation(req *apistructs.CreateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
 	// 参数校验
