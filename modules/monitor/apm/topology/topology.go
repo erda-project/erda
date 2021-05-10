@@ -1145,7 +1145,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 
 	// error request count
 	errorCount := 0.0
-	for _, errorReqMetricName := range ErrorReqMetricNames {
+	for _, errorReqMetricName := range ReqMetricNames {
 		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
 		if err != nil {
 			return nil, err
@@ -1187,7 +1187,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 }
 
 func (topology *provider) globalReqCount(metricScopeName string, params GlobalParams, metricsParams url.Values) (float64, error) {
-	statement := fmt.Sprintf("SELECT count(elapsed_count) FROM %s WHERE _metric_scope_id=$terminus_key", metricScopeName)
+	statement := fmt.Sprintf("SELECT sum(errors_sum::field) FROM %s WHERE target_terminus_key::tag=$terminus_key", metricScopeName)
 	queryParams := map[string]interface{}{
 		"metric":       metricScopeName,
 		"terminus_key": params.ScopeId,
