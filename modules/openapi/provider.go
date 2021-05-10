@@ -23,18 +23,8 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
-const serviceName = "openapi"
-
 type provider struct{}
 
-func init() { servicehub.RegisterProvider(serviceName, &provider{}) }
-
-func (p *provider) Service() []string                 { return []string{serviceName} }
-func (p *provider) Dependencies() []string            { return []string{} }
-func (p *provider) Init(ctx servicehub.Context) error { return nil }
-func (p *provider) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
-}
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof(version.String())
 	logrus.Errorf("[alert] openapi instance start")
@@ -44,4 +34,11 @@ func (p *provider) Run(ctx context.Context) error {
 		return err
 	}
 	return srv.ListenAndServe()
+}
+
+func init() {
+	servicehub.Register("openapi", &servicehub.Spec{
+		Services: []string{"openapi"},
+		Creator:  func() servicehub.Provider { return &provider{} },
+	})
 }
