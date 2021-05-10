@@ -380,10 +380,10 @@ func (db *DBClient) CopyAutoTestSceneStep(req apistructs.AutotestSceneRequest) e
 }
 
 func (db *DBClient) InsertAutoTestSceneStep(req apistructs.AutotestSceneRequest, preID uint64) (uint64, error) {
+	var (
+		pre, step, newNext AutoTestSceneStep
+	)
 	err := db.Transaction(func(tx *gorm.DB) error {
-		var (
-			pre, step, newNext AutoTestSceneStep
-		)
 		// 获取pre信息
 		if preID != 0 {
 			err := tx.Where("id = ?", preID).First(&pre).Error
@@ -407,7 +407,9 @@ func (db *DBClient) InsertAutoTestSceneStep(req apistructs.AutotestSceneRequest,
 			return err
 		}
 		// 获取next信息
-		if err := tx.Where("pre_id = ?", preID).Where("id != ?", step.ID).
+		if err := tx.Where("pre_id = ?", preID).
+			Where("scene_id = ?", req.SceneID).
+			Where("id != ?", step.ID).
 			Where("pre_type = ?", req.PreType).First(&newNext).Error; err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				return nil
@@ -423,9 +425,6 @@ func (db *DBClient) InsertAutoTestSceneStep(req apistructs.AutotestSceneRequest,
 	if err != nil {
 		return 0, err
 	}
-	var newStep AutoTestSceneStep
-	if err = db.Where("pre_id = ?", preID).Where("pre_type = ?", req.PreType).Find(&newStep).Error; err != nil {
-		return 0, err
-	}
-	return newStep.ID, nil
+
+	return step.ID, nil
 }
