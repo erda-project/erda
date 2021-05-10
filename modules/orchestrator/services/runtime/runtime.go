@@ -1516,7 +1516,15 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	// TODO: no diceJson and no overlay, we just read dice from releaseId
 	for k, v := range dice.Services {
 		var expose []string
-		if len(v.Expose) != 0 {
+		var svcPortExpose bool
+		// serv.Expose will abandoned, serv.Ports.Expose is recommended
+		for _, svcPort := range v.Ports {
+			if svcPort.Expose {
+				svcPortExpose = true
+			}
+		}
+
+		if len(v.Expose) != 0 || svcPortExpose {
 			expose = domainMap[k]
 		}
 
