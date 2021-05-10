@@ -277,7 +277,7 @@ func (impl GatewayOpenapiRuleServiceImpl) setPackageApiKongPolicies(basePriority
 	domainPolicies.Disables = strings.Join(fullDisables, ",")
 	domainPolicies.Id = packageApi.ZoneId
 	domainPolicies.Regex = "^(" + strings.Join(pathRegexs, "|") + ")"
-	domainPolicies.Priority = basePriority + len(packageApi.ApiPath)
+	domainPolicies.Priority = basePriority + len(apiPath)
 	domainPolicies.PackageName = packageName
 	err = impl.zoneBiz.SetZoneKongPoliciesWithoutDomainPolicy(packageApi.ZoneId, &domainPolicies, helper)
 	if err != nil {
