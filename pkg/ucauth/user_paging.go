@@ -91,7 +91,7 @@ func ConvertToUserInfoExt(user *userPaging) *apistructs.UserPagingData {
 	for _, u := range user.Data {
 		ret.List = append(ret.List, apistructs.UserInfoExt{
 			UserInfo: apistructs.UserInfo{
-				ID:          u.Id,
+				ID:          strutil.String(u.Id),
 				Name:        u.Username,
 				Nick:        u.Nickname,
 				Avatar:      u.Avatar,
@@ -109,7 +109,7 @@ func ConvertToUserInfoExt(user *userPaging) *apistructs.UserPagingData {
 
 // userInPaging 用户中心分页用户数据结构
 type userInPaging struct {
-	Id            string      `json:"id"`            // 主键
+	Id            interface{} `json:"id"`            // 主键
 	Avatar        string      `json:"avatar"`        // 头像
 	Username      string      `json:"username"`      // 用户名
 	Nickname      string      `json:"nickname"`      // 昵称
