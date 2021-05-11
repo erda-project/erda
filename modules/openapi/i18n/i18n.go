@@ -58,7 +58,7 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "Confirm to move out iteration", "确认移出迭代")
 	message.SetString(language.SimplifiedChinese, "Confirm to delete board", "确认删除看板")
 	message.SetString(language.SimplifiedChinese, "Confirm to update board", "确认更新看板")
-	message.SetString(language.SimplifiedChinese, "The number of boards cannot exceed 5", "创建的看板数量不能超过5")
+	message.SetString(language.SimplifiedChinese, "The number of boards cannot exceed 15", "创建的看板数量不能超过15")
 	message.SetString(language.SimplifiedChinese, "No permission to operate", "您暂无权限进行此操作")
 }
 
