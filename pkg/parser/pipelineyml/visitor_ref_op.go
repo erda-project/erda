@@ -19,8 +19,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -156,7 +156,7 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			return v.handleOneRefOp(refOp)
 		case expression.Random:
 			typeValue := ss[1]
-			value := apitestsv2.MockValue(typeValue)
+			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
 		default: // case 3
 			return refOp.Ori
