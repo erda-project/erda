@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -61,7 +62,7 @@ var (
 			// mock
 			if strings.HasPrefix(inner, "@") {
 				mockType := strings.TrimPrefix(inner, "@")
-				mockValue := mockValue(mockType)
+				mockValue := mock.MockValue(mockType)
 				if mockValue != nil {
 					return fmt.Sprint(mockValue)
 				}
