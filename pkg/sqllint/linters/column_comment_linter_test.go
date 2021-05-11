@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/sqllint"
+	"github.com/erda-project/erda/pkg/sqllint/configuration"
 	"github.com/erda-project/erda/pkg/sqllint/linters"
 	rules2 "github.com/erda-project/erda/pkg/sqllint/rules"
 )
@@ -49,7 +50,7 @@ func TestNewCommentLinter(t *testing.T) {
 
 func TestNewCommentLinter2(t *testing.T) {
 	var rules []rules2.Ruler
-	for _, r := range sqllint.DefaultRulers {
+	for _, r := range configuration.DefaultRulers {
 		rules = append(rules, r)
 	}
 	linter := sqllint.New(rules...)
