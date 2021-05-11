@@ -29,14 +29,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-
-
 const (
 	baseScriptLabel  = "# MIGRATION_BASE"
 	baseScriptLabel2 = "-- MIGRATION_BASE"
 	baseScriptLabel3 = "/* MIGRATION_BASE */"
 )
-
 
 var MigrationLint = command.Command{
 	ParentName:     "",
