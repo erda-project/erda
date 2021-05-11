@@ -43,6 +43,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/mock"
 )
 
 // tryV1RenderRequestBodyStr 尝试使用 apitestsv1 的严格渲染逻辑，渲染失败不报错
@@ -85,7 +86,7 @@ func v1RenderRequestBody(val interface{}, caseParams map[string]*apistructs.Case
 				if reMock && err == nil {
 					valTemp := strings.TrimLeft(valueTrim, "{{@")
 					v := strings.TrimRight(valTemp, "}}")
-					mv := mockValue(v)
+					mv := mock.MockValue(v)
 					if mv != nil {
 						val.(map[string]interface{})[k] = mv
 					}
@@ -96,21 +97,21 @@ func v1RenderRequestBody(val interface{}, caseParams map[string]*apistructs.Case
 						valNew := strings.TrimRight(valTemp, "}}")
 						if value, ok := caseParams[valNew]; ok {
 							switch value.Type {
-							case String:
+							case mock.String:
 								val.(map[string]interface{})[k] = fmt.Sprint(value.Value)
-							case Integer:
+							case mock.Integer:
 								intVal, _ := strconv.Atoi(fmt.Sprint(value.Value))
 								val.(map[string]interface{})[k] = intVal
-							case Float:
+							case mock.Float:
 								fVal, _ := strconv.ParseFloat(fmt.Sprint(value.Value), 64)
 								val.(map[string]interface{})[k] = fVal
-							case Boolean:
+							case mock.Boolean:
 								var bVal bool
 								if fmt.Sprint(value.Value) == "true" {
 									bVal = true
 								}
 								val.(map[string]interface{})[k] = bVal
-							case List:
+							case mock.List:
 								var list []string
 								isMatch, err := regexp.MatchString("^\\[.+]$", fmt.Sprint(value.Value))
 								if isMatch && err == nil {
@@ -145,7 +146,7 @@ func v1RenderRequestBody(val interface{}, caseParams map[string]*apistructs.Case
 				if reMock && err == nil {
 					valTemp := strings.TrimLeft(valueTrim, "{{@")
 					v := strings.TrimRight(valTemp, "}}")
-					mv := mockValue(v)
+					mv := mock.MockValue(v)
 					if mv != nil {
 						val.([]interface{})[i] = mv
 					}
@@ -156,21 +157,21 @@ func v1RenderRequestBody(val interface{}, caseParams map[string]*apistructs.Case
 						valNew := strings.TrimRight(valTemp, "}}")
 						if value, ok := caseParams[valNew]; ok {
 							switch value.Type {
-							case String:
+							case mock.String:
 								val.([]interface{})[i] = fmt.Sprint(value.Value)
-							case Integer:
+							case mock.Integer:
 								intVal, _ := strconv.Atoi(fmt.Sprint(value.Value))
 								val.([]interface{})[i] = intVal
-							case Float:
+							case mock.Float:
 								fVal, _ := strconv.ParseFloat(fmt.Sprint(value.Value), 64)
 								val.([]interface{})[i] = fVal
-							case Boolean:
+							case mock.Boolean:
 								var bVal bool
 								if fmt.Sprint(value.Value) == "true" {
 									bVal = true
 								}
 								val.([]interface{})[i] = bVal
-							case List:
+							case mock.List:
 								var list []string
 								isMatch, err := regexp.MatchString("^\\[.+]$", fmt.Sprint(value.Value))
 								if isMatch && err == nil {
