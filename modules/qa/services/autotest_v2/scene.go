@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/qa/services/autotest"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -518,7 +519,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		switch ss[0] {
 		case expression.Random:
 			typeValue := ss[1]
-			value := apitestsv2.MockValue(typeValue)
+			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
 		default: // case 3
 			return phData
