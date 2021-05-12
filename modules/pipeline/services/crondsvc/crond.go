@@ -107,6 +107,9 @@ func (s *CrondSvc) ReloadCrond(pipelineCronFunc func(uint64)) ([]string, error) 
 }
 
 func (s *CrondSvc) CrondSnapshot() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var logs []string
 	logs = append(logs, "inspecting cron daemon ...")
 	for _, entry := range s.crond.Entries() {
