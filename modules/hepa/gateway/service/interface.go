@@ -14,6 +14,9 @@
 package service
 
 import (
+	"github.com/gin-gonic/gin"
+
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
@@ -23,10 +26,7 @@ import (
 	. "github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/gin-gonic/gin"
 )
 
 type DiceInfo struct {

@@ -21,9 +21,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
 )
 
 // User 用户中心用户数据结构

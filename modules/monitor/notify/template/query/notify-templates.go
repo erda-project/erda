@@ -17,10 +17,11 @@ import (
 	"encoding/json"
 	"strings"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"gopkg.in/yaml.v2"
 )
 
 var (

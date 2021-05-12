@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	spaceFormModal "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/components/spaceFormModal"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/components/spaceFormModal"
 )
 
 const (

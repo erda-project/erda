@@ -22,10 +22,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
+
+	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/influxql"
 )
 
 func getClient() *elastic.Client {

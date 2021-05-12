@@ -16,6 +16,9 @@ package topology
 import (
 	"fmt"
 
+	"github.com/gocql/gocql"
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/cassandra"
@@ -26,8 +29,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	"github.com/gocql/gocql"
-	"github.com/olivere/elastic"
 )
 
 type provider struct {

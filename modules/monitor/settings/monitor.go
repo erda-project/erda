@@ -23,13 +23,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/pkg/router"
 	"github.com/jinzhu/gorm"
 	"github.com/recallsong/go-utils/conv"
 	"github.com/recallsong/go-utils/encoding/md5x"
 	"github.com/recallsong/go-utils/reflectx"
+
+	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/pkg/router"
 )
 
 func (p *provider) monitorConfigMap(ns string) *configDefine {
