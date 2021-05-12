@@ -17,8 +17,8 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/sqllint"
+	"github.com/erda-project/erda/pkg/sqllint/configuration"
 	"github.com/erda-project/erda/pkg/sqllint/linters"
-	rules2 "github.com/erda-project/erda/pkg/sqllint/rules"
 )
 
 const columnCommentLinterSQL = `
@@ -48,11 +48,7 @@ func TestNewCommentLinter(t *testing.T) {
 }
 
 func TestNewCommentLinter2(t *testing.T) {
-	var rules []rules2.Ruler
-	for _, r := range sqllint.DefaultRulers {
-		rules = append(rules, r)
-	}
-	linter := sqllint.New(rules...)
+	linter := sqllint.New(configuration.DefaultRulers()...)
 	if err := linter.Input([]byte(alterTableAlterColumnSetDefault), alterTableAlterColumnSetDefault); err != nil {
 		t.Fatal(err)
 	}
