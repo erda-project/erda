@@ -19,7 +19,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -32,11 +31,18 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return strings.Contains(r.Header.Get("Origin"), os.Getenv("DICE_ROOT_DOMAIN"))
+		origin := r.Header.Get("Origin")
+		for _, domain := range strutil.Split(os.Getenv("DICE_ROOT_DOMAIN"), ",") {
+			if strutil.Contains(origin, domain) {
+				return true
+			}
+		}
+		return false
 	},
 }
 var instanceinfoClient = instanceinfo.New(dbengine.MustOpen())
