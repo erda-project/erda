@@ -16,15 +16,15 @@ package metricq
 import (
 	"net/http"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/olivere/elastic"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/metricmeta"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
-	"github.com/olivere/elastic"
 )
 
 // InfluxQL tsql

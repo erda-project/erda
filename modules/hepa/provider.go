@@ -16,11 +16,11 @@ package hepa
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/health"
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"

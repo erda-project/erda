@@ -21,11 +21,12 @@ import (
 	"strings"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/varstr/uaparser"
+
 	"github.com/erda-project/erda/modules/monitor/apm/browser/timing"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/varstr/uaparser"
 )
 
 var (

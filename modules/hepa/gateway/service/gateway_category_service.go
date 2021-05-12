@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
-	assembler "github.com/erda-project/erda/modules/hepa/gateway/assembler"
+	"github.com/erda-project/erda/modules/hepa/gateway/assembler"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/kong"
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"

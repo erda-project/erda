@@ -22,9 +22,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
 	"github.com/scylladb/gocqlx"
 	"github.com/scylladb/gocqlx/qb"
+
+	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
 )
 
 const (

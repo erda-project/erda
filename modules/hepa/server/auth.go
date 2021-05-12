@@ -17,13 +17,13 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/erda-project/erda/modules/hepa/common/util"
-	"github.com/erda-project/erda/modules/hepa/gateway/dto"
-
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httputil"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/modules/hepa/common/util"
+	"github.com/erda-project/erda/modules/hepa/gateway/dto"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/httputil"
 )
 
 func CheckAuth(c *gin.Context, projectIDStr string) (bool, error) {

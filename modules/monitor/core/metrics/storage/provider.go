@@ -16,13 +16,14 @@ package storage
 import (
 	"fmt"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type define struct{}

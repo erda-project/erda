@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	toml "github.com/pelletier/go-toml"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/pelletier/go-toml"
+	"gopkg.in/yaml.v2"
 )
 
 func (m *Manager) LoadFiles() error {
