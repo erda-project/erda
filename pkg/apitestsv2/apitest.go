@@ -123,7 +123,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	for _, p := range at.API.Params {
 		// add to params
 		if p.Key != "" {
-			params.Add(p.Key, p.Value)
+			params.Add(p.Key, fmt.Sprintf("%v", p.Value))
 		}
 	}
 	apiReq.Params = params
@@ -152,7 +152,7 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 		case apistructs.APIBodyTypeApplicationXWWWFormUrlencoded:
 			values := url.Values{}
 			for _, param := range at.API.Body.Content.([]apistructs.APIParam) {
-				values.Add(param.Key, param.Value)
+				values.Add(param.Key, fmt.Sprintf("%v", param.Value))
 			}
 			reqBody = values.Encode()
 
@@ -230,7 +230,7 @@ func (at *APITest) renderAtOnce(apiReq *apistructs.APIInfo, caseParams map[strin
 	for i := range apiReq.Params {
 		param := apiReq.Params[i]
 		apiReq.Params[i].Key = renderFunc(strings.TrimSpace(param.Key), caseParams)
-		apiReq.Params[i].Value = renderFunc(strings.TrimSpace(param.Value), caseParams)
+		apiReq.Params[i].Value = renderFunc(strings.TrimSpace(fmt.Sprintf("%v", param.Value)), caseParams)
 	}
 	// request body
 	if apiReq.Body.Content != nil {
@@ -280,7 +280,7 @@ func (at *APITest) renderAtOnce(apiReq *apistructs.APIInfo, caseParams map[strin
 			for i := range content {
 				param := content[i]
 				param.Key = renderFunc(strings.TrimSpace(param.Key), caseParams)
-				param.Value = renderFunc(strings.TrimSpace(param.Value), caseParams)
+				param.Value = renderFunc(strings.TrimSpace(fmt.Sprintf("%v", param.Value)), caseParams)
 				param.Desc = renderFunc(strings.TrimSpace(param.Desc), caseParams)
 				renderedContent = append(renderedContent, param)
 			}
