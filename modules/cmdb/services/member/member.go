@@ -19,6 +19,11 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/go-redis/redis"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
@@ -28,10 +33,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
-	"github.com/go-redis/redis"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Member 成员操作封装

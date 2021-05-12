@@ -18,6 +18,8 @@ import (
 	"net/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/gorilla/schema"
+
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/services/activity"
@@ -62,7 +64,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/gorilla/schema"
 )
 
 // Endpoints 定义 endpoint 方法

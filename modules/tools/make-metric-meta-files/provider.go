@@ -24,12 +24,13 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/encoding/jsonx"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	"github.com/olivere/elastic"
-	"github.com/recallsong/go-utils/encoding/jsonx"
 )
 
 type define struct{}

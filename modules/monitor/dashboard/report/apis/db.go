@@ -16,10 +16,11 @@ package apis
 import (
 	"time"
 
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
-	"github.com/erda-project/erda/modules/pkg/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+
+	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
 // tables name
