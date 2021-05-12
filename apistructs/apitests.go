@@ -52,9 +52,9 @@ type APIHeader struct {
 
 // APIParam API测试参数
 type APIParam struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
-	Desc  string      `json:"desc"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Desc  string `json:"desc"`
 }
 
 type APIBodyType string
