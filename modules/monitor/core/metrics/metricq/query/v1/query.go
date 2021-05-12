@@ -18,11 +18,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
-	"github.com/olivere/elastic"
 )
 
 // Queryer .

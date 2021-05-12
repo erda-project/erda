@@ -613,6 +613,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	}
 	props := `{
     "columns": [
+		{
+            "dataIndex": "id",
+            "title": "ID",
+			"width": 100
+        },
         {
             "dataIndex": "title",
             "title": "标题"

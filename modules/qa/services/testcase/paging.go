@@ -340,7 +340,7 @@ func (svc *Service) PagingTestCases(req apistructs.TestCasePagingRequest) (*apis
 
 	//当更新人没有更新过用例的时候,传入更新人
 	if len(testCases) == 0 {
-		return &apistructs.TestCasePagingResponseData{Total: 0, TestSets: nil, UserIDs: req.UpdaterIDs}, nil
+		return &apistructs.TestCasePagingResponseData{Total: total, TestSets: nil, UserIDs: req.UpdaterIDs}, nil
 	}
 
 	// 将 测试用例列表 转换为 测试集(包含测试用例)列表

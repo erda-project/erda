@@ -22,6 +22,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/conf"
@@ -32,9 +36,6 @@ import (
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Project 资源对象操作封装

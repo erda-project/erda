@@ -19,9 +19,10 @@ import (
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda/modules/monitor/core/logs"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRDSProcess_withFilter1(t *testing.T) {
