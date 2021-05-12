@@ -96,3 +96,32 @@ func (svc *Service) RecursiveFindParents(leafTestSetIDs []uint64, knownTestSets 
 	// 递归查询父节点
 	return svc.RecursiveFindParents(filterParentIDs, knownTestSets)
 }
+
+// FindAncestors find ancestors for testSet.
+func (svc *Service) FindAncestors(tsID uint64) ([]apistructs.TestSet, error) {
+	ancestorsMap := make(map[uint64]apistructs.TestSet)
+	if err := svc.RecursiveFindParents([]uint64{tsID}, ancestorsMap); err != nil {
+		return nil, err
+	}
+	var ancestors []apistructs.TestSet
+	testSet := ancestorsMap[tsID]
+	parentID := testSet.ParentID
+	for parentID != 0 {
+		parent := ancestorsMap[parentID]
+		// add parent to results
+		ancestors = append(ancestors, parent)
+		// find next parent
+		parentID = parent.ParentID
+	}
+	// add fake root testSet
+	ancestors = append(ancestors, apistructs.TestSet{
+		ID:        0,
+		Name:      "/",
+		ProjectID: testSet.ProjectID,
+		ParentID:  0,
+		Recycled:  testSet.Recycled,
+		Directory: "/",
+		Order:     0,
+	})
+	return ancestors, nil
+}

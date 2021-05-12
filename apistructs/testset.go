@@ -35,12 +35,18 @@ type TestSet struct {
 	UpdaterID string `json:"updaterID"`
 }
 
+type TestSetWithAncestors struct {
+	TestSet
+	// ancestors
+	Ancestors []TestSet `json:"ancestors,omitempty"`
+}
+
 type TestSetGetRequest struct {
 	ID uint64 `json:"id"`
 }
 type TestSetGetResponse struct {
 	Header
-	Data *TestSet `json:"data"`
+	Data *TestSetWithAncestors `json:"data"`
 }
 
 // TestSetCreateRequest POST /api/testsets 创建测试集
