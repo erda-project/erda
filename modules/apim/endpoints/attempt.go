@@ -169,7 +169,7 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 	// 传入 query parameters
 	var params = request.URL.Query()
 	for _, v := range apiInfo.Params {
-		params.Add(v.Key, v.Value)
+		params.Add(v.Key, fmt.Sprintf("%v", v.Value))
 	}
 	if access.Authentication == apistructs.AuthenticationSignAuth {
 		if body.ClientSecret == "" {
