@@ -224,7 +224,7 @@ func (e *Endpoints) CopySceneSet(ctx context.Context, r *http.Request, vars map[
 		return apierrors.ErrDragAutoTestSceneSet.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
-	setId, err := e.sceneset.CopySceneSet(req, false)
+	setId, _, _, err := e.sceneset.CopySceneSet(req, false)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

@@ -236,3 +236,17 @@ func (svc *Service) ListAutoTestSceneOutputByScenes(sceneIDs []uint64) ([]apistr
 	}
 	return scenes, nil
 }
+
+func (svc *Service) UpdateInputsValue(replaceInputMap map[uint64]uint64, sceneIDMap map[uint64]uint64) error {
+	for inputID, oldSceneID := range replaceInputMap {
+		input, err := svc.db.GetAutoTestSceneInputByID(inputID)
+		if err != nil {
+			return err
+		}
+		input.Value = replaceOldSceneValue(input.Value, oldSceneID, sceneIDMap[oldSceneID])
+		if err := svc.db.UpdateAutotestSceneInput(input); err != nil {
+			return err
+		}
+	}
+	return nil
+}

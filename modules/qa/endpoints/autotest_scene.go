@@ -115,7 +115,7 @@ func (e *Endpoints) CopyAutoTestScene(ctx context.Context, r *http.Request, vars
 		}
 	}
 
-	sceneID, err := e.autotestV2.CopyAutotestScene(req, false, nil)
+	sceneID, _, err := e.autotestV2.CopyAutotestScene(req, false, nil)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

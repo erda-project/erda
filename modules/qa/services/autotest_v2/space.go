@@ -234,11 +234,16 @@ func (svc *Service) CopyAutoTestSpace(sceneset *sceneset.Service, req apistructs
 		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
 	}
 	go func() {
+		allReplaceInputMap := map[uint64]uint64{}
+		allSceneIDMap := map[uint64]uint64{}
+
 		var refSceneData []apistructs.AutoTestSceneCopyRef
 
 		var preID uint64 = 0
 		for _, each := range sceneSet {
-			preID, err = sceneset.CopySceneSet(apistructs.SceneSetRequest{
+			var replaceInputMap map[uint64]uint64
+			var sceneIDMap map[uint64]uint64
+			preID, sceneIDMap, replaceInputMap, err = sceneset.CopySceneSet(apistructs.SceneSetRequest{
 				Name:         each.Name,
 				SpaceID:      space.ID,
 				Description:  each.Description,
@@ -253,6 +258,14 @@ func (svc *Service) CopyAutoTestSpace(sceneset *sceneset.Service, req apistructs
 				AfterSetID:   preID,
 				AfterSpaceID: space.ID,
 			})
+
+			for oldSceneID, newSceneID := range sceneIDMap {
+				allSceneIDMap[oldSceneID] = newSceneID
+			}
+
+			for inputID, oldSceneID := range replaceInputMap {
+				allReplaceInputMap[inputID] = oldSceneID
+			}
 
 			if err != nil {
 				space.Status = apistructs.TestSpaceFailed
@@ -281,6 +294,11 @@ func (svc *Service) CopyAutoTestSpace(sceneset *sceneset.Service, req apistructs
 		if err != nil {
 			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
 			return
+		}
+
+		err = svc.UpdateInputsValue(allReplaceInputMap, allSceneIDMap)
+		if err != nil {
+			logrus.Error(apierrors.ErrUpdateAutoTestSceneInput.InternalError(err))
 		}
 	}()
 

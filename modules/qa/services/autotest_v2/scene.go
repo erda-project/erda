@@ -812,29 +812,30 @@ func (svc *Service) CancelDiceAutotestScene(req apistructs.AutotestCancelSceneRe
 }
 
 // CopyAutotestScene 复制场景
-func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, isSpaceCopy bool, preSceneIdMap map[uint64]uint64) (uint64, error) {
+func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, isSpaceCopy bool, preSceneIdMap map[uint64]uint64) (uint64, map[uint64]uint64, error) {
+	var replaceInputMap = map[uint64]uint64{}
 	// 一个场景集下500个场景
 	total, err := svc.db.CountSceneBySetID(req.SetID)
 	if err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 	if int(total) >= maxSize {
-		return 0, fmt.Errorf("一个场景集合下，限制500个测试场景")
+		return 0, replaceInputMap, fmt.Errorf("一个场景集合下，限制500个测试场景")
 	}
 
 	// 一个测试空间下50000个场景
 	total, err = svc.db.CountSceneBySpaceID(req.SpaceID)
 	if err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 	if int(total) >= spaceMaxSize {
-		return 0, fmt.Errorf("一个空间下，限制五万个场景")
+		return 0, replaceInputMap, fmt.Errorf("一个空间下，限制五万个场景")
 	}
 
 	// 获取原场景
 	oldScene, err := svc.db.GetAutotestScene(req.SceneID)
 	if err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 
 	if req.SetID == 0 {
@@ -843,34 +844,34 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 	// 校验目标场景集是否存在
 	checkSet, err := svc.db.GetSceneSet(req.SetID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	if checkSet.SpaceID != req.SpaceID {
-		return 0, apierrors.ErrCopyAutoTestScene.InvalidState("目标场景集不属于目标测试空间")
+		return 0, replaceInputMap, apierrors.ErrCopyAutoTestScene.InvalidState("目标场景集不属于目标测试空间")
 	}
 	// 校验目标测试空间
 	checkSpace, err := svc.db.GetAutoTestSpace(req.SpaceID)
 	if err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 	if checkSpace.Status != apistructs.TestSpaceOpen && !isSpaceCopy {
-		return 0, apierrors.ErrCopyAutoTestScene.InvalidState("目标测试空间已锁定")
+		return 0, replaceInputMap, apierrors.ErrCopyAutoTestScene.InvalidState("目标测试空间已锁定")
 	}
 	// 校验pre
 	if req.PreID != 0 {
 		checkScene, err := svc.db.GetAutotestScene(req.PreID)
 		if err != nil {
-			return 0, err
+			return 0, replaceInputMap, err
 		}
 		if checkScene.SetID != req.SetID {
-			return 0, apierrors.ErrCopyAutoTestScene.InvalidState("目标场景不属于目标场景集")
+			return 0, replaceInputMap, apierrors.ErrCopyAutoTestScene.InvalidState("目标场景不属于目标场景集")
 		}
 	}
 
 	// 复制到指定位置
 	newSceneName, err := svc.GenerateSceneName(oldScene.Name, req.SetID)
 	if err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 	newScene := &dao.AutoTestScene{
 		Name:        newSceneName,
@@ -884,7 +885,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 	}
 
 	if err = svc.db.Insert(newScene, req.PreID); err != nil {
-		return 0, err
+		return 0, replaceInputMap, err
 	}
 
 	newId := newScene.ID
@@ -892,10 +893,10 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 	// 依次复制场景入参
 	oldInput, err := svc.ListAutoTestSceneInput(req.SceneID)
 	for _, v := range oldInput {
-		v.Value = replacePreSceneValue(v.Value, preSceneIdMap)
+		replacedValue := replacePreSceneValue(v.Value, preSceneIdMap)
 		newInput := &dao.AutoTestSceneInput{
 			Name:        v.Name,
-			Value:       v.Value,
+			Value:       replacedValue,
 			Temp:        v.Temp,
 			Description: v.Description,
 			SceneID:     newId,
@@ -903,13 +904,19 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			CreatorID:   req.UserID,
 		}
 		if err := svc.db.CreateAutoTestSceneInput(newInput); err != nil {
-			return newScene.ID, err
+			return newScene.ID, replaceInputMap, err
+		}
+		if replacedValue != v.Value {
+			oldSceneID := getRefScenceID(v.Value)
+			if oldSceneID != 0 {
+				replaceInputMap[newInput.ID] = oldSceneID
+			}
 		}
 	}
 	// 依次复制场景步骤
 	step, err := svc.ListAutoTestSceneStep(req.SceneID)
 	if err != nil {
-		return newScene.ID, err
+		return newScene.ID, replaceInputMap, err
 	}
 	var head uint64
 	var replaceIdMap = map[uint64]uint64{}
@@ -928,7 +935,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			CreatorID: req.UserID,
 		}
 		if err := svc.db.CreateAutoTestSceneStep(newStep); err != nil {
-			return newScene.ID, err
+			return newScene.ID, replaceInputMap, err
 		}
 		head = newStep.ID
 		pHead := newStep.ID
@@ -950,7 +957,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			}
 
 			if err := svc.db.CreateAutoTestSceneStep(newPStep); err != nil {
-				return newScene.ID, err
+				return newScene.ID, replaceInputMap, err
 			}
 			pHead = newPStep.ID
 
@@ -975,10 +982,31 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			CreatorID:   req.UserID,
 		}
 		if err := svc.db.CreateAutoTestSceneOutput(newOutput); err != nil {
-			return newScene.ID, err
+			return newScene.ID, replaceInputMap, err
 		}
 	}
-	return newScene.ID, nil
+	return newScene.ID, replaceInputMap, nil
+}
+
+func getRefScenceID(value string) uint64 {
+	s := strutil.ReplaceAllStringSubmatchFunc(pexpr.PhRe, value, func(subs []string) string {
+		inner := subs[1]
+		inner = strings.Trim(inner, " ")
+		ss := strings.SplitN(inner, ".", 3)
+		if len(ss) < 3 {
+			return ""
+		}
+		tmp := strings.SplitN(ss[2], "_", 2)
+		if len(tmp) < 2 {
+			return ""
+		}
+		return tmp[0]
+	})
+	oldScenceID, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return uint64(oldScenceID)
 }
 
 func replacePreSceneValue(value string, replaceIdMap map[uint64]uint64) string {
@@ -1018,6 +1046,10 @@ func replacePreStepValue(value string, replaceIdMap map[uint64]uint64) string {
 			return phData
 		}
 	})
+}
+
+func replaceOldSceneValue(value string, oldSceneID uint64, newSceneID uint64) string {
+	return strings.Replace(value, strconv.FormatUint(oldSceneID, 10), strconv.FormatUint(newSceneID, 10), 1)
 }
 
 // GenerateSceneName 生成场景名，追加 (N)

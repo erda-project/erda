@@ -182,11 +182,13 @@ func (svc *Service) DragSceneSet(req apistructs.SceneSetRequest) error {
 	return svc.db.MoveSceneSet(req)
 }
 
-func (svc *Service) CopySceneSet(req apistructs.SceneSetRequest, isSpaceCopy bool) (uint64, error) {
+func (svc *Service) CopySceneSet(req apistructs.SceneSetRequest, isSpaceCopy bool) (uint64, map[uint64]uint64, map[uint64]uint64, error) {
+	var sceneIdMap = map[uint64]uint64{}
+	var allReplaceInputMap = map[uint64]uint64{}
 	id := req.SetID
 	set, err := svc.GetSceneSet(id)
 	if err != nil {
-		return 0, nil
+		return 0, sceneIdMap, allReplaceInputMap, err
 	}
 
 	newSet := &dao.SceneSet{
@@ -198,7 +200,7 @@ func (svc *Service) CopySceneSet(req apistructs.SceneSetRequest, isSpaceCopy boo
 	}
 
 	if err := svc.db.CreateSceneSet(newSet); err != nil {
-		return 0, err
+		return 0, sceneIdMap, allReplaceInputMap, err
 	}
 
 	_, scenes, err := svc.GetScenes(apistructs.AutotestSceneRequest{SetID: id})
@@ -210,17 +212,20 @@ func (svc *Service) CopySceneSet(req apistructs.SceneSetRequest, isSpaceCopy boo
 	}
 	r.IdentityInfo = req.IdentityInfo
 
-	var sceneIdMap = map[uint64]uint64{}
 	for _, scene := range scenes {
+		var replaceInputMap map[uint64]uint64
 		r.SceneID = scene.ID
 		r.PreID = preId
-		preId, err = svc.CopyScene(r, isSpaceCopy, sceneIdMap)
+		preId, replaceInputMap, err = svc.CopyScene(r, isSpaceCopy, sceneIdMap)
 		if err != nil {
-			return 0, err
+			return 0, sceneIdMap, allReplaceInputMap, err
+		}
+		for inputID, oldSceneID := range replaceInputMap {
+			allReplaceInputMap[inputID] = oldSceneID
 		}
 		sceneIdMap[scene.ID] = preId
 	}
-	return newSet.ID, nil
+	return newSet.ID, sceneIdMap, allReplaceInputMap, nil
 }
 
 func mapping(s *dao.SceneSet) *apistructs.SceneSet {

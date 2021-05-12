@@ -77,3 +77,12 @@ func (db *DBClient) ListAutoTestSceneInputByScenes(sceneID []uint64) ([]AutoTest
 	}
 	return inputs, nil
 }
+
+func (db *DBClient) GetAutoTestSceneInputByID(id uint64) (*AutoTestSceneInput, error) {
+	var input AutoTestSceneInput
+	err := db.Where("id = ?", id).Find(&input).Error
+	if err != nil {
+		return nil, err
+	}
+	return &input, nil
+}

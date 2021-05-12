@@ -25,7 +25,7 @@ type Service struct {
 	bdl *bundle.Bundle
 
 	GetScenes func(req apistructs.AutotestSceneRequest) (uint64, []apistructs.AutoTestScene, error)
-	CopyScene func(req apistructs.AutotestSceneCopyRequest, isSpaceCopy bool, preSceneMap map[uint64]uint64) (uint64, error)
+	CopyScene func(req apistructs.AutotestSceneCopyRequest, isSpaceCopy bool, preSceneMap map[uint64]uint64) (uint64, map[uint64]uint64, error)
 }
 
 // New 新建  service
