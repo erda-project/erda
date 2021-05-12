@@ -55,7 +55,7 @@ type Configuration struct {
 
 // ToJsonIndent marshals the Configuration to JSON []byte
 func (c *Configuration) ToJsonIndent() ([]byte, error) {
-	return json.Marshal(c)
+	return json.MarshalIndent(c, "", "  ")
 }
 
 // ToYaml marshals the Configuration to YAML []byte
