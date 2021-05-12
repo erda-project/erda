@@ -16,6 +16,7 @@ package query
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -145,4 +146,19 @@ func ToNotify(u *model.UpdateNotifyReq) (*db.Notify, error) {
 	}
 	notify.Attributes = string(attribute)
 	return &notify, nil
+}
+
+func ToNotifyRecord(n *model.NotifyRecord) *db.NotifyRecord {
+	record := &db.NotifyRecord{}
+	record.NotifyId = n.NotifyId
+	record.NotifyName = n.NotifyName
+	record.ScopeType = n.ScopeType
+	record.ScopeId = n.ScopeId
+	record.GroupId = n.GroupId
+	record.NotifyGroup = n.NotifyGroup
+	record.Title = n.Title
+	record.NotifyTime = time.Unix(n.NotifyTime/1000, 0)
+	record.CreateTime = time.Unix(n.CreateTime, 0)
+	record.UpdateTime = time.Unix(n.UpdateTime, 0)
+	return record
 }

@@ -14,6 +14,8 @@
 package adapt
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
@@ -41,6 +43,25 @@ func (a *AlertRecord) FromModel(m *db.AlertRecord) *AlertRecord {
 	a.CreateTime = utils.ConvertTimeToMS(m.CreateTime)
 	a.UpdateTime = utils.ConvertTimeToMS(m.UpdateTime)
 	return a
+}
+
+func (a *AlertRecord) ToModel(m *db.AlertRecord) {
+	m.GroupID = a.GroupID
+	m.Scope = a.Scope
+	m.ScopeKey = a.ScopeKey
+	m.AlertGroup = a.AlertGroup
+	m.Title = a.Title
+	m.AlertState = a.AlertState
+	m.AlertType = a.AlertType
+	m.AlertIndex = a.AlertIndex
+	m.ExpressionKey = a.ExpressionKey
+	m.AlertID = a.AlertID
+	m.AlertName = a.AlertName
+	m.RuleID = a.RuleID
+	m.IssueID = a.IssueID
+	m.HandleState = a.HandleState
+	m.HandlerID = a.HandlerID
+	m.AlertTime = time.Unix(a.AlertTime/1000, 0)
 }
 
 // FromModel .
