@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
-	"github.com/jinzhu/gorm"
-
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+
+	"github.com/jinzhu/gorm"
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {

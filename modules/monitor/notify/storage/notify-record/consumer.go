@@ -17,9 +17,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/erda-project/erda/modules/monitor/notify/template/query"
 )
