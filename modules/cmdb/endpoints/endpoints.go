@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/services/activity"
+	"github.com/erda-project/erda/modules/cmdb/services/aksk"
 	"github.com/erda-project/erda/modules/cmdb/services/appcertificate"
 	"github.com/erda-project/erda/modules/cmdb/services/application"
 	"github.com/erda-project/erda/modules/cmdb/services/approve"
@@ -112,6 +113,7 @@ type Endpoints struct {
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
 	fileTree           *filetree.FileTree
+	aksk               *aksk.Service
 }
 
 type Option func(*Endpoints)
@@ -428,6 +430,12 @@ func WithGittarFileTree(fileTree *filetree.FileTree) Option {
 	}
 }
 
+func WithAkSk(obj *aksk.Service) Option {
+	return func(e *Endpoints) {
+		e.aksk = obj
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
@@ -563,6 +571,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/permissions/actions/access", Method: http.MethodPost, Handler: e.ScopeRoleAccess},
 		{Path: "/api/permissions/actions/check", Method: http.MethodPost, Handler: e.CheckPermission},
 
+		// aksk密钥管理相关
+		{Path: "/api/aksks", Method: http.MethodPost, Handler: e.CreateAkSks},
+		{Path: "/api/aksks/{ak}", Method: http.MethodGet, Handler: e.GetAkSkByAk},
+		{Path: "/api/aksks/{ak}", Method: http.MethodDelete, Handler: e.DeleteAkSkByAk},
+
 		// 工单相关
 		{Path: "/api/tickets", Method: http.MethodPost, Handler: e.CreateTicket},
 		{Path: "/api/tickets/{ticketID}", Method: http.MethodPut, Handler: e.UpdateTicket},
@@ -598,8 +611,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/config/actions/export", Method: http.MethodGet, Handler: e.ExportConfigs},
 		{Path: "/api/config/actions/import", Method: http.MethodPost, Handler: e.ImportConfigs},
 		{Path: "/api/config/deployment", Method: http.MethodGet, Handler: e.GetDeployConfigs},
-		//{"/api/configmanage/configs/publish",Method:http.MethodPost,Handler: e.PublishConfig},
-		//{"/api/configmanage/configs/publish/all",Method:http.MethodPost,Handler: e.PublishConfigs},
+		// {"/api/configmanage/configs/publish",Method:http.MethodPost,Handler: e.PublishConfig},
+		// {"/api/configmanage/configs/publish/all",Method:http.MethodPost,Handler: e.PublishConfigs},
 		{Path: "/api/config/actions/list-multinamespace-configs", Method: http.MethodPost, Handler: e.GetMultiNamespaceConfigs},
 		// 以前的dice_config_namespace表数据不全，里面很多name没有了，导致check ns exist时报错，用这个接口修复
 		{Path: "/api/config/namespace/fix-namespace-data-err", Method: http.MethodGet, Handler: e.FixDataErr},
@@ -625,7 +638,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/notify-histories", Method: http.MethodPost, Handler: e.CreateNotifyHistory},
 		{Path: "/api/notifies/actions/search-by-source", Method: http.MethodGet, Handler: e.QueryNotifiesBySource},
 		{Path: "/api/notifies/actions/fuzzy-query-by-source", Method: http.MethodGet, Handler: e.FuzzyQueryNotifiesBySource},
-		{Path: "/api/notify-groups/actions/batch-get", Method: http.MethodGet, Handler: e.BatchGetNotifyGroup}, //内部接口
+		{Path: "/api/notify-groups/actions/batch-get", Method: http.MethodGet, Handler: e.BatchGetNotifyGroup}, // 内部接口
 
 		// license
 		{Path: "/api/license", Method: http.MethodGet, Handler: e.GetLicense},
@@ -702,7 +715,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// issue stage
 		{Path: "/api/issues/action/update-stage", Method: http.MethodPut, Handler: e.CreateIssueStage},
 		{Path: "/api/issues/action/get-stage", Method: http.MethodGet, Handler: e.GetIssueStage},
-		//执行issue的历史数据推送到监控平台
+		// 执行issue的历史数据推送到监控平台
 		{Path: "/api/issues/monitor/history", Method: http.MethodGet, Handler: e.RunIssueHistory},
 		{Path: "/api/issues/monitor/addOrRepairHistory", Method: http.MethodGet, Handler: e.RunIssueAddOrRepairHistory},
 
@@ -768,7 +781,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/project-pipeline/filetree/{inode}", Method: http.MethodGet, Handler: e.GetFileTreeNode},
 		{Path: "/api/project-pipeline/filetree/actions/fuzzy-search", Method: http.MethodGet, Handler: e.FuzzySearchFileTreeNodes},
 
-		//人工审核相关
+		// 人工审核相关
 		{Path: "/api/reviews/actions/list-launched-approval", Method: http.MethodGet, Handler: e.GetReviewsBySponsorId},
 		{Path: "/api/reviews/actions/list-approved", Method: http.MethodGet, Handler: e.GetReviewsByUserId},
 		{Path: "/api/reviews/actions/review/approve", Method: http.MethodPost, Handler: e.CreateReview},

@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/endpoints"
 	"github.com/erda-project/erda/modules/cmdb/services/activity"
+	"github.com/erda-project/erda/modules/cmdb/services/aksk"
 	"github.com/erda-project/erda/modules/cmdb/services/appcertificate"
 	"github.com/erda-project/erda/modules/cmdb/services/application"
 	"github.com/erda-project/erda/modules/cmdb/services/approve"
@@ -132,7 +133,7 @@ func Initialize() error {
 		bundle.WithCollector(),
 	)
 
-	//定时上报issue
+	// 定时上报issue
 	go func() {
 		monitor.MetricsAddAndRepairBug(ep.DBClient(), bdl)
 	}()
@@ -386,7 +387,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		appcertificate.WithCertificate(cer),
 	)
 
-	//通过ui显示错误,不影响启动
+	// 通过ui显示错误,不影响启动
 	license, _ := license.ParseLicense(conf.LicenseKey())
 
 	// init label
@@ -468,6 +469,12 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		filetree.WithBundle(bdl),
 	)
 
+	// aksk
+	apikey, err := aksk.New(aksk.WithDBClient(db))
+	if err != nil {
+		return nil, errors.Wrap(err, "create endpoint aksk error")
+	}
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithJSONStore(store),
@@ -514,6 +521,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
 		endpoints.WithGittarFileTree(fileTree),
+		endpoints.WithAkSk(apikey),
 	)
 
 	return ep, nil
