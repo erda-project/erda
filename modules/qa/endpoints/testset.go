@@ -73,7 +73,19 @@ func (e *Endpoints) GetTestSet(ctx context.Context, r *http.Request, vars map[st
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(ts, strutil.DedupSlice([]string{ts.CreatorID, ts.UpdaterID}))
+	tsWithAncestors := apistructs.TestSetWithAncestors{TestSet: *ts}
+
+	// get ancestors
+	withAncestors, _ := strconv.ParseBool(r.URL.Query().Get("withAncestors"))
+	if withAncestors {
+		ancestors, err := e.testset.FindAncestors(testSetID)
+		if err != nil {
+			return errorresp.ErrResp(err)
+		}
+		tsWithAncestors.Ancestors = ancestors
+	}
+
+	return httpserver.OkResp(tsWithAncestors, strutil.DedupSlice([]string{ts.CreatorID, ts.UpdaterID}))
 }
 
 // ListTestSets 获取测试集列表
