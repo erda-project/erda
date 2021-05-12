@@ -25,11 +25,12 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	_ "github.com/erda-project/erda/modules/monitor/core/collector/statik" // include static files
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/rakyll/statik/fs"
+
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda/modules/monitor/core/collector/statik" // include static files
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js

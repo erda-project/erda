@@ -19,12 +19,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/pkg/errors"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/hepa/config"
 )
 
 // 2016-09-27 09:38:21.541541811 +0200 CEST

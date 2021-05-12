@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/sqllint/script"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 
 	"github.com/erda-project/erda/pkg/color"
+	"github.com/erda-project/erda/pkg/sqllint/script"
 )
 
 type LintError struct {

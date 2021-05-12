@@ -19,6 +19,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-redis/redis"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/conf"
@@ -32,9 +36,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
-	"github.com/go-redis/redis"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Org 资源对象操作封装

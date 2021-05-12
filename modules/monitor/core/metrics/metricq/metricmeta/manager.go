@@ -14,10 +14,11 @@
 package metricmeta
 
 import (
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
-	"github.com/jinzhu/gorm"
 )
 
 type MetaSource string

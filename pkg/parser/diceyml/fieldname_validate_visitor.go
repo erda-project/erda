@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"strconv"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type FieldnameValidateVisitor struct {
