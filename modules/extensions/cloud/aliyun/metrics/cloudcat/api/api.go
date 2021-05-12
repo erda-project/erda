@@ -21,9 +21,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	g "github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/globals"
-	"github.com/pkg/errors"
 )
 
 var (

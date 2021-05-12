@@ -22,6 +22,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
 	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/built-in"
 	_ "github.com/erda-project/erda/modules/hepa/apipolicy/policies/cors"
@@ -38,11 +43,6 @@ import (
 	"github.com/erda-project/erda/modules/hepa/kong"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

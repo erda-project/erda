@@ -16,8 +16,9 @@ package indexmanager
 import (
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics"
 )
 
 // IndexEntry .

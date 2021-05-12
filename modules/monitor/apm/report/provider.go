@@ -16,6 +16,8 @@ package report
 import (
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -23,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/jinzhu/gorm"
 )
 
 type provider struct {

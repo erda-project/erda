@@ -21,11 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/modules/hepa/common/util"
-	"github.com/erda-project/erda/modules/hepa/common/vars"
-	"github.com/erda-project/erda/pkg/clientgo"
-
-	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -33,6 +28,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/erda-project/erda/modules/hepa/common/util"
+	"github.com/erda-project/erda/modules/hepa/common/vars"
+	"github.com/erda-project/erda/pkg/clientgo"
+	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 )
 
 const (

@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
@@ -25,7 +27,6 @@ import (
 	"github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/api"
 	g "github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/globals"
 	"github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/scheduler"
-	"github.com/pkg/errors"
 )
 
 type define struct{}

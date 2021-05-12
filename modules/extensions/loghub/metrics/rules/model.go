@@ -18,8 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
 	"github.com/recallsong/go-utils/reflectx"
+
+	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
 )
 
 // LogMetricConfig .

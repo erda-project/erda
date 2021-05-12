@@ -17,6 +17,11 @@ package publisher
 import (
 	"strings"
 
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	uuid2 "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
@@ -24,10 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/nexussvc"
 	"github.com/erda-project/erda/pkg/nexus"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	uuid2 "github.com/satori/go.uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // Publisher 资源对象操作封装

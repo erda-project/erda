@@ -16,10 +16,11 @@ package exporter
 import (
 	"fmt"
 
+	"github.com/recallsong/go-utils/encoding/md5x"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/recallsong/go-utils/encoding/md5x"
 )
 
 type define struct{}

@@ -21,12 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"github.com/olivere/elastic"
 )
 
 func (p *provider) getContainers(ctx httpserver.Context, r *http.Request, params struct {

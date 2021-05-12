@@ -16,12 +16,13 @@ package rules
 import (
 	"encoding/json"
 
+	"github.com/recallsong/go-utils/encoding/md5x"
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/recallsong/go-utils/encoding/md5x"
-	uuid "github.com/satori/go.uuid"
 )
 
 // ListLogMetricConfig .

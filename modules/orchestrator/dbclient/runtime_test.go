@@ -18,8 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 // func TestDBClient_CreateRuntime(t *testing.T) {

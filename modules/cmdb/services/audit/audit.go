@@ -21,6 +21,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
@@ -28,7 +30,6 @@ import (
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/sirupsen/logrus"
 )
 
 // Audit 成员操作封装

@@ -16,10 +16,11 @@ package linters
 import (
 	"strings"
 
+	"github.com/pingcap/parser/ast"
+
 	"github.com/erda-project/erda/pkg/sqllint/linterror"
 	"github.com/erda-project/erda/pkg/sqllint/rules"
 	"github.com/erda-project/erda/pkg/sqllint/script"
-	"github.com/pingcap/parser/ast"
 )
 
 const UTF8MB4 = "utf8mb4"

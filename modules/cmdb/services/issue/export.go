@@ -18,11 +18,12 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/pkg/errors"
+	"github.com/tealeg/xlsx/v3"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
-	"github.com/tealeg/xlsx/v3"
 )
 
 func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool) (io.Reader, string, error) {

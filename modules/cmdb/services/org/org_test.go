@@ -18,10 +18,11 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/erda-project/erda/modules/cmdb/dao"
+	"github.com/erda-project/erda/modules/cmdb/model"
 )
 
 // func TestShouldGetOrgByName(t *testing.T) {

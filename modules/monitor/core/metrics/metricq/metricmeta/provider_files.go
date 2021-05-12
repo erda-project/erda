@@ -21,10 +21,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	"gopkg.in/yaml.v2"
 )
 
 // scopeDefine

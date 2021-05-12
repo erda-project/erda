@@ -14,9 +14,9 @@
 package prehandle
 
 import (
+	"fmt"
 	"testing"
 
-	"fmt"
 	"github.com/stretchr/testify/assert"
 )
 

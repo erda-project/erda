@@ -20,9 +20,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/jinzhu/gorm"
 )
 
 type DataMeta struct {

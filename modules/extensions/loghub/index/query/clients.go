@@ -19,10 +19,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/netportal"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
+
+	"github.com/erda-project/erda/pkg/netportal"
 )
 
 // log versions

@@ -18,13 +18,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
-	"github.com/jinzhu/gorm"
 )
 
 type define struct{}

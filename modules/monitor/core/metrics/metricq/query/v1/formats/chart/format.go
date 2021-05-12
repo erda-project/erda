@@ -16,10 +16,11 @@ package chart
 import (
 	"fmt"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	query "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/units"
-	"github.com/olivere/elastic"
 )
 
 // Formater .

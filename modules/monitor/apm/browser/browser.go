@@ -16,12 +16,13 @@ package browser
 import (
 	"fmt"
 
+	"github.com/labstack/gommon/log"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"github.com/labstack/gommon/log"
 )
 
 type define struct{}

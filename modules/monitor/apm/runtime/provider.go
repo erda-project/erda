@@ -14,6 +14,8 @@
 package runtime
 
 import (
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -21,7 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/modules/monitor/common/db"
-	"github.com/olivere/elastic"
 )
 
 type provider struct {

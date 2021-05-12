@@ -17,8 +17,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erda-project/erda/modules/monitor/utils"
 	jsoniter "github.com/json-iterator/go"
+
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 var (

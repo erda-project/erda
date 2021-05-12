@@ -16,9 +16,10 @@ package example
 import (
 	"context"
 
-	"github.com/erda-project/erda-proto-go/examples/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/erda-project/erda-proto-go/examples/pb"
 )
 
 type greeterService struct {

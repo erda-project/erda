@@ -17,9 +17,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/recallsong/go-utils/encoding"
 	"github.com/recallsong/go-utils/reflectx"
+
+	"github.com/erda-project/erda-infra/base/logs"
 )
 
 // consumer .

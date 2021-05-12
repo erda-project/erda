@@ -16,8 +16,9 @@ package raw
 import (
 	"fmt"
 
-	query "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 	"github.com/olivere/elastic"
+
+	query "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
 )
 
 // Formater .

@@ -20,10 +20,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // Functions .

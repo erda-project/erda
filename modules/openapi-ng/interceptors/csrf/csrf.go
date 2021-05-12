@@ -23,11 +23,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo"
+	"github.com/labstack/gommon/random"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/openapi-ng/common"
 	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
-	"github.com/labstack/echo"
-	"github.com/labstack/gommon/random"
 )
 
 type config struct {

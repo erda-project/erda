@@ -17,9 +17,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
-	"github.com/sirupsen/logrus"
 )
 
 type BaseModel struct {

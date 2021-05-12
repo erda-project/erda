@@ -17,11 +17,12 @@ import (
 	"strings"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/recallsong/go-utils/errorx"
+
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	"github.com/erda-project/erda/modules/monitor/core/logs"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/recallsong/go-utils/errorx"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

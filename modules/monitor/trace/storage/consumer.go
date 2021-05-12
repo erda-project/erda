@@ -20,10 +20,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gocql/gocql"
+
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/monitor/trace"
-	"github.com/gocql/gocql"
 )
 
 func (p *provider) initCassandra(session *gocql.Session) error {

@@ -18,9 +18,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/recallsong/go-utils/reflectx"
+
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/pkg/router"
-	"github.com/recallsong/go-utils/reflectx"
 )
 
 type metricConfig struct {

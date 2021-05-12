@@ -21,11 +21,12 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+
 	logs2 "github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
-	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
 )
 
 func Test_insertOrgFilter(t *testing.T) {

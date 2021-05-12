@@ -17,11 +17,12 @@ import (
 	"bytes"
 	"strings"
 
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/tidb/types"
+
 	"github.com/erda-project/erda/pkg/sqllint/linterror"
 	"github.com/erda-project/erda/pkg/sqllint/rules"
 	"github.com/erda-project/erda/pkg/sqllint/script"
-	"github.com/pingcap/parser/ast"
-	"github.com/pingcap/tidb/types"
 )
 
 const (

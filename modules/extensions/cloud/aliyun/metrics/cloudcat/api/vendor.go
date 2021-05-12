@@ -20,8 +20,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
-	"github.com/erda-project/erda/pkg/aliyunclient"
 	"go.uber.org/ratelimit"
+
+	"github.com/erda-project/erda/pkg/aliyunclient"
 )
 
 type CloudVendor interface {

@@ -25,14 +25,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/logs"
-	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	"github.com/erda-project/erda/pkg/router"
 	"github.com/jinzhu/gorm"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/lang/size"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
+	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	"github.com/erda-project/erda/pkg/router"
 )
 
 var random = rand.New(rand.NewSource(time.Now().UnixNano()))

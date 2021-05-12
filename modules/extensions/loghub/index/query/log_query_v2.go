@@ -17,8 +17,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/monitor/core/logs"
 )
 
 func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {

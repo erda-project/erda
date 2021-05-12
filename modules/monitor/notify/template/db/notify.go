@@ -14,8 +14,9 @@
 package db
 
 import (
-	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 )
 
 type NotifyDB struct {

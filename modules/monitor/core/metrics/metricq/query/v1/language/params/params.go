@@ -24,11 +24,12 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/recallsong/go-utils/reflectx"
+
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
-	query "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
-	"github.com/recallsong/go-utils/reflectx"
 )
 
 // Parser .

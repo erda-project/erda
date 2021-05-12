@@ -20,10 +20,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/jinzhu/gorm"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {

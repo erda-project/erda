@@ -31,11 +31,11 @@ func Test_calculateStatus(t *testing.T) {
 			raws: []rawStatus{
 				{
 					HealthStatus: 0,
-					Weight: 0,
+					Weight:       0,
 				},
 				{
 					HealthStatus: 0,
-					Weight: 1,
+					Weight:       1,
 				},
 			},
 			name: "kubernetes",

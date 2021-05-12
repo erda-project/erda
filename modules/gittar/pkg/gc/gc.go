@@ -19,10 +19,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/cron"
-	"github.com/sirupsen/logrus"
 )
 
 // all gittar repository root address

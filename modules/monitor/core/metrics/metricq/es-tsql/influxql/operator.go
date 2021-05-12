@@ -14,8 +14,9 @@
 package esinfluxql
 
 import (
-	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 	"github.com/influxdata/influxql"
+
+	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 )
 
 func reverseOperator(op influxql.Token) influxql.Token {

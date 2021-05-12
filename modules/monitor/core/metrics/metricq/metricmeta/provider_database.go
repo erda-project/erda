@@ -18,11 +18,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jinzhu/gorm"
+	"github.com/recallsong/go-utils/reflectx"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	"github.com/jinzhu/gorm"
-	"github.com/recallsong/go-utils/reflectx"
 )
 
 // tables name

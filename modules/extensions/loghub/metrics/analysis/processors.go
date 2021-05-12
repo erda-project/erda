@@ -14,10 +14,11 @@
 package analysis
 
 import (
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
 	"github.com/recallsong/go-utils/encoding"
 	"github.com/recallsong/go-utils/reflectx"
+
+	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
+	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
 )
 
 type processorConfig struct {

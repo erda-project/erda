@@ -19,11 +19,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
 )
 
 func HandlePagingUsers(req *apistructs.UserPagingRequest, token OAuthToken) (*userPaging, error) {

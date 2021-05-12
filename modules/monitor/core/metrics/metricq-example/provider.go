@@ -17,11 +17,12 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/recallsong/go-utils/encoding/jsonx"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	"github.com/recallsong/go-utils/encoding/jsonx"
 )
 
 type define struct{}

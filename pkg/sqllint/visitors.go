@@ -14,11 +14,12 @@
 package sqllint
 
 import (
+	"github.com/pingcap/parser"
+	"gopkg.in/yaml.v3"
+
 	"github.com/erda-project/erda/pkg/sqllint/linterror"
 	"github.com/erda-project/erda/pkg/sqllint/rules"
 	"github.com/erda-project/erda/pkg/sqllint/script"
-	"github.com/pingcap/parser"
-	"gopkg.in/yaml.v3"
 )
 
 type Linter struct {

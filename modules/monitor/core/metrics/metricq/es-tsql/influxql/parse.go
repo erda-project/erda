@@ -20,9 +20,10 @@ import (
 	"strings"
 	"time"
 
-	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
+
+	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
 )
 
 // Parser .
