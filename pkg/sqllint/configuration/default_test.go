@@ -21,7 +21,7 @@ import (
 
 func TestDefaultRulers(t *testing.T) {
 	rulers := configuration.DefaultRulers()
-	if len(rulers) != 23 {
+	if len(rulers) != 25 {
 		t.Fatal("numbers of rulers err")
 	}
 }
