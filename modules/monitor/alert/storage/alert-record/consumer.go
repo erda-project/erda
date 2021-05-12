@@ -15,29 +15,40 @@ package alert_record
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
+	p.mysql.LogMode(true)
 	alertRecord := &adapt.AlertRecord{}
 	if err := json.Unmarshal(value, alertRecord); err != nil {
 		return err
 	}
 	record := &db.AlertRecord{}
 	alertRecord.ToModel(record)
-	err := p.mysql.Exec("INSERT INTO `sp_alert_record`"+
-		"(`group_id`, `scope`, `scope_key`, `alert_group`, `title`, `alert_state`, `alert_type`, `alert_index`, "+
-		"`expression_key`, `alert_id`, `alert_name`, `rule_id`, `alert_time`) "+
-		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "+
-		"ON DUPLICATE KEY UPDATE "+
-		"`alert_state` = ?, `alert_type` = ?, `alert_index` = ?, `alert_name` = ?, `alert_time` = ?",
-		record.GroupID, record.Scope, record.ScopeKey, record.AlertGroup, record.Title, record.AlertState, record.AlertType, record.AlertIndex,
-		record.ExpressionKey, record.AlertID, record.AlertName, record.RuleID, record.AlertTime,
-		record.AlertState, record.AlertType, record.AlertIndex, record.AlertName, record.AlertTime).Error
-	fmt.Println("save alert record is succ")
-	return err
+	sqlRecord := &db.AlertRecord{}
+	err := p.mysql.Model(&db.AlertRecord{}).Where("group_id = ?", alertRecord.GroupID).First(sqlRecord).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if sqlRecord == nil {
+		//create
+		err := p.mysql.Create(record).Error
+		return err
+	} else {
+		//update
+		err := p.mysql.Model(&db.AlertRecord{}).Where("group_id = ?", alertRecord.GroupID).Updates(map[string]interface{}{
+			"alert_state": record.AlertState,
+			"alert_type":  record.AlertType,
+			"alert_index": record.AlertIndex,
+			"alert_name":  record.AlertName,
+			"alert_time":  record.AlertTime,
+		}).Error
+		return err
+	}
 }

@@ -62,9 +62,6 @@ func (a *AlertRecord) ToModel(m *db.AlertRecord) {
 	m.HandleState = a.HandleState
 	m.HandlerID = a.HandlerID
 	m.AlertTime = time.Unix(a.AlertTime/1000, 0)
-	m.HandleTime = time.Unix(a.HandleTime, 0)
-	m.CreateTime = time.Unix(a.CreateTime, 0)
-	m.UpdateTime = time.Unix(a.UpdateTime, 0)
 }
 
 // FromModel .

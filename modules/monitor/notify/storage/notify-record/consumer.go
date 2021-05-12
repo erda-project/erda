@@ -17,6 +17,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/erda-project/erda/modules/monitor/notify/template/db"
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
 	"github.com/erda-project/erda/modules/monitor/notify/template/query"
 )
@@ -27,13 +30,21 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return err
 	}
 	record := query.ToNotifyRecord(&notifyRecord)
-	err := p.mysql.Exec("INSERT INTO `sp_notify_record`"+
-		"(`notify_id`,`notify_name`,`scope_type`,`scope_id`,`group_id`,`notify_group`,"+
-		"`title`,`notify_time`)"+
-		"VALUES (?,?,?,?,?,?,?,?)"+
-		"ON DUPLICATE KEY UPDATE"+
-		"`notify_id` = ?,`notify_name` = ?,`notify_time` = ?,`title` = ?",
-		record.NotifyId, record.NotifyName, record.ScopeType, record.ScopeId, record.GroupId, record.NotifyGroup,
-		record.Title, record.NotifyTime, record.NotifyId, record.NotifyName, record.NotifyTime, record.Title).Error
-	return err
+	sqlRecord := &db.NotifyRecord{}
+	err := p.mysql.Model(&db.NotifyRecord{}).Where("notify_id = ?", notifyRecord.NotifyId).First(sqlRecord).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if sqlRecord == nil {
+		err := p.mysql.Create(record).Error
+		return err
+	} else {
+		err := p.mysql.Model(&db.NotifyRecord{}).Where("notify_id = ?", notifyRecord.NotifyId).Updates(map[string]interface{}{
+			"notify_id":   record.NotifyId,
+			"notify_name": record.NotifyName,
+			"notify_time": record.NotifyTime,
+			"title":       record.Title,
+		}).Error
+		return err
+	}
 }
