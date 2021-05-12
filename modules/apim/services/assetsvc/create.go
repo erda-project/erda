@@ -375,9 +375,10 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 			"org_id":   version.OrgID,
 			"asset_id": version.AssetID,
 			"major":    version.Major,
+			"minor":    version.Minor,
 		}
 	)
-	if err := dbclient.Sq().Where(where).Order("minor DESC, patch DESC").
+	if err := dbclient.Sq().Where(where).Order("patch DESC").
 		Find(&versions); err != nil {
 		logrus.Errorf("failed to query newest ten versions: %v", err)
 	}

@@ -252,32 +252,17 @@ func (svc *Service) collectListSwaggerVersionRspObj(versions []*apistructs.APIAs
 }
 
 func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersionsReq) (*apistructs.ListSwaggerVersionRsp, error) {
-	var versions []*apistructs.APIAssetVersionsModel
-	if err := svc.ListRecords(&versions, map[string]interface{}{
-		"org_id":   req.OrgID,
-		"asset_id": req.URIParams.AssetID,
-	}); err != nil {
+	var (
+		versions []*apistructs.APIAssetVersionsModel
+		where = map[string]interface{}{
+			"org_id":   req.OrgID,
+			"asset_id": req.URIParams.AssetID,
+			"deprecated": false,
+		}
+	)
+	if err := dbclient.Sq().Find(&versions, where).Order("major DESC, minor DESC, patch DESC").Error; err != nil {
 		return nil, err
 	}
-
-	sort.Slice(versions, func(i, j int) bool {
-		if versions[i].Major < versions[j].Major {
-			return false
-		}
-		if versions[i].Major > versions[j].Major {
-			return true
-		}
-		if versions[i].Minor > versions[j].Minor {
-			return false
-		}
-		if versions[i].Minor < versions[j].Minor {
-			return true
-		}
-		if versions[i].Patch < versions[j].Patch {
-			return false
-		}
-		return true
-	})
 
 	var (
 		m = make(map[string]*apistructs.ListSwaggerVersionRspObj)
@@ -285,9 +270,6 @@ func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersion
 	)
 
 	for _, version := range versions {
-		if version.Deprecated {
-			continue
-		}
 		num := strconv.FormatUint(version.Major, 10) + "." + strconv.FormatUint(version.Minor, 10)
 		if _, ok := group[num]; ok {
 			continue
