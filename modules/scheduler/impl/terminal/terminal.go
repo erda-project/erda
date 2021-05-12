@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/executor"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
@@ -37,7 +38,11 @@ import (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		for _, domain := range strutil.Split(os.Getenv("DICE_ROOT_DOMAIN"), ",") {
+		if strutil.Contains(origin, os.Getenv("DICE_ROOT_DOMAIN")) {
+			return true
+		}
+
+		for _, domain := range strutil.Split(conf.WsDiceRootDomain(), ",") {
 			if strutil.Contains(origin, domain) {
 				return true
 			}
