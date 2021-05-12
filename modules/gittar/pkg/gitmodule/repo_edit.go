@@ -119,12 +119,10 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		case EDIT_ACTION_ADD, EDIT_ACTION_UPDATE:
 			// 判断文件是否存在，避免文件重复添加
 			if action.Action == EDIT_ACTION_ADD {
-				if _, err = index.Find(action.Path);
-					err == nil {
+				if _, err = index.Find(action.Path); err == nil {
 					return nil, FileAlreadyExists
 				}
-				if _, err = index.Find(action.Path + "/.gitkeep");
-					err == nil {
+				if _, err = index.Find(action.Path + "/.gitkeep"); err == nil {
 					return nil, FileAlreadyExists
 				}
 			}
@@ -153,13 +151,11 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 			}
 		case EDIT_ACTION_DELETE:
 			if action.PathType == EDIT_PATH_TYPE_TREE {
-				if err = index.RemoveDirectory(action.Path, 0);
-					err != nil {
+				if err = index.RemoveDirectory(action.Path, 0); err != nil {
 					return nil, err
 				}
 			} else {
-				if err = index.RemoveByPath(action.Path);
-					err != nil {
+				if err = index.RemoveByPath(action.Path); err != nil {
 					return nil, err
 				}
 			}
@@ -193,8 +189,7 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 	}
 	if isInitCommit {
 		//把第一次提交的分支设为默认分支
-		if err := rawRepo.SetHead(BRANCH_PREFIX + branch);
-			err != nil {
+		if err := rawRepo.SetHead(BRANCH_PREFIX + branch); err != nil {
 			return nil, err
 		}
 	}

@@ -654,8 +654,7 @@ func CreateCommit(context *webcontext.Context) {
 		return
 	}
 
-	if err := context.CheckBranchOperatePermission(context.User, createCommitRequest.Branch);
-		err != nil {
+	if err := context.CheckBranchOperatePermission(context.User, createCommitRequest.Branch); err != nil {
 		context.Abort(err)
 		return
 	}
