@@ -151,11 +151,11 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 			image = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
 		}
 		pro.Title.Props = TitleProps{
-			DisplayName: fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
+			DisplayName: fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.Name),
 			RenderType:  "linkText",
 			Value: map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{"image": image}, map[string]interface{}{
-					"text":         fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
+					"text":         fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.Name),
 					"operationKey": "toSpecificProject",
 					"styleConfig": map[string]interface{}{
 						"bold":     true,

@@ -145,7 +145,7 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 	item := AppItem{
 		ID:          strconv.Itoa(int(app.ID)),
 		AppId:       strconv.Itoa(int(app.ID)),
-		Title:       fmt.Sprintf("%s/%s", app.ProjectDisplayName, app.DisplayName),
+		Title:       fmt.Sprintf("%s/%s", app.ProjectName, app.Name),
 		Description: "",
 		PrefixImg:   "/images/default-app-icon.svg",
 		Operations: map[string]Operation{
@@ -225,7 +225,7 @@ func (m *MyApplicationList) addAppsData(datas *apistructs.ApplicationListRespons
 		if orgDTO == nil {
 			return fmt.Errorf("failed to get org")
 		}
-		orgName = orgDTO.DisplayName
+		orgName = orgDTO.Name
 	}
 	for _, v := range datas.List {
 		dataList = append(dataList, RenItem(v, orgName))

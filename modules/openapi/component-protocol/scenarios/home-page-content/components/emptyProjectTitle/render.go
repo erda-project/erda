@@ -138,7 +138,7 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 			if permissionRes.Access {
 				role = "管理员"
 			}
-			e.Props.Title = fmt.Sprintf("你已经是 %s 组织的%s", orgDTO.DisplayName, role)
+			e.Props.Title = fmt.Sprintf("你已经是 %s 组织的%s", orgDTO.Name, role)
 			e.Props.Visible = true
 		}
 	}
