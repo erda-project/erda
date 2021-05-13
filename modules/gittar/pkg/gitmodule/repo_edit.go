@@ -37,9 +37,10 @@ const (
 )
 
 var (
-	NotSupportType    = errors.New("not support path type")
-	NotSupportAction  = errors.New("not support action")
-	FileAlreadyExists = errors.New("a file with the same name already exists")
+	NotSupportType      = errors.New("not support path type")
+	NotSupportAction    = errors.New("not support action")
+	FileAlreadyExists   = errors.New("存在同名文件")
+	FolderAlreadyExists = errors.New("存在同名文件夹")
 )
 
 type EditActionItem struct {
@@ -119,11 +120,13 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		case EDIT_ACTION_ADD, EDIT_ACTION_UPDATE:
 			// 判断文件是否存在，避免文件重复添加
 			if action.Action == EDIT_ACTION_ADD {
+				// 查找文件是否存在
 				if _, err = index.Find(action.Path); err == nil {
 					return nil, FileAlreadyExists
 				}
-				if _, err = index.Find(action.Path + "/.gitkeep"); err == nil {
-					return nil, FileAlreadyExists
+				// 查找文件夹是否存在
+				if _, err = index.FindPrefix(action.Path + "/"); err == nil {
+					return nil, FolderAlreadyExists
 				}
 			}
 
