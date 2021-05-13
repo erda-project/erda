@@ -21,11 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/influxdata/influxql"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
 	"github.com/recallsong/go-utils/lang/size"
+
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // Context .

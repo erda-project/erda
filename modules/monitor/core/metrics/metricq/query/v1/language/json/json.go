@@ -21,9 +21,10 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/recallsong/go-utils/reflectx"
+
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	queryv1 "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query/v1"
-	"github.com/recallsong/go-utils/reflectx"
 )
 
 // Form .

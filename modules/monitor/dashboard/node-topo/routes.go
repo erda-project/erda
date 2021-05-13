@@ -17,10 +17,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
+
+	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {

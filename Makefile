@@ -150,7 +150,7 @@ build-push-all:
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
-#build cli
+# build cli
 prepare-cli:
 	cd tools/cli/command/generate && go generate
 .PHONY: cli

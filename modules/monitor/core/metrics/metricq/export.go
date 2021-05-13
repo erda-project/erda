@@ -21,8 +21,9 @@ import (
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"github.com/erda-project/erda-infra/modcom/api"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/erda-project/erda-infra/modcom/api"
 )
 
 // exportMetrics .

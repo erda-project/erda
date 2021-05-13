@@ -63,7 +63,7 @@ func generateFrontendConditionProps(fixedIssueType string) FrontendConditionProp
 			ShowIndex:   2,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeInput,
-			Placeholder: "请输入标题",
+			Placeholder: "请输入标题或ID",
 		},
 		{
 			Key:         PropConditionKeyStateBelongs,

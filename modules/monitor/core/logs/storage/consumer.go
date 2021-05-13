@@ -18,9 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/monitor/core/logs"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
