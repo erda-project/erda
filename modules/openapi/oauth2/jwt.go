@@ -76,7 +76,7 @@ func (a *JWTAccessGenerate) Token(data *oauth2.GenerateBasic, isGenRefresh bool)
 
 	// expire_in
 	if payload.AccessTokenExpiredIn == "" {
-		return "", "", fmt.Errorf("no accessTokenExpiredIn is not allowed")
+		return "", "", fmt.Errorf("accessTokenExpiredIn is required")
 	} else {
 		expiredIn, err := time.ParseDuration(payload.AccessTokenExpiredIn)
 		if err != nil {
