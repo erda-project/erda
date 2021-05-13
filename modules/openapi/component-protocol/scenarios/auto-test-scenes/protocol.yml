@@ -55,10 +55,10 @@ hierarchy:
       - executeHead
       - executeInfo
       - executeTaskTitle
+      - executeAlertInfo
       - executeTaskBreadcrumb
       - executeTaskTable
       - resultDrawer
-      - executeAlertInfo
     apiEditorDrawer:
       content: apiEditorContainer
     waitEditorDrawer:
