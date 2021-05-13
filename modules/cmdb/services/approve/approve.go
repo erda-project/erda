@@ -191,8 +191,8 @@ func (a *Approve) mkMboxEmailNotify(id int64, done string, orgid uint64, project
 		return err
 	}
 
-	url := fmt.Sprintf("%s://%s-org.%s/orgCenter/approval/%s?id=%d",
-		protocol, org.Name, domain, done, id)
+	url := fmt.Sprintf("%s://%s-org.%s/%s/orgCenter/approval/%s?id=%d",
+		protocol, org.Name, domain, org.Name, done, id)
 
 	approverIDs := []string{}
 	emails := []string{}
