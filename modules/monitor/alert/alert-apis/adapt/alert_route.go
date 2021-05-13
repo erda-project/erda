@@ -301,8 +301,8 @@ func convertAlertURL(domain, orgName, routeID string, params map[string]interfac
 }
 
 // convert custom market url
-func convertDashboardURL(domain, path, dashboardID string, groups []string) string {
-	u := domain + path + "/" + dashboardID
+func convertDashboardURL(domain, orgName, path, dashboardID string, groups []string) string {
+	u := domain + "/" + orgName + path + "/" + dashboardID
 	conn := "?"
 	for _, group := range groups {
 		u += conn + group + "={{" + group + "}}"
