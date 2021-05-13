@@ -40,6 +40,20 @@ type APITest struct {
 	opt option
 }
 
+type APIParam struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
+	Desc  string      `json:"desc"`
+}
+
+func (p APIParam) convert() apistructs.APIParam {
+	return apistructs.APIParam{
+		Key:   p.Key,
+		Value: strutil.String(p.Value),
+		Desc:  p.Desc,
+	}
+}
+
 func New(api *apistructs.APIInfo, opOptions ...OpOption) *APITest {
 	var at APITest
 	at.API = api
@@ -267,18 +281,19 @@ func (at *APITest) renderAtOnce(apiReq *apistructs.APIInfo, caseParams map[strin
 			}
 			apiReq.Body.Content = renderFunc(bodyStr, caseParams)
 		case apistructs.APIBodyTypeApplicationXWWWFormUrlencoded:
-			// check type: []apistructs.APIParam
+			// check type: []APIParam
+			// after check convert to []apistructs.APIParam
 			b, err := json.Marshal(apiReq.Body.Content)
 			if err != nil {
 				return err
 			}
-			var content []apistructs.APIParam
+			var content []APIParam
 			if err := json.Unmarshal(b, &content); err != nil {
 				return err
 			}
 			var renderedContent []apistructs.APIParam
 			for i := range content {
-				param := content[i]
+				param := content[i].convert()
 				param.Key = renderFunc(strings.TrimSpace(param.Key), caseParams)
 				param.Value = renderFunc(strings.TrimSpace(param.Value), caseParams)
 				param.Desc = renderFunc(strings.TrimSpace(param.Desc), caseParams)
