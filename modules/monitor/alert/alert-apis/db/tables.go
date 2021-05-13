@@ -33,7 +33,7 @@ const (
 )
 
 type AlertRecord struct {
-	GroupID       string    `gorm:"column:group_id"`
+	GroupID       string    `gorm:"column:group_id;primary_key"`
 	Scope         string    `gorm:"column:scope"`
 	ScopeKey      string    `gorm:"column:scope_key"`
 	AlertGroup    string    `gorm:"column:alert_group"`
@@ -49,7 +49,7 @@ type AlertRecord struct {
 	HandleState   string    `gorm:"column:handle_state"`
 	HandlerID     string    `gorm:"column:handler_id"`
 	AlertTime     time.Time `gorm:"column:alert_time"`
-	HandleTime    time.Time `gorm:"column:handle_time"`
+	HandleTime    time.Time `gorm:"column:handle_time;default:null"`
 	CreateTime    time.Time `gorm:"column:create_time"`
 	UpdateTime    time.Time `gorm:"column:update_time"`
 }
