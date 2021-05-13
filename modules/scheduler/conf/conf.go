@@ -36,6 +36,8 @@ type Conf struct {
 	KafkaGroup          string `env:"CMDB_GROUP"`
 
 	TerminalSecurity bool `env:"TERMINAL_SECURITY" default:"false"`
+
+	WsDiceRootDomain string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
 }
 
 var cfg Conf
@@ -88,4 +90,8 @@ func KafkaGroup() string {
 // TerminalSecurity return cfg.TerminalSecurity
 func TerminalSecurity() bool {
 	return cfg.TerminalSecurity
+}
+
+func WsDiceRootDomain() string {
+	return cfg.WsDiceRootDomain
 }

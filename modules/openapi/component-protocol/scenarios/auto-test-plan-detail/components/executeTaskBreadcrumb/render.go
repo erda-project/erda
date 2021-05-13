@@ -114,11 +114,15 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 			}
 		}
 		a.State.Unfold = false
-		res = append(res, Breadcrumb{
-			Key:  strconv.FormatUint(a.State.PipelineID, 10),
-			Item: a.State.Name,
-		})
-		a.State.Visible = len(res) < 2
+		// changePage bug修复
+		l := len(res)
+		if l == 0 || res[l-1].Item != a.State.Name {
+			res = append(res, Breadcrumb{
+				Key:  strconv.FormatUint(a.State.PipelineID, 10),
+				Item: a.State.Name,
+			})
+		}
+		a.State.Visible = l < 2
 		a.Data = map[string]interface{}{"list": res}
 	case apistructs.ExecuteTaskBreadcrumbSelectItem:
 		res := []Breadcrumb{}
