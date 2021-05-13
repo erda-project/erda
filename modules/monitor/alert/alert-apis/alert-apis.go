@@ -83,11 +83,6 @@ func (p *provider) createAlert(r *http.Request, alert adapt.Alert) interface{} {
 	if err := p.checkAlert(&alert); err != nil {
 		return err
 	}
-	org, err := p.bdl.GetOrg(alert.AlertScopeID)
-	if err != nil {
-		return api.Errors.Internal(err)
-	}
-	alert.Attributes["org_name"] = org.Name
 	id, err := p.a.CreateAlert(&alert)
 	if err != nil {
 		if adapt.IsInvalidParameterError(err) {

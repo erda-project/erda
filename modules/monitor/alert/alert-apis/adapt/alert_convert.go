@@ -266,8 +266,13 @@ func (e *AlertExpression) FromModel(expression *db.AlertExpression) *AlertExpres
 }
 
 // ToModel .
-func (e *AlertExpression) ToModel(alert *Alert, orgName string, rule *AlertRule) (*db.AlertExpression, error) {
+func (e *AlertExpression) ToModel(orgName string, alert *Alert, rule *AlertRule) (*db.AlertExpression, error) {
 	attributes := make(map[string]interface{})
+	//org, err := new(bundle.Bundle).GetOrg(alert.AlertScopeID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//attributes["org_name"] = org.Name
 	for k, v := range rule.Attributes {
 		attributes[k] = v
 	}
@@ -386,7 +391,7 @@ func (e *AlertExpression) ToModel(alert *Alert, orgName string, rule *AlertRule)
 			for _, item := range group {
 				groups = append(groups, item.(string))
 			}
-			attributes["display_url"] = convertDashboardURL(alertDomain, orgName, dashboardPath, dashboardID, groups)
+			attributes["display_url"] = convertDashboardURL(alertDomain, dashboardPath, dashboardID, groups)
 		}
 	}
 
