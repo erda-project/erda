@@ -31,6 +31,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -38,7 +40,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	"github.com/olivere/elastic"
 )
 
 type Vo struct {
@@ -1145,7 +1146,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 
 	// error request count
 	errorCount := 0.0
-	for _, errorReqMetricName := range ErrorReqMetricNames {
+	for _, errorReqMetricName := range ReqMetricNames {
 		count, err := topology.globalReqCount(errorReqMetricName, params, metricsParams)
 		if err != nil {
 			return nil, err
@@ -1187,7 +1188,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 }
 
 func (topology *provider) globalReqCount(metricScopeName string, params GlobalParams, metricsParams url.Values) (float64, error) {
-	statement := fmt.Sprintf("SELECT count(elapsed_count) FROM %s WHERE _metric_scope_id=$terminus_key", metricScopeName)
+	statement := fmt.Sprintf("SELECT sum(errors_sum::field) FROM %s WHERE target_terminus_key::tag=$terminus_key", metricScopeName)
 	queryParams := map[string]interface{}{
 		"metric":       metricScopeName,
 		"terminus_key": params.ScopeId,
@@ -1312,16 +1313,14 @@ func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*No
 	}
 
 	for _, node := range nodes {
-		key := node.ApplicationName + "#" + node.ServiceName
+		key := node.ServiceId
 		serviceInstances := instances[key]
-		if serviceInstances != nil {
-			for _, instance := range serviceInstances {
-				if instance.ApplicationName == node.ApplicationName {
-					if instance.InstanceState == "running" {
-						node.Metric.Running += 1
-					} else {
-						node.Metric.Stopped += 1
-					}
+		for _, instance := range serviceInstances {
+			if instance.ServiceId == node.ServiceId {
+				if instance.InstanceState == "running" {
+					node.Metric.Running += 1
+				} else {
+					node.Metric.Stopped += 1
 				}
 			}
 		}
@@ -1358,6 +1357,7 @@ func (topology *provider) Services(serviceName string, nodes []*Node) []ServiceD
 
 type ServiceInstance struct {
 	ApplicationName     string `json:"applicationName,omitempty"`
+	ServiceId           string `json:"serviceId,omitempty"`
 	ServiceName         string `json:"serviceName,omitempty"`
 	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
 	ServiceInstanceId   string `json:"serviceInstanceId,omitempty"`
@@ -1371,7 +1371,7 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement := "SELECT service_name::tag,application_name::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
+	statement := "SELECT service_id::tag,service_instance_id::tag,if(gt(now()-timestamp,300000000000),'stopping','running') FROM application_service_node WHERE terminus_key=$terminus_key GROUP BY service_id::tag,service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.TerminusKey,
 	}
@@ -1383,16 +1383,15 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceName:         row[0].(string),
-			ApplicationName:     row[1].(string),
-			ServiceInstanceName: row[2].(string),
-			InstanceState:       row[3].(string),
+			ServiceId:           row[0].(string),
+			ServiceInstanceName: row[1].(string),
+			InstanceState:       row[2].(string),
 		}
 		result = append(result, instance)
 	}
 	instanceResult := make(map[string][]ServiceInstance)
 	for _, instance := range result {
-		key := instance.ApplicationName + "#" + instance.ServiceName
+		key := instance.ServiceId
 		if instanceResult[key] == nil {
 			var serviceInstance []ServiceInstance
 			serviceInstance = append(serviceInstance, instance)

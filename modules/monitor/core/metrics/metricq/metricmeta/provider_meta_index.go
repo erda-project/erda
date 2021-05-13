@@ -21,11 +21,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
-	"github.com/olivere/elastic"
 )
 
 // MetaIndexGroupProvider .

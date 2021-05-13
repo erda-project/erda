@@ -21,12 +21,13 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/sirupsen/logrus"
+
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/api"
 	"github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/globals"
 	"github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat/grabber"
-	"github.com/sirupsen/logrus"
 )
 
 var topic = "spot-telemetry"

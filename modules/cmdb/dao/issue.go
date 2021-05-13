@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Issue
@@ -255,7 +256,11 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 
 	if req.Title != "" {
 		title := strings.ReplaceAll(req.Title, "%", "\\%")
-		sql = sql.Where("title LIKE ?", "%"+title+"%")
+		if _, err := strutil.Atoi64(title); err == nil {
+			sql = sql.Where("title LIKE ? OR id LIKE ?", "%"+title+"%", "%"+title+"%")
+		} else {
+			sql = sql.Where("title LIKE ?", "%"+title+"%")
+		}
 	}
 	if req.Source != "" {
 		sql = sql.Where("source LIKE ?", "%"+req.Source+"%")

@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 )
 

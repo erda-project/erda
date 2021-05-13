@@ -20,13 +20,14 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/gocql/gocql"
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/gocql/gocql"
-	"github.com/pkg/errors"
 )
 
 const (

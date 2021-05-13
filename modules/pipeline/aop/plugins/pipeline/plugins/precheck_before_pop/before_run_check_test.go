@@ -21,11 +21,12 @@ import (
 
 	"bou.ke/monkey"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_matchHookType(t *testing.T) {

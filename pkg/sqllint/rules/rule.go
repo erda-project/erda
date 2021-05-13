@@ -14,8 +14,9 @@
 package rules
 
 import (
-	"github.com/erda-project/erda/pkg/sqllint/script"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/erda-project/erda/pkg/sqllint/script"
 )
 
 // Rule is an Error and SQL ast visitor,

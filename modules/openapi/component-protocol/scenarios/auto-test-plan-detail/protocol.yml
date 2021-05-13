@@ -234,10 +234,10 @@ rendering:
       state:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
-    - name: cancelExecuteButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
+    # - name: cancelExecuteButton
+    #   state:
+    #     - name: "visible"
+    #       value: "{{ executeTaskBreadcrumb.visible }}"
     - name: executeInfo
       state:
         - name: "pipelineId"
@@ -261,8 +261,8 @@ rendering:
           value: "{{ executeTaskBreadcrumb.visible }}"
     - name: cancelExecuteButton
       state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
+        # - name: "visible"
+        #   value: "{{ executeTaskBreadcrumb.visible }}"
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
   executeHistoryRefresh:

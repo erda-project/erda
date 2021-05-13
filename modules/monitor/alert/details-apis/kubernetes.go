@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
-
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/olivere/elastic"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // PodInfoSummary .

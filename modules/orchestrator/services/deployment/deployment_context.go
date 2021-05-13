@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,8 +27,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -328,20 +327,26 @@ func (fsm *DeployFSMContext) continuePhasePreService() error {
 	}
 	fsm.d.Log(`prepare default domain...`)
 	// TODO: create default domain should be one phase
+	var expose bool
 	for name, serv := range fsm.Spec.Services {
-		if len(serv.Expose) == 0 {
-			// not an endpoint
-			continue
+		// serv.Expose will abandoned, serv.Ports.Expose is recommended
+		for _, svcPort := range serv.Ports {
+			if svcPort.Expose {
+				expose = true
+				break
+			}
 		}
-		rootDomains := strings.Split(fsm.Cluster.WildcardDomain, ",")
-		if len(rootDomains) < 1 {
-			return errors.Errorf("domain not exist, cluster %s", fsm.Cluster.Name)
-		}
-		rootDomain := rootDomains[0]
-		if _, err := fsm.db.GetDefaultDomainOrCreate(fsm.Runtime.ID, name,
-			// TODO: default domain format should be refactored
-			fmt.Sprintf("%s-%s-%d-app.%s", name, strings.ToLower(fsm.Runtime.Workspace), fsm.Runtime.ID, rootDomain)); err != nil {
-			return err
+		if len(serv.Expose) != 0 || expose {
+			rootDomains := strings.Split(fsm.Cluster.WildcardDomain, ",")
+			if len(rootDomains) < 1 {
+				return errors.Errorf("domain not exist, cluster %s", fsm.Cluster.Name)
+			}
+			rootDomain := rootDomains[0]
+			if _, err := fsm.db.GetDefaultDomainOrCreate(fsm.Runtime.ID, name,
+				// TODO: default domain format should be refactored
+				fmt.Sprintf("%s-%s-%d-app.%s", name, strings.ToLower(fsm.Runtime.Workspace), fsm.Runtime.ID, rootDomain)); err != nil {
+				return err
+			}
 		}
 	}
 

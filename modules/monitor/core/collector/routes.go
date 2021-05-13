@@ -28,7 +28,6 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/rakyll/statik/fs"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	_ "github.com/erda-project/erda/modules/monitor/core/collector/statik" // include static files
@@ -83,22 +82,23 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 	name := source + "_log"
 
 	body, err := ReadRequestBody(ctx.Request())
+
 	if err != nil {
-		logrus.Errorf("fail to read request body, err: %v", err)
+		c.Logger.Errorf("fail to read request body, err: %v", err)
 		return err
 	}
-	if isJSONArray(body) {
-		logrus.Warningf("the body is not a json array. body=%s", string(body))
+	if !isJSONArray(body) {
+		c.Logger.Warnf("the body is not a json array. body=%s", string(body))
 		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	if _, err := jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
-			logrus.Errorf("fail to json parse, err: %v", err)
+			c.Logger.Errorf("fail to json parse, err: %v", err)
 			return
 		}
 		if err := c.send(name, value); err != nil {
-			logrus.Errorf("fail to send msg to kafka, name: %s, err: %v", name, err)
+			c.Logger.Errorf("fail to send msg to kafka, name: %s, err: %v", name, err)
 		}
 	}); err != nil {
 		return err

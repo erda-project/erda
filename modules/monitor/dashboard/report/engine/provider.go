@@ -17,10 +17,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-playground/validator"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/go-playground/validator"
 )
 
 type define struct{}
