@@ -636,9 +636,8 @@ func CreateCommit(context *webcontext.Context) {
 		context.Abort(err)
 		return
 	}
-	repository := context.Repository
-	var createCommitRequest gitmodule.CreateCommit
 
+	repository := context.Repository
 	isLocked, err := context.Service.GetRepoLocked(repository.ProjectId, repository.ApplicationId)
 	if err != nil {
 		context.Abort(err)
@@ -649,8 +648,8 @@ func CreateCommit(context *webcontext.Context) {
 		return
 	}
 
-	err = context.BindJSON(&createCommitRequest)
-	if err != nil {
+	var createCommitRequest gitmodule.CreateCommit
+	if err = context.BindJSON(&createCommitRequest); err != nil {
 		context.Abort(err)
 		return
 	}
@@ -697,7 +696,7 @@ func CreateCommit(context *webcontext.Context) {
 	})
 }
 
-// GetRaw function
+// GetRepoRaw function
 func GetRepoRaw(context *webcontext.Context) {
 	repository := context.Repository
 	path := context.Param("*")
@@ -1003,7 +1002,6 @@ func GetRepoStats(context *webcontext.Context) {
 		return
 	}
 	context.Success(stats)
-
 }
 
 // SetLocked 仓库锁定

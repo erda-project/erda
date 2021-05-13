@@ -26,6 +26,7 @@ type EditPathType string
 
 const (
 	EDIT_ACTION_ADD    EditAction = "add"
+	EDIT_ACTION_UPDATE EditAction = "update"
 	EDIT_ACTION_DELETE EditAction = "delete"
 	EDIT_ACTION_MOVE   EditAction = "move"
 )
@@ -33,6 +34,13 @@ const (
 const (
 	EDIT_PATH_TYPE_TREE EditPathType = "tree"
 	EDIT_PATH_TYPE_BLOB EditPathType = "blob"
+)
+
+var (
+	ErrNotSupportType      = errors.New("not support path type")
+	ErrNotSupportAction    = errors.New("not support action")
+	ErrFileAlreadyExists   = errors.New("a file with the same name already exists")
+	ErrFolderAlreadyExists = errors.New("a folder with the same name already exists")
 )
 
 type EditActionItem struct {
@@ -71,7 +79,7 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		return nil, err
 	}
 
-	parentCommits := []*git.Commit{}
+	var parentCommits []*git.Commit
 	if !isInitCommit {
 		// 不是init commit,读取对应分支内容到index
 		branchCommit, err := repo.GetBranchCommit(branch)
@@ -96,48 +104,62 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		if action.PathType == "" {
 			action.PathType = EDIT_PATH_TYPE_BLOB
 		}
+		if action.PathType != EDIT_PATH_TYPE_BLOB &&
+			action.PathType != EDIT_PATH_TYPE_TREE {
+			return nil, ErrNotSupportType
+		}
+		if action.Action != EDIT_ACTION_ADD &&
+			action.Action != EDIT_ACTION_UPDATE &&
+			action.Action != EDIT_ACTION_DELETE {
+			return nil, ErrNotSupportAction
+		}
 	}
 
 	for _, action := range request.Actions {
-		if action.Action == EDIT_ACTION_ADD {
+		switch action.Action {
+		case EDIT_ACTION_ADD, EDIT_ACTION_UPDATE:
+			// judge whether files and folders exist
+			if action.Action == EDIT_ACTION_ADD {
+				if _, err = index.Find(action.Path); err == nil {
+					return nil, ErrFileAlreadyExists
+				}
+				if _, err = index.FindPrefix(action.Path + "/"); err == nil {
+					return nil, ErrFolderAlreadyExists
+				}
+			}
+
+			var (
+				content string
+				path    string
+			)
 			if action.PathType == EDIT_PATH_TYPE_TREE {
-				oid, err := rawRepo.CreateBlobFromBuffer([]byte(""))
-				if err != nil {
+				content = ""
+				path = action.Path + "/.gitkeep"
+			} else {
+				content = action.Content
+				path = action.Path
+			}
+			oid, err := rawRepo.CreateBlobFromBuffer([]byte(content))
+			if err != nil {
+				return nil, err
+			}
+			if err = index.Add(&git.IndexEntry{
+				Mode: git.FilemodeBlob,
+				Id:   oid,
+				Path: path,
+			}); err != nil {
+				return nil, err
+			}
+		case EDIT_ACTION_DELETE:
+			if action.PathType == EDIT_PATH_TYPE_TREE {
+				if err = index.RemoveDirectory(action.Path, 0); err != nil {
 					return nil, err
 				}
-
-				index.Add(&git.IndexEntry{
-					Mode: git.FilemodeBlob,
-					Id:   oid,
-					Path: action.Path + "/.gitkeep",
-				})
-
-			} else if action.PathType == EDIT_PATH_TYPE_BLOB {
-				content := action.Content
-				oid, err := rawRepo.CreateBlobFromBuffer([]byte(content))
-				if err != nil {
+			} else {
+				if err = index.RemoveByPath(action.Path); err != nil {
 					return nil, err
 				}
-
-				index.Add(&git.IndexEntry{
-					Mode: git.FilemodeBlob,
-					Id:   oid,
-					Path: action.Path,
-				})
-
-			} else {
-				return nil, errors.New("not support path type: " + string(action.PathType))
 			}
-		} else if action.Action == EDIT_ACTION_DELETE {
-			if action.PathType == EDIT_PATH_TYPE_TREE {
-				index.RemoveDirectory(action.Path, 0)
-			} else if action.PathType == EDIT_PATH_TYPE_BLOB {
-				index.RemoveByPath(action.Path)
-			} else {
-				return nil, errors.New("not support pathType: " + string(action.PathType))
-			}
-		} else {
-			return nil, errors.New("not support action: " + string(action.Action))
 		}
 	}
 
@@ -168,8 +190,7 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 	}
 	if isInitCommit {
 		//把第一次提交的分支设为默认分支
-		err := rawRepo.SetHead(BRANCH_PREFIX + branch)
-		if err != nil {
+		if err := rawRepo.SetHead(BRANCH_PREFIX + branch); err != nil {
 			return nil, err
 		}
 	}
