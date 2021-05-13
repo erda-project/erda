@@ -17,9 +17,10 @@ RUN tar -zcvf ./bin/scripts.tar.gz ./modules/ops/scripts/
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
-RUN apk add --no-cache jq && \
+RUN apk add --no-cache jq py3-pip && \
     apk add --update nodejs nodejs-npm && \
-    npm i -g jackson-converter@1.0.10
+    npm i -g jackson-converter@1.0.10 && \
+    pip3 install dicttoxml xmindparser
 
 WORKDIR /app
 
