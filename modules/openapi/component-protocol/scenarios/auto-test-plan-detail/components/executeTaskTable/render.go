@@ -150,7 +150,12 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *apistructs.Component, 
 
 	// listen on operation
 	switch event.Operation {
-	case apistructs.ExecuteChangePageNoOperationKey, apistructs.RenderingOperation, apistructs.InitializeOperation:
+	case apistructs.ExecuteChangePageNoOperationKey:
+		a.State.Unfold = true
+		if err := a.handlerListOperation(a.CtxBdl, c, inParams, event); err != nil {
+			return err
+		}
+	case apistructs.RenderingOperation, apistructs.InitializeOperation:
 		a.State.Unfold = false
 		if err := a.handlerListOperation(a.CtxBdl, c, inParams, event); err != nil {
 			return err
