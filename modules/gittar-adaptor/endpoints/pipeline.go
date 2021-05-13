@@ -347,7 +347,8 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckAppAction(identityInfo, p.ApplicationID, apistructs.GetAction); err != nil {
+	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(p.ApplicationID, 10),
+		p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
