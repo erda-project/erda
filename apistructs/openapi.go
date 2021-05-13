@@ -24,7 +24,7 @@ type OpenapiOAuth2Token struct {
 }
 
 type OpenapiOAuth2TokenPayload struct {
-	AccessTokenExpiredIn string            `json:"accessTokenExpiredIn"` // such as "300ms", "-1.5h" or "2h45m". "0" means it doesn't expire.
+	AccessTokenExpiredIn string            `json:"accessTokenExpiredIn"` // such as "300ms", "-1.5h" or "2h45m". "0" means it doesn't expire. Empty string is not allowed.
 	AllowAccessAllAPIs   bool              `json:"allowAccessAllApIs,omitempty"`
 	AccessibleAPIs       []AccessibleAPI   `json:"accessibleAPIs,omitempty"`
 	Metadata             map[string]string `json:"metadata,omitempty"`
