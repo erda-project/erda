@@ -37,10 +37,10 @@ const (
 )
 
 var (
-	NotSupportType      = errors.New("not support path type")
-	NotSupportAction    = errors.New("not support action")
-	FileAlreadyExists   = errors.New("存在同名文件")
-	FolderAlreadyExists = errors.New("存在同名文件夹")
+	ErrNotSupportType      = errors.New("not support path type")
+	ErrNotSupportAction    = errors.New("not support action")
+	ErrFileAlreadyExists   = errors.New("a file with the same name already exists")
+	ErrFolderAlreadyExists = errors.New("a folder with the same name already exists")
 )
 
 type EditActionItem struct {
@@ -106,27 +106,25 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		}
 		if action.PathType != EDIT_PATH_TYPE_BLOB &&
 			action.PathType != EDIT_PATH_TYPE_TREE {
-			return nil, NotSupportType
+			return nil, ErrNotSupportType
 		}
 		if action.Action != EDIT_ACTION_ADD &&
 			action.Action != EDIT_ACTION_UPDATE &&
 			action.Action != EDIT_ACTION_DELETE {
-			return nil, NotSupportAction
+			return nil, ErrNotSupportAction
 		}
 	}
 
 	for _, action := range request.Actions {
 		switch action.Action {
 		case EDIT_ACTION_ADD, EDIT_ACTION_UPDATE:
-			// 判断文件是否存在，避免文件重复添加
+			// judge whether files and folders exist
 			if action.Action == EDIT_ACTION_ADD {
-				// 查找文件是否存在
 				if _, err = index.Find(action.Path); err == nil {
-					return nil, FileAlreadyExists
+					return nil, ErrFileAlreadyExists
 				}
-				// 查找文件夹是否存在
 				if _, err = index.FindPrefix(action.Path + "/"); err == nil {
-					return nil, FolderAlreadyExists
+					return nil, ErrFolderAlreadyExists
 				}
 			}
 
