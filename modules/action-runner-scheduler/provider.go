@@ -24,15 +24,8 @@ import (
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
-const serviceName = "action-runner-scheduler"
-
 type provider struct{}
 
-func init() { servicehub.RegisterProvider(serviceName, &provider{}) }
-
-func (p *provider) Service() []string                 { return []string{serviceName} }
-func (p *provider) Dependencies() []string            { return []string{} }
-func (p *provider) Init(ctx servicehub.Context) error { return nil }
 func (p *provider) Run(ctx context.Context) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     false,
@@ -46,6 +39,10 @@ func (p *provider) Run(ctx context.Context) error {
 
 	return Initialize()
 }
-func (p *provider) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
+
+func init() {
+	servicehub.Register("action-runner-scheduler", &servicehub.Spec{
+		Services: []string{"action-runner-scheduler"},
+		Creator:  func() servicehub.Provider { return &provider{} },
+	})
 }

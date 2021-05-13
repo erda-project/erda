@@ -22,36 +22,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-const serviceVolumeProvisioner = "volume-provisioner"
-
-// define Represents the definition of provider and provides some information
-type define struct{}
-
-// Service Declare what services the provider provides
-func (d *define) Service() []string { return []string{serviceVolumeProvisioner} }
-
-// Dependencies Return which services the provider depends on
-func (d *define) Dependencies() []string { return []string{} }
-
-// Description Describe information about this provider
-func (d *define) Description() string {
-	return "This is a Persistent Volume Claim (PVC) provisioner for Kubernetes."
-}
-
-// Creator Return a provider creator
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
-// Config Return an instance representing the configuration
-func (d *define) Config() interface{} { return &config{} }
-
-type provider struct {
-	Cfg *config
-}
-
 // config The definition of volume-provisioner config
 type config struct {
 	// ProvisionerNamespace Consistent with the namespace of the volume-provisioner daemonSet,
@@ -69,6 +39,10 @@ type config struct {
 	NodeName string `env:"NODE_NAME" default:""`
 }
 
+type provider struct {
+	Cfg *config
+}
+
 // TODO: refactor
 // Init Initialize the provider to run
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
@@ -76,7 +50,7 @@ func (p *provider) Init(ctx servicehub.Context) error { return nil }
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Info("volumeProvisioner provider is running...")
-	return initialize(p.Cfg)
+	return initialize(p.Cfg, ctx)
 }
 
 // Close Close the provider
@@ -86,5 +60,10 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider(serviceVolumeProvisioner, &define{})
+	servicehub.Register("volume-provisioner", &servicehub.Spec{
+		Services:    []string{"volume-provisioner"},
+		Description: "This is a Persistent Volume Claim (PVC) provisioner for Kubernetes.",
+		ConfigFunc:  func() interface{} { return &config{} },
+		Creator:     func() servicehub.Provider { return &provider{} },
+	})
 }

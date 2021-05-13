@@ -22,17 +22,10 @@ import (
 	"github.com/erda-project/erda/providers/metrics/query"
 )
 
-const service = "dicehub"
-
 type provider struct {
 	Log         logs.Logger
-	QueryClient query.MetricQuery
+	QueryClient query.MetricQuery `autowired:"metricq-client"`
 }
-
-func init() { servicehub.RegisterProvider(service, &provider{}) }
-
-func (p *provider) Service() []string      { return []string{service} }
-func (p *provider) Dependencies() []string { return []string{"metricq-client"} }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	metrics.Client = p.QueryClient
@@ -40,6 +33,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error { return Initialize(p) }
-func (p *provider) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
+
+func init() {
+	servicehub.Register("dicehub", &servicehub.Spec{
+		Services: []string{"dicehub"},
+		Creator:  func() servicehub.Provider { return &provider{} },
+	})
 }
