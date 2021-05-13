@@ -123,7 +123,7 @@ const props1 string = `{
       {
         "title": "参数名",
         "key": "key",
-        "width": 200,
+        "width": 150,
         "render": {
           "required": true,
           "uniqueValue": true,
@@ -192,7 +192,7 @@ const props2 string = `}
       {
         "title": "参数名",
         "key": "key",
-        "width": 200,
+        "width": 150,
         "name": "key",
         "render": {
           "required": true,
