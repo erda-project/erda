@@ -18,8 +18,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda-infra/base/logs"
 )
 
 type ttlStore interface {

@@ -19,9 +19,10 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/olivere/elastic"
 	cfgpkg "github.com/recallsong/go-utils/config"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics"
 )
 
 func (p *provider) initTemplate(client *elastic.Client) error {

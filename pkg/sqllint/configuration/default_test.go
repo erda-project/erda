@@ -11,22 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package apitestsv2
+package configuration_test
 
 import (
-	"fmt"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/erda-project/erda/pkg/sqllint/configuration"
 )
 
-func TestRandString(t *testing.T) {
-	s := randString(Integer)
-	i, err := strconv.Atoi(s)
-	assert.NoError(t, err)
-	fmt.Println(s, i)
-
-	s = randString(String)
-	fmt.Println(s)
+func TestDefaultRulers(t *testing.T) {
+	rulers := configuration.DefaultRulers()
+	if len(rulers) != 25 {
+		t.Fatal("numbers of rulers err")
+	}
 }

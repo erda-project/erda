@@ -27,6 +27,10 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/kafka"
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
+
+	//storage record
+	_ "github.com/erda-project/erda/modules/monitor/alert/storage/alert-record"
+	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 )
 
 func main() {

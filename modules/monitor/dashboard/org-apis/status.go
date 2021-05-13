@@ -16,9 +16,10 @@ package orgapis
 import (
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/pkg/errors"
 )
 
 type statusQuery struct {

@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apierrors"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
@@ -25,7 +27,6 @@ import (
 	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/sirupsen/logrus"
 )
 
 var UC_USER_PAGING = apis.ApiSpec{

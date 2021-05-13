@@ -19,11 +19,12 @@ import (
 	"strings"
 	"time"
 
-	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	md5simd "github.com/minio/md5-simd"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+
+	tsql "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 )
 
 // NormalizeColumn .

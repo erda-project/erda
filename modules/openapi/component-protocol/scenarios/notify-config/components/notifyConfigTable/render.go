@@ -18,9 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/table"
 )
