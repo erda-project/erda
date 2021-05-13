@@ -391,7 +391,7 @@ func (e *AlertExpression) ToModel(orgName string, alert *Alert, rule *AlertRule)
 			for _, item := range group {
 				groups = append(groups, item.(string))
 			}
-			attributes["display_url"] = convertDashboardURL(alertDomain, dashboardPath, dashboardID, groups)
+			attributes["display_url"] = convertDashboardURL(alertDomain, orgName, dashboardPath, dashboardID, groups)
 		}
 	}
 
