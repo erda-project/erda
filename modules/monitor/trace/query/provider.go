@@ -16,10 +16,11 @@ package query
 import (
 	"fmt"
 
+	"github.com/gocql/gocql"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/gocql/gocql"
 )
 
 type define struct{}
