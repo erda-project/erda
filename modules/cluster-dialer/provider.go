@@ -17,10 +17,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster-dialer/server"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/cluster-dialer/server"
 )
 
 type config struct {

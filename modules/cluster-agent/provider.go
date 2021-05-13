@@ -23,10 +23,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
 type config struct {

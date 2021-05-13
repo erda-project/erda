@@ -22,10 +22,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/gorilla/websocket"
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 const HandshakeTimeOut = 10 * time.Second
