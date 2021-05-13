@@ -37,8 +37,8 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	for _, region := range regions {
 		ctx.Region = region
 		pagenum := 1
-		MAX := 1000
-		for ((pagenum - 1) * pagesize) < MAX {
+		max := 1000
+		for ((pagenum - 1) * pagesize) < max {
 			rsp, err := DescribeResource(ctx,
 				aliyun_resources.PageOption{
 					PageSize:   &pagesize,
@@ -52,7 +52,7 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 				break
 			}
 			pagenum += 1
-			MAX = rsp.TotalCount
+			max = rsp.TotalCount
 		}
 	}
 	start := (*page.PageNumber - 1) * (*page.PageSize)
@@ -63,7 +63,7 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	if end > len(instances) {
 		end = len(instances)
 	}
-	total, err := Total(ctx, regions, cluster)
+	total, err := totalEcs(ctx, regions, cluster)
 	if err != nil {
 		logrus.Errorf("get total ecs number failed, error: %v", err)
 		return nil, 0, err
@@ -74,7 +74,7 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	return instances, total, nil
 }
 
-func Total(ctx aliyun_resources.Context, regions []string, cluster string) (int, error) {
+func totalEcs(ctx aliyun_resources.Context, regions []string, cluster string) (int, error) {
 	pagesize := 10
 	pagenum := 1
 	total := 0
