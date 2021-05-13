@@ -1,26 +1,30 @@
 // Copyright (c) 2021 Terminus, Inc.
-
+//
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
 // or later ("AGPL"), as published by the Free Software Foundation.
-
+//
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
-	// providers and modules
+	"github.com/erda-project/erda/conf"
+
+	// modules
 	_ "github.com/erda-project/erda/modules/monitor/apm/browser"
 	_ "github.com/erda-project/erda/modules/monitor/core/logs/storage"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/storage"
 	_ "github.com/erda-project/erda/modules/monitor/trace/storage"
 
+	// providers
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
 	_ "github.com/erda-project/erda-infra/providers/health"
@@ -34,5 +38,8 @@ import (
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/streaming", "streaming")
+	modcom.Run(&servicehub.RunOptions{
+		ConfigFile: conf.MonitorStreamingDefaultConfig,
+		Content:    conf.MonitorStreamingConfigFilePath,
+	})
 }

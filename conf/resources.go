@@ -15,10 +15,27 @@ package conf
 
 import _ "embed"
 
-//go:embed openapi-ng/openapi-ng.yaml
-var OpenAPINGDefaultConfig string
-var OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
+var (
+	//go:embed openapi-ng/openapi-ng.yaml
+	OpenAPINGDefaultConfig  string
+	OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
 
-//go:embed openapi/openapi.yaml
-var OpenAPIDefaultConfig string
-var OpenAPIConfigFilePath = "conf/openapi/openapi.yaml"
+	//go:embed openapi/openapi.yaml
+	OpenAPIDefaultConfig  string
+	OpenAPIConfigFilePath = "conf/openapi/openapi.yaml"
+)
+
+// monitor
+var (
+	//go:embed monitor/collector/collector.yaml
+	MonitorCollectorDefaultConfig  string
+	MonitorCollectorConfigFilePath string = "conf/monitor/collector/collector.yaml"
+
+	//go:embed monitor/monitor/monitor.yaml
+	MonitorDefaultConfig  string
+	MonitorConfigFilePath string = "conf/monitor/monitor/monitor.yaml"
+
+	//go:embed monitor/streaming/streaming.yaml
+	MonitorStreamingDefaultConfig  string
+	MonitorStreamingConfigFilePath string = "conf/monitor/streaming/streaming.yaml"
+)

@@ -14,15 +14,24 @@
 package main
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda/conf"
 
-	// log hub
+	// modules
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
-
 	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
-
+	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
+	_ "github.com/erda-project/erda/modules/monitor/apm/report"
+	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
+	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
+	_ "github.com/erda-project/erda/modules/monitor/apm/trace"
+	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/index"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
@@ -31,23 +40,10 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
-
-	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/index"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
+	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
 	_ "github.com/erda-project/erda/modules/monitor/settings"
 
-	// notify
-	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
-
-	// apm
-	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
-	_ "github.com/erda-project/erda/modules/monitor/apm/report"
-	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
-	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
-	_ "github.com/erda-project/erda/modules/monitor/apm/trace"
-
+	// providers
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
 	_ "github.com/erda-project/erda-infra/providers/health"
@@ -59,5 +55,8 @@ import (
 
 func main() {
 	// modcom.RegisterInitializer(loghub.Init)
-	modcom.RunWithCfgDir("conf/monitor", "monitor")
+	modcom.Run(&servicehub.RunOptions{
+		ConfigFile: conf.MonitorDefaultConfig,
+		Content:    conf.MonitorConfigFilePath,
+	})
 }
