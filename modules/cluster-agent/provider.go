@@ -23,10 +23,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/pkg/errors"
 	"github.com/rancher/remotedialer"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/sirupsen/logrus"
 )
 

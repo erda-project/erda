@@ -17,10 +17,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/rancher/remotedialer"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/cluster-dialer/server"
+	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 )
 
