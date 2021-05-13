@@ -57,6 +57,11 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		IssueListRequest: apistructs.IssueListRequest{
 			StateBelongs: stateBelongs,
 			Assignees:    []string{userID.String()},
+			Type: []apistructs.IssueType{
+				apistructs.IssueTypeRequirement,
+				apistructs.IssueTypeBug,
+				apistructs.IssueTypeTask,
+			},
 		},
 	}
 	if err := e.issue.FilterByStateBelongForPros(stateMap, projectIDs, &stateReq); err != nil {
@@ -102,6 +107,11 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 					apistructs.IssuePriorityNormal,
 					apistructs.IssuePriorityLow,
 				},
+				Type: []apistructs.IssueType{
+					apistructs.IssueTypeRequirement,
+					apistructs.IssueTypeBug,
+					apistructs.IssueTypeTask,
+				},
 				Asc: true,
 			},
 		}
@@ -129,6 +139,11 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 			etIssueReq.PageNo = 1
 			etIssueReq.PageSize = 1
 			etIssueReq.External = true
+			etIssueReq.Type = []apistructs.IssueType{
+				apistructs.IssueTypeRequirement,
+				apistructs.IssueTypeBug,
+				apistructs.IssueTypeTask,
+			}
 			etIssueReq.Assignees = []string{userID.String()}
 			_, total, err := e.issue.Paging(etIssueReq)
 			if err != nil {
