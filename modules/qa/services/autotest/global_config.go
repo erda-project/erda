@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/uuid"
 )
 
@@ -243,7 +244,7 @@ func (svc *Service) createOrUpdatePipelineCmsGlobalConfigs(cfg *apistructs.AutoT
 		// 转成 config.autotest.xx 语法由 pipeline 渲染
 		for _, item := range cfg.APIConfig.Global {
 			kvs[apistructs.PipelineSourceAutoTest.String()+"."+item.Name] = apistructs.PipelineCmsConfigValue{
-				Value:       item.Value,
+				Value:       expression.ReplaceRandomParams(item.Value),
 				EncryptInDB: false,
 				Type:        apistructs.PipelineCmsConfigTypeKV,
 				Operations:  &apistructs.PipelineCmsConfigDefaultOperationsForKV,
