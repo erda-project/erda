@@ -17,10 +17,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/jinzhu/gorm"
 )
 
 func (p *provider) getSystemBlock(params struct {

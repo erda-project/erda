@@ -17,9 +17,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 )
 
 var (

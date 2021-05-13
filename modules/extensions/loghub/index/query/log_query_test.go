@@ -16,8 +16,9 @@ package query
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
 	"github.com/recallsong/go-utils/encoding/jsonx"
+
+	"github.com/erda-project/erda/modules/monitor/core/logs"
 )
 
 func Example_mergeLogSearch() {
