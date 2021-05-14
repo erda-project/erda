@@ -16,7 +16,6 @@ package logic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -73,8 +72,6 @@ func (kvs *KVs) add(k, v string) {
 func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 	log := clog(ctx)
 
-	var content string
-
 	// kvs 保证顺序
 	kvs := &KVs{}
 
@@ -104,15 +101,13 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 		}
 	}
 
+	var fields []*apistructs.MetadataField
 	for _, kv := range *kvs {
-		content = fmt.Sprintf("%s\n%s=%s\n", content, kv.k, kv.v)
+		fields = append(fields, &apistructs.MetadataField{Name: kv.k, Value: kv.v})
 	}
 
 	var cb actionagent.Callback
-	if err := cb.HandleMetaFile([]byte(content)); err != nil {
-		log.Errorf("invalid meta, err: %v", err)
-		return
-	}
+	cb.AppendMetadataFields(fields)
 	cb.PipelineID = task.PipelineID
 	cb.PipelineTaskID = task.ID
 
