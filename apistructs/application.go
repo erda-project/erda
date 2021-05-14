@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import (
@@ -114,6 +127,7 @@ type ApplicationListRequest struct {
 	PageNo   int    `query:"pageNo"`
 	PageSize int    `query:"pageSize"`
 	Public   string `query:"public"`
+	OrderBy  string `query:"orderBy"`
 
 	// 是否只返回简单信息(应用级流水线打开列表使用)
 	IsSimple bool `query:"isSimple"`
@@ -155,6 +169,7 @@ type ApplicationDTO struct {
 	Stats              ApplicationStats       `json:"stats"`
 	GitRepo            string                 `json:"gitRepo"`
 	GitRepoAbbrev      string                 `json:"gitRepoAbbrev"`
+	GitRepoNew         string                 `json:"gitRepoNew"`
 	Token              string                 `json:"token"`
 	OrgID              uint64                 `json:"orgId"`
 	OrgName            string                 `json:"orgName"`

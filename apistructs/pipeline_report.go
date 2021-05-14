@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import (
@@ -5,6 +18,10 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	PipelineReportEventMetaKey = "event"
 )
 
 // PipelineReportSet 流水线报告集，一条流水线可能会有多个报告，称为报告集
@@ -31,6 +48,7 @@ type PipelineReportType string
 var (
 	PipelineReportTypeBasic   PipelineReportType = "basic"
 	PipelineReportTypeAPITest PipelineReportType = "api-test"
+	PipelineReportTypeEvent   PipelineReportType = "event"
 )
 
 // PipelineReportMeta 流水线报告元数据，前端根据该数据拼装报告详情界面

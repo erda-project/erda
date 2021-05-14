@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
@@ -61,24 +74,27 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 		s.Stages = append(s.Stages, &Stage{Actions: actions})
 	}
 
-	params := frontendYmlSpec.Params
 	var pipelineParams []*PipelineParam
-	if params != nil {
-		for _, param := range params {
-			pipelineInput := toPipelineYamlParam(param)
-			pipelineParams = append(pipelineParams, pipelineInput)
-		}
+	for _, param := range frontendYmlSpec.Params {
+		pipelineInput := toPipelineYamlParam(param)
+		pipelineParams = append(pipelineParams, pipelineInput)
 	}
-	outputs := frontendYmlSpec.Outputs
+
 	var pipelineOutputs []*PipelineOutput
-	if outputs != nil {
-		for _, output := range outputs {
-			pipelineOutput := toPipelineYamlOutput(output)
-			pipelineOutputs = append(pipelineOutputs, pipelineOutput)
-		}
+	for _, output := range frontendYmlSpec.Outputs {
+		pipelineOutput := toPipelineYamlOutput(output)
+		pipelineOutputs = append(pipelineOutputs, pipelineOutput)
 	}
+
 	s.Params = pipelineParams
 	s.Outputs = pipelineOutputs
+
+	var lifecycle []*NetworkHookInfo
+	for _, hookInfo := range frontendYmlSpec.Lifecycle {
+		hookInfo := toPipelineYamlHookInfo(hookInfo)
+		lifecycle = append(lifecycle, hookInfo)
+	}
+	s.Lifecycle = lifecycle
 
 	return GenerateYml(s)
 }
@@ -111,25 +127,29 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 
 	var on *apistructs.TriggerConfig
 	if pipelineYml.Spec().On != nil {
-		on = &apistructs.TriggerConfig{}
-		if pipelineYml.Spec().On.Merge != nil {
-			var branches []string
-			if pipelineYml.Spec().On.Merge.Branches != nil {
-				branches = pipelineYml.Spec().On.Merge.Branches
+		merge := pipelineYml.Spec().On.Merge
+		push := pipelineYml.Spec().On.Push
+		if merge != nil || push != nil {
+			on = &apistructs.TriggerConfig{}
+			if merge != nil {
+				var branches []string
+				if merge.Branches != nil {
+					branches = merge.Branches
+				}
+				on.Merge = &apistructs.MergeTrigger{Branches: branches}
 			}
-			on.Merge = &apistructs.MergeTrigger{Branches: branches}
-		}
-		if pipelineYml.Spec().On.Push != nil {
-			var branches, tags []string
-			if pipelineYml.Spec().On.Push.Branches != nil {
-				branches = pipelineYml.Spec().On.Push.Branches
-			}
-			if pipelineYml.Spec().On.Push.Tags != nil {
-				tags = pipelineYml.Spec().On.Push.Tags
-			}
-			on.Push = &apistructs.PushTrigger{
-				Branches: branches,
-				Tags:     tags,
+			if push != nil {
+				var branches, tags []string
+				if push.Branches != nil {
+					branches = push.Branches
+				}
+				if push.Tags != nil {
+					tags = push.Tags
+				}
+				on.Push = &apistructs.PushTrigger{
+					Branches: branches,
+					Tags:     tags,
+				}
 			}
 		}
 	}
@@ -142,6 +162,17 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		Outputs:     pipelineOutputs,
 		On:          on,
 	}
+
+	var lifecycle []*apistructs.NetworkHookInfo
+	for _, hookInfo := range pipelineYml.Spec().Lifecycle {
+		hook := apistructs.NetworkHookInfo{
+			Hook:   hookInfo.Hook,
+			Client: hookInfo.Client,
+			Labels: hookInfo.Labels,
+		}
+		lifecycle = append(lifecycle, &hook)
+	}
+	result.Lifecycle = lifecycle
 
 	if result.NeedUpgrade {
 		result.YmlContent = string(pipelineYml.upgradedYmlContent)
@@ -227,5 +258,13 @@ func toPipelineYamlOutput(outputs *apistructs.PipelineOutput) (pipelineOutput *P
 		Desc: outputs.Desc,
 		Name: outputs.Name,
 		Ref:  outputs.Ref,
+	}
+}
+
+func toPipelineYamlHookInfo(hookInfo *apistructs.NetworkHookInfo) (pipelineHookInfo *NetworkHookInfo) {
+	return &NetworkHookInfo{
+		Hook:   hookInfo.Hook,
+		Client: hookInfo.Client,
+		Labels: hookInfo.Labels,
 	}
 }

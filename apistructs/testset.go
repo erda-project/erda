@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 // TestSetCreateRequest POST /api/testsets 创建测试集返回结构
@@ -22,12 +35,18 @@ type TestSet struct {
 	UpdaterID string `json:"updaterID"`
 }
 
+type TestSetWithAncestors struct {
+	TestSet
+	// ancestors
+	Ancestors []TestSet `json:"ancestors,omitempty"`
+}
+
 type TestSetGetRequest struct {
 	ID uint64 `json:"id"`
 }
 type TestSetGetResponse struct {
 	Header
-	Data *TestSet `json:"data"`
+	Data *TestSetWithAncestors `json:"data"`
 }
 
 // TestSetCreateRequest POST /api/testsets 创建测试集

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apitestsv2
 
 import (
@@ -12,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -24,6 +38,20 @@ type APITest struct {
 	APIResult *apistructs.ApiTestInfo
 
 	opt option
+}
+
+type APIParam struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
+	Desc  string      `json:"desc"`
+}
+
+func (p APIParam) convert() apistructs.APIParam {
+	return apistructs.APIParam{
+		Key:   p.Key,
+		Value: strutil.String(p.Value),
+		Desc:  p.Desc,
+	}
 }
 
 func New(api *apistructs.APIInfo, opOptions ...OpOption) *APITest {
@@ -48,7 +76,7 @@ var (
 			// mock
 			if strings.HasPrefix(inner, "@") {
 				mockType := strings.TrimPrefix(inner, "@")
-				mockValue := mockValue(mockType)
+				mockValue := mock.MockValue(mockType)
 				if mockValue != nil {
 					return fmt.Sprint(mockValue)
 				}
@@ -172,7 +200,8 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	}
 	apiReq.Body.Content = reqBody
 
-	_url, err := url.ParseRequestURI(apiReq.URL)
+	// use netportal
+	customReq, err := handleCustomNetportalRequest(&apiReq, at.opt.netportalOption)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -181,11 +210,11 @@ func (at *APITest) Invoke(httpClient *http.Client, testEnv *apistructs.APITestEn
 	apiReq.Headers = polishHeadersForCompression(apiReq.Headers)
 
 	var buffer bytes.Buffer
-	httpResp, err := httpclient.New(httpclient.WithCookieJar(httpClient.Jar), httpclient.WithCompleteRedirect()).
-		Method(apiReq.Method, _url.Scheme+"://"+_url.Host, httpclient.NoRetry).
-		Path(_url.Path).
-		Headers(apiReq.Headers).
-		Params(apiReq.Params).
+	req := httpclient.New(httpclient.WithCompleteRedirect()).
+		Method(apiReq.Method, customReq.URL.Scheme+"://"+customReq.URL.Host, httpclient.NoRetry).
+		Path(customReq.URL.Path).
+		Headers(apiReq.Headers)
+	httpResp, err := req.Params(apiReq.Params).
 		RawBody(bytes.NewBufferString(apiReq.Body.Content.(string))).
 		Do().Body(&buffer)
 	if err != nil {
@@ -252,18 +281,19 @@ func (at *APITest) renderAtOnce(apiReq *apistructs.APIInfo, caseParams map[strin
 			}
 			apiReq.Body.Content = renderFunc(bodyStr, caseParams)
 		case apistructs.APIBodyTypeApplicationXWWWFormUrlencoded:
-			// check type: []apistructs.APIParam
+			// check type: []APIParam
+			// after check convert to []apistructs.APIParam
 			b, err := json.Marshal(apiReq.Body.Content)
 			if err != nil {
 				return err
 			}
-			var content []apistructs.APIParam
+			var content []APIParam
 			if err := json.Unmarshal(b, &content); err != nil {
 				return err
 			}
 			var renderedContent []apistructs.APIParam
 			for i := range content {
-				param := content[i]
+				param := content[i].convert()
 				param.Key = renderFunc(strings.TrimSpace(param.Key), caseParams)
 				param.Value = renderFunc(strings.TrimSpace(param.Value), caseParams)
 				param.Desc = renderFunc(strings.TrimSpace(param.Desc), caseParams)

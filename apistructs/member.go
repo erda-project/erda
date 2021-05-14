@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import "github.com/pkg/errors"
@@ -239,7 +252,7 @@ type GetAllOrganizationalData struct {
 
 // IsInPrj 判断用户是否在某个Prj下
 func (od *GetAllOrganizationalData) IsInPrj(scopeNames map[string][]string, scopeType, userID string) bool {
-	for name, _ := range scopeNames {
+	for name := range scopeNames {
 		if _, ok := od.Members[userID][scopeType][name]; ok {
 			return true
 		}

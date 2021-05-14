@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package jsonpath
 
 import (
@@ -18,7 +31,7 @@ func JQ(jsonInput, filter string) (interface{}, error) {
 	f.WriteString(jsonInput)
 	filter = strings.ReplaceAll(filter, `"`, `\"`)
 	filter = filter + " | select(.!=null) | tojson"
-	jq := fmt.Sprintf(`cat %s | jq -c -j "%s"`, f.Name(), filter)
+	jq := fmt.Sprintf(`jq -c -j "%s" '%s'`, filter, f.Name())
 	wrappedJQ := exec.Command("/bin/sh", "-c", jq)
 	output, err := wrappedJQ.CombinedOutput()
 	if err != nil {

@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
@@ -54,6 +67,9 @@ func ReplacePipelineParams(pipeline string, params map[string]interface{}) strin
 		default:
 			replaceStr = fmt.Sprintf("%v", v)
 		}
+
+		// generate random params before replace
+		replaceStr = expression.ReplaceRandomParams(replaceStr)
 
 		// 替换老的
 		pipeline = strings.ReplaceAll(pipeline, fmt.Sprintf("%s%s.%s%s", expression.OldLeftPlaceholder, expression.Params, k, expression.OldRightPlaceholder), replaceStr)

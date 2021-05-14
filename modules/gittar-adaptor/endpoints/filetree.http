@@ -1,0 +1,171 @@
+### 查询项目的应用子目录
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=0&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 查询应用分支子目录
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=NC81MA==&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+
+### 查询分支下的treenode
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=NC81MC90cmVlL21hc3Rlcg==&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 查询 .dice 下的 pipelines
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=NC81MC90cmVlL21hc3Rlci8uZGljZQ==&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 查询 pipelines 下的 nodes
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=NC81MC90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXM=&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 查询 pipelines 下的 kkk 目录 的 nodes
+GET http://localhost:1086/api/cicd-pipeline/filetree?pinode=NC8yMi90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXMva2tr&scope=project&scopeId=4
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 查询 kkk 中的节点详情
+GET http://localhost:1086/api/cicd-pipeline/filetree/NC8yMi90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXMva2trL2JiYi55bWw=
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 模糊查询项目的叶子节点
+GET http://localhost:1086/api/cicd-pipeline/filetree/actions/fuzzy-search?scope=project&scopeId=4&Fuzzy=bbb
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+
+
+### 在分支下创建 pipeline.yml
+POST http://localhost:1086/api/cicd-pipeline/filetree
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+{
+  "pinode": "NC81MC90cmVlL21hc3Rlcg==",
+  "type": "f",
+  "scope": "project-app",
+  "scopeID": "4",
+  "name": "pipeline.yml",
+  "desc": "desc"
+}
+
+### 在分支下创建.dice文件
+
+POST http://localhost:1086/api/cicd-pipeline/filetree
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+{
+  "pinode": "NC81MC90cmVlL21hc3Rlcg==",
+  "type": "d",
+  "scope": "project-app",
+  "scopeID": "4",
+  "name": ".dice",
+  "desc": "desc"
+}
+
+
+### 在.dice下创建pipelines
+
+POST http://localhost:1086/api/cicd-pipeline/filetree
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+{
+  "pinode": "NC81MC90cmVlL21hc3Rlci8uZGljZQ==",
+  "type": "d",
+  "scope": "project-app",
+  "scopeID": "4",
+  "name": "pipelines",
+  "desc": "desc"
+}
+
+### 在 pipelines 下创建文件
+
+POST http://localhost:1086/api/cicd-pipeline/filetree
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+{
+  "pinode": "NC81MC90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXM=",
+  "type": "d",
+  "scope": "project-app",
+  "scopeID": "4",
+  "name": "kkk",
+  "desc": "desc"
+}
+
+
+### 在 pipelines 下创建文件
+
+POST http://localhost:1086/api/cicd-pipeline/filetree
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+{
+  "pinode": "NC81MC90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXM=",
+  "type": "d",
+  "scope": "project-app",
+  "scopeID": "4",
+  "name": "kkk",
+  "desc": "desc"
+}
+
+### 删除根目录下的 pipeline.yml
+DELETE http://localhost:1086/api/cicd-pipeline/filetree/NC81MC90cmVlL21hc3Rlci8uZGljZS9waXBlbGluZXMva2tr
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+
+### 获取父节点
+GET http://localhost:1086/api/cicd-pipeline/filetree/NC80OS90cmVlL3BpcGVsaW5lLnltbA==/actions/find-ancestors
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+### 根据 pipelineId 获取inode
+GET http://localhost:1086/api/cicd-pipeline/filetree/actions/get-inode-by-pipeline?pipelineId=10000285
+Content-Type: application/json
+User-ID: 2
+ORG-ID: 1
+Cookie: OPENAPISESSION=a63e34e7-bab2-47b8-9258-f79098a03122
+
+
+
+
+

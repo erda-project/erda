@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package apistructs
 
 import (
@@ -25,15 +38,15 @@ type ReleaseEvent struct {
 	Content ReleaseEventData `json:"content"`
 }
 
-// PipelineEvent 流水线状态变化时发送的事件
+// PipelineInstanceEvent 流水线状态变化时发送的事件
 // event: pipeline
 // action: status 见 internal/pipeline/spec/pipeline_status.go#Status
-type PipelineEvent struct {
+type PipelineInstanceEvent struct {
 	EventHeader
-	Content PipelineEventData `json:"content"`
+	Content PipelineInstanceEventData `json:"content"`
 }
 
-type PipelineEventData struct {
+type PipelineInstanceEventData struct {
 	PipelineID      uint64     `json:"pipelineID"`
 	Status          string     `json:"status"`
 	Branch          string     `json:"branch"`
@@ -47,6 +60,8 @@ type PipelineEventData struct {
 	ClusterName     string     `json:"clusterName"`
 	TimeBegin       *time.Time `json:"timeBegin"`
 	CronExpr        string     `json:"cronExpr"`
+
+	Labels map[string]string `json:"labels"`
 }
 
 // PipelineTaskEvent 流水线任务状态变化时发送的事件

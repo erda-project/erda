@@ -1,15 +1,26 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package pipelineyml
 
 import (
-	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/erda-project/erda/pkg/apitestsv2"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -145,7 +156,7 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			return v.handleOneRefOp(refOp)
 		case expression.Random:
 			typeValue := ss[1]
-			value := apitestsv2.MockValue(typeValue)
+			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
 		default: // case 3
 			return refOp.Ori
@@ -322,16 +333,6 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 		}
 	}
 
-	actions := v.allActions
-	if actions != nil {
-		action, ok := actions[ActionAlias(refOp.Ref)]
-		// 假如 action 是 snippet 类型，走下面的校验
-		if ok && IsSnippetType(action.Type) {
-			v.handleSnippetOneRefOutput(refOp, action)
-			return
-		}
-	}
-
 	// not found
 	if refOp.RefStageIndex < refOp.CurrentStageIndex {
 		if v.allowMissingCustomScriptOutputs {
@@ -346,39 +347,6 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	}
 
 	return
-}
-
-// 校验 snippet 的 outputs
-func (v *RefOpVisitor) handleSnippetOneRefOutput(refOp RefOp, action *indexedAction) {
-
-	snippetConfig := HandleSnippetConfigLabel(action.SnippetConfig, v.globalSnippetConfigLabels)
-
-	graph, err := SnippetToPipelineGraph(snippetConfig)
-	if err != nil {
-		v.result.AppendError(errors.New(fmt.Sprintf(" handleSnippetOneRefOutput get local snippet error %v", err)))
-		return
-	}
-	outputs := graph.Outputs
-
-	if outputs == nil {
-		v.result.AppendError(fmt.Errorf("%q, snippet %q doesn't have output %q", refOp.Ori, refOp.Ref, refOp.Key))
-		return
-	}
-
-	var find = false
-	for _, v := range outputs {
-		if v.Name == refOp.Key {
-			find = true
-		}
-	}
-
-	if !find {
-		v.result.AppendError(fmt.Errorf("%q, snippet %q doesn't have output %q", refOp.Ori, refOp.Ref, refOp.Key))
-		return
-	}
-
-	return
-
 }
 
 func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias bool, isNamespace bool) {

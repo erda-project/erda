@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package expression
 
 import (
@@ -9,7 +22,9 @@ import (
 
 	"gopkg.in/Knetic/govaluate.v3"
 
-	"github.com/erda-project/erda/modules/pipeline/pexpr"
+	"github.com/erda-project/erda/pkg/mock"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // 匹配 ${{ xxx }}
@@ -145,6 +160,29 @@ func EvalResultToString(result interface{}) (string, error) {
 		return "", err
 	}
 	return string(jsonByte), nil
+}
+
+func ReplaceRandomParams(ori string) string {
+	replaced := strutil.ReplaceAllStringSubmatchFunc(Re, ori, func(sub []string) string {
+		inner := sub[1]
+		inner = strings.Trim(inner, " ")
+
+		ss := strings.SplitN(inner, ".", 3)
+
+		if len(ss) < 2 {
+			return sub[0]
+		}
+
+		switch ss[0] {
+		case Random:
+			typeValue := ss[1]
+			value := mock.MockValue(typeValue)
+			return fmt.Sprintf("%v", value)
+		default:
+			return sub[0]
+		}
+	})
+	return replaced
 }
 
 // GenConfigParams 生成全局参数的表达式
