@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -130,8 +131,10 @@ func (s *PipelineSvc) makeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *
 	// runParams
 	var runParams []apistructs.PipelineRunParam
 	for k, v := range snippetTask.Extra.Action.Params {
-		runParams = append(runParams, apistructs.PipelineRunParam{Name: k, Value: v})
+		replaceValue := expression.ReplaceRandomParams(strutil.String(v))
+		runParams = append(runParams, apistructs.PipelineRunParam{Name: k, Value: replaceValue})
 	}
+
 	// transfer snippetTask to pipeline create request
 	snippetPipelineCreateReq := apistructs.PipelineCreateRequestV2{
 		PipelineYml:            yamlContent,
