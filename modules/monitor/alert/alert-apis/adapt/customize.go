@@ -389,6 +389,9 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		// filter group
 		groups := make([]string, 0)
 		for _, group := range rule.Group {
+			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[group] {
+				continue
+			}
 			if alert.AlertType == customizeAlertTypeOrg && a.orgFilterTags[group] {
 				continue
 			}
