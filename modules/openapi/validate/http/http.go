@@ -14,9 +14,8 @@
 package http
 
 import (
-	"strings"
-
 	nethttp "net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 )

@@ -16,7 +16,7 @@ package timing
 import (
 	"strings"
 
-	utils "github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // NavigationTiming .

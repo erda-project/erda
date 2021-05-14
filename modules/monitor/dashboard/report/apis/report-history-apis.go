@@ -16,11 +16,12 @@ package apis
 import (
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/jinzhu/gorm"
 )
 
 func (p *provider) createReportHistory(history *reportHistory) interface{} {

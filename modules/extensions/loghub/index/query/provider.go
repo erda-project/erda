@@ -16,6 +16,9 @@ package query
 import (
 	"time"
 
+	"github.com/jinzhu/gorm"
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -26,8 +29,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
 	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/jinzhu/gorm"
-	"github.com/olivere/elastic"
 )
 
 type define struct{}

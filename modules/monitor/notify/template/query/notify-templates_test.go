@@ -17,9 +17,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
-	"github.com/jinzhu/gorm"
 )
 
 var p *provider

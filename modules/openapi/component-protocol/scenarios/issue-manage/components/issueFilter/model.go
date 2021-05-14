@@ -42,7 +42,7 @@ type FrontendConditions struct {
 	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
 }
 
-func generateFrontendConditionProps(fixedIssueType string) FrontendConditionProps {
+func generateFrontendConditionProps(fixedIssueType string, state State) FrontendConditionProps {
 	conditionProps := []filter.PropCondition{
 		{
 			Key:         PropConditionKeyIterationIDs,
@@ -63,39 +63,7 @@ func generateFrontendConditionProps(fixedIssueType string) FrontendConditionProp
 			ShowIndex:   2,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeInput,
-			Placeholder: "请输入标题",
-		},
-		{
-			Key:         PropConditionKeyStateBelongs,
-			Label:       "状态",
-			EmptyText:   "全部",
-			Fixed:       true,
-			ShowIndex:   3,
-			HaveFilter:  false,
-			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "",
-			Options: func() []filter.PropConditionOption {
-				open := filter.PropConditionOption{Label: "待处理", Value: apistructs.IssueStateBelongOpen, Icon: ""}
-				reopen := filter.PropConditionOption{Label: "重新打开", Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				resolved := filter.PropConditionOption{Label: "已解决", Value: apistructs.IssueStateBelongResloved, Icon: ""}
-				wontfix := filter.PropConditionOption{Label: "不修复", Value: apistructs.IssueStateBelongWontfix, Icon: ""}
-				closed := filter.PropConditionOption{Label: "已关闭", Value: apistructs.IssueStateBelongClosed, Icon: ""}
-				working := filter.PropConditionOption{Label: "进行中", Value: apistructs.IssueStateBelongWorking, Icon: ""}
-				done := filter.PropConditionOption{Label: "已完成", Value: apistructs.IssueStateBelongDone, Icon: ""}
-				switch fixedIssueType {
-				case "ALL":
-					return []filter.PropConditionOption{open, working, done, reopen, resolved, wontfix, closed}
-				case apistructs.IssueTypeEpic.String():
-					return []filter.PropConditionOption{open, working, done}
-				case apistructs.IssueTypeRequirement.String():
-					return []filter.PropConditionOption{open, working, done}
-				case apistructs.IssueTypeTask.String():
-					return []filter.PropConditionOption{open, working, done}
-				case apistructs.IssueTypeBug.String():
-					return []filter.PropConditionOption{open, wontfix, reopen, resolved, closed}
-				}
-				return nil
-			}(),
+			Placeholder: "请输入标题或ID",
 		},
 		{
 			Key:         PropConditionKeyLabelIDs,
@@ -244,6 +212,44 @@ func generateFrontendConditionProps(fixedIssueType string) FrontendConditionProp
 			},
 		},
 	}
+
+	v, ok := state.IssueViewGroupChildrenValue["kanban"]
+	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
+		status := filter.PropCondition{
+			Key:         PropConditionKeyStateBelongs,
+			Label:       "状态",
+			EmptyText:   "全部",
+			Fixed:       true,
+			ShowIndex:   3,
+			HaveFilter:  false,
+			Type:        filter.PropConditionTypeSelect,
+			Placeholder: "",
+			Options: func() []filter.PropConditionOption {
+				open := filter.PropConditionOption{Label: "待处理", Value: apistructs.IssueStateBelongOpen, Icon: ""}
+				reopen := filter.PropConditionOption{Label: "重新打开", Value: apistructs.IssueStateBelongReopen, Icon: ""}
+				resolved := filter.PropConditionOption{Label: "已解决", Value: apistructs.IssueStateBelongResloved, Icon: ""}
+				wontfix := filter.PropConditionOption{Label: "不修复", Value: apistructs.IssueStateBelongWontfix, Icon: ""}
+				closed := filter.PropConditionOption{Label: "已关闭", Value: apistructs.IssueStateBelongClosed, Icon: ""}
+				working := filter.PropConditionOption{Label: "进行中", Value: apistructs.IssueStateBelongWorking, Icon: ""}
+				done := filter.PropConditionOption{Label: "已完成", Value: apistructs.IssueStateBelongDone, Icon: ""}
+				switch fixedIssueType {
+				case "ALL":
+					return []filter.PropConditionOption{open, working, done, reopen, resolved, wontfix, closed}
+				case apistructs.IssueTypeEpic.String():
+					return []filter.PropConditionOption{open, working, done}
+				case apistructs.IssueTypeRequirement.String():
+					return []filter.PropConditionOption{open, working, done}
+				case apistructs.IssueTypeTask.String():
+					return []filter.PropConditionOption{open, working, done}
+				case apistructs.IssueTypeBug.String():
+					return []filter.PropConditionOption{open, wontfix, reopen, resolved, closed}
+				}
+				return nil
+			}(),
+		}
+		conditionProps = append(conditionProps[:2], append([]filter.PropCondition{status}, conditionProps[2:]...)...)
+	}
+
 	return conditionProps
 }
 

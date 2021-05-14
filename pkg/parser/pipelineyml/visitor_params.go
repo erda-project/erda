@@ -68,6 +68,9 @@ func ReplacePipelineParams(pipeline string, params map[string]interface{}) strin
 			replaceStr = fmt.Sprintf("%v", v)
 		}
 
+		// generate random params before replace
+		replaceStr = expression.ReplaceRandomParams(replaceStr)
+
 		// 替换老的
 		pipeline = strings.ReplaceAll(pipeline, fmt.Sprintf("%s%s.%s%s", expression.OldLeftPlaceholder, expression.Params, k, expression.OldRightPlaceholder), replaceStr)
 

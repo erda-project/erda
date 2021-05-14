@@ -427,6 +427,8 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 			tx.Commit()
 		}
 	}()
+	orgName := alert.Attributes["org_name"].(string)
+	delete(alert.Attributes, "org_name")
 	dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeID, alert.Name)
 	if err != nil {
 		return 0, err
@@ -460,7 +462,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 		if !ok || rule.AlertScope != alert.AlertScope {
 			return 0, invalidParameter("rule %s is not scope: %s", rule.AlertIndex.Key, alert.AlertScope)
 		}
-		exp, err := expression.ToModel(alert, rule)
+		exp, err := expression.ToModel(orgName, alert, rule)
 		if err != nil {
 			return 0, err
 		}
@@ -531,7 +533,7 @@ func (a *Adapt) newTicketAlertNotify(alertID uint64, silence *AlertNotifySilence
 func (a *Adapt) CreateOrgAlert(alert *Alert, orgID string) (alertID uint64, err error) {
 	alert.AlertScope = "org"
 	alert.AlertScopeID = orgID
-	alert.Attributes = make(map[string]interface{})
+	//alert.Attributes = make(map[string]interface{})
 	alert.Attributes["alert_domain"] = alert.Domain
 	alert.Attributes["alert_dashboard_path"] = dashboardPath
 	alert.Attributes["alert_record_path"] = recordPath
@@ -558,7 +560,7 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error
 	alert.AlertScope = origin.AlertScope
 	alert.AlertScopeID = origin.AlertScopeID
 	alert.Enable = origin.Enable
-	alert.Attributes = make(map[string]interface{})
+	//alert.Attributes = make(map[string]interface{})
 	for k, v := range origin.Attributes {
 		alert.Attributes[k] = v
 	}
@@ -585,6 +587,8 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 			tx.Commit()
 		}
 	}()
+	orgName := alert.Attributes["org_name"].(string)
+	delete(alert.Attributes, "org_name")
 	if alert.Name != "" {
 		dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeID, alert.Name)
 		if err != nil {
@@ -638,7 +642,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		if !ok || rule.AlertScope != alert.AlertScope {
 			return invalidParameter("rule %s is not scope: %s", rule.AlertIndex.Key, alert.AlertScope)
 		}
-		expression, err := item.ToModel(alert, rule)
+		expression, err := item.ToModel(orgName, alert, rule)
 		if err != nil {
 			return err
 		}

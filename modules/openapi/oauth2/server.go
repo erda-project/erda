@@ -58,6 +58,7 @@ func NewOAuth2Server() *OAuth2Server {
 	// logger
 	srv.SetInternalErrorHandler(func(err error) (re *errors.Response) {
 		logrus.Errorf("oauth2 server internal err: %v", err)
+		re = &errors.Response{Error: err}
 		return
 	})
 	srv.SetResponseErrorHandler(func(re *errors.Response) {

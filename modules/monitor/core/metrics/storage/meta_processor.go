@@ -19,13 +19,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	indexmanager "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/arrays"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type metricMetaCache struct {

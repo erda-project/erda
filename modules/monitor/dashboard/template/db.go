@@ -16,8 +16,9 @@ package template
 import (
 	"time"
 
-	"github.com/erda-project/erda/modules/pkg/mysql"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
 var (

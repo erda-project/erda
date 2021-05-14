@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/recallsong/go-utils/ioutil"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -27,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/chartmeta"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/metricmeta"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
-	"github.com/recallsong/go-utils/ioutil"
 
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/chartv2"  //
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/es-tsql/formats/dict"     //

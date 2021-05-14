@@ -18,16 +18,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/pkg/errors"
 )
 
 // User 用户中心用户数据结构
 type User struct {
 	ID        string `json:"user_id"`
+	Name      string `json:"username"`
+	Nick      string `json:"nickname"`
+	AvatarURL string `json:"avatar_url"`
+	Phone     string `json:"phone_number"`
+	Email     string `json:"email"`
+}
+
+type UcUser struct {
+	ID        int    `json:"user_id"`
 	Name      string `json:"username"`
 	Nick      string `json:"nickname"`
 	AvatarURL string `json:"avatar_url"`
@@ -136,7 +147,7 @@ func (c *UCClient) getUser(userID string) (*User, error) {
 		return nil, errors.Wrapf(err, "failed to get token when finding user")
 	}
 
-	var user User
+	var user UcUser
 	r, err := c.client.Get(c.baseURL).
 		Path(strutil.Concat("/api/open/v1/users/", userID)).
 		Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).
@@ -151,11 +162,22 @@ func (c *UCClient) getUser(userID string) (*User, error) {
 		}
 		return nil, errors.Errorf("failed to find user, status code: %d", r.StatusCode())
 	}
-	if user.ID == "" {
+	if user.ID == 0 {
 		return nil, errors.Errorf("failed to find user %s", userID)
 	}
 
-	return &user, nil
+	return userMapper(&user), nil
+}
+
+func userMapper(user *UcUser) *User {
+	return &User{
+		ID:        strconv.Itoa(user.ID),
+		Name:      user.Name,
+		Nick:      user.Nick,
+		AvatarURL: user.AvatarURL,
+		Phone:     user.Phone,
+		Email:     user.Email,
+	}
 }
 
 func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, error) {
@@ -166,7 +188,7 @@ func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, er
 	}
 
 	// 批量查询用户
-	var users []User
+	var users []UcUser
 	var b bytes.Buffer
 	r, err := c.client.Get(c.baseURL).
 		Path("/api/open/v1/users").
@@ -188,7 +210,7 @@ func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, er
 	if len(idOrder) > 0 {
 		userMap := make(map[string]User)
 		for _, user := range users {
-			userMap[user.ID] = user
+			userMap[strconv.Itoa(user.ID)] = *userMapper(&user)
 		}
 		var orderedUsers []User
 		for _, id := range idOrder {
@@ -197,5 +219,10 @@ func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, er
 		return orderedUsers, nil
 	}
 
-	return users, nil
+	userList := make([]User, len(users))
+	for i, user := range users {
+		userList[i] = *userMapper(&user)
+	}
+
+	return userList, nil
 }

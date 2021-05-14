@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/recallsong/go-utils/reflectx"
+
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/convert"
 	"github.com/erda-project/erda/modules/monitor/core/metrics"
-	"github.com/recallsong/go-utils/reflectx"
 )
 
 type config struct {
