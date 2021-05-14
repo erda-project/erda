@@ -17,6 +17,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestHandleMetaFile(t *testing.T) {
@@ -41,4 +43,38 @@ name=pipeline
 	assert.Equal(t, "test metafile", cb.Metadata[2].Value)
 	assert.Equal(t, "name", cb.Metadata[3].Name)
 	assert.Equal(t, "pipeline", cb.Metadata[3].Value)
+}
+
+func TestAppendMetaFile(t *testing.T) {
+	var kvs = []struct {
+		key   string
+		value string
+	}{
+		{
+			key: "name",
+			value: `aaa
+bbb`,
+		},
+		{
+			key: "name1",
+			value: `123456
+2345667`,
+		},
+		{
+			key:   "name3",
+			value: `aaabbb`,
+		},
+	}
+
+	var fields []*apistructs.MetadataField
+	for _, value := range kvs {
+		fields = append(fields, &apistructs.MetadataField{Name: value.key, Value: value.value})
+	}
+
+	cb := Callback{}
+	cb.AppendMetadataFields(fields)
+	for index, _ := range kvs {
+		assert.Equal(t, cb.Metadata[index].Name, kvs[index].key)
+		assert.Equal(t, cb.Metadata[index].Value, kvs[index].value)
+	}
 }

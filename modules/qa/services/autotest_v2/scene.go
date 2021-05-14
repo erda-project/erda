@@ -501,29 +501,9 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 			(strings.HasPrefix(param.Temp, "{") && strings.HasSuffix(param.Temp, "}")) {
 			param.Temp = strings.ReplaceAll(param.Temp, "\"", "\\\"")
 		}
-		apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Params+"."+param.Name+" "+expression.RightPlaceholder, param.Temp)
-		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, param.Temp)
+		apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Params+"."+param.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(param.Temp))
+		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
-
-	apiTestStr = strutil.ReplaceAllStringSubmatchFunc(pexpr.PhRe, apiTestStr, func(subs []string) string {
-		phData := subs[0]
-		inner := subs[1] // configs.key
-		// 去除两边的空格
-		inner = strings.Trim(inner, " ")
-		ss := strings.SplitN(inner, ".", 3)
-		if len(ss) < 2 {
-			return inner
-		}
-
-		switch ss[0] {
-		case expression.Random:
-			typeValue := ss[1]
-			value := apitestsv2.MockValue(typeValue)
-			return fmt.Sprintf("%v", value)
-		default: // case 3
-			return phData
-		}
-	})
 
 	for _, conf := range configs {
 		switch conf.Key {
@@ -533,10 +513,12 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 				return nil, fmt.Errorf("failed to unmarshal apiConfig, err: %v", err)
 			}
 			for _, item := range apiConfig.Global {
-				apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Configs+"."+apistructs.PipelineSourceAutoTest.String()+"."+item.Name+" "+expression.RightPlaceholder, item.Value)
+				apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Configs+"."+apistructs.PipelineSourceAutoTest.String()+"."+item.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(item.Value))
 			}
 		}
 	}
+
+	apiTestStr = expression.ReplaceRandomParams(apiTestStr)
 
 	var apiInfoV2 apistructs.APIInfoV2
 	err = json.Unmarshal([]byte(apiTestStr), &apiInfoV2)

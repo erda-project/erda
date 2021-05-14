@@ -24,18 +24,8 @@ import (
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
-const servicePipeline = "pipeline"
-
 type provider struct{}
 
-func init() { servicehub.RegisterProvider(servicePipeline, &provider{}) }
-
-func (p *provider) Service() []string                 { return []string{servicePipeline} }
-func (p *provider) Dependencies() []string            { return []string{} }
-func (p *provider) Init(ctx servicehub.Context) error { return nil }
-func (p *provider) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
-}
 func (p *provider) Run(ctx context.Context) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
@@ -48,4 +38,11 @@ func (p *provider) Run(ctx context.Context) error {
 	logrus.Infoln(version.String())
 
 	return Initialize()
+}
+
+func init() {
+	servicehub.Register("pipeline", &servicehub.Spec{
+		Services: []string{"pipeline"},
+		Creator:  func() servicehub.Provider { return &provider{} },
+	})
 }

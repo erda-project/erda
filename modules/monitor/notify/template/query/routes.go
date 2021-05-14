@@ -18,13 +18,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
-	"gopkg.in/yaml.v2"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {

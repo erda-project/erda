@@ -16,9 +16,10 @@ package orgapis
 import (
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/pkg/errors"
 )
 
 type statusQuery struct {
@@ -37,17 +38,12 @@ type statusDTO struct {
 }
 
 func (p *provider) clusterStatus(params *statusQuery, r *http.Request) interface{} {
-	clusterStatus, err := p.getClusterStatus(params.ClusterName)
-	if err != nil {
-		return api.Errors.Internal(err)
-	}
-
 	componentStatus, err := p.getComponentStatus(params.ClusterName)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
 
-	res := createStatusResp(clusterStatus, componentStatus)
+	res := p.createStatusResp(componentStatus)
 	p.translateStatus(res, api.Language(r))
 	return api.Success(res)
 }
@@ -60,40 +56,36 @@ func (p *provider) translateStatus(resp *StatusResp, lang i18n.LanguageCodes) {
 }
 
 func (p *provider) getComponentStatus(clusterName string) (statuses []*statusDTO, err error) {
-	componentStatuses, err := p.service.queryComponentStatus("component", clusterName)
+	componentStatuses, err := p.service.queryStatus(clusterName)
 	if err != nil {
 		return nil, errors.Wrap(err, "query failed")
 	}
 	return componentStatuses, nil
 }
 
-func (p *provider) getClusterStatus(clusterName string) (status *statusDTO, err error) {
-	clusterStatus, err := p.service.queryComponentStatus("cluster", clusterName)
-	if err != nil {
-		return nil, errors.Wrap(err, "query failed")
-	}
-	if len(clusterStatus) != 1 {
-		p.L.Infof("cluster_status cnt != 1. clusterStatus: %+v", clusterStatus)
-		return &statusDTO{Name: "cluster_status", Status: 0}, nil
-	}
-	return clusterStatus[0], nil
-}
-
-func createStatusResp(clusterStatus *statusDTO, componentStatus []*statusDTO) *StatusResp {
+func (p *provider) createStatusResp(componentStatus []*statusDTO) *StatusResp {
 	components := map[string]*statusDTO{
 		"machine":        {Name: "machine", Status: 0},
 		"kubernetes":     {Name: "kubernetes", Status: 0},
 		"dice_addon":     {Name: "dice_addon", Status: 0},
 		"dice_component": {Name: "dice_component", Status: 0},
 	}
+	var maxStatus uint8
+
 	for _, item := range componentStatus {
 		v, ok := components[item.Name]
 		if ok {
 			v.Status = item.Status
+			if v.Status > maxStatus {
+				maxStatus = v.Status
+			}
 		}
 	}
 	return &StatusResp{
-		statusDTO:  clusterStatus,
+		statusDTO: &statusDTO{
+			Name:   "cluster_status",
+			Status: maxStatus,
+		},
 		Components: components,
 	}
 }

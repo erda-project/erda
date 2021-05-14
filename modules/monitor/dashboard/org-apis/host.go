@@ -22,9 +22,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
-	"github.com/olivere/elastic"
 )
 
 type groupHostTypeData struct {
@@ -333,8 +334,9 @@ func (p *provider) updateClusterStatus(group *groupHostData) {
 		return
 	}
 	for _, g := range group.Groups {
-		s, _ := p.getClusterStatus(g.Name)
-		g.ClusterStatus = s.Status
+		s, _ := p.getComponentStatus(g.Name)
+		status := p.createStatusResp(s)
+		g.ClusterStatus = status.Status
 	}
 }
 
@@ -478,6 +480,7 @@ func parseGroupHost(agg elastic.Aggregations, groups []string, index int, vfs []
 			metric.DiskUsage += innerGroup.Metric.DiskUsage
 			metric.DiskTotal += innerGroup.Metric.DiskTotal
 		}
+		group.Metric = metric
 	}
 	return group
 }

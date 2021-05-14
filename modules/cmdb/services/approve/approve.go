@@ -21,6 +21,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
@@ -28,9 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/member"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Approve 资源对象操作封装
@@ -190,8 +191,8 @@ func (a *Approve) mkMboxEmailNotify(id int64, done string, orgid uint64, project
 		return err
 	}
 
-	url := fmt.Sprintf("%s://%s-org.%s/orgCenter/approval/%s?id=%d",
-		protocol, org.Name, domain, done, id)
+	url := fmt.Sprintf("%s://%s-org.%s/%s/orgCenter/approval/%s?id=%d",
+		protocol, org.Name, domain, org.Name, done, id)
 
 	approverIDs := []string{}
 	emails := []string{}

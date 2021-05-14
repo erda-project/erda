@@ -202,7 +202,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 				"visible":    visible,
 				"value": map[string]interface{}{
 					"text": []interface{}{"点击左上角菜单", map[string]interface{}{
-						"icon":          "appstore",
+						"icon":          "application-menu",
 						"iconStyleName": "primary-icon",
 					}, "选择 DevOps平台进入，选择我的项目可以查看该组织下公开项目的信息"},
 				},

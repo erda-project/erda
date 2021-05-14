@@ -22,9 +22,10 @@ import (
 	"bou.ke/monkey"
 	"gotest.tools/assert"
 
+	"github.com/xormplus/xorm"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/xormplus/xorm"
 )
 
 func TestRegisterLifecycleHookClient(t *testing.T) {
