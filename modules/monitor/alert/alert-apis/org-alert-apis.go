@@ -76,6 +76,12 @@ func (p *provider) getOrgAlertDetail(r *http.Request, params struct {
 
 func (p *provider) createOrgAlert(r *http.Request, alert adapt.Alert) interface{} {
 	orgID := api.OrgID(r)
+	org, err := p.bdl.GetOrg(orgID)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	alert.Attributes = make(map[string]interface{})
+	alert.Attributes["org_name"] = org.Name
 	id, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
@@ -125,6 +131,12 @@ func (p *provider) updateOrgAlert(r *http.Request, params struct {
 	ID int `param:"id" validate:"required,gt=0"`
 }, alert adapt.Alert) interface{} {
 	orgID := api.OrgID(r)
+	org, err := p.bdl.GetOrg(orgID)
+	if err != nil {
+		return api.Errors.InvalidParameter(err)
+	}
+	alert.Attributes = make(map[string]interface{})
+	alert.Attributes["org_name"] = org.Name
 	id, err := strconv.ParseUint(orgID, 10, 64)
 	if err != nil {
 		return api.Errors.InvalidParameter(err)
