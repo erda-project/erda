@@ -159,7 +159,7 @@ type TestPlanCaseRelPagingRequest struct {
 	PageNo   uint64 `schema:"pageNo"`
 	PageSize uint64 `schema:"pageSize"`
 
-	RelIDs       []uint64             `schema:"-"`
+	RelIDs       []uint64             `schema:"relationID"`
 	TestPlanID   uint64               `schema:"-"`
 	TestSetID    uint64               `schema:"testSetID"`
 	Query        string               `schema:"query"`
