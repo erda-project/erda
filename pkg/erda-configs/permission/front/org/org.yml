@@ -17,7 +17,7 @@
   name: "企业 > DevOps平台 > 我的发布 > 查看"
   resource: "UI.workBench.publisher"
   action: "read"
-  role: "EdgeOps,DataManager,DataEngineer,PublisherManager,Support,Reporter"
+  role: "Manager,Dev,Ops,EdgeOps,DataManager,DataEngineer,PublisherManager,Support,Reporter"
 - scope: "org"
   name: "企业 > 微服务治理平台"
   resource: "UI"
