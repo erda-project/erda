@@ -114,7 +114,7 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	}
 	defer resp.Body.Close()
 
-	logrus.Infof("[%d] REQ OK code=%s latency=%dms %s", id, resp.StatusCode, time.Since(start).Milliseconds(), url)
+	logrus.Infof("[%d] REQ OK code=%d latency=%dms %s", id, resp.StatusCode, time.Since(start).Milliseconds(), url)
 	rw.WriteHeader(resp.StatusCode)
 	io.Copy(rw, resp.Body)
 	logrus.Infof("[%d] REQ DONE latency=%dms %s", id, time.Since(start).Milliseconds(), url)

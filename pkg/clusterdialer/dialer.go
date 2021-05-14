@@ -94,14 +94,14 @@ type DialContextProtoFunc func(ctx context.Context, address string) (net.Conn, e
 
 func DialContext(clusterKey string) DialContextFunc {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
-		logrus.Debug("use cluster dialer, key:%s", clusterKey)
+		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
 		return getClusterDialer(ctx, clusterKey)(ctx, network, addr)
 	}
 }
 
 func DialContextProto(clusterKey, proto string) DialContextProtoFunc {
 	return func(ctx context.Context, addr string) (net.Conn, error) {
-		logrus.Debug("use cluster dialer, key:%s", clusterKey)
+		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
 		return getClusterDialer(ctx, clusterKey)(ctx, proto, addr)
 	}
 }
