@@ -18,9 +18,30 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
+
+func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
+	if c == nil || c.State == nil {
+		return nil
+	}
+	var state State
+	cont, err := json.Marshal(c.State)
+	if err != nil {
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
+		return err
+	}
+	err = json.Unmarshal(cont, &state)
+	if err != nil {
+		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
+		return err
+	}
+	i.State = state
+	return nil
+}
 
 func (f *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	// init filter
@@ -28,10 +49,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 		return err
 	}
 
+	if err := f.GenComponentState(c); err != nil {
+		return err
+	}
+
 	// operation
 	switch event.Operation.String() {
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
-		if err := f.InitDefaultOperation(); err != nil {
+		if err := f.InitDefaultOperation(f.State); err != nil {
 			return err
 		}
 	case f.Operations[OperationKeyFilter].Key.String():
@@ -101,12 +126,10 @@ func (f *ComponentFilter) SetToProtocolComponent(c *apistructs.Component) error 
 	return nil
 }
 
-func (f *ComponentFilter) InitDefaultOperation() error {
+func (f *ComponentFilter) InitDefaultOperation(state State) error {
 	f.Props = filter.Props{Delay: 300}
 	f.Operations = GetAllOperations()
-	f.State = State{
-		FrontendConditionProps: generateFrontendConditionProps(f.InParams.FrontendFixedIssueType),
-	}
+	f.State.FrontendConditionProps = generateFrontendConditionProps(f.InParams.FrontendFixedIssueType, state)
 
 	// 初始化时从 url query params 中获取已经存在的过滤参数
 	if f.InParams.FrontendUrlQuery != "" {

@@ -779,6 +779,11 @@ func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePaging
 		states = append(states, v.States...)
 	}
 
+	// filter by status is not avialble in status board
+	if len(req.StateBelongs) > 0 {
+		req.StateBelongs = nil
+	}
+
 	date := struct {
 		Map  map[int64]CartList
 		Lock sync.Mutex

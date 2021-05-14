@@ -55,6 +55,11 @@ rendering:
   issueViewGroup:
     # 关联渲染组件列表
     - name: issueFilter
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "issueViewGroupChildrenValue"
+          value: "{{ issueViewGroup.childrenValue }}"
     - name: issueTable
       state:
         - name: "issueViewGroupValue"
@@ -104,9 +109,14 @@ rendering:
     - name: topHead
     - name: issueAddButton
     - name: head
-    - name: issueFilter
     - name: issueOperations
     - name: issueViewGroup
+    - name: issueFilter
+      state:
+        - name: "issueViewGroupValue"
+          value: "{{ issueViewGroup.value }}"
+        - name: "issueViewGroupChildrenValue"
+          value: "{{ issueViewGroup.childrenValue }}"
     - name: issueExport
     - name: issueImport
     - name: content
