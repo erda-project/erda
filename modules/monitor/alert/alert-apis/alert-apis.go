@@ -127,6 +127,12 @@ func (p *provider) updateAlert(r *http.Request, params struct {
 	if err := p.checkAlert(&alert); err != nil {
 		return err
 	}
+	orgID := alert.Attributes["dice_org_id"]
+	org, err := p.bdl.GetOrg(orgID)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	alert.Attributes["org_name"] = org.Name
 	if err := p.a.UpdateAlert(uint64(params.ID), &alert); err != nil {
 		if adapt.IsInvalidParameterError(err) {
 			return api.Errors.InvalidParameter(err)
