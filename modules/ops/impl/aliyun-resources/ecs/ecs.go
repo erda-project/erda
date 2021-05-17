@@ -34,18 +34,26 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	IPs []string) ([]ecs.Instance, int, error) {
 	instances := []ecs.Instance{}
 	pagesize := 100
-	pagenum := 1
 	for _, region := range regions {
 		ctx.Region = region
-		ecsList, err := DescribeResource(ctx,
-			aliyun_resources.PageOption{
-				PageSize:   &pagesize,
-				PageNumber: &pagenum,
-			}, cluster, "", IPs)
-		if err != nil {
-			return nil, 0, err
+		pagenum := 1
+		max := 1000
+		for ((pagenum - 1) * pagesize) < max {
+			rsp, err := DescribeResource(ctx,
+				aliyun_resources.PageOption{
+					PageSize:   &pagesize,
+					PageNumber: &pagenum,
+				}, cluster, "", IPs)
+			if err != nil {
+				return nil, 0, err
+			}
+			instances = append(instances, rsp.Instances.Instance...)
+			if len(instances) >= ((*page.PageNumber) * (*page.PageSize)) {
+				break
+			}
+			pagenum += 1
+			max = rsp.TotalCount
 		}
-		instances = append(instances, ecsList.Instances.Instance...)
 	}
 	start := (*page.PageNumber - 1) * (*page.PageSize)
 	end := start + (*page.PageSize)
@@ -55,11 +63,34 @@ func List(ctx aliyun_resources.Context, page aliyun_resources.PageOption,
 	if end > len(instances) {
 		end = len(instances)
 	}
-	total := len(instances)
+	total, err := totalEcs(ctx, regions, cluster)
+	if err != nil {
+		logrus.Errorf("get total ecs number failed, error: %v", err)
+		return nil, 0, err
+	}
 
 	instances = instances[start:end]
 
 	return instances, total, nil
+}
+
+func totalEcs(ctx aliyun_resources.Context, regions []string, cluster string) (int, error) {
+	pagesize := 10
+	pagenum := 1
+	total := 0
+	for _, region := range regions {
+		ctx.Region = region
+		resp, err := DescribeResource(ctx,
+			aliyun_resources.PageOption{
+				PageSize:   &pagesize,
+				PageNumber: &pagenum,
+			}, cluster, "", []string{})
+		if err != nil {
+			return 0, err
+		}
+		total += resp.TotalCount
+	}
+	return total, nil
 }
 
 func Stop(ctx aliyun_resources.Context, IDs []string) (*ecs.StopInstancesResponse, error) {
@@ -335,7 +366,7 @@ func DescribeResource(ctx aliyun_resources.Context, page aliyun_resources.PageOp
 	// create request
 	request := ecs.CreateDescribeInstancesRequest()
 	request.Scheme = "https"
-	if page.PageNumber == nil || page.PageSize == nil || *page.PageSize <= 0 || *page.PageNumber <= 0 {
+	if page.PageNumber == nil || page.PageSize == nil || *page.PageSize <= 0 || *page.PageNumber <= 0 || *page.PageSize > 100 {
 		err := fmt.Errorf("invalid page parameters: %+v", page)
 		logrus.Errorf(err.Error())
 		return nil, err
