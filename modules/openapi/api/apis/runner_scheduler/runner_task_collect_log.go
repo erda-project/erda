@@ -22,7 +22,7 @@ import (
 var RUNNER_TASK_COLLECT_LOG = apis.ApiSpec{
 	Path:        "/api/runner/collect/logs/<runnerSource>",
 	BackendPath: "/api/runner/collect/logs/<runnerSource>",
-	Host:        "runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
+	Host:        "action-runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	IsOpenAPI:   true,

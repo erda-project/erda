@@ -146,12 +146,13 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 			}
 		}
 	} else {
+		logrus.Infof("pipeline event: %+v", pipelineEvent)
 		//普通pipeline
 		eventName := "pipeline_" + strings.ToLower(pipelineData.Status)
 		sourceType := "app"
 		sourceID := strconv.FormatUint(pipelineDetail.ApplicationID, 10)
 		notifyDetails, err := cdp.bdl.QueryNotifiesBySource(pipelineEvent.OrgID,
-			sourceType, sourceID, "", eventName)
+			sourceType, sourceID, eventName, "")
 		if err != nil {
 			return err
 		}
