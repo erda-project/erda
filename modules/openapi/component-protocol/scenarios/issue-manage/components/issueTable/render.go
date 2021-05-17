@@ -342,6 +342,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				cond.PageNo = uint64(c.State["pageNo"].(float64))
 			}
 		}
+	} else if event.Operation.String() == "changePageSize" {
+		cond.PageSize = uint64(c.State["pageSize"].(float64))
 	} else if event.Operation == apistructs.InitializeOperation {
 		cond.PageNo = 1
 		if urlquery, ok := bdl.InParams["issueTable__urlQuery"]; ok {
@@ -355,6 +357,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			}
 			if pageNoInQuery, ok := querymap["pageNo"]; ok {
 				cond.PageNo = uint64(pageNoInQuery.(float64))
+			}
+			if pageSize, ok := querymap["pageSize"]; ok {
+				cond.PageSize = uint64(pageSize.(float64))
 			}
 		}
 	} else if event.Operation == apistructs.RenderingOperation {
@@ -688,7 +693,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
         }` +
 		closedAtCol +
 		`],
-    "rowKey": "id"
+    "rowKey": "id",
+	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
@@ -700,6 +706,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			"key":    "changePageNo",
 			"reload": true,
 		},
+		"changePageSize": map[string]interface{}{
+			"key":    "changePageSize",
+			"reload": true,
+		},
 	}
 	c.Props.(map[string]interface{})["visible"] = visible
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
@@ -709,7 +719,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	c.State["total"] = r.Data.Total
 	c.State["pageNo"] = cond.PageNo
 	c.State["pageSize"] = cond.PageSize
-	urlquery := fmt.Sprintf(`{"pageNo":%d}`, cond.PageNo)
+	urlquery := fmt.Sprintf(`{"pageNo":%d, "pageSize":%d}`, cond.PageNo, cond.PageSize)
 	c.State["issueTable__urlQuery"] = base64.StdEncoding.EncodeToString([]byte(urlquery))
 	return nil
 }
