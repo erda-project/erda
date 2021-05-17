@@ -395,9 +395,12 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 
 	var params []apistructs.PipelineRunParam
 	for _, input := range sceneInputs {
+		// replace mock temp before create pipeline
+		// and so steps can use the same mock temp
+		replacedTemp := expression.ReplaceRandomParams(input.Temp)
 		params = append(params, apistructs.PipelineRunParam{
 			Name:  input.Name,
-			Value: input.Temp,
+			Value: replacedTemp,
 		})
 	}
 

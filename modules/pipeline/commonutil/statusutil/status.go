@@ -82,7 +82,16 @@ func CalculatePipelineStatusV2(tasks []*spec.PipelineTask) apistructs.PipelineSt
 	}
 }
 
-// CalculatePipelineTaskAllDone 计算 pipeline 下的所有任务是否都已完毕
+// CalculatePipelineTaskAllDone
+// all task was Disabled or EndStatus, return true
 func CalculatePipelineTaskAllDone(tasks []*spec.PipelineTask) bool {
-	return CalculatePipelineStatusV2(tasks).IsEndStatus()
+	for _, task := range tasks {
+		if task.Status == apistructs.PipelineStatusDisabled {
+			continue
+		}
+		if !task.Status.IsEndStatus() {
+			return false
+		}
+	}
+	return true
 }
