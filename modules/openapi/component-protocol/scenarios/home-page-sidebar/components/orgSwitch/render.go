@@ -146,7 +146,7 @@ func RenItem(org apistructs.OrgDTO) MenuItem {
 		logo = fmt.Sprintf("https:%s", org.Logo)
 	}
 	item := MenuItem{
-		Label:        org.Name,
+		Label:        org.DisplayName,
 		Value:        strconv.FormatInt(int64(org.ID), 10),
 		PrefixImgSrc: logo,
 		Operations: map[string]interface{}{
