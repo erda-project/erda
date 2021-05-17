@@ -252,11 +252,15 @@ func (svc *Service) collectListSwaggerVersionRspObj(versions []*apistructs.APIAs
 }
 
 func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersionsReq) (*apistructs.ListSwaggerVersionRsp, error) {
-	var versions []*apistructs.APIAssetVersionsModel
-	if err := svc.ListRecords(&versions, map[string]interface{}{
-		"org_id":   req.OrgID,
-		"asset_id": req.URIParams.AssetID,
-	}); err != nil {
+	var (
+		versions []*apistructs.APIAssetVersionsModel
+		where    = map[string]interface{}{
+			"org_id":     req.OrgID,
+			"asset_id":   req.URIParams.AssetID,
+			"deprecated": false,
+		}
+	)
+	if err := svc.ListRecords(&versions, where); err != nil {
 		return nil, err
 	}
 
@@ -408,7 +412,7 @@ func groupByMinor(records []map[string]interface{}) []map[string]interface{} {
 	)
 	for _, record := range records {
 		minor := record["minor"].(uint64)
-		if r, ok := m[minor]; ok && record["patch"].(uint64) > r["patch"].(uint64) {
+		if r, ok := m[minor]; ok && record["patch"].(uint64) < r["patch"].(uint64) {
 			m[minor] = r
 		} else {
 			m[minor] = record
