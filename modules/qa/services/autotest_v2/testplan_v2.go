@@ -577,7 +577,10 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 
 			var params = make(map[string]interface{})
 			for _, input := range inputs {
-				params[input.Name] = input.Value
+				// replace mock random param before return to pipeline
+				// and so steps can use the same random value
+				replacedValue := expression.ReplaceRandomParams(input.Value)
+				params[input.Name] = replacedValue
 			}
 
 			sceneJson, err := json.Marshal(v)
