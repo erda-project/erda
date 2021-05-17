@@ -19,7 +19,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/services/issue"
 )
 
@@ -177,8 +176,9 @@ func (ip *IssuePanel) GetPanelByProjectID(req *apistructs.IssuePanelRequest) ([]
 
 // GetPanelIssues 获取看板下的事件ID
 func (ip *IssuePanel) GetPanelIssues(req *apistructs.IssuePanelRequest) ([]apistructs.Issue, uint64, error) {
+	var res []int64
 	req.External = true
-	// 如果是自定义创建的看板
+	// custom boards
 	if req.PanelID != 0 {
 		panels, total, err := ip.db.GetPanelIssuesByPanel(req.PanelID, req.PageNo, req.PageSize)
 		if err != nil {
@@ -188,23 +188,27 @@ func (ip *IssuePanel) GetPanelIssues(req *apistructs.IssuePanelRequest) ([]apist
 			return nil, 0, nil
 		}
 
-		issueIds := []int64{}
+		issueMap := map[int64]bool{}
 		for _, p := range panels {
-			issueIds = append(issueIds, p.IssueID)
+			res = append(res, p.IssueID)
+			issueMap[p.IssueID] = true
 		}
 
-		issues, err := ip.db.ListIssueByIDs(issueIds)
+		req.IDs = res
+		issues, total, err := ip.issue.Paging(req.IssuePagingRequest)
 		if err != nil {
 			return nil, 0, err
 		}
-		res, err := ip.issue.BatchConvert(issues, req.Type, req.IdentityInfo)
-		if err != nil {
-			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
-		}
 
-		return res, total, nil
+		issuesFiltered := []apistructs.Issue{}
+		for _, i := range issues {
+			if issueMap[i.ID] {
+				issuesFiltered = append(issuesFiltered, i)
+			}
+		}
+		return issuesFiltered, uint64(len(issuesFiltered)), nil
 	} else {
-		//不属于新创建看板的事件
+		// default board
 		ids, err := ip.db.GetPanelIssuesIDByProjectID(req.ProjectID)
 		if err != nil {
 			return nil, 0, err
