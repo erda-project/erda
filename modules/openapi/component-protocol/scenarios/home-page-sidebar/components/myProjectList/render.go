@@ -225,7 +225,7 @@ func (m *MyProjectList) addDataList(datas *apistructs.PagingProjectDTO) error {
 		if orgDTO == nil {
 			return fmt.Errorf("failed to get org")
 		}
-		orgName = orgDTO.DisplayName
+		orgName = orgDTO.Name
 	}
 	for _, v := range datas.List {
 		dataList = append(dataList, RenItem(v, orgName))

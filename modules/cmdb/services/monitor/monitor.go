@@ -491,9 +491,7 @@ func statisticsAddAndRepairBug(r StatisticsAddAndRepairBugRequest) (*IssueMonito
 	if !r.CreateEndTime.IsZero() {
 		repairSql += "and updated_at < ? "
 	}
-	repairSql += " and state = ? "
-
-	params = append(params, apistructs.IssueStateClosed)
+	repairSql += fmt.Sprintf(" and state = (select id from dice_issue_state where project_id = %v and issue_type = '%s' and belong = '%s')", r.ProjectId, apistructs.IssueTypeBug, apistructs.IssueStateClosed)
 	row = r.db.Raw(repairSql, params...).Row()
 	if row != nil {
 		var counts int
