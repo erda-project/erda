@@ -134,12 +134,13 @@ func DeleteAPIAssetVersion(orgID uint64, assetID string, versionID uint64, casca
 	return nil
 }
 
+// GenSemVer generate the semantics version
 func GenSemVer(orgID uint64, assetID, swaggerVersion string, major, minor, patch *uint64) error {
 	if major == nil || minor == nil || patch == nil {
 		return errors.New("semVer is nil")
 	}
 
-	// select out a version model record for the giving swagger_version
+	// select out the version model record for the giving swagger_version
 	var (
 		swaggerVersionModel apistructs.APIAssetVersionsModel
 		swaggerVerExists    bool
