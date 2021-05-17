@@ -142,8 +142,17 @@ func TestCalculatePipelineTaskAllDone(t *testing.T) {
 				{Status: apistructs.PipelineStatusAnalyzed},
 				{Status: apistructs.PipelineStatusAnalyzeFailed},
 			},
-			expectAllDone: true,
+			expectAllDone: false,
 			desc:          "有一个失败的状态，应该展示失败",
+		},
+		{
+			tasks: []*spec.PipelineTask{
+				{Status: apistructs.PipelineStatusSuccess},
+				{Status: apistructs.PipelineStatusAnalyzeFailed},
+				{Status: apistructs.PipelineStatusFailed},
+			},
+			expectAllDone: true,
+			desc:          "所有都是终态",
 		},
 		{
 			tasks: []*spec.PipelineTask{
