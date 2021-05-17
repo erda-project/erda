@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
@@ -200,6 +201,10 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
 		extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, task.Type)
 	})
+	if extensionSearchRequest.Extensions != nil {
+		extensionSearchRequest.Extensions = strutil.DedupSlice(extensionSearchRequest.Extensions, true)
+	}
+
 	// 根据 Extensions 数组批量查询详情
 	resultMap, err := s.bdl.SearchExtensions(extensionSearchRequest)
 	if err != nil {
