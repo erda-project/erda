@@ -145,7 +145,7 @@ func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 	item := ProItem{
 		ID:          strconv.Itoa(int(pro.ID)),
 		ProjectId:   strconv.Itoa(int(pro.ID)),
-		Title:       pro.Name,
+		Title:       pro.DisplayName,
 		Description: "",
 		PrefixImg:   "/images/default-project-icon.png",
 		Operations: map[string]Operation{
