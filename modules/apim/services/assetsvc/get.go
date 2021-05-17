@@ -129,6 +129,7 @@ func (svc *Service) GetAssetVersion(req *apistructs.GetAPIAssetVersionReq) (*api
 	// 查询
 	version, err := dbclient.GetAPIAssetVersion(req)
 	if err != nil {
+		logrus.Errorf("failed to GetAPIAssetVersion, req: %+v: %v", req, err)
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, apierrors.GetAPIAssetVersion.NotFound()
 		}
