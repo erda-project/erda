@@ -46,6 +46,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
 	if err != nil {
 		rlog.PErrorf(pipelineID, "cannot reconcile, failed to get pipeline with tasks, err: %v", err)
+		return err
 	}
 	p := pipelineWithTasks.Pipeline
 	tasks := pipelineWithTasks.Tasks
