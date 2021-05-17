@@ -108,7 +108,8 @@ func RenderSecrets(input []byte, secrets map[string]string) ([]byte, error) {
 
 	// replace ${{ configs.key }}
 	for k, v := range secrets {
-		replaced = strings.ReplaceAll(replaced, expression.LeftPlaceholder+" "+expression.Configs+"."+k+" "+expression.RightPlaceholder, v)
+		replaced = strings.ReplaceAll(replaced, expression.LeftPlaceholder+" "+expression.Configs+"."+k+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(v))
 	}
+
 	return []byte(replaced), nil
 }
