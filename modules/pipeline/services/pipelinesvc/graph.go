@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (s *PipelineSvc) PipelineYmlGraph(req *apistructs.PipelineYmlParseGraphRequest) (*apistructs.PipelineYml, error) {
@@ -39,12 +40,16 @@ func (s *PipelineSvc) PipelineYmlGraph(req *apistructs.PipelineYmlParseGraphRequ
 }
 
 func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) {
+
 	var extensionSearchRequest = apistructs.ExtensionSearchRequest{}
 	extensionSearchRequest.YamlFormat = true
 	for _, stage := range graph.Stages {
 		for _, action := range stage {
 			extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, action.Type)
 		}
+	}
+	if extensionSearchRequest.Extensions != nil {
+		extensionSearchRequest.Extensions = strutil.DedupSlice(extensionSearchRequest.Extensions, true)
 	}
 
 	resultMap, err := s.bdl.SearchExtensions(extensionSearchRequest)
