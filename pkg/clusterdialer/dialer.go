@@ -57,10 +57,10 @@ func init() {
 			if err != nil {
 				logrus.Errorf("Failed to serve proxy connection err: %v", err)
 			}
+			sessionG.Close()
 			lock.Lock()
 			sessionG = nil
 			lock.Unlock()
-			sessionG.Close()
 			ws.Close()
 			// retry connect after sleep a random time
 			time.Sleep(time.Duration(rand.Int()%10) * time.Second)
