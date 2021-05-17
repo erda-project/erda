@@ -118,11 +118,10 @@ func (s ContractStatus) ToLower() ContractStatus {
 }
 
 const (
-	ContractProved    ContractStatus = "proved"    // 已授权
-	ContractProving   ContractStatus = "proving"   // 等待授权
-	ContractDisproved ContractStatus = "disproved" // 已拒绝授权
-	ContractUnproved  ContractStatus = "unproved"  // 已撤销授权
-	SLAPending        ContractStatus = "pending"   // SLA pending
+	ContractApproved    ContractStatus = "proved"    // 已授权
+	ContractApproving   ContractStatus = "proving"   // 等待授权
+	ContractDisapproved ContractStatus = "disproved" // 已拒绝授权
+	ContractUnapproved  ContractStatus = "unproved"  // 已撤销授权
 )
 
 type SLAUsedInContract string
