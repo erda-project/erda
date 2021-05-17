@@ -187,3 +187,15 @@ i18n@metric:
 http-server@admin:
   addr: ":7098"
 pprof:
+
+alert-storage:
+  input:
+    topics: "${TRACE_TOPICS:spot-alert-record}"
+    group: "${TRACE_GROUP_ID:spot-alert-record-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
+
+notify-storage:
+  input:
+    topics: "${TRACE_TOPICS:spot-notify-record}"
+    group: "${TRACE_GROUP_ID:spot-notify-record-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
