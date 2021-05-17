@@ -458,7 +458,7 @@ func (svc *Service) updateContractCurSLA(req *apistructs.UpdateContractReq, cont
 		}
 	}
 
-	// 更新 contract
+	// update contract
 	var (
 		timeNow = time.Now()
 		updates = map[string]interface{}{
