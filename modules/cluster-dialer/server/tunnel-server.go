@@ -14,6 +14,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -105,6 +106,10 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 		remotedialer.DefaultErrorWriter(rw, req, 500, err)
 		return
 	}
+	req.Header.Del(portalHostHeader)
+	req.Header.Del(portalDestHeader)
+	req.Header.Del(portalSchemeHeader)
+	proxyReq.Header = req.Header
 	start := time.Now()
 	resp, err := client.Do(proxyReq)
 	if err != nil {
@@ -134,6 +139,9 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: dialer,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		},
 		Timeout: timeout,
 	}

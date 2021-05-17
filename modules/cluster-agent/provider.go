@@ -110,9 +110,8 @@ func (p *provider) Run(ctx context.Context) error {
 
 func init() {
 	servicehub.Register("cluster-agent", &servicehub.Spec{
-		Services:     []string{"cluster-agent"},
-		Dependencies: []string{"http-server"},
-		Description:  "cluster agent",
+		Services:    []string{"cluster-agent"},
+		Description: "cluster agent",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},
