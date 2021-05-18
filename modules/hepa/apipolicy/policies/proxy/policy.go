@@ -109,11 +109,12 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	annotation[ANNOTATION_PROXY_REQ_TIMEOUT] = &reqTimeout
 	respTimeout := fmt.Sprintf("%d", policyDto.ProxyRespTimeout)
 	annotation[ANNOTATION_PROXY_RESP_TIMEOUT] = &respTimeout
+	clientHeaderTimeout := fmt.Sprintf("client_header_timeout %ds;", policyDto.ClientReqTimeout)
+	annotation[ANNOTATION_SERVER_SNIPPET] = &clientHeaderTimeout
 	snippet := fmt.Sprintf(`
-client_header_timeout %ds;
 client_body_timeout %ds;
 send_timeout %ds;
-`, policyDto.ClientReqTimeout, policyDto.ClientReqTimeout, policyDto.ClientRespTimeout)
+`, policyDto.ClientReqTimeout, policyDto.ClientRespTimeout)
 	res.IngressAnnotation = &apipolicy.IngressAnnotation{
 		LocationSnippet: &snippet,
 		Annotation:      annotation,
