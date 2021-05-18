@@ -14,13 +14,16 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,6 +34,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
+	"github.com/erda-project/erda/modules/cluster-dialer/config"
 )
 
 var (
@@ -40,9 +44,10 @@ var (
 )
 
 const (
-	portalSchemeHeader = "X-Portal-Scheme"
-	portalHostHeader   = "X-Portal-Host"
-	portalDestHeader   = "X-Portal-Dest"
+	portalSchemeHeader  = "X-Portal-Scheme"
+	portalHostHeader    = "X-Portal-Host"
+	portalDestHeader    = "X-Portal-Dest"
+	portalTimeoutHeader = "X-Portal-Timeout"
 )
 
 type cluster struct {
@@ -51,38 +56,40 @@ type cluster struct {
 	CACert  string `json:"caCert"`
 }
 
-func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request) {
-	info := req.Header.Get("X-Erda-Cluster-Info")
-	if info == "" {
-		remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
-		return
+func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool) {
+	if needClusterInfo {
+		info := req.Header.Get("X-Erda-Cluster-Info")
+		if info == "" {
+			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
+			return
+		}
+		var clusterInfo cluster
+		bytes, err := base64.StdEncoding.DecodeString(info)
+		if err != nil {
+			remotedialer.DefaultErrorWriter(rw, req, 400, err)
+			return
+		}
+		if err := json.Unmarshal(bytes, &clusterInfo); err != nil {
+			remotedialer.DefaultErrorWriter(rw, req, 400, err)
+			return
+		}
+		if clusterInfo.Address == "" {
+			err = errors.New("invalid cluster info, address empty")
+			remotedialer.DefaultErrorWriter(rw, req, 400, err)
+			return
+		}
+		if clusterInfo.Token == "" {
+			err = errors.New("invalid cluster info, token empty")
+			remotedialer.DefaultErrorWriter(rw, req, 400, err)
+			return
+		}
+		if clusterInfo.CACert == "" {
+			err = errors.New("invalid cluster info, caCert empty")
+			remotedialer.DefaultErrorWriter(rw, req, 400, err)
+			return
+		}
+		// TODO: register cluster info
 	}
-	var clusterInfo cluster
-	bytes, err := base64.StdEncoding.DecodeString(info)
-	if err != nil {
-		remotedialer.DefaultErrorWriter(rw, req, 400, err)
-		return
-	}
-	if err := json.Unmarshal(bytes, &clusterInfo); err != nil {
-		remotedialer.DefaultErrorWriter(rw, req, 400, err)
-		return
-	}
-	if clusterInfo.Address == "" {
-		err = errors.New("invalid cluster info, address empty")
-		remotedialer.DefaultErrorWriter(rw, req, 400, err)
-		return
-	}
-	if clusterInfo.Token == "" {
-		err = errors.New("invalid cluster info, token empty")
-		remotedialer.DefaultErrorWriter(rw, req, 400, err)
-		return
-	}
-	if clusterInfo.CACert == "" {
-		err = errors.New("invalid cluster info, caCert empty")
-		remotedialer.DefaultErrorWriter(rw, req, 400, err)
-		return
-	}
-	// TODO: register cluster info
 	server.ServeHTTP(rw, req)
 }
 
@@ -90,6 +97,13 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	clusterKey := req.Header.Get(portalHostHeader)
 	addrInCluster := req.Header.Get(portalDestHeader)
 	schemeInCluster := req.Header.Get(portalSchemeHeader)
+	timeoutStr := req.Header.Get(portalTimeoutHeader)
+	if timeoutStr != "" {
+		timeoutInt, err := strconv.Atoi(timeoutStr)
+		if err == nil {
+			timeout = time.Duration(timeoutInt) * time.Second
+		}
+	}
 	if schemeInCluster == "" {
 		schemeInCluster = "http"
 	}
@@ -109,6 +123,7 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 	req.Header.Del(portalHostHeader)
 	req.Header.Del(portalDestHeader)
 	req.Header.Del(portalSchemeHeader)
+	req.Header.Del(portalTimeoutHeader)
 	proxyReq.Header = req.Header
 	start := time.Now()
 	resp, err := client.Do(proxyReq)
@@ -150,7 +165,7 @@ func getClusterClient(server *remotedialer.Server, clusterKey string, timeout ti
 	return client
 }
 
-func Start(listenAddr string, timeout time.Duration) error {
+func Start(ctx context.Context, cfg *config.Config) error {
 	handler := remotedialer.New(auth.Authorizer, remotedialer.DefaultErrorWriter)
 	handler.ClientConnectAuthorizer = func(proto, address string) bool {
 		if strings.HasSuffix(proto, "::tcp") {
@@ -169,11 +184,18 @@ func Start(listenAddr string, timeout time.Duration) error {
 	router.Handle("/clusterdialer", handler)
 	router.HandleFunc("/clusteragent/connect", func(rw http.ResponseWriter,
 		req *http.Request) {
-		clusterRegister(handler, rw, req)
+		clusterRegister(handler, rw, req, cfg.NeedClusterInfo)
 	})
 	router.PathPrefix("/").HandlerFunc(func(rw http.ResponseWriter,
 		req *http.Request) {
-		netportal(handler, rw, req, timeout)
+		netportal(handler, rw, req, cfg.Timeout)
 	})
-	return http.ListenAndServe(listenAddr, router)
+	server := &http.Server{
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
+		Addr:    cfg.Listen,
+		Handler: router,
+	}
+	return server.ListenAndServe()
 }

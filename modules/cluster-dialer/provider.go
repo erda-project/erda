@@ -15,23 +15,17 @@ package cluster_dialer
 
 import (
 	"context"
-	"time"
 
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/cluster-dialer/config"
 	"github.com/erda-project/erda/modules/cluster-dialer/server"
 )
 
-type config struct {
-	Debug   bool          `default:"false" desc:"enable debug logging"`
-	Timeout time.Duration `default:"60s" desc:"default timeout"`
-	Listen  string        `default:":80" desc:"listen address"`
-}
-
 type provider struct {
-	Cfg *config // auto inject this field
+	Cfg *config.Config // auto inject this field
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -43,7 +37,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	return server.Start(p.Cfg.Listen, p.Cfg.Timeout)
+	return server.Start(ctx, p.Cfg)
 }
 
 func init() {
@@ -51,7 +45,7 @@ func init() {
 		Services:    []string{"cluster-dialer"},
 		Description: "cluster dialer",
 		ConfigFunc: func() interface{} {
-			return &config{}
+			return &config.Config{}
 		},
 		Creator: func() servicehub.Provider {
 			return &provider{}
