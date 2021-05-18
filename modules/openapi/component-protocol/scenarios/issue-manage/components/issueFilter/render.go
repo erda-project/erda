@@ -144,7 +144,7 @@ func (f *ComponentFilter) InitDefaultOperation(state State) error {
 		f.State.FrontendConditionValues.StateBelongs = map[string][]apistructs.IssueStateBelong{
 			"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
 			"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-			"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
+			"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
 			"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
 		}[f.InParams.FrontendFixedIssueType]
 	}

@@ -92,6 +92,12 @@ type CreateReviewUser struct {
 	TaskId    int64     `json:"taskId"`
 	CreatedAt time.Time `json:"createdAt"`
 }
+
+type CreateReviewUserResponse struct {
+	ID               int64     `json:"id"`
+	OperatorUserInfo *UserInfo `json:"operatorUserInfo"`
+}
+
 type GetReviewsByUserIdResponse struct {
 	Id              int64  `json:"id"`
 	ProjectName     string `json:"projectName"`
