@@ -46,6 +46,7 @@ func startServer() (context.Context, context.CancelFunc) {
 }
 
 func Test_DialerContext(t *testing.T) {
+	ctx, cancel := startServer()
 	go client.Start(context.Background(), &clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
 		ClusterKey:          "test",
@@ -58,16 +59,15 @@ func Test_DialerContext(t *testing.T) {
 	}
 	http.HandleFunc("/hello", helloHandler)
 	go http.ListenAndServe(helloListenAddr, nil)
-	ctx, cancel := startServer()
+	select {
+	case <-client.Connected():
+		fmt.Println("client connected")
+	}
 	hc := http.Client{
 		Transport: &http.Transport{
 			DialContext: DialContext("test"),
 		},
 		Timeout: 10 * time.Second,
-	}
-	select {
-	case <-client.Connected():
-		fmt.Println("client connected")
 	}
 	req, _ := http.NewRequest("GET", "http://"+helloListenAddr, nil)
 	_, err := hc.Do(req)
