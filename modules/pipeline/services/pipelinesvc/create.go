@@ -295,7 +295,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 						}
 						snippetTasks = append(snippetTasks, pt)
 					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action, actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
+						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData.actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
 						if err != nil {
 							return apierrors.ErrCreatePipelineTask.InternalError(err)
 						}

@@ -11,22 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package apitestsv2
+package addon
 
-import (
-	"fmt"
-	"strconv"
-	"testing"
+import "strings"
 
-	"github.com/stretchr/testify/assert"
-)
+// IsEncryptedValueByKey Determine whether it is an encrypted field by key
+func IsEncryptedValueByKey(key string) bool {
+	return strings.Contains(strings.ToLower(key), "pass") || strings.Contains(strings.ToLower(key), "secret")
+}
 
-func TestRandString(t *testing.T) {
-	s := randString(Integer)
-	i, err := strconv.Atoi(s)
-	assert.NoError(t, err)
-	fmt.Println(s, i)
-
-	s = randString(String)
-	fmt.Println(s)
+// IsEncryptedValueByValue Determine whether it is an encrypted field by value
+func IsEncryptedValueByValue(value string) bool {
+	return strings.Contains(value, ErdaEncryptedValue)
 }

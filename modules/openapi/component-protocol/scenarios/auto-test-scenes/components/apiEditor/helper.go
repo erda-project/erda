@@ -15,6 +15,7 @@ package apiEditor
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -122,7 +123,7 @@ const props1 string = `{
       {
         "title": "参数名",
         "key": "key",
-        "width": 100,
+        "width": 150,
         "render": {
           "required": true,
           "uniqueValue": true,
@@ -191,7 +192,7 @@ const props2 string = `}
       {
         "title": "参数名",
         "key": "key",
-        "width": 100,
+        "width": 150,
         "name": "key",
         "render": {
           "required": true,
@@ -420,6 +421,7 @@ var (
 	emptySpec, emptySpecStr = genEmptyAPISpecStr()
 )
 
+// GetStepOutPut get output parameter by autotest steps
 func GetStepOutPut(steps []apistructs.AutoTestSceneStep) (map[string]map[string]string, error) {
 	var value APISpec
 	outputs := make(map[string]map[string]string, 0)
@@ -435,9 +437,14 @@ func GetStepOutPut(steps []apistructs.AutoTestSceneStep) (map[string]map[string]
 			if len(value.APIInfo.OutParams) == 0 {
 				continue
 			}
-			outputs[step.Name] = make(map[string]string, 0)
+
+			stepIDStr := strconv.Itoa(int(step.ID))
+			stepKey := "#" + stepIDStr + "-" + step.Name
+
+			outputs[stepKey] = make(map[string]string, 0)
 			for _, v := range value.APIInfo.OutParams {
-				outputs[step.Name][v.Key] = expression.LeftPlaceholder + " outputs." + strconv.Itoa(int(step.ID)) + "." + v.Key + " " + expression.RightPlaceholder
+				outputs[stepKey][v.Key] = fmt.Sprintf("%s outputs.%s.%s %s", expression.LeftPlaceholder,
+					stepIDStr, v.Key, expression.RightPlaceholder)
 			}
 		}
 	}

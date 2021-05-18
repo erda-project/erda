@@ -20,9 +20,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/pkg/httpclient"
-	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

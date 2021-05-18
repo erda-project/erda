@@ -20,10 +20,11 @@ import (
 	"sort"
 	"time"
 
-	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/olivere/elastic"
 	cfgpkg "github.com/recallsong/go-utils/config"
 	"github.com/recallsong/go-utils/lang/size"
+
+	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 )
 
 func (m *IndexManager) getNodeStats() (map[string]*elastic.NodesStatsNode, error) {

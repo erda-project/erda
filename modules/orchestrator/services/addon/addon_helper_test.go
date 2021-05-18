@@ -11,33 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package linters_test
+package addon
 
 import (
 	"testing"
 
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/linters"
+	"github.com/stretchr/testify/assert"
 )
 
-const DDLDMLLinterSQL = `
-begin;
+func TestIsEncryptedValueByKey(t *testing.T) {
+	assert.True(t, IsEncryptedValueByKey("A_PAsswOrd"))
+	assert.True(t, IsEncryptedValueByKey("SecReT_A21"))
+	assert.False(t, IsEncryptedValueByKey("asfq"))
+}
 
-update some_table set name='chen';
-
-commit;
-
-grant select on student to some_user with grant option;
-`
-
-func TestNewDDLDMLLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewDDLDMLLinter)
-	if err := linter.Input([]byte(DDLDMLLinterSQL), "DDLDMLLinterSQL"); err != nil {
-		t.Error(err)
-	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["DDLDMLLinterSQL [lints]"]) != 3 {
-		t.Fatal("failed")
-	}
+func TestIsEncryptedValueByValue(t *testing.T) {
+	assert.True(t, IsEncryptedValueByValue("***ERDA_ENCRYPTED***"))
+	assert.True(t, IsEncryptedValueByValue("**ERDA_ENCRYPTED*"))
+	assert.True(t, IsEncryptedValueByValue("*ERDA_ENCRYPTED***"))
+	assert.False(t, IsEncryptedValueByValue("**ENCRYPTED*"))
 }

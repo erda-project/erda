@@ -134,30 +134,30 @@ func (t *MyProjectTitle) Render(ctx context.Context, c *apistructs.Component, sc
 	var visible bool
 	if permissionRes.Access {
 		visible = true
-	}
-	t.Props.Operations = []interface{}{
-		map[string]interface{}{
-			"props": map[string]interface{}{
-				"text":        "创建",
-				"visible":     visible,
-				"disabled":    false,
-				"disabledTip": "暂无创建项目权限",
-				"type":        "link",
-			},
-			"operations": map[string]interface{}{
-				"click": map[string]interface{}{
-					"command": map[string]interface{}{
-						"key":     "goto",
-						"target":  "createProject",
-						"jumpOut": false,
-						"visible": visible,
+		t.Props.Operations = []interface{}{
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"text":        "创建",
+					"visible":     visible,
+					"disabled":    false,
+					"disabledTip": "暂无创建项目权限",
+					"type":        "link",
+				},
+				"operations": map[string]interface{}{
+					"click": map[string]interface{}{
+						"command": map[string]interface{}{
+							"key":     "goto",
+							"target":  "createProject",
+							"jumpOut": false,
+							"visible": visible,
+						},
+						"key":    "click",
+						"reload": false,
+						"show":   false,
 					},
-					"key":    "click",
-					"reload": false,
-					"show":   false,
 				},
 			},
-		},
+		}
 	}
 	return nil
 }

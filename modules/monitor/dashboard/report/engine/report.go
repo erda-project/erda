@@ -27,11 +27,12 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/jinzhu/now"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/httpclient"
 )
 
 const (

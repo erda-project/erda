@@ -18,6 +18,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apierrors"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
@@ -26,9 +28,9 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/sirupsen/logrus"
 )
 
 var UC_USER_EXPORT = apis.ApiSpec{
@@ -99,7 +101,17 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 		withRole = true
 	}
 
-	reader, tablename, err := exportExcel(users, withRole)
+	local := i18n.GetLocaleNameByRequest(r)
+	if local == "" {
+		local = "zh-CN"
+	}
+	loginMethodMap, err := getLoginMethodMap(token, local)
+	if err != nil {
+		errorresp.ErrWrite(err, w)
+		return
+	}
+
+	reader, tablename, err := exportExcel(users, withRole, loginMethodMap)
 	if err != nil {
 		errorresp.ErrWrite(err, w)
 		return
@@ -113,7 +125,28 @@ func exportUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func exportExcel(users []apistructs.UserInfoExt, withRole bool) (io.Reader, string, error) {
+// getLoginMethodMap get the mapping relationship between login mode value and display name
+func getLoginMethodMap(token ucauth.OAuthToken, local string) (map[string]string, error) {
+	res, err := handleListLoginMethod(token)
+	if err != nil {
+		return nil, err
+	}
+
+	valueDisplayNameMap := make(map[string]string, 0)
+	deDubMap := make(map[string]string, 0)
+	for _, v := range res.RegistryType {
+		tmp := getLoginTypeByUC(v)
+		if _, ok := deDubMap[tmp["marks"]]; ok {
+			continue
+		}
+		valueDisplayNameMap[tmp["marks"]] = tmp[local]
+		deDubMap[tmp["marks"]] = ""
+	}
+
+	return valueDisplayNameMap, nil
+}
+
+func exportExcel(users []apistructs.UserInfoExt, withRole bool, loginMethodMap map[string]string) (io.Reader, string, error) {
 	var (
 		tabel     [][]string
 		err       error
@@ -122,12 +155,12 @@ func exportExcel(users []apistructs.UserInfoExt, withRole bool) (io.Reader, stri
 	)
 
 	if withRole {
-		tabel, err = convertUserToExcelListWithRoles(users)
+		tabel, err = convertUserToExcelListWithRoles(users, loginMethodMap)
 		if err != nil {
 			return nil, "", err
 		}
 	} else {
-		tabel = convertUserToExcelList(users)
+		tabel = convertUserToExcelList(users, loginMethodMap)
 	}
 
 	if err := excel.ExportExcel(buf, tabel, tabelName); err != nil {
@@ -137,7 +170,7 @@ func exportExcel(users []apistructs.UserInfoExt, withRole bool) (io.Reader, stri
 	return buf, tabelName, nil
 }
 
-func convertUserToExcelList(users []apistructs.UserInfoExt) [][]string {
+func convertUserToExcelList(users []apistructs.UserInfoExt, loginMethodMap map[string]string) [][]string {
 	r := [][]string{{"用户名", "昵称", "邮箱", "手机号", "登录方式", "上次登录时间", "密码过期时间", "状态"}}
 	for _, user := range users {
 		var state string
@@ -146,14 +179,14 @@ func convertUserToExcelList(users []apistructs.UserInfoExt) [][]string {
 		} else {
 			state = "未冻结"
 		}
-		r = append(r, append(append([]string{user.Name, user.Nick, user.Email, user.Phone, user.Source, user.LastLoginAt, user.PwdExpireAt, state})))
+		r = append(r, append(append([]string{user.Name, user.Nick, user.Email, user.Phone, loginMethodMap[user.Source], user.LastLoginAt, user.PwdExpireAt, state})))
 	}
 
 	return r
 }
 
 // 生成二维数组，每个用户在他所属的最小组织单位下的角色是一行记录，之后再合并单元格
-func convertUserToExcelListWithRoles(users []apistructs.UserInfoExt) ([][]string, error) {
+func convertUserToExcelListWithRoles(users []apistructs.UserInfoExt, loginMethodMap map[string]string) ([][]string, error) {
 	orgnazation, err := bdl.GetAllOrganizational()
 	if err != nil {
 		return nil, err
@@ -169,7 +202,7 @@ func convertUserToExcelListWithRoles(users []apistructs.UserInfoExt) ([][]string
 		} else {
 			state = "未冻结"
 		}
-		fixedData := []string{user.Name, user.Nick, user.Email, user.Phone, user.Source, user.LastLoginAt, user.PwdExpireAt, state}
+		fixedData := []string{user.Name, user.Nick, user.Email, user.Phone, loginMethodMap[user.Source], user.LastLoginAt, user.PwdExpireAt, state}
 		if _, ok := orgnazation.Members[user.ID]; !ok {
 			target = append(target, fixedData)
 			continue
