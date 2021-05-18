@@ -11,21 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package runner_scheduler
+package addon
 
 import (
-	"net/http"
+	"testing"
 
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/stretchr/testify/assert"
 )
 
-var RUNNER_TASK_COLLECT_LOG = apis.ApiSpec{
-	Path:        "/api/runner/collect/logs/<runnerSource>",
-	BackendPath: "/api/runner/collect/logs/<runnerSource>",
-	Host:        "action-runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	IsOpenAPI:   true,
-	CheckLogin:  false,
-	CheckToken:  false,
+func TestIsEncryptedValueByKey(t *testing.T) {
+	assert.True(t, IsEncryptedValueByKey("A_PAsswOrd"))
+	assert.True(t, IsEncryptedValueByKey("SecReT_A21"))
+	assert.False(t, IsEncryptedValueByKey("asfq"))
+}
+
+func TestIsEncryptedValueByValue(t *testing.T) {
+	assert.True(t, IsEncryptedValueByValue("***ERDA_ENCRYPTED***"))
+	assert.True(t, IsEncryptedValueByValue("**ERDA_ENCRYPTED*"))
+	assert.True(t, IsEncryptedValueByValue("*ERDA_ENCRYPTED***"))
+	assert.False(t, IsEncryptedValueByValue("**ENCRYPTED*"))
 }
