@@ -54,6 +54,7 @@ This section is in progress here [Contributing to Erda](CONTRIBUTING.md)
 We look forward to your connecting with us, you can ask us any questions.
 
 - Email: erda@terminus.io
+- DingDing User Group: 31232990
 - 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - 微信公众号:
 
