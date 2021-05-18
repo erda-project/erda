@@ -42,6 +42,9 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
+// ErdaEncryptedValue encrypted value
+const ErdaEncryptedValue string = "ERDA_ENCRYPTED"
+
 // AddonInfos 市场 addon 全集
 var AddonInfos map[string]apistructs.Extension // key 为 addonName
 
@@ -1093,8 +1096,10 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 		return err
 	}
 	for k, v := range oldconfig {
-		if strings.Contains(strings.ToLower(k), "pass") || strings.Contains(strings.ToLower(k), "secret") {
-			if _, ok := (*configReq)[k]; !ok {
+		if IsEncryptedValueByKey(k) {
+			v1, ok := (*configReq)[k]
+			// the encrypted value has not changed
+			if ok && IsEncryptedValueByValue(v1.(string)) {
 				(*configReq)[k] = v
 			}
 		}
@@ -1293,9 +1298,9 @@ func (a *Addon) Get(userID, orgID, routingInstanceID string, internalcall bool) 
 
 	// config中的password需要过滤
 	for k, v := range config {
-		if strings.Contains(strings.ToLower(k), "pass") || strings.Contains(strings.ToLower(k), "secret") {
+		if IsEncryptedValueByKey(k) {
 			if routingInstance.Category == apistructs.AddonCustomCategory || !manager {
-				config[k] = ""
+				config[k] = "***" + ErdaEncryptedValue + "***"
 			}
 			if internalcall || (manager && instance.Category != apistructs.AddonCustomCategory) {
 				password := v.(string)

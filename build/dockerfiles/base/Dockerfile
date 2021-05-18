@@ -9,7 +9,7 @@ RUN apk update \
 && apk add tzdata \
 && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
 && echo "Asia/Shanghai" > /etc/timezone \
-&& apk add bash curl make cmake git openssh libressl-dev make curl libcurl alpine-sdk pkgconfig tzdata && \
+&& apk add bash curl make cmake git openssh libressl-dev make curl libcurl alpine-sdk pkgconfig tzdata openjdk8 && \
    rm -rf /var/cache/apk/*
 
 ENV PKG_CONFIG_PATH /lib64/pkgconfig:$PKG_CONFIG_PATH
