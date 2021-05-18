@@ -21,6 +21,7 @@ import (
 // Conf Define the configuration
 type Conf struct {
 	Debug         bool   `env:"DEBUG" default:"false"`
+	EnableEss     bool   `env:"ENABLE_ESS" default:"false"`
 	ListenAddr    string `env:"LISTEN_ADDR" default:":9027"`
 	SoldierAddr   string `env:"SOLDIER_ADDR"`
 	SchedulerAddr string `env:"SCHEDULER_ADDR"`
@@ -51,4 +52,8 @@ func SchedulerAddr() string {
 // Debug Return the switch of debug.
 func Debug() bool {
 	return cfg.Debug
+}
+
+func EnableEss() bool {
+	return cfg.EnableEss
 }
