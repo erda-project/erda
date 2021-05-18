@@ -242,7 +242,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 				case apistructs.IssueTypeTask.String():
 					return []filter.PropConditionOption{open, working, done}
 				case apistructs.IssueTypeBug.String():
-					return []filter.PropConditionOption{open, wontfix, reopen, resolved, closed}
+					return []filter.PropConditionOption{open, working, wontfix, reopen, resolved, closed}
 				}
 				return nil
 			}(),
