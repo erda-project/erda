@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -25,6 +26,8 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
+
+const DataValueKey = "action_data_value_key"
 
 func (a *ComponentAction) GenActionState(c *apistructs.Component) (err error) {
 	sByte, err := json.Marshal(c.State)
@@ -265,7 +268,37 @@ func (a *ComponentAction) GenActionProps(name, version string) (err error) {
 	return
 }
 
-func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) (err error) {
+var actionTypeRender map[string]func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error)
+var one sync.Once
+
+func registerActionTypeRender() {
+	one.Do(func() {
+		actionTypeRender = make(map[string]func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error))
+		actionTypeRender["manual-review"] = func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
+			action := ctx.Value(DataValueKey).(*apistructs.PipelineYmlAction)
+			params := action.Params
+			if params == nil || params["processor"] == nil {
+				return nil
+			}
+			processorJson, err := json.Marshal(params["processor"])
+			if err != nil {
+				return err
+			}
+
+			var processor []string
+			err = json.Unmarshal(processorJson, &processor)
+			if err != nil {
+				return err
+			}
+
+			(*globalStateData)[protocol.GlobalInnerKeyUserIDs.String()] = processor
+			return nil
+		}
+	})
+}
+
+func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
+	registerActionTypeRender()
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	err = a.SetBundle(bdl)
 	if err != nil {
@@ -294,7 +327,34 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 	c.Props = a.Props
 	cont, _ := json.Marshal(a.State)
 	_ = json.Unmarshal(cont, &c.State)
-	return
+
+	if bdl.InParams == nil {
+		return nil
+	}
+	if bdl.InParams["actionData"] == nil {
+		return nil
+	}
+	actionDataJson, err := json.Marshal(bdl.InParams["actionData"])
+	if err != nil {
+		return fmt.Errorf("failed to marshal actionData:%+v, err:%v", bdl.InParams["actionData"], err)
+	}
+	if len(actionDataJson) <= 0 {
+		return nil
+	}
+
+	var action = &apistructs.PipelineYmlAction{}
+	err = json.Unmarshal(actionDataJson, action)
+	if err != nil {
+		return fmt.Errorf("failed to Unmarshal actionData:%+v, err:%v", actionDataJson, err)
+	}
+
+	doFunc := actionTypeRender[action.Type]
+	if doFunc == nil {
+		return nil
+	}
+
+	newCtx := context.WithValue(ctx, DataValueKey, action)
+	return doFunc(newCtx, c, scenario, event, globalStateData)
 }
 
 func RenderCreator() protocol.CompRender {
