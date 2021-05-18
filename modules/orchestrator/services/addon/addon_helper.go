@@ -11,21 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package runner_scheduler
+package addon
 
-import (
-	"net/http"
+import "strings"
 
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+// IsEncryptedValueByKey Determine whether it is an encrypted field by key
+func IsEncryptedValueByKey(key string) bool {
+	return strings.Contains(strings.ToLower(key), "pass") || strings.Contains(strings.ToLower(key), "secret")
+}
 
-var RUNNER_TASK_COLLECT_LOG = apis.ApiSpec{
-	Path:        "/api/runner/collect/logs/<runnerSource>",
-	BackendPath: "/api/runner/collect/logs/<runnerSource>",
-	Host:        "action-runner-scheduler.marathon.l4lb.thisdcos.directory:9500",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	IsOpenAPI:   true,
-	CheckLogin:  false,
-	CheckToken:  false,
+// IsEncryptedValueByValue Determine whether it is an encrypted field by value
+func IsEncryptedValueByValue(value string) bool {
+	return strings.Contains(value, ErdaEncryptedValue)
 }
