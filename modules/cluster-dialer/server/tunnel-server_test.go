@@ -11,71 +11,67 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package clusterdialer
+package server
 
 import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
-	"github.com/erda-project/erda/modules/cluster-dialer/server"
-	"github.com/erda-project/erda/pkg/discover"
 )
 
 const (
-	dialerListenAddr = "127.0.0.1:18751"
-	helloListenAddr  = "127.0.0.1:18752"
+	dialerListenAddr = "127.0.0.1:18753"
+	helloListenAddr  = "127.0.0.1:18754"
 )
 
-var _ = os.Setenv(discover.EnvClusterDialer, dialerListenAddr)
-
-func startServer() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	go server.Start(ctx, &serverconfig.Config{
+func Test_netportal(t *testing.T) {
+	go Start(context.Background(), &serverconfig.Config{
 		Listen:          dialerListenAddr,
 		NeedClusterInfo: false,
 	})
-	return ctx, cancel
-}
-
-func Test_DialerContext(t *testing.T) {
 	go client.Start(context.Background(), &clientconfig.Config{
 		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
 		ClusterKey:          "test",
 		SecretKey:           "test",
 		CollectClusterInfo:  false,
 	})
-
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello, world!\n")
+		io.WriteString(w, "Hello, world!")
 	}
 	http.HandleFunc("/hello", helloHandler)
 	go http.ListenAndServe(helloListenAddr, nil)
-	ctx, cancel := startServer()
-	hc := http.Client{
-		Transport: &http.Transport{
-			DialContext: DialContext("test"),
-		},
-		Timeout: 10 * time.Second,
-	}
 	select {
 	case <-client.Connected():
 		fmt.Println("client connected")
 	}
-	req, _ := http.NewRequest("GET", "http://"+helloListenAddr, nil)
-	_, err := hc.Do(req)
-	if err != nil {
-		t.Errorf("dialer failed, err:%+v", err)
+	hc := &http.Client{}
+	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr+"/hello", nil)
+	req.Header = http.Header{
+		portalSchemeHeader:  {"http"},
+		portalHostHeader:    {"test"},
+		portalDestHeader:    {helloListenAddr},
+		portalTimeoutHeader: {"10"},
 	}
-	cancel()
-	select {
-	case <-ctx.Done():
+	resp, err := hc.Do(req)
+	if err != nil {
+		t.Errorf("request failed, err:%+v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Errorf("status:%d expect:200", resp.StatusCode)
+		return
+	}
+	respBody, _ := ioutil.ReadAll(resp.Body)
+	if string(respBody) != "Hello, world!" {
+		t.Errorf("respBody:%s, expect:Hello, world!", respBody)
+		return
 	}
 }
