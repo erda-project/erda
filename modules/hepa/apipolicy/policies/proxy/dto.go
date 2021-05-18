@@ -23,6 +23,7 @@ const (
 	ANNOTATION_REQ_LIMIT          = "nginx.ingress.kubernetes.io/proxy-body-size"
 	ANNOTATION_PROXY_REQ_TIMEOUT  = "nginx.ingress.kubernetes.io/proxy-send-timeout"
 	ANNOTATION_PROXY_RESP_TIMEOUT = "nginx.ingress.kubernetes.io/proxy-read-timeout"
+	ANNOTATION_SERVER_SNIPPET     = "nginx.ingress.kubernetes.io/server-snippet"
 	ANNOTATION_SSL_REDIRECT       = "nginx.ingress.kubernetes.io/ssl-redirect"
 )
 
