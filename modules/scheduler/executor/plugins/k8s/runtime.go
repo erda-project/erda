@@ -98,7 +98,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		default:
 			err = k.deleteDeployment(ns, service.Name)
 		}
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "not found") {
 			return fmt.Errorf("delete resource %s, %s error: %v", service.WorkLoad, service.Name, err)
 		}
 
