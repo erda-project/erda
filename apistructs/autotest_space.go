@@ -95,3 +95,12 @@ type AutoTestSpaceList struct {
 	List  []AutoTestSpace `json:"list"`
 	Total int             `json:"total"`
 }
+
+// AutoTestSpaceExportRequest export autotest space
+type AutoTestSpaceExportRequest struct {
+	ID       uint64           `json:"id"`
+	Locale   string           `schema:"-"`
+	FileType TestCaseFileType `schema:"fileType"`
+
+	IdentityInfo
+}

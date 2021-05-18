@@ -151,6 +151,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodGet, Handler: e.GetAutoTestSpace},
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodDelete, Handler: e.DeleteAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/copy", Method: http.MethodPost, Handler: e.CopyAutoTestSpace},
+		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, WriterHandler: e.ExportAutoTestSpace},
 
 		// 自动化测试 - 场景
 		{Path: "/api/autotests/scenes", Method: http.MethodPost, Handler: e.CreateAutoTestScene},
