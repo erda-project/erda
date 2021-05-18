@@ -61,16 +61,17 @@ func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars 
 		return
 	}
 
+	akCtx, resp := e.mkCtx(ctx, i.OrgID)
+	if resp != nil {
+		return errorresp.ErrResp(fmt.Errorf("get cloud resource context failed, err:%v", err))
+	}
+	req.AccessKey = akCtx.AccessKeyID
+	req.SecretKey = akCtx.AccessSecret
+	akCtx.Region = req.Region
+
 	// add cluster using cloud resource, vpc already exist
 	if req.VpcID != "" {
-		ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
-		if resp != nil {
-			return errorresp.ErrResp(fmt.Errorf("gte cloud resource context failed, err:%v", err))
-		}
-		req.AccessKey = ak_ctx.AccessKeyID
-		req.SecretKey = ak_ctx.AccessSecret
-		ak_ctx.Region = req.Region
-		rsp, er := vpc.DescribeVPCs(ak_ctx, aliyun_resources.DefaultPageOption, "", req.VpcID)
+		rsp, er := vpc.DescribeVPCs(akCtx, aliyun_resources.DefaultPageOption, "", req.VpcID)
 		if er != nil {
 			err = fmt.Errorf("describe vpc failed, error:%v", er)
 			logrus.Error(err.Error())
@@ -80,7 +81,7 @@ func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars 
 		if len(rsp.Vpcs.Vpc) > 0 && len(rsp.Vpcs.Vpc[0].NatGatewayIds.NatGatewayIds) > 0 {
 			// assign nat gateway id to prevent to recreate
 			req.NatGatewayID = rsp.Vpcs.Vpc[0].NatGatewayIds.NatGatewayIds[0]
-			rsp, er := nat.DescribeResource(ak_ctx, aliyun_resources.DefaultPageOption, req.NatGatewayID)
+			rsp, er := nat.DescribeResource(akCtx, aliyun_resources.DefaultPageOption, req.NatGatewayID)
 			if er != nil {
 				err = fmt.Errorf("describe nat gateway failed, error:%v", er)
 				logrus.Error(err.Error())
@@ -90,7 +91,7 @@ func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars 
 				gateway := rsp.NatGateways.NatGateway[0]
 				fTableId := gateway.ForwardTableIds.ForwardTableId[0]
 				sTableId := gateway.SnatTableIds.SnatTableId[0]
-				isVswBoundSnat, er := nat.IsVswitchBoundSnat(ak_ctx, sTableId, req.VSwitchID)
+				isVswBoundSnat, er := nat.IsVswitchBoundSnat(akCtx, sTableId, req.VSwitchID)
 				if er != nil {
 					err = fmt.Errorf("check vsw snat bound info failed, error:%v", er)
 					return errorresp.ErrResp(err)
