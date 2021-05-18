@@ -20,7 +20,7 @@ import (
 
 // CreateMember 创建成员
 
-func (client *DBClient) CreateReviewUser(review *apistructs.CreateReviewUser) error {
+func (client *DBClient) CreateReviewUser(review *model.ReviewUser) error {
 	return client.Table("dice_manual_review_user").Create(review).Error
 }
 
@@ -39,7 +39,7 @@ func (client *DBClient) GetReviewByTaskId(param *apistructs.GetReviewByTaskIdIdR
 	return review, nil
 }
 
-func (client *DBClient) CreateReview(review *apistructs.CreateReviewRequest) error {
+func (client *DBClient) CreateReview(review *model.ManualReview) error {
 	return client.Table("dice_manual_review").Create(review).Error
 }
 
