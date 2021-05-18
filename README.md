@@ -58,6 +58,9 @@ We look forward to your connecting with us, you can ask us any questions.
 - 微信公众号:
 
     ![Erda WeChat](./docs/assets/wechat-small.jpg)
+- 钉钉用户群:
+  
+    ![Erda DingTalk](./docs/assets/dingtalk.png)
 
 ## License
 
