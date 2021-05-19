@@ -1,0 +1,6 @@
+cluster-agent:
+  debug: ${DEBUG:false}
+  clusterDialEndpoint: "${CLUSTER_DIAL_ENDPOINT}"
+  clusterKey: "${CLUSTER_KEY}"
+  secretKey: "${SECRET_KEY}"
+  k8sApiServerAddr: "${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"
