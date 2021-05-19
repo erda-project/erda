@@ -60,12 +60,18 @@ func (e *Endpoints) CreateReviewUser(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCreateReviewUser.InvalidParameter(err).ToResp(), nil
 	}
 	reviewCreateReq.OrgId = orgID
-	// 创建/更新成员信息至DB
 
-	if err := e.ManualReview.CreateReviewUser(&reviewCreateReq); err != nil {
+	// 创建/更新成员信息至DB
+	var resp apistructs.CreateReviewUserResponse
+	var insertID int64
+	if err, insertID = e.ManualReview.CreateReviewUser(&reviewCreateReq); err != nil {
 		return apierrors.ErrCreateReviewUser.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp("create review succ")
+	userInfo, _ := e.bdl.GetCurrentUser(reviewCreateReq.Operator)
+	resp.OperatorUserInfo = userInfo
+	resp.ID = insertID
+
+	return httpserver.OkResp(resp)
 }
 
 func (e *Endpoints) CreateReview(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -87,10 +93,12 @@ func (e *Endpoints) CreateReview(ctx context.Context, r *http.Request, vars map[
 	}
 	reviewCreateReq.OrgId = orgID
 	// 创建/更新成员信息至DB
-	if err := e.ManualReview.CreateOrUpdate(&reviewCreateReq); err != nil {
+	var reviewID int64
+	if err, reviewID = e.ManualReview.CreateReview(&reviewCreateReq); err != nil {
 		return apierrors.ErrCreateReview.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp("create review succ")
+
+	return httpserver.OkResp(reviewID)
 }
 
 func (e *Endpoints) GetReviewsBySponsorId(ctx context.Context, r *http.Request, vars map[string]string) (
