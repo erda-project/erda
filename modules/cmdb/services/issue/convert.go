@@ -182,7 +182,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 	}
 }
 
-func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool) ([][]string, error) {
+func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string) ([][]string, error) {
 	// 默认字段列名
 	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间"}}
 	// 自定义字段列名
@@ -245,6 +245,10 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			planFinishedAt = i.PlanFinishedAt.Format("2006-01-02 15:04:05")
 		}
 		iterationName := iterationMap[i.IterationID]
+		stage := issueStage{
+			Type:  i.Type,
+			Value: i.GetStage(),
+		}
 		r = append(r, append([]string{
 			strconv.FormatInt(i.ID, 10),
 			i.Title,
@@ -253,7 +257,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			i.Creator,
 			i.Assignee,
 			i.Owner,
-			i.GetStage(),
+			stageMap[stage],
 			map[apistructs.IssuePriority]string{
 				apistructs.IssuePriorityLow:    "低",
 				apistructs.IssuePriorityHigh:   "高",
