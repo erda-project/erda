@@ -1,152 +1,145 @@
 # How to install the Erda
 
-We have successfully installed Erda in the following software:
-
-- Kubernetes 1.18.8
-- Docker 19.03.5
-- CentOS 7.9
-- Helm 3.4
-
-
-
-## Quickly Started
-
 ### Prerequisites
 
-- Kuberentes 1.18 +
+- Kuberentes 1.16 +
   - Each node needs at least 4 core CPU, 16G memory
   - At least 4 Nodes (1 Master and 3 Workers)
-  - At least 200G storage in the `/`
-  - **Don't Install the ingress component**
+  - **Don't Install the ingress-controller-manager component**
 - Docker 19.03+
-- CentOS 7 +
+- CentOS 7.4 +
 - Helm 3 +
+
 
 
 ### Install Erda
 
-1. Download the Erda tarball from [here](https://github.com/erda-project/erda/releases)
-
-2. Copy the tarball to your  **Kubernetes Master** node and make sure the **kubeconfig** file on the ~/.kube/config.
-
-   > scp package/erda-release.tar.gz root@<hostip>:/root
-
-   > tar -xzvf /root/erda-release.tar.gz
-
-   > cd erda-release
-
-   
-
-
-    Then prepare the following environment variables on the **Kubernetes Master Node**.
+1. Download the [tarball](https://terminus-dice.oss-cn-hangzhou.aliyuncs.com/installer/erda-installer/erda-release.tar.gz) to your  **Kubernetes Master** node.
 
    ```shell
-   # specify the kuberentes namepsace to install erda components, default  value is `default`.
-   export ERDA_NAMESPACE=default
-   
-   # specify the erda size to install erda components, demo supported only, default value is `demo`.
-   export ERDA_SIZE=demo
-   
-   # enable the netportal, `enable` and `disable` supported, default is `disable`
-   export ERDA_NETPORTAL_ENABLE=enable
-   
-   # enable the netdata, `enable` and `disable` supported, default is `disable`
-   export ERDA_NETDATA_ENABLE=enable
-   
-   # set necessary label of erda to the Kubernetes, `enable` and `disable` supported, default is `enable`
-   export ERDA_LABEL_ENABLE=enable
-   
-   # set the network of registry host mode, `host` and `container` supported, default is `container`
-   export ERDA_REGISTRY_NETMODE=host
+   tar -xzvf erda-release.tar.gz
+   cd erda-release
    ```
 
-   
 
-   **Note:** If you want to use the Erda registry, you need to set the NETMODE to `host` and update the values of  `insecure-registries` in the `/etc/docker/daemon.json` on each node: 
 
-   ```shell
-   ...
-       "insecure-registries": [
-        "0.0.0.0/0"
-       ],
-   ...
-   ```
+2. Apply Erda necessary configurations on the **Kubernetes Master Node**.
 
-   Then restart the docker with `systemctl restart docker`
+   - make sure the **kubeconfig** file on the ~/.kube/config.
 
-   
+   - set configuration to prepare the Erda and execute the `prepare.sh` script
 
-3. Configurate the Kubernetes machine
+     - The script will do the following tasks:
+       - generate etc SSL
+       - generate multi-cluster manager SSL
+       - set node labels which use for Erda Application
+       - set Erda installer configuration   
 
-   > bash scripts/prepare.sh
+     ```shell
+     # specify the Kubernetes namespace to install Erda components, the default value is default and the Erda components are only support the default namespace
+     export ERDA_NAMESPACE="default"
+     
+     # specify the generic domains like *.erda-demo.erda.io to visit the erda application, default values is erda-demo.erda.io, you can set owner generic domains in here
+     export ERDA_GENERIC_DOMAIN="erda-demo.erda.io"
+     
+     # The ERDA_CLUSTER_NAME specified for Erda which will be used in cluster creating
+     export ERDA_CLUSTER_NAME="erda-demo"
+     
+     # Execute the script to apply Erda necessary configuration
+     bash scripts/prepare.sh
+     ```
 
-   
+     
 
-4. Install the Erda with helm package
+   - update `insecure-registries` in the config of the docker daemon 
+
+     ```shell
+     # edit the /etc/docker/daemon.json on each node
+     ...
+         "insecure-registries": [
+             "0.0.0.0/0"
+         ],
+     ...
+     
+     # restart the docker daemon
+     systemctl restart docker
+     ```
+
+     
+
+   - set NFS storage as network storage to each node. 
+
+     - if you already have share storage like AliCloud NAS, you can set them to each node with command like:
+
+       ```shell
+       mount -t <storage_type> <your-share-storage-node-ip>:<your-share-storage-dir> /netdata
+       ```
+
+       
+     
+     - if not, you can execute the script. It will install NFS utils, create a dir `/netdata` to the current machine, and mount `/netdata` to each node
+     
+       ```shell
+       bash scripts/storage_prepare.sh
+       ```
+     
+       
+
+    - you need to open the 80, 443 ports of the **LB machine** , which will receivers all outside traffic
+
+     
+
+3. Install the Erda with helm package and waiting all Erda components are ready
 
    ```shell
    # install erda-base
    helm install package/erda-base-0.1.0.tgz --generate-name
-   # wating all pods is running with `kubectl`
-   kubectl get pods
    
    # install erda-addons
    helm install package/erda-addons-0.1.0.tgz --generate-name
-   # wating all pods is running with `kubectl`
-   kubectl get pods
    
    # install erda
    helm install package/erda-0.1.0.tgz --generate-name
-   # wating all pods is running with `kubectl`
-   kubectl get pods
    ```
 
-
-
-4. set admin username and password to push the Erda extensions
-
-   ```shell
-   export ERDA_ADMIN_USERNAME=
-   export ERDA_ADMIN_PASSWORD=
-   
-   bash scripts/push-ext.sh
-   ```
-   
    
 
+4. After Installed the Erda
 
-5. Write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**, which will receivers all outside traffic:
-   ```
-   <IP> harbor.erda.cloud
-   <IP> nexus.erda-demo.erda.io
-   <IP> sonar.erda-demo.erda.io
-   <IP> dice.erda-demo.erda.io
-   <IP> uc-adaptor.erda-demo.erda.io
-   <IP> soldier.erda-demo.erda.io
-   <IP> gittar.erda-demo.erda.io
-   <IP> collector.erda-demo.erda.io
-   <IP> hepa.erda-demo.erda.io
-   <IP> openapi.erda-demo.erda.io
-   <IP> uc.erda-demo.erda.io
-   <IP> <orgname>-org.erda-demo.erda.io
-   <IP> test-java.erda-demo.erda.io
-   ```
+   - set admin username and password to push the Erda extensions（the extension is a plugin which uses in the pipeline）
 
+     ```shell
+     export ERDA_ADMIN_USERNAME=admin
+     export ERDA_ADMIN_PASSWORD=password123456
+     
+     bash scripts/push-ext.sh
+     ```
 
+   - write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**
 
+     > For example, if I have an LB machine whose IP is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda-demo.erda.io`, org-name is `erda-test`. so I can write the following info to `/etc/hosts` 
 
-6. Visit the URL `http://dice.erda-demo.erda.io` on your browser machine which set the `/etc/hosts`
+     ```shell
+     10.0.0.1 nexus.erda-demo.erda.io
+     10.0.0.1 sonar.erda-demo.erda.io
+     10.0.0.1 dice.erda-demo.erda.io
+     10.0.0.1 uc-adaptor.erda-demo.erda.io
+     10.0.0.1 soldier.erda-demo.erda.io
+     10.0.0.1 gittar.erda-demo.erda.io
+     10.0.0.1 collector.erda-demo.erda.io
+     10.0.0.1 hepa.erda-demo.erda.io
+     10.0.0.1 openapi.erda-demo.erda.io
+     10.0.0.1 uc.erda-demo.erda.io
+     # Note: The org-name of this example is erda-test
+     10.0.0.1 erda-test-org.erda-demo.erda.io
+     ```
 
-   - Note that you need to open the 80, 443 and 6443 ports of the **LB machine**
+   - set your Kubernetes nodes label with your created organization name（organization is a name for a group in Erda）
+
+     ```shell
+     kubectl label node <node_name> dice/org-<orgname>=true --overwrite
+     ```
 
      
 
-
-7. set your Kubernetes nodes label with your created organization name
-
-    ```shell
-    for i in `kubectl get nodes | grep -v NAME | awk '{print $1}'`;
-    do
-      kubectl label node $i dice/org-<orgname>=true --overwrite
-    done
-    ```
+5. Visit the URL `http://dice.erda-demo.erda.io` on your browser machine which set the `/etc/hosts`
