@@ -18,9 +18,22 @@ import (
 	"time"
 )
 
-var ctx Context
+var (
+	ctx      Context
+	testTime time.Time
+)
+
+const (
+	timeFormat  = "2006-01-02 15:04:05"
+	strTestTime = "1970-01-01 00:00:01"
+)
+
+func prepare() {
+	testTime, _ = time.Parse(timeFormat, strTestTime)
+}
 
 func Test_BuildInFunctions(t *testing.T) {
+	prepare()
 	tests := []struct {
 		name    string
 		args    []interface{}
@@ -91,8 +104,87 @@ func Test_BuildInFunctions(t *testing.T) {
 		{"min_value", []interface{}{3, 2}, 2, false},
 		{"min_value", []interface{}{}, "error", true},
 		{"min_value", []interface{}{}, "error", true},
+		{"int", []interface{}{}, "error", true},
+		{"int", []interface{}{nil}, int64(0), false},
+		{"int", []interface{}{false}, int64(0), false},
+		{"int", []interface{}{int(1)}, int64(1), false},
+		{"int", []interface{}{int8(1)}, int64(1), false},
+		{"int", []interface{}{int16(1)}, int64(1), false},
+		{"int", []interface{}{int32(1)}, int64(1), false},
+		{"int", []interface{}{int64(1)}, int64(1), false},
+		{"int", []interface{}{uint(1)}, int64(1), false},
+		{"int", []interface{}{uint8(1)}, int64(1), false},
+		{"int", []interface{}{uint16(1)}, int64(1), false},
+		{"int", []interface{}{uint32(1)}, int64(1), false},
+		{"int", []interface{}{uint64(1)}, int64(1), false},
+		{"int", []interface{}{float32(1)}, int64(1), false},
+		{"int", []interface{}{float64(1)}, int64(1), false},
+		{"int", []interface{}{"1"}, int64(1), false},
+		{"int", []interface{}{1 * time.Nanosecond}, int64(1), false},
+		{"int", []interface{}{testTime}, int64(1000000000), false},
+		{"int", []interface{}{map[string]string{}}, int64(0), true},
+		{"bool", []interface{}{}, "error", true},
+		{"bool", []interface{}{nil}, false, false},
+		{"bool", []interface{}{false}, false, false},
+		{"bool", []interface{}{int(1)}, true, false},
+		{"bool", []interface{}{int8(1)}, true, false},
+		{"bool", []interface{}{int16(1)}, true, false},
+		{"bool", []interface{}{int32(1)}, true, false},
+		{"bool", []interface{}{int64(1)}, true, false},
+		{"bool", []interface{}{uint(1)}, true, false},
+		{"bool", []interface{}{uint8(1)}, true, false},
+		{"bool", []interface{}{uint16(1)}, true, false},
+		{"bool", []interface{}{uint32(1)}, true, false},
+		{"bool", []interface{}{uint64(1)}, true, false},
+		{"bool", []interface{}{float32(1)}, true, false},
+		{"bool", []interface{}{float64(1)}, true, false},
+		{"bool", []interface{}{"test"}, true, false},
+		{"bool", []interface{}{1 * time.Nanosecond}, true, false},
+		{"bool", []interface{}{testTime}, true, false},
+		{"bool", []interface{}{map[string]string{}}, true, false},
+		{"float", []interface{}{}, "error", true},
+		{"float", []interface{}{nil}, float64(0), false},
+		{"float", []interface{}{false}, float64(0), false},
+		{"float", []interface{}{int(1)}, float64(1), false},
+		{"float", []interface{}{int8(1)}, float64(1), false},
+		{"float", []interface{}{int16(1)}, float64(1), false},
+		{"float", []interface{}{int32(1)}, float64(1), false},
+		{"float", []interface{}{int64(1)}, float64(1), false},
+		{"float", []interface{}{uint(1)}, float64(1), false},
+		{"float", []interface{}{uint8(1)}, float64(1), false},
+		{"float", []interface{}{uint16(1)}, float64(1), false},
+		{"float", []interface{}{uint32(1)}, float64(1), false},
+		{"float", []interface{}{uint64(1)}, float64(1), false},
+		{"float", []interface{}{float32(1)}, float64(1), false},
+		{"float", []interface{}{float64(1)}, float64(1), false},
+		{"float", []interface{}{"1.0"}, float64(1), false},
+		{"float", []interface{}{1 * time.Nanosecond}, float64(1), false},
+		{"float", []interface{}{testTime}, float64(1000000000), false},
+		{"float", []interface{}{map[string]string{}}, float64(0), true},
+		{"string", []interface{}{}, "error", true},
+		{"string", []interface{}{1}, "1", false},
+		{"duration", []interface{}{}, "error", true},
+		{"duration", []interface{}{nil}, time.Duration(0), false},
+		{"duration", []interface{}{false}, time.Duration(0), false},
+		{"duration", []interface{}{int(1)}, time.Duration(1), false},
+		{"duration", []interface{}{int8(1)}, time.Duration(1), false},
+		{"duration", []interface{}{int16(1)}, time.Duration(1), false},
+		{"duration", []interface{}{int32(1)}, time.Duration(1), false},
+		{"duration", []interface{}{int64(1)}, time.Duration(1), false},
+		{"duration", []interface{}{uint(1)}, time.Duration(1), false},
+		{"duration", []interface{}{uint8(1)}, time.Duration(1), false},
+		{"duration", []interface{}{uint16(1)}, time.Duration(1), false},
+		{"duration", []interface{}{uint32(1)}, time.Duration(1), false},
+		{"duration", []interface{}{uint64(1)}, time.Duration(1), false},
+		{"duration", []interface{}{float32(1)}, time.Duration(1), false},
+		{"duration", []interface{}{float64(1)}, time.Duration(1), false},
+		{"duration", []interface{}{"1ns"}, time.Duration(1), false},
+		{"duration", []interface{}{"z"}, time.Duration(0), true},
+		{"duration", []interface{}{1 * time.Nanosecond}, time.Duration(1), false},
+		{"duration", []interface{}{map[string]string{}}, time.Duration(0), true},
 		{"parse_time", []interface{}{}, "error", true},
 		{"parse_time", []interface{}{"2021-01-02 20:07:08", "2006-01"}, "error", true},
+		{"parse_time", []interface{}{"2021-01-02 20:07:08", map[string]string{}}, "error", true},
 		{"substring", []interface{}{}, "error", true},
 		{"substring", []interface{}{1, 2}, "error", true},
 		{"substring", []interface{}{"substring", 3, 9}, "string", false},
