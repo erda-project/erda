@@ -682,7 +682,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 			b, ok := val.(bool)
 			if !ok {
 				return nil, fmt.Errorf("args[%v] is not boolean", index)
-			}  
+			}
 			if b {
 				return true, nil
 			}
