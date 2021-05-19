@@ -103,6 +103,13 @@ type TableItem struct {
 	Type        string   `json:"type"`
 	Deadline    Deadline `json:"deadline"`
 	Assignee    Assignee `json:"assignee"`
+	ClosedAt    ClosedAt `json:"closedAt"`
+}
+
+type ClosedAt struct {
+	RenderType string `json:"renderType"`
+	Value      string `json:"value"`
+	NoBorder   bool   `json:"noBorder"`
 }
 
 type PriorityOperationData struct {
@@ -535,6 +542,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if data.PlanStartedAt != nil {
 			deadline.DisabledBefore = data.PlanStartedAt.Format(time.RFC3339)
 		}
+		closedAt := ClosedAt{
+			RenderType: "datePicker",
+			Value:      "",
+			NoBorder:   true,
+		}
+		if data.FinishTime != nil {
+			closedAt.Value = data.FinishTime.Format(time.RFC3339)
+		}
 		l = append(l, TableItem{
 			//Assignee:    map[string]string{"value": data.Assignee, "renderType": "userAvatar"},
 			Id:          strconv.FormatInt(data.ID, 10),
@@ -618,6 +633,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				RenderType: "textWithTags",
 			},
 			Deadline: deadline,
+			ClosedAt: closedAt,
 		})
 	}
 	c.Data = map[string]interface{}{}
@@ -630,9 +646,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
             "title": "进度"
         },`
 	}
-	severityCol := ""
+
+	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
 		severityCol = `{ "title": "严重程度", "dataIndex": "severity", "width": 120 },`
+		closedAtCol = `,{ "title": "关闭日期", "dataIndex": "closedAt", "width": 160 }`
 	}
 	props := `{
     "columns": [
@@ -667,8 +685,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
             "width": 160,
             "dataIndex": "deadline",
             "title": "截止日期"
-        }
-    ],
+        }` +
+		closedAtCol +
+		`],
     "rowKey": "id"
 }`
 	var propsI interface{}
