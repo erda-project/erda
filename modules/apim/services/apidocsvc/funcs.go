@@ -142,10 +142,18 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 	return &data, nil
 }
 
+func CommitAPIDocCreation(orgID uint64, userID, repo, commitMessage, serviceName, content, branch string) error {
+	return commitAPIDocContent(orgID, userID, repo, commitMessage, serviceName, content, branch, "add")
+}
+
+func CommitAPIDocModifies(orgID uint64, userID, repo, commitMessage, serviceName, content, branch string) error {
+	return commitAPIDocContent(orgID, userID, repo, commitMessage, serviceName, content, branch, "update")
+}
+
 // 提交 API 文档内容到 gittar
 // 如果文档内容为空, 则填充默认内容;
 // 前端提交的文档格式为 json, 转换为 yaml 后再提交.
-func CommitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName, content, branch string) error {
+func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName, content, branch, action string) error {
 	// 如果 content 为空, 给一个默认的 content
 	if content == "" {
 		content = defaultOAS3Content(serviceName)
@@ -172,7 +180,7 @@ func CommitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName,
 	var commit = apistructs.GittarCreateCommitRequest{
 		Message: commitMessage,
 		Actions: []apistructs.EditActionItem{{
-			Action:   actionAdd,
+			Action:   action,
 			Content:  content,
 			Path:     filenameFromRepoRoot,
 			PathType: "blob",

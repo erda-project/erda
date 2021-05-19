@@ -92,11 +92,10 @@ func (s Data) Len() int {
 
 type Props struct {
 	Visible     bool   `json:"visible"`
-	UseLoadMore bool   `json:"useLoadMore"`
+	IsLoadMore  bool   `json:"isLoadMore"`
 	AlignCenter bool   `json:"alignCenter"`
 	Size        string `json:"size"`
 	NoBorder    bool   `json:"noBorder"`
-	//PaginationType string `json:"paginationType"`
 }
 
 type State struct {
@@ -145,7 +144,7 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 	item := AppItem{
 		ID:          strconv.Itoa(int(app.ID)),
 		AppId:       strconv.Itoa(int(app.ID)),
-		Title:       fmt.Sprintf("%s/%s", app.ProjectName, app.Name),
+		Title:       fmt.Sprintf("%s/%s", app.ProjectDisplayName, app.DisplayName),
 		Description: "",
 		PrefixImg:   "/images/default-app-icon.svg",
 		Operations: map[string]Operation{
@@ -250,7 +249,7 @@ func (this *MyApplicationList) Render(ctx context.Context, c *apistructs.Compone
 		return nil
 	}
 	this.Props.Visible = true
-	this.Props.UseLoadMore = true
+	this.Props.IsLoadMore = true
 	this.Props.AlignCenter = true
 	this.Props.Size = "small"
 	this.Props.NoBorder = true
