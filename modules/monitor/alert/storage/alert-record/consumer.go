@@ -31,7 +31,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	record := &db.AlertRecord{}
 	alertRecord.ToModel(record)
-	var sqlRecord *db.AlertRecord
+	sqlRecord := &db.AlertRecord{}
 	err := p.mysql.Model(&db.AlertRecord{}).Where("group_id = ?", alertRecord.GroupID).First(sqlRecord).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
