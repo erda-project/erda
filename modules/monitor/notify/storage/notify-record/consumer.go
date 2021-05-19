@@ -30,7 +30,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		return err
 	}
 	record := query.ToNotifyRecord(&notifyRecord)
-	sqlRecord := &db.NotifyRecord{}
+	var sqlRecord *db.NotifyRecord
 	err := p.mysql.Model(&db.NotifyRecord{}).Where("notify_id = ?", notifyRecord.NotifyId).First(sqlRecord).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
