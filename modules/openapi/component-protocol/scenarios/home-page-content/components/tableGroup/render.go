@@ -338,6 +338,7 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		return nil
 	}
 	t.Props.Visible = true
+	t.Props.IsLoadMore = true
 	orgName, orgDisplayName, err := t.getOrgName()
 	if err != nil {
 		return err

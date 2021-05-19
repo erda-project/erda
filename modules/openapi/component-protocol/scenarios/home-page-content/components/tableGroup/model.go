@@ -19,7 +19,8 @@ type TableGroup struct {
 	ctxBdl protocol.ContextBundle
 	Type   string `json:"type"`
 	Props  struct {
-		Visible bool `json:"visible"`
+		IsLoadMore bool `json:"isLoadMore"`
+		Visible    bool `json:"visible"`
 	} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
 	Data       ProData                `json:"data"`
