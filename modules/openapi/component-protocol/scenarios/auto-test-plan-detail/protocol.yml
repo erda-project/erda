@@ -84,6 +84,11 @@ components:
     type: Button
   executeHistory:
     type: Popover
+    props:
+      placement: "bottomRight"
+      size: "l"
+      title: "执行历史"
+      trigger: "click"
   executeHistoryButton:
     type: Button
   executeHistoryPop:
