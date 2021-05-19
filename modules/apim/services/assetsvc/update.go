@@ -33,7 +33,7 @@ import (
 )
 
 func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp.APIError {
-	// 参数校验
+	// parameters validation
 	if req.URIParams == nil {
 		return apierrors.UpdateAPIAsset.MissingParameter("URI parameters")
 	}
@@ -50,7 +50,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		return apierrors.UpdateAPIAsset.MissingParameter("orgID")
 	}
 
-	// 查询 asset
+	// retrieve asset
 	var asset apistructs.APIAssetsModel
 	if err := svc.FirstRecord(&asset, map[string]interface{}{
 		"org_id":   req.OrgID,
@@ -60,7 +60,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		return apierrors.UpdateAPIAsset.InternalError(err)
 	}
 
-	// 鉴权
+	// authentication
 	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return apierrors.UpdateAPIAsset.AccessDenied()
@@ -77,7 +77,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 	req.Keys["updater_id"] = req.Identity.UserID
 	req.Keys["updated_at"] = time.Now()
 
-	// 校验 assetName 长度合法性, 设置级联更新的 key-value
+	// validate the length of assetName
 	if assetName, ok := req.Keys["assetName"]; ok {
 		assetNameS, ok := assetName.(string)
 		if !ok {
@@ -88,7 +88,8 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		}
 	}
 
-	// 检查用户是否在做清空关联项目或应用的操作 (传入相应的键但值为空)
+	// check whether the user is doing the operation of clearing the associated project or application
+	// (the key without a value)
 	var (
 		projectID, ok1 = req.Keys["projectID"]
 		appID, ok2     = req.Keys["appID"]
@@ -102,7 +103,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		req.Keys["app_name"] = nil
 	}
 
-	// 执行更新
+	// update db
 	tx := dbclient.Tx()
 	defer tx.RollbackUnlessCommitted()
 
@@ -113,7 +114,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		return apierrors.UpdateAPIAsset.InternalError(err)
 	}
 
-	// 级联更新 access 表 assetName
+	// cascade update assetName in table access
 	if cascadeUpdates["asset_name"] == nil {
 		return nil
 	}
@@ -121,12 +122,12 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 		return apierrors.UpdateAPIAsset.InternalError(errors.Wrap(err, "failed to UpdateAccess"))
 	}
 
-	// 级联更新 version 表中的 assetName
+	// cascade update assetName in table version
 	if err := tx.Model(new(apistructs.APIAssetVersionsModel)).Where(where).Updates(cascadeUpdates).Error; err != nil {
 		return apierrors.UpdateAPIAsset.InternalError(errors.Wrap(err, "failed to UpdateVersion"))
 	}
 
-	// 级联更新 contract 表中的 assetName
+	// cascade update assetName in table contract
 	if err := tx.Model(new(apistructs.ContractModel)).Where(where).Updates(cascadeUpdates).Error; err != nil {
 		return apierrors.UpdateAPIAsset.InternalError(errors.Wrap(err, "failed to UpdateContract"))
 	}
@@ -137,7 +138,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 }
 
 func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
-	// 参数校验
+	// parameters validation
 	if req.URIParams == nil {
 		return nil, apierrors.UpdateInstantiation.MissingParameter("URI parameters")
 	}
@@ -155,7 +156,7 @@ func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) 
 		asset  apistructs.APIAssetsModel
 		access apistructs.APIAccessesModel
 	)
-	// 查出 asset
+	// retrieve asset
 	if err := svc.FirstRecord(&asset, map[string]interface{}{
 		"org_id":   req.OrgID,
 		"asset_id": req.URIParams.AssetID,
@@ -164,13 +165,13 @@ func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) 
 		return nil, apierrors.UpdateInstantiation.InternalError(err)
 	}
 
-	// 鉴权 当前用户是否具备修改实例记录的权限
+	// authentication
 	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	if written := writePermission(rolesSet, &asset); !written {
 		return nil, apierrors.UpdateInstantiation.AccessDenied()
 	}
 
-	// 检查是否有 Access 了, 如果有了, 就不能编辑了
+	// can not update if there is an Access
 	if err := svc.FirstRecord(&access, map[string]interface{}{
 		"org_id":          req.OrgID,
 		"asset_id":        req.URIParams.AssetID,
@@ -180,12 +181,12 @@ func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) 
 		return nil, apierrors.UpdateInstantiation.InternalError(errors.New("实例处于访问管理中, 不可修改"))
 	}
 
-	// 解析实例的 url
+	// parse the url of runtime instance
 	var (
 		urlStr = req.Body.URL
 	)
 	if urlStr == "" {
-		// 如果没有访问管理, 给定的实例地址为空, 则认为用户在删除实例
+		// delete the association relationship with the instance if the giving url is ""
 		if err := dbclient.Sq().Delete(new(apistructs.InstantiationModel), map[string]interface{}{
 			"id": req.URIParams.InstantiationID,
 		}).Error; err != nil {
@@ -293,7 +294,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 		}
 	)
 
-	// 查询客户端
+	// retrieve the client
 	if err := svc.FirstRecord(&client, map[string]interface{}{
 		"org_id": req.OrgID,
 		"id":     req.URIParams.ClientID,
@@ -305,7 +306,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 		return nil, nil, apierrors.UpdateContract.InternalError(err)
 	}
 
-	// 查询 contract
+	// retrieve the contract
 	if err := svc.FirstRecord(&contract, where); err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil, apierrors.UpdateContract.InternalError(errors.New("contract not found"))
@@ -313,7 +314,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 		return nil, nil, apierrors.UpdateContract.InternalError(err)
 	}
 
-	// 查询 asset
+	// retrieve the  asset
 	if err := svc.FirstRecord(&asset, map[string]interface{}{
 		"org_id":   req.OrgID,
 		"asset_id": contract.AssetID,
@@ -322,11 +323,12 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 		return nil, nil, apierrors.UpdateContract.InternalError(err)
 	}
 
+	// authentication: can the user approve it ?
 	// 鉴权 当前用户是否具备审批权限
 	rolesSet := bdl.FetchAssetRolesSet(req.OrgID, req.Identity.UserID)
 	written := writePermission(rolesSet, &asset)
 
-	// 查找相应的 access
+	// retrieve access
 	if err := svc.FirstRecord(&access, map[string]interface{}{
 		"org_id":          req.OrgID,
 		"asset_id":        contract.AssetID,
@@ -347,6 +349,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 
 	switch {
 	case req.Body.RequestSLAID != nil:
+		// If the current user is not an org administrator or the client creator, he cannot apply for a new SLA
 		// 如果不是企业管理员, 也不是客户端创建者, 则不能申请新的 SLA
 		if !inSlice(strconv.FormatUint(req.OrgID, 10), rolesSet.RolesOrgs(bdl.OrgMRoles...)) && req.Identity.UserID != contract.CreatorID {
 			return nil, nil, apierrors.UpdateContract.AccessDenied()
@@ -383,27 +386,30 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 	return &client, &contract, nil
 }
 
-// 管理人员修改合约的状态 (审批合约)
+// the manager modifies the contract status (approve the contract)
 func (svc *Service) updateContractStatus(req *apistructs.UpdateContractReq, client *apistructs.ClientModel, access *apistructs.APIAccessesModel,
 	contract *apistructs.ContractModel) error {
 	if req.Body.Status == nil {
 		return nil
 	}
 
+	// do something depends on contract status
 	status := req.Body.Status.ToLower()
 	switch status {
-	case apistructs.ContractProved:
-		// 如果管理人员将合约状态改为 "已授权", 则调用网关侧的授权
+	case apistructs.ContractApproved:
+		// the manager change the contract status to "approved", call the api-gateway to grant to the client
 		if err := bdl.Bdl.GrantEndpointToClient(client.ClientID, access.EndpointID); err != nil {
 			return err
 		}
-	case apistructs.ContractDisproved, apistructs.ContractUnproved:
-		// 如果管理人员将合约状态改为 "已拒绝", "已撤销", 则调用网关测撤回授权
+	case apistructs.ContractDisapproved:
+		// do nothing with api-gateway
+	case apistructs.ContractUnapproved:
+		//  call the api-gateway to revoke the grant
 		if err := bdl.Bdl.RevokeEndpointFromClient(client.ClientID, access.EndpointID); err != nil {
 			return err
 		}
 	default:
-		return errors.New("无效的审批状态")
+		return errors.New("invalid contract status")
 	}
 
 	timeNow := time.Now()
@@ -431,7 +437,7 @@ func (svc *Service) updateContractStatus(req *apistructs.UpdateContractReq, clie
 
 	tx.Commit()
 
-	// 邮件和站内信通知
+	// notification by mail and in-site letter
 	go svc.contractMsgToUser(req.OrgID, contract.CreatorID, access.AssetName, client, ApprovalResultFromStatus(status))
 
 	return nil
@@ -452,7 +458,7 @@ func (svc *Service) updateContractCurSLA(req *apistructs.UpdateContractReq, cont
 		}
 	}
 
-	// 更新 contract
+	// update contract
 	var (
 		timeNow = time.Now()
 		updates = map[string]interface{}{

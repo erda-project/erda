@@ -61,7 +61,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 
 	repo := strings.TrimPrefix(pft.RepoPath(), "/")
 	message := "create api doc from API Design Center"
-	if err = CommitAPIDocContent(orgID, userID, repo, message, serviceName, content, pft.BranchName()); err != nil {
+	if err = CommitAPIDocCreation(orgID, userID, repo, message, serviceName, content, pft.BranchName()); err != nil {
 		return nil, apierrors.CreateNode.InternalError(err)
 	}
 
@@ -117,7 +117,7 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 	var commitRequest = apistructs.GittarCreateCommitRequest{
 		Message: "从 API 设计中心删除了文件 " + nodeInfo.Path,
 		Actions: []apistructs.EditActionItem{{
-			Action:   actionDelete,
+			Action:   "delete",
 			Content:  "",
 			Path:     ft.PathFromRepoRoot(),
 			PathType: nodeInfo.Type,
@@ -137,8 +137,6 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 }
 
 func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	// todo: 鉴权 谁可以编辑
-
 	ft, err := bundle.NewGittarFileTree(dstInode)
 	if err != nil {
 		return nil, apierrors.UpdateNode.InvalidParameter("不合法的 inode")
@@ -198,12 +196,12 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 	var commit = apistructs.GittarCreateCommitRequest{
 		Message: fmt.Sprintf("文档 %s 重命名为 %s", ft.PathFromRepoRoot(), docName),
 		Actions: []apistructs.EditActionItem{{
-			Action:   actionAdd,
+			Action:   "add",
 			Content:  apiDocMeta.Blob.Content,
 			Path:     newPath,
 			PathType: "blob",
 		}, {
-			Action:   actionDelete,
+			Action:   "delete",
 			Content:  "",
 			Path:     ft.PathFromRepoRoot(),
 			PathType: "blob",

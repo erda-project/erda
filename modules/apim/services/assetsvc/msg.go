@@ -91,7 +91,7 @@ func ApprovalResultSLAUpdated(name string) ApprovalResult {
 const ManagerProvedContract ApprovalResult = "同意调用"
 
 func ApprovalResultWhileDelete(status apistructs.ContractStatus) ApprovalResult {
-	if status == apistructs.ContractProved {
+	if status == apistructs.ContractApproved {
 		return "撤销调用权限"
 	}
 	return "拒绝调用"
@@ -99,13 +99,13 @@ func ApprovalResultWhileDelete(status apistructs.ContractStatus) ApprovalResult 
 
 func ApprovalResultFromStatus(status apistructs.ContractStatus) ApprovalResult {
 	switch status {
-	case apistructs.ContractProving:
+	case apistructs.ContractApproving:
 		return "正在审批"
-	case apistructs.ContractProved:
+	case apistructs.ContractApproved:
 		return "同意调用"
-	case apistructs.ContractDisproved:
+	case apistructs.ContractDisapproved:
 		return "拒绝调用"
-	case apistructs.ContractUnproved:
+	case apistructs.ContractUnapproved:
 		return "撤销调用权限"
 	default:
 		return ""
