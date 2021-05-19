@@ -307,7 +307,9 @@ func isEmpty(value interface{}) (bool, error) {
 			return true, nil
 		}
 	default:
-		return false, errors.Errorf("not support this type, value:%v", reflect.ValueOf(value))
+		if jsonparse.JsonOneLine(value) == "" {
+			return true, nil
+		}
 	}
 
 	return false, nil
