@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -351,6 +352,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 	} else if event.Operation == apistructs.RenderingOperation {
 		cond.PageNo = 1
+	}
+
+	// check reset pageNo
+	if c.State != nil && resetPageNoByFilterCondition(event.Operation.String(), TableItem{}, c.State) {
+		if _, ok := c.State["pageNo"]; ok {
+			cond.PageNo = uint64(c.State["pageNo"].(float64))
+		}
 	}
 	r, err := bdl.Bdl.PageIssues(cond)
 	if err != nil {
@@ -699,4 +707,16 @@ func RenderCreator() protocol.CompRender {
 
 func getPrefixIcon(_type string) string {
 	return "ISSUE_ICON.issue." + _type
+}
+
+func resetPageNoByFilterCondition(event string, filter interface{}, state map[string]interface{}) bool {
+	v := reflect.ValueOf(filter).Type()
+	for i := 0; i < v.NumField(); i++ {
+		if strutil.Contains(event, v.Field(i).Name) {
+			if v, ok := state[v.Field(i).Name]; ok && v != nil {
+				return false
+			}
+		}
+	}
+	return true
 }
