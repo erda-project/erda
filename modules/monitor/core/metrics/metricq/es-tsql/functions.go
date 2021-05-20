@@ -667,7 +667,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 			if !ok {
 				return nil, fmt.Errorf("args[%v] is not boolean", index)
 			}
-			if b == false {
+			if !b {
 				return false, nil
 			}
 		}
@@ -683,7 +683,7 @@ var BuildInFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 			if !ok {
 				return nil, fmt.Errorf("args[%v] is not boolean", index)
 			}
-			if b == true {
+			if b {
 				return true, nil
 			}
 		}
@@ -781,15 +781,11 @@ var LiteralFunctions = map[string]func(ctx Context, args ...interface{}) (interf
 
 // IsFunction check function is exist.
 func IsFunction(name string) bool {
-	_, ok := LiteralFunctions[name]
-	if ok {
+	if _, ok := LiteralFunctions[name]; ok {
 		return true
 	}
-	_, ok = BuildInFunctions[name]
-	if ok {
-		return true
-	}
-	return false
+	_, ok := BuildInFunctions[name]
+	return ok
 }
 
 // MustFuncArgsNum check whether the number of input parameters meets the equal condition.
