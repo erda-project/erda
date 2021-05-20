@@ -40,7 +40,7 @@ We split the codes of erda into multiple repositories according to different fun
 
 ## User Documentation
 
-To start using Erda, please see our user documentation. Before using, you need to see the [installation document](https://github.com/erda-project/erda-release/blob/master/README.md) to install erda.
+To start using Erda, please see our user documentation. Before using, you need to see the [installation document](./docs/guides/deploy/How-to-install-the-Erda.md) to install erda.
 
 - [中文](https://dice-docs.app.terminus.io)
 - English
@@ -58,6 +58,9 @@ We look forward to your connecting with us, you can ask us any questions.
 - 微信公众号:
 
     ![Erda WeChat](./docs/assets/wechat-small.jpg)
+- 钉钉用户群:
+  
+    ![Erda DingTalk](./docs/assets/dingtalk.png)
 
 ## License
 

@@ -16,6 +16,7 @@ package manual_review
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/dao"
+	"github.com/erda-project/erda/modules/cmdb/model"
 )
 
 // Member 成员操作封装
@@ -42,15 +43,35 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-func (m *ManualReview) CreateReviewUser(param *apistructs.CreateReviewUser) error {
-	return m.db.CreateReviewUser(param)
+func (m *ManualReview) CreateReviewUser(param *apistructs.CreateReviewUser) (error, int64) {
+	var user = &model.ReviewUser{
+		Operator: param.Operator,
+		OrgId:    param.OrgId,
+		TaskId:   param.TaskId,
+	}
+	err := m.db.CreateReviewUser(user)
+	return err, user.TaskId
 }
 
 func (m *ManualReview) GetReviewByTaskId(param *apistructs.GetReviewByTaskIdIdRequest) (apistructs.GetReviewByTaskIdIdResponse, error) {
 	return m.db.GetReviewByTaskId(param)
 }
-func (m *ManualReview) CreateOrUpdate(param *apistructs.CreateReviewRequest) error {
-	return m.db.CreateReview(param)
+func (m *ManualReview) CreateReview(param *apistructs.CreateReviewRequest) (error, int64) {
+	var review = &model.ManualReview{
+		BuildId:         param.BuildId,
+		ProjectId:       param.ProjectId,
+		ApplicationId:   param.ApplicationId,
+		ApplicationName: param.ApplicationName,
+		SponsorId:       param.SponsorId,
+		CommitID:        param.CommitID,
+		OrgId:           param.OrgId,
+		TaskId:          param.TaskId,
+		ProjectName:     param.ProjectName,
+		BranchName:      param.BranchName,
+		ApprovalStatus:  param.ApprovalStatus,
+	}
+	err := m.db.CreateReview(review)
+	return err, review.ID
 }
 
 func (m *ManualReview) GetReviewsByUserId(param *apistructs.GetReviewsByUserIdRequest) (int, []apistructs.GetReviewsByUserIdResponse, error) {
