@@ -61,6 +61,7 @@ func Test_DialerContext(t *testing.T) {
 	go http.ListenAndServe(helloListenAddr, nil)
 	select {
 	case <-client.Connected():
+		time.Sleep(1 * time.Second)
 		fmt.Println("client connected")
 	}
 	hc := http.Client{
