@@ -71,8 +71,20 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 	}
 
 	keyword := r.URL.Query().Get("q")
-	if keyword != "" { // 按关键字查找用户
-		users, err = e.uc.FindUsersByKey(keyword)
+	if keyword != "" { // search by keyword
+		pageSize, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+		if err != nil {
+			return apierrors.ErrListUser.InvalidParameter("pageSize").ToResp(), nil
+		}
+		pageNo, err := strconv.Atoi(r.URL.Query().Get("pageNo"))
+		if err != nil {
+			return apierrors.ErrListUser.InvalidParameter("pageNO").ToResp(), nil
+		}
+		users, err = e.uc.FuzzSearchUserByName(&apistructs.UserPagingRequest{
+			Name:     keyword,
+			PageNo:   pageNo,
+			PageSize: pageSize,
+		})
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
