@@ -247,7 +247,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 		logrus.Errorf("failed to ListRecords contracts, err: %v", err)
 	}
 	for _, contract := range contracts {
-		if contract.Status.ToLower() == apistructs.ContractProved {
+		if contract.Status.ToLower() == apistructs.ContractApproved {
 			return apierrors.DeleteAccess.InternalError(errors.Errorf("不可删除: %s %s 存在已授权调用申请",
 				access.AssetName, access.SwaggerVersion))
 		}
