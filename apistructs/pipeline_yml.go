@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	SnippetActionSourceType = "action"
+	ActionSourceType = "action"
 
 	ActionTypeAPITest      = "api-test"
 	ActionTypeSnippet      = "snippet"
