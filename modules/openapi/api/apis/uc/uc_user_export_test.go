@@ -36,7 +36,7 @@ func TestGetLoginMethodMap(t *testing.T) {
 	assert.Equal(t, "默认登录方式", logM[""])
 }
 
-var fakeUserData = []apistructs.UserInfoExt{apistructs.UserInfoExt{
+var fakeUserData = []apistructs.UserInfoExt{{
 	UserInfo: apistructs.UserInfo{
 		ID:          "1000001",
 		Name:        "Hanmeimei",
@@ -48,7 +48,7 @@ var fakeUserData = []apistructs.UserInfoExt{apistructs.UserInfoExt{
 		PwdExpireAt: "2006-01-02 15:04:05",
 		Source:      "",
 	},
-}, apistructs.UserInfoExt{
+}, {
 	UserInfo: apistructs.UserInfo{
 		ID:          "1000002",
 		Name:        "Lilei",

@@ -73,7 +73,7 @@ bbb`,
 
 	cb := Callback{}
 	cb.AppendMetadataFields(fields)
-	for index, _ := range kvs {
+	for index := range kvs {
 		assert.Equal(t, cb.Metadata[index].Name, kvs[index].key)
 		assert.Equal(t, cb.Metadata[index].Value, kvs[index].value)
 	}
