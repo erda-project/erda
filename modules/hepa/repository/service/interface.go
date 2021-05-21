@@ -320,6 +320,7 @@ type GatewayUpstreamRegisterRecordService interface {
 
 type GatewayAzInfoService interface {
 	GetAz(*GatewayAzInfo) (string, error)
+	GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, error)
 	GetAzInfo(*GatewayAzInfo) (*GatewayAzInfo, error)
 	SelectByAny(*GatewayAzInfo) ([]GatewayAzInfo, error)
 	SelectValidAz() ([]GatewayAzInfo, error)
