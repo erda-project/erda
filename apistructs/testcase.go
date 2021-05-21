@@ -44,6 +44,12 @@ type TestCase struct {
 	UpdatedAt      time.Time               `json:"updatedAt"`
 }
 
+// TestCaseWithSimpleSetInfo testcase with simple set info
+type TestCaseWithSimpleSetInfo struct {
+	TestCase
+	Directory string `json:"directory"`
+}
+
 // TestCaseAPICount 用例接口状态个数
 type TestCaseAPICount struct {
 	Total   uint64 `json:"total"`

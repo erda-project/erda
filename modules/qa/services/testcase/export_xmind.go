@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/xmind"
 )
 
-func (svc *Service) convert2XMind(tcs []apistructs.TestCase, locale string) (xmind.XMLContent, error) {
+func (svc *Service) convert2XMind(tcs []apistructs.TestCaseWithSimpleSetInfo, locale string) (xmind.XMLContent, error) {
 	l := svc.bdl.GetLocale(locale)
 	// 定义临时结构体
 	type TmpTestCases struct {
@@ -30,8 +30,6 @@ func (svc *Service) convert2XMind(tcs []apistructs.TestCase, locale string) (xmi
 		TestSetDir string
 		TestCases  []apistructs.TestCase
 	}
-	// 测试集缓存
-	testSetDirCaches := map[uint64]string{0: "/"}
 	// 按照父测试集 ID 进行分类
 	tcGroupMapByTsID := make(map[uint64]*TmpTestCases)
 	for _, tc := range tcs {
@@ -40,19 +38,8 @@ func (svc *Service) convert2XMind(tcs []apistructs.TestCase, locale string) (xmi
 			tmp = &TmpTestCases{}
 		}
 		tmp.TestSetID = tc.TestSetID
-		tmp.TestCases = append(tmp.TestCases, tc)
-		dir, ok := testSetDirCaches[tc.TestSetID]
-		if ok {
-			tmp.TestSetDir = dir
-		} else {
-			// 缓存中不存在，查询后放入缓存
-			tsDir, err := svc.db.GetTestSetDirectoryByID(tc.TestSetID)
-			if err != nil {
-				return xmind.XMLContent{}, err
-			}
-			testSetDirCaches[tc.TestSetID] = tsDir
-			tmp.TestSetDir = tsDir
-		}
+		tmp.TestCases = append(tmp.TestCases, tc.TestCase)
+		tmp.TestSetDir = tc.Directory
 		tcGroupMapByTsID[tc.TestSetID] = tmp
 	}
 	// 将 map 转换为 list，并用 testSetID 倒序排序

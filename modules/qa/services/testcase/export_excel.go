@@ -26,7 +26,7 @@ const (
 	i18nKeyCaseAPITest = ""
 )
 
-func (svc *Service) convert2Excel(tcs []apistructs.TestCase, locale string) ([][]excel.Cell, error) {
+func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, locale string) ([][]excel.Cell, error) {
 	l := svc.bdl.GetLocale(locale)
 	title1 := []excel.Cell{
 		excel.NewVMergeCell(l.Get(i18n.I18nKeyCaseNum), 1),
@@ -66,16 +66,6 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCase, locale string) ([][
 	var allTcLines [][]excel.Cell
 
 	for _, tc := range tcs {
-		// get testSet directory
-		directory := "/"
-		if tc.TestSetID > 0 {
-			_dir, err := svc.db.GetTestSetDirectoryByID(tc.TestSetID)
-			if err != nil {
-				return nil, err
-			}
-			directory = _dir
-		}
-
 		var oneTcLines [][]excel.Cell
 
 		// 步骤与结果会有多条，接口测试也会有多个，取两个长度更大的一个，作为垂直单元格合并的数值
@@ -88,7 +78,7 @@ func (svc *Service) convert2Excel(tcs []apistructs.TestCase, locale string) ([][
 			line := []excel.Cell{
 				excel.NewCell(strconv.FormatUint(tc.ID, 10)),
 				excel.NewCell(tc.Name),
-				excel.NewCell(directory),
+				excel.NewCell(tc.Directory),
 				excel.NewCell(string(tc.Priority)),
 				excel.NewCell(tc.PreCondition),
 			}
