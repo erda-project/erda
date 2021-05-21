@@ -289,9 +289,12 @@ func (c *IssueCart) RenderCartOperations(s ChartOperationSwitch, i apistructs.Is
 	if c.Operations == nil {
 		c.Operations = make(map[string]interface{})
 	}
-	if s.enableMoveOut {
-		c.RenderMoveOutOperation()
-	}
+
+	// for task 60429. pd's roadmap, temporarily remove 'Move Out of Iteration',
+	// and add a button for more options later.
+	// if s.enableMoveOut {
+	// 	c.RenderMoveOutOperation()
+	// }
 	if s.enableMoveTo {
 		c.RenderMoveToOperation()
 	}

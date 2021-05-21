@@ -139,7 +139,7 @@ func (t IssueType) GetCorrespondingResource() string {
 	case IssueTypeTicket:
 		return IssueTicketResource
 	case IssueTypeEpic:
-		return IssueTaskResource
+		return IssueEpicResource
 	default:
 		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
 	}
