@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -121,8 +122,9 @@ func (t *Title) getUndoneIssueNum() (int, error) {
 }
 
 func (t *Title) setProps(unDoneIssueNum int) {
+	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
 	t.Props.Level = 1
-	t.Props.Title = "事件"
+	t.Props.Title = i18nLocale.Get(i18n2.I18nKeyEvent)
 	t.Props.NoMarginBottom = true
 	//t.Props.Subtitle = fmt.Sprintf("你未完成的事项 %d 条", unDoneIssueNum)
 	//t.Props.TitleStyles.FontSize = "24px"

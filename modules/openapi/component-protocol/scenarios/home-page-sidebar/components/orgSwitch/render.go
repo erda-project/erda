@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -118,11 +119,12 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	if orgDTO == nil {
 		return fmt.Errorf("can not get org")
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.State.Value = strconv.FormatInt(int64(orgDTO.ID), 10)
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
-			"label": "浏览公开组织",
+			"label": i18nLocale.Get(i18n2.I18nKeyOrgBrowse),
 			"operations": map[string]interface{}{
 				"click": map[string]interface{}{
 					"key":    "click",
