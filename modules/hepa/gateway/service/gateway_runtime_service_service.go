@@ -212,10 +212,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(c *gin.Context, reqDto
 		goto failed
 	}
 	diceObj = diceYaml.Obj()
-	azInfo, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Env:       reqDto.Env,
-		ProjectId: reqDto.ProjectId,
-	})
+	azInfo, err = impl.azDb.GetAzInfoByClusterName(reqDto.ClusterName)
 	if err != nil {
 		goto failed
 	}

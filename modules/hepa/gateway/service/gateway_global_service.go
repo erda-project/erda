@@ -395,11 +395,7 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) *common
 		if err != nil {
 			goto failed
 		}
-		az, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			Az:        tenant.Az,
-			ProjectId: tenant.ProjectId,
-			Env:       tenant.Env,
-		})
+		az, err = impl.azDb.GetAzInfoByClusterName(tenant.Az)
 		if err != nil {
 			goto failed
 		}

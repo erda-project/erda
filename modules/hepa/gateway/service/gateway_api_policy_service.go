@@ -506,11 +506,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		policyService = impl.ingressPolicyDb
 		kongService = impl.kongDb
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Env:       zone.DiceEnv,
-		OrgId:     zone.DiceOrgId,
-		ProjectId: zone.DiceProjectId,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -874,11 +870,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPolicyConfig(category, packageId, pac
 			}
 		}
 	}()
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Az:        pack.DiceClusterName,
-		ProjectId: pack.DiceProjectId,
-		Env:       pack.DiceEnv,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(pack.DiceClusterName)
 	if err != nil {
 		log.Errorf("get az failed, err:%+v", err)
 		return res

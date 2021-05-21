@@ -408,11 +408,7 @@ func (impl GatewayZoneServiceImpl) CreateZone(config ZoneConfig, session ...*db.
 	if err != nil {
 		return nil, err
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Az:        config.Az,
-		ProjectId: config.ProjectId,
-		Env:       config.Env,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(config.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -468,11 +464,7 @@ func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route ZoneRout
 	if zone == nil {
 		return false, errors.Errorf("zone not find, id:%s", zoneId)
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Az:        zone.DiceClusterName,
-		ProjectId: zone.DiceProjectId,
-		Env:       zone.DiceEnv,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
 	if err != nil {
 		return false, err
 	}
@@ -522,10 +514,7 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db
 	if zone == nil {
 		return errors.Errorf("zone not find, id:%s", zoneId)
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Env:       zone.DiceEnv,
-		ProjectId: zone.DiceProjectId,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
 	if err != nil {
 		return err
 	}
