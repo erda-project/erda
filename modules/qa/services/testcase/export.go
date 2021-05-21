@@ -76,7 +76,7 @@ func (svc *Service) Export(w io.Writer, req apistructs.TestCaseExportRequest) er
 	}
 
 	// 结果处理
-	var testCases []apistructs.TestCase
+	var testCases []apistructs.TestCaseWithSimpleSetInfo
 	testSets := make([][]apistructs.TestSetWithCases, 0, count)
 	for i := 0; i < count; i++ {
 		testSets = append(testSets, testSetMap[i])
@@ -84,7 +84,7 @@ func (svc *Service) Export(w io.Writer, req apistructs.TestCaseExportRequest) er
 	for _, testSets := range testSets {
 		for _, ts := range testSets {
 			for _, tc := range ts.TestCases {
-				testCases = append(testCases, tc)
+				testCases = append(testCases, apistructs.TestCaseWithSimpleSetInfo{TestCase: tc, Directory: ts.Directory})
 			}
 		}
 	}
