@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -150,6 +151,7 @@ func (this *JoinedBrief) setProps() {
 }
 
 func (this *JoinedBrief) setData(orgID string) error {
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Data.List = make([]bItem, 0)
 	projectNum, err := this.getProjectsNum(orgID)
 	if err != nil {
@@ -162,7 +164,7 @@ func (this *JoinedBrief) setData(orgID string) error {
 		Id: 1, Category: category{
 			RenderType:     "textWithIcon",
 			PrefixIcon:     "project-icon",
-			Value:          "参与项目数：",
+			Value:          i18nLocale.Get(i18n2.I18nKeyProjectNum),
 			ColorClassName: "color-primary"},
 		Number: projectNum})
 	appNum, err := this.getAppsNum(orgID)
@@ -176,7 +178,7 @@ func (this *JoinedBrief) setData(orgID string) error {
 		Id: 1, Category: category{
 			RenderType:     "textWithIcon",
 			PrefixIcon:     "app-icon",
-			Value:          "参与应用数：",
+			Value:          i18nLocale.Get(i18n2.I18nKeyAppNum),
 			ColorClassName: "color-primary"},
 		Number: appNum})
 	return nil

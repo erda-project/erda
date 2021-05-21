@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type ProjectTipWithoutOrg struct {
@@ -93,6 +94,7 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 		return err
 	}
 
+	i18nLocale := p.ctxBdl.Bdl.GetLocale(p.ctxBdl.Locale)
 	p.Type = "Text"
 	var visible bool
 	if p.ctxBdl.Identity.OrgID == "" {
@@ -101,8 +103,8 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 	p.Props.Visible = visible
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
-		"text": []interface{}{"请先加入组织或者", map[string]interface{}{
-			"text":         "了解更多内容",
+		"text": []interface{}{i18nLocale.Get(i18n2.I18nKeyOrgAddFirstOr), map[string]interface{}{
+			"text":         i18nLocale.Get(i18n2.I18nKeyMoreContent),
 			"operationKey": "toJoinOrgDoc",
 		}},
 	}

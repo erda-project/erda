@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -74,6 +75,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	if err := this.SetCtxBundle(ctx); err != nil {
 		return err
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Type = DefaultType
 	this.Props.Align = "center"
 	var visible bool
@@ -87,7 +89,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 		"props": map[string]interface{}{
 			"renderType": "text",
 			"visible":    visible,
-			"value":      "未加入任何组织",
+			"value":      i18nLocale.Get(i18n2.I18nKeyOrgNoAdded),
 		},
 	})
 	this.Props.Value = append(this.Props.Value, map[string]interface{}{
@@ -96,7 +98,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         "了解如何受邀加入到组织",
+					"text":         i18nLocale.Get(i18n2.I18nKeyOrgHowAdded),
 					"operationKey": "toJoinOrgDoc",
 				}},
 			},
@@ -108,7 +110,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         "浏览公开组织信息",
+					"text":         i18nLocale.Get(i18n2.I18nKeyOrgBrosePublic),
 					"operationKey": "toPublicOrgPage",
 				}},
 			},

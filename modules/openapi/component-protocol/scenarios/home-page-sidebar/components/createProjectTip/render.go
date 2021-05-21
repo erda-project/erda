@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type CreateProjectTip struct {
@@ -119,15 +120,16 @@ func (p *CreateProjectTip) Render(ctx context.Context, c *apistructs.Component, 
 		visible = true
 	}
 
+	i18nLocale := p.ctxBdl.Bdl.GetLocale(p.ctxBdl.Locale)
 	p.Type = "Text"
 	p.Props.Visible = visible
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
 		"text": []interface{}{map[string]interface{}{
-			"text":         "如何创建项目",
+			"text":         i18nLocale.Get(i18n2.I18nKeyProjectHowCreate),
 			"operationKey": "createProjectDoc",
-		}, " 或 ", map[string]interface{}{
-			"text":         "通过公开组织浏览公开项目信息",
+		}, fmt.Sprintf(" %s ", i18nLocale.Get(i18n2.I18nKeyOr)), map[string]interface{}{
+			"text":         i18nLocale.Get(i18n2.I18nKeyOrgBrowseInfo),
 			"operationKey": "toPublicOrgPage",
 		}},
 	}

@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package emptyOrgTitle
+package myApplicationTitle
 
 import (
 	"context"
@@ -21,22 +21,33 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
-type EmptyOrgTitle struct {
+type MyApplicationTitle struct {
 	ctxBdl protocol.ContextBundle
 	Type   string `json:"type"`
 	Props  Props  `json:"props"`
 }
 
 type Props struct {
-	Visible bool   `json:"visible"`
-	Title   string `json:"title"`
-	Level   int    `json:"level"`
+	Visible        bool   `json:"visible"`
+	Title          string `json:"title"`
+	Level          int    `json:"level"`
+	NoMarginBottom bool   `json:"noMarginBottom"`
+	ShowDivider    bool   `json:"showDivider"`
 }
 
-func (this *EmptyOrgTitle) SetCtxBundle(ctx context.Context) error {
+func (t *MyApplicationTitle) setProps() {
+	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
+	t.Props.Visible = true
+	t.Props.Title = i18nLocale.Get(i18n2.I18nKeyAppName)
+	t.Props.Level = 1
+	t.Props.NoMarginBottom = true
+	t.Props.ShowDivider = true
+}
+
+func (this *MyApplicationTitle) SetCtxBundle(ctx context.Context) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
 		return fmt.Errorf("invalid context bundle")
@@ -46,20 +57,15 @@ func (this *EmptyOrgTitle) SetCtxBundle(ctx context.Context) error {
 	return nil
 }
 
-func (e *EmptyOrgTitle) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	if err := e.SetCtxBundle(ctx); err != nil {
+func (t *MyApplicationTitle) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	if err := t.SetCtxBundle(ctx); err != nil {
 		return err
 	}
-	e.Type = "Title"
-	if e.ctxBdl.Identity.OrgID == "" {
-		e.Props.Visible = true
-	}
-	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
-	e.Props.Title = i18nLocale.Get(i18n2.I18nKeyOrgEmpty)
-	e.Props.Level = 2
+	t.Type = "Title"
+	t.setProps()
 	return nil
 }
 
 func RenderCreator() protocol.CompRender {
-	return &EmptyOrgTitle{}
+	return &MyApplicationTitle{}
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyOrgContent struct {
@@ -89,24 +90,25 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 		}
 		access = permissionRes.Access
 	}
+	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	if access {
-		role = "管理员"
+		role = i18nLocale.Get(i18n2.I18nKeyAdmin)
 	} else {
-		role = "新成员"
+		role = i18nLocale.Get(i18n2.I18nKeyNewMember)
 	}
 	e.Props.Value = make([]Value, 0)
 	e.Props.Value = append(e.Props.Value, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
+			Value:      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n2.I18nKeyOrgBelow), role, i18nLocale.Get(i18n2.I18nKeyOrgQuickKnow)),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      "* 公开组织浏览",
+			Value:      i18nLocale.Get(i18n2.I18nKeyOrgBrowsePublic),
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -116,14 +118,14 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      "通过左上角的浏览公开组织信息，选择公开组织可以直接进入浏览该组织公开项目的信息可（包含项目管理、应用运行信息等）",
+			Value:      i18nLocale.Get(i18n2.I18nKeyOrgMsg),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      "* 加入组织",
+			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoin),
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -133,14 +135,14 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      "组织当前都是受邀机制，需要线下联系企业所有者进行邀请加入",
+			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoinMsg),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      "当你已经加入到任何组织后，此框将不再显示",
+			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoinAfter),
 			TextStyleName: map[string]bool{
 				"fz12":            true,
 				"color-text-desc": true,
