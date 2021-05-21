@@ -37,12 +37,12 @@ func (svc *Issue) ImportExcel(req apistructs.IssueImportExcelRequest, r *http.Re
 		return nil, err
 	}
 	defer ff.Close()
-	svc.storeExcel2DB(req, issues, instances, excelIndex, l, ip, falseExcel, falseReason, member)
+	falseExcel, falseReason = svc.storeExcel2DB(req, issues, instances, excelIndex, l, ip, falseExcel, falseReason, member)
 	return svc.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
 }
 
 func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issues []apistructs.Issue, instances []apistructs.IssuePropertyRelationCreateRequest, excelIndex []int,
-	l *label.Label, ip *issueproperty.IssueProperty, falseIssue []int, falseReason []string, member []model.Member) int {
+	l *label.Label, ip *issueproperty.IssueProperty, falseIssue []int, falseReason []string, member []model.Member) ([]int, []string) {
 	memberMap := make(map[string]string)
 	for _, m := range member {
 		memberMap[m.Nick] = m.UserID
@@ -108,5 +108,5 @@ func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issu
 			continue
 		}
 	}
-	return len(falseIssue) - 1
+	return falseIssue, falseReason
 }
