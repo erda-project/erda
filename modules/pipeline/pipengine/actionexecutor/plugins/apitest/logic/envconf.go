@@ -15,7 +15,7 @@ package logic
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/jsonparse"
 )
 
 type EnvConfig struct {
@@ -66,7 +66,7 @@ type APIParam struct {
 func (p APIParam) convert() apistructs.APIParam {
 	return apistructs.APIParam{
 		Key:   p.Key,
-		Value: strutil.String(p.Value),
+		Value: jsonparse.JsonOneLine(p.Value),
 		Desc:  p.Desc,
 	}
 }
@@ -80,7 +80,7 @@ type APIHeader struct {
 func (h APIHeader) convert() apistructs.APIHeader {
 	return apistructs.APIHeader{
 		Key:   h.Key,
-		Value: strutil.String(h.Value),
+		Value: jsonparse.JsonOneLine(h.Value),
 		Desc:  h.Desc,
 	}
 }
@@ -95,6 +95,6 @@ func (a APIAssert) convert() apistructs.APIAssert {
 	return apistructs.APIAssert{
 		Arg:      a.Arg,
 		Operator: a.Operator,
-		Value:    strutil.String(a.Value),
+		Value:    jsonparse.JsonOneLine(a.Value),
 	}
 }
