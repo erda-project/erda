@@ -279,7 +279,7 @@ func (h *APIDocWSHandler) handleCommit(tx *dbclient.TX, w websocket.ResponseWrit
 	}
 
 	repo := strings.TrimPrefix(h.ft.RepoPath(), "/")
-	if err := CommitAPIDocContent(h.orgID, h.userID, repo, "从 API 设计中心更新文档",
+	if err := CommitAPIDocModifies(h.orgID, h.userID, repo, "从 API 设计中心更新文档",
 		h.filename, data.Content, h.ft.BranchName()); err != nil {
 		h.responseError(w, err)
 		return nil
@@ -405,7 +405,7 @@ func (h *APIDocWSHandler) commitTmpToGittar(commitMessage string) error {
 	}
 
 	repo := strings.TrimPrefix(h.ft.RepoPath(), "/")
-	if err := CommitAPIDocContent(h.orgID, h.userID, repo, commitMessage, h.filename, tmp.Content, h.ft.BranchName()); err != nil {
+	if err := CommitAPIDocModifies(h.orgID, h.userID, repo, commitMessage, h.filename, tmp.Content, h.ft.BranchName()); err != nil {
 		return errors.Wrap(err, "failed to CommitAPIDocContent")
 	}
 

@@ -29,13 +29,13 @@ type Action string
 
 func status2Action(status apistructs.ContractStatus) Action {
 	switch status {
-	case apistructs.ContractProving:
+	case apistructs.ContractApproving:
 		return "正在审批"
-	case apistructs.ContractProved:
+	case apistructs.ContractApproved:
 		return "通过了"
-	case apistructs.ContractDisproved:
+	case apistructs.ContractDisapproved:
 		return "拒绝了"
-	case apistructs.ContractUnproved:
+	case apistructs.ContractUnapproved:
 		return "撤销了"
 	default:
 		return ""
@@ -91,7 +91,7 @@ func (svc *Service) createOrUpdateClientLimits(endpointID string, clientID strin
 	if err = svc.FirstRecord(&contract, map[string]interface{}{"id": contractID}); err != nil {
 		return err
 	}
-	if contract.Status.ToLower() != apistructs.ContractProved {
+	if contract.Status.ToLower() != apistructs.ContractApproved {
 		return nil
 	}
 
