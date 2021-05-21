@@ -223,9 +223,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 // UpdateWithEvent 更新项目 & 发送事件
 func (p *Project) UpdateWithEvent(projectID int64, updateReq *apistructs.ProjectUpdateBody) error {
 	// 更新项目
-	if updateReq.DisplayName == "" {
-		updateReq.DisplayName = updateReq.Name
-	}
 	project, err := p.Update(projectID, updateReq)
 	if err != nil {
 		return err
@@ -256,19 +253,9 @@ func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBod
 	if err := checkClusterConfig(updateReq.ClusterConfig); err != nil {
 		return nil, err
 	}
-	clusterConfig, err := json.Marshal(updateReq.ClusterConfig)
-	if err != nil {
-		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
-		return nil, errors.Errorf("failed to marshal clusterConfig")
-	}
 
 	if err := checkRollbackConfig(&updateReq.RollbackConfig); err != nil {
 		return nil, err
-	}
-	rollbackConfig, err := json.Marshal(updateReq.RollbackConfig)
-	if err != nil {
-		logrus.Infof("failed to marshal rollbackConfig, (%v)", err)
-		return nil, errors.Errorf("failed to marshal rollbackConfig")
 	}
 
 	// 检查待更新的project是否存在
@@ -277,22 +264,52 @@ func (p *Project) Update(projectID int64, updateReq *apistructs.ProjectUpdateBod
 		return nil, errors.Wrap(err, "failed to update project")
 	}
 
-	project.Desc = updateReq.Desc
-	project.DisplayName = updateReq.DisplayName
-	project.Logo = updateReq.Logo
-	project.DDHook = updateReq.DdHook
-	project.ClusterConfig = string(clusterConfig)
-	project.RollbackConfig = string(rollbackConfig)
-	project.CpuQuota = updateReq.CpuQuota
-	project.MemQuota = updateReq.MemQuota
-	project.ActiveTime = time.Now()
-	project.IsPublic = updateReq.IsPublic
+	if err := patchProject(&project, updateReq); err != nil {
+		return nil, err
+	}
+
 	if err = p.db.UpdateProject(&project); err != nil {
 		logrus.Warnf("failed to update project, (%v)", err)
 		return nil, errors.Errorf("failed to update project")
 	}
 
 	return &project, nil
+}
+
+func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody) error {
+	clusterConfig, err := json.Marshal(updateReq.ClusterConfig)
+	if err != nil {
+		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
+		return errors.Errorf("failed to marshal clusterConfig")
+	}
+
+	rollbackConfig, err := json.Marshal(updateReq.RollbackConfig)
+	if err != nil {
+		logrus.Errorf("failed to marshal rollbackConfig, (%v)", err)
+		return errors.Errorf("failed to marshal rollbackConfig")
+	}
+
+	if updateReq.DisplayName != "" {
+		project.DisplayName = updateReq.DisplayName
+	}
+
+	if len(updateReq.ClusterConfig) != 0 {
+		project.ClusterConfig = string(clusterConfig)
+	}
+
+	if len(updateReq.RollbackConfig) != 0 {
+		project.RollbackConfig = string(rollbackConfig)
+	}
+
+	project.Desc = updateReq.Desc
+	project.Logo = updateReq.Logo
+	project.DDHook = updateReq.DdHook
+	project.CpuQuota = updateReq.CpuQuota
+	project.MemQuota = updateReq.MemQuota
+	project.ActiveTime = time.Now()
+	project.IsPublic = updateReq.IsPublic
+
+	return nil
 }
 
 // DeleteWithEvent 删除项目 & 发送事件
@@ -824,15 +841,19 @@ func checkClusterConfig(clusterConfig map[string]string) error {
 	return nil
 }
 func checkRollbackConfig(rollbackConfig *map[string]int) error {
-	if len(*rollbackConfig) != 4 {
-		*rollbackConfig = map[string]int{
-			string(types.DevWorkspace):     5,
-			string(types.TestWorkspace):    5,
-			string(types.StagingWorkspace): 5,
-			string(types.ProdWorkspace):    5,
-		}
+	// DEV/TEST/STAGING/PROD
+	l := len(*rollbackConfig)
+
+	// if empty then don't update
+	if l == 0 {
 		return nil
 	}
+
+	// check
+	if l != 4 {
+		return errors.Errorf("invalid param(clusterConfig is empty)")
+	}
+
 	for key := range *rollbackConfig {
 		switch key {
 		case string(types.DevWorkspace), string(types.TestWorkspace), string(types.StagingWorkspace),
