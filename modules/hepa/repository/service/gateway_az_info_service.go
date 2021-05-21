@@ -120,7 +120,9 @@ func fillInfo(info *orm.GatewayAzInfo, clusterInfo ClusterInfoDto) {
 }
 
 func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, error) {
-	info := &orm.GatewayAzInfo{}
+	info := &orm.GatewayAzInfo{
+		Az: name,
+	}
 	code, body, err := util.CommonRequest("GET", discover.Scheduler()+"/api/clusterinfo/"+name, nil, map[string]string{"Internal-Client": "hepa-gateway"})
 	if code >= 300 {
 		err = errors.Errorf("get cluster info failed, code:%d", code)
