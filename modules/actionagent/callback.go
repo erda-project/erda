@@ -157,6 +157,30 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 
 type Callback apistructs.ActionCallback
 
+// append fields to metadata and limit metadataField
+func (c *Callback) AppendMetadataFields(fields []*apistructs.MetadataField) {
+
+	if fields == nil {
+		return
+	}
+
+	for _, field := range fields {
+
+		if field == nil {
+			continue
+		}
+
+		var name = field.Name
+		var value = field.Value
+		name = strings.TrimSpace(name)
+		value = strings.TrimSpace(value)
+
+		c.Metadata = append(c.Metadata, apistructs.MetadataField{Name: name, Value: value})
+	}
+
+	c.limitMetadataField()
+}
+
 // 1) decode as: apistructs.Metadata
 // 2) decode as: line(k=v)
 func (c *Callback) HandleMetaFile(b []byte) error {
@@ -181,10 +205,16 @@ func (c *Callback) HandleMetaFile(b []byte) error {
 		c.Metadata = append(c.Metadata, apistructs.MetadataField{Name: k, Value: v})
 	}
 
-	// limit metadata
-	// key length <= 128
-	// value length <= 1024000
-	// metadata length <= 100
+	c.limitMetadataField()
+
+	return nil
+}
+
+// limit metadata
+// key length <= 128
+// value length <= 1024000
+// metadata length <= 100
+func (c *Callback) limitMetadataField() {
 	var result apistructs.Metadata
 	for i, meta := range c.Metadata {
 		if i >= 100 {
@@ -202,8 +232,6 @@ func (c *Callback) HandleMetaFile(b []byte) error {
 		result = append(result, apistructs.MetadataField{Name: meta.Name, Value: meta.Value})
 	}
 	c.Metadata = result
-
-	return nil
 }
 
 func filterMetadata(cb *Callback, agent *Agent) {

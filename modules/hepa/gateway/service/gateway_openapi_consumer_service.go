@@ -34,11 +34,12 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/uuid"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/uuid"
 )
 
 type GatewayOpenapiConsumerServiceImpl struct {
@@ -783,6 +784,7 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	selected := []gw.PackageAclInfoDto{}
 	unselect := []gw.PackageAclInfoDto{}
 	selectMap := map[string]bool{}
+	var apiAclRules []gw.OpenapiRuleInfo
 	if packageId == "" || packageApiId == "" {
 		return res.SetReturnCode(PARAMS_IS_NULL)
 	}
@@ -790,8 +792,12 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetPackageApiAcls(packageId string
 	if err != nil {
 		goto failed
 	}
+	apiAclRules, err = impl.ruleBiz.GetApiRules(packageApiId, gw.ACL_RULE)
+	if err != nil {
+		goto failed
+	}
 	packageRes = impl.GetPackageAcls(packageId)
-	if len(consumerIn) == 0 {
+	if len(apiAclRules) == 0 {
 		return packageRes
 	}
 	pack, err = impl.packageDb.Get(packageId)

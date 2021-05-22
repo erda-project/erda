@@ -11,33 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package linters_test
+package clusterdialer
 
 import (
+	"context"
 	"testing"
-
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/linters"
+	"time"
 )
 
-const DDLDMLLinterSQL = `
-begin;
-
-update some_table set name='chen';
-
-commit;
-
-grant select on student to some_user with grant option;
-`
-
-func TestNewDDLDMLLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewDDLDMLLinter)
-	if err := linter.Input([]byte(DDLDMLLinterSQL), "DDLDMLLinterSQL"); err != nil {
-		t.Error(err)
-	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["DDLDMLLinterSQL [lints]"]) != 3 {
-		t.Fatal("failed")
+func TestTunnelSession_getClusterDialer_timeout(t *testing.T) {
+	var session TunnelSession
+	go session.initialize("ws://127.0.0.1")
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	dialer := session.getClusterDialer(ctx, "test")
+	if dialer != nil {
+		t.Error("dialer is not nil")
 	}
 }

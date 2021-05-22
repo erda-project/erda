@@ -191,7 +191,7 @@ func (e *Endpoints) PagingTestPlans(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp(result, result.UserIDs)
 }
 
-// ListTestPlanUsecase 测试计划内测试用例过滤
+// PagingTestPlanCaseRelations 测试计划内测试用例过滤
 func (e *Endpoints) PagingTestPlanCaseRelations(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {

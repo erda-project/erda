@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
@@ -28,7 +30,6 @@ import (
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -490,9 +491,7 @@ func statisticsAddAndRepairBug(r StatisticsAddAndRepairBugRequest) (*IssueMonito
 	if !r.CreateEndTime.IsZero() {
 		repairSql += "and updated_at < ? "
 	}
-	repairSql += " and state = ? "
-
-	params = append(params, apistructs.IssueStateClosed)
+	repairSql += fmt.Sprintf(" and state = (select id from dice_issue_state where project_id = %v and issue_type = '%s' and belong = '%s')", r.ProjectId, apistructs.IssueTypeBug, apistructs.IssueStateClosed)
 	row = r.db.Raw(repairSql, params...).Row()
 	if row != nil {
 		var counts int

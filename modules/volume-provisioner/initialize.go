@@ -60,7 +60,7 @@ func initNetDataVolumeProvisioner(config *config, csConfig *rest.Config, client 
 	go pc.Run(context.Background())
 }
 
-func initialize(config *config) error {
+func initialize(config *config, ctx context.Context) error {
 
 	csConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -86,8 +86,8 @@ func initialize(config *config) error {
 		initNetDataVolumeProvisioner(config, csConfig, cs, serverVersion)
 	}
 
-	ch := make(chan struct{})
-	<-ch
-
+	select {
+	case <-ctx.Done():
+	}
 	return nil
 }

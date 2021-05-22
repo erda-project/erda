@@ -9,6 +9,7 @@ run:
     - tools/cli/command/generate
     - modules/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
+    - modules/openapi/api/generate/api.go
     - third_party
   skip-files:
     - apistructs/generated_desc.go
@@ -17,7 +18,7 @@ run:
 
 linters-settings:
   goimports:
-    #local-prefixes: github.com/erda-project/erda
+    local-prefixes: github.com/erda-project
 
 linters:
   disable-all: true
@@ -47,6 +48,9 @@ issues:
     - linters:
         - gosec
       text: "G204:" # G204: Subprocess launched with function call as argument or cmd arguments (gosec)
+    - linters:
+        - gosec
+      text: "G305:" # G305: File traversal when extracting zip/tar archive (gosec)
     - linters:
         - gosec
       text: "G306:" # G306: Expect WriteFile permissions to be 0600 or less

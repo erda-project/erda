@@ -16,8 +16,9 @@ package storage
 import (
 	"testing"
 
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/base/logs/logrusx"
 )
 
 func mockMysqlStore() *mysqlStore {

@@ -266,8 +266,13 @@ func (e *AlertExpression) FromModel(expression *db.AlertExpression) *AlertExpres
 }
 
 // ToModel .
-func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpression, error) {
+func (e *AlertExpression) ToModel(orgName string, alert *Alert, rule *AlertRule) (*db.AlertExpression, error) {
 	attributes := make(map[string]interface{})
+	//org, err := new(bundle.Bundle).GetOrg(alert.AlertScopeID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//attributes["org_name"] = org.Name
 	for k, v := range rule.Attributes {
 		attributes[k] = v
 	}
@@ -374,7 +379,7 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 		alertDomain = alertDomain[0 : len(alertDomain)-1]
 	}
 	if routeID, ok := utils.GetMapValueString(rule.Attributes, "display_url_id"); ok {
-		if alertURL := convertAlertURL(alertDomain, routeID, attributes); alertURL != "" {
+		if alertURL := convertAlertURL(alertDomain, orgName, routeID, attributes); alertURL != "" {
 			attributes["display_url"] = alertURL
 		}
 	}
@@ -386,13 +391,13 @@ func (e *AlertExpression) ToModel(alert *Alert, rule *AlertRule) (*db.AlertExpre
 			for _, item := range group {
 				groups = append(groups, item.(string))
 			}
-			attributes["display_url"] = convertDashboardURL(alertDomain, dashboardPath, dashboardID, groups)
+			attributes["display_url"] = convertDashboardURL(alertDomain, orgName, dashboardPath, dashboardID, groups)
 		}
 	}
 
 	// transform record url
 	if recordPath, ok := utils.GetMapValueString(alert.Attributes, "alert_record_path"); ok {
-		attributes["record_url"] = convertRecordURL(alertDomain, recordPath)
+		attributes["record_url"] = convertRecordURL(alertDomain, orgName, recordPath)
 	}
 
 	return &db.AlertExpression{

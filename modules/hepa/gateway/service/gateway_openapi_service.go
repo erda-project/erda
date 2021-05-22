@@ -40,12 +40,13 @@ import (
 	aliyun_errors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/uuid"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/uuid"
 )
 
 type GatewayOpenapiServiceImpl struct {
@@ -1712,11 +1713,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info PackageApiInfo, s
 	} else {
 		runtimeSession = impl.runtimeDb
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Az:        info.Az,
-		ProjectId: info.ProjectId,
-		Env:       info.Env,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(info.Az)
 	if err != nil {
 		return "", err
 	}
@@ -2655,11 +2652,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 		var corsConfig apipolicy.PolicyDto
 		var configByte []byte
 		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: kongInfo.ProjectId,
-			Env:       kongInfo.Env,
-			Az:        kongInfo.Az,
-		})
+		azInfo, err = impl.azDb.GetAzInfoByClusterName(kongInfo.Az)
 		if err != nil {
 			goto clear_route
 		}
@@ -2924,11 +2917,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageRootApi(packageId string, reqD
 
 func (impl GatewayOpenapiServiceImpl) endpointPadding(endpoint *diceyml.Endpoint, service *orm.GatewayRuntimeService) error {
 	if strings.HasSuffix(endpoint.Domain, ".*") {
-		azInfo, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: service.ProjectId,
-			Env:       service.Workspace,
-			Az:        service.ClusterName,
-		})
+		azInfo, err := impl.azDb.GetAzInfoByClusterName(service.ClusterName)
 		if err != nil {
 			return err
 		}

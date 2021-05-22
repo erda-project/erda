@@ -16,9 +16,12 @@ package main
 import (
 	// providers and modules
 	"github.com/erda-project/erda-infra/modcom"
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-infra/providers/kafka"
+
 	_ "github.com/erda-project/erda/modules/monitor/core/collector"
+
+	_ "github.com/erda-project/erda-infra/providers/health"
+	_ "github.com/erda-project/erda-infra/providers/kafka"
+	_ "github.com/erda-project/erda-infra/providers/pprof"
 )
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"

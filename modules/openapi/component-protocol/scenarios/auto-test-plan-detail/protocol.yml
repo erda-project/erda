@@ -84,6 +84,11 @@ components:
     type: Button
   executeHistory:
     type: Popover
+    props:
+      placement: "bottomRight"
+      size: "l"
+      title: "执行历史"
+      trigger: "click"
   executeHistoryButton:
     type: Button
   executeHistoryPop:
@@ -234,10 +239,10 @@ rendering:
       state:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
-    - name: cancelExecuteButton
-      state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
+    # - name: cancelExecuteButton
+    #   state:
+    #     - name: "visible"
+    #       value: "{{ executeTaskBreadcrumb.visible }}"
     - name: executeInfo
       state:
         - name: "pipelineId"
@@ -261,8 +266,8 @@ rendering:
           value: "{{ executeTaskBreadcrumb.visible }}"
     - name: cancelExecuteButton
       state:
-        - name: "visible"
-          value: "{{ executeTaskBreadcrumb.visible }}"
+        # - name: "visible"
+        #   value: "{{ executeTaskBreadcrumb.visible }}"
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
   executeHistoryRefresh:

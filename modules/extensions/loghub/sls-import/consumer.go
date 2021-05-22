@@ -22,9 +22,10 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	slsconsumer "github.com/aliyun/aliyun-log-go-sdk/consumer"
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/recallsong/go-utils/encoding/md5x"
 	"github.com/recallsong/go-utils/errorx"
+
+	"github.com/erda-project/erda-infra/base/logs"
 )
 
 // 层级关系: account -> N * LogProject -> N * LogStore

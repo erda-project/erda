@@ -67,11 +67,10 @@ type Data struct {
 
 type Props struct {
 	Visible     bool   `json:"visible"`
-	UseLoadMore bool   `json:"useLoadMore"`
+	IsLoadMore  bool   `json:"isLoadMore"`
 	AlignCenter bool   `json:"alignCenter"`
 	Size        string `json:"size"`
 	NoBorder    bool   `json:"noBorder"`
-	//PaginationType string `json:"paginationType"`
 }
 
 type Command struct {
@@ -225,7 +224,7 @@ func (m *MyProjectList) addDataList(datas *apistructs.PagingProjectDTO) error {
 		if orgDTO == nil {
 			return fmt.Errorf("failed to get org")
 		}
-		orgName = orgDTO.DisplayName
+		orgName = orgDTO.Name
 	}
 	for _, v := range datas.List {
 		dataList = append(dataList, RenItem(v, orgName))
@@ -248,7 +247,7 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 	if this.State.ProNums != 0 {
 		this.Props.Visible = true
 	}
-	this.Props.UseLoadMore = true
+	this.Props.IsLoadMore = true
 	this.Props.AlignCenter = true
 	this.Props.Size = "small"
 	this.Props.NoBorder = true

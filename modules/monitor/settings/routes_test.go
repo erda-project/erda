@@ -18,8 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 type translator struct {

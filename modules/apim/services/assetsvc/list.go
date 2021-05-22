@@ -252,11 +252,14 @@ func (svc *Service) collectListSwaggerVersionRspObj(versions []*apistructs.APIAs
 }
 
 func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersionsReq) (*apistructs.ListSwaggerVersionRsp, error) {
-	var versions []*apistructs.APIAssetVersionsModel
-	if err := svc.ListRecords(&versions, map[string]interface{}{
-		"org_id":   req.OrgID,
-		"asset_id": req.URIParams.AssetID,
-	}); err != nil {
+	var (
+		versions []*apistructs.APIAssetVersionsModel
+		where    = map[string]interface{}{
+			"org_id":   req.OrgID,
+			"asset_id": req.URIParams.AssetID,
+		}
+	)
+	if err := svc.ListRecords(&versions, where); err != nil {
 		return nil, err
 	}
 
@@ -408,7 +411,7 @@ func groupByMinor(records []map[string]interface{}) []map[string]interface{} {
 	)
 	for _, record := range records {
 		minor := record["minor"].(uint64)
-		if r, ok := m[minor]; ok && record["patch"].(uint64) > r["patch"].(uint64) {
+		if r, ok := m[minor]; ok && record["patch"].(uint64) < r["patch"].(uint64) {
 			m[minor] = r
 		} else {
 			m[minor] = record
@@ -485,8 +488,8 @@ func (svc *Service) ListContracts(req *apistructs.ListContractsReq) (*apistructs
 	}
 	if len(req.QueryParams.Status) == 0 {
 		req.QueryParams.Status = []apistructs.ContractStatus{
-			apistructs.ContractProving, apistructs.ContractProved,
-			apistructs.ContractDisproved, apistructs.ContractUnproved,
+			apistructs.ContractApproving, apistructs.ContractApproved,
+			apistructs.ContractDisapproved, apistructs.ContractUnapproved,
 		}
 	}
 

@@ -11,25 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package linters_test
+package config
 
-import (
-	"testing"
-
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/linters"
-)
-
-const keywordsLinterSQL = "CREATE TABLE `values` (id BIGINT)"
-
-func TestNewKeywordsLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewKeywordsLinter)
-	if err := linter.Input([]byte(keywordsLinterSQL), "keywordsLinterSQL"); err != nil {
-		t.Error(err)
-	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors) == 0 {
-		t.Fatal("failed")
-	}
+type Config struct {
+	Debug               bool   `default:"false" desc:"enable debug logging"`
+	CollectClusterInfo  bool   `default:"true" desc:"enable collect cluster info"`
+	ClusterDialEndpoint string `desc:"cluster dialer endpoint"`
+	ClusterKey          string `desc:"cluster key"`
+	SecretKey           string `desc:"secret key"`
+	K8SApiServerAddr    string `desc:"kube-apiserver address in cluster"`
 }

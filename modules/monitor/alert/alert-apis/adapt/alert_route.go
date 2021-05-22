@@ -292,17 +292,17 @@ func routeParamConvert(key string) routeParamFunc {
 }
 
 // transform alert url
-func convertAlertURL(domain, routeID string, params map[string]interface{}) string {
+func convertAlertURL(domain, orgName, routeID string, params map[string]interface{}) string {
 	route, ok := routeMap[routeID]
 	if !ok {
 		return ""
 	}
-	return domain + route(params)
+	return domain + "/" + orgName + route(params)
 }
 
 // convert custom market url
-func convertDashboardURL(domain, path, dashboardID string, groups []string) string {
-	u := domain + path + "/" + dashboardID
+func convertDashboardURL(domain, orgName, path, dashboardID string, groups []string) string {
+	u := domain + "/" + orgName + path + "/" + dashboardID
 	conn := "?"
 	for _, group := range groups {
 		u += conn + group + "={{" + group + "}}"
@@ -313,6 +313,6 @@ func convertDashboardURL(domain, path, dashboardID string, groups []string) stri
 }
 
 // transform record url
-func convertRecordURL(domain, path string) string {
-	return domain + path + "/{{alert_group_id}}"
+func convertRecordURL(domain, orgName, path string) string {
+	return domain + "/" + orgName + path + "/{{alert_group_id}}"
 }

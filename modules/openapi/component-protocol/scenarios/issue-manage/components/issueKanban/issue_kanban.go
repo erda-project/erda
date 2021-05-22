@@ -133,6 +133,8 @@ type DeleteBoardOperation OperationInfo
 type UpdateBoardOperation OperationInfo
 type MoveToCustomOperation OperationInfo
 
+const MaxBoardNum = 15
+
 //type DragToCustomOperation DragOperationInfo
 
 func (c *CartList) SetI18nPrinter(ip *message.Printer) {
@@ -287,9 +289,12 @@ func (c *IssueCart) RenderCartOperations(s ChartOperationSwitch, i apistructs.Is
 	if c.Operations == nil {
 		c.Operations = make(map[string]interface{})
 	}
-	if s.enableMoveOut {
-		c.RenderMoveOutOperation()
-	}
+
+	// for task 60429. pd's roadmap, temporarily remove 'Move Out of Iteration',
+	// and add a button for more options later.
+	// if s.enableMoveOut {
+	// 	c.RenderMoveOutOperation()
+	// }
 	if s.enableMoveTo {
 		c.RenderMoveToOperation()
 	}
@@ -620,14 +625,14 @@ func (i *ComponentIssueBoard) Filter(req IssueFilterRequest) (ib *IssueBoard, er
 	// 所有，不含此分类
 	case BoardTypeCustom:
 		cls, uids, err = i.FilterByCustom(req.IssuePagingRequest)
-		// 自定义看板最多创建5块
+		// Created custom board max num 15
 		o := CreateBoardOperation{}
 		o.Disabled = false
 		o.Confirm = i.ctxBdl.I18nPrinter.Sprintf(CreateBoardConfirmMsg)
 		o.Text = i.ctxBdl.I18nPrinter.Sprintf(apistructs.CreateCustomOperation.String())
 		o.Reload = true
 		o.DisabledTip = i.ctxBdl.I18nPrinter.Sprintf(CreateBoardDisabledTip)
-		if len(cls) > 5 {
+		if len(cls) > MaxBoardNum {
 			o.Disabled = true
 		}
 		i.Operations[apistructs.CreateCustomOperation.String()] = o
@@ -775,6 +780,11 @@ func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePaging
 	var states []apistructs.IssueStateName
 	for _, v := range is {
 		states = append(states, v.States...)
+	}
+
+	// filter by status is not avialble in status board
+	if len(req.StateBelongs) > 0 {
+		req.StateBelongs = nil
 	}
 
 	date := struct {

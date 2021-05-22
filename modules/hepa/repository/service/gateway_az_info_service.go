@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type AdminProjectDto struct {
@@ -117,6 +117,29 @@ func fillInfo(info *orm.GatewayAzInfo, clusterInfo ClusterInfoDto) {
 	} else {
 		info.MasterAddr = clusterInfo.NetportalUrl + "/" + clusterInfo.MasterAddr
 	}
+}
+
+func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.GatewayAzInfo, error) {
+	info := &orm.GatewayAzInfo{
+		Az: name,
+	}
+	code, body, err := util.CommonRequest("GET", discover.Scheduler()+"/api/clusterinfo/"+name, nil, map[string]string{"Internal-Client": "hepa-gateway"})
+	if code >= 300 {
+		err = errors.Errorf("get cluster info failed, code:%d", code)
+	}
+	if err != nil {
+		return nil, err
+	}
+	clusterResp := &ClusterRespDto{}
+	err = json.Unmarshal(body, clusterResp)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unmarshal failed:%s", body)
+	}
+	if !clusterResp.Success {
+		return nil, errors.Errorf("request cluster info failed: resp[%s]", body)
+	}
+	fillInfo(info, clusterResp.Data)
+	return info, nil
 }
 
 func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.GatewayAzInfo, error) {

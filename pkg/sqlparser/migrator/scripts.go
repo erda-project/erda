@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/rules"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/erda-project/erda/pkg/sqllint"
+	"github.com/erda-project/erda/pkg/sqllint/rules"
 )
 
 // Scripts is the set of Module

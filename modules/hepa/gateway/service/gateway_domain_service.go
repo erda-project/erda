@@ -34,13 +34,14 @@ import (
 
 	aliyun_errors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/uuid"
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type GatewayDomainServiceImpl struct {
@@ -188,11 +189,7 @@ func (impl GatewayDomainServiceImpl) acquireComponenetEndpointFactory(clusterNam
 }
 
 func (impl GatewayDomainServiceImpl) acquireEndpointFactory(runtimeService *orm.GatewayRuntimeService) (bool, endpoint.EndpointFactory, error) {
-	azInfo, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		ProjectId: runtimeService.ProjectId,
-		Env:       runtimeService.Workspace,
-		Az:        runtimeService.ClusterName,
-	})
+	azInfo, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 	if azInfo == nil {
 		return false, nil, errors.New("az not found")
 	}
@@ -530,10 +527,7 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(runtimeService *orm.Gate
 			return "", err
 		}
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		ProjectId: runtimeService.ProjectId,
-		Env:       runtimeService.Workspace,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 	if err != nil {
 		return "", err
 	}
@@ -1062,11 +1056,7 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) *common
 		appName = leader.AppName
 		var azInfo *orm.GatewayAzInfo
 		var kongInfo *orm.GatewayKongInfo
-		azInfo, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: leader.ProjectId,
-			Env:       leader.Workspace,
-			Az:        leader.ClusterName,
-		})
+		azInfo, err = impl.azDb.GetAzInfoByClusterName(leader.ClusterName)
 		if err != nil {
 			goto failed
 		}
@@ -1209,11 +1199,7 @@ func (impl GatewayDomainServiceImpl) UpdateRuntimeServiceDomain(orgId, runtimeId
 	// acquire root domain
 	{
 		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: runtimeService.ProjectId,
-			Env:       runtimeService.Workspace,
-			Az:        runtimeService.ClusterName,
-		})
+		azInfo, err = impl.azDb.GetAzInfoByClusterName(runtimeService.ClusterName)
 		if err != nil {
 			goto failed
 		}

@@ -95,12 +95,18 @@ func (t *TableGroup) GetProsByPage() (*apistructs.PagingProjectDTO, error) {
 	return pageProDTO, nil
 }
 
-func (t *TableGroup) getOrgName() string {
-	var orgName string
-	if orgIn, ok := t.ctxBdl.InParams["orgName"]; ok {
-		orgName = orgIn.(string)
+func (t *TableGroup) getOrgName() (name string, displayName string, err error) {
+	var orgDTO *apistructs.OrgDTO
+	orgDTO, err = t.ctxBdl.Bdl.GetOrg(t.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return
 	}
-	return orgName
+	if orgDTO == nil {
+		return "", "", fmt.Errorf("failed to get org")
+	}
+	name = orgDTO.Name
+	displayName = orgDTO.DisplayName
+	return
 }
 
 func (t *TableGroup) getWorkbenchData() (*apistructs.WorkbenchResponse, error) {
@@ -142,7 +148,7 @@ func (this *TableGroup) getProjectsNum(orgID string) (int, error) {
 	return projectDTO.Total, nil
 }
 
-func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgName string) {
+func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgName string, orgDisplayName string) {
 	dataList := make([]ProItem, 0)
 	for _, v := range datas.Data.List {
 		pro := ProItem{}
@@ -151,11 +157,11 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 			image = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
 		}
 		pro.Title.Props = TitleProps{
-			DisplayName: fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
+			DisplayName: fmt.Sprintf("%s/%s", orgDisplayName, v.ProjectDTO.DisplayName),
 			RenderType:  "linkText",
 			Value: map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{"image": image}, map[string]interface{}{
-					"text":         fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName),
+					"text":         fmt.Sprintf("%s/%s", orgDisplayName, v.ProjectDTO.DisplayName),
 					"operationKey": "toSpecificProject",
 					"styleConfig": map[string]interface{}{
 						"bold":     true,
@@ -229,7 +235,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 			},
 		}
 		pro.Description.TextStyleName = map[string]interface{}{
-			"color-text-sub": true,
+			"color-text-light-desc": true,
 		}
 		//pro.Description.Value = fmt.Sprintf("当前您还有 %d 个事项待完成，其中 已过期: %d，本日到期: %d，7日内到期: %d，30日内到期: %d",
 		//	v.TotalIssueNum, v.ExpiredIssueNum, v.ExpiredOneDayNum, v.ExpiredSevenDayNum, v.ExpiredThirtyDayNum)
@@ -253,9 +259,10 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				ProjectId: v.ProjectDTO.ID,
 				Type:      issueTypeMap[issue.Type.String()],
 				Name: IssueName{
-					RenderType: "textWithIcon",
-					PrefixIcon: fmt.Sprintf("ISSUE_ICON.issue.%s", issue.Type.String()),
-					Value:      issue.Title,
+					RenderType:  "textWithIcon",
+					PrefixIcon:  fmt.Sprintf("ISSUE_ICON.issue.%s", issue.Type.String()),
+					Value:       issue.Title,
+					HoverActive: "hover-active",
 				},
 				OrgName: orgName,
 			}
@@ -293,7 +300,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				RenderType: "linkText",
 				Value: Value{
 					Text: []ValueText{
-						{Text: fmt.Sprintf("查看剩余%d条事件 >>", leftIssueNum), OperationKey: "toSpecificProject"},
+						{Text: fmt.Sprintf("查看剩余%d条事件 ", leftIssueNum), OperationKey: "toSpecificProject", Icon: "double-right"},
 					},
 				},
 			},
@@ -331,7 +338,11 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		return nil
 	}
 	t.Props.Visible = true
-	orgName := t.getOrgName()
+	t.Props.IsLoadMore = true
+	orgName, orgDisplayName, err := t.getOrgName()
+	if err != nil {
+		return err
+	}
 	switch event.Operation {
 	case apistructs.InitializeOperation:
 		t.State.PageNo = DefaultPageNo
@@ -344,7 +355,7 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		t.Data.List = make([]ProItem, 0)
 		if workDatas != nil {
 			t.State.Total = workDatas.Data.TotalProject
-			t.addWorkbenchData(workDatas, orgName)
+			t.addWorkbenchData(workDatas, orgName, orgDisplayName)
 		}
 	case apistructs.ChangeOrgsPageNoOperationKey:
 		if t.State.PageNo <= 0 || t.State.PageSize <= 0 {
@@ -370,7 +381,7 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 		t.Data.List = make([]ProItem, 0)
 		if workDatas != nil {
 			t.State.Total = workDatas.Data.TotalProject
-			t.addWorkbenchData(workDatas, orgName)
+			t.addWorkbenchData(workDatas, orgName, orgDisplayName)
 		}
 	}
 	return nil

@@ -11,22 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package apitestsv2
+package auth
 
-import (
-	"fmt"
-	"strconv"
-	"testing"
+import "net/http"
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestRandString(t *testing.T) {
-	s := randString(Integer)
-	i, err := strconv.Atoi(s)
-	assert.NoError(t, err)
-	fmt.Println(s, i)
-
-	s = randString(String)
-	fmt.Println(s)
+func Authorizer(req *http.Request) (string, bool, error) {
+	// inner proxy not need auth
+	if req.URL.Path == "/clusterdialer" {
+		return "proxy", true, nil
+	}
+	clusterKey := req.Header.Get("X-Erda-Cluster-Key")
+	// TODO: support openapi auth
+	auth := req.Header.Get("Authorization")
+	return clusterKey, auth != "", nil
 }

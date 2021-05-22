@@ -141,6 +141,19 @@ type GetAllGroupData struct {
 	Type  string `json:"type"`
 }
 
+type NotifyRecord struct {
+	NotifyId    string `json:"notify_id" gorm:"column:notify_id"`
+	NotifyName  string `json:"notify_name" gorm:"column:notify_name"`
+	ScopeType   string `json:"scope_type" gorm:"column:scope_type"`
+	ScopeId     int64  `json:"scope_id" gorm:"column:scope_id"`
+	GroupId     string `json:"group_id" gorm:"column:group_id"`
+	NotifyGroup string `json:"notify_group" gorm:"column:notify_group"`
+	Title       string `json:"title" gorm:"column:title"`
+	NotifyTime  int64  `json:"notify_time" gorm:"column:notify_time"`
+	CreateTime  int64  `json:"create_time" gorm:"column:create_time"`
+	UpdateTime  int64  `json:"update_time" gorm:"column:update_time"`
+}
+
 func ValidateString(field string) string {
 	if len(field) == 0 {
 		return FieldEmpty

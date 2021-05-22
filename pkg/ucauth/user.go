@@ -23,8 +23,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/erda-project/erda/pkg/httpclient"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/httpclient"
 )
 
 type USERID string
