@@ -82,6 +82,9 @@ type Conf struct {
 	FileMaxMemorySizeStr string `env:"FILE_MAX_MEMORY_SIZE" default:"32MB"`
 	FileMaxMemorySize    datasize.ByteSize
 
+	// disable file download permission validate temporarily for multi-domain
+	DisableFileDownloadPermissionValidate bool `env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
+
 	// fs
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/cmdb/files:/files:rw' 容器内挂载点的值
 	StorageMountPointInContainer string `env:"STORAGE_MOUNT_POINT_IN_CONTAINER" default:"/files"`
@@ -458,9 +461,15 @@ func FileMaxUploadSize() datasize.ByteSize {
 	return cfg.FileMaxUploadSize
 }
 
+
 // FileMaxMemorySize return the size of the file parts stored in memory
 func FileMaxMemorySize() datasize.ByteSize {
 	return cfg.FileMaxMemorySize
+}
+
+// DisableFileDownloadPermissionValidate return switch for file download permission check.
+func DisableFileDownloadPermissionValidate() bool {
+	return cfg.DisableFileDownloadPermissionValidate
 }
 
 // StorageMountPointInContainer 返回 files 在容器内的挂载点.

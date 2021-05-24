@@ -255,9 +255,8 @@ func (svc *Service) listSwaggerVersionOnMinor(req *apistructs.ListSwaggerVersion
 	var (
 		versions []*apistructs.APIAssetVersionsModel
 		where    = map[string]interface{}{
-			"org_id":     req.OrgID,
-			"asset_id":   req.URIParams.AssetID,
-			"deprecated": false,
+			"org_id":   req.OrgID,
+			"asset_id": req.URIParams.AssetID,
 		}
 	)
 	if err := svc.ListRecords(&versions, where); err != nil {
@@ -489,8 +488,8 @@ func (svc *Service) ListContracts(req *apistructs.ListContractsReq) (*apistructs
 	}
 	if len(req.QueryParams.Status) == 0 {
 		req.QueryParams.Status = []apistructs.ContractStatus{
-			apistructs.ContractProving, apistructs.ContractProved,
-			apistructs.ContractDisproved, apistructs.ContractUnproved,
+			apistructs.ContractApproving, apistructs.ContractApproved,
+			apistructs.ContractDisapproved, apistructs.ContractUnapproved,
 		}
 	}
 

@@ -89,7 +89,7 @@ func (svc *Service) UpdateAutoTestSceneStep(req apistructs.AutotestSceneRequest)
 	//}
 
 	// TODO 放开限制，直接把特殊字符删掉
-	reg := regexp.MustCompile("[^a-zA-Z\u4e00-\u9fa50-9_-]")
+	reg := regexp.MustCompile("[^a-zA-Z\u4e00-\u9fa50-9_\\-()/\\s]")
 	req.Name = reg.ReplaceAllString(req.Name, "")
 	step, err := svc.db.GetAutoTestSceneStep(req.ID)
 	if err != nil {
