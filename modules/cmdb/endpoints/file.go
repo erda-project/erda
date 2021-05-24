@@ -160,7 +160,7 @@ func (e *Endpoints) DownloadFile(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// 校验用户登录
-	if file.Extra.IsPublic == false {
+	if !file.Extra.IsPublic && !conf.DisableFileDownloadPermissionValidate() {
 		_, err = user.GetIdentityInfo(r)
 		if err != nil {
 			return apierrors.ErrDownloadFile.NotLogin()

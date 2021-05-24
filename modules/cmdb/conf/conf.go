@@ -79,6 +79,9 @@ type Conf struct {
 	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
 	FileMaxUploadSize    datasize.ByteSize
 
+	// disable file download permission validate temporarily for multi-domain
+	DisableFileDownloadPermissionValidate bool `env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
+
 	// fs
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/cmdb/files:/files:rw' 容器内挂载点的值
 	StorageMountPointInContainer string `env:"STORAGE_MOUNT_POINT_IN_CONTAINER" default:"/files"`
@@ -446,6 +449,11 @@ func ProjectStatsCacheCron() string {
 // FileMaxUploadSize 返回 文件上传的大小限制.
 func FileMaxUploadSize() datasize.ByteSize {
 	return cfg.FileMaxUploadSize
+}
+
+// DisableFileDownloadPermissionValidate return switch for file download permission check.
+func DisableFileDownloadPermissionValidate() bool {
+	return cfg.DisableFileDownloadPermissionValidate
 }
 
 // StorageMountPointInContainer 返回 files 在容器内的挂载点.
