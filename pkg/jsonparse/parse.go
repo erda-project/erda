@@ -16,6 +16,7 @@ package jsonparse
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/erda-project/erda/pkg/jsonpath"
@@ -51,14 +52,12 @@ func FilterJson(jsonValue []byte, express string, expressType string) interface{
 		body interface{}
 		val  interface{}
 	)
-
 	d := json.NewDecoder(bytes.NewReader(jsonValue))
 	d.UseNumber()
 	err := d.Decode(&body)
 	if err != nil {
 		return ""
 	}
-
 	jsonString := string(jsonValue)
 
 	express = strings.TrimSpace(express)
@@ -75,8 +74,8 @@ func FilterJson(jsonValue []byte, express string, expressType string) interface{
 				val, _ = jsonpath.Jackson(jsonString, express)
 			} else {
 				// jq The expression does not necessarily start with ., maybe like '{"ss": 1}' | .ss
-				var err error
 				val, err = jsonpath.JQ(jsonString, express)
+				fmt.Println(fmt.Sprintf("jq filter error: %v", err))
 				if err != nil {
 					val, _ = jsonpath.Get(body, express)
 				}

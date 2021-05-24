@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/jsonparse"
 )
 
 type ParamsVisitor struct {
@@ -65,7 +66,7 @@ func ReplacePipelineParams(pipeline string, params map[string]interface{}) strin
 		case string:
 			replaceStr = v.(string)
 		default:
-			replaceStr = fmt.Sprintf("%v", v)
+			replaceStr = jsonparse.JsonOneLine(v)
 		}
 
 		// generate random params before replace

@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 func JQ(jsonInput, filter string) (interface{}, error) {
@@ -29,9 +28,8 @@ func JQ(jsonInput, filter string) (interface{}, error) {
 	}
 	defer os.Remove(f.Name())
 	f.WriteString(jsonInput)
-	filter = strings.ReplaceAll(filter, `"`, `\"`)
 	filter = filter + " | select(.!=null) | tojson"
-	jq := fmt.Sprintf(`jq -c -j "%s" '%s'`, filter, f.Name())
+	jq := fmt.Sprintf(`jq -c -j '%s' '%s'`, filter, f.Name())
 	wrappedJQ := exec.Command("/bin/sh", "-c", jq)
 	output, err := wrappedJQ.CombinedOutput()
 	if err != nil {
