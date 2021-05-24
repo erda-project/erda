@@ -89,6 +89,12 @@ func Initialize() error {
 		systemGroup.POST("/migration/new_auth", webcontext.WrapHandler(api.MigrationNewAuth))
 	}
 
+	apiGroup := e.Group("/_api")
+	{
+		// implements the health check
+		apiGroup.GET("/health", webcontext.WrapHandler(api.Health))
+	}
+
 	debugGroup := e.Group("/_debug")
 	profiling.WrapGroup(debugGroup)
 
