@@ -143,7 +143,7 @@ func (this *JoinedBrief) setProps() {
 	this.Props.Pagination = false
 
 	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "category"})
-	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "number", Width: 42})
+	this.Props.Columns = append(this.Props.Columns, column{Title: "", DataIndex: "number", Width: 55})
 	this.Props.StyleNames = StyleNames{
 		NoBorder:  true,
 		LightCard: true,
