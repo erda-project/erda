@@ -28,7 +28,3 @@ func Load() {
 	settings.LoadEnv()
 	envconf.MustLoad(&cfg)
 }
-
-//func CollectorURL() string {
-//	return cfg.CollectorURL
-//}
