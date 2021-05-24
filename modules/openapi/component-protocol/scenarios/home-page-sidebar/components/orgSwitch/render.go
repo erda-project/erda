@@ -145,7 +145,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 func RenItem(org apistructs.OrgDTO) MenuItem {
 	logo := "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQY0vUTJwftJ8WqXoLiLeB--2MJkpZLpYOA&usqp=CAU"
 	if org.Logo != "" {
-		logo = fmt.Sprintf("https:%s", org.Logo)
+		logo = org.Logo
 	}
 	item := MenuItem{
 		Label:        org.DisplayName,
