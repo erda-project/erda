@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyProjectContent struct {
@@ -104,20 +104,20 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		access = permissionRes.Access
 	}
 	if access {
-		role = i18nLocale.Get(i18n2.I18nKeyAdmin)
+		role = i18nLocale.Get(i18n.I18nKeyAdmin)
 		createProType = "linkText"
-		createProStr = i18nLocale.Get(i18n2.I18nKeyProCreate)
+		createProStr = i18nLocale.Get(i18n.I18nKeyProCreate)
 		createProDetail = map[string]interface{}{
-			"text": []interface{}{i18nLocale.Get(i18n2.I18nKeyProCreateBy), map[string]interface{}{
+			"text": []interface{}{i18nLocale.Get(i18n.I18nKeyProCreateBy), map[string]interface{}{
 				"icon":          "appstore",
 				"iconStyleName": "primary-icon",
-			}, i18nLocale.Get(i18n2.I18nKeyProCreateByCenter)},
+			}, i18nLocale.Get(i18n.I18nKeyProCreateByCenter)},
 		}
 	} else {
-		role = i18nLocale.Get(i18n2.I18nKeyNewMember)
+		role = i18nLocale.Get(i18n.I18nKeyNewMember)
 		createProType = "Text"
-		createProStr = i18nLocale.Get(i18n2.I18nKeyProJoin)
-		createProDetail = i18nLocale.Get(i18n2.I18nKeyProJoinMsg)
+		createProStr = i18nLocale.Get(i18n.I18nKeyProJoin)
+		createProDetail = i18nLocale.Get(i18n.I18nKeyProJoinMsg)
 	}
 	e.Props = make(map[string]interface{})
 	e.Props["visible"] = visible
@@ -126,7 +126,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n2.I18nKeyOrgBelow), role, i18nLocale.Get(i18n2.I18nKeyOrgQuickKnow)),
+				"value":      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n.I18nKeyOrgBelow), role, i18nLocale.Get(i18n.I18nKeyOrgQuickKnow)),
 			},
 			"gapSize": "normal",
 		},
@@ -134,7 +134,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyOrgSwitch),
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitch),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -145,7 +145,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyOrgSwitchMsg),
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitchMsg),
 			},
 			"gapSize": "large",
 		},
@@ -153,7 +153,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyOrgBrowsePublic),
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgBrowsePublic),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -164,7 +164,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyOrgSwitchBrowse),
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitchBrowse),
 			},
 			"gapSize": "large",
 		},
@@ -191,7 +191,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyOrgProBrowse),
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgProBrowse),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -203,10 +203,10 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 				"renderType": "linkText",
 				"visible":    visible,
 				"value": map[string]interface{}{
-					"text": []interface{}{i18nLocale.Get(i18n2.I18nKeyMenuClick), map[string]interface{}{
+					"text": []interface{}{i18nLocale.Get(i18n.I18nKeyMenuClick), map[string]interface{}{
 						"icon":          "application-menu",
 						"iconStyleName": "primary-icon",
-					}, i18nLocale.Get(i18n2.I18nKeyProPublicBrowse)},
+					}, i18nLocale.Get(i18n.I18nKeyProPublicBrowse)},
 				},
 			},
 			"gapSize": "large",
@@ -215,7 +215,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      i18nLocale.Get(i18n2.I18nKeyProJoinAfter),
+				"value":      i18nLocale.Get(i18n.I18nKeyProJoinAfter),
 				"textStyleName": map[string]bool{
 					"fz12":            true,
 					"color-text-desc": true,

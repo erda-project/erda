@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type MyApplicationTitle struct {
@@ -41,7 +41,7 @@ type Props struct {
 func (t *MyApplicationTitle) setProps() {
 	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
 	t.Props.Visible = true
-	t.Props.Title = i18nLocale.Get(i18n2.I18nKeyAppName)
+	t.Props.Title = i18nLocale.Get(i18n.I18nKeyAppName)
 	t.Props.Level = 1
 	t.Props.NoMarginBottom = true
 	t.Props.ShowDivider = true

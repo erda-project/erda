@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -89,7 +89,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 		"props": map[string]interface{}{
 			"renderType": "text",
 			"visible":    visible,
-			"value":      i18nLocale.Get(i18n2.I18nKeyOrgNoAdded),
+			"value":      i18nLocale.Get(i18n.I18nKeyOrgNoAdded),
 		},
 	})
 	this.Props.Value = append(this.Props.Value, map[string]interface{}{
@@ -98,7 +98,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         i18nLocale.Get(i18n2.I18nKeyOrgHowAdded),
+					"text":         i18nLocale.Get(i18n.I18nKeyOrgHowAdded),
 					"operationKey": "toJoinOrgDoc",
 				}},
 			},
@@ -110,7 +110,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         i18nLocale.Get(i18n2.I18nKeyOrgBrosePublic),
+					"text":         i18nLocale.Get(i18n.I18nKeyOrgBrosePublic),
 					"operationKey": "toPublicOrgPage",
 				}},
 			},

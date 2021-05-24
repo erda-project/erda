@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -92,7 +92,7 @@ func (this *EmptyProject) Render(ctx context.Context, c *apistructs.Component, s
 	prosNum := this.State.ProsNum
 	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	if prosNum == 0 {
-		this.setProps(true, i18nLocale.Get(i18n2.I18nKeyProjectNoAdded))
+		this.setProps(true, i18nLocale.Get(i18n.I18nKeyProjectNoAdded))
 		return nil
 	} else {
 		this.setProps(false, "")

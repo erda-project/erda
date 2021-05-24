@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -88,7 +88,7 @@ func (this *MoreProject) setComponentValue() {
 	this.Type = "Text"
 	this.Props.RenderType = "linkText"
 	this.Props.Visible = true
-	this.Props.Value.Text = i18nLocale.Get(i18n2.I18nKeyMore)
+	this.Props.Value.Text = i18nLocale.Get(i18n.I18nKeyMore)
 }
 
 func (this *MoreProject) getProjectsNum(orgID string) (int, error) {

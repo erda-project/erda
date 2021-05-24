@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type CreateProjectTip struct {
@@ -126,10 +126,10 @@ func (p *CreateProjectTip) Render(ctx context.Context, c *apistructs.Component, 
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
 		"text": []interface{}{map[string]interface{}{
-			"text":         i18nLocale.Get(i18n2.I18nKeyProjectHowCreate),
+			"text":         i18nLocale.Get(i18n.I18nKeyProjectHowCreate),
 			"operationKey": "createProjectDoc",
-		}, fmt.Sprintf(" %s ", i18nLocale.Get(i18n2.I18nKeyOr)), map[string]interface{}{
-			"text":         i18nLocale.Get(i18n2.I18nKeyOrgBrowseInfo),
+		}, fmt.Sprintf(" %s ", i18nLocale.Get(i18n.I18nKeyOr)), map[string]interface{}{
+			"text":         i18nLocale.Get(i18n.I18nKeyOrgBrowseInfo),
 			"operationKey": "toPublicOrgPage",
 		}},
 	}

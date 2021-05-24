@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyOrgContent struct {
@@ -92,23 +92,23 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	}
 	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	if access {
-		role = i18nLocale.Get(i18n2.I18nKeyAdmin)
+		role = i18nLocale.Get(i18n.I18nKeyAdmin)
 	} else {
-		role = i18nLocale.Get(i18n2.I18nKeyNewMember)
+		role = i18nLocale.Get(i18n.I18nKeyNewMember)
 	}
 	e.Props.Value = make([]Value, 0)
 	e.Props.Value = append(e.Props.Value, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n2.I18nKeyOrgBelow), role, i18nLocale.Get(i18n2.I18nKeyOrgQuickKnow)),
+			Value:      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n.I18nKeyOrgBelow), role, i18nLocale.Get(i18n.I18nKeyOrgQuickKnow)),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      i18nLocale.Get(i18n2.I18nKeyOrgBrowsePublic),
+			Value:      i18nLocale.Get(i18n.I18nKeyOrgBrowsePublic),
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -118,14 +118,14 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      i18nLocale.Get(i18n2.I18nKeyOrgMsg),
+			Value:      i18nLocale.Get(i18n.I18nKeyOrgMsg),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoin),
+			Value:      i18nLocale.Get(i18n.I18nKeyOrgJoin),
 			StyleConfig: map[string]bool{
 				"bold": true,
 			},
@@ -135,14 +135,14 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoinMsg),
+			Value:      i18nLocale.Get(i18n.I18nKeyOrgJoinMsg),
 		},
 		GapSize: "large",
 	}, Value{
 		Props: PropValue{
 			RenderType: "text",
 			Visible:    visible,
-			Value:      i18nLocale.Get(i18n2.I18nKeyOrgJoinAfter),
+			Value:      i18nLocale.Get(i18n.I18nKeyOrgJoinAfter),
 			TextStyleName: map[string]bool{
 				"fz12":            true,
 				"color-text-desc": true,

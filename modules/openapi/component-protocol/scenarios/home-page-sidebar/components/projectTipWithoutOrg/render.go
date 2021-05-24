@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type ProjectTipWithoutOrg struct {
@@ -103,8 +103,8 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 	p.Props.Visible = visible
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
-		"text": []interface{}{i18nLocale.Get(i18n2.I18nKeyOrgAddFirstOr), map[string]interface{}{
-			"text":         i18nLocale.Get(i18n2.I18nKeyMoreContent),
+		"text": []interface{}{i18nLocale.Get(i18n.I18nKeyOrgAddFirstOr), map[string]interface{}{
+			"text":         i18nLocale.Get(i18n.I18nKeyMoreContent),
 			"operationKey": "toJoinOrgDoc",
 		}},
 	}

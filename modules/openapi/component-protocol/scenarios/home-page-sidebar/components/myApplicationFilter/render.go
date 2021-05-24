@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -102,11 +102,11 @@ func (this *MyApplicationFilter) setComponentValue() {
 	this.State.Conditions = []Condition{
 		{
 			Key:         "title",
-			Label:       i18nLocale.Get(i18n2.I18nKeyFilterTitle),
-			EmptyText:   i18nLocale.Get(i18n2.I18nKeyAll),
+			Label:       i18nLocale.Get(i18n.I18nKeyFilterTitle),
+			EmptyText:   i18nLocale.Get(i18n.I18nKeyAll),
 			Fixed:       true,
 			ShowIndex:   2,
-			Placeholder: i18nLocale.Get(i18n2.I18nKeyFilterSearchApp),
+			Placeholder: i18nLocale.Get(i18n.I18nKeyFilterSearchApp),
 			Type:        "input",
 		},
 	}
