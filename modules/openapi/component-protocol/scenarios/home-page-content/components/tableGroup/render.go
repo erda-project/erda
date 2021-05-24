@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 const (
@@ -202,35 +202,35 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		//pro.Title.PrefixImage = ""
 		//pro.Title.Title = fmt.Sprintf("%s/%s", orgName, v.ProjectDTO.DisplayName)
 		//pro.Title.Level = 2
-		pro.SubTitle.Title = i18nLocale.Get(i18n2.I18nKeyProUnDoneIssue)
+		pro.SubTitle.Title = i18nLocale.Get(i18n.I18nKeyProUnDoneIssue)
 		pro.SubTitle.Level = 3
 		pro.SubTitle.Size = "small"
 		pro.Description.RenderType = "linkText"
 		pro.Description.Visible = true
 		pro.Description.Value = map[string]interface{}{
 			"text": []interface{}{
-				i18nLocale.Get(i18n2.I18nKeyNowHave), map[string]interface{}{
+				i18nLocale.Get(i18n.I18nKeyNowHave), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.TotalIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueNoSpecified), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueNoSpecified), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.UnSpecialIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredIssueNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueTodayExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueTodayExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredOneDayNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueTomorrowExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueTomorrowExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredTomorrowNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueSevenDayExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueSevenDayExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredSevenDayNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueThirtyDayExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueThirtyDayExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.ExpiredThirtyDayNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
-				}, i18nLocale.Get(i18n2.I18nKeyIssueFeatureExpired), map[string]interface{}{
+				}, i18nLocale.Get(i18n.I18nKeyIssueFeatureExpired), map[string]interface{}{
 					"text":        fmt.Sprintf(" %d ", v.FeatureDayNum),
 					"styleConfig": map[string]interface{}{"bold": true, "fontSize": "16px"},
 				},
@@ -302,7 +302,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				RenderType: "linkText",
 				Value: Value{
 					Text: []ValueText{
-						{Text: fmt.Sprintf("%s%d%s ", i18nLocale.Get(i18n2.I18nKeyViewRemaining), leftIssueNum, i18nLocale.Get(i18n2.I18nKeySomeEvent)), OperationKey: "toSpecificProject", Icon: "double-right"},
+						{Text: fmt.Sprintf("%s%d%s ", i18nLocale.Get(i18n.I18nKeyViewRemaining), leftIssueNum, i18nLocale.Get(i18n.I18nKeySomeEvent)), OperationKey: "toSpecificProject", Icon: "double-right"},
 					},
 				},
 			},

@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyProjectIssue struct {
@@ -105,7 +105,7 @@ func (e *EmptyProjectIssue) Render(ctx context.Context, c *apistructs.Component,
 
 	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	e.Type = "EmptyHolder"
-	e.Props.Tip = i18nLocale.Get(i18n2.I18nKeyProNoIssue)
+	e.Props.Tip = i18nLocale.Get(i18n.I18nKeyProNoIssue)
 	e.Props.WhiteBg = true
 	e.Props.Relative = true
 	e.Props.PaddingY = true

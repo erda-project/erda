@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	i18n2 "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -124,7 +124,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
-			"label": i18nLocale.Get(i18n2.I18nKeyOrgBrowse),
+			"label": i18nLocale.Get(i18n.I18nKeyOrgBrowse),
 			"operations": map[string]interface{}{
 				"click": map[string]interface{}{
 					"key":    "click",
