@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/Knetic/govaluate.v3"
 
 	"github.com/erda-project/erda/pkg/mock"
@@ -59,7 +60,18 @@ type ExpressionExecSign struct {
 	Condition string
 }
 
-func Reconcile(condition string) ExpressionExecSign {
+func Reconcile(condition string) (sign ExpressionExecSign) {
+
+	// panic handler
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Errorf("pkg.expression: invalid condition: %s, panic: %v", condition, r)
+			sign = ExpressionExecSign{
+				Sign: TaskJumpOver,
+				Err:  fmt.Errorf("expression %q exec failed, action skip", condition),
+			}
+		}
+	}()
 
 	// 表达式为空，不跳过
 	if condition == "" {
