@@ -78,13 +78,12 @@ func calculateStatus(raws []rawStatus, name string) uint8 {
 				status.update(1)
 			}
 			if item.Weight == 1 {
-				switch name {
-				case "machine":
-					status.update(3)
-				default:
-					status.update(2)
-				}
+				status.update(2)
 				failureCnt++
+			}
+			// upgrade
+			if name == "machine" {
+				status += 1
 			}
 		}
 	}
