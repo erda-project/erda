@@ -26,6 +26,8 @@ type Conf struct {
 	Debug       bool   `env:"DEBUG" default:"false"`
 	MonitorAddr string `env:"MONITOR_ADDR"`
 	GittarAddr  string `env:"GITTAR_ADDR"`
+
+	BundleTimeoutSec int `env:"BUNDLE_TIMEOUT_SECOND" default:"10"`
 }
 
 // Load 加载环境变量配置.
@@ -51,4 +53,8 @@ func MonitorAddr() string {
 // GittarAddr 返回 gittar 的集群内部地址.
 func GittarAddr() string {
 	return cfg.GittarAddr
+}
+
+func BundleTimeoutSecond() int {
+	return cfg.BundleTimeoutSec
 }
