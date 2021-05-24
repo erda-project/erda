@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/action-runner-scheduler/conf"
 	"github.com/erda-project/erda/modules/action-runner-scheduler/dbclient"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 type RunnerTask struct {

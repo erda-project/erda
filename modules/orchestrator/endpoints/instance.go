@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // InstanceRequestType 获取实例输入的请求参数

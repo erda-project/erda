@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type RunnerTask struct {

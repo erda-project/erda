@@ -34,8 +34,8 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/loop"
 	// "terminus.io/dice/telemetry/promxp"
 )

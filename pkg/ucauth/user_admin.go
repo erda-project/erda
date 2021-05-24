@@ -23,8 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -119,35 +118,6 @@ func (c *UCClient) FindUsersByKey(key string) ([]User, error) {
 	query := fmt.Sprintf("username:%s OR nickname:%s OR phone_number:%s OR email:%s", key, key, key, key)
 
 	return c.findUsersByQuery(query)
-}
-
-func (c *UCClient) FuzzSearchUserByName(req *apistructs.UserPagingRequest) ([]User, error) {
-	token, err := c.ucTokenAuth.GetServerToken(false)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token when finding users")
-	}
-
-	data, err := HandlePagingUsers(req, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return userPagingListMapper(data), nil
-}
-
-func userPagingListMapper(user *userPaging) []User {
-	userList := make([]User, 0)
-	for _, u := range user.Data {
-		userList = append(userList, User{
-			ID:        strutil.String(u.Id),
-			Name:      u.Username,
-			Nick:      u.Nickname,
-			AvatarURL: u.Avatar,
-			Phone:     u.Mobile,
-			Email:     u.Email,
-		})
-	}
-	return userList
 }
 
 // GetUser 获取用户详情

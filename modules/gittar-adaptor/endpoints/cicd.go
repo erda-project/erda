@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // CICDTaskLog 包装 cicd task 获取接口

@@ -17,7 +17,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/testcase"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // Service testSet 实例对象封装

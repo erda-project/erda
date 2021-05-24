@@ -29,10 +29,9 @@ import (
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/i18n"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
-	i18npkg "github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -70,8 +69,6 @@ func protocolRender(w http.ResponseWriter, r *http.Request) {
 	}
 	bdl := bundle.New(bundleOpts...)
 	i18nPrinter := i18n.I18nPrinter(r)
-	// get locale from request
-	locale := i18npkg.GetLocaleNameByRequest(r)
 	// UserID 来自session, OrgID 来自url xxx-org.xx
 	i, _ := GetIdentity(r)
 	ctxBdl := protocol.ContextBundle{
@@ -79,7 +76,6 @@ func protocolRender(w http.ResponseWriter, r *http.Request) {
 		I18nPrinter: i18nPrinter,
 		Identity:    i,
 		InParams:    req.InParams,
-		Locale:      locale,
 	}
 	ctx := context.Background()
 	ctx1 := context.WithValue(ctx, protocol.GlobalInnerKeyCtxBundle.String(), ctxBdl)

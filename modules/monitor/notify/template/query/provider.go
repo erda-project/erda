@@ -23,7 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

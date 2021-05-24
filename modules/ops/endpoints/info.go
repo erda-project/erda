@@ -17,7 +17,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Info demo

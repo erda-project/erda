@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/action-runner-scheduler/dbclient"
 	"github.com/erda-project/erda/modules/action-runner-scheduler/endpoints"
 	"github.com/erda-project/erda/modules/action-runner-scheduler/services/runnertask"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Initialize initialize module.

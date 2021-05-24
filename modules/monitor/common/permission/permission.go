@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	table "github.com/erda-project/erda/modules/monitor/common/db"
 	bundlecmdb "github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // Scope .

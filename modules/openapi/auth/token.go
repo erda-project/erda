@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/oauth2"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

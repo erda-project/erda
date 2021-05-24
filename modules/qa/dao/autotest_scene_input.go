@@ -14,7 +14,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type AutoTestSceneInput struct {

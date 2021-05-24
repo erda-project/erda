@@ -16,7 +16,7 @@ package dbclient
 import (
 	"time"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type RecordType string

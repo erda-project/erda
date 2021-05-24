@@ -30,10 +30,9 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/filehelper"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -556,7 +555,7 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		ID:          uint64(org.ID),
 		Name:        org.Name,
 		Desc:        org.Desc,
-		Logo:        filehelper.APIFileUrlRetriever(org.Logo),
+		Logo:        org.Logo,
 		Locale:      org.Locale,
 		Domain:      concat_domain,
 		Creator:     org.UserID,

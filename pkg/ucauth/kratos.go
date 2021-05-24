@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type OryKratosSession struct {
