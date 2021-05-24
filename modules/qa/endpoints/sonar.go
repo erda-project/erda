@@ -31,9 +31,9 @@ import (
 	"github.com/erda-project/erda/modules/qa/dbclient"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 	"github.com/erda-project/erda/pkg/cimysql"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/httpclientutil"
 	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 // sonar 分析结果的问题类型

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
 func JsonOneLine(o interface{}) string {

@@ -20,7 +20,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
 func TestJsonPath(t *testing.T) {

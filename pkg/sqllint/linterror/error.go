@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 
-	"github.com/erda-project/erda/pkg/color"
 	"github.com/erda-project/erda/pkg/sqllint/script"
+	"github.com/erda-project/erda/pkg/terminal/color"
 )
 
 type LintError struct {

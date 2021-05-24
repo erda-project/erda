@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
-	"github.com/erda-project/erda/pkg/encryption"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/httpserver"
 )
