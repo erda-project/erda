@@ -202,6 +202,10 @@ func getProps() map[string]interface{} {
 				DataIndex: "status",
 			},
 			{
+				Title:     "执行人",
+				DataIndex: "runUser",
+			},
+			{
 				Title:     "触发时间",
 				DataIndex: "triggerTime",
 			},
@@ -232,11 +236,16 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 	}
 	for _, each := range pipeline.Pipelines {
 		var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
+		var runUser string
+		if each.Extra.RunUser != nil {
+			runUser = each.Extra.RunUser.Name
+		}
 		list := map[string]interface{}{
 			//"id":          each.ID,
 			"version":     "#" + strconv.FormatInt(num, 10),
 			"pipelineId":  each.ID,
 			"status":      getStatus(each.Status),
+			"runUser":     runUser,
 			"triggerTime": each.TimeCreated.Format(timeLayoutStr),
 		}
 		lists = append(lists, list)

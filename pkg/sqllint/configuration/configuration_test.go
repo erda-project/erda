@@ -166,6 +166,8 @@ func TestConfiguration_Rulers(t *testing.T) {
 	c.UpdatedAtDefaultValueLinter = true
 	c.UpdatedAtOnUpdateLinter = true
 	c.VarcharLengthLinter = true
+	c.CompleteInsertLinter = true
+	c.ManualTimeSetterLinter = true
 
 	if _, err := c.Rulers(); err != nil {
 		t.Fatal(err)

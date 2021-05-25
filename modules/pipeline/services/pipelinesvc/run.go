@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/commonutil/linkutil"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -62,6 +63,11 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	secrets, cmsDiceFiles, holdOnKeys, err := s.FetchSecrets(&p)
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	}
+
+	// replace global config use same random value
+	for k, v := range secrets {
+		secrets[k] = expression.ReplaceRandomParams(v)
 	}
 
 	// 校验私有配置转换出来的 envs
