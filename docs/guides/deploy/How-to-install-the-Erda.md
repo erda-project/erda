@@ -9,6 +9,7 @@
 - Docker 19.03+
 - CentOS 7.4 +
 - Helm 3 +
+- Generic Domain (Optional)
 
 
 
@@ -17,7 +18,7 @@
 1. Download the [tarball](https://github.com/erda-project/erda/releases) to your  **Kubernetes Master** node.
 
    ```shell
-   tar -xzvf erda-release.tar.gz
+   tar -xzvf erda.tar.gz
    cd erda-release
    ```
 
@@ -73,16 +74,19 @@
 
        ```shell
        mount -t <storage_type> <your-share-storage-node-ip>:<your-share-storage-dir> /netdata
+       
+       # for example use NFS as share storage，and NFS node ip is 10.0.0.1 you can mount the dir with command:
+       mount -t nfs 10.0.0.1:/netdata /netdata
        ```
 
        
-     
+
      - if not, you can execute the script. It will install NFS utils, create a dir `/netdata` to the current machine, and mount `/netdata` to each node
-     
+
        ```shell
        bash scripts/storage_prepare.sh
        ```
-     
+
        
 
     - you need to open the 80, 443 ports of the **LB machine** , which will receivers all outside traffic
@@ -143,3 +147,4 @@
      
 
 5. Visit the URL `http://dice.erda-demo.erda.io` on your browser machine which set the `/etc/hosts`
+
