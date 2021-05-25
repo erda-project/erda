@@ -133,23 +133,23 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	addEnv := func(svc *apistructs.Service, envs *[]apiv1.EnvVar, useClusterIP bool) error {
 		var err error
 		// use SHORT dns, service's name is equal to SHORT dns
-		host := strings.Join([]string{serviceName, svc.Namespace, DefaultServiceDNSSuffix}, ".")
+		host := strings.Join([]string{svc.Name, svc.Namespace, DefaultServiceDNSSuffix}, ".")
 		if useClusterIP {
-			host, err = k.getClusterIP(svc.Namespace, serviceName)
+			host, err = k.getClusterIP(svc.Namespace, svc.Name)
 			if err != nil {
 				return err
 			}
 		}
 		// add {serviceName}_HOST
 		*envs = append(*envs, apiv1.EnvVar{
-			Name:  makeEnvVariableName(serviceName) + "_HOST",
+			Name:  makeEnvVariableName(svc.Name) + "_HOST",
 			Value: host,
 		})
 
 		// {serviceName}_PORT Refers to the first port
 		if len(svc.Ports) > 0 {
 			*envs = append(*envs, apiv1.EnvVar{
-				Name:  makeEnvVariableName(serviceName) + "_PORT",
+				Name:  makeEnvVariableName(svc.Name) + "_PORT",
 				Value: strconv.Itoa(svc.Ports[0].Port),
 			})
 		}
@@ -157,7 +157,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		//If there are multiple ports, use them in sequence: {serviceName}_PORT0,{serviceName}_PORT1,...
 		for i, port := range svc.Ports {
 			*envs = append(*envs, apiv1.EnvVar{
-				Name:  makeEnvVariableName(serviceName) + "_PORT" + strconv.Itoa(i),
+				Name:  makeEnvVariableName(svc.Name) + "_PORT" + strconv.Itoa(i),
 				Value: strconv.Itoa(port.Port),
 			})
 		}
