@@ -11,20 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package conf
+package util
 
 import (
-	"github.com/erda-project/erda/modules/soldier/settings"
-	"github.com/erda-project/erda/pkg/envconf"
+	"encoding/base64"
+	"io"
+	"net/http"
+
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Conf struct {
-	//CollectorURL string `env:"COLLECTOR_URL" default:"http://collector.marathon.l4lb.thisdcos.directory:7076"`
-}
+const Base64EncodedRequestBody = "base64-encoded-request-body"
 
-var cfg Conf
-
-func Load() {
-	settings.LoadEnv()
-	envconf.MustLoad(&cfg)
+func HandleRequest(r *http.Request) {
+	// base64 decode request body if declared in header
+	if strutil.Equal(r.Header.Get(Base64EncodedRequestBody), "true", true) {
+		r.Body = io.NopCloser(base64.NewDecoder(base64.StdEncoding, r.Body))
+	}
 }

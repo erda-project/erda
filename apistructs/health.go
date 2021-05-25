@@ -11,20 +11,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package conf
+package apistructs
 
-import (
-	"github.com/erda-project/erda/modules/soldier/settings"
-	"github.com/erda-project/erda/pkg/envconf"
+type HealthStatus string
+
+const (
+	HealthStatusOk      HealthStatus = "ok"
+	HealthStatusWarning HealthStatus = "warning"
+	HealthStatusFail    HealthStatus = "fail"
 )
 
-type Conf struct {
-	//CollectorURL string `env:"COLLECTOR_URL" default:"http://collector.marathon.l4lb.thisdcos.directory:7076"`
+// HealthResponse the response struct of health check
+type HealthResponse struct {
+	Name    string            `json:"name"`
+	Status  HealthStatus      `json:"status"`
+	Modules []Module          `json:"modules"`
+	Tags    map[string]string `json:"tags"`
 }
 
-var cfg Conf
-
-func Load() {
-	settings.LoadEnv()
-	envconf.MustLoad(&cfg)
+type Module struct {
+	Name    string       `json:"name"`
+	Status  HealthStatus `json:"status"`
+	Message string       `json:"message"`
 }
