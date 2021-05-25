@@ -137,6 +137,7 @@ var (
 	ErrGetAutoTestSpace    = err("ErrGetAutoTestSpace", "获取自动化测试空间失败")
 	ErrListAutoTestSpace   = err("ErrListAutoTestSpace", "获取自动化测试空间列表失败")
 	ErrExportAutoTestSpace = err("ErrExportAutoTestSpace", "导出自动化测试空间失败")
+	ErrImportAutoTestSpace = err("ErrImportAutoTestSpace", "导入自动化测试空间失败")
 
 	ErrCreateAutoTestScene      = err("ErrCreateAutoTestScene", "创建自动化测试场景失败")
 	ErrUpdateAutoTestScene      = err("ErrUpdateAutoTestScene", "更新自动化测试场景失败")

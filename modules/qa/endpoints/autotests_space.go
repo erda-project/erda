@@ -244,6 +244,7 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
+	// permission check
 	if !identityInfo.IsInternalClient() {
 		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   identityInfo.UserID,
@@ -262,4 +263,41 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWrit
 	req.IdentityInfo = identityInfo
 
 	return e.autotestV2.Export(w, req)
+}
+
+func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportAutoTestSpace.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.AutoTestSpaceImportRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	// permission check
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(req.ProjectID),
+			Resource: apistructs.TestSpaceResource,
+			Action:   apistructs.DeleteAction,
+		})
+		if err != nil {
+			return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrCreateTestPlan.AccessDenied().ToResp(), nil
+		}
+	}
+
+	importResult, err := e.autotestV2.Import(req, r)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(importResult)
 }

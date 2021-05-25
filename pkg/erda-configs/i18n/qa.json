@@ -42,8 +42,10 @@
         "tp.export.scene.sheet.name": "自动化测试场景",
         "tp.export.scene.num": "用例编号",
         "tp.export.scene.name": "场景名称",
+        "tp.export.scene.scene.set.num": "场景集编号",
         "tp.export.scene.space.num": "测试空间编号",
         "tp.export.scene.pre.num": "上个场景编号",
+        "tp.export.scene.ref.set.num": "关联场景集编号",
         "tp.export.scene.description": "场景描述",
 
         "tp.export.scene.input.sheet.name": "自动化测试场景入参",
@@ -134,6 +136,7 @@
         "tp.export.scene.sheet.name": "AutoTest Scene",
         "tp.export.scene.num": "scene num",
         "tp.export.scene.name": "scene name",
+        "tp.export.scene.scene.set.num": "scene set num",
         "tp.export.scene.space.num": "space num",
         "tp.export.scene.pre.num": "pre num",
         "tp.export.scene.description": "description",
