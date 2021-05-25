@@ -136,16 +136,16 @@ func (c *UCClient) FuzzSearchUserByName(req *apistructs.UserPagingRequest) ([]Us
 }
 
 func userPagingListMapper(user *userPaging) []User {
-	userList := make([]User, user.Total)
-	for i, u := range user.Data {
-		userList[i] = User{
+	userList := make([]User, 0)
+	for _, u := range user.Data {
+		userList = append(userList, User{
 			ID:        strutil.String(u.Id),
 			Name:      u.Username,
 			Nick:      u.Nickname,
 			AvatarURL: u.Avatar,
 			Phone:     u.Mobile,
 			Email:     u.Email,
-		}
+		})
 	}
 	return userList
 }
