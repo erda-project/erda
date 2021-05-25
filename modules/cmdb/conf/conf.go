@@ -78,6 +78,9 @@ type Conf struct {
 	// --- 文件管理 begin ---
 	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
 	FileMaxUploadSize    datasize.ByteSize
+	// the size of the file parts stored in memory, the default value 32M refer to https://github.com/golang/go/blob/5c489514bc5e61ad9b5b07bd7d8ec65d66a0512a/src/net/http/request.go
+	FileMaxMemorySizeStr string `env:"FILE_MAX_MEMORY_SIZE" default:"32MB"`
+	FileMaxMemorySize    datasize.ByteSize
 
 	// disable file download permission validate temporarily for multi-domain
 	DisableFileDownloadPermissionValidate bool `env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
@@ -187,6 +190,13 @@ func Load() {
 	}
 	fmt.Println(fileMaxUploadByte.String())
 	cfg.FileMaxUploadSize = fileMaxUploadByte
+
+	// parse FileMaxMemorySize
+	var fileMaxMemoryByte datasize.ByteSize
+	if err := fileMaxMemoryByte.UnmarshalText([]byte(cfg.FileMaxMemorySizeStr)); err != nil {
+		panic(fmt.Sprintf("failed to parse FILE_MAX_MEMORY_SIZE, err: %v", err))
+	}
+	cfg.FileMaxMemorySize = fileMaxMemoryByte
 
 	OrgWhiteList = map[string]bool{
 		UIDomain():                          true,
@@ -449,6 +459,11 @@ func ProjectStatsCacheCron() string {
 // FileMaxUploadSize 返回 文件上传的大小限制.
 func FileMaxUploadSize() datasize.ByteSize {
 	return cfg.FileMaxUploadSize
+}
+
+// FileMaxMemorySize return the size of the file parts stored in memory
+func FileMaxMemorySize() datasize.ByteSize {
+	return cfg.FileMaxMemorySize
 }
 
 // DisableFileDownloadPermissionValidate return switch for file download permission check.
