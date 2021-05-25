@@ -74,6 +74,7 @@ type Conf struct {
 	RedisPwd              string        `default:"anywhere" env:"REDIS_PASSWORD"`
 	ProjectStatsCacheCron string        `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	EnableProjectNS       bool          `env:"ENABLE_PROJECT_NS" default:"true"`
+	LegacyUIDomain        string        `env:"LEGACY_UI_PUBLIC_ADDR" default:"dice.app.terminus.io"`
 
 	// --- 文件管理 begin ---
 	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
@@ -190,6 +191,7 @@ func Load() {
 
 	OrgWhiteList = map[string]bool{
 		UIDomain():                          true,
+		LegacyUIDomain():                    true,
 		OpenAPIDomain():                     true,
 		"openapi.default.svc.cluster.local": true,
 	}
@@ -374,6 +376,11 @@ func UIPublicURL() string {
 // UIDomain 返回 UIDomain 选项
 func UIDomain() string {
 	return cfg.UIDomain
+}
+
+// LegacyUIDomain
+func LegacyUIDomain() string {
+	return cfg.LegacyUIDomain
 }
 
 // OpenAPIDomain 返回 OpenAPIDomain 选项
