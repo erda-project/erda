@@ -107,7 +107,7 @@ func Test_calculateStatus(t *testing.T) {
 		{"status-3", args{
 			raws: []rawStatus{
 				{
-					HealthStatus: 0,
+					HealthStatus: 2,
 					Weight:       0,
 				},
 				{

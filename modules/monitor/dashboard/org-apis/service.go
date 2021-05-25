@@ -75,15 +75,20 @@ func calculateStatus(raws []rawStatus, name string) uint8 {
 		}
 		if item.HealthStatus == 2 {
 			if item.Weight == 0 {
-				status.update(1)
+				if name == "machine" {
+					status.update(2)
+				} else {
+					status.update(1)
+				}
+
 			}
 			if item.Weight == 1 {
-				status.update(2)
+				if name == "machine" {
+					status.update(3)
+				} else {
+					status.update(2)
+				}
 				failureCnt++
-			}
-			// upgrade
-			if name == "machine" {
-				status += 1
 			}
 		}
 	}
