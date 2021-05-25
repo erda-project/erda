@@ -127,7 +127,7 @@ func (f *ComponentFilter) SetToProtocolComponent(c *apistructs.Component) error 
 }
 
 func (f *ComponentFilter) InitDefaultOperation(state State) error {
-	f.Props = filter.Props{Delay: 300}
+	f.Props = filter.Props{Delay: 2000}
 	f.Operations = GetAllOperations()
 	f.State.FrontendConditionProps = generateFrontendConditionProps(f.InParams.FrontendFixedIssueType, state)
 
