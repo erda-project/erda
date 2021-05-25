@@ -74,7 +74,7 @@ type Conf struct {
 	RedisPwd              string        `default:"anywhere" env:"REDIS_PASSWORD"`
 	ProjectStatsCacheCron string        `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	EnableProjectNS       bool          `env:"ENABLE_PROJECT_NS" default:"true"`
-	LegacyUIDomain        string        `env:"LEGACY_UI_PUBLIC_ADDR" default:"dice.app.terminus.io"`
+	LegacyUIDomain        string        `env:"LEGACY_UI_PUBLIC_ADDR"`
 
 	// --- 文件管理 begin ---
 	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
