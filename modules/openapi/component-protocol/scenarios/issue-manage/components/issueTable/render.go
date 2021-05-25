@@ -360,9 +360,24 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			cond.PageNo = uint64(c.State["pageNo"].(float64))
 		}
 	}
-	r, err := bdl.Bdl.PageIssues(cond)
+
+	var (
+		pageTotal uint64
+		r         *apistructs.IssuePagingResponse
+	)
+	r, err = bdl.Bdl.PageIssues(cond)
 	if err != nil {
 		return err
+	}
+	// if pageTotal < cond.PageNo, to reset the cond.PageNo = 1,
+	// and return the first page of data
+	pageTotal = getTotalPage(r.Data.Total, cond.PageSize)
+	if pageTotal < cond.PageNo {
+		cond.PageNo = 1
+		r, err = bdl.Bdl.PageIssues(cond)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, p := range r.Data.List {
@@ -719,4 +734,15 @@ func resetPageNoByFilterCondition(event string, filter interface{}, state map[st
 		}
 	}
 	return true
+}
+
+// getTotalPage get total page
+func getTotalPage(total, pageSize uint64) (page uint64) {
+	if pageSize == 0 {
+		return 0
+	}
+	if total%pageSize == 0 {
+		return total / pageSize
+	}
+	return total/pageSize + 1
 }
