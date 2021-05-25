@@ -18,6 +18,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -71,7 +73,7 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 	}
 
 	keyword := r.URL.Query().Get("q")
-	if keyword != "" { // 按关键字查找用户
+	if keyword != "" { // search by keyword
 		users, err = e.uc.FindUsersByKey(keyword)
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
@@ -138,4 +140,90 @@ func convertToUserInfo(user *ucauth.User, plaintext bool) *apistructs.UserInfo {
 		Phone:  user.Phone,
 		Email:  user.Email,
 	}
+}
+
+func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var (
+		users []ucauth.User
+		err   error
+	)
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListUser.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		var orgID uint64
+		orgIDStr := r.Header.Get(httputil.OrgHeader)
+		if orgIDStr != "" {
+			orgID, err = strconv.ParseUint(orgIDStr, 10, 64)
+			if err != nil {
+				return apierrors.ErrListUser.InvalidParameter("orgId is invalid").ToResp(), nil
+			}
+		}
+
+		access, err := e.permission.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  orgID,
+			Resource: apistructs.MemberResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
+		}
+		if !access {
+			return apierrors.ErrListUser.AccessDenied().ToResp(), nil
+		}
+	}
+
+	req, err := getUserParam(r)
+	if err != nil {
+		return apierrors.ErrListUser.InvalidParameter("pageSize").ToResp(), nil
+	}
+	users, err = e.uc.FuzzSearchUserByName(req)
+	if err != nil {
+		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
+	}
+
+	var plaintext bool
+	plaintextStr := r.URL.Query().Get("plaintext")
+	if plaintextStr == "true" {
+		plaintext = true
+	}
+
+	userInfos := make([]apistructs.UserInfo, 0, len(users))
+	for i := range users {
+		userInfos = append(userInfos, *convertToUserInfo(&users[i], plaintext))
+	}
+
+	return httpserver.OkResp(apistructs.UserListResponseData{Users: userInfos})
+}
+
+func getUserParam(r *http.Request) (*apistructs.UserPagingRequest, error) {
+	keyword := r.URL.Query().Get("q")
+
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "15"
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		return nil, errors.Errorf("invalid param, pageSize is invalid")
+	}
+
+	pageNoStr := r.URL.Query().Get("pageNo")
+	if pageNoStr == "" {
+		pageNoStr = "1"
+	}
+	pageNo, err := strconv.Atoi(pageNoStr)
+	if err != nil {
+		return nil, errors.Errorf("invalid param, pageNo is invalid")
+	}
+
+	return &apistructs.UserPagingRequest{
+		Name:     keyword,
+		PageNo:   pageNo,
+		PageSize: pageSize,
+	}, nil
 }
