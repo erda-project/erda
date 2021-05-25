@@ -47,3 +47,11 @@ func (client *DBClient) GetIssuesStage(orgID int64, issueType apistructs.IssueTy
 	}
 	return stages, nil
 }
+
+// GetIssuesStageByOrgID get issuesStage by orgID
+func (client *DBClient) GetIssuesStageByOrgID(orgID int64) ([]IssueStage, error) {
+	var stages []IssueStage
+	err := client.Table("dice_issue_stage").Where("org_id = ?", orgID).
+		Find(&stages).Error
+	return stages, err
+}

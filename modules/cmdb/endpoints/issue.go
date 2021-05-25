@@ -247,7 +247,7 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, w http.ResponseWriter,
 	if err != nil {
 		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}
-	reader, tablename, err := e.issue.ExportExcel(issues, pro, pageReq.ProjectID, pageReq.IsDownload)
+	reader, tablename, err := e.issue.ExportExcel(issues, pro, pageReq.ProjectID, pageReq.IsDownload, pageReq.OrgID)
 	if err != nil {
 		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}

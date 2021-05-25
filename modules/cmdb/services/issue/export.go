@@ -22,12 +22,26 @@ import (
 	"github.com/tealeg/xlsx/v3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool) (io.Reader, string, error) {
-	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload)
+type issueStage struct {
+	Type  apistructs.IssueType
+	Value string
+}
+
+func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64) (io.Reader, string, error) {
+	// list of  issue stage
+	stages, err := svc.db.GetIssuesStageByOrgID(orgID)
+	if err != nil {
+		return nil, "", err
+	}
+	// get the stageMap
+	stageMap := svc.getStageMap(stages)
+
+	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload, stageMap)
 	if err != nil {
 		return nil, "", err
 	}
@@ -84,6 +98,22 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 		return nil, "", err
 	}
 	return buf, tablename, nil
+}
+
+// getStageMap return a map,the key is the struct of dice_issue_stage.Value and dice_issue_stage.IssueType,
+// the value is dice_issue_stage.Name
+func (svc *Issue) getStageMap(stages []dao.IssueStage) map[issueStage]string {
+	stageMap := make(map[issueStage]string, len(stages))
+	for _, v := range stages {
+		if v.Value != "" && v.IssueType != "" {
+			stage := issueStage{
+				Type:  v.IssueType,
+				Value: v.Value,
+			}
+			stageMap[stage] = v.Name
+		}
+	}
+	return stageMap
 }
 
 func (svc *Issue) ExportFalseExcel(r io.Reader, falseIndex []int, falseReason []string, allNumber int) (*apistructs.IssueImportExcelResponse, error) {
