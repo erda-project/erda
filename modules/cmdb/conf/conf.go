@@ -461,7 +461,6 @@ func FileMaxUploadSize() datasize.ByteSize {
 	return cfg.FileMaxUploadSize
 }
 
-
 // FileMaxMemorySize return the size of the file parts stored in memory
 func FileMaxMemorySize() datasize.ByteSize {
 	return cfg.FileMaxMemorySize
