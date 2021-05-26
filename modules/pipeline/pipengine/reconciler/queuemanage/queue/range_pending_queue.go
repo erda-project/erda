@@ -82,7 +82,10 @@ func (q *defaultQueue) RangePendingQueue() {
 		}
 
 		// queue validate
+		// it will cause `concurrent map read and map write` panic if `pipeline_caches` is not locked.
+		q.lock.RLock()
 		validateResult := q.validatePipeline(p)
+		q.lock.RUnlock()
 		if !validateResult.Success {
 			q.emitEvent(p, PendingQueueValidate, validateResult.Reason, events.EventLevelWarning)
 			// stopRange if queue is strict mode
