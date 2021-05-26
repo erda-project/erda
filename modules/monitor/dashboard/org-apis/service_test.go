@@ -107,6 +107,23 @@ func Test_calculateStatus(t *testing.T) {
 		{"status-3", args{
 			raws: []rawStatus{
 				{
+					HealthStatus: 0,
+					Weight:       0,
+				},
+				{
+					HealthStatus: 1,
+					Weight:       0,
+				},
+				{
+					HealthStatus: 2,
+					Weight:       0,
+				},
+			},
+			name: "machine",
+		}, 2},
+		{"status-3", args{
+			raws: []rawStatus{
+				{
 					HealthStatus: 2,
 					Weight:       1,
 				},
