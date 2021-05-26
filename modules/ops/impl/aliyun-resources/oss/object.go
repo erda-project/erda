@@ -16,6 +16,7 @@ package oss
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/sirupsen/logrus"
@@ -58,6 +59,7 @@ func GetBucketInfo(ctx aliyun_resources.Context, bucketname string, location str
 		for _, o := range objs.Objects {
 			totalsize += o.Size
 		}
+		logrus.Debugf("bucket: [%s], size: %v G, object num: %v", bucketname, totalsize/1024.0/1024.0, len(objs.Objects))
 	}
 	return &BucketInfo{AllObjectTotalSize: totalsize}, nil
 }
@@ -67,10 +69,13 @@ func GetBucketsSize(ctx aliyun_resources.Context, buckets []oss.BucketProperties
 	m := new(sync.Map)
 	ch := make(chan struct{}, 20)
 	var wg sync.WaitGroup
-	for _, b := range buckets {
+	wg.Add(len(buckets))
+	start := time.Now()
+	logrus.Debugf("oss buckets num: %d, buckets: %v", len(buckets), buckets)
+	for i, b := range buckets {
 		ch <- struct{}{}
-		wg.Add(1)
-		go func(b oss.BucketProperties) {
+		logrus.Debugf("start to get bucket [%v] size for [%s]", i, b.Name)
+		go func(index int, b oss.BucketProperties) {
 			defer func() {
 				<-ch
 				wg.Done()
@@ -81,12 +86,16 @@ func GetBucketsSize(ctx aliyun_resources.Context, buckets []oss.BucketProperties
 				return
 			}
 			m.Store(info.AllObjectTotalSize, struct{}{})
-		}(b)
+			logrus.Debugf("finish get bucket[%d] [%s] size: %vG", index, b.Name, info.AllObjectTotalSize/1024.0/1024.0)
+		}(i, b)
 	}
 	wg.Wait()
+	end := time.Now()
+	d := end.Sub(start).Minutes()
 	m.Range(func(k interface{}, _ interface{}) bool {
 		allsize += k.(int64)
 		return true
 	})
+	logrus.Infof("finish calculate oss bucket size, start:%v, end:%v, spend: [%v min], size:%vG", start, end, d, allsize/1024.0/1024.0)
 	return allsize, nil
 }

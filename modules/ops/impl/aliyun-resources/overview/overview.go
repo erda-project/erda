@@ -126,7 +126,6 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		}, regionids.ECS, "", nil)
 		if err != nil {
 			logrus.Errorf("ecs overview failed, error:%v", err)
-			allResource["COMPUTE"].ResourceTypeData["ECS"] = nil
 			return
 		}
 
@@ -160,7 +159,6 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		vpcs, total, err := vpc.List(ak_ctx, aliyun_resources.DefaultPageOption, regionids.VPC, "")
 		if err != nil {
 			logrus.Errorf("vpc overview failed, error:%v", err)
-			allResource["NETWORK"].ResourceTypeData["VPC"].TotalCount = 0
 			return
 		}
 		labelCount := vpc.Classify(vpcs)
@@ -178,7 +176,6 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		ossBuckets, err := oss.List(ak_ctx, aliyun_resources.DefaultPageOption, regionids.VPC, "", []string{}, "")
 		if err != nil {
 			logrus.Errorf("oss overview failed, error:%v", err)
-			allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"].TotalCount = 0
 			return
 		}
 		allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"].TotalCount = len(ossBuckets)
@@ -194,7 +191,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		ins, total, err := rds.List(ak_ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 		if err != nil {
 			logrus.Errorf("rds overview failed, error:%v", err)
-			allResource["CLOUD_SERVICE"].ResourceTypeData["RDS"].TotalCount = 0
+			return
 		}
 		// https://www.alibabacloud.com/help/zh/doc-detail/26315.htm#reference-nyz-nnn-12b
 		// rds instance status list
@@ -228,7 +225,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		ins, err := redis.List(ak_ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 		if err != nil {
 			logrus.Errorf("redis overview failed, error:%v", err)
-			allResource["CLOUD_SERVICE"].ResourceTypeData["REDIS"].TotalCount = 0
+			return
 		}
 		// redis instance status list
 		// https://help.aliyun.com/document_detail/26315.html?spm=a2c4g.11186623.2.16.7aa024daPIAv9D
@@ -261,7 +258,7 @@ func CloudResourceOverview(ak_ctx aliyun_resources.Context) (map[string]*apistru
 		ins, err := ons.List(ak_ctx, aliyun_resources.DefaultPageOption, regionids.ECS, "")
 		if err != nil {
 			logrus.Errorf("ons overview failed, error:%v", err)
-			allResource["CLOUD_SERVICE"].ResourceTypeData["ROCKET_MQ"].TotalCount = 0
+			return
 		}
 
 		// ons instance status list
@@ -355,19 +352,19 @@ func GetCloudResourceOverViewRaw(ak_ctx aliyun_resources.Context) (map[string]*a
 		if timestamp-cachedView.LastUpdateTimestamp > 60*15 {
 			go func() {
 				// try to get cloud resource overview from alicloud
-				allResource, err := CloudResourceOverview(ak_ctx)
+				newRsc, err := CloudResourceOverview(ak_ctx)
 				if err != nil {
 					logrus.Errorf("cloud resource overview failed, error:%v", err)
 					return
 				}
 				var overview CachedCloudResourceOverview
 
-				overview.ECS = *(allResource["COMPUTE"].ResourceTypeData["ECS"])
-				overview.VPC = *(allResource["NETWORK"].ResourceTypeData["VPC"])
-				overview.OSS = *(allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"])
-				overview.RDS = *(allResource["CLOUD_SERVICE"].ResourceTypeData["RDS"])
-				overview.REDIS = *(allResource["CLOUD_SERVICE"].ResourceTypeData["REDIS"])
-				overview.MQ = *(allResource["CLOUD_SERVICE"].ResourceTypeData["ROCKET_MQ"])
+				overview.ECS = *(newRsc["COMPUTE"].ResourceTypeData["ECS"])
+				overview.VPC = *(newRsc["NETWORK"].ResourceTypeData["VPC"])
+				overview.OSS = *(newRsc["STORAGE"].ResourceTypeData["OSS_BUCKET"])
+				overview.RDS = *(newRsc["CLOUD_SERVICE"].ResourceTypeData["RDS"])
+				overview.REDIS = *(newRsc["CLOUD_SERVICE"].ResourceTypeData["REDIS"])
+				overview.MQ = *(newRsc["CLOUD_SERVICE"].ResourceTypeData["ROCKET_MQ"])
 				go func() {
 					start := time.Now()
 					defer func() {
@@ -377,7 +374,6 @@ func GetCloudResourceOverViewRaw(ak_ctx aliyun_resources.Context) (map[string]*a
 					ossBuckets, err := oss.List(ak_ctx, aliyun_resources.DefaultPageOption, []string{}, "", []string{}, "")
 					if err != nil {
 						logrus.Errorf("oss overview failed, error:%v", err)
-						allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"].TotalCount = 0
 						return
 					}
 					ossSize, err := oss.GetBucketsSize(ak_ctx, ossBuckets)
@@ -385,8 +381,11 @@ func GetCloudResourceOverViewRaw(ak_ctx aliyun_resources.Context) (map[string]*a
 						logrus.Errorf("oss overview failed, error:%v", err)
 						return
 					}
-					allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"].StorageUsage = &ossSize
-					allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"].TotalCount = len(ossBuckets)
+					newRsc["STORAGE"].ResourceTypeData["OSS_BUCKET"].StorageUsage = cachedView.OSS.StorageUsage
+					if ossSize > 0 {
+						newRsc["STORAGE"].ResourceTypeData["OSS_BUCKET"].StorageUsage = &ossSize
+					}
+					newRsc["STORAGE"].ResourceTypeData["OSS_BUCKET"].TotalCount = len(ossBuckets)
 					overview.OSS = *(allResource["STORAGE"].ResourceTypeData["OSS_BUCKET"])
 					PutCachedCloudResourceOverview(ak_ctx, overview)
 				}()
