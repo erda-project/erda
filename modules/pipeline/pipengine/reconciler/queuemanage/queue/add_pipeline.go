@@ -53,10 +53,14 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	//   else add to pending queue.
 	if p.Status.AfterPipelineQueue() {
 		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
+		go func() {
+			doneCh <- struct{}{}
+			close(doneCh)
+		}()
 	} else {
 		q.eq.Add(itemKey, priority, *createdTime)
+		q.doneChanByPipelineID[p.ID] = doneCh
 	}
-	q.doneChanByPipelineID[p.ID] = doneCh
 
 	go func() {
 		q.rangeAtOnceCh <- true
