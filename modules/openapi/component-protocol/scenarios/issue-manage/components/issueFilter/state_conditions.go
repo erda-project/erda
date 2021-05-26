@@ -106,6 +106,8 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 
 		case PropConditionKeyFinishedAtStartEnd:
 
+		case PropConditionKeyClosed:
+
 		}
 		if flag {
 			newConditions = append(newConditions, cond)

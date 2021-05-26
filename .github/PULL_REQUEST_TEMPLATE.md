@@ -13,6 +13,6 @@ Add one of the following kinds:
 #### Which issue(s) this PR fixes:
 Fixes #
 
-#### Specified Reivewers:
-/assgin @your-reviewer
+#### Specified Reviewers:
+/assign @your-reviewer
 
