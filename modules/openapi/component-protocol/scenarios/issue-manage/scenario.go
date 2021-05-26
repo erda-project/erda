@@ -18,6 +18,6 @@ const (
 )
 
 const (
-	DefaultTablePageSize = 12
+	DefaultTablePageSize = 10
 	DefaultGanttPageSize = 200
 )
