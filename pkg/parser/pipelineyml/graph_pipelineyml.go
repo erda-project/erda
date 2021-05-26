@@ -69,6 +69,13 @@ func ConvertGraphPipelineYmlContent(data []byte) ([]byte, error) {
 				}
 			}
 
+			for _, cache := range frontendAction.Caches {
+				maps[ActionType(frontendAction.Type)].Caches = append(maps[ActionType(frontendAction.Type)].Caches, ActionCache{
+					Key:  cache.Key,
+					Path: cache.Path,
+				})
+			}
+
 			actions = append(actions, maps)
 		}
 		s.Stages = append(s.Stages, &Stage{Actions: actions})
