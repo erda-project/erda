@@ -73,6 +73,16 @@ func creator(ctx aliyun_resources.Context, m resource_factory.BaseResourceMateri
 		}
 	}
 
+	// get available vswitch/zone
+	ctx.VpcID = req.VpcID
+	vsw, err := GetAvailableVsw(ctx, apistructs.CreateCloudResourceBaseInfo{VSwitchID: req.VSwitchID, ZoneID: req.ZoneID})
+	if err != nil {
+		logrus.Errorf("get available vswitch failed, error: %v", err)
+		return nil, nil, err
+	}
+	req.VSwitchID = vsw.VSwitchId
+	req.ZoneID = vsw.ZoneId
+
 	logrus.Infof("start to create redis instance, request: %+v", req)
 	resp, err := CreateInstance(ctx, req)
 	if err != nil {
