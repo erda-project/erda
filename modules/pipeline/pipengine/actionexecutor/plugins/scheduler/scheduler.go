@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/httpclient"
@@ -206,7 +207,7 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/%s/start", action.Extra.Namespace, makeJobID(action))).
+		Path(fmt.Sprintf("/v1/job/%s/%s/start", action.Extra.Namespace, task_uuid.MakeJobID(action))).
 		Do().Body(&body)
 	if err != nil {
 		return nil, errors.Errorf("http invoke err: %v", err)
@@ -248,7 +249,7 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().Get(s.addr, httpclient.RetryErrResp).
-		Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, makeJobID(action))).
+		Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, task_uuid.MakeJobID(action))).
 		Do().Body(&body)
 	if err != nil {
 		return apistructs.PipelineStatusDesc{}, httpInvokeErr(err)
@@ -289,7 +290,7 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/%s/stop", action.Extra.Namespace, makeJobID(action))).
+		Path(fmt.Sprintf("/v1/job/%s/%s/stop", action.Extra.Namespace, action.Extra.UUID)).
 		Do().Body(&body)
 	if err != nil {
 		return nil, httpInvokeErr(err)
@@ -317,7 +318,7 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().Delete(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/%s/delete", action.Extra.Namespace, makeJobID(action))).
+		Path(fmt.Sprintf("/v1/job/%s/%s/delete", action.Extra.Namespace, task_uuid.MakeJobID(action))).
 		Do().Body(&body)
 	if err != nil {
 		return nil, httpInvokeErr(err)
@@ -356,7 +357,12 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 		if len(action.Extra.UUID) <= 0 {
 			continue
 		}
-		req = append(req, apistructs.JobFromUser{Name: action.Extra.UUID, Namespace: action.Extra.Namespace, ClusterName: action.Extra.ClusterName})
+		req = append(req, apistructs.JobFromUser{
+			Name:        action.Extra.UUID,
+			Namespace:   action.Extra.Namespace,
+			ClusterName: action.Extra.ClusterName,
+			Volumes:     makeVolume(action),
+		})
 	}
 	var body bytes.Buffer
 	resp, err := httpclient.New().Delete(s.addr).
@@ -401,7 +407,7 @@ func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 	}()
 
 	return apistructs.JobFromUser{
-		Name: makeJobID(task),
+		Name: task_uuid.MakeJobID(task),
 		Kind: func() string {
 			switch task.Type {
 			case string(pipelineymlv1.RES_TYPE_FLINK):
@@ -419,47 +425,12 @@ func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 			}
 			return task.Extra.ClusterName
 		}(),
-		Image:  task.Extra.Image,
-		Cmd:    strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
-		CPU:    task.Extra.RuntimeResource.CPU,
-		Memory: task.Extra.RuntimeResource.Memory,
-		Binds:  task.Extra.Binds,
-		Volumes: func() []diceyml.Volume {
-			diceVolumes := make([]diceyml.Volume, 0)
-			for _, vo := range task.Extra.Volumes {
-				if vo.Type == string(spec.StoreTypeDiceVolumeFake) || vo.Type == string(spec.StoreTypeDiceCacheNFS) {
-					// fake volume,没有实际挂载行为,不传给scheduler
-					continue
-				}
-				diceVolume := diceyml.Volume{
-					Path: vo.Value,
-					Storage: func() string {
-						switch vo.Type {
-						case string(spec.StoreTypeDiceVolumeNFS):
-							return "nfs"
-						case string(spec.StoreTypeDiceVolumeLocal):
-							return "local"
-						default:
-							panic(errors.Errorf("%q has not supported volume type: %s", vo.Name, vo.Type))
-						}
-					}(),
-				}
-				if vo.Labels != nil {
-					if id, ok := vo.Labels["ID"]; ok {
-						diceVolume.ID = &id
-						goto AppendDiceVolume
-					}
-				}
-				// labels == nil or labels["ID"] not exist
-				// 如果 id 不存在，说明上一次没有生成 volume，并且是 optional 的，则不创建 diceVolume
-				if vo.Optional {
-					continue
-				}
-			AppendDiceVolume:
-				diceVolumes = append(diceVolumes, diceVolume)
-			}
-			return diceVolumes
-		}(),
+		Image:      task.Extra.Image,
+		Cmd:        strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
+		CPU:        task.Extra.RuntimeResource.CPU,
+		Memory:     task.Extra.RuntimeResource.Memory,
+		Binds:      task.Extra.Binds,
+		Volumes:    makeVolume(task),
 		PreFetcher: task.Extra.PreFetcher,
 		Env:        task.Extra.PublicEnvs,
 		Labels:     task.Extra.Labels,
@@ -470,6 +441,43 @@ func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 		// 重试不依赖 scheduler，由 pipeline engine 自己实现，保证所有 action executor 均适用
 		Params: task.Extra.Action.Params,
 	}, nil
+}
+
+func makeVolume(task *spec.PipelineTask) []diceyml.Volume {
+	diceVolumes := make([]diceyml.Volume, 0)
+	for _, vo := range task.Extra.Volumes {
+		if vo.Type == string(spec.StoreTypeDiceVolumeFake) || vo.Type == string(spec.StoreTypeDiceCacheNFS) {
+			// fake volume,没有实际挂载行为,不传给scheduler
+			continue
+		}
+		diceVolume := diceyml.Volume{
+			Path: vo.Value,
+			Storage: func() string {
+				switch vo.Type {
+				case string(spec.StoreTypeDiceVolumeNFS):
+					return "nfs"
+				case string(spec.StoreTypeDiceVolumeLocal):
+					return "local"
+				default:
+					panic(errors.Errorf("%q has not supported volume type: %s", vo.Name, vo.Type))
+				}
+			}(),
+		}
+		if vo.Labels != nil {
+			if id, ok := vo.Labels["ID"]; ok {
+				diceVolume.ID = &id
+				goto AppendDiceVolume
+			}
+		}
+		// labels == nil or labels["ID"] not exist
+		// 如果 id 不存在，说明上一次没有生成 volume，并且是 optional 的，则不创建 diceVolume
+		if vo.Optional {
+			continue
+		}
+	AppendDiceVolume:
+		diceVolumes = append(diceVolumes, diceVolume)
+	}
+	return diceVolumes
 }
 
 func transferStatus(status string) apistructs.PipelineStatus {
@@ -525,15 +533,7 @@ func respBodyDecodeErr(statusCode int, respBody string, err error) error {
 
 func printActionInfo(action *spec.PipelineTask) string {
 	return fmt.Sprintf("pipelineID: %d, id: %d, name: %s, namespace: %s, schedulerJobID: %s",
-		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, makeJobID(action))
-}
-
-// makeJobID 返回 job id。若需要循环，则在 uuid 后追加当前是第几次执行。
-func makeJobID(action *spec.PipelineTask) string {
-	if action.Extra.LoopOptions != nil && action.Extra.LoopOptions.CalculatedLoop != nil && action.Extra.LoopOptions.CalculatedLoop.Strategy.MaxTimes > 0 {
-		return fmt.Sprintf("%s-loop-%d", action.Extra.UUID, action.Extra.LoopOptions.LoopedTimes)
-	}
-	return action.Extra.UUID
+		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, task_uuid.MakeJobID(action))
 }
 
 // isJobIdempotent
