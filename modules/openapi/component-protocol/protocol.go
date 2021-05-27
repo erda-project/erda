@@ -57,6 +57,8 @@ type ContextBundle struct {
 	I18nPrinter *message.Printer
 	Identity    apistructs.Identity
 	InParams    map[string]interface{}
+	// add language name for change language
+	Locale string
 }
 
 // scenario name: scenario default protocol
