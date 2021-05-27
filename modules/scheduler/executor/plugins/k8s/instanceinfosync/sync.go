@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
@@ -243,7 +244,9 @@ func (s *Syncer) watchSyncEvent(ctx context.Context) {
 		name := e.InvolvedObject.Name
 		pod, err := s.pod.Get(ns, name)
 		if err != nil {
-			logrus.Errorf("failed to get pod: %s/%s", ns, name)
+			if !util.IsNotFound(err) {
+				logrus.Errorf("failed to get pod: %s/%s, err: %v", ns, name, err)
+			}
 			return
 		}
 		if err := updatePodAndInstance(s.dbupdater, &corev1.PodList{Items: []corev1.Pod{*pod}}, false,
