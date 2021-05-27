@@ -156,7 +156,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		pro := ProItem{}
 		image := "/images/default-project-icon.png"
 		if v.ProjectDTO.Logo != "" {
-			image = fmt.Sprintf("https:%s", v.ProjectDTO.Logo)
+			image = v.ProjectDTO.Logo
 		}
 		pro.Title.Props = TitleProps{
 			DisplayName: fmt.Sprintf("%s/%s", orgDisplayName, v.ProjectDTO.DisplayName),
