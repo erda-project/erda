@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -254,7 +255,12 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			if task.Extra.UUID == "" {
 				continue
 			}
-			groupedTasks[task.Extra.ExecutorName] = append(groupedTasks[task.Extra.ExecutorName], &task)
+
+			for _, uuid := range task_uuid.MakeJobIDSliceWithLoopedTimes(&task) {
+				var loopTask = task
+				loopTask.Extra.UUID = uuid
+				groupedTasks[loopTask.Extra.ExecutorName] = append(groupedTasks[loopTask.Extra.ExecutorName], &loopTask)
+			}
 		}
 	}
 

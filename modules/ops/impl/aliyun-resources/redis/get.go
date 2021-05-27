@@ -20,11 +20,14 @@ import (
 	native_strings "strings"
 
 	kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
+	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vswitch"
 )
 
 func GetInstanceFullDetailInfo(c context.Context, ctx aliyun_resources.Context, instanceID string) ([]apistructs.CloudResourceDetailInfo, error) {
@@ -176,4 +179,69 @@ func NetInfo(ctx aliyun_resources.Context, instanceID string) (kvstore.InstanceN
 
 	}
 	return response.NetInfoItems.InstanceNetInfo[0], nil
+}
+
+func SupportZones(ctx aliyun_resources.Context) ([]string, error) {
+	rsp, err := DescribeZones(ctx)
+	if err != nil {
+		logrus.Errorf("describe redis zone failed, error:%v", err)
+		return nil, err
+	}
+	if rsp == nil {
+		logrus.Warnf("describe redis zone returned empty response")
+		return nil, err
+	}
+	var zones []string
+	for _, i := range rsp.Zones.KVStoreZone {
+		zones = append(zones, i.ZoneId)
+	}
+	return zones, nil
+}
+
+func DescribeZones(ctx aliyun_resources.Context) (*kvstore.DescribeZonesResponse, error) {
+	// create client
+	client, err := kvstore.NewClientWithAccessKey(ctx.Region, ctx.AccessKeyID, ctx.AccessSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	request := kvstore.CreateDescribeZonesRequest()
+	request.Scheme = "https"
+
+	response, err := client.DescribeZones(request)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func GetAvailableVsw(ctx aliyun_resources.Context, req apistructs.CreateCloudResourceBaseInfo) (*vpc.VSwitch, error) {
+	zones, err := SupportZones(ctx)
+	if err != nil {
+		logrus.Errorf("get support zones failed, err:%v", err)
+		return nil, err
+	}
+
+	s := set.New()
+	for _, z := range zones {
+		s.Insert(z)
+	}
+	// request zone is available
+	if s.Has(req.ZoneID) {
+		return &vpc.VSwitch{VSwitchId: req.VSwitchID, ZoneId: req.ZoneID}, nil
+	}
+
+	// request zone ont available,  try to find another
+	vsws, _, err := vswitch.List(ctx, []string{ctx.Region})
+	if err != nil {
+		logrus.Errorf("list vsw failed, err:%v", err)
+		return nil, err
+	}
+	for _, v := range vsws {
+		if s.Has(v.ZoneId) {
+			return &vpc.VSwitch{VSwitchId: v.VSwitchId, ZoneId: v.ZoneId}, nil
+		}
+	}
+	err = fmt.Errorf("no available vswitch in zone %v under region %s, please crate related zone first", zones, ctx.Region)
+	return nil, err
 }

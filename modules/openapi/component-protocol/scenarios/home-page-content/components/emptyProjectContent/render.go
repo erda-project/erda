@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyProjectContent struct {
@@ -83,6 +84,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 	var createProStr string
 	var createProDetail interface{}
 	var createProType string
+	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	if e.ctxBdl.Identity.OrgID != "" {
 		orgIntId, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
 		req := &apistructs.PermissionCheckRequest{
@@ -102,20 +104,20 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		access = permissionRes.Access
 	}
 	if access {
-		role = "管理员"
+		role = i18nLocale.Get(i18n.I18nKeyAdmin)
 		createProType = "linkText"
-		createProStr = "* 创建项目"
+		createProStr = i18nLocale.Get(i18n.I18nKeyProCreate)
 		createProDetail = map[string]interface{}{
-			"text": []interface{}{"通过左上角菜单快读创建或者进入", map[string]interface{}{
+			"text": []interface{}{i18nLocale.Get(i18n.I18nKeyProCreateBy), map[string]interface{}{
 				"icon":          "appstore",
 				"iconStyleName": "primary-icon",
-			}, "选择管理中心后, 进行项目的创建"},
+			}, i18nLocale.Get(i18n.I18nKeyProCreateByCenter)},
 		}
 	} else {
-		role = "新成员"
+		role = i18nLocale.Get(i18n.I18nKeyNewMember)
 		createProType = "Text"
-		createProStr = "* 加入项目"
-		createProDetail = "当前都是受邀机制，需要线下联系项目管理员进行邀请加入"
+		createProStr = i18nLocale.Get(i18n.I18nKeyProJoin)
+		createProDetail = i18nLocale.Get(i18n.I18nKeyProJoinMsg)
 	}
 	e.Props = make(map[string]interface{})
 	e.Props["visible"] = visible
@@ -124,7 +126,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      fmt.Sprintf("以下是作为组织%s的一些快速入门知识：", role),
+				"value":      fmt.Sprintf("%s%s%s", i18nLocale.Get(i18n.I18nKeyOrgBelow), role, i18nLocale.Get(i18n.I18nKeyOrgQuickKnow)),
 			},
 			"gapSize": "normal",
 		},
@@ -132,7 +134,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "* 切换组织",
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitch),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -143,7 +145,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "使用此屏幕上左上角的组织切换，快速进行组织之间切换",
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitchMsg),
 			},
 			"gapSize": "large",
 		},
@@ -151,7 +153,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "* 公开组织浏览",
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgBrowsePublic),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -162,7 +164,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "可以通过切换组织下拉菜单中选择公开组织进行浏览",
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitchBrowse),
 			},
 			"gapSize": "large",
 		},
@@ -189,7 +191,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "* 该组织内公开项目浏览",
+				"value":      i18nLocale.Get(i18n.I18nKeyOrgProBrowse),
 				"styleConfig": map[string]interface{}{
 					"bold": true,
 				},
@@ -201,10 +203,10 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 				"renderType": "linkText",
 				"visible":    visible,
 				"value": map[string]interface{}{
-					"text": []interface{}{"点击左上角菜单", map[string]interface{}{
+					"text": []interface{}{i18nLocale.Get(i18n.I18nKeyMenuClick), map[string]interface{}{
 						"icon":          "application-menu",
 						"iconStyleName": "primary-icon",
-					}, "选择 DevOps平台进入，选择我的项目可以查看该组织下公开项目的信息"},
+					}, i18nLocale.Get(i18n.I18nKeyProPublicBrowse)},
 				},
 			},
 			"gapSize": "large",
@@ -213,7 +215,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 			"props": map[string]interface{}{
 				"renderType": "Text",
 				"visible":    visible,
-				"value":      "当你已经加入到任何项目后，此框将不再显示",
+				"value":      i18nLocale.Get(i18n.I18nKeyProJoinAfter),
 				"textStyleName": map[string]bool{
 					"fz12":            true,
 					"color-text-desc": true,
