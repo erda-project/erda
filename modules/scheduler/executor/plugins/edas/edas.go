@@ -1468,7 +1468,11 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	group := runtime.Type + "-" + runtime.ID
 
 	appName := group + "-" + s.Name
+
 	envs = s.Env
+	if envs == nil {
+		envs = make(map[string]string, 10)
+	}
 
 	addEnv := func(s *apistructs.Service, envs *map[string]string) error {
 		appName := group + "-" + s.Name
@@ -1543,9 +1547,11 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	envs["IS_K8S"] = "true"
 	// add svc label
 	envs["SELF_HOST"] = svcAddr
-	envs["SELF_PORT"] = strconv.Itoa(s.Ports[0].Port)
-	envs["SELF_URL"] = "http://" + svcAddr + ":" + strconv.Itoa(s.Ports[0].Port)
-	envs["SELF_PORT0"] = strconv.Itoa(s.Ports[0].Port)
+	if len(s.Ports) != 0 {
+		envs["SELF_PORT"] = strconv.Itoa(s.Ports[0].Port)
+		envs["SELF_URL"] = "http://" + svcAddr + ":" + strconv.Itoa(s.Ports[0].Port)
+		envs["SELF_PORT0"] = strconv.Itoa(s.Ports[0].Port)
+	}
 
 	// TODO: add self env
 	//Problem: After the service is created, there will be k8s service, which makes it impossible to insert SELF_HOST env in advance
