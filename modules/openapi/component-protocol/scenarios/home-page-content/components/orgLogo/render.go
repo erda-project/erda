@@ -70,7 +70,7 @@ func (e *OrgLogo) Render(ctx context.Context, c *apistructs.Component, scenario 
 			return fmt.Errorf("can not get org")
 		}
 		if orgDTO.Logo != "" {
-			e.Props.Src = fmt.Sprintf("https:%s", orgDTO.Logo)
+			e.Props.Src = orgDTO.Logo
 		}
 		e.Props.Visible = true
 	}

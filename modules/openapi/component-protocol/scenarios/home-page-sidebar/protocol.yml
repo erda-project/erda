@@ -80,12 +80,6 @@ components:
     type: Container
   myApplicationTitle:
     type: Title
-    props:
-      visible: true
-      title: "应用"
-      level: 1
-      noMarginBottom: true
-      showDivider: true
   myApplicationFilter:
     type: ContractiveFilter
   myApplicationList:
@@ -179,6 +173,7 @@ rendering:
           value: "{{ myApplicationList.prosNum }}"
         - name: "appsNum"
           value: "{{ myApplicationList.appsNum }}"
+    - name: myApplicationTitle
 #    - name: orgSwitch
 #    - name: emptyImage
 #      state:

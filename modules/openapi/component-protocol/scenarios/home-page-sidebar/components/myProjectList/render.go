@@ -166,7 +166,7 @@ func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 		},
 	}
 	if pro.Logo != "" {
-		item.PrefixImg = fmt.Sprintf("https:%s", pro.Logo)
+		item.PrefixImg = pro.Logo
 	}
 	return item
 }

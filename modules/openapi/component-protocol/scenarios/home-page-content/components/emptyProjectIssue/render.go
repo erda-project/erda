@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyProjectIssue struct {
@@ -102,8 +103,9 @@ func (e *EmptyProjectIssue) Render(ctx context.Context, c *apistructs.Component,
 		return err
 	}
 
+	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	e.Type = "EmptyHolder"
-	e.Props.Tip = "已加入的项目中，无待完成事项"
+	e.Props.Tip = i18nLocale.Get(i18n.I18nKeyProNoIssue)
 	e.Props.WhiteBg = true
 	e.Props.Relative = true
 	e.Props.PaddingY = true

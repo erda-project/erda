@@ -71,7 +71,7 @@ func (this *OrgImage) Render(ctx context.Context, c *apistructs.Component, scena
 			return fmt.Errorf("can not get org")
 		}
 		if orgDTO.Logo != "" {
-			this.Props.Src = fmt.Sprintf("https:%s", orgDTO.Logo)
+			this.Props.Src = orgDTO.Logo
 		}
 	}
 
