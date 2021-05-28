@@ -14,27 +14,40 @@
 package k8s
 
 import (
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 )
 
-func (m *Kubernetes) IPToHostname(ip string) string {
-	nodelist, err := m.nodeLabel.List()
-	if err != nil {
-		return ""
+func (m *Kubernetes) IPsToHostname(ips []string) []string {
+	length := len(ips)
+	if length == 0 {
+		return []string{}
 	}
-	for _, node := range nodelist.Items {
+
+	nodeList, err := m.nodeLabel.List()
+	if err != nil {
+		return []string{}
+	}
+
+	ipMap := make(map[string]struct{}, length)
+	for _, ip := range ips {
+		ipMap[ip] = struct{}{}
+	}
+
+	var hosts []string
+	for _, node := range nodeList.Items {
 		for _, addr := range node.Status.Addresses {
-			if addr.Type == v1.NodeInternalIP && addr.Address == ip {
-				return node.Name
+			_, ok := ipMap[addr.Address]
+			if addr.Type == v1.NodeInternalIP && ok {
+				hosts = append(hosts, node.Name)
 			}
 		}
 	}
-	return ""
+	return hosts
 }
 
 // SetNodeLabels set the labels of k8s node

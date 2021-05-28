@@ -26,5 +26,5 @@ type Constraints interface {
 }
 
 type HostnameUtil interface {
-	IPToHostname(ip string) string
+	IPsToHostname(ips []string) []string
 }

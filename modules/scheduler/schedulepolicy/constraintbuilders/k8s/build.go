@@ -81,13 +81,13 @@ func (Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, p
 	buildPlatformAffinity(s, cons, service)
 	buildDaemonsetAffinity(s, cons, service)
 
+	buildSpecificHost(s.SpecificHost, cons, hostnameUtil)
+
 	// decentralized job deployments
 	buildJobAntiAffinity(s.Job || s.BigData || s.Pack, cons)
 
 	// decentralized service deployments
 	buildServiceAntiAffinity(podLabels, cons)
-
-	buildSpecificHost(s.SpecificHost, cons, hostnameUtil)
 
 	if len(cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
 		cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = nil
@@ -140,13 +140,17 @@ func buildSpecificHost(specificHosts []string, cons *Constraints, hostnameUtil c
 		return
 	}
 	terms := &(cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms)
-	*terms = []k8s.NodeSelectorTerm{{MatchFields: []k8s.NodeSelectorRequirement{
-		{
-			Key:      "metadata.name",
-			Operator: "In",
-			Values:   []string{hostnameUtil.IPToHostname(specificHosts[0])},
-		},
-	}}}
+
+	hosts := hostnameUtil.IPsToHostname(specificHosts)
+	if len(hosts) != 0 {
+		*terms = []k8s.NodeSelectorTerm{{MatchFields: []k8s.NodeSelectorRequirement{
+			{
+				Key:      "metadata.name",
+				Operator: "In",
+				Values:   hosts,
+			},
+		}}}
+	}
 }
 func buildStatefulServiceAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, service *apistructs.Service) {
 	if !isStateful(s) {
