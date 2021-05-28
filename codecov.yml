@@ -34,3 +34,9 @@ coverage:
 
 github_checks:
   annotations: true
+
+ignore:
+  # ignore the boilerplate code
+  - "modules/*/conf"
+  - "modules/*/dbclient"
+  - "modules/*/dao"
