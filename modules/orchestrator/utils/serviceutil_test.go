@@ -14,21 +14,21 @@
 package utils
 
 import (
-	"math"
-	"regexp"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// Round 保留小数点计算
-func Round(f float64, n int) float64 {
-	shift := math.Pow(10, float64(n))
-	fv := 0.0000000001 + f //对浮点数产生.xxx999999999 计算不准进行处理
-
-	return math.Floor(fv*shift+.5) / shift
+func TestRound(t *testing.T) {
+	assert.Equal(t, 4.21, Round(4.213213, 2))
+	assert.Equal(t, 4.22, Round(4.219213, 2))
 }
 
-var svcRegexp, _ = regexp.Compile(`^[a-z0-9]+([-]*[a-z0-9])+$`)
-
-// IsValidK8sSvcName is valid service name
-func IsValidK8sSvcName(name string) bool {
-	return svcRegexp.MatchString(name) && len(name) <= 63
+func TestIsValidK8sSvcName(t *testing.T) {
+	assert.True(t, IsValidK8sSvcName("sdf-sdfb---wqfqw-wqfe"))
+	assert.True(t, IsValidK8sSvcName("12sdf-sdfb---wqfqw-wqfe213"))
+	assert.False(t, IsValidK8sSvcName("sdf-sdfB---wqfqw-wqfe"))
+	assert.False(t, IsValidK8sSvcName("sdf-sdfB---wqfqw-wqfe-"))
+	assert.False(t, IsValidK8sSvcName(`cmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbccmdbcmdbcmdb
+		cmdbcmdbcmdbcmdbcmdbcmdbcmdbmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdbcmdb`))
 }
