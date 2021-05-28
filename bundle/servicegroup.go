@@ -165,11 +165,14 @@ func (b *Bundle) ServiceGroupConfigUpdate(sg apistructs.ServiceGroup) error {
 }
 
 // TODO: an ugly hack, need refactor, it may cause goroutine explosion
-func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error) {
+func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string, timeout int64) (*apistructs.ServiceGroup, error) {
 	var (
 		sg  *apistructs.ServiceGroup
 		err error
 	)
+	if timeout == 0 {
+		timeout = 3
+	}
 	done := make(chan struct{}, 1)
 	go func() {
 		sg, err = b.InspectServiceGroup(namespace, name)
@@ -178,7 +181,7 @@ func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string) (*apistr
 	select {
 	case <-done:
 		return sg, err
-	case <-time.After(3 * time.Second):
+	case <-time.After(time.Duration(timeout) * time.Second):
 		return nil, apierrors.ErrInvoke.InternalError(fmt.Errorf("timeout for invoke getServiceGroup"))
 	}
 }
