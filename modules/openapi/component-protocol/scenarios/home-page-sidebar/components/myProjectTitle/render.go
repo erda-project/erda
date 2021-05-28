@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 type MyProjectTitle struct {
@@ -103,8 +104,9 @@ func (t *MyProjectTitle) Render(ctx context.Context, c *apistructs.Component, sc
 	if err := t.GenComponentState(c); err != nil {
 		return err
 	}
+	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
 	t.Type = "Title"
-	t.Props.Title = "项目"
+	t.Props.Title = i18nLocale.Get(i18n.I18nKeyProjectName)
 	t.Props.NoMarginBottom = true
 	t.Props.Level = 1
 	t.Props.Visible = true
@@ -137,10 +139,10 @@ func (t *MyProjectTitle) Render(ctx context.Context, c *apistructs.Component, sc
 		t.Props.Operations = []interface{}{
 			map[string]interface{}{
 				"props": map[string]interface{}{
-					"text":        "创建",
+					"text":        i18nLocale.Get(i18n.I18nKeyCreate),
 					"visible":     visible,
 					"disabled":    false,
-					"disabledTip": "暂无创建项目权限",
+					"disabledTip": i18nLocale.Get(i18n.I18nKeyProjectNoPermission),
 					"type":        "link",
 				},
 				"operations": map[string]interface{}{

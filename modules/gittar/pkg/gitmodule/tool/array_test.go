@@ -11,13 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package issue_manage
+package tool
 
-const (
-	IssueType = "issue-manage"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-const (
-	DefaultTablePageSize = 10
-	DefaultGanttPageSize = 200
-)
+func TestIsKeyInArray(t *testing.T) {
+	tests := []struct {
+		array    []string
+		key      string
+		expected bool
+	}{
+		{[]string{"foo", "bar"}, "foo", true},
+		{[]string{"foo", "bar"}, "", false},
+		{[]string{"foo", ""}, "", true},
+	}
+	for _, v := range tests {
+		assert.Equal(t, v.expected, IsKeyInArray(v.array, v.key))
+	}
+}
