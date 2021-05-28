@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
@@ -350,7 +351,8 @@ func (d *Deployment) GetStatus(deploymentID uint64) (*apistructs.DeploymentStatu
 		}
 	}
 
-	sg, err := d.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+	namespace, name := runtime.ScheduleName.Args()
+	sg, err := d.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 
 	var rt *apistructs.DeploymentStatusRuntimeDTO
 	if deployment.Status == apistructs.DeploymentStatusOK {

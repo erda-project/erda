@@ -30,6 +30,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
@@ -1333,7 +1334,8 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		d.Source = runtime.Source
 		d.Status = apistructs.RuntimeStatusUnHealthy
 		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
-			sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+			namespace, name := runtime.ScheduleName.Args()
+			sg, err := r.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 			if err != nil {
 				logrus.Errorf("failed to inspect servicegroup: %s/%s",
 					runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
@@ -1424,7 +1426,8 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	// TODO: use the newest api instead of InspectGroup
 	var sg *apistructs.ServiceGroup
 	if runtime.ScheduleName.Name != "" {
-		sg, _ = r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+		namespace, name := runtime.ScheduleName.Args()
+		sg, _ = r.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 	}
 
 	cluster, err := r.bdl.GetCluster(runtime.ClusterName)
@@ -1566,7 +1569,8 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	}
 
 	statusMap := map[string]map[string]string{}
-	statusResp, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+	namespace, name := runtime.ScheduleName.Args()
+	statusResp, err := r.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 	if err != nil {
 		logrus.Errorf("Failed to query service status in runtime, %+v", err)
 	} else {
@@ -1604,7 +1608,9 @@ func (r *Runtime) GetSpec(userID user.ID, orgID uint64, runtimeID uint64) (*apis
 	if !perm.Access {
 		return nil, apierrors.ErrGetRuntime.AccessDenied()
 	}
-	return r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+
+	namespace, name := runtime.ScheduleName.Args()
+	return r.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 }
 
 func (r *Runtime) KillPod(runtimeID uint64, podname string) error {

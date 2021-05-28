@@ -1411,7 +1411,8 @@ func (fsm *DeployFSMContext) doCancelDeploy(operator string, force bool) error {
 }
 
 func (fsm *DeployFSMContext) getServiceGroup() (*apistructs.ServiceGroup, error) {
-	return fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+	namespace, name := fsm.Runtime.ScheduleName.Args()
+	return fsm.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 }
 
 // TODO: we should redundant app info into runtime, so then we can move this func to utils
@@ -1489,7 +1490,8 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 	logrus.Info("start request hepa service.")
 	var sg *apistructs.ServiceGroup
 	if fsm.Runtime.ScheduleName.Name != "" {
-		sg, _ = fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+		namespace, name := fsm.Runtime.ScheduleName.Args()
+		sg, _ = fsm.bdl.InspectServiceGroupWithTimeout(namespace, name, conf.InspectServiceGroupTimeout())
 	}
 	if sg != nil {
 		logrus.Info("start request hepa service, sg is not null.")
