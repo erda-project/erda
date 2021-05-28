@@ -101,58 +101,27 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
 	}
 	workspaces := strutil.Split(releaseReq.Workspace, ",", true)
-	yml := apistructs.PipelineYml{
-		Version: "1.1",
-		Stages: [][]*apistructs.PipelineYmlAction{
-			{},
-			{},
-			{},
-			{},
-		},
+	commitid := releaseResp.Labels["gitCommitId"]
+	branch := releaseResp.Labels["gitBranch"]
+
+	// check if there is a runtime already being created by release
+	rts, err := utils.FindCreatingRuntimesByRelease(uint64(releaseReq.ApplicationID), workspaces[0],
+		fmt.Sprintf("dice-deploy-release-%s", branch), r.bdl)
+	if err != nil {
+		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
 	}
-	for _, workspace := range workspaces {
-		yml.Stages[0] = append(yml.Stages[0], &apistructs.PipelineYmlAction{
-			Type:    "dice-deploy-release",
-			Alias:   fmt.Sprintf("dice-deploy-release-%s", workspace),
-			Version: "1.0",
-			Params: map[string]interface{}{
-				"release_id": releaseReq.ReleaseID,
-				"workspace":  workspace,
-			},
-		})
-		yml.Stages[1] = append(yml.Stages[1], &apistructs.PipelineYmlAction{
-			Type:    "dice-deploy-addon",
-			Alias:   fmt.Sprintf("dice-deploy-addon-%s", workspace),
-			Version: "1.0",
-			Params: map[string]interface{}{
-				"deployment_id": fmt.Sprintf("${dice-deploy-release-%s:OUTPUT:deployment_id}", workspace),
-			},
-		})
-		yml.Stages[2] = append(yml.Stages[2], &apistructs.PipelineYmlAction{
-			Type:    "dice-deploy-service",
-			Alias:   fmt.Sprintf("dice-deploy-service-%s", workspace),
-			Version: "1.0",
-			Params: map[string]interface{}{
-				"deployment_id": fmt.Sprintf("${dice-deploy-release-%s:OUTPUT:deployment_id}", workspace),
-			},
-		})
-		yml.Stages[3] = append(yml.Stages[3], &apistructs.PipelineYmlAction{
-			Type:    "dice-deploy-domain",
-			Alias:   fmt.Sprintf("dice-deploy-domain-%s", workspace),
-			Version: "1.0",
-			Params: map[string]interface{}{
-				"deployment_id": fmt.Sprintf("${dice-deploy-release-%s:OUTPUT:deployment_id}", workspace),
-			},
-		})
+	if len(rts) != 0 {
+		return apistructs.RuntimeReleaseCreatePipelineResponse{},
+			errors.Errorf("There is already a runtime created by releaseID %s, please do not repeat deployment", releaseReq.ReleaseID)
 	}
+
+	yml := utils.GenCreateByReleasePipelineYaml(releaseReq.ReleaseID, workspaces)
 	b, err := yaml.Marshal(yml)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
 		logrus.Errorf(errstr)
 		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
 	}
-	commitid := releaseResp.Labels["gitCommitId"]
-	branch := releaseResp.Labels["gitBranch"]
 	detail := apistructs.CommitDetail{
 		CommitID: "",
 		Repo:     app.GitRepo,
@@ -420,40 +389,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	yml := apistructs.PipelineYml{
-		Version: "1.1",
-		Stages: [][]*apistructs.PipelineYmlAction{
-			{{
-				Type:    "dice-deploy-redeploy",
-				Alias:   "dice-deploy-redeploy",
-				Version: "1.0",
-				Params: map[string]interface{}{
-					"runtime_id": strconv.FormatUint(runtimeID, 10),
-				},
-			}},
-			{{
-				Type:    "dice-deploy-addon",
-				Version: "1.0",
-				Params: map[string]interface{}{
-					"deployment_id": "${dice-deploy-redeploy:OUTPUT:deployment_id}",
-				},
-			}},
-			{{
-				Type:    "dice-deploy-service",
-				Version: "1.0",
-				Params: map[string]interface{}{
-					"deployment_id": "${dice-deploy-redeploy:OUTPUT:deployment_id}",
-				},
-			}},
-			{{
-				Type:    "dice-deploy-domain",
-				Version: "1.0",
-				Params: map[string]interface{}{
-					"deployment_id": "${dice-deploy-redeploy:OUTPUT:deployment_id}",
-				},
-			}},
-		},
-	}
+	yml := utils.GenRedeployPipelineYaml(runtimeID)
 	app, err := r.bdl.GetApp(runtime.ApplicationID)
 	if err != nil {
 		return nil, err
@@ -1284,6 +1220,7 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 	if err != nil {
 		return nil, err
 	}
+
 	// check four env perm
 	rtEnvPermMark := make(map[string]struct{})
 	anyPerm := false
@@ -1313,9 +1250,11 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		if runtime.OrgID != orgID {
 			continue
 		}
-		if _, exists := rtEnvPermMark[strutil.ToLower(runtime.Workspace)]; !exists {
+		env := strutil.ToLower(runtime.Workspace)
+		if _, exists := rtEnvPermMark[env]; !exists {
 			continue
 		}
+		delete(rtEnvPermMark, env)
 		deployment, err := r.db.FindLastDeployment(runtime.ID)
 		if err != nil {
 			logrus.Errorf("[alert] failed to build summary item, runtime %v get last deployment failed, err: %v",
@@ -1372,6 +1311,18 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		d.LastOperator = deployment.Operator
 		d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
 		data = append(data, d)
+	}
+
+	// It takes some time to initialize and run the pipeline when creating a runtime
+	// through the release, but we should let users know that thisruntime is being created.
+	if len(workspace) == 0 && len(name) == 0 {
+		for env := range rtEnvPermMark {
+			creatingRTs, err := utils.FindCreatingRuntimesByRelease(appID, env, "", r.bdl)
+			if err != nil {
+				return nil, err
+			}
+			data = append(data, creatingRTs...)
+		}
 	}
 
 	return data, nil
