@@ -442,6 +442,7 @@ func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/info", Method: http.MethodGet, Handler: e.Info},
+		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
 
 		// hosts
 		{Path: "/api/hosts/{host}", Method: http.MethodGet, Handler: e.GetHost},
