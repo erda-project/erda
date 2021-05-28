@@ -11,13 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package issue_manage
+package issueTable
 
-const (
-	IssueType = "issue-manage"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-const (
-	DefaultTablePageSize = 10
-	DefaultGanttPageSize = 200
-)
+func TestGetTotalPage(t *testing.T) {
+	data := []struct {
+		total    uint64
+		pageSize uint64
+		page     uint64
+	}{
+		{10, 0, 0},
+		{0, 10, 0},
+		{20, 10, 2},
+		{21, 10, 3},
+	}
+	for _, v := range data {
+		assert.Equal(t, getTotalPage(v.total, v.pageSize), v.page)
+	}
+}
