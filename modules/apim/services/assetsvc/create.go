@@ -705,16 +705,16 @@ func (svc *Service) createContractIfExists(req *apistructs.CreateContractReq, as
 	)
 
 	// 如果合约处于 "等待授权" 和 "已授权" 以外的情形, 则修改为 "等待授权"
-	if exContract.Status.ToLower() != apistructs.ContractProving &&
-		exContract.Status.ToLower() != apistructs.ContractProved {
-		exContract.Status = apistructs.ContractProving
+	if exContract.Status.ToLower() != apistructs.ContractApproving &&
+		exContract.Status.ToLower() != apistructs.ContractApproved {
+		exContract.Status = apistructs.ContractApproving
 		updates["status"] = exContract.Status
 	}
 
 	// 如果合约处 "等待授权" 且 access 是自动授权的, 则修改为 "已授权"
-	if exContract.Status.ToLower() == apistructs.ContractProving &&
+	if exContract.Status.ToLower() == apistructs.ContractApproving &&
 		access.Authorization.ToLower() == apistructs.AuthorizationAuto {
-		exContract.Status = apistructs.ContractProved
+		exContract.Status = apistructs.ContractApproved
 		updates["status"] = exContract.Status
 	}
 
@@ -751,12 +751,12 @@ func (svc *Service) createContractIfExists(req *apistructs.CreateContractReq, as
 				record.Action = string(result)
 			}
 
-		case updatingStatus == apistructs.ContractProving:
+		case updatingStatus == apistructs.ContractApproving:
 			// 如果是更新后的状态是"等待授权", 向管理员发送通知
 			go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
 			record.Action += ", 等待审批中"
 
-		case updatingStatus == apistructs.ContractProved:
+		case updatingStatus == apistructs.ContractApproved:
 			// 如果更新后的状态是"已授权", 向用户发送通知; 调用网关测的授权
 			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
 			record.Action += ", 并自动通过了审批"
@@ -828,7 +828,7 @@ func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, a
 			AssetName:      access.AssetName,
 			SwaggerVersion: access.SwaggerVersion,
 			ClientID:       client.ID,
-			Status:         apistructs.ContractProving,
+			Status:         apistructs.ContractApproving,
 			CurSLAID:       nil,
 			RequestSLAID:   nil,
 			SLACommittedAt: nil,
@@ -844,7 +844,7 @@ func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, a
 
 	// 如果 access 是自动授权的, 令 contract.Status 为 "已授权"
 	if access.Authorization.ToLower() == apistructs.AuthorizationAuto {
-		contract.Status = apistructs.ContractProved
+		contract.Status = apistructs.ContractApproved
 	}
 
 	// 如果 access 有默认 SLA, 则令 contract 当前 SLA 为其默认 SLA
@@ -900,7 +900,7 @@ func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, a
 	}
 
 	switch contract.Status.ToLower() {
-	case apistructs.ContractProving:
+	case apistructs.ContractApproving:
 		// 等待审批, 通知管理人员进行审批
 
 		go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
@@ -911,7 +911,7 @@ func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, a
 			return nil, errors.Wrap(err, "failed to Create record")
 		}
 
-	case apistructs.ContractProved:
+	case apistructs.ContractApproved:
 		// 如果合约已授权, 调用网关侧的授权; 通知用户已通过
 
 		go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)

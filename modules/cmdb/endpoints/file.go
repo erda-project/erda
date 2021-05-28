@@ -42,29 +42,28 @@ const (
 
 // UploadFile 上传文件至存储
 func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	// 校验用户登录
+	// check the user login
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrUploadFile.NotLogin().ToResp(), nil
 	}
 
-	// w
-	w := ctx.Value(httpserver.ResponseWriter).(http.ResponseWriter)
-
-	// 校验文件大小
-	r.Body = http.MaxBytesReader(w, r.Body, int64(conf.FileMaxUploadSize()))
-	if err := r.ParseMultipartForm(int64(conf.FileMaxUploadSize())); err != nil {
-		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s,err: %s", conf.FileMaxUploadSize().String(), err))
+	// check the size
+	if r.ContentLength > int64(conf.FileMaxUploadSize()) {
+		return nil, apierrors.ErrUploadTooLargeFile.InvalidParameter(errors.Errorf("max file size: %s", conf.FileMaxUploadSize().String()))
 	}
 
-	// 获取上传文件
+	// get the file
+	if err := r.ParseMultipartForm(int64(conf.FileMaxMemorySize())); err != nil {
+		return nil, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("err: %s", err))
+	}
 	formFile, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		return nil, apierrors.ErrUploadFile.InternalError(err)
 	}
 	defer formFile.Close()
 
-	// 获取参数
+	// get params
 	const (
 		paramFileFrom  = "fileFrom"
 		paramFileFrom2 = "from"
@@ -160,7 +159,7 @@ func (e *Endpoints) DownloadFile(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// 校验用户登录
-	if file.Extra.IsPublic == false {
+	if !file.Extra.IsPublic && !conf.DisableFileDownloadPermissionValidate() {
 		_, err = user.GetIdentityInfo(r)
 		if err != nil {
 			return apierrors.ErrDownloadFile.NotLogin()

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -83,11 +84,12 @@ func (this *EmptyApplication) Render(ctx context.Context, c *apistructs.Componen
 	if err := this.SetCtxBundle(ctx); err != nil {
 		return err
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Type = "EmptyHolder"
 	if this.State.ProsNum > 0 && this.State.AppsNum == 0 {
 		this.Props.Visible = true
 	}
-	this.Props.Tip = "未加入任何应用"
+	this.Props.Tip = i18nLocale.Get(i18n.I18nKeyAppNoAdded)
 	this.Props.Relative = true
 	return nil
 }

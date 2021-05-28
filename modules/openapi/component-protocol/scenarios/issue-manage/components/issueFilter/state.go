@@ -41,7 +41,7 @@ func (f *ComponentFilter) generateUrlQueryKey() string {
 
 func (f *ComponentFilter) generateIssuePagingRequest() (apistructs.IssuePagingRequest, error) {
 	var (
-		startCreatedAt, endCreatedAt, startFinishedAt, endFinishedAt int64
+		startCreatedAt, endCreatedAt, startFinishedAt, endFinishedAt, startClosedAt, endClosedAt int64
 	)
 	if len(f.State.FrontendConditionValues.CreatedAtStartEnd) >= 2 {
 		if f.State.FrontendConditionValues.CreatedAtStartEnd[0] != nil {
@@ -69,6 +69,20 @@ func (f *ComponentFilter) generateIssuePagingRequest() (apistructs.IssuePagingRe
 			endFinishedAt = *f.State.FrontendConditionValues.FinishedAtStartEnd[1]
 		}
 	}
+	if len(f.State.FrontendConditionValues.ClosedAtStartEnd) >= 2 {
+		if f.State.FrontendConditionValues.ClosedAtStartEnd[0] != nil {
+			startClosedAt = *f.State.FrontendConditionValues.ClosedAtStartEnd[0]
+			if f.State.FrontendConditionValues.ClosedAtStartEnd[1] == nil {
+				endClosedAt = 0
+			} else {
+				endClosedAt = *f.State.FrontendConditionValues.ClosedAtStartEnd[1]
+			}
+		} else if f.State.FrontendConditionValues.ClosedAtStartEnd[1] != nil {
+			startClosedAt = 0
+			endClosedAt = *f.State.FrontendConditionValues.ClosedAtStartEnd[1]
+		}
+	}
+
 	req := apistructs.IssuePagingRequest{
 		PageNo:   1, // 每次走 filter，都需要重新查询，调整 pageNo 为 1
 		PageSize: 0,
@@ -90,6 +104,8 @@ func (f *ComponentFilter) generateIssuePagingRequest() (apistructs.IssuePagingRe
 			EndCreatedAt:    endCreatedAt,
 			StartFinishedAt: startFinishedAt,
 			EndFinishedAt:   endFinishedAt,
+			StartClosedAt:   startClosedAt,
+			EndClosedAt:     endClosedAt,
 			Priority:        f.State.FrontendConditionValues.Priorities,
 			Complexity:      nil,
 			Severity:        f.State.FrontendConditionValues.Severities,
