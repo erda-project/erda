@@ -339,8 +339,7 @@ func (a *Addon) transPlan(addons []apistructs.AddonCreateItem) {
 	}
 }
 
-// RuntimeAddonStatus runtime addo status, ensure that
-// an error will only be returned when the status is 0
+// RuntimeAddonStatus runtime addon状态
 func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 	if runtimeID == "" {
 		return 0, errors.New("runtimeId 不能为空")
@@ -378,7 +377,7 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 			return 0, err
 		}
 		if routing == nil {
-			return 0, errors.Errorf("instance routing is not existed: %s", ins.RoutingInstanceID)
+			return 0, err
 		}
 		insMap[routing.ID] = routing.Status
 		if routing.Status == string(apistructs.AddonAttaching) {
@@ -394,7 +393,8 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 			continue
 		}
 		if _, ok := insMap[prebuild.RoutingInstanceID]; !ok {
-			return 0, errors.Errorf("RuntimeAddonStatus error, routingId not found: %v", prebuild.RoutingInstanceID)
+			logrus.Errorf("RuntimeAddonStatus error, routingId not found: %v", prebuild.RoutingInstanceID)
+			return 0, nil
 		}
 	}
 

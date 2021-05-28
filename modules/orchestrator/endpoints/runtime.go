@@ -65,7 +65,7 @@ func (e *Endpoints) CreateRuntimeByRelease(ctx context.Context, r *http.Request,
 	}
 	orgid, err := getOrgID(r)
 	if err != nil {
-		return apierrors.ErrCreateRuntime.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrDeleteRuntime.InvalidParameter(err).ToResp(), nil
 	}
 	var req apistructs.RuntimeReleaseCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
