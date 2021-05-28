@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/apierrors"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Permission struct {
@@ -107,4 +108,27 @@ func (p *Permission) CheckBranchAction(identityInfo apistructs.IdentityInfo, app
 		Resource: validBranch.GetPermissionResource(),
 		Action:   action,
 	})
+}
+
+func (p *Permission) CheckRuntimeBranch(identityInfo apistructs.IdentityInfo, appID uint64, branch string, action string) error {
+	validBranch, err := p.bdl.GetBranchWorkspaceConfig(appID, branch)
+	if err != nil {
+		return apierrors.ErrCheckPermission.InternalError(err)
+	}
+
+	perm, err := p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.AppScope,
+		ScopeID:  appID,
+		Resource: "runtime-" + strutil.ToLower(validBranch.Workspace),
+		Action:   action,
+	})
+	if err != nil {
+		return apierrors.ErrCheckPermission.InternalError(err)
+	}
+	if !perm.Access {
+		return apierrors.ErrCheckPermission.AccessDenied()
+	}
+
+	return nil
 }
