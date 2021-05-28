@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyProjectTitle struct {
@@ -99,8 +100,10 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 	if err := e.GenComponentState(c); err != nil {
 		return err
 	}
+
+	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	e.Type = "Title"
-	e.Props.Title = "你已经是 Erda Cloud 组织的成员"
+	e.Props.Title = i18nLocale.Get(i18n.I18nKeyOrgEmpty)
 	e.Props.Level = 2
 	if e.ctxBdl.Identity.OrgID != "" {
 		prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
@@ -126,7 +129,7 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 				Resource: apistructs.ProjectResource,
 				Action:   apistructs.CreateAction,
 			}
-			var role string = "成员"
+			var role string = i18nLocale.Get(i18n.I18nKeyMember)
 			permissionRes, err := e.ctxBdl.Bdl.CheckPermission(req)
 			if err != nil {
 				return err
@@ -136,9 +139,9 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 			}
 
 			if permissionRes.Access {
-				role = "管理员"
+				role = i18nLocale.Get(i18n.I18nKeyAdmin)
 			}
-			e.Props.Title = fmt.Sprintf("你已经是 %s 组织的%s", orgDTO.DisplayName, role)
+			e.Props.Title = fmt.Sprintf("%s %s %s%s", i18nLocale.Get(i18n.I18nKeyYouAlready), orgDTO.DisplayName, i18nLocale.Get(i18n.I18nKeyOrgIs), role)
 			e.Props.Visible = true
 		}
 	}

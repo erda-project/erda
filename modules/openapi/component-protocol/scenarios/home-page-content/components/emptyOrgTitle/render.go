@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
 )
 
 type EmptyOrgTitle struct {
@@ -53,7 +54,8 @@ func (e *EmptyOrgTitle) Render(ctx context.Context, c *apistructs.Component, sce
 	if e.ctxBdl.Identity.OrgID == "" {
 		e.Props.Visible = true
 	}
-	e.Props.Title = "你已经是 Erda Cloud 组织的成员"
+	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
+	e.Props.Title = i18nLocale.Get(i18n.I18nKeyOrgEmpty)
 	e.Props.Level = 2
 	return nil
 }

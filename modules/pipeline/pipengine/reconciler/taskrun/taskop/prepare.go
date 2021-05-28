@@ -688,7 +688,7 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 		TaskLoop:       taskLoop,
 		SpecYmlLoop:    actionSpec.Loop,
 		CalculatedLoop: nil,
-		LoopedTimes:    1, // 当前这次运行即为 1
+		LoopedTimes:    apistructs.TaskLoopTimeBegin, // 当前这次运行即为 1
 	}
 	// calculate
 	//

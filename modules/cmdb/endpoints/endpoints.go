@@ -582,6 +582,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// 用户相关
 		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
+		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 
 		// 活动相关
 		{Path: "/api/activities", Method: http.MethodGet, Handler: e.ListActivity},
