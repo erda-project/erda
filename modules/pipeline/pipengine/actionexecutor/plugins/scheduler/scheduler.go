@@ -290,7 +290,7 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/%s/stop", action.Extra.Namespace, action.Extra.UUID)).
+		Path(fmt.Sprintf("/v1/job/%s/%s/stop", action.Extra.Namespace, task_uuid.MakeJobID(action))).
 		Do().Body(&body)
 	if err != nil {
 		return nil, httpInvokeErr(err)
