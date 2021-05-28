@@ -33,17 +33,28 @@ func precheck(sg *apistructs.ServiceGroup, resourceinfo apistructs.ClusterResour
 	r := map[string][]apistructs.ServiceGroupPrecheckNodeData{}
 	serviceAffinityMap := map[string]string{}
 	for _, svc := range sg.Services {
+		// svcLabels structs example  [][2][]string
+		// [
+		//	[
+		// 		[erda/org-erda erda/workspace-test erda/stateless-service]  -> must exist
+		//		[erda/locked erda/location]								    -> must doesn't exist
+		//  ]
+		// ]
+		svcLabels := make([][2][]string, 0)
 		cons := constraintbuilders.K8S(&sg.ScheduleInfo2, &svc, nil, nil)
-		svclabels := extractLabels(cons.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms)
-		serviceAffinityMap[svc.Name] = pp(svclabels)
+		if cons.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			svcLabels = extractLabels(cons.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.
+				NodeSelectorTerms)
+		}
+		serviceAffinityMap[svc.Name] = pp(svcLabels)
 		for ip, node := range resourceinfo.Nodes {
-			if !matchNodeLabels(node.Labels, svclabels) {
+			if !matchNodeLabels(node.Labels, svcLabels) {
 				r[svc.Name] = append(r[svc.Name],
 					apistructs.ServiceGroupPrecheckNodeData{
 						IP:     ip,
 						Status: statusUnschedulable,
 						Info: fmt.Sprintf("标签限制: [%s], 节点标签: %v",
-							pp(svclabels), node.Labels),
+							pp(svcLabels), node.Labels),
 					})
 			} else {
 				r[svc.Name] = append(r[svc.Name],
@@ -105,32 +116,39 @@ func extractLabels(terms []v1.NodeSelectorTerm) [][2][]string {
 	return r
 }
 
-func matchNodeLabels(nodelabels []string, svclabels [][2][]string) bool {
-	sort.Strings(nodelabels)
-	for _, labelTuple := range svclabels {
-		succ := true
+func matchNodeLabels(nodeLabels []string, svcLabels [][2][]string) bool {
+	// If labels schedule already disabled, all nodes can be matched.
+	if len(svcLabels) == 0 {
+		return true
+	}
+
+	sort.Strings(nodeLabels)
+
+	for _, labelTuple := range svcLabels {
+		isSuccess := true
 		for _, exist := range labelTuple[0] {
-			i := sort.SearchStrings(nodelabels, exist)
-			if i == len(nodelabels) || nodelabels[i] != exist {
-				succ = false
+			i := sort.SearchStrings(nodeLabels, exist)
+			if i == len(nodeLabels) || nodeLabels[i] != exist {
+				isSuccess = false
 			}
 		}
-		for _, notexist := range labelTuple[1] {
-			i := sort.SearchStrings(nodelabels, notexist)
-			if i != len(nodelabels) && nodelabels[i] == notexist {
-				succ = false
+		for _, notExist := range labelTuple[1] {
+			i := sort.SearchStrings(nodeLabels, notExist)
+			if i != len(nodeLabels) && nodeLabels[i] == notExist {
+				isSuccess = false
 			}
 		}
-		if succ {
+		if isSuccess {
 			return true
 		}
 	}
+
 	return false
 }
 
-func pp(svclabels [][2][]string) string {
-	descs := []string{}
-	for _, labelTuple := range svclabels {
+func pp(svcLabels [][2][]string) string {
+	descs := make([]string, 0)
+	for _, labelTuple := range svcLabels {
 		desc := fmt.Sprintf("需要存在标签: %v, 需要不存在标签: %v", labelTuple[0], labelTuple[1])
 		descs = append(descs, desc)
 	}

@@ -82,6 +82,7 @@ func LabelFilterChain(configs *executortypes.ExecutorWholeConfigs, name, kind st
 	defaultScheduleInfo := apistructs.ScheduleInfo{IsUnLocked: true}
 	// Label scheduling has not been opened
 	if !configs.EnableLabelSchedule() {
+		defaultScheduleInfo2.DisableLabelSchedule = true
 		return defaultScheduleInfo2, defaultScheduleInfo, nil, nil
 	}
 	var (

@@ -132,6 +132,9 @@ type ScheduleInfo2 struct {
 	// =DEPRECATED= k8s 中忽略该字段
 	HasProject bool
 	Project    string
+
+	// Tag disable label schedule
+	DisableLabelSchedule bool
 }
 
 // ScheduleInfo 之后将完全替换为 ScheduleInfo2

@@ -82,7 +82,7 @@ func (Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, p
 	buildDaemonsetAffinity(s, cons, service)
 
 	// decentralized job deployments
-	buildJobAntiAffinity(s.Job || s.BigData || s.Pack, cons)
+	buildJobAntiAffinity(s.Job || s.BigData || s.Pack || s.DisableLabelSchedule, cons)
 
 	// decentralized service deployments
 	buildServiceAntiAffinity(podLabels, cons)
