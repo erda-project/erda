@@ -123,9 +123,6 @@ func (d *Deployment) ContinueDeploy(deploymentID uint64) error {
 	if end, err := fsm.timeout(); end || err != nil {
 		return err
 	}
-	if err := fsm.precheck(); err != nil {
-		return fsm.failDeploy(err)
-	}
 	switch fsm.Deployment.Status {
 	case apistructs.DeploymentStatusWaiting:
 		return fsm.continueWaiting()
