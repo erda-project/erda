@@ -3,26 +3,26 @@
 CREATE TABLE `dice_api_access`
 (
     `id`                bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `asset_id`          varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset id',
-    `asset_name`        varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset name',
+    `asset_id`          varchar(191) DEFAULT NULL COMMENT 'asset id',
+    `asset_name`        varchar(191) DEFAULT NULL COMMENT 'asset name',
     `org_id`            bigint(20) DEFAULT NULL COMMENT 'organization id',
-    `swagger_version`   varchar(16) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'swagger version',
+    `swagger_version`   varchar(16)  DEFAULT NULL COMMENT 'swagger version',
     `major`             int(11) DEFAULT NULL COMMENT 'version major number',
     `minor`             int(11) DEFAULT NULL COMMENT 'version minor number',
     `project_id`        bigint(20) DEFAULT NULL COMMENT 'project id',
     `app_id`            bigint(20) DEFAULT NULL COMMENT 'application id',
-    `workspace`         varchar(32) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'DEV, TEST, STAGING, PROD',
-    `endpoint_id`       varchar(32) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'gateway endpoint id',
-    `authentication`    varchar(32) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'api-key, parameter-sign, auth2',
-    `authorization`     varchar(32) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'auto, manual',
-    `addon_instance_id` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'addon instance id',
-    `bind_domain`       varchar(256) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bind domains',
-    `creator_id`        varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'creator user id',
-    `updater_id`        varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'updater user id',
-    `created_at`        datetime                                DEFAULT NULL COMMENT 'created datetime',
-    `updated_at`        datetime                                DEFAULT NULL COMMENT 'last updated datetime',
-    `project_name`      varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'project name',
-    `app_name`          varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'app name',
+    `workspace`         varchar(32)  DEFAULT NULL COMMENT 'DEV, TEST, STAGING, PROD',
+    `endpoint_id`       varchar(32)  DEFAULT NULL COMMENT 'gateway endpoint id',
+    `authentication`    varchar(32)  DEFAULT NULL COMMENT 'api-key, parameter-sign, auth2',
+    `authorization`     varchar(32)  DEFAULT NULL COMMENT 'auto, manual',
+    `addon_instance_id` varchar(128) DEFAULT NULL COMMENT 'addon instance id',
+    `bind_domain`       varchar(256) DEFAULT NULL COMMENT 'bind domains',
+    `creator_id`        varchar(191) DEFAULT NULL COMMENT 'creator user id',
+    `updater_id`        varchar(191) DEFAULT NULL COMMENT 'updater user id',
+    `created_at`        datetime     DEFAULT NULL COMMENT 'created datetime',
+    `updated_at`        datetime     DEFAULT NULL COMMENT 'last updated datetime',
+    `project_name`      varchar(191) DEFAULT NULL COMMENT 'project name',
+    `app_name`          varchar(191) DEFAULT NULL COMMENT 'app name',
     `default_sla_id`    bigint(20) DEFAULT NULL COMMENT 'default SLA id',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理表';
@@ -121,15 +121,15 @@ CREATE TABLE `dice_api_clients`
 (
     `id`           bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `org_id`       bigint(20) DEFAULT NULL COMMENT 'organization id',
-    `name`         varchar(64) COLLATE utf8mb4_unicode_ci   DEFAULT NULL COMMENT 'client name',
-    `desc`         varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'describe',
-    `client_id`    varchar(32) COLLATE utf8mb4_unicode_ci   DEFAULT NULL COMMENT 'client id',
-    `creator_id`   varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'creator user id',
-    `updater_id`   varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'updater user id',
-    `created_at`   datetime NOT NULL                        DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`   datetime NOT NULL                        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `alias_name`   varchar(64) COLLATE utf8mb4_unicode_ci   DEFAULT NULL COMMENT 'alias name',
-    `display_name` varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'client display name',
+    `name`         varchar(64)       DEFAULT NULL COMMENT 'client name',
+    `desc`         varchar(1024)     DEFAULT NULL COMMENT 'describe',
+    `client_id`    varchar(32)       DEFAULT NULL COMMENT 'client id',
+    `creator_id`   varchar(191)      DEFAULT NULL COMMENT 'creator user id',
+    `updater_id`   varchar(191)      DEFAULT NULL COMMENT 'updater user id',
+    `created_at`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `alias_name`   varchar(64)       DEFAULT NULL COMMENT 'alias name',
+    `display_name` varchar(191)      DEFAULT NULL COMMENT 'client display name',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理表';
 
@@ -138,29 +138,29 @@ CREATE TABLE `dice_api_contract_records`
     `id`          bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `org_id`      bigint(20) DEFAULT NULL COMMENT 'organization id',
     `contract_id` bigint(20) DEFAULT NULL COMMENT 'dice_api_contracts primary key',
-    `action`      varchar(64) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'operation describe',
-    `creator_id`  varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'operation user id',
-    `created_at`  datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`  datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `action`      varchar(64)       DEFAULT NULL COMMENT 'operation describe',
+    `creator_id`  varchar(191)      DEFAULT NULL COMMENT 'operation user id',
+    `created_at`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理合约操作记录表';
 
 CREATE TABLE `dice_api_contracts`
 (
     `id`               bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `asset_id`         varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset id',
-    `asset_name`       varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset name',
+    `asset_id`         varchar(191)      DEFAULT NULL COMMENT 'asset id',
+    `asset_name`       varchar(191)      DEFAULT NULL COMMENT 'asset name',
     `org_id`           bigint(20) DEFAULT NULL COMMENT 'organization id',
-    `swagger_version`  varchar(16) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'swagger version',
+    `swagger_version`  varchar(16)       DEFAULT NULL COMMENT 'swagger version',
     `client_id`        bigint(20) DEFAULT NULL COMMENT 'primary key of table dice_api_client',
-    `status`           varchar(16) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'proved:已授权, proving:待审批, disproved:已撤销',
-    `creator_id`       varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'creator user id',
-    `updater_id`       varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'updater user id',
-    `created_at`       datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`       datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `status`           varchar(16)       DEFAULT NULL COMMENT 'proved:已授权, proving:待审批, disproved:已撤销',
+    `creator_id`       varchar(191)      DEFAULT NULL COMMENT 'creator user id',
+    `updater_id`       varchar(191)      DEFAULT NULL COMMENT 'updater user id',
+    `created_at`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `cur_sla_id`       bigint(20) DEFAULT NULL COMMENT 'contract current SLA id',
     `request_sla_id`   bigint(20) DEFAULT NULL COMMENT 'contract request SLA',
-    `sla_committed_at` datetime                                DEFAULT NULL COMMENT 'current SLA committed time',
+    `sla_committed_at` datetime          DEFAULT NULL COMMENT 'current SLA committed time',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理合约表';
 
@@ -227,26 +227,26 @@ CREATE TABLE `dice_api_oas3_index`
 CREATE TABLE `dice_api_sla_limits`
 (
     `id`         bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `created_at` datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at` datetime NOT NULL                       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `creator_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'creator id',
-    `updater_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'creator id',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `creator_id` varchar(191)      DEFAULT NULL COMMENT 'creator id',
+    `updater_id` varchar(191)      DEFAULT NULL COMMENT 'creator id',
     `sla_id`     bigint(20) DEFAULT NULL COMMENT 'SLA model id',
     `limit`      bigint(20) DEFAULT NULL COMMENT 'request limit',
-    `unit`       varchar(16) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 's: second, m: minute, h: hour, d: day',
+    `unit`       varchar(16)       DEFAULT NULL COMMENT 's: second, m: minute, h: hour, d: day',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市访问管理 SLA 限制条件表';
 
 CREATE TABLE `dice_api_slas`
 (
     `id`         bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `created_at` datetime NOT NULL                        DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at` datetime NOT NULL                        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `creator_id` varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'creator id',
-    `updater_id` varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'creator id',
-    `name`       varchar(191) COLLATE utf8mb4_unicode_ci  DEFAULT NULL COMMENT 'SLA name',
-    `desc`       varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'description',
-    `approval`   varchar(16) COLLATE utf8mb4_unicode_ci   DEFAULT NULL COMMENT 'auto, manual',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `creator_id` varchar(191)      DEFAULT NULL COMMENT 'creator id',
+    `updater_id` varchar(191)      DEFAULT NULL COMMENT 'creator id',
+    `name`       varchar(191)      DEFAULT NULL COMMENT 'SLA name',
+    `desc`       varchar(1024)     DEFAULT NULL COMMENT 'description',
+    `approval`   varchar(16)       DEFAULT NULL COMMENT 'auto, manual',
     `access_id`  bigint(20) DEFAULT NULL COMMENT 'access id',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市访问管理 Service Level Agreements 表';
