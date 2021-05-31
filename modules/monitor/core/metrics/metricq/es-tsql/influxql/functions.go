@@ -42,6 +42,7 @@ type Context struct {
 	aggregations     elastic.Aggregations
 	row              int64
 	params           map[string]interface{}
+	attributesCache  map[string]interface{}
 }
 
 type scopeField struct {
@@ -98,6 +99,14 @@ func (c *Context) GetFuncID(call *influxql.Call, deftyp influxql.DataType) strin
 // RowNum .
 func (c *Context) RowNum() int64 {
 	return c.row
+}
+
+// AttributeCache .
+func (c *Context) AttributesCache() map[string]interface{}{
+	if c.attributesCache==nil{
+		c.attributesCache=make(map[string]interface{})
+	}
+	return c.attributesCache
 }
 
 func getCallHash(call *influxql.Call, deftyp influxql.DataType) string {
@@ -350,6 +359,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
 				nilFloat64 := 0.0
 				rNilFloat64 := &nilFloat64
+				attributesCache:=ctx.AttributesCache()
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
 
@@ -387,6 +397,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
 				nilFloat64 := 0.0
 				rNilFloat64 := &nilFloat64
+				attributesCache:=ctx.AttributesCache()
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
 
@@ -414,8 +425,6 @@ var AggFunctions = map[string]*AggFuncDefine{
 	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
 	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
 }
-
-var attributesCache = make(map[string]interface{})
 
 func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine {
 	return &AggFuncDefine{
