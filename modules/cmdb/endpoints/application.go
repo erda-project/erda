@@ -884,7 +884,7 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 		Name:           application.Name,
 		DisplayName:    application.DisplayName,
 		Desc:           application.Desc,
-		Logo:           filehelper.FileUrlRetriever(application.Logo),
+		Logo:           filehelper.APIFileUrlRetriever(application.Logo),
 		Config:         config,
 		UnBlockStart:   map[bool]*time.Time{true: unblockStart, false: nil}[isOrgBlocked],
 		UnBlockEnd:     map[bool]*time.Time{true: unblockEnd, false: nil}[isOrgBlocked],

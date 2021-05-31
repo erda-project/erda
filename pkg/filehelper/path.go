@@ -31,22 +31,22 @@ func Abs2Rel(path string) string {
 	return filepath.Clean(path)
 }
 
-func FileUrlRetriever(path string) string {
-	u, err := url.Parse(path)
+func APIFileUrlRetriever(fileUrl string) string {
+	u, err := url.Parse(fileUrl)
 	if err != nil {
-		return path
+		return fileUrl
 	}
 
 	if strings.HasPrefix(u.Path, apiFile) {
 		return u.Path
 	}
-	return path
+	return fileUrl
 }
 
-func FilterFilePath(content string) string {
+func FilterAPIFileUrl(content string) string {
 	r := regexp.MustCompile(`\(([^)]+)\)`)
 	for _, sub := range r.FindAllStringSubmatch(content, -1) {
-		path := FileUrlRetriever(sub[1])
+		path := APIFileUrlRetriever(sub[1])
 		if path != sub[1] {
 			content = strings.Replace(content, sub[1], path, 1)
 		}

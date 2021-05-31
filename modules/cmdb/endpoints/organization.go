@@ -556,7 +556,7 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		ID:          uint64(org.ID),
 		Name:        org.Name,
 		Desc:        org.Desc,
-		Logo:        filehelper.FileUrlRetriever(org.Logo),
+		Logo:        filehelper.APIFileUrlRetriever(org.Logo),
 		Locale:      org.Locale,
 		Domain:      concat_domain,
 		Creator:     org.UserID,

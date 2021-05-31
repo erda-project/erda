@@ -883,7 +883,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Name:        project.Name,
 		DisplayName: project.DisplayName,
 		Desc:        project.Desc,
-		Logo:        filehelper.FileUrlRetriever(project.Logo),
+		Logo:        filehelper.APIFileUrlRetriever(project.Logo),
 		OrgID:       uint64(project.OrgID),
 		Joined:      joined,
 		Creator:     project.UserID,
