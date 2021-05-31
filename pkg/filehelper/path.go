@@ -16,8 +16,11 @@ package filehelper
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+const apiFile string = "/api/files"
 
 func Abs2Rel(path string) string {
 	path = filepath.Clean(path)
@@ -25,4 +28,20 @@ func Abs2Rel(path string) string {
 		path = fmt.Sprintf(".%s", path)
 	}
 	return filepath.Clean(path)
+}
+
+func FileUrlRetriever(path string) string {
+	i := strings.Index(path, apiFile)
+	if i != -1 {
+		path = path[i:]
+	}
+	return path
+}
+
+func FilterFilePath(content string) string {
+	r := regexp.MustCompile(`\(([^)]+)\)`)
+	for _, sub := range r.FindAllStringSubmatch(content, -1) {
+		content = strings.Replace(content, sub[1], FileUrlRetriever(sub[1]), 1)
+	}
+	return content
 }
