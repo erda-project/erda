@@ -222,3 +222,82 @@ func (e *Endpoints) CopyAutoTestSpace(ctx context.Context, r *http.Request, vars
 	}
 	return httpserver.OkResp(space)
 }
+
+func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetAutoTestSpace.NotLogin()
+	}
+
+	// check body is valid
+	if r.ContentLength == 0 {
+		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter("missing request body")
+	}
+
+	var req apistructs.AutoTestSpaceExportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrExportAutoTestSpace.InvalidParameter(err)
+	}
+
+	res, err := e.autotestV2.GetSpace(req.ID)
+	if err != nil {
+		return err
+	}
+
+	// permission check
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(res.ProjectID),
+			Resource: apistructs.TestSpaceResource,
+			Action:   apistructs.DeleteAction,
+		})
+		if err != nil {
+			return err
+		}
+		if !access.Access {
+			return apierrors.ErrCreateTestPlan.AccessDenied()
+		}
+	}
+	req.IdentityInfo = identityInfo
+
+	return e.autotestV2.Export(w, req)
+}
+
+func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportAutoTestSpace.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.AutoTestSpaceImportRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+
+	// permission check
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(req.ProjectID),
+			Resource: apistructs.TestSpaceResource,
+			Action:   apistructs.DeleteAction,
+		})
+		if err != nil {
+			return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrCreateTestPlan.AccessDenied().ToResp(), nil
+		}
+	}
+
+	importResult, err := e.autotestV2.Import(req, r)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(importResult)
+}

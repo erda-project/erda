@@ -55,3 +55,48 @@ func ExportExcelByCell(w io.Writer, data [][]Cell, sheetName string) error {
 
 	return write(w, file, sheetName)
 }
+
+type XlsxFile struct {
+	file *xlsx.File
+}
+
+func NewXLSXFile() *XlsxFile {
+	return &XlsxFile{file: xlsx.NewFile()}
+}
+
+func AddSheetByCell(f *XlsxFile, data [][]Cell, sheetName string) error {
+	sheet, err := f.file.AddSheet(sheetName)
+	if err != nil {
+		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+	}
+
+	for _, cells := range data {
+		row := sheet.AddRow()
+		for _, cell := range cells {
+			xlsxCell := row.AddCell()
+			xlsxCell.Value = cell.Value
+			xlsxCell.HMerge = cell.HorizontalMergeNum
+			xlsxCell.VMerge = cell.VerticalMergeNum
+		}
+	}
+
+	style := xlsx.NewStyle()
+	style.Alignment.Horizontal = "center"
+	style.Alignment.Vertical = "center"
+	style.Alignment.ShrinkToFit = true
+	style.Alignment.WrapText = true
+
+	_ = sheet.ForEachRow(func(r *xlsx.Row) error {
+		_ = r.ForEachCell(func(c *xlsx.Cell) error {
+			c.SetStyle(style)
+			return nil
+		}, xlsx.SkipEmptyCells)
+		r.SetHeightCM(1.5)
+		return nil
+	}, xlsx.SkipEmptyRows)
+	return nil
+}
+
+func WriteFile(w io.Writer, f *XlsxFile, filename string) error {
+	return write(w, f.file, filename)
+}
