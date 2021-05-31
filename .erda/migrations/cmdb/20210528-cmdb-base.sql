@@ -386,7 +386,7 @@ CREATE TABLE `dice_error_box`
     `level`           varchar(50) DEFAULT 'error' COMMENT '日志级别',
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_rtype_rid_did` (`resource_type`,`resource_id`,`dedup_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='错误信息透出记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='错误信息透出记录';
 
 CREATE TABLE `dice_files`
 (
@@ -731,7 +731,7 @@ CREATE TABLE `dice_member_extra`
     KEY              `idx_user_id_scope_id_scope_type` (`user_id`,`scope_id`,`scope_type`),
     KEY              `idx_resource_key` (`resource_key`),
     KEY              `idx_resource_value` (`resource_value`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户额外信息kv表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4  COMMENT='用户额外信息kv表';
 
 
 INSERT INTO `dice_member_extra` (`id`, `created_at`, `updated_at`, `user_id`, `parent_id`, `scope_id`, `scope_type`,

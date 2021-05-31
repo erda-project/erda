@@ -25,7 +25,7 @@ CREATE TABLE `dice_api_access`
     `app_name`          varchar(191) DEFAULT NULL COMMENT 'app name',
     `default_sla_id`    bigint(20) DEFAULT NULL COMMENT 'default SLA id',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市资源访问管理表';
 
 CREATE TABLE `dice_api_asset_version_instances`
 (
@@ -131,7 +131,7 @@ CREATE TABLE `dice_api_clients`
     `alias_name`   varchar(64)       DEFAULT NULL COMMENT 'alias name',
     `display_name` varchar(191)      DEFAULT NULL COMMENT 'client display name',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市资源访问管理表';
 
 CREATE TABLE `dice_api_contract_records`
 (
@@ -143,7 +143,7 @@ CREATE TABLE `dice_api_contract_records`
     `created_at`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理合约操作记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市资源访问管理合约操作记录表';
 
 CREATE TABLE `dice_api_contracts`
 (
@@ -162,7 +162,7 @@ CREATE TABLE `dice_api_contracts`
     `request_sla_id`   bigint(20) DEFAULT NULL COMMENT 'contract request SLA',
     `sla_committed_at` datetime          DEFAULT NULL COMMENT 'current SLA committed time',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市资源访问管理合约表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市资源访问管理合约表';
 
 CREATE TABLE `dice_api_doc_lock`
 (
@@ -235,7 +235,7 @@ CREATE TABLE `dice_api_sla_limits`
     `limit`      bigint(20) DEFAULT NULL COMMENT 'request limit',
     `unit`       varchar(16)       DEFAULT NULL COMMENT 's: second, m: minute, h: hour, d: day',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市访问管理 SLA 限制条件表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市访问管理 SLA 限制条件表';
 
 CREATE TABLE `dice_api_slas`
 (
@@ -249,5 +249,5 @@ CREATE TABLE `dice_api_slas`
     `approval`   varchar(16)       DEFAULT NULL COMMENT 'auto, manual',
     `access_id`  bigint(20) DEFAULT NULL COMMENT 'access id',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API 集市访问管理 Service Level Agreements 表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='API 集市访问管理 Service Level Agreements 表';
 

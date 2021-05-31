@@ -13,7 +13,7 @@ CREATE TABLE `ci_v3_build_artifacts`
     `pipeline_id`   bigint(20) NOT NULL COMMENT '关联的流水线 ID',
     PRIMARY KEY (`id`),
     UNIQUE KEY `sha_256` (`sha_256`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='buildpack action 使用的构建产物表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='buildpack action 使用的构建产物表';
 
 CREATE TABLE `ci_v3_build_caches`
 (
@@ -176,7 +176,7 @@ CREATE TABLE `pipeline_crons`
     `time_created`      datetime     NOT NULL,
     `time_updated`      datetime     NOT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时流水线';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='定时流水线';
 
 CREATE TABLE `pipeline_extras`
 (
@@ -214,7 +214,7 @@ CREATE TABLE `pipeline_labels`
     KEY                 `idx_target_id` (`target_id`),
     KEY                 `idx_type_source_key_value_targetid` (`type`,`pipeline_source`,`key`,`value`,`target_id`),
     KEY                 `idx_type_source_ymlname_key_value_targetid` (`type`,`pipeline_source`,`pipeline_yml_name`,`key`,`value`,`target_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='流水线标签表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='流水线标签表';
 
 CREATE TABLE `pipeline_stages`
 (
@@ -230,7 +230,7 @@ CREATE TABLE `pipeline_stages`
     `time_updated`  datetime     NOT NULL,
     PRIMARY KEY (`id`),
     KEY             `idx_pipeline_id` (`pipeline_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='流水线阶段(stage)表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='流水线阶段(stage)表';
 
 CREATE TABLE `pipeline_tasks`
 (
@@ -258,5 +258,5 @@ CREATE TABLE `pipeline_tasks`
     KEY                       `idx_pipeline_id` (`pipeline_id`),
     KEY                       `idx_stage_id` (`stage_id`),
     KEY                       `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='流水线任务(task)表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='流水线任务(task)表';
 
