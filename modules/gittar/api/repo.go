@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/models"
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule/tool"
+	"github.com/erda-project/erda/modules/gittar/pkg/util"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
 )
 
@@ -632,6 +633,8 @@ func GetRepoBlob(context *webcontext.Context) {
 
 // CreateCommit 创建Commit
 func CreateCommit(context *webcontext.Context) {
+	util.HandleRequest(context.HttpRequest())
+
 	if err := context.CheckPermission(models.PermissionPush); err != nil {
 		context.Abort(err)
 		return
