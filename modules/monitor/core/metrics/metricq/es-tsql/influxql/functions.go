@@ -102,9 +102,9 @@ func (c *Context) RowNum() int64 {
 }
 
 // AttributeCache .
-func (c *Context) AttributesCache() map[string]interface{}{
-	if c.attributesCache==nil{
-		c.attributesCache=make(map[string]interface{})
+func (c *Context) AttributesCache() map[string]interface{} {
+	if c.attributesCache == nil {
+		c.attributesCache = make(map[string]interface{})
 	}
 	return c.attributesCache
 }
@@ -346,6 +346,8 @@ var AggFunctions = map[string]*AggFuncDefine{
 		),
 	},
 	// Diff is the difference value of the countervalue field, that is, the difference between the upper and lower bucket.
+	// Warning: if use the group by for tags, the first bucket may be not accurate.
+	// TODO: support group by for tags
 	"diff": {
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
@@ -359,7 +361,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
 				nilFloat64 := 0.0
 				rNilFloat64 := &nilFloat64
-				attributesCache:=ctx.AttributesCache()
+				attributesCache := ctx.AttributesCache()
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
 
@@ -384,6 +386,8 @@ var AggFunctions = map[string]*AggFuncDefine{
 		),
 	},
 	// Diffps is the rate of the countervalue field, that is, the rate of the difference between the upper and lower bucket per second.
+	// Warning: if use the group by for tags, the first bucket may be not accurate.
+	// TODO: support group by for tags
 	"diffps": {
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
@@ -397,7 +401,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
 				nilFloat64 := 0.0
 				rNilFloat64 := &nilFloat64
-				attributesCache:=ctx.AttributesCache()
+				attributesCache := ctx.AttributesCache()
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
 
