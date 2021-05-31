@@ -348,9 +348,14 @@ var AggFunctions = map[string]*AggFuncDefine{
 				return elastic.NewMinAggregation().Field(field), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				nilFloat64 := 0.0
+				rNilFloat64 := &nilFloat64
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
-					if !ok || min.Value == nil {
+
+					// the case for machine situations where downtime or restart causes the count to be reset.
+					if !ok || min.Value == nil || *prev.(*float64) > *min.Value {
+						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
 					attributesCache[id] = min.Value
@@ -358,6 +363,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 				}
 				if min, ok := aggs.Min(id); ok {
 					if min.Value == nil {
+						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
 					attributesCache[id] = min.Value
@@ -379,9 +385,14 @@ var AggFunctions = map[string]*AggFuncDefine{
 				return elastic.NewMinAggregation().Field(field), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				nilFloat64 := 0.0
+				rNilFloat64 := &nilFloat64
 				if prev, ok := attributesCache[id]; ok {
 					min, ok := aggs.Min(id)
-					if !ok || min.Value == nil {
+
+					// the case for machine situations where downtime or restart causes the count to be reset.
+					if !ok || min.Value == nil || *prev.(*float64) > *min.Value {
+						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
 					attributesCache[id] = min.Value
@@ -389,6 +400,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 				}
 				if min, ok := aggs.Min(id); ok {
 					if min.Value == nil {
+						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
 					attributesCache[id] = min.Value
