@@ -803,6 +803,7 @@ func (impl GatewayOpenapiServiceImpl) TryClearRuntimePackage(runtimeService *orm
 	if pack != nil {
 		apis, err := packApiSession.SelectByAny(&orm.GatewayPackageApi{
 			PackageId: pack.Id,
+			Origin:    string(gw.FROM_CUSTOM),
 		})
 		if err != nil {
 			return err
