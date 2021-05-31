@@ -95,3 +95,44 @@ type AutoTestSpaceList struct {
 	List  []AutoTestSpace `json:"list"`
 	Total int             `json:"total"`
 }
+
+// AutoTestSpaceExportRequest export autotest space
+type AutoTestSpaceExportRequest struct {
+	ID       uint64            `json:"id"`
+	Locale   string            `schema:"-"`
+	IsCopy   bool              `json:"-"`
+	FileType TestSpaceFileType `schema:"fileType"`
+
+	IdentityInfo
+}
+
+type TestSpaceFileType string
+
+var (
+	TestSpaceFileTypeExcel TestSpaceFileType = "excel"
+)
+
+func (t TestSpaceFileType) Valid() bool {
+	switch t {
+	case TestSpaceFileTypeExcel:
+		return true
+	default:
+		return false
+	}
+}
+
+type AutoTestSpaceImportRequest struct {
+	ProjectID uint64            `schema:"projectID"`
+	FileType  TestSpaceFileType `schema:"fileType"`
+
+	IdentityInfo
+}
+
+type AutoTestSpaceImportResponse struct {
+	Header
+	Data *AutoTestSpaceImportResult `json:"data"`
+}
+
+type AutoTestSpaceImportResult struct {
+	Success bool `json:"success"`
+}
