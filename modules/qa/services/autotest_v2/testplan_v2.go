@@ -121,24 +121,24 @@ func (svc *Service) UpdateTestPlanV2(req *apistructs.TestPlanV2UpdateRequest) er
 		}
 	}
 
-	fields, err := svc.getChangedFields(req, testPlan)
-	if err != nil {
-		return err
-	}
-
 	// update members of test plan
-	if _, ok := fields["owners"]; ok {
-		var members []dao.AutoTestPlanMember
-		for _, v := range fields["owners"].([]string) {
-			members = append(members, dao.AutoTestPlanMember{
-				TestPlanID: req.TestPlanID,
-				Role:       apistructs.TestPlanMemberRoleOwner,
-				UserID:     v,
-			})
-		}
+	var members []dao.AutoTestPlanMember
+	for _, v := range req.Owners {
+		members = append(members, dao.AutoTestPlanMember{
+			TestPlanID: req.TestPlanID,
+			Role:       apistructs.TestPlanMemberRoleOwner,
+			UserID:     v,
+		})
+	}
+	if len(members) > 0 {
 		if err := svc.db.OverwriteAutoTestPlanMembers(req.TestPlanID, members); err != nil {
 			return err
 		}
+	}
+
+	fields, err := svc.getChangedFields(req, testPlan)
+	if err != nil {
+		return err
 	}
 
 	return svc.db.UpdateTestPlanV2(req.TestPlanID, fields)
@@ -400,10 +400,6 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 
 	if req.Desc != model.Desc {
 		fields["desc"] = req.Desc
-	}
-
-	if len(req.Owners) != 0 {
-		fields["owners"] = req.Owners
 	}
 
 	if len(fields) != 0 {
