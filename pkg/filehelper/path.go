@@ -15,6 +15,7 @@ package filehelper
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -31,9 +32,13 @@ func Abs2Rel(path string) string {
 }
 
 func FileUrlRetriever(path string) string {
-	i := strings.Index(path, apiFile)
-	if i != -1 {
-		path = path[i:]
+	u, err := url.Parse(path)
+	if err != nil {
+		return path
+	}
+
+	if strings.HasPrefix(u.Path, apiFile) {
+		return u.Path
 	}
 	return path
 }
@@ -41,7 +46,10 @@ func FileUrlRetriever(path string) string {
 func FilterFilePath(content string) string {
 	r := regexp.MustCompile(`\(([^)]+)\)`)
 	for _, sub := range r.FindAllStringSubmatch(content, -1) {
-		content = strings.Replace(content, sub[1], FileUrlRetriever(sub[1]), 1)
+		path := FileUrlRetriever(sub[1])
+		if path != sub[1] {
+			content = strings.Replace(content, sub[1], path, 1)
+		}
 	}
 	return content
 }

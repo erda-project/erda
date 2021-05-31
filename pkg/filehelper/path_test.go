@@ -30,19 +30,22 @@ func TestAbs2Rel(t *testing.T) {
 }
 
 func TestFileUrlRetriever(t *testing.T) {
-	path1 := "https://dice.dev.terminus.io/api/files/b1d64d02fe274519bac2bb26120ce18e"
+	path1 := "https://test.io/api/files/xed"
 	path1 = FileUrlRetriever(path1)
-	assert.Equal(t, "/api/files/b1d64d02fe274519bac2bb26120ce18e", path1)
-	path2 := "api/files/b1d64d02fe274519bac2bb26120ce18e"
+	assert.Equal(t, "/api/files/xed", path1)
+	path2 := "api/files/xxx"
 	path2 = FileUrlRetriever(path2)
-	assert.Equal(t, "api/files/b1d64d02fe274519bac2bb26120ce18e", path2)
+	assert.Equal(t, "api/files/xxx", path2)
+	path3 := "https://test.io/erda/api/files/xxx"
+	path3 = FileUrlRetriever(path3)
+	assert.Equal(t, "https://test.io/erda/api/files/xxx", path3)
 }
 
 func TestFilterFilePath(t *testing.T) {
-	path1 := "(dasd)![a.png(94.56 KB)](https://dice.dev.terminus.io/api/files/3fe93466c56b461683ffb925db3ffa3f)![b.png(94.56 KB)](https://dice.dev.terminus.io/api/files/221e3f5a66c241ec82f9b1d0f33a7c6d)"
+	path1 := "(dasd)![a.png(94.56 KB)](https://test.io/api/files/xed)![b.png(94.56 KB)](https://test.io/api/files/xe2)"
 	path1 = FilterFilePath(path1)
-	assert.Equal(t, "(dasd)![a.png(94.56 KB)](/api/files/3fe93466c56b461683ffb925db3ffa3f)![b.png(94.56 KB)](/api/files/221e3f5a66c241ec82f9b1d0f33a7c6d)", path1)
-	path2 := "(/api/files/b1d64d02fe274519bac2bb26120ce18e)"
+	assert.Equal(t, "(dasd)![a.png(94.56 KB)](/api/files/xed)![b.png(94.56 KB)](/api/files/xe2)", path1)
+	path2 := "(/api/files/xev)"
 	path2 = FilterFilePath(path2)
-	assert.Equal(t, "(/api/files/b1d64d02fe274519bac2bb26120ce18e)", path2)
+	assert.Equal(t, "(/api/files/xev)", path2)
 }
