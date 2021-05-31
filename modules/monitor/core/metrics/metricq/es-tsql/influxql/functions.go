@@ -336,10 +336,74 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
+	// Diff is the difference value of the countervalue field, that is, the difference between the upper and lower bucket.
+	"diff": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"diff",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewMinAggregation().Script(script), nil
+				}
+				return elastic.NewMinAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				if prev, ok := attributesCache[id]; ok {
+					min, ok := aggs.Min(id)
+					if !ok || min.Value == nil {
+						return 0, true
+					}
+					attributesCache[id] = min.Value
+					return *min.Value - *prev.(*float64), true
+				}
+				if min, ok := aggs.Min(id); ok {
+					if min.Value == nil {
+						return 0, true
+					}
+					attributesCache[id] = min.Value
+				}
+
+				return 0, true
+			},
+		),
+	},
+	// Diffps is the rate of the countervalue field, that is, the rate of the difference between the upper and lower bucket per second.
+	"diffps": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"diffps",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewMinAggregation().Script(script), nil
+				}
+				return elastic.NewMinAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				if prev, ok := attributesCache[id]; ok {
+					min, ok := aggs.Min(id)
+					if !ok || min.Value == nil {
+						return 0, true
+					}
+					attributesCache[id] = min.Value
+					return (*min.Value - *prev.(*float64)) / float64(ctx.interval/1000000000), true
+				}
+				if min, ok := aggs.Min(id); ok {
+					if min.Value == nil {
+						return 0, true
+					}
+					attributesCache[id] = min.Value
+				}
+
+				return 0, true
+			},
+		),
+	},
 	"first": newSourceFieldAggFunction("first", tsql.TimestampKey, true),
 	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
 	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
 }
+
+var attributesCache = make(map[string]interface{})
 
 func newSourceFieldAggFunction(name, sort string, ascending bool) *AggFuncDefine {
 	return &AggFuncDefine{

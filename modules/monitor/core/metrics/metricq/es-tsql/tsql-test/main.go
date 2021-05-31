@@ -129,10 +129,19 @@ func getSources(query tsql.Query) []string {
 }
 
 func main() {
-	err := test20()
+	err := test21()
 	if err != nil {
 		panic(err)
 	}
+}
+
+func test21() error {
+	return Query(`
+		SELECT rx_bytes::field,tx_bytes::field,round_float(diff(rx_bytes::field)/60, 2),round_float(diff(tx_bytes::field)/60, 2),round_float(diffps(rx_bytes::field), 2),round_float(diffps(tx_bytes::field), 2)
+		FROM docker_container_summary
+		WHERE service_id::tag='9_feature/auto-test1_apm-demo-dubbo'
+		GROUP BY time(1m);
+		`, map[string]interface{}{})
 }
 
 func test20() error {
