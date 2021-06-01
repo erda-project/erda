@@ -346,8 +346,6 @@ var AggFunctions = map[string]*AggFuncDefine{
 		),
 	},
 	// Diff is the difference value of the countervalue field, that is, the difference between the upper and lower bucket.
-	// Warning: if use the group by for tags, the first bucket may be not accurate.
-	// TODO: support group by for tags
 	"diff": {
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
@@ -359,26 +357,19 @@ var AggFunctions = map[string]*AggFuncDefine{
 				return elastic.NewMinAggregation().Field(field), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
-				nilFloat64 := 0.0
-				rNilFloat64 := &nilFloat64
-				attributesCache := ctx.AttributesCache()
-				if prev, ok := attributesCache[id]; ok {
-					min, ok := aggs.Min(id)
-
-					// the case for machine situations where downtime or restart causes the count to be reset.
-					if !ok || min.Value == nil || *prev.(*float64) > *min.Value {
-						attributesCache[id] = rNilFloat64
-						return 0, true
+				if next, ok := ctx.attributesCache["next"]; ok {
+					min, _ := aggs.Min(id)
+					if min == nil {
+						return nil, false
 					}
-					attributesCache[id] = min.Value
-					return *min.Value - *prev.(*float64), true
-				}
-				if min, ok := aggs.Min(id); ok {
 					if min.Value == nil {
-						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
-					attributesCache[id] = min.Value
+					if next, ok := next.(elastic.Aggregations); ok {
+						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
+							return *next.Value - *min.Value, true
+						}
+					}
 				}
 
 				return 0, true
@@ -386,8 +377,6 @@ var AggFunctions = map[string]*AggFuncDefine{
 		),
 	},
 	// Diffps is the rate of the countervalue field, that is, the rate of the difference between the upper and lower bucket per second.
-	// Warning: if use the group by for tags, the first bucket may be not accurate.
-	// TODO: support group by for tags
 	"diffps": {
 		Flag: FuncFlagSelect,
 		New: newUnaryAggFunction(
@@ -399,26 +388,19 @@ var AggFunctions = map[string]*AggFuncDefine{
 				return elastic.NewMinAggregation().Field(field), nil
 			},
 			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
-				nilFloat64 := 0.0
-				rNilFloat64 := &nilFloat64
-				attributesCache := ctx.AttributesCache()
-				if prev, ok := attributesCache[id]; ok {
-					min, ok := aggs.Min(id)
-
-					// the case for machine situations where downtime or restart causes the count to be reset.
-					if !ok || min.Value == nil || *prev.(*float64) > *min.Value {
-						attributesCache[id] = rNilFloat64
-						return 0, true
+				if next, ok := ctx.attributesCache["next"]; ok {
+					min, _ := aggs.Min(id)
+					if min == nil {
+						return nil, false
 					}
-					attributesCache[id] = min.Value
-					return (*min.Value - *prev.(*float64)) / float64(ctx.interval/1000000000), true
-				}
-				if min, ok := aggs.Min(id); ok {
 					if min.Value == nil {
-						attributesCache[id] = rNilFloat64
 						return 0, true
 					}
-					attributesCache[id] = min.Value
+					if next, ok := next.(elastic.Aggregations); ok {
+						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
+							return (*next.Value - *min.Value) / float64(ctx.interval/1000000000), true
+						}
+					}
 				}
 
 				return 0, true

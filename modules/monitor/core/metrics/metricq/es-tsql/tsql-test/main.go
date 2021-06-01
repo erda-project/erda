@@ -129,10 +129,28 @@ func getSources(query tsql.Query) []string {
 }
 
 func main() {
-	err := test21()
+	err := test23()
 	if err != nil {
 		panic(err)
 	}
+}
+
+func test23() error {
+	return Query(
+		`
+		SELECT time(),round_float(avg(max::field), 2) 
+		FROM jvm_memory 
+		WHERE service_id::tag='9_feature/auto-test1_apm-demo-dubbo' 
+		GROUP BY time()
+		`, map[string]interface{}{})
+}
+
+func test22() error {
+	return Query(`
+		SELECT service_id::tag,service_name::tag,min(rx_bytes::field),round_float(diff(rx_bytes::field), 2),round_float(diffps(rx_bytes::field), 2)
+		FROM docker_container_summary
+		GROUP BY time(),service_id::tag;
+		`, map[string]interface{}{})
 }
 
 func test21() error {
