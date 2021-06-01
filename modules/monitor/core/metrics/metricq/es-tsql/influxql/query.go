@@ -261,6 +261,10 @@ func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggrega
 			}
 		}
 	} else if histogram, ok := aggs.Histogram("histogram"); ok {
+		bucketsCount := len(histogram.Buckets)
+		if bucketsCount > 0 && histogram.Buckets[bucketsCount-1].DocCount == 0 {
+			histogram.Buckets = histogram.Buckets[:bucketsCount-1]
+		}
 		q.ctx.AttributesCache()
 		for i, bucket := range histogram.Buckets {
 			if i+1 < len(histogram.Buckets) {

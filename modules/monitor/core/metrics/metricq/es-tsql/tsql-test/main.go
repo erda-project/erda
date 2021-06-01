@@ -129,7 +129,7 @@ func getSources(query tsql.Query) []string {
 }
 
 func main() {
-	err := test23()
+	err := test22()
 	if err != nil {
 		panic(err)
 	}
