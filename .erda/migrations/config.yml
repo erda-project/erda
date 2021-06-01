@@ -95,3 +95,4 @@ updated_at_on_update_linter: true
 varchar_length_linter: true
 complete_insert_linter: true
 manual_time_setter_linter: true
+explicit_collation_linter: true
