@@ -29,3 +29,7 @@ Once we've discussed your changes and you've got your code ready, make sure that
 * Includes tests for new functionality.
 * References the original issue in description, e.g. "Resolves #123".
 * Has a [good commit message](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+
+## How to cherry pick a merged PR?
+
+See [cherry-pick.md](./docs/guides/dev/cherry-pick.md).
