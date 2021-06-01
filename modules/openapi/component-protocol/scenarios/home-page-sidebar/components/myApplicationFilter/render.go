@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -89,6 +90,7 @@ func (this *MyApplicationFilter) GenComponentState(c *apistructs.Component) erro
 }
 
 func (this *MyApplicationFilter) setComponentValue() {
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Props.Delay = 1000
 	this.Props.FullWidth = true
 	this.Operations = map[string]interface{}{
@@ -100,11 +102,11 @@ func (this *MyApplicationFilter) setComponentValue() {
 	this.State.Conditions = []Condition{
 		{
 			Key:         "title",
-			Label:       "标题",
-			EmptyText:   "全部",
+			Label:       i18nLocale.Get(i18n.I18nKeyFilterTitle),
+			EmptyText:   i18nLocale.Get(i18n.I18nKeyAll),
 			Fixed:       true,
 			ShowIndex:   2,
-			Placeholder: "搜索应用",
+			Placeholder: i18nLocale.Get(i18n.I18nKeyFilterSearchApp),
 			Type:        "input",
 		},
 	}
