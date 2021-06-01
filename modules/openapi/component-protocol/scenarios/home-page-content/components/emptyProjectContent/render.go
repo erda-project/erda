@@ -74,16 +74,31 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		return err
 	}
 	e.Type = "TextGroup"
-	var visible bool
-	if e.ctxBdl.Identity.OrgID != "" && e.State.ProsNum == 0 {
-		visible = true
+	if e.ctxBdl.Identity.OrgID == "" {
+		e.Props["visible"] = false
+		return nil
 	}
-
+	var visible bool
 	var access bool
 	var role string
 	var createProStr string
 	var createProDetail interface{}
 	var createProType string
+	if e.State.ProsNum == 0 {
+		visible = true
+	}
+	//orgIDInt, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
+	//if err != nil {
+	//	return err
+	//}
+	//permission, err := e.ctxBdl.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+	//	Scope:   apistructs.OrgScope,
+	//	ScopeID: uint64(orgIDInt),
+	//	Action: apistructs.
+	//})
+	//if err != nil {
+	//	return fmt.Errorf("check permission failed: %v", err)
+	//}
 	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
 	if e.ctxBdl.Identity.OrgID != "" {
 		orgIntId, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
