@@ -335,13 +335,13 @@ services:
   mysql:
     image: registry.cn-hangzhou.aliyuncs.com/dice-third-party/mysql:5.7-quickstart
     container_name: erda-mysql
-    ports:
-      - "3306:3306"
-    volumes:
-      - type: volume
-        source: erda-mysql
-        target: /var/lib/mysql
-        read_only: false
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - type: volume
+#        source: erda-mysql
+#        target: /var/lib/mysql
+#        read_only: false
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
       TZ: Asia/Shanghai
@@ -362,7 +362,7 @@ services:
       - MIGRATION_ERDA_LINT=true
       - MIGRATION_DIR=/opt/action/migrations
     volumes:
-      - ../.dice/migrations:/opt/action/migrations
+      - ../.erda/migrations:/opt/action/migrations
     restart: on-failure
     platform: linux/amd64
 
