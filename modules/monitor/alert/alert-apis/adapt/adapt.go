@@ -64,17 +64,18 @@ func IsAlreadyExistsError(err error) bool {
 
 // Adapt .
 type Adapt struct {
-	l                      logs.Logger
-	metricq                metricq.Queryer
-	t                      i18n.Translator
-	db                     *db.DB
-	cql                    *cql.Cql
-	bdl                    *bundle.Bundle
-	cmdb                   *cmdb.Cmdb
-	dashboardAPI           block.DashboardAPI
-	orgFilterTags          map[string]bool
-	microServiceFilterTags map[string]bool
-	silencePolicies        map[string]bool
+	l                           logs.Logger
+	metricq                     metricq.Queryer
+	t                           i18n.Translator
+	db                          *db.DB
+	cql                         *cql.Cql
+	bdl                         *bundle.Bundle
+	cmdb                        *cmdb.Cmdb
+	dashboardAPI                block.DashboardAPI
+	orgFilterTags               map[string]bool
+	microServiceFilterTags      map[string]bool
+	microServiceOtherFilterTags map[string]bool
+	silencePolicies             map[string]bool
 }
 
 // New .
@@ -89,19 +90,21 @@ func New(
 	dashapi block.DashboardAPI,
 	orgFilterTags map[string]bool,
 	microServiceFilterTags map[string]bool,
+	microServiceOtherFilterTags map[string]bool,
 	silencePolicies map[string]bool,
 ) *Adapt {
 	return &Adapt{
-		l:                      l,
-		metricq:                metricq,
-		t:                      t,
-		db:                     db,
-		bdl:                    bdl,
-		cmdb:                   cmdb,
-		cql:                    cql,
-		orgFilterTags:          orgFilterTags,
-		microServiceFilterTags: microServiceFilterTags,
-		silencePolicies:        silencePolicies,
-		dashboardAPI:           dashapi,
+		l:                           l,
+		metricq:                     metricq,
+		t:                           t,
+		db:                          db,
+		bdl:                         bdl,
+		cmdb:                        cmdb,
+		cql:                         cql,
+		orgFilterTags:               orgFilterTags,
+		microServiceFilterTags:      microServiceFilterTags,
+		microServiceOtherFilterTags: microServiceOtherFilterTags,
+		silencePolicies:             silencePolicies,
+		dashboardAPI:                dashapi,
 	}
 }
