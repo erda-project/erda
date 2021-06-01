@@ -15,10 +15,107 @@ package snippetsvc
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/alecthomas/assert"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/expression"
 )
+
+func Test_getActionDetail(t *testing.T) {
+	var table = []struct {
+		config  apistructs.SnippetDetailQuery
+		spec    string
+		outputs []string
+	}{
+		{
+			config: apistructs.SnippetDetailQuery{
+				Alias: "jsonparse",
+				SnippetConfig: apistructs.SnippetConfig{
+					Name:   "jsonparse",
+					Source: apistructs.ActionSourceType,
+					Labels: map[string]string{
+						"actionJson":    "{\"alias\":\"jsonparse\",\"type\":\"jsonparse\",\"description\":\"对 json 解析值然后返回出参\",\"version\":\"1.0\",\"params\":{\"data\":\"{\\\"aaa\\\": 1}\",\"out_params\":[{\"expression\":\".aaa\",\"key\":\"aaa\"}]},\"resources\":{},\"displayName\":\"json 解析\"}",
+						"actionVersion": "1.0",
+					},
+				},
+			},
+			outputs: []string{
+				"name",
+				"name1",
+				"key1",
+			},
+			spec: "name: jsonparse\nversion: '1.0'\ntype: action\ncategory: custom_task\ndisplayName: json 解析\ndesc: 对 json 解析值然后返回出参\npublic: true\nsupportedVersions:\n  - \">= 3.21\"\nlabels:\n  configsheet: true\n\nparams:\n  - name: out_params\n    required: false\n    desc: 出参\n    type: struct_array\n    struct:\n      - name: key\n        required: true\n        desc: 出参名\n      - name: expression\n        required: true\n        desc: 支持 linux jq 表达式 以 . 开头，支持 jackson 以 $. 开头\n  - name: data\n    required: true\n    desc: json 数据\n    \n    \noutputsFromParams:\n  - type: jq\n    keyExpr: \"[.out_params[].key]\"    \n\n",
+		},
+		{
+			config: apistructs.SnippetDetailQuery{
+				Alias: "jsonparse",
+				SnippetConfig: apistructs.SnippetConfig{
+					Name:   "jsonparse",
+					Source: apistructs.ActionSourceType,
+					Labels: map[string]string{
+						"actionJson":    "{\"alias\":\"jsonparse\",\"type\":\"jsonparse\",\"description\":\"对 json 解析值然后返回出参\",\"version\":\"1.0\",\"params\":{\"data\":\"{\\\"aaa\\\": 1}\",\"out_params\":[{\"expression\":\".aaa\",\"key\":\"aaa\"}]},\"resources\":{},\"displayName\":\"json 解析\"}",
+						"actionVersion": "1.0",
+					},
+				},
+			},
+			spec: "name: jsonparse\nversion: '1.0'\ntype: action\ncategory: custom_task\ndisplayName: json 解析\ndesc: 对 json 解析值然后返回出参\npublic: true\nsupportedVersions:\n  - \">= 3.21\"\nlabels:\n  configsheet: true\n\nparams:\n  - name: out_params\n    required: false\n    desc: 出参\n    type: struct_array\n    struct:\n      - name: key\n        required: true\n        desc: 出参名\n      - name: expression\n        required: true\n        desc: 支持 linux jq 表达式 以 . 开头，支持 jackson 以 $. 开头\n  - name: data\n    required: true\n    desc: json 数据\n    \n    \noutputsFromParams:\n  - type: jq\n    keyExpr: \"[.out_params[].key]\"    \n\n",
+		},
+		{
+			config: apistructs.SnippetDetailQuery{
+				Alias: "jsonparse",
+				SnippetConfig: apistructs.SnippetConfig{
+					Name:   "jsonparse",
+					Source: apistructs.ActionSourceType,
+					Labels: map[string]string{
+						"actionJson":    "{\"alias\":\"jsonparse\",\"type\":\"jsonparse\",\"description\":\"对 json 解析值然后返回出参\",\"version\":\"1.0\",\"params\":{\"data\":\"{\\\"aaa\\\": 1}\",\"out_params\":[{\"expression\":\".aaa\",\"key\":\"aaa\"}]},\"resources\":{},\"displayName\":\"json 解析\"}",
+						"actionVersion": "1.0",
+					},
+				},
+			},
+			outputs: []string{
+				"result",
+			},
+			spec: "name: jsonparse\nversion: '1.0'\ntype: action\ncategory: custom_task\ndisplayName: json 解析\ndesc: 对 json 解析值然后返回出参\npublic: true\nsupportedVersions:\n  - \">= 3.21\"\nlabels:\n  configsheet: true\n\nparams:\n  - name: out_params\n    required: false\n    desc: 出参\n    type: struct_array\n    struct:\n      - name: key\n        required: true\n        desc: 出参名\n      - name: expression\n        required: true\n        desc: 支持 linux jq 表达式 以 . 开头，支持 jackson 以 $. 开头\n  - name: data\n    required: true\n    desc: json 数据\n\n\noutputs:\n  - name: result",
+		},
+	}
+
+	var s = &SnippetSvc{}
+
+	for _, data := range table {
+
+		bdl := &bundle.Bundle{}
+		s.bdl = bdl
+
+		monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetExtensionVersion", func(b *bundle.Bundle, req apistructs.ExtensionVersionGetRequest) (*apistructs.ExtensionVersion, error) {
+			return &apistructs.ExtensionVersion{
+				Spec: data.spec,
+			}, nil
+		})
+
+		monkey.Patch(handlerActionOutputsWithJq, func(action *apistructs.PipelineYmlAction, jq string) ([]string, error) {
+			return data.outputs, nil
+		})
+
+		detail, err := s.getActionDetail(data.config)
+		assert.NoError(t, err)
+
+		assert.Equal(t, len(data.outputs), len(data.outputs))
+		for _, key := range detail.Outputs {
+			var find = false
+			for _, output := range data.outputs {
+				if key == expression.GenOutputRef(data.config.Alias, output) {
+					find = true
+				}
+			}
+			assert.True(t, find)
+		}
+	}
+}
 
 func Test_ActionJson(t *testing.T) {
 
