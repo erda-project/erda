@@ -398,7 +398,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 					}
 					if next, ok := next.(elastic.Aggregations); ok {
 						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
-							return (*next.Value - *min.Value) / (float64(ctx.interval) / 1000000000), true
+							return (*next.Value - *min.Value) / (float64(tsql.ConvertTimestamp(ctx.interval, ctx.originalTimeUnit, tsql.Nanosecond) / 1000000000)), true
 						}
 					}
 				}
