@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/types"
 	"github.com/erda-project/erda/pkg/cron"
+	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/ucauth"
 	"github.com/erda-project/erda/pkg/uuid"
@@ -882,7 +883,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Name:        project.Name,
 		DisplayName: project.DisplayName,
 		Desc:        project.Desc,
-		Logo:        project.Logo,
+		Logo:        filehelper.APIFileUrlRetriever(project.Logo),
 		OrgID:       uint64(project.OrgID),
 		Joined:      joined,
 		Creator:     project.UserID,

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/pkg/excel"
+	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -166,7 +167,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		RequirementID:  model.RequirementID,
 		Type:           model.Type,
 		Title:          model.Title,
-		Content:        model.Content,
+		Content:        filehelper.FilterAPIFileUrl(model.Content),
 		State:          model.State,
 		Priority:       model.Priority,
 		Complexity:     model.Complexity,
