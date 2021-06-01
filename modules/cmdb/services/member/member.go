@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
@@ -728,23 +729,28 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Warnf("CAUTION: user(%s) current no admin, will become soon", userID)
-		// TODO: some risk
-		if m.noOneAdmin() && len(userID) > 11 {
-			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
-			if err := m.firstUserBecomeAdmin(userID); err != nil {
-				return false
+		if conf.OryEnabled() {
+			logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
+			// TODO: some risk
+			if m.noOneAdminForKratos() {
+				logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
+				if err := m.firstUserBecomeAdmin(userID); err != nil {
+					return false
+				}
+				return true
 			}
-			return true
 		}
 		return false
 	}
 	return true
 }
 
-func (m *Member) noOneAdmin() bool {
+func (m *Member) noOneAdminForKratos() bool {
 	cnt := 1
-	if err := m.db.Model(&model.Member{}).Where("scope_type = ?", apistructs.SysScope).Count(&cnt).Error; err != nil {
+	if err := m.db.Model(&model.Member{}).
+		// only kratos user_id length greater than 11, add this check to prevent init sql's data: user_id=1 admin
+		Where("scope_type = ? AND length(user_id) > 11", apistructs.SysScope).
+		Count(&cnt).Error; err != nil {
 		return false
 	}
 	logrus.Warnf("CAUTION: there are %d admins", cnt)
