@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
@@ -729,16 +728,14 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		if conf.OryEnabled() {
-			logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
-			// TODO: some risk
-			if m.noOneAdminForKratos() {
-				logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
-				if err := m.firstUserBecomeAdmin(userID); err != nil {
-					return false
-				}
-				return true
+		logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
+		// TODO: some risk
+		if m.noOneAdminForKratos() && len(userID) > 11 { // len > 11 imply that is kratos user
+			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
+			if err := m.firstUserBecomeAdmin(userID); err != nil {
+				return false
 			}
+			return true
 		}
 		return false
 	}
