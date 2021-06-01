@@ -142,7 +142,7 @@ func (db *DBClient) UpdateAutotestSceneUpdateAt(sceneID uint64, time time.Time) 
 	return db.Table("dice_autotest_scene").Where("id = ?", sceneID).Update("updated_at", time).Error
 }
 
-func (db *DBClient) DeleteAutoTestScene(id uint64) error {
+func (db *DBClient) DeleteAutoTestScene(id uint64) (err error) {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var scene, next AutoTestScene
 		// 获取scene
@@ -160,9 +160,16 @@ func (db *DBClient) DeleteAutoTestScene(id uint64) error {
 		if err := tx.Save(&next).Error; err != nil {
 			return err
 		}
+
+		defer func() {
+			err = checkSamePreID(tx, next.SetID, next.PreID)
+			if err != nil {
+				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+			}
+		}()
 	LABEL1:
 		// 删除该场景的全部关联
-		if err := tx.Delete(&scene).Error; err != nil {
+		if err := tx.Delete(&scene, "pre_id = ? and id = ?", scene.PreID, scene.ID).Error; err != nil {
 			return err
 		}
 		if err := tx.Where(AutoTestSceneInput{}).Where("scene_id = ?", scene.ID).Delete(AutoTestSceneInput{}).Error; err != nil {
@@ -178,44 +185,86 @@ func (db *DBClient) DeleteAutoTestScene(id uint64) error {
 	})
 }
 
-func (db *DBClient) MoveAutoTestScene(id, preID, setID uint64) error {
+// like linklist change to node index
+func (db *DBClient) MoveAutoTestScene(id, newPreID, newSetID uint64) (err error) {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var scene, next, oldNext AutoTestScene
-		// 获取scene
+		// get scene
 		if err := tx.Where("id = ?", id).Find(&scene).Error; err != nil {
 			return err
 		}
-		// 获取next并更新
+		// get next scene
 		if err := tx.Where("pre_id = ?", id).Find(&oldNext).Error; err != nil {
+			// not have next scene jump over update next scene
 			if gorm.IsRecordNotFoundError(err) {
 				goto LABEL1
 			}
 			return err
 		}
+		// next scene link this scene pre scene
 		oldNext.PreID = scene.PreID
 		if err := tx.Save(&oldNext).Error; err != nil {
 			return err
 		}
+
+		defer func() {
+			err = checkSamePreID(tx, oldNext.SetID, oldNext.PreID)
+			if err != nil {
+				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", oldNext.SetID, oldNext.PreID)
+			}
+		}()
+
 	LABEL1:
-		// 获取next
-		if err := tx.Where("pre_id = ?", preID).Where("set_id = ?", setID).Find(&next).Error; err != nil {
+		// get new next scene pre scene
+		if err := tx.Where("pre_id = ?", newPreID).Where("set_id = ?", newSetID).Find(&next).Error; err != nil {
+			// not have new next scene jump over update new next scene
 			if gorm.IsRecordNotFoundError(err) {
 				goto LABEL2
 			}
 			return err
 		}
+		// new next scene link this scene
 		next.PreID = scene.ID
 		if err := tx.Save(&next).Error; err != nil {
 			return err
 		}
+
+		defer func() {
+			err = checkSamePreID(tx, next.SetID, next.PreID)
+			if err != nil {
+				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+			}
+		}()
+
 	LABEL2:
-		scene.SetID = setID
-		scene.PreID = preID
+		// this scene link new next scene pre scene
+		scene.SetID = newSetID
+		scene.PreID = newPreID
 		if err := tx.Save(&scene).Error; err != nil {
 			return err
 		}
+
+		defer func() {
+			err = checkSamePreID(tx, scene.SetID, scene.PreID)
+			if err != nil {
+				err = fmt.Errorf("set_id %v have same pre_id %v, please refresh", next.SetID, next.PreID)
+			}
+		}()
+
 		return nil
 	})
+}
+
+// check sceneSet linked list not have same pre_id
+func checkSamePreID(tx *gorm.DB, setId uint64, preID uint64) error {
+	var res int
+	if err := tx.Model(&AutoTestScene{}).Where("`set_id` = ? and pre_id = ?", setId, preID).Count(&res).Error; err != nil {
+		return err
+	}
+	if res > 1 {
+		return fmt.Errorf("set_id %v have same pre_id %v, please refresh", setId, preID)
+	}
+	return nil
 }
 
 func (db *DBClient) GetAutoTestScenePreByPosition(req apistructs.AutotestSceneRequest) (uint64, uint64, bool, error) {
