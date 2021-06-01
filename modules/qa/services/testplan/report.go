@@ -14,7 +14,10 @@
 package testplan
 
 import (
+	"sync"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -38,24 +41,43 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
 	}
 	var totalApiCount apistructs.TestCaseAPICount
+	var mx sync.Mutex
+	var relErr error
+	var wg sync.WaitGroup
+	caseChan := make(chan struct{}, 20)
 	for _, rel := range rels {
-		apis, err := t.testCaseSvc.ListAPIs(int64(rel.TestCaseID))
-		if err != nil {
-			return nil, apierrors.ErrGetApiTestInfo.InternalError(err)
-		}
-		for _, api := range apis {
-			totalApiCount.Total++
-			switch api.Status {
-			case apistructs.ApiTestCreated:
-				totalApiCount.Created++
-			case apistructs.ApiTestRunning:
-				totalApiCount.Running++
-			case apistructs.ApiTestPassed:
-				totalApiCount.Passed++
-			case apistructs.ApiTestFailed:
-				totalApiCount.Failed++
+		caseChan <- struct{}{}
+		wg.Add(1)
+		go func(caseRel dao.TestPlanCaseRel) {
+			apis, err := t.testCaseSvc.ListAPIs(int64(caseRel.TestCaseID))
+			if err != nil {
+				<-caseChan
+				relErr = err
+				return
 			}
-		}
+			mx.Lock()
+			for _, api := range apis {
+				totalApiCount.Total++
+				switch api.Status {
+				case apistructs.ApiTestCreated:
+					totalApiCount.Created++
+				case apistructs.ApiTestRunning:
+					totalApiCount.Running++
+				case apistructs.ApiTestPassed:
+					totalApiCount.Passed++
+				case apistructs.ApiTestFailed:
+					totalApiCount.Failed++
+				}
+			}
+			<-caseChan
+			defer wg.Done()
+			defer mx.Unlock()
+		}(rel)
+	}
+	wg.Wait()
+	defer close(caseChan)
+	if relErr != nil {
+		return nil, apierrors.ErrGetApiTestInfo.InternalError(relErr)
 	}
 	report.APICount = totalApiCount
 

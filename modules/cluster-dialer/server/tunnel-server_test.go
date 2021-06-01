@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
@@ -49,6 +50,7 @@ func Test_netportal(t *testing.T) {
 	go http.ListenAndServe(helloListenAddr, nil)
 	select {
 	case <-client.Connected():
+		time.Sleep(1 * time.Second)
 		fmt.Println("client connected")
 	}
 	hc := &http.Client{}

@@ -229,8 +229,8 @@ func (a *Addon) GetMiddleware(orgID uint64, userID, instanceID string) (*apistru
 		UpdatedAt:      instance.UpdatedAt,
 	}
 
-	if v, ok := AddonInfos[instance.AddonName]; ok {
-		response.LogoURL = v.LogoUrl
+	if v, ok := AddonInfos.Load(instance.AddonName); ok {
+		response.LogoURL = v.(apistructs.Extension).LogoUrl
 	} else {
 		logrus.Warnf("failed to fetch addon info: %s", instance.AddonName)
 	}
