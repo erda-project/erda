@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/clientgo/restclient"
 )
 
+// NewConfigClient creates a new ConfigV1alpha2Client for the given addr.
 func NewConfigClient(addr string) (*configv1alpha2.ConfigV1alpha2Client, error) {
 	config := restclient.GetDefaultConfig("")
 	config.GroupVersion = &configv1alpha2_api.SchemeGroupVersion
@@ -35,4 +36,9 @@ func NewConfigClient(addr string) (*configv1alpha2.ConfigV1alpha2Client, error) 
 		return nil, err
 	}
 	return configv1alpha2.New(client), nil
+}
+
+// NewConfigClientWithConfig creates a new ConfigV1alpha2Client for the given kubeconfig
+func NewConfigClientWithConfig(restConfig *rest.Config) (*configv1alpha2.ConfigV1alpha2Client, error) {
+	return configv1alpha2.NewForConfig(restConfig)
 }

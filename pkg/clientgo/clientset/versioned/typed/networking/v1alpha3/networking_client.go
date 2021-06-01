@@ -37,3 +37,8 @@ func NewNetworkingClient(addr string) (*netv1alpha3.NetworkingV1alpha3Client, er
 	}
 	return netv1alpha3.New(client), nil
 }
+
+// NewNetworkingClientWithConfig creates a new NetworkingV1alpha3 for the given kubeconfig
+func NewNetworkingClientWithConfig(restConfig *rest.Config) (*netv1alpha3.NetworkingV1alpha3Client, error) {
+	return netv1alpha3.NewForConfig(restConfig)
+}

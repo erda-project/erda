@@ -14,7 +14,9 @@
 package kubernetes
 
 import (
+	"github.com/pkg/errors"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
 	admissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 	admissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -55,6 +57,7 @@ import (
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
 	storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
 	storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
+	"k8s.io/client-go/rest"
 
 	erdadiscovery "github.com/erda-project/erda/pkg/clientgo/discovery"
 	erdaappsv1 "github.com/erda-project/erda/pkg/clientgo/kubernetes/apps/v1"
@@ -344,4 +347,59 @@ func NewKubernetesClientSet(addr string) (*Clientset, error) {
 		return nil, err
 	}
 	return &cs, nil
+}
+
+func NewKubernetesClientSetWithConfig(restConfig *rest.Config) (*Clientset, error) {
+	clientSet, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return ConvertToClientSet(clientSet), nil
+}
+
+func ConvertToClientSet(c *kubernetes.Clientset) *Clientset {
+	return &Clientset{
+		DiscoveryClient:              c.DiscoveryClient,
+		admissionregistrationV1:      c.AdmissionregistrationV1().(*admissionregistrationv1.AdmissionregistrationV1Client),
+		admissionregistrationV1beta1: c.AdmissionregistrationV1beta1().(*admissionregistrationv1beta1.AdmissionregistrationV1beta1Client),
+		appsV1:                       c.AppsV1().(*appsv1.AppsV1Client),
+		appsV1beta1:                  c.AppsV1beta1().(*appsv1beta1.AppsV1beta1Client),
+		appsV1beta2:                  c.AppsV1beta2().(*appsv1beta2.AppsV1beta2Client),
+		auditregistrationV1alpha1:    c.AuditregistrationV1alpha1().(*auditregistrationv1alpha1.AuditregistrationV1alpha1Client),
+		authenticationV1:             c.AuthenticationV1().(*authenticationv1.AuthenticationV1Client),
+		authenticationV1beta1:        c.AuthenticationV1beta1().(*authenticationv1beta1.AuthenticationV1beta1Client),
+		authorizationV1:              c.AuthorizationV1().(*authorizationv1.AuthorizationV1Client),
+		authorizationV1beta1:         c.AuthorizationV1beta1().(*authorizationv1beta1.AuthorizationV1beta1Client),
+		autoscalingV1:                c.AutoscalingV1().(*autoscalingv1.AutoscalingV1Client),
+		autoscalingV2beta1:           c.AutoscalingV2beta1().(*autoscalingv2beta1.AutoscalingV2beta1Client),
+		autoscalingV2beta2:           c.AutoscalingV2beta2().(*autoscalingv2beta2.AutoscalingV2beta2Client),
+		batchV1:                      c.BatchV1().(*batchv1.BatchV1Client),
+		batchV1beta1:                 c.BatchV1beta1().(*batchv1beta1.BatchV1beta1Client),
+		batchV2alpha1:                c.BatchV2alpha1().(*batchv2alpha1.BatchV2alpha1Client),
+		certificatesV1beta1:          c.CertificatesV1beta1().(*certificatesv1beta1.CertificatesV1beta1Client),
+		coordinationV1beta1:          c.CoordinationV1beta1().(*coordinationv1beta1.CoordinationV1beta1Client),
+		coordinationV1:               c.CoordinationV1().(*coordinationv1.CoordinationV1Client),
+		coreV1:                       c.CoreV1().(*corev1.CoreV1Client),
+		discoveryV1alpha1:            c.DiscoveryV1alpha1().(*discoveryv1alpha1.DiscoveryV1alpha1Client),
+		discoveryV1beta1:             c.DiscoveryV1beta1().(*discoveryv1beta1.DiscoveryV1beta1Client),
+		eventsV1beta1:                c.EventsV1beta1().(*eventsv1beta1.EventsV1beta1Client),
+		extensionsV1beta1:            c.ExtensionsV1beta1().(*extensionsv1beta1.ExtensionsV1beta1Client),
+		flowcontrolV1alpha1:          c.FlowcontrolV1alpha1().(*flowcontrolv1alpha1.FlowcontrolV1alpha1Client),
+		networkingV1:                 c.NetworkingV1().(*networkingv1.NetworkingV1Client),
+		networkingV1beta1:            c.NetworkingV1beta1().(*networkingv1beta1.NetworkingV1beta1Client),
+		nodeV1alpha1:                 c.NodeV1alpha1().(*nodev1alpha1.NodeV1alpha1Client),
+		nodeV1beta1:                  c.NodeV1beta1().(*nodev1beta1.NodeV1beta1Client),
+		policyV1beta1:                c.PolicyV1beta1().(*policyv1beta1.PolicyV1beta1Client),
+		rbacV1:                       c.RbacV1().(*rbacv1.RbacV1Client),
+		rbacV1beta1:                  c.RbacV1beta1().(*rbacv1beta1.RbacV1beta1Client),
+		rbacV1alpha1:                 c.RbacV1alpha1().(*rbacv1alpha1.RbacV1alpha1Client),
+		schedulingV1alpha1:           c.SchedulingV1alpha1().(*schedulingv1alpha1.SchedulingV1alpha1Client),
+		schedulingV1beta1:            c.SchedulingV1beta1().(*schedulingv1beta1.SchedulingV1beta1Client),
+		schedulingV1:                 c.SchedulingV1().(*schedulingv1.SchedulingV1Client),
+		settingsV1alpha1:             c.SettingsV1alpha1().(*settingsv1alpha1.SettingsV1alpha1Client),
+		storageV1beta1:               c.StorageV1beta1().(*storagev1beta1.StorageV1beta1Client),
+		storageV1:                    c.StorageV1().(*storagev1.StorageV1Client),
+		storageV1alpha1:              c.StorageV1alpha1().(*storagev1alpha1.StorageV1alpha1Client),
+	}
 }

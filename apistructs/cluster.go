@@ -38,6 +38,14 @@ const (
 	ClusterStatusOffline string = "offline"
 )
 
+// token / client-cert&client-key / proxy(dialer) / inet(self-innovate)
+const (
+	ManageToken = "token"
+	ManageCert  = "cert"
+	ManageProxy = "proxy"
+	ManageInet  = "inet"
+)
+
 // ClusterCreateRequest 集群创建请求
 // TODO 逐步废弃 urls & settings, 统一使用config
 type ClusterCreateRequest struct {
@@ -55,6 +63,7 @@ type ClusterCreateRequest struct {
 	SchedulerConfig *ClusterSchedConfig `json:"scheduler"`
 	OpsConfig       *OpsConfig          `json:"opsConfig"`
 	SysConfig       *Sysconf            `json:"sysConfig"`
+	ManageConfig    *ManageConfig       `json:"manageConfig"` // e.g. token, cert, proxy
 }
 
 // ClusterCreateResponse 集群创建响应
@@ -76,6 +85,7 @@ type ClusterUpdateRequest struct {
 	SchedulerConfig *ClusterSchedConfig `json:"scheduler"`
 	OpsConfig       *OpsConfig          `json:"opsConfig"`
 	SysConfig       *Sysconf            `json:"sysConfig"`
+	ManageConfig    *ManageConfig       `json:"manageConfig"`
 }
 
 // ClusterUpdateResponse 集群更新响应
@@ -103,23 +113,26 @@ type ClusterListResponse struct {
 
 // ClusterSchedConfig 调度器初始化配置
 type ClusterSchedConfig struct {
-	MasterURL         string `json:"dcosURL"`
-	AuthType          string `json:"authType"` // basic, token
-	AuthUsername      string `json:"authUsername"`
-	AuthPassword      string `json:"authPassword"`
-	CACrt             string `json:"caCrt"`
-	ClientCrt         string `json:"clientCrt"`
-	ClientKey         string `json:"clientKey"`
-	EnableTag         bool   `json:"enableTag"`
-	EdasConsoleAddr   string `json:"edasConsoleAddr"`
-	AccessKey         string `json:"accessKey"`
-	AccessSecret      string `json:"accessSecret"`
-	ClusterID         string `json:"clusterID"`
-	RegionID          string `json:"regionID"`
-	LogicalRegionID   string `json:"logicalRegionID"`
-	K8sAddr           string `json:"k8sAddr"`
-	RegAddr           string `json:"regAddr"`
-	CPUSubscribeRatio string `json:"cpuSubscribeRatio"`
+	MasterURL                string `json:"dcosURL"`
+	AuthType                 string `json:"authType"` // basic, token
+	AuthUsername             string `json:"authUsername"`
+	AuthPassword             string `json:"authPassword"`
+	CACrt                    string `json:"caCrt"`
+	ClientCrt                string `json:"clientCrt"`
+	ClientKey                string `json:"clientKey"`
+	EnableTag                bool   `json:"enableTag"`
+	EdasConsoleAddr          string `json:"edasConsoleAddr"`
+	AccessKey                string `json:"accessKey"`
+	AccessSecret             string `json:"accessSecret"`
+	ClusterID                string `json:"clusterID"`
+	RegionID                 string `json:"regionID"`
+	LogicalRegionID          string `json:"logicalRegionID"`
+	K8sAddr                  string `json:"k8sAddr"`
+	RegAddr                  string `json:"regAddr"`
+	CPUSubscribeRatio        string `json:"cpuSubscribeRatio"`
+	DevCPUSubscribeRatio     string `json:"devCPUSubscribeRatio"`
+	TestCPUSubscribeRatio    string `json:"testCPUSubscribeRatio"`
+	StagingCPUSubscribeRatio string `json:"stagingCPUSubscribeRatio"`
 }
 
 // OpsConfig 集群ops配置初始化
@@ -169,7 +182,8 @@ type ClusterInfo struct {
 	SchedConfig    *ClusterSchedConfig    `json:"scheduler,omitempty"`
 	OpsConfig      *OpsConfig             `json:"opsConfig,omitempty"`
 	//Resource       *aliyun.AliyunResources `json:"resource"`  // TODO: 重构优化
-	System *Sysconf `json:"system,omitempty"`
+	System       *Sysconf      `json:"system,omitempty"`
+	ManageConfig *ManageConfig `json:"manageConfig"`
 	// 是否关联集群，Y: 是，N: 否
 	IsRelation string    `json:"isRelation"`
 	CreatedAt  time.Time `json:"createdAt"`
@@ -284,4 +298,14 @@ type DereferenceClusterRequest struct {
 type DereferenceClusterResponse struct {
 	Header
 	Data string `json:"data"`
+}
+
+type ManageConfig struct {
+	Type     string `json:"type"`
+	Address  string `json:"address"`
+	Insecure bool   `json:"insecure"`
+	CaData   string `json:"caData"`
+	CertData string `json:"certData"`
+	KeyData  string `json:"keyData"`
+	Token    string `json:"token"`
 }

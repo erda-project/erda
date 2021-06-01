@@ -60,30 +60,34 @@ func (e *Endpoints) CreateCluster(ctx context.Context, r *http.Request, vars map
 
 // UpdateCluster 更新集群
 func (e *Endpoints) UpdateCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		return apierrors.ErrUpdateCluster.NotLogin().ToResp(), nil
-	}
-
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	if orgIDStr == "" {
 		return apierrors.ErrUpdateCluster.NotLogin().ToResp(), nil
 	}
+
 	orgID, err := strutil.Atoi64(orgIDStr)
 	if err != nil {
 		return apierrors.ErrUpdateCluster.InvalidParameter(err).ToResp(), nil
 	}
 
-	// 操作鉴权
-	permissionReq := apistructs.PermissionCheckRequest{
-		UserID:   userID.String(),
-		Scope:    apistructs.OrgScope,
-		ScopeID:  uint64(orgID),
-		Resource: apistructs.ClusterResource,
-		Action:   apistructs.UpdateAction,
-	}
-	if access, err := e.permission.CheckPermission(&permissionReq); err != nil || !access {
-		return apierrors.ErrUpdateCluster.AccessDenied().ToResp(), nil
+	internalClient := r.Header.Get(httputil.InternalHeader)
+	if internalClient == "" {
+		userID, err := user.GetUserID(r)
+		if err != nil {
+			return apierrors.ErrUpdateCluster.NotLogin().ToResp(), nil
+		}
+
+		// 操作鉴权
+		permissionReq := apistructs.PermissionCheckRequest{
+			UserID:   userID.String(),
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(orgID),
+			Resource: apistructs.ClusterResource,
+			Action:   apistructs.UpdateAction,
+		}
+		if access, err := e.permission.CheckPermission(&permissionReq); err != nil || !access {
+			return apierrors.ErrUpdateCluster.AccessDenied().ToResp(), nil
+		}
 	}
 
 	if r.Body == nil {

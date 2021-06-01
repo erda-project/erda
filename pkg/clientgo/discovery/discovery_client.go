@@ -54,3 +54,34 @@ func NewDiscoveryClient(addr string) (*discovery.DiscoveryClient, error) {
 	}
 	return discovery.NewDiscoveryClient(client), nil
 }
+
+func NewDiscoveryClientWithConfig(restConfig *rest.Config) (*discovery.DiscoveryClient, error) {
+	var (
+		client rest.Interface
+		err    error
+	)
+
+	if restConfig.Host != "" {
+		restConfig.APIPath = ""
+		restConfig.GroupVersion = nil
+		if restConfig.Timeout == 0 {
+			restConfig.Timeout = 32 * time.Second
+		}
+		codec := runtime.NoopEncoder{Decoder: scheme.Codecs.UniversalDecoder()}
+		restConfig.NegotiatedSerializer = serializer.NegotiatedSerializerWrapper(runtime.SerializerInfo{Serializer: codec})
+		client, err = rest.UnversionedRESTClientFor(restConfig)
+	} else {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+		config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+		client, err = rest.UnversionedRESTClientFor(config)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return discovery.NewDiscoveryClient(client), nil
+}

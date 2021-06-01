@@ -95,7 +95,7 @@ func (c *AppsV1alpha1Client) RESTClient() rest.Interface {
 	return c.restClient
 }
 
-// NewFlinkOpeartorClient creates a new OperatorV1beta1 for the given addr.
+// NewOpenYurtClient creates a new AppsV1alpha1Client for the given addr.
 func NewOpenYurtClient(addr string) (*AppsV1alpha1Client, error) {
 	config := restclient.GetDefaultConfig("/apis")
 	config.GroupVersion = &v1alpha1.SchemeGroupVersion

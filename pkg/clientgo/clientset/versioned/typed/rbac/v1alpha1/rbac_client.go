@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/clientgo/restclient"
 )
 
+// NewRBACClient creates a new RbacV1alpha1Client for the given addr.
 func NewRBACClient(addr string) (*rbacv1alpha1.RbacV1alpha1Client, error) {
 	config := restclient.GetDefaultConfig("")
 	config.GroupVersion = &rbacv1alpha1_api.SchemeGroupVersion
@@ -35,4 +36,15 @@ func NewRBACClient(addr string) (*rbacv1alpha1.RbacV1alpha1Client, error) {
 		return nil, err
 	}
 	return rbacv1alpha1.New(client), nil
+}
+
+// NewRBACClientWithConfig creates a new RbacV1alpha1Client for the given kubeconfig
+func NewRBACClientWithConfig(restConfig *rest.Config) (*rbacv1alpha1.RbacV1alpha1Client, error) {
+	client, err := rbacv1alpha1.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+
 }

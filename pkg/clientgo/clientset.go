@@ -14,6 +14,8 @@
 package clientgo
 
 import (
+	"k8s.io/client-go/rest"
+
 	"github.com/erda-project/erda/pkg/clientgo/customclient"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 )
@@ -34,5 +36,24 @@ func New(addr string) (*ClientSet, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &cs, nil
+}
+
+func NewClientSet(restConfig *rest.Config) (*ClientSet, error) {
+	var (
+		cs  ClientSet
+		err error
+	)
+
+	cs.K8sClient, err = kubernetes.NewKubernetesClientSetWithConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	cs.CustomClient, err = customclient.NewCustomClientSetWithConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &cs, nil
 }

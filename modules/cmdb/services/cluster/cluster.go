@@ -190,6 +190,10 @@ func (c *Cluster) Create(req *apistructs.ClusterCreateRequest) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	manageConfig, err := json.MarshalIndent(req.ManageConfig, "", "\t")
+	if err != nil {
+		return 0, err
+	}
 
 	// 集群信息入库
 	cluster := &model.Cluster{
@@ -207,6 +211,7 @@ func (c *Cluster) Create(req *apistructs.ClusterCreateRequest) (int64, error) {
 		SchedulerConfig: string(schedulerConfig),
 		OpsConfig:       string(opsConfig),
 		SysConfig:       string(sysConfig),
+		ManageConfig:    string(manageConfig),
 	}
 	if err := c.db.CreateCluster(cluster); err != nil {
 		return 0, err
@@ -392,6 +397,13 @@ func (c *Cluster) Update(orgID int64, req *apistructs.ClusterUpdateRequest) (int
 			return 0, err
 		}
 		cluster.SysConfig = string(sysConfig)
+	}
+	if req.ManageConfig != nil {
+		manageConfig, err := json.MarshalIndent(req.ManageConfig, "", "\t")
+		if err != nil {
+			return 0, err
+		}
+		cluster.ManageConfig = string(manageConfig)
 	}
 
 	if err := c.db.UpdateCluster(cluster); err != nil {
@@ -643,6 +655,7 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		config          = make(map[string]string)
 		schedulerConfig *apistructs.ClusterSchedConfig
 		opsConfig       *apistructs.OpsConfig
+		manageConfig    *apistructs.ManageConfig
 	)
 
 	if cluster.URLs != "" {
@@ -672,6 +685,12 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		}
 	}
 
+	if cluster.ManageConfig != "" {
+		if err := json.Unmarshal([]byte(cluster.ManageConfig), &manageConfig); err != nil {
+			logrus.Warnf("failed to unmarshal, (%v)", err)
+		}
+	}
+
 	return &apistructs.ClusterInfo{
 		ID:             int(cluster.ID),
 		OrgID:          int(cluster.OrgID),
@@ -687,6 +706,7 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		Config:         config,
 		SchedConfig:    schedulerConfig,
 		OpsConfig:      opsConfig,
+		ManageConfig:   manageConfig,
 		CreatedAt:      cluster.CreatedAt,
 		UpdatedAt:      cluster.UpdatedAt,
 	}

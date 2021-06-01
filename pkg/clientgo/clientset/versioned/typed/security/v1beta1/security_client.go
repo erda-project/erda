@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/clientgo/restclient"
 )
 
+// NewSecurityClient creates a new SecurityV1beta1Client for the given addr.
 func NewSecurityClient(addr string) (*secv1beta1.SecurityV1beta1Client, error) {
 	config := restclient.GetDefaultConfig("")
 	config.GroupVersion = &secv1beta1_api.SchemeGroupVersion
@@ -35,4 +36,14 @@ func NewSecurityClient(addr string) (*secv1beta1.SecurityV1beta1Client, error) {
 		return nil, err
 	}
 	return secv1beta1.New(client), nil
+}
+
+// NewSecurityClientWithConfig creates a new SecurityV1beta1Client for the given kubeconfig
+func NewSecurityClientWithConfig(restConfig *rest.Config) (*secv1beta1.SecurityV1beta1Client, error) {
+	client, err := secv1beta1.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -119,5 +120,58 @@ func (b *Bundle) UpdateCluster(req apistructs.ClusterUpdateRequest, header ...ht
 	if !resp.IsOK() || !updateResp.Success {
 		return toAPIError(resp.StatusCode(), updateResp.Error)
 	}
+	return nil
+}
+
+// CreateCluster Create cluster with event [bundle -> cmdb -> db && eventBox -> scheduler -> etcd]
+func (b *Bundle) CreateCluster(req *apistructs.ClusterCreateRequest, header ...http.Header) error {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var createResp apistructs.ClusterCreateResponse
+
+	q := hc.Post(host).Path("/api/clusters")
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+	resp, err := q.JSONBody(req).
+		Do().
+		JSON(&createResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !createResp.Success {
+		return toAPIError(resp.StatusCode(), createResp.Error)
+	}
+	return nil
+}
+
+// DeleteCluster Delete cluster with event.
+func (b *Bundle) DeleteCluster(clusterName string, header ...http.Header) error {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	q := hc.Delete(host).Path("/api/clusters/" + clusterName)
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+
+	var httpResp httpserver.Resp
+
+	resp, err := q.Do().JSON(&httpResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() || !httpResp.Success {
+		return toAPIError(resp.StatusCode(), httpResp.Err)
+	}
+
 	return nil
 }

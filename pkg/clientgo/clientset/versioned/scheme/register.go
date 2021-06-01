@@ -25,8 +25,12 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	elasticsearchv1 "github.com/erda-project/erda/pkg/clientgo/apis/elasticsearch/v1"
 	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
 	openyurtv1alpha1 "github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
+	redisfailoverv1 "github.com/erda-project/erda/pkg/clientgo/apis/redisfailover/v1"
+	sparkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/sparkoperator/v1beta1"
+	sparkoperatorv1beta2 "github.com/erda-project/erda/pkg/clientgo/apis/sparkoperator/v1beta2"
 )
 
 var Scheme = runtime.NewScheme()
@@ -35,6 +39,10 @@ var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	flinkoperatorv1beta1.AddToScheme,
 	openyurtv1alpha1.AddToScheme,
+	sparkoperatorv1beta1.AddToScheme,
+	sparkoperatorv1beta2.AddToScheme,
+	redisfailoverv1.AddToScheme,
+	elasticsearchv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
