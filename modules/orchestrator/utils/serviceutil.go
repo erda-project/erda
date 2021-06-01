@@ -15,6 +15,7 @@ package utils
 
 import (
 	"math"
+	"regexp"
 )
 
 // Round 保留小数点计算
@@ -23,4 +24,11 @@ func Round(f float64, n int) float64 {
 	fv := 0.0000000001 + f //对浮点数产生.xxx999999999 计算不准进行处理
 
 	return math.Floor(fv*shift+.5) / shift
+}
+
+var svcRegexp, _ = regexp.Compile(`^[a-z0-9]+([-]*[a-z0-9])+$`)
+
+// IsValidK8sSvcName is valid service name
+func IsValidK8sSvcName(name string) bool {
+	return svcRegexp.MatchString(name) && len(name) <= 63
 }

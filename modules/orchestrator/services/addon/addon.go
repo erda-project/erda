@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -45,16 +46,16 @@ import (
 // ErdaEncryptedValue encrypted value
 const ErdaEncryptedValue string = "ERDA_ENCRYPTED"
 
-// AddonInfos 市场 addon 全集
-var AddonInfos map[string]apistructs.Extension // key 为 addonName
+var (
+	// AddonInfos 市场addon全集 key: addonName, value: apistructs.Extension
+	AddonInfos sync.Map
+	// ProjectInfos 项目信息缓存  key: projectId, value: apistructs.ProjectDTO
+	ProjectInfos sync.Map
+	// AppInfos app列表缓存 key: appID, value: apistructs.ApplicationDTO
+	AppInfos sync.Map
+)
 
-// ProjectInfos 项目信息缓存
-var ProjectInfos = make(map[string]apistructs.ProjectDTO) // key 为 projectId, value 为项目详情
-
-// AppInfos app 列表缓存
-var AppInfos = make(map[string]apistructs.ApplicationDTO) // key 为 appID, value 为应用详情
-
-// AppInfos app 列表缓存
+// ExtensionDeployAddon .
 var ExtensionDeployAddon = map[string]string{"mysql": "", "redis": "", "consul": "", "canal": "", "kafka": "", "rabbitmq": "", "rocketmq": "", "terminus-elasticsearch": "", "terminus-zookeeper": ""} // key 为 appID, value 为应用详情
 
 // Addon addon 实例对象封装
@@ -339,7 +340,8 @@ func (a *Addon) transPlan(addons []apistructs.AddonCreateItem) {
 	}
 }
 
-// RuntimeAddonStatus runtime addon状态
+// RuntimeAddonStatus runtime addo status, ensure that
+// an error will only be returned when the status is 0
 func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 	if runtimeID == "" {
 		return 0, errors.New("runtimeId 不能为空")
@@ -377,7 +379,7 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 			return 0, err
 		}
 		if routing == nil {
-			return 0, err
+			return 0, errors.Errorf("instance routing is not existed: %s", ins.RoutingInstanceID)
 		}
 		insMap[routing.ID] = routing.Status
 		if routing.Status == string(apistructs.AddonAttaching) {
@@ -393,8 +395,7 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 			continue
 		}
 		if _, ok := insMap[prebuild.RoutingInstanceID]; !ok {
-			logrus.Errorf("RuntimeAddonStatus error, routingId not found: %v", prebuild.RoutingInstanceID)
-			return 0, nil
+			return 0, errors.Errorf("RuntimeAddonStatus error, routingId not found: %v", prebuild.RoutingInstanceID)
 		}
 	}
 
@@ -604,9 +605,11 @@ func (a *Addon) AddonConfigCallback(insId string, response *apistructs.AddonConf
 // CreateCustom 创建自定义 addon
 func (a *Addon) CreateCustom(req *apistructs.CustomAddonCreateRequest) (*map[string]string, error) {
 	// 获取addon extension信息
-	addonExtension, ok := AddonInfos[req.AddonName]
-	if !ok {
+	addonExtension := apistructs.Extension{}
+	if v, ok := AddonInfos.Load(req.AddonName); !ok {
 		return nil, errors.Errorf("not found addon: %s", req.AddonName)
+	} else {
+		addonExtension = v.(apistructs.Extension)
 	}
 
 	// 校验 project 是否存在
@@ -1614,8 +1617,8 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 
 // getAddonExtension 获取extension信息
 func (a *Addon) getAddonExtension(addonName, version string) (*apistructs.AddonExtension, error) {
-	_, ok := AddonInfos[addonName]
-	if !ok {
+
+	if _, ok := AddonInfos.Load(addonName); !ok {
 		logrus.Errorf("[alert] can't find addon: %s,version: %s ", addonName, version)
 		return nil, errors.Errorf("can't find addon: %s", addonName)
 	}
@@ -2256,8 +2259,8 @@ func (a *Addon) ListReferencesByInstanceID(orgID uint64, userID, instanceID stri
 	referenceInfos := make([]apistructs.AddonReferenceInfo, 0, len(*attachments))
 	// 批量查询 projectName & appName 等信息
 	for _, v := range *attachments {
-		app, ok := AppInfos[v.ApplicationID]
-		if !ok {
+		app := apistructs.ApplicationDTO{}
+		if application, ok := AppInfos.Load(v.ApplicationID); !ok {
 			// 若找不到应用信息，根据 projectID 实时获取并缓存
 			projectID, _ := strconv.ParseUint(v.ProjectID, 10, 64)
 			appResp, err := a.bdl.GetAppsByProject(projectID, orgID, userID)
@@ -2265,9 +2268,13 @@ func (a *Addon) ListReferencesByInstanceID(orgID uint64, userID, instanceID stri
 				return nil, err
 			}
 			for _, item := range appResp.List {
-				AppInfos[strconv.FormatUint(item.ID, 10)] = item
+				AppInfos.Store(strconv.FormatUint(item.ID, 10), item)
 			}
-			app = AppInfos[v.ApplicationID]
+			if application, ok = AppInfos.Load(v.ApplicationID); ok {
+				app = application.(apistructs.ApplicationDTO)
+			}
+		} else {
+			app = application.(apistructs.ApplicationDTO)
 		}
 		runtimeID, _ := strconv.ParseUint(v.RuntimeID, 10, 64)
 		reference := apistructs.AddonReferenceInfo{
@@ -2367,8 +2374,9 @@ func (a *Addon) ListReferencesByRoutingInstanceID(orgID uint64, userID, routingI
 	referenceInfos := make([]apistructs.AddonReferenceInfo, 0, len(attachments))
 	// 批量查询 projectName & appName 等信息
 	for _, v := range attachments {
-		app, ok := AppInfos[v.ApplicationID]
-		if !ok {
+		app := apistructs.ApplicationDTO{}
+
+		if application, ok := AppInfos.Load(v.ApplicationID); !ok {
 			// 若找不到应用信息，根据 projectID 实时获取并缓存
 			projectID, _ := strconv.ParseUint(v.ProjectID, 10, 64)
 			appResp, err := a.bdl.GetAppsByProject(projectID, orgID, userID)
@@ -2376,9 +2384,13 @@ func (a *Addon) ListReferencesByRoutingInstanceID(orgID uint64, userID, routingI
 				return nil, err
 			}
 			for _, item := range appResp.List {
-				AppInfos[strconv.FormatUint(item.ID, 10)] = item
+				AppInfos.Store(strconv.FormatUint(item.ID, 10), item)
 			}
-			app = AppInfos[v.ApplicationID]
+			if application, ok := AppInfos.Load(v.ApplicationID); ok {
+				app = application.(apistructs.ApplicationDTO)
+			}
+		} else {
+			app = application.(apistructs.ApplicationDTO)
 		}
 		if app.ID == 0 {
 			applictionId, err := strconv.ParseUint(v.ApplicationID, 10, 64)
@@ -2596,7 +2608,7 @@ func (a *Addon) transAddonName(addonName string) string {
 func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbclient.AddonPrebuild) error {
 	needDeployAddons := []apistructs.AddonHandlerCreateItem{}
 	for _, v := range deploys {
-		if _, ok := AddonInfos[v.AddonName]; !ok {
+		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, fmt.Sprintf("%d", req.RuntimeID),
 				fmt.Sprintf("不存在该类型 addon: %s, 请检查 diceyml 中 addon 部分是否正确", v.AddonName),
 				fmt.Sprintf("not found addon: %s", v.AddonName))
@@ -3200,10 +3212,11 @@ func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistruc
 		}
 	}
 
-	if v, ok := AddonInfos[routingInstance.AddonName]; ok {
-		addonResp.AddonDisplayName = v.DisplayName
-		addonResp.LogoURL = v.LogoUrl
-		addonResp.Desc = v.Desc
+	if v, ok := AddonInfos.Load(routingInstance.AddonName); ok {
+		ext := v.(apistructs.Extension)
+		addonResp.AddonDisplayName = ext.DisplayName
+		addonResp.LogoURL = ext.LogoUrl
+		addonResp.Desc = ext.Desc
 	} else {
 		logrus.Warnf("failed to fetch addon info: %s", routingInstance.AddonName)
 	}
@@ -3248,8 +3261,9 @@ func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistruc
 	}
 	// 填充 projectName
 	if routingInstance.ProjectID != "" {
-		project, ok := ProjectInfos[routingInstance.ProjectID]
-		if !ok {
+		project := apistructs.ProjectDTO{}
+
+		if v, ok := ProjectInfos.Load(routingInstance.ProjectID); !ok {
 			// 若找不到项目信息，根据 projectID 实时获取并缓存
 			projResp, err := a.bdl.GetProject(projectID)
 			if err != nil {
@@ -3257,7 +3271,9 @@ func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistruc
 				return addonResp
 			}
 			project = *projResp
-			ProjectInfos[routingInstance.ProjectID] = *projResp
+			ProjectInfos.Store(routingInstance.ProjectID, *projResp)
+		} else {
+			project = v.(apistructs.ProjectDTO)
 		}
 		addonResp.ProjectName = project.Name
 	}
@@ -3267,8 +3283,9 @@ func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistruc
 
 // getProject 根据 projectID 获取项目信息
 func (a *Addon) getProject(projectID string) (*apistructs.ProjectDTO, error) {
-	project, ok := ProjectInfos[projectID]
-	if !ok {
+	project := apistructs.ProjectDTO{}
+
+	if v, ok := ProjectInfos.Load(projectID); !ok {
 		id, err := strconv.ParseUint(projectID, 10, 64)
 		if err != nil {
 			return nil, errors.Errorf("failed to convert project id: %s, %v", projectID, err)
@@ -3280,7 +3297,9 @@ func (a *Addon) getProject(projectID string) (*apistructs.ProjectDTO, error) {
 			return nil, errors.Errorf("failed to get project, %v", err)
 		}
 		project = *projectResp
-		ProjectInfos[projectID] = project
+		ProjectInfos.Store(projectID, project)
+	} else {
+		project = v.(apistructs.ProjectDTO)
 	}
 	return &project, nil
 }
