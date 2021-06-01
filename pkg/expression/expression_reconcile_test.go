@@ -57,3 +57,32 @@ func Test_expression(t *testing.T) {
 		}
 	}
 }
+
+func TestReconcile(t *testing.T) {
+	type args struct {
+		condition string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantSign SignType
+	}{
+		{
+			name:     "invalid aa",
+			args:     args{condition: "aa"},
+			wantSign: TaskJumpOver,
+		},
+		{
+			name:     "1 != 2",
+			args:     args{condition: "1 != 2"},
+			wantSign: TaskNotJumpOver,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotSign := Reconcile(tt.args.condition); gotSign.Sign != tt.wantSign {
+				t.Errorf("Reconcile() = %v, want %v", gotSign, tt.wantSign)
+			}
+		})
+	}
+}
