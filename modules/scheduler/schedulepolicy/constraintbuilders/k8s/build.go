@@ -128,6 +128,7 @@ func buildDaemonsetAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, serv
 	}
 }
 
+// Note: this is an intentional limitation by k8s, only allow targeting single nodes.
 // requiredDuringSchedulingIgnoredDuringExecution:
 //   nodeSelectorTerms:
 //   - matchFields:
@@ -140,13 +141,17 @@ func buildSpecificHost(specificHosts []string, cons *Constraints, hostnameUtil c
 		return
 	}
 	terms := &(cons.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms)
-	*terms = []k8s.NodeSelectorTerm{{MatchFields: []k8s.NodeSelectorRequirement{
-		{
-			Key:      "metadata.name",
-			Operator: "In",
-			Values:   []string{hostnameUtil.IPToHostname(specificHosts[0])},
-		},
-	}}}
+
+	host := hostnameUtil.IPToHostname(specificHosts[0])
+	if host != "" {
+		*terms = []k8s.NodeSelectorTerm{{MatchFields: []k8s.NodeSelectorRequirement{
+			{
+				Key:      "metadata.name",
+				Operator: "In",
+				Values:   []string{host},
+			},
+		}}}
+	}
 }
 func buildStatefulServiceAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, service *apistructs.Service) {
 	if !isStateful(s) {
