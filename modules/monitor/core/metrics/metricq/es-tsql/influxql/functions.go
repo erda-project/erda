@@ -401,7 +401,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 							if ctx.targetTimeUnit == tsql.Nanosecond {
 								ctx.targetTimeUnit = tsql.Nanosecond
 							}
-							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(int64(tsql.Second))
+							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
 							return (*next.Value - *min.Value) / seconds, true
 						}
 					}
