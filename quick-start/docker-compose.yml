@@ -1,7 +1,7 @@
 version: "3"
 services:
   ui:
-    image: registry.cn-hangzhou.aliyuncs.com/terminus/erda-ui:1.0-20210423-72e31a0
+    image: registry.cn-hangzhou.aliyuncs.com/terminus/erda-ui:1.0-20210528-80e985b
     container_name: erda-ui
     env_file:
       - ./env
@@ -11,8 +11,10 @@ services:
       ENABLE_MPAAS: "false"
       ENABLE_BIGDATA: "false"
       ONLY_FDP: "false"
+      TERMINUS_KEY: "123"
+      FDP_UI_ADDR: "www.erda.cloud"
     ports:
-      - "8000:80"
+      - "80:80"
     restart: always
     platform: linux/amd64
 
@@ -45,8 +47,8 @@ services:
       - KRATOS_ADMIN_URL=http://kratos:4434/
       - PORT=4455
       - SECURITY_MODE=
-      - BASE_URL=https://one.dice.local/uc/
-      - KRATOS_BROWSER_URL=https://one.dice.local/.ory/kratos/public/
+      - BASE_URL=http://one.dice.local/uc/
+      - KRATOS_BROWSER_URL=http://one.dice.local/.ory/kratos/public/
 
     networks:
       - default
@@ -97,7 +99,8 @@ services:
     platform: linux/amd64
 
   eventbox:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/eventbox:4.0-20210420-29519ae
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/eventbox
     container_name: erda-eventbox
     env_file:
       - ./env
@@ -107,9 +110,8 @@ services:
     platform: linux/amd64
 
   pipeline:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/pipeline:3.21-20210416-2c8b9419e
-    # todo delete this command when pipeline update to the 4.0
-    command: ./bin/pipeline
+    image: registry.cn-hangzhou.aliyuncs.com/dice/pipeline:4.0-20210524-b614087
+    command: /app/pipeline
     container_name: erda-pipeline
     env_file:
       - ./env
@@ -122,7 +124,8 @@ services:
     platform: linux/amd64
 
   ops:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/ops:20210402-43057c555f3875d432ce4eb9f1675ca79c0857bc
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/ops
     container_name: erda-ops
     env_file:
       - ./env
@@ -130,7 +133,8 @@ services:
     platform: linux/amd64
 
   qa:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/qa:4.0-20210416-ceb9858
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/qa
     container_name: erda-qa
     env_file:
       - ./env
@@ -144,7 +148,8 @@ services:
     platform: linux/amd64
 
   scheduler:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/scheduler:3.19-20201020-055111f
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/scheduler
     container_name: erda-scheduler
     env_file:
       - ./env
@@ -158,7 +163,8 @@ services:
     platform: linux/amd64
 
   apim:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/apim:20201022-d6f4f42f0697b4d206888f5ee33b072f61ef5de3
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/apim
     container_name: erda-apim
     env_file:
       - ./env
@@ -168,7 +174,8 @@ services:
     platform: linux/amd64
 
   cmdb:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/cmdb:4.0-20210421-a9391cc
+    image: registry.cn-hangzhou.aliyuncs.com/dice/cmdb:4.0-20210526-0a850d9
+    command: /app/cmdb
     container_name: erda-cmdb
     env_file:
       - ./env
@@ -197,7 +204,8 @@ services:
     platform: linux/amd64
 
   gittar:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/gittar:4.0-20210420-29519ae
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/gittar
     container_name: erda-gittar
     env_file:
       - ./env
@@ -219,7 +227,8 @@ services:
     platform: linux/amd64
 
   gittar-adaptor:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/gittar-adaptor:4.0-20210420-29519ae
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/gittar-adaptor
     container_name: erda-gittar-adaptor
     env_file:
       - ./env
@@ -229,7 +238,8 @@ services:
     platform: linux/amd64
 
   dicehub:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/dicehub:4.0-20210420-29519ae
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/dicehub
     container_name: erda-dicehub
     env_file:
       - ./env
@@ -243,7 +253,8 @@ services:
     platform: linux/amd64
 
   openapi:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/openapi:4.0-20210421-a9391cc
+    image: registry.cn-hangzhou.aliyuncs.com/dice/openapi:1.1-20210526-440a412
+    command: /app/openapi
     container_name: erda-openapi
     env_file:
       - ./env
@@ -262,7 +273,8 @@ services:
     platform: linux/amd64
 
   hepa:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/hepa:4.0.0-20210324-2638ccf
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/hepa
     container_name: erda-hepa
     env_file:
       - ./env
@@ -270,7 +282,8 @@ services:
     platform: linux/amd64
 
   orchestrator:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/orchestrator:4.0-20210414-f806769
+    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    command: /app/orchestrator
     container_name: erda-orchestrator
     env_file:
       - ./env
@@ -282,17 +295,18 @@ services:
     restart: always
     platform: linux/amd64
 
-  monitor:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/monitor:4.0-20210421-a2d7e5d
-    container_name: erda-monitor
-    env_file:
-      - ./env
-    environment:
-      DEBUG: "false"
-    ports:
-      - "7096:7096"
-      - "7098:7098"
-    platform: linux/amd64
+  # monitor:
+  #   image: registry.cn-hangzhou.aliyuncs.com/dice/monitor:4.0-20210525-f916c43
+  #   command: /app/monitor
+  #   container_name: erda-monitor
+  #   env_file:
+  #     - ./env
+  #   environment:
+  #     DEBUG: "false"
+  #   ports:
+  #     - "7096:7096"
+  #     - "7098:7098"
+  #   platform: linux/amd64
 
   etcd:
     image: bitnami/etcd:3
@@ -307,30 +321,30 @@ services:
     restart: always
     platform: linux/amd64
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-    container_name: erda-elasticsearch
-    environment:
-      - xpack.security.enabled=false
-      - discovery.type=single-node
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    cap_add:
-      - IPC_LOCK
-    volumes:
-      - type: volume
-        source: erda-elasticsearch
-        target: /usr/share/elasticsearch/data
-        read_only: false
-    ports:
-        - "9200:9200"
-        - "9300:9300"
-    platform: linux/amd64
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+  #   container_name: erda-elasticsearch
+  #   environment:
+  #     - xpack.security.enabled=false
+  #     - discovery.type=single-node
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #     nofile:
+  #       soft: 65536
+  #       hard: 65536
+  #   cap_add:
+  #     - IPC_LOCK
+  #   volumes:
+  #     - type: volume
+  #       source: erda-elasticsearch
+  #       target: /usr/share/elasticsearch/data
+  #       read_only: false
+  #   ports:
+  #       - "9200:9200"
+  #       - "9300:9300"
+  #   platform: linux/amd64
 
   mysql:
     image: registry.cn-hangzhou.aliyuncs.com/dice-third-party/mysql:5.7-quickstart
@@ -387,7 +401,7 @@ services:
   #   image: zookeeper:3.4
 volumes:
   erda-mysql: {}
-  erda-elasticsearch: {}
+  # erda-elasticsearch: {}
   erda-etcd: {}
   erda-gittar: {}
   erda-avatars: {}
