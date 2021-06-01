@@ -201,6 +201,11 @@ func (e *Endpoints) GetIteration(ctx context.Context, r *http.Request, vars map[
 		return apierrors.ErrGetIteration.NotLogin().ToResp(), nil
 	}
 
+	// unassigned iterationID is virtual data
+	if vars["id"] == strconv.Itoa(apistructs.UnassignedIterationID) {
+		return httpserver.OkResp(nil)
+	}
+
 	iterationID, err := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		return apierrors.ErrGetIteration.InvalidParameter("id").ToResp(), nil
