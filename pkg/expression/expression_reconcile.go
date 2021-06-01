@@ -22,6 +22,7 @@ import (
 
 	"gopkg.in/Knetic/govaluate.v3"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/mock"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -185,7 +186,30 @@ func ReplaceRandomParams(ori string) string {
 	return replaced
 }
 
-// GenConfigParams 生成全局参数的表达式
 func GenConfigParams(key string) string {
-	return LeftPlaceholder + " configs.autotest." + key + " " + RightPlaceholder
+	return fmt.Sprintf("%s %s.%s %s", LeftPlaceholder, Configs, key, RightPlaceholder)
+}
+
+func GenAutotestConfigParams(key string) string {
+	return fmt.Sprintf("%s %s.%s.%s %s", LeftPlaceholder, Configs, apistructs.PipelineSourceAutoTest.String(), key, RightPlaceholder)
+}
+
+func GenDirsRef(alias string) string {
+	return fmt.Sprintf("%s %s.%s %s", LeftPlaceholder, Dirs, alias, RightPlaceholder)
+}
+
+func GenParamsRef(param string) string {
+	return fmt.Sprintf("%s %s.%s %s", LeftPlaceholder, Params, param, RightPlaceholder)
+}
+
+func GenOldParamsRef(param string) string {
+	return fmt.Sprintf("%s%s.%s%s", OldLeftPlaceholder, Params, param, OldRightPlaceholder)
+}
+
+func GenRandomRef(key string) string {
+	return fmt.Sprintf("%s %s.%s %s", LeftPlaceholder, Random, key, RightPlaceholder)
+}
+
+func GenOutputRef(alias, outputName string) string {
+	return fmt.Sprintf("%s %s.%s.%s %s", LeftPlaceholder, Outputs, alias, outputName, RightPlaceholder)
 }
