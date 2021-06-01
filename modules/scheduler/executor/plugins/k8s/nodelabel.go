@@ -14,20 +14,20 @@
 package k8s
 
 import (
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 )
 
 func (m *Kubernetes) IPToHostname(ip string) string {
-	nodelist, err := m.nodeLabel.List()
+	nodeList, err := m.nodeLabel.List()
 	if err != nil {
 		return ""
 	}
-	for _, node := range nodelist.Items {
+	for _, node := range nodeList.Items {
 		for _, addr := range node.Status.Addresses {
 			if addr.Type == v1.NodeInternalIP && addr.Address == ip {
 				return node.Name
