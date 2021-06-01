@@ -67,4 +67,6 @@ var defaultRulers = []rules.Ruler{
 	linters.NewVarcharLengthLinter,
 	linters.NewCompleteInsertLinter,
 	linters.NewManualTimeSetterLinter,
+
+	linters.NewExplicitCollationLinter,
 }
