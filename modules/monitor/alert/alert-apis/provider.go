@@ -49,34 +49,37 @@ func (d *define) Creator() servicehub.Creator {
 }
 
 type config struct {
-	OrgFilterTags          string `file:"org_filter_tags"`
-	MicroServiceFilterTags string `file:"micro_service_filter_tags"`
-	SilencePolicy          string `file:"silence_policy"`
-	Cassandra              struct {
+	OrgFilterTags               string `file:"org_filter_tags"`
+	MicroServiceFilterTags      string `file:"micro_service_filter_tags"`
+	MicroServiceOtherFilterTags string `file:micro_service_other_filter_tags`
+	SilencePolicy               string `file:"silence_policy"`
+	Cassandra                   struct {
 		cassandra.SessionConfig `file:"session"`
 		GCGraceSeconds          int `file:"gc_grace_seconds" default:"86400"`
 	} `file:"cassandra"`
 }
 
 type provider struct {
-	C                      *config
-	L                      logs.Logger
-	metricq                metricq.Queryer
-	t                      i18n.Translator
-	db                     *db.DB
-	cql                    *cql.Cql
-	a                      *adapt.Adapt
-	bdl                    *bundle.Bundle
-	cmdb                   *cmdb.Cmdb
-	silencePolicies        map[string]bool
-	orgFilterTags          map[string]bool
-	microServiceFilterTags map[string]bool
+	C                           *config
+	L                           logs.Logger
+	metricq                     metricq.Queryer
+	t                           i18n.Translator
+	db                          *db.DB
+	cql                         *cql.Cql
+	a                           *adapt.Adapt
+	bdl                         *bundle.Bundle
+	cmdb                        *cmdb.Cmdb
+	silencePolicies             map[string]bool
+	orgFilterTags               map[string]bool
+	microServiceFilterTags      map[string]bool
+	microServiceOtherFilterTags map[string]bool
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.silencePolicies = make(map[string]bool)
 	p.orgFilterTags = make(map[string]bool)
 	p.microServiceFilterTags = make(map[string]bool)
+	p.microServiceOtherFilterTags = make(map[string]bool)
 	for _, k := range strings.Split(p.C.OrgFilterTags, ",") {
 		k = strings.TrimSpace(k)
 		if len(k) > 0 {
@@ -93,6 +96,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		k = strings.TrimSpace(k)
 		if len(k) > 0 {
 			p.silencePolicies[k] = true
+		}
+	}
+	for _, k := range strings.Split(p.C.MicroServiceOtherFilterTags, ",") {
+		k = strings.TrimSpace(k)
+		if len(k) > 0 {
+			p.microServiceOtherFilterTags[k] = true
 		}
 	}
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
@@ -116,7 +125,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
-	p.a = adapt.New(p.L, p.metricq, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.silencePolicies)
+	p.a = adapt.New(p.L, p.metricq, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
 	routes := ctx.Service("http-server",
 		//telemetry.HttpMetric(),
 		interceptors.Recover(p.L)).(httpserver.Router)
