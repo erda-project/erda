@@ -450,6 +450,7 @@ func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/info", Method: http.MethodGet, Handler: e.Info},
+		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
 
 		// hosts
 		{Path: "/api/hosts/{host}", Method: http.MethodGet, Handler: e.GetHost},
@@ -595,6 +596,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// 用户相关
 		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
+		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 
 		// 活动相关
 		{Path: "/api/activities", Method: http.MethodGet, Handler: e.ListActivity},

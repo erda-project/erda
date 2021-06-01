@@ -63,8 +63,7 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(cronInfo.ApplicationID, 10),
-		cronInfo.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -95,8 +94,7 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(cronInfo.ApplicationID, 10),
-		cronInfo.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -151,8 +149,7 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(cronInfo.ApplicationID, 10),
-		cronInfo.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
