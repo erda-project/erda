@@ -21,11 +21,10 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 )
-
-const apiTest = "api-test"
 
 func (s *SnippetSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
 
@@ -46,26 +45,32 @@ func (s *SnippetSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (m
 		}
 	}
 
-	snippetDetailMap := make(map[string]apistructs.SnippetQueryDetail)
-
+	var snippetConfigs []apistructs.SnippetConfig
 	for _, config := range configs {
+		if config.Source == apistructs.ActionSourceType {
+			continue
+		}
+		snippetConfigs = append(snippetConfigs, config.SnippetConfig)
+	}
+	yamlResults, err := pipeline_snippet_client.BatchGetSnippetPipelineYml(snippetConfigs)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]string)
+	for _, yamlResult := range yamlResults {
+		result[yamlResult.Config.ToString()] = yamlResult.Yml
+	}
 
+	snippetDetailMap := make(map[string]apistructs.SnippetQueryDetail)
+	for _, config := range configs {
 		// 假如是 action 类型就跳过
-		if config.Source == apistructs.SnippetActionSourceType {
+		if config.Source == apistructs.ActionSourceType {
 			continue
 		}
 
-		snippetConfig := pipelineyml.HandleSnippetConfigLabel(&pipelineyml.SnippetConfig{
-			Name:   config.Name,
-			Source: config.Source,
-			Labels: config.Labels,
-		}, nil)
-
-		config.Labels = snippetConfig.Labels
-		pipelineYmlContext, err := pipeline_snippet_client.GetSnippetPipelineYml(config.SnippetConfig)
-
-		if err != nil {
-			return nil, err
+		pipelineYmlContext, find := result[config.SnippetConfig.ToString()]
+		if !find {
+			return nil, fmt.Errorf("not find snippet: %v", config)
 		}
 
 		graph, err := pipelineyml.ConvertToGraphPipelineYml([]byte(pipelineYmlContext))
@@ -74,10 +79,9 @@ func (s *SnippetSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (m
 		}
 
 		var detail apistructs.SnippetQueryDetail
-
 		// outputs
 		for _, output := range graph.Outputs {
-			detail.Outputs = append(detail.Outputs, getOutputRef(config.Alias, output.Name))
+			detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output.Name))
 		}
 
 		// params
@@ -91,7 +95,7 @@ func (s *SnippetSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (m
 	// action source 运行
 	for _, config := range configs {
 		// 假如不是 action 类型就跳过
-		if config.Source != apistructs.SnippetActionSourceType {
+		if config.Source != apistructs.ActionSourceType {
 			continue
 		}
 
@@ -108,54 +112,15 @@ func (s *SnippetSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (m
 	return snippetDetailMap, nil
 }
 
-func getOutputRef(alias, outputName string) string {
-	return fmt.Sprintf("${%s:OUTPUT:%s}", alias, outputName)
-}
-
 func (s *SnippetSvc) getActionDetail(config apistructs.SnippetDetailQuery) (*apistructs.SnippetQueryDetail, error) {
 
-	var detail apistructs.SnippetQueryDetail
+	var detail = &apistructs.SnippetQueryDetail{}
 
-	// config 的类型是 api-test 的类型，就需要额外的去拿 out_params
-	if config.Name == apiTest {
-
-		actionJson := config.Labels[apistructs.LabelActionJson]
-		var action apistructs.PipelineYmlAction
-		err := json.Unmarshal([]byte(actionJson), &action)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to parse actionJson %s", config.Alias))
-		}
-
-		params := action.Params
-		if params != nil {
-
-			outParamsBytes, err := json.Marshal(action.Params["out_params"])
-			if err != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("failed to parse %s actionJson out_params %s", apiTest, config.Alias))
-			}
-
-			var outParams []apistructs.APIOutParam
-			err = json.Unmarshal(outParamsBytes, &outParams)
-			if err != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("failed to unparse %s actionJson out_params %s", apiTest, config.Alias))
-			}
-
-			if outParams != nil {
-				for _, out := range outParams {
-					detail.Outputs = append(detail.Outputs, getOutputRef(config.Alias, out.Key))
-				}
-			}
-
-		}
-	}
-
-	// 其他 action 需要去查询其 action 的 output
 	req := apistructs.ExtensionVersionGetRequest{
 		Name:       config.Name,
 		Version:    config.Labels[apistructs.LabelActionVersion],
 		YamlFormat: true,
 	}
-
 	version, err := s.bdl.GetExtensionVersion(req)
 	if err != nil {
 		return nil, err
@@ -172,14 +137,29 @@ func (s *SnippetSvc) getActionDetail(config apistructs.SnippetDetailQuery) (*api
 		return nil, err
 	}
 
-	outputs := actionSpec.Outputs
-	if outputs == nil {
-		return &detail, nil
+	for _, output := range actionSpec.Outputs {
+		detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output.Name))
 	}
 
-	for _, output := range outputs {
-		detail.Outputs = append(detail.Outputs, getOutputRef(config.Alias, output.Name))
+	actionJson := config.Labels[apistructs.LabelActionJson]
+	var action apistructs.PipelineYmlAction
+	err = json.Unmarshal([]byte(actionJson), &action)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse actionJson %s", config.Alias))
 	}
 
-	return &detail, nil
+	for _, matchOutputs := range actionSpec.OutputsFromParams {
+		switch matchOutputs.Type {
+		case apistructs.JqActionMatchOutputType:
+			outputs, err := handlerActionOutputsWithJq(&action, matchOutputs.Expression)
+			if err != nil {
+				return nil, err
+			}
+			for _, output := range outputs {
+				detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output))
+			}
+		}
+	}
+
+	return detail, nil
 }
