@@ -63,6 +63,11 @@ func NewDefaultDiffOptions() *DiffOptions {
 	}
 }
 
+func (d *DiffOptions) SetShowAll(showAll bool) *DiffOptions {
+	d.ShowAll = showAll
+	return d
+}
+
 // DiffLine represents a line in diff.
 type DiffLine struct {
 	OldLineNo int          `json:"oldLineNo"`
@@ -179,7 +184,7 @@ func (repo *Repository) GetDiffFile(newCommit *Commit, oldCommit *Commit, oldPat
 }
 
 func (repo *Repository) GetDiff(newCommit *Commit, oldCommit *Commit) (*Diff, error) {
-	return repo.GetDiffWithOptions(newCommit, oldCommit, NewDefaultDiffOptions())
+	return repo.GetDiffWithOptions(newCommit, oldCommit, NewDefaultDiffOptions().SetShowAll(true))
 }
 
 func (repo *Repository) GetDiffWithOptions(newCommit *Commit, oldCommit *Commit, diffOptions *DiffOptions) (*Diff, error) {
