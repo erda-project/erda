@@ -255,11 +255,11 @@ func (a *Addon) appendMicroServiceProjectData(dataMap map[uint64]*apistructs.Mic
 func (a *Addon) createMicroServiceMenuData(routing dbclient.AddonInstanceRouting, instance dbclient.AddonInstance, project *apistructs.ProjectDTO) *apistructs.MicroServiceMenuResponseData {
 	data := new(apistructs.MicroServiceMenuResponseData)
 	data.AddonName = routing.AddonName
-	addonExtension, ok := AddonInfos[routing.AddonName]
-	if !ok {
+
+	if v, ok := AddonInfos.Load(routing.AddonName); !ok {
 		data.AddonDisplayName = routing.AddonName
 	} else {
-		data.AddonDisplayName = addonExtension.DisplayName
+		data.AddonDisplayName = v.(apistructs.Extension).DisplayName
 	}
 	data.InstanceId = routing.ID
 	data.ProjectName = project.Name
