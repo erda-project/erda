@@ -41,17 +41,21 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 		return nil, apierrors.ErrPagingTestPlanCaseRels.InternalError(err)
 	}
 	var totalApiCount apistructs.TestCaseAPICount
+	var mx sync.Mutex
 	var relErr error
 	var wg sync.WaitGroup
+	caseChan := make(chan struct{}, 20)
 	for _, rel := range rels {
+		caseChan <- struct{}{}
 		wg.Add(1)
 		go func(caseRel dao.TestPlanCaseRel) {
-			defer wg.Done()
 			apis, err := t.testCaseSvc.ListAPIs(int64(caseRel.TestCaseID))
 			if err != nil {
+				<-caseChan
 				relErr = err
 				return
 			}
+			mx.Lock()
 			for _, api := range apis {
 				totalApiCount.Total++
 				switch api.Status {
@@ -65,9 +69,13 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 					totalApiCount.Failed++
 				}
 			}
+			<-caseChan
+			defer wg.Done()
+			defer mx.Unlock()
 		}(rel)
 	}
 	wg.Wait()
+	defer close(caseChan)
 	if relErr != nil {
 		return nil, apierrors.ErrGetApiTestInfo.InternalError(relErr)
 	}
