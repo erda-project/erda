@@ -15,7 +15,6 @@ package job
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/task"
@@ -26,7 +25,7 @@ const (
 	RetainNamespace = "RETAIN_NAMESPACE"
 )
 
-func (j *JobImpl) Stop(namespace, name string, retainNamespace bool) error {
+func (j *JobImpl) Stop(namespace, name string) error {
 	job := apistructs.Job{}
 	ctx := context.Background()
 	if err := j.js.Get(ctx, makeJobKey(namespace, name), &job); err != nil {
@@ -38,7 +37,7 @@ func (j *JobImpl) Stop(namespace, name string, retainNamespace bool) error {
 	if job.Env == nil {
 		job.Env = make(map[string]string, 0)
 	}
-	job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
+	job.Env[RetainNamespace] = "true"
 
 	if _, err := j.handleJobTask(ctx, &job, task.TaskDestroy); err != nil {
 		return err

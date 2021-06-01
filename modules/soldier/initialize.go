@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/soldier/autoop"
 	"github.com/erda-project/erda/modules/soldier/command"
 	"github.com/erda-project/erda/modules/soldier/conf"
+	"github.com/erda-project/erda/modules/soldier/health"
 	"github.com/erda-project/erda/modules/soldier/mysql"
 	"github.com/erda-project/erda/modules/soldier/proxy"
 	"github.com/erda-project/erda/modules/soldier/registry"
@@ -43,6 +44,8 @@ func Initialize() error {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Healthy"))
 	})
+
+	router.HandleFunc(health.ErdaHealthPath, health.GetSoldierHealth)
 
 	registryRouter := router.PathPrefix("/registry").Subrouter()
 	registryRouter.Methods("POST").PathPrefix("/remove/manifests").HandlerFunc(registry.RemoveManifests)

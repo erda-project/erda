@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -118,11 +119,12 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	if orgDTO == nil {
 		return fmt.Errorf("can not get org")
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.State.Value = strconv.FormatInt(int64(orgDTO.ID), 10)
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
-			"label": "浏览公开组织",
+			"label": i18nLocale.Get(i18n.I18nKeyOrgBrowse),
 			"operations": map[string]interface{}{
 				"click": map[string]interface{}{
 					"key":    "click",
@@ -143,7 +145,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 func RenItem(org apistructs.OrgDTO) MenuItem {
 	logo := "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQY0vUTJwftJ8WqXoLiLeB--2MJkpZLpYOA&usqp=CAU"
 	if org.Logo != "" {
-		logo = fmt.Sprintf("https:%s", org.Logo)
+		logo = org.Logo
 	}
 	item := MenuItem{
 		Label:        org.DisplayName,

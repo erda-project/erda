@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/event"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
@@ -129,6 +130,22 @@ func (k *k8sJob) Name() executortypes.Name {
 	return k.name
 }
 
+// IPToHostname change ip to hostname
+func (k *k8sJob) IPToHostname(ip string) string {
+	nodeList, err := k.client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return ""
+	}
+	for _, node := range nodeList.Items {
+		for _, addr := range node.Status.Addresses {
+			if addr.Type == corev1.NodeInternalIP && addr.Address == ip {
+				return node.Name
+			}
+		}
+	}
+	return ""
+}
+
 // Create create k8s job
 func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, error) {
 	job := specObj.(apistructs.Job)
@@ -173,10 +190,8 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 	}
 
 	_, err = k.client.BatchV1().Jobs(namespace).Create(ctx, kubeJob, metav1.CreateOptions{})
-
-	name := kubeJob.Name
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to create k8s job, name: %s", name)
+		errMsg := fmt.Sprintf("failed to create k8s job, name: %s, err: %v", kubeJob.Name, err)
 		logrus.Errorf(errMsg)
 		return nil, errors.Errorf(errMsg)
 	}
@@ -208,7 +223,7 @@ func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.St
 
 	job, err = k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if util.IsNotFound(err) {
 			statusDesc.Status = apistructs.StatusNotFoundInCluster
 			return statusDesc, nil
 		}
@@ -274,32 +289,37 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 
 	jb, err := k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
+		if !util.IsNotFound(err) {
 			return err
 		}
+		logrus.Warningf("get the job %s in namespace %s is not found", name, namespace)
 	}
 
 	// when the err is nil, the job and DeletionTimestamp is not nil. scheduler should delete the job.
 	if err == nil && jb.DeletionTimestamp == nil {
+		logrus.Infof("start to delete job %s", name)
 		err = k.client.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
 			PropagationPolicy: &propagationPolicy,
 		})
 		if err != nil {
-			if !strings.Contains(err.Error(), "not found") {
+			if !util.IsNotFound(err) {
 				return errors.Wrapf(err, "failed to remove k8s job, name: %s", name)
 			}
-			logrus.Debugf("the job %s in namespace %s is not found", name, namespace)
+			logrus.Warningf("delete the job %s in namespace %s is not found", name, namespace)
 		}
+		logrus.Infof("finish to delete job %s", name)
 
 		for index := range job.Volumes {
 			pvcName := fmt.Sprintf("%s-%s-%d", namespace, job.Name, index)
+			logrus.Infof("start to delete pvc %s", pvcName)
 			err = k.client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 			if err != nil {
-				if !strings.Contains(err.Error(), "not found") {
+				if !util.IsNotFound(err) {
 					return errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
 				}
-				logrus.Debugf("the pvc %s in namespace %s is not found", name, namespace)
+				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", job.Name, pvcName, namespace)
 			}
+			logrus.Infof("finish to delete pvc %s", pvcName)
 		}
 	}
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" {
@@ -310,7 +330,7 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 		}
 
 		remainCount := 0
-		if len(jobs.Items) == 0 {
+		if len(jobs.Items) != 0 {
 			for _, j := range jobs.Items {
 				if j.DeletionTimestamp == nil {
 					remainCount++
@@ -323,11 +343,11 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			logrus.Debugf("parse bool err %v when delete job %s in the namespace %s", err, job.Name, job.Namespace)
 			retainNamespace = false
 		}
-
 		if remainCount < 1 && retainNamespace == false {
 			ns, err := k.client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
-				if strings.Contains(err.Error(), "not found") {
+				if util.IsNotFound(err) {
+					logrus.Warningf("get namespace %s not found", namespace)
 					return nil
 				}
 				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
@@ -335,14 +355,16 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 			}
 
 			if ns.DeletionTimestamp == nil {
-				logrus.Infof("delete the job's namespace %s", namespace)
+				logrus.Infof("start to delete the job's namespace %s", namespace)
 				err = k.client.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
-					if !strings.Contains(err.Error(), "not found") {
+					if !util.IsNotFound(err) {
 						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
 						return errMsg
 					}
+					logrus.Warningf("not found the namespace %s", namespace)
 				}
+				logrus.Infof("clean namespace %s successfully", namespace)
 			}
 		}
 	}
@@ -453,7 +475,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 				Spec: corev1.PodSpec{
 					Tolerations:      toleration.GenTolerations(),
 					ImagePullSecrets: []corev1.LocalObjectReference{{Name: k8s.AliyunRegistry}},
-					Affinity:         &constraintbuilders.K8S(&job.ScheduleInfo2, nil, nil, nil).Affinity,
+					Affinity:         &constraintbuilders.K8S(&job.ScheduleInfo2, nil, nil, k).Affinity,
 					Containers: []corev1.Container{
 						{
 							Name:  job.Name,
@@ -827,14 +849,14 @@ func (k *k8sJob) createImageSecretIfNotExist(namespace string) error {
 		return nil
 	}
 
-	if !strings.Contains(err.Error(), "not found") {
+	if !util.IsNotFound(err) {
 		return err
 	}
 
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
 	s, err := k.client.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), k8s.AliyunRegistry, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
+		if !util.IsNotFound(err) {
 			return nil
 		}
 		return err
@@ -907,7 +929,7 @@ func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
 
 	_, err := k.client.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
+		if !util.IsNotFound(err) {
 			errMsg := fmt.Sprintf("failed to get k8s namespace %s: %v", name, err)
 			logrus.Errorf(errMsg)
 			return errors.Errorf(errMsg)
@@ -932,7 +954,7 @@ func (k *k8sJob) createNamespace(ctx context.Context, name string) error {
 func (k *k8sJob) CreatePVCIfNotExists(pvc *corev1.PersistentVolumeClaim) error {
 	_, err := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.Background(), pvc.Name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
+		if !util.IsNotFound(err) {
 			return errors.Errorf("failed to get pvc, name: %s, (%v)", pvc.Name, err)
 		}
 		_, createErr := k.client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
