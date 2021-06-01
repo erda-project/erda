@@ -730,7 +730,7 @@ func (m *Member) IsAdmin(userID string) bool {
 	if member.ID == 0 {
 		logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
 		// TODO: some risk
-		if m.noOneAdminForKratos() && len(userID) > 11 { // len > 11 imply that is kratos user
+		if len(userID) > 11 && m.noOneAdminForKratos() { // len > 11 imply that is kratos user
 			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
 			if err := m.firstUserBecomeAdmin(userID); err != nil {
 				return false
