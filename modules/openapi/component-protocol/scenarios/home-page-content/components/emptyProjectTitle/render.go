@@ -105,45 +105,68 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 	e.Type = "Title"
 	e.Props.Title = i18nLocale.Get(i18n.I18nKeyOrgEmpty)
 	e.Props.Level = 2
-	if e.ctxBdl.Identity.OrgID != "" {
-		prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
+	if e.ctxBdl.Identity.OrgID == "" {
+		e.Props.Visible = false
+		return nil
+	}
+	orgIDInt, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	orgDTO, err := e.ctxBdl.Bdl.GetOrg(e.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	if orgDTO == nil {
+		return fmt.Errorf("can not get org")
+	}
+	members, err := e.ctxBdl.Bdl.ListMembers(apistructs.MemberListRequest{
+		ScopeType: apistructs.OrgScope,
+		ScopeID:   int64(orgIDInt),
+		PageNo:    1,
+		PageSize:  1000,
+	})
+	if err != nil {
+		return fmt.Errorf("check permission failed: %v", err)
+	}
+	var joined bool
+	for _, member := range members {
+		if member.UserID == e.ctxBdl.Identity.UserID {
+			joined = true
+			break
+		}
+	}
+	if !joined {
+		e.Props.Title = fmt.Sprintf("%s %s", i18nLocale.Get(i18n.I18nKeyOrgPublicBrowse), orgDTO.DisplayName)
+		e.Props.Visible = true
+		return nil
+	}
+	prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	if prosNum == 0 {
+		req := &apistructs.PermissionCheckRequest{
+			UserID:   e.ctxBdl.Identity.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(orgIDInt),
+			Resource: apistructs.ProjectResource,
+			Action:   apistructs.CreateAction,
+		}
+		var role string = i18nLocale.Get(i18n.I18nKeyMember)
+		permissionRes, err := e.ctxBdl.Bdl.CheckPermission(req)
 		if err != nil {
 			return err
 		}
-		if prosNum == 0 {
-			orgDTO, err := e.ctxBdl.Bdl.GetOrg(e.ctxBdl.Identity.OrgID)
-			if err != nil {
-				return err
-			}
-			if orgDTO == nil {
-				return fmt.Errorf("can not get org")
-			}
-			orgIntId, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
-			if err != nil {
-				return err
-			}
-			req := &apistructs.PermissionCheckRequest{
-				UserID:   e.ctxBdl.Identity.UserID,
-				Scope:    apistructs.OrgScope,
-				ScopeID:  uint64(orgIntId),
-				Resource: apistructs.ProjectResource,
-				Action:   apistructs.CreateAction,
-			}
-			var role string = i18nLocale.Get(i18n.I18nKeyMember)
-			permissionRes, err := e.ctxBdl.Bdl.CheckPermission(req)
-			if err != nil {
-				return err
-			}
-			if permissionRes == nil {
-				return fmt.Errorf("can not check permission for org")
-			}
-
-			if permissionRes.Access {
-				role = i18nLocale.Get(i18n.I18nKeyAdmin)
-			}
-			e.Props.Title = fmt.Sprintf("%s %s %s%s", i18nLocale.Get(i18n.I18nKeyYouAlready), orgDTO.DisplayName, i18nLocale.Get(i18n.I18nKeyOrgIs), role)
-			e.Props.Visible = true
+		if permissionRes == nil {
+			return fmt.Errorf("can not check permission for org")
 		}
+
+		if permissionRes.Access {
+			role = i18nLocale.Get(i18n.I18nKeyAdmin)
+		}
+		e.Props.Title = fmt.Sprintf("%s %s %s%s", i18nLocale.Get(i18n.I18nKeyYouAlready), orgDTO.DisplayName, i18nLocale.Get(i18n.I18nKeyOrgIs), role)
+		e.Props.Visible = true
 	}
 	return nil
 }

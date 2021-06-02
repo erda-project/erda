@@ -74,17 +74,123 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		return err
 	}
 	e.Type = "TextGroup"
-	var visible bool
-	if e.ctxBdl.Identity.OrgID != "" && e.State.ProsNum == 0 {
-		visible = true
+	e.Props = make(map[string]interface{})
+	if e.ctxBdl.Identity.OrgID == "" {
+		e.Props["visible"] = false
+		return nil
 	}
-
+	var visible bool
 	var access bool
 	var role string
 	var createProStr string
 	var createProDetail interface{}
 	var createProType string
 	i18nLocale := e.ctxBdl.Bdl.GetLocale(e.ctxBdl.Locale)
+	if e.State.ProsNum == 0 {
+		visible = true
+	}
+	orgIDInt, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	members, err := e.ctxBdl.Bdl.ListMembers(apistructs.MemberListRequest{
+		ScopeType: apistructs.OrgScope,
+		ScopeID:   int64(orgIDInt),
+		PageNo:    1,
+		PageSize:  1000,
+	})
+	if err != nil {
+		return fmt.Errorf("check permission failed: %v", err)
+	}
+	var joined bool
+	for _, member := range members {
+		if member.UserID == e.ctxBdl.Identity.UserID {
+			joined = true
+			break
+		}
+	}
+	if !joined {
+		e.Props["value"] = []interface{}{
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyPlatformBelow),
+				},
+				"gapSize": "large",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitch),
+					"styleConfig": map[string]interface{}{
+						"bold": true,
+					},
+				},
+				"gapSize": "small",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgSwitchMsg),
+				},
+				"gapSize": "large",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgPublicProBrowse),
+					"styleConfig": map[string]interface{}{
+						"bold": true,
+					},
+				},
+				"gapSize": "small",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgLeftProBrowse),
+				},
+				"gapSize": "large",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgJoin),
+					"styleConfig": map[string]interface{}{
+						"bold": true,
+					},
+				},
+				"gapSize": "small",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgJoinMsg),
+				},
+				"gapSize": "large",
+			},
+			map[string]interface{}{
+				"props": map[string]interface{}{
+					"renderType": "Text",
+					"visible":    visible,
+					"value":      i18nLocale.Get(i18n.I18nKeyOrgJoinAfter),
+					"textStyleName": map[string]bool{
+						"fz12":            true,
+						"color-text-desc": true,
+					},
+				},
+				"gapSize": "normal",
+			},
+		}
+		return nil
+	}
 	if e.ctxBdl.Identity.OrgID != "" {
 		orgIntId, err := strconv.Atoi(e.ctxBdl.Identity.OrgID)
 		req := &apistructs.PermissionCheckRequest{
@@ -119,7 +225,6 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		createProStr = i18nLocale.Get(i18n.I18nKeyProJoin)
 		createProDetail = i18nLocale.Get(i18n.I18nKeyProJoinMsg)
 	}
-	e.Props = make(map[string]interface{})
 	e.Props["visible"] = visible
 	e.Props["value"] = []interface{}{
 		map[string]interface{}{
