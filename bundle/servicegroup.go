@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -178,7 +179,7 @@ func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string) (*apistr
 	select {
 	case <-done:
 		return sg, err
-	case <-time.After(3 * time.Second):
+	case <-time.After(time.Duration(conf.InspectServiceGroupTimeout()) * time.Second):
 		return nil, apierrors.ErrInvoke.InternalError(fmt.Errorf("timeout for invoke getServiceGroup"))
 	}
 }

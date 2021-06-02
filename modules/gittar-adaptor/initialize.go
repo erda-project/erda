@@ -15,6 +15,8 @@
 package adaptor
 
 import (
+	"time"
+
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
@@ -26,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/filetree"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/permission"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	//"terminus.io/dice/telemetry/promxp"
 )
@@ -65,6 +68,11 @@ func initEndpoints() *endpoints.Endpoints {
 		bundle.WithEventBox(),
 		bundle.WithCMDB(),
 		bundle.WithMonitor(),
+		bundle.WithHTTPClient(
+			httpclient.New(
+				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),
+			),
+		),
 	)
 
 	// init pipeline
