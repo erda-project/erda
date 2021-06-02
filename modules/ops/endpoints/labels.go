@@ -22,7 +22,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) ListLabels(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

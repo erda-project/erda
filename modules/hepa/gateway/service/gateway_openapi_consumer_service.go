@@ -39,7 +39,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 type GatewayOpenapiConsumerServiceImpl struct {

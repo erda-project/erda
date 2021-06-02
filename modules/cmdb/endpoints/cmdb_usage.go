@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/modules/cmdb/model"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

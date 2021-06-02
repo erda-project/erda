@@ -19,7 +19,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

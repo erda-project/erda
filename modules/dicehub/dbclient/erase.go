@@ -16,7 +16,7 @@ package dbclient
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 // PublishItemErase 数据擦除

@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
 	"github.com/erda-project/erda/modules/apim/services/signauth"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // API 返回对应的错误类型

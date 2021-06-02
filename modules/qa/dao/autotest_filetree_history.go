@@ -13,7 +13,7 @@
 
 package dao
 
-import "github.com/erda-project/erda/pkg/dbengine"
+import "github.com/erda-project/erda/pkg/database/dbengine"
 
 type AutoTestFileTreeNodeHistory struct {
 	dbengine.BaseModel
