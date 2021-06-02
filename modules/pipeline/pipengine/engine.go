@@ -139,11 +139,11 @@ func (engine *Engine) loadRunningPipelines() error {
 
 	// send pipeline id by interval time instead of at once
 	total := len(pipelineIDs)
-	intervalTime := time.Duration(conf.InitializeSendIntervalTime())
-	intervalNum := conf.InitializeSendIntervalNum()
+	intervalSec := time.Duration(conf.InitializeSendRunningIntervalSec())
+	intervalNum := conf.InitializeSendRunningIntervalNum()
 	maxTimes := total / int(intervalNum)
 	for i := 0; i <= maxTimes; i++ {
-		time.Sleep(intervalTime)
+		time.Sleep(intervalSec)
 		end := (i + 1) * int(intervalNum)
 		if end > total {
 			end = total

@@ -89,8 +89,8 @@ type Conf struct {
 	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
 
 	// initialize send running pipeline interval
-	InitializeSendIntervalTime uint64 `env:"INITIALIZE_SEND_INTERVAL_TIME" default:"10"`
-	InitializeSendIntervalNum  uint64 `env:"INITIALIZE_SEND_INTERVAL_NUM" default:"20"`
+	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
+	InitializeSendRunningIntervalNum uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_NUM" default:"20"`
 }
 
 var cfg Conf
@@ -281,12 +281,12 @@ func APITestNetportalAccessK8sNamespaceBlacklist() []string {
 	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
 }
 
-// InitializeSendIntervalTime return initialize send running pipeline id interval time
-func InitializeSendIntervalTime() uint64 {
-	return cfg.InitializeSendIntervalTime
+// InitializeSendIntervalTime return initialize send running pipeline id interval second
+func InitializeSendRunningIntervalSec() uint64 {
+	return cfg.InitializeSendRunningIntervalSec
 }
 
 // InitializeSendIntervalNum return initialize send running pipeline id interval num
-func InitializeSendIntervalNum() uint64 {
-	return cfg.InitializeSendIntervalNum
+func InitializeSendRunningIntervalNum() uint64 {
+	return cfg.InitializeSendRunningIntervalNum
 }
