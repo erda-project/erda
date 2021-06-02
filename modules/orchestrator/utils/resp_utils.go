@@ -19,8 +19,8 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

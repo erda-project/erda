@@ -22,7 +22,7 @@ package bundle
 //	"github.com/stretchr/testify/assert"
 //
 //	"github.com/erda-project/erda/apistructs"
-//	"github.com/erda-project/erda/pkg/httpclient"
+//	"github.com/erda-project/erda/pkg/http/httpclient"
 //)
 //
 //func TestBundle_ListGittarFileTreeNodes(t *testing.T) {

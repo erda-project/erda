@@ -47,7 +47,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"

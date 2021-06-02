@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) version(ctx context.Context, r *http.Request, vars map[string]string) (

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const (

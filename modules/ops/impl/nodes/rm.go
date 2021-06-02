@@ -26,9 +26,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/ops/dbclient"
-	"github.com/erda-project/erda/pkg/encrypt"
+	"github.com/erda-project/erda/pkg/crypto/encrypt"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 func (n *Nodes) RmNodes(req apistructs.RmNodesRequest, userid string, orgid string) (uint64, error) {

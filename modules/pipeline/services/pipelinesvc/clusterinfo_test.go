@@ -22,7 +22,7 @@ package pipelinesvc
 //	"github.com/stretchr/testify/assert"
 //
 //	"github.com/erda-project/erda/bundle"
-//	"github.com/erda-project/erda/pkg/httpclient"
+//	"github.com/erda-project/erda/pkg/http/httpclient"
 //)
 //
 //func TestPipelineSvc_retryQueryClusterInfo(t *testing.T) {

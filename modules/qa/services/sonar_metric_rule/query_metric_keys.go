@@ -16,7 +16,7 @@ package sonar_metric_rule
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dao"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (svc *Service) QueryMetricKeys(req *apistructs.SonarMetricRulesListRequest) (httpserver.Responser, error) {
