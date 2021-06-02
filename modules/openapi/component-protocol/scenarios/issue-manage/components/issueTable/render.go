@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -102,6 +103,13 @@ type TableItem struct {
 	Type        string   `json:"type"`
 	Deadline    Deadline `json:"deadline"`
 	Assignee    Assignee `json:"assignee"`
+	ClosedAt    ClosedAt `json:"closedAt"`
+}
+
+type ClosedAt struct {
+	RenderType string `json:"renderType"`
+	Value      string `json:"value"`
+	NoBorder   bool   `json:"noBorder"`
 }
 
 type PriorityOperationData struct {
@@ -334,6 +342,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				cond.PageNo = uint64(c.State["pageNo"].(float64))
 			}
 		}
+	} else if event.Operation.String() == "changePageSize" {
+		cond.PageSize = uint64(c.State["pageSize"].(float64))
 	} else if event.Operation == apistructs.InitializeOperation {
 		cond.PageNo = 1
 		if urlquery, ok := bdl.InParams["issueTable__urlQuery"]; ok {
@@ -348,13 +358,38 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			if pageNoInQuery, ok := querymap["pageNo"]; ok {
 				cond.PageNo = uint64(pageNoInQuery.(float64))
 			}
+			if pageSize, ok := querymap["pageSize"]; ok {
+				cond.PageSize = uint64(pageSize.(float64))
+			}
 		}
 	} else if event.Operation == apistructs.RenderingOperation {
 		cond.PageNo = 1
 	}
-	r, err := bdl.Bdl.PageIssues(cond)
+
+	// check reset pageNo
+	if c.State != nil && resetPageNoByFilterCondition(event.Operation.String(), TableItem{}, c.State) {
+		if _, ok := c.State["pageNo"]; ok {
+			cond.PageNo = uint64(c.State["pageNo"].(float64))
+		}
+	}
+
+	var (
+		pageTotal uint64
+		r         *apistructs.IssuePagingResponse
+	)
+	r, err = bdl.Bdl.PageIssues(cond)
 	if err != nil {
 		return err
+	}
+	// if pageTotal < cond.PageNo, to reset the cond.PageNo = 1,
+	// and return the first page of data
+	pageTotal = getTotalPage(r.Data.Total, cond.PageSize)
+	if pageTotal < cond.PageNo {
+		cond.PageNo = 1
+		r, err = bdl.Bdl.PageIssues(cond)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, p := range r.Data.List {
@@ -512,6 +547,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if data.PlanStartedAt != nil {
 			deadline.DisabledBefore = data.PlanStartedAt.Format(time.RFC3339)
 		}
+		closedAt := ClosedAt{
+			RenderType: "datePicker",
+			Value:      "",
+			NoBorder:   true,
+		}
+		if data.FinishTime != nil {
+			closedAt.Value = data.FinishTime.Format(time.RFC3339)
+		}
 		l = append(l, TableItem{
 			//Assignee:    map[string]string{"value": data.Assignee, "renderType": "userAvatar"},
 			Id:          strconv.FormatInt(data.ID, 10),
@@ -595,6 +638,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				RenderType: "textWithTags",
 			},
 			Deadline: deadline,
+			ClosedAt: closedAt,
 		})
 	}
 	c.Data = map[string]interface{}{}
@@ -607,9 +651,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
             "title": "进度"
         },`
 	}
-	severityCol := ""
+
+	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
 		severityCol = `{ "title": "严重程度", "dataIndex": "severity", "width": 120 },`
+		closedAtCol = `,{ "title": "关闭日期", "dataIndex": "closedAt", "width": 160 }`
 	}
 	props := `{
     "columns": [
@@ -644,9 +690,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
             "width": 160,
             "dataIndex": "deadline",
             "title": "截止日期"
-        }
-    ],
-    "rowKey": "id"
+        }` +
+		closedAtCol +
+		`],
+    "rowKey": "id",
+	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
@@ -658,6 +706,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			"key":    "changePageNo",
 			"reload": true,
 		},
+		"changePageSize": map[string]interface{}{
+			"key":    "changePageSize",
+			"reload": true,
+		},
 	}
 	c.Props.(map[string]interface{})["visible"] = visible
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
@@ -667,7 +719,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	c.State["total"] = r.Data.Total
 	c.State["pageNo"] = cond.PageNo
 	c.State["pageSize"] = cond.PageSize
-	urlquery := fmt.Sprintf(`{"pageNo":%d}`, cond.PageNo)
+	urlquery := fmt.Sprintf(`{"pageNo":%d, "pageSize":%d}`, cond.PageNo, cond.PageSize)
 	c.State["issueTable__urlQuery"] = base64.StdEncoding.EncodeToString([]byte(urlquery))
 	return nil
 }
@@ -699,4 +751,27 @@ func RenderCreator() protocol.CompRender {
 
 func getPrefixIcon(_type string) string {
 	return "ISSUE_ICON.issue." + _type
+}
+
+func resetPageNoByFilterCondition(event string, filter interface{}, state map[string]interface{}) bool {
+	v := reflect.ValueOf(filter).Type()
+	for i := 0; i < v.NumField(); i++ {
+		if strutil.Contains(event, v.Field(i).Name) {
+			if v, ok := state[v.Field(i).Name]; ok && v != nil {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// getTotalPage get total page
+func getTotalPage(total, pageSize uint64) (page uint64) {
+	if pageSize == 0 {
+		return 0
+	}
+	if total%pageSize == 0 {
+		return total / pageSize
+	}
+	return total/pageSize + 1
 }

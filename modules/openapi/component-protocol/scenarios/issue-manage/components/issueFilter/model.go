@@ -40,6 +40,7 @@ type FrontendConditions struct {
 	BugStages          []string                      `json:"bugStages,omitempty"`
 	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
 	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
+	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
 }
 
 func generateFrontendConditionProps(fixedIssueType string, state State) FrontendConditionProps {
@@ -213,6 +214,24 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 	}
 
+	if fixedIssueType == apistructs.IssueTypeBug.String() {
+		conditionProps = append(conditionProps, filter.PropCondition{
+			Key:         PropConditionKeyClosed,
+			Label:       "关闭日期",
+			EmptyText:   "",
+			Fixed:       false,
+			ShowIndex:   0,
+			HaveFilter:  false,
+			Type:        filter.PropConditionTypeDateRange,
+			QuickSelect: filter.QuickSelect{},
+			Placeholder: "",
+			Options:     nil,
+			CustomProps: map[string]interface{}{
+				"borderTime": true,
+			},
+		})
+	}
+
 	v, ok := state.IssueViewGroupChildrenValue["kanban"]
 	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
 		status := filter.PropCondition{
@@ -242,7 +261,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 				case apistructs.IssueTypeTask.String():
 					return []filter.PropConditionOption{open, working, done}
 				case apistructs.IssueTypeBug.String():
-					return []filter.PropConditionOption{open, wontfix, reopen, resolved, closed}
+					return []filter.PropConditionOption{open, working, wontfix, reopen, resolved, closed}
 				}
 				return nil
 			}(),
@@ -266,6 +285,7 @@ var (
 	PropConditionKeyBugStages          filter.PropConditionKey = "bugStages"
 	PropConditionKeyCreatedAtStartEnd  filter.PropConditionKey = "createdAtStartEnd"
 	PropConditionKeyFinishedAtStartEnd filter.PropConditionKey = "finishedAtStartEnd"
+	PropConditionKeyClosed             filter.PropConditionKey = "closedAtStartEnd"
 )
 
 func GetAllOperations() map[filter.OperationKey]filter.Operation {

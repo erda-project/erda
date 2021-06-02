@@ -1,23 +1,23 @@
-# Erda - An enterprise-grade application building, development, monitoring platform
+# Erda - An enterprise-grade application building, deploying, monitoring platform
 
 ![Erda logo](./docs/assets/logo-small.jpg)
 
 ## Introduction
 
-Erda is an open-source platform created by [Terminus](https://www.terminus.io/) to ensuring the development of  microservice applications. It provides DevOps, microservice governance, and multi-cloud management capabilities. The multi-cloud architecture based on Kubernetes and application-centric DevOps and microservice governance can make the development, operation, monitoring, and problem diagnosis of complex business applications simpler and more efficient.
+Erda is an open-source platform created by [Terminus](https://www.terminus.io/) to ensure the development of microservice applications. It provides DevOps, microservice governance, and multi-cloud management capabilities. The multi-cloud architecture based on Kubernetes and application-centric DevOps and microservice governance can make the development, operation, monitoring, and problem diagnosis of complex business applications simpler and more efficient.
 
 **Functional Architecture**
 
 ![](./docs/assets/functional_architecture.jpg)
 
-Erda is mainly composed of the following parts, they are
+Erda is mainly composed of the following parts:
 - DevOps
-- Microservice Governance, include Application Performance Management, Monitoring, Log Analysis, API Gateway, etc.
-- Multi-cloud Management
+- Microservice Governance, including Application Performance Management, Monitoring, Log Analysis, API Gateway, etc.
+- Multi-Cloud Management
 - Edge Computing
 - FastData Management
 
-## Erda's vision is "Build any application, Deploy anywhere, Monitor everything".
+## Vision: Build any application, Deploy anywhere, Monitor anything
 ![](./docs/assets/vision.png)
 
 ## Screenshot
@@ -28,36 +28,45 @@ Erda is mainly composed of the following parts, they are
 
 ![](./docs/assets/arch.png)
 
-We split the codes of erda into multiple repositories according to different function. The key repositories are erda, erda-proto, erda-infra, erda-ui.
+We split the codes of erda into multiple repositories according to different functions. The key repositories are erda, erda-proto, erda-infra, erda-ui.
 
 **erda** It is the main repository.
 
-[erda-proto](https://github.com/erda-project/erda-proto) Store the communication protocol definitions between erda internal services, and the componentized protocol definitions between the web front-end and back-end services.
+[erda-proto]: (https://github.com/erda-project/erda-proto) It stores the communication protocol definitions between erda internal services, and the componentized protocol definitions between the web front-end and back-end services.
 
-[erda-infra](https://github.com/erda-project/erda-infra) It is a basic repository, which stores some common and basic module codes, including the wrappers of middleware SDK, etc.
+[erda-infra]: (https://github.com/erda-project/erda-infra) It is a basic repository, which stores some common and basic module codes, including the wrappers of middleware SDK, etc.
 
-[erda-ui](https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
+[erda-ui]: (https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
+
+## Installation
+
+Please follow How to install Erda.
+
+- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
 
 ## User Documentation
 
-To start using Erda, please see our user documentation. Before using, you need to see the [installation document](./docs/guides/deploy/How-to-install-the-Erda.md) to install erda.
+To start using Erda, please see the documentation.
 
-- [中文](https://dice-docs.app.terminus.io)
+- [中文](https://docs.erda.cloud)
 - English
 
 ## Contributing
 
-This section is in progress here [Contributing to Erda](CONTRIBUTING.md)
+Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRIBUTING.md) for details.
 
 ## Contact Us
 
-We look forward to your connecting with us, you can ask us any questions.
+If you have any questions, please feel free to contact us.
 
 - Email: erda@terminus.io
-- 知乎：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
-- 微信公众号:
+- Zhihu：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
+- WeChat Official Account:
 
     ![Erda WeChat](./docs/assets/wechat-small.jpg)
+- DingTalk Group:
+  
+    ![Erda DingTalk](./docs/assets/dingtalk.png)
 
 ## License
 

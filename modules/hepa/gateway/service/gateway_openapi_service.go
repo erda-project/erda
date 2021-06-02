@@ -803,6 +803,7 @@ func (impl GatewayOpenapiServiceImpl) TryClearRuntimePackage(runtimeService *orm
 	if pack != nil {
 		apis, err := packApiSession.SelectByAny(&orm.GatewayPackageApi{
 			PackageId: pack.Id,
+			Origin:    string(gw.FROM_CUSTOM),
 		})
 		if err != nil {
 			return err
@@ -1713,11 +1714,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageApiZone(info PackageApiInfo, s
 	} else {
 		runtimeSession = impl.runtimeDb
 	}
-	az, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-		Az:        info.Az,
-		ProjectId: info.ProjectId,
-		Env:       info.Env,
-	})
+	az, err := impl.azDb.GetAzInfoByClusterName(info.Az)
 	if err != nil {
 		return "", err
 	}
@@ -2656,11 +2653,7 @@ func (impl GatewayOpenapiServiceImpl) CreateTenantPackage(tenantId string, sessi
 		var corsConfig apipolicy.PolicyDto
 		var configByte []byte
 		var azInfo *orm.GatewayAzInfo
-		azInfo, err = impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: kongInfo.ProjectId,
-			Env:       kongInfo.Env,
-			Az:        kongInfo.Az,
-		})
+		azInfo, err = impl.azDb.GetAzInfoByClusterName(kongInfo.Az)
 		if err != nil {
 			goto clear_route
 		}
@@ -2925,11 +2918,7 @@ func (impl GatewayOpenapiServiceImpl) TouchPackageRootApi(packageId string, reqD
 
 func (impl GatewayOpenapiServiceImpl) endpointPadding(endpoint *diceyml.Endpoint, service *orm.GatewayRuntimeService) error {
 	if strings.HasSuffix(endpoint.Domain, ".*") {
-		azInfo, err := impl.azDb.GetAzInfo(&orm.GatewayAzInfo{
-			ProjectId: service.ProjectId,
-			Env:       service.Workspace,
-			Az:        service.ClusterName,
-		})
+		azInfo, err := impl.azDb.GetAzInfoByClusterName(service.ClusterName)
 		if err != nil {
 			return err
 		}

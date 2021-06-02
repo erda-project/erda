@@ -52,6 +52,9 @@ type Configuration struct {
 	UpdatedAtDefaultValueLinter bool         `json:"updated_at_default_value_linter" yaml:"updated_at_default_value_linter"`
 	UpdatedAtOnUpdateLinter     bool         `json:"updated_at_on_update_linter" yaml:"updated_at_on_update_linter"`
 	VarcharLengthLinter         bool         `json:"varchar_length_linter" yaml:"varchar_length_linter"`
+	CompleteInsertLinter        bool         `json:"complete_insert_linter" yaml:"complete_insert_linter"`
+	ManualTimeSetterLinter      bool         `json:"manual_time_setter_linter" yaml:"manual_time_setter_linter"`
+	ExplicitCollationLinter     bool         `json:"explicit_collation_linter" yaml:"explicit_collation_linter"`
 }
 
 // ToJsonIndent marshals the Configuration to JSON []byte
@@ -356,6 +359,15 @@ func (c *Configuration) Rulers() (rulers []rules.Ruler, err error) {
 	}
 	if c.VarcharLengthLinter {
 		rulers = append(rulers, linters.NewVarcharLengthLinter)
+	}
+	if c.CompleteInsertLinter {
+		rulers = append(rulers, linters.NewCompleteInsertLinter)
+	}
+	if c.ManualTimeSetterLinter {
+		rulers = append(rulers, linters.NewManualTimeSetterLinter)
+	}
+	if c.ExplicitCollationLinter {
+		rulers = append(rulers, linters.NewExplicitCollationLinter)
 	}
 
 	return rulers, nil

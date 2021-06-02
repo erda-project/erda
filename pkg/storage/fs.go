@@ -37,8 +37,10 @@ func (fs *FS) Write(path string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(dst, r)
-	return err
+	if _, err = io.Copy(dst, r); err != nil {
+		return err
+	}
+	return dst.Sync()
 }
 
 func (fs *FS) Delete(path string) error {

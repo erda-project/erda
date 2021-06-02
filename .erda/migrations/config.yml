@@ -93,5 +93,6 @@ updated_at_type_linter: true
 updated_at_default_value_linter: true
 updated_at_on_update_linter: true
 varchar_length_linter: true
-complete-insert-linter: true
-manual-time-setter-linter: true
+complete_insert_linter: true
+manual_time_setter_linter: true
+explicit_collation_linter: true

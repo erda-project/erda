@@ -288,6 +288,34 @@
   resource_role: Creator
 ## issue缺陷 end
 
+## issue epic start
+- scope: project
+  resource: issue-epic
+  action: CREATE
+  role: Owner,Lead,PM,PD,Dev,QA
+  resource_role: Creator,Assignee
+- scope: project
+  resource: issue-epic
+  action: UPDATE
+  role: Owner,Lead,PM,PD,QA,Dev
+  resource_role: Creator,Assignee
+- scope: project
+  resource: issue-epic
+  action: LIST
+  role: Owner,Lead,PM,PD,Dev,QA,Support,Guest
+  resource_role: Creator,Assignee
+- scope: project
+  resource: issue-epic
+  action: GET
+  role: Owner,Lead,PM,PD,Dev,QA,Support,Guest
+  resource_role: Creator,Assignee
+- scope: project
+  resource: issue-epic
+  action: DELETE
+  role: Owner,PM,PD
+  resource_role: Creator
+## issue epic end
+
 ## issue工单 start
 - scope: project
   resource: issue-ticket

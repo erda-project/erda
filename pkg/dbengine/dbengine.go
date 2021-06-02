@@ -71,3 +71,8 @@ func loadCfg(c ...*Conf) (*Conf, error) {
 	}
 	return LoadDefaultConf()
 }
+
+// Ping ping mysql server
+func (e *DBEngine) Ping() error {
+	return e.DB.DB().Ping()
+}

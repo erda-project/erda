@@ -24,7 +24,6 @@ import (
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
-	p.mysql.LogMode(true)
 	alertRecord := &adapt.AlertRecord{}
 	if err := json.Unmarshal(value, alertRecord); err != nil {
 		return err
@@ -36,7 +35,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
-	if sqlRecord == nil {
+	if sqlRecord.GroupID == "" {
 		//create
 		err := p.mysql.Create(record).Error
 		return err

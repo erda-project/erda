@@ -100,7 +100,9 @@ func do() (*httpserver.Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	initServices(ep)
+	if conf.EnableEss() {
+		initServices(ep)
+	}
 
 	k8sep := newKubernetesEndpoints(bdl)
 
