@@ -16,8 +16,8 @@ package linters_test
 import (
 	"testing"
 
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/linters"
+	"github.com/erda-project/erda/pkg/database/sqllint"
+	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
 func TestNewExplicitCollationLinter(t *testing.T) {
