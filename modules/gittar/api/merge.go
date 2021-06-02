@@ -15,6 +15,7 @@ package api
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/template"
 )
 
@@ -114,12 +116,7 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 		repo := ctx.Repository
 		org, err := ctx.Bundle.GetOrg(repo.OrgId)
 		if err == nil {
-			request.Link = "http://" + org.Domain + template.Render(conf.MergePathTemplate(), map[string]string{
-				"projectId": strconv.FormatInt(repo.ProjectId, 10),
-				"appId":     strconv.FormatInt(repo.ApplicationId, 10),
-				"orgId":     strconv.FormatInt(repo.OrgId, 10),
-				"mrId":      strconv.FormatInt(int64(request.RepoMergeId), 10),
-			})
+			request.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(request.RepoMergeId))
 		}
 		request.MergeUserId = ctx.User.Id
 		request.EventName = apistructs.GitCreateMREvent
@@ -134,7 +131,6 @@ func CreateMergeRequest(ctx *webcontext.Context) {
 			ctx.Service.TriggerEvent(ctx.Repository, apistructs.CheckRunEvent, request)
 		}
 	}()
-
 	ctx.Success(request)
 }
 
@@ -230,12 +226,7 @@ func UpdateMergeRequest(ctx *webcontext.Context) {
 		repo := ctx.Repository
 		org, err := ctx.Bundle.GetOrg(repo.OrgId)
 		if err == nil {
-			result.Link = "http://" + org.Domain + template.Render(conf.MergePathTemplate(), map[string]string{
-				"projectId": strconv.FormatInt(repo.ProjectId, 10),
-				"appId":     strconv.FormatInt(repo.ApplicationId, 10),
-				"orgId":     strconv.FormatInt(repo.OrgId, 10),
-				"mrId":      strconv.FormatInt(int64(result.RepoMergeId), 10),
-			})
+			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(result.RepoMergeId))
 		}
 		// check-run
 		result.MergeUserId = ctx.User.Id
@@ -303,12 +294,7 @@ func Merge(ctx *webcontext.Context) {
 		repo := ctx.Repository
 		org, err := ctx.Bundle.GetOrg(repo.OrgId)
 		if err == nil {
-			request.Link = "http://" + org.Domain + template.Render(conf.MergePathTemplate(), map[string]string{
-				"projectId": strconv.FormatInt(repo.ProjectId, 10),
-				"appId":     strconv.FormatInt(repo.ApplicationId, 10),
-				"orgId":     strconv.FormatInt(repo.OrgId, 10),
-				"mrId":      strconv.FormatInt(int64(request.RepoMergeId), 10),
-			})
+			request.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(request.RepoMergeId))
 		}
 		request.MergeUserId = ctx.User.Id
 		request.EventName = apistructs.GitMergeMREvent
@@ -338,12 +324,7 @@ func CloseMR(ctx *webcontext.Context) {
 		repo := ctx.Repository
 		org, err := ctx.Bundle.GetOrg(repo.OrgId)
 		if err == nil {
-			result.Link = "http://" + org.Domain + template.Render(conf.MergePathTemplate(), map[string]string{
-				"projectId": strconv.FormatInt(repo.ProjectId, 10),
-				"appId":     strconv.FormatInt(repo.ApplicationId, 10),
-				"orgId":     strconv.FormatInt(repo.OrgId, 10),
-				"mrId":      strconv.FormatInt(int64(result.RepoMergeId), 10),
-			})
+			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(result.RepoMergeId))
 		}
 		result.AuthorUser.NickName = ctx.User.NickName
 		result.MergeUserId = ctx.User.Id
@@ -464,12 +445,7 @@ func CreateNotes(ctx *webcontext.Context) {
 		repo := ctx.Repository
 		org, err := ctx.Bundle.GetOrg(repo.OrgId)
 		if err == nil {
-			result.Link = "http://" + org.Domain + template.Render(conf.MergePathTemplate(), map[string]string{
-				"projectId": strconv.FormatInt(repo.ProjectId, 10),
-				"appId":     strconv.FormatInt(repo.ApplicationId, 10),
-				"orgId":     strconv.FormatInt(repo.OrgId, 10),
-				"mrId":      strconv.FormatInt(int64(id), 10),
-			})
+			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(id))
 		}
 		result.Description = noteRequest.Note
 		result.AuthorUser.NickName = ctx.User.NickName
@@ -478,4 +454,20 @@ func CreateNotes(ctx *webcontext.Context) {
 		ctx.Service.TriggerEvent(ctx.Repository, apistructs.GitCommentMREvent, result)
 	}()
 	ctx.Success(result)
+}
+
+// getLink get the link of ding push
+func getLink(domain, orgName string, projectId, appId, orgId, mrId int64) string {
+	protocols := strutil.Split(os.Getenv(string(apistructs.DICE_PROTOCOL)), ",", true)
+	protocol := "https"
+	if len(protocols) > 0 {
+		protocol = protocols[0]
+	}
+	return strutil.Concat(protocol, "://", domain, "/", orgName,
+		template.Render(conf.MergePathTemplate(), map[string]string{
+			"projectId": strconv.FormatInt(projectId, 10),
+			"appId":     strconv.FormatInt(appId, 10),
+			"orgId":     strconv.FormatInt(orgId, 10),
+			"mrId":      strconv.FormatInt(mrId, 10),
+		}))
 }
