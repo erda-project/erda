@@ -33,7 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"

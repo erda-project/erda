@@ -46,7 +46,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )

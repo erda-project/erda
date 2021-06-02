@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func CheckAuth(c *gin.Context, projectIDStr string) (bool, error) {
