@@ -23,7 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -137,7 +137,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	log.Infof("load notify files: %v", p.C.Files)
 	p.N = db.New(ctx.Service("mysql").(mysql.Interface).DB())
-	p.N.DB.LogMode(true)
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("notify")
 	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
 	p.initBundle()

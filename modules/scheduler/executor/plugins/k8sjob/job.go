@@ -130,6 +130,22 @@ func (k *k8sJob) Name() executortypes.Name {
 	return k.name
 }
 
+// IPToHostname change ip to hostname
+func (k *k8sJob) IPToHostname(ip string) string {
+	nodeList, err := k.client.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return ""
+	}
+	for _, node := range nodeList.Items {
+		for _, addr := range node.Status.Addresses {
+			if addr.Type == corev1.NodeInternalIP && addr.Address == ip {
+				return node.Name
+			}
+		}
+	}
+	return ""
+}
+
 // Create create k8s job
 func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, error) {
 	job := specObj.(apistructs.Job)
@@ -174,10 +190,8 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 	}
 
 	_, err = k.client.BatchV1().Jobs(namespace).Create(ctx, kubeJob, metav1.CreateOptions{})
-
-	name := kubeJob.Name
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to create k8s job, name: %s", name)
+		errMsg := fmt.Sprintf("failed to create k8s job, name: %s, err: %v", kubeJob.Name, err)
 		logrus.Errorf(errMsg)
 		return nil, errors.Errorf(errMsg)
 	}
@@ -461,7 +475,7 @@ func (k *k8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 				Spec: corev1.PodSpec{
 					Tolerations:      toleration.GenTolerations(),
 					ImagePullSecrets: []corev1.LocalObjectReference{{Name: k8s.AliyunRegistry}},
-					Affinity:         &constraintbuilders.K8S(&job.ScheduleInfo2, nil, nil, nil).Affinity,
+					Affinity:         &constraintbuilders.K8S(&job.ScheduleInfo2, nil, nil, k).Affinity,
 					Containers: []corev1.Container{
 						{
 							Name:  job.Name,

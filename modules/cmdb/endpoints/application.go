@@ -31,9 +31,10 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/types"
 	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/filehelper"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -883,7 +884,7 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 		Name:           application.Name,
 		DisplayName:    application.DisplayName,
 		Desc:           application.Desc,
-		Logo:           application.Logo,
+		Logo:           filehelper.APIFileUrlRetriever(application.Logo),
 		Config:         config,
 		UnBlockStart:   map[bool]*time.Time{true: unblockStart, false: nil}[isOrgBlocked],
 		UnBlockEnd:     map[bool]*time.Time{true: unblockEnd, false: nil}[isOrgBlocked],

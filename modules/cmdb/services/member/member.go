@@ -29,10 +29,10 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/types"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 // Member 成员操作封装
@@ -728,9 +728,10 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Warnf("CAUTION: user(%s) current no admin, will become soon", userID)
+		logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
 		// TODO: some risk
-		if m.noOneAdmin() && len(userID) > 11 {
+		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
+		if len(userID) > 11 && m.noOneAdminForKratos() { // len > 11 imply that is kratos user
 			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
 			if err := m.firstUserBecomeAdmin(userID); err != nil {
 				return false
@@ -742,9 +743,13 @@ func (m *Member) IsAdmin(userID string) bool {
 	return true
 }
 
-func (m *Member) noOneAdmin() bool {
+func (m *Member) noOneAdminForKratos() bool {
 	cnt := 1
-	if err := m.db.Model(&model.Member{}).Where("scope_type = ?", apistructs.SysScope).Count(&cnt).Error; err != nil {
+	if err := m.db.Model(&model.Member{}).
+		// only kratos user_id length greater than 11, add this check to prevent init sql's data: user_id=1 admin
+		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
+		Where("scope_type = ? AND length(user_id) > 11", apistructs.SysScope).
+		Count(&cnt).Error; err != nil {
 		return false
 	}
 	logrus.Warnf("CAUTION: there are %d admins", cnt)

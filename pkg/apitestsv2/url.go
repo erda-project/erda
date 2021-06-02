@@ -18,7 +18,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 )
 
 // domain: schema://${prefix} + u

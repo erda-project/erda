@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type define struct{}

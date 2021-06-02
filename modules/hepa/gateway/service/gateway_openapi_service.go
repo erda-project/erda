@@ -45,8 +45,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 type GatewayOpenapiServiceImpl struct {
@@ -803,6 +803,7 @@ func (impl GatewayOpenapiServiceImpl) TryClearRuntimePackage(runtimeService *orm
 	if pack != nil {
 		apis, err := packApiSession.SelectByAny(&orm.GatewayPackageApi{
 			PackageId: pack.Id,
+			Origin:    string(gw.FROM_CUSTOM),
 		})
 		if err != nil {
 			return err

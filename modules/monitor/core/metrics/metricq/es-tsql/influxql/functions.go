@@ -42,6 +42,7 @@ type Context struct {
 	aggregations     elastic.Aggregations
 	row              int64
 	params           map[string]interface{}
+	attributesCache  map[string]interface{}
 }
 
 type scopeField struct {
@@ -98,6 +99,14 @@ func (c *Context) GetFuncID(call *influxql.Call, deftyp influxql.DataType) strin
 // RowNum .
 func (c *Context) RowNum() int64 {
 	return c.row
+}
+
+// AttributeCache .
+func (c *Context) AttributesCache() map[string]interface{} {
+	if c.attributesCache == nil {
+		c.attributesCache = make(map[string]interface{})
+	}
+	return c.attributesCache
 }
 
 func getCallHash(call *influxql.Call, deftyp influxql.DataType) string {
@@ -333,6 +342,72 @@ var AggFunctions = map[string]*AggFuncDefine{
 					return v, true
 				}
 				return nil, true
+			},
+		),
+	},
+	// Diff is the difference value of the countervalue field, that is, the difference between the upper and lower bucket.
+	"diff": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"diff",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewMinAggregation().Script(script), nil
+				}
+				return elastic.NewMinAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				if next, ok := ctx.attributesCache["next"]; ok {
+					min, _ := aggs.Min(id)
+					if min == nil {
+						return nil, false
+					}
+					if min.Value == nil {
+						return 0, true
+					}
+					if next, ok := next.(elastic.Aggregations); ok {
+						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
+							return *next.Value - *min.Value, true
+						}
+					}
+				}
+
+				return 0, true
+			},
+		),
+	},
+	// Diffps is the rate of the countervalue field, that is, the rate of the difference between the upper and lower bucket per second.
+	"diffps": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"diffps",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewMinAggregation().Script(script), nil
+				}
+				return elastic.NewMinAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				if next, ok := ctx.attributesCache["next"]; ok {
+					min, _ := aggs.Min(id)
+					if min == nil {
+						return nil, false
+					}
+					if min.Value == nil {
+						return 0, true
+					}
+					if next, ok := next.(elastic.Aggregations); ok {
+						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
+							if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
+								ctx.targetTimeUnit = tsql.Nanosecond
+							}
+							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
+							return (*next.Value - *min.Value) / seconds, true
+						}
+					}
+				}
+
+				return 0, true
 			},
 		),
 	},

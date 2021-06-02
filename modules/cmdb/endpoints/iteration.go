@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -199,6 +199,11 @@ func (e *Endpoints) GetIteration(ctx context.Context, r *http.Request, vars map[
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrGetIteration.NotLogin().ToResp(), nil
+	}
+
+	// unassigned iterationID is virtual data
+	if vars["id"] == strconv.Itoa(apistructs.UnassignedIterationID) {
+		return httpserver.OkResp(nil)
 	}
 
 	iterationID, err := strconv.ParseUint(vars["id"], 10, 64)

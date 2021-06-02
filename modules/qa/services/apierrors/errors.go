@@ -15,7 +15,7 @@
 package apierrors
 
 import (
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 const (
@@ -136,6 +136,8 @@ var (
 	ErrCopyAutoTestSpace   = err("ErrCopyAutoTestSpace", "复制自动化测试空间失败")
 	ErrGetAutoTestSpace    = err("ErrGetAutoTestSpace", "获取自动化测试空间失败")
 	ErrListAutoTestSpace   = err("ErrListAutoTestSpace", "获取自动化测试空间列表失败")
+	ErrExportAutoTestSpace = err("ErrExportAutoTestSpace", "导出自动化测试空间失败")
+	ErrImportAutoTestSpace = err("ErrImportAutoTestSpace", "导入自动化测试空间失败")
 
 	ErrCreateAutoTestScene      = err("ErrCreateAutoTestScene", "创建自动化测试场景失败")
 	ErrUpdateAutoTestScene      = err("ErrUpdateAutoTestScene", "更新自动化测试场景失败")

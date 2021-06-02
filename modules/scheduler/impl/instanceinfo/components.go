@@ -16,7 +16,7 @@ package instanceinfo
 import (
 	"github.com/erda-project/erda/apistructs"
 	insinfo "github.com/erda-project/erda/modules/scheduler/instanceinfo"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type ComponentInfo interface {

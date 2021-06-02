@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/apierrors"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const gittarPrefixOpenApi = "/wb/"
@@ -518,9 +518,11 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 		request.Branch = branch
 		request.Actions = []apistructs.EditActionItem{}
 		request.Message = "add " + node.Name
+		// set default yml content
 		action := apistructs.EditActionItem{
 			Action:   "add",
 			PathType: gittarEntryBlobType,
+			Content:  "version: \"1.1\"\nstages: []\n",
 		}
 
 		// 假如长度为4，那就是应用的根目录下，就只能创建pipeline.yml文件了

@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/modules/apim/endpoints"
 	"github.com/erda-project/erda/modules/apim/services/apidocsvc"
 	"github.com/erda-project/erda/modules/apim/services/assetsvc"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Initialize 初始化应用启动服务.
