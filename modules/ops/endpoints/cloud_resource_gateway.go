@@ -29,7 +29,7 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	_ "github.com/erda-project/erda/modules/ops/impl/aliyun-resources/cloudapi"
 	resource_factory "github.com/erda-project/erda/modules/ops/impl/resource-factory"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) CreateGatewayVpcGrant(ctx context.Context, r *http.Request, vars map[string]string) (

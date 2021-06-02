@@ -16,8 +16,8 @@ package gittarutil
 import (
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 )
 
 func (r *Repo) FetchFile(ref string, filename string) (b []byte, err error) {
