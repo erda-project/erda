@@ -39,6 +39,7 @@ type Context interface {
 	Aggregations() elastic.Aggregations
 	HandleScopeAgg(scope string, aggs elastic.Aggregations, expr influxql.Expr) (interface{}, error)
 	RowNum() int64
+	AttributesCache() map[string]interface{}
 }
 
 var timeLayouts = []string{
