@@ -25,8 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/sqllint"
-	"github.com/erda-project/erda/pkg/sqllint/configuration"
+	"github.com/erda-project/erda/pkg/database/sqllint"
+	"github.com/erda-project/erda/pkg/database/sqllint/configuration"
 	"github.com/erda-project/erda/tools/cli/command"
 )
 

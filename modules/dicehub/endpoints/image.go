@@ -19,7 +19,7 @@ import (
 	"net/url"
 
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

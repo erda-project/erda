@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/apim/bdl"
 	"github.com/erda-project/erda/modules/apim/dbclient"
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

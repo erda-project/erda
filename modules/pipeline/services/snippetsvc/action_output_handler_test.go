@@ -20,7 +20,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
 func Test_handlerActionOutputsWithJq(t *testing.T) {

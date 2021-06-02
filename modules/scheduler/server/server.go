@@ -42,7 +42,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume/driver"
 	"github.com/erda-project/erda/modules/scheduler/task"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
 )

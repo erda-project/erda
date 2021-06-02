@@ -17,7 +17,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // FilterHeader remove internal header if exist in request

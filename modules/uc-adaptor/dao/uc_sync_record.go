@@ -20,7 +20,7 @@ import (
 
 	gormbulk "github.com/t-tiger/gorm-bulk-insert"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 // UCSyncRecord uc同步历史记录

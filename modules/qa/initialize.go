@@ -39,8 +39,8 @@ import (
 	"github.com/erda-project/erda/modules/qa/services/testplan"
 	"github.com/erda-project/erda/modules/qa/services/testset"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Initialize qa server initialize

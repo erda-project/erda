@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/modules/ops/impl/labels"
 	"github.com/erda-project/erda/modules/ops/impl/mns"
 	"github.com/erda-project/erda/modules/ops/impl/nodes"
+	"github.com/erda-project/erda/pkg/crypto/encrypt"
 	"github.com/erda-project/erda/pkg/dlock"
-	"github.com/erda-project/erda/pkg/encrypt"
 )
 
 const (

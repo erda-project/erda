@@ -28,7 +28,7 @@ import (
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (p *provider) creatOrgReportTask(obj *reportTask) interface{} {

@@ -16,7 +16,7 @@ package nexussvc
 import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/pkg/encryption"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 )
 
 // NexusSvc nexus 操作封装

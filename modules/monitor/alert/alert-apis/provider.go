@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type define struct{}

@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func TestMarathon_SuspendApp(t *testing.T) {

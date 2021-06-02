@@ -25,9 +25,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/eventbox/constant"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 var BadRequestErr = errors.New("bad request input")

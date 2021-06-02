@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
 func TestAdapt_newTicketAlertNotify(t *testing.T) {
@@ -119,10 +119,10 @@ func TestAdapt_compareNotify(t *testing.T) {
 			fields: fields{},
 			args: args{
 				a: &db.AlertNotify{
-					NotifyTarget: utils.JSONMap{},
+					NotifyTarget: jsonmap.JSONMap{},
 				},
 				b: &db.AlertNotify{
-					NotifyTarget: utils.JSONMap{},
+					NotifyTarget: jsonmap.JSONMap{},
 				},
 			},
 			want: false,

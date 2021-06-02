@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/namespace"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

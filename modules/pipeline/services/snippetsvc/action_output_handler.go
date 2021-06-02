@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
 func handlerActionOutputsWithJq(action *apistructs.PipelineYmlAction, jq string) ([]string, error) {

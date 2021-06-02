@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
 type translator struct {
@@ -84,13 +84,13 @@ func TestAlertRule_FromModel(t *testing.T) {
 					AlertScope: "app",
 					AlertType:  "alert",
 					AlertIndex: "dhfidjfkdfjd",
-					Template: utils.JSONMap{
+					Template: jsonmap.JSONMap{
 						"window": 4,
 						"functions": []interface{}{
 							"str",
 						},
 					},
-					Attributes: utils.JSONMap{},
+					Attributes: jsonmap.JSONMap{},
 					Version:    "2",
 					Enable:     false,
 					CreateTime: time.Now(),

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type define struct{}

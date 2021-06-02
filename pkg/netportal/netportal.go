@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/customhttp"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 var bdl *bundle.Bundle

@@ -33,10 +33,10 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/types"
 	"github.com/erda-project/erda/pkg/cron"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 // Project 资源对象操作封装

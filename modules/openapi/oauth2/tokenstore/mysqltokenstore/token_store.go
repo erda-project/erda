@@ -24,7 +24,7 @@ import (
 	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/models"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type TokenStore struct {

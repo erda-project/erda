@@ -20,7 +20,7 @@ import (
 
 	"github.com/gorilla/schema"
 
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 
 	"github.com/erda-project/erda/modules/apim/services/apidocsvc"
 	"github.com/erda-project/erda/modules/apim/services/assetsvc"

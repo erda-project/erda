@@ -16,7 +16,7 @@ package db
 import (
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
 // tables name
@@ -59,15 +59,15 @@ func (AlertRecord) TableName() string { return TableAlertRecord }
 
 // CustomizeAlert .
 type CustomizeAlert struct {
-	ID           uint64        `gorm:"column:id"`
-	Name         string        `gorm:"column:name"`
-	AlertType    string        `gorm:"column:alert_type"`
-	AlertScope   string        `gorm:"column:alert_scope"`
-	AlertScopeID string        `gorm:"column:alert_scope_id"`
-	Attributes   utils.JSONMap `gorm:"column:attributes"`
-	Enable       bool          `gorm:"column:enable"`
-	CreateTime   time.Time     `gorm:"column:create_time"`
-	UpdateTime   time.Time     `gorm:"column:update_time"`
+	ID           uint64          `gorm:"column:id"`
+	Name         string          `gorm:"column:name"`
+	AlertType    string          `gorm:"column:alert_type"`
+	AlertScope   string          `gorm:"column:alert_scope"`
+	AlertScopeID string          `gorm:"column:alert_scope_id"`
+	Attributes   jsonmap.JSONMap `gorm:"column:attributes"`
+	Enable       bool            `gorm:"column:enable"`
+	CreateTime   time.Time       `gorm:"column:create_time"`
+	UpdateTime   time.Time       `gorm:"column:update_time"`
 }
 
 // TableName .
@@ -75,18 +75,18 @@ func (CustomizeAlert) TableName() string { return TableCustomizeAlert }
 
 // CustomizeAlertRule .
 type CustomizeAlertRule struct {
-	ID               uint64        `gorm:"column:id"`
-	Name             string        `gorm:"column:name"`
-	CustomizeAlertID uint64        `gorm:"column:customize_alert_id"`
-	AlertType        string        `gorm:"column:alert_type"`
-	AlertIndex       string        `gorm:"column:alert_index"`
-	AlertScope       string        `gorm:"column:alert_scope"`
-	AlertScopeID     string        `gorm:"column:alert_scope_id"`
-	Template         utils.JSONMap `gorm:"column:template"`
-	Attributes       utils.JSONMap `gorm:"column:attributes"`
-	Enable           bool          `gorm:"column:enable"`
-	CreateTime       time.Time     `gorm:"column:create_time"`
-	UpdateTime       time.Time     `gorm:"column:update_time"`
+	ID               uint64          `gorm:"column:id"`
+	Name             string          `gorm:"column:name"`
+	CustomizeAlertID uint64          `gorm:"column:customize_alert_id"`
+	AlertType        string          `gorm:"column:alert_type"`
+	AlertIndex       string          `gorm:"column:alert_index"`
+	AlertScope       string          `gorm:"column:alert_scope"`
+	AlertScopeID     string          `gorm:"column:alert_scope_id"`
+	Template         jsonmap.JSONMap `gorm:"column:template"`
+	Attributes       jsonmap.JSONMap `gorm:"column:attributes"`
+	Enable           bool            `gorm:"column:enable"`
+	CreateTime       time.Time       `gorm:"column:create_time"`
+	UpdateTime       time.Time       `gorm:"column:update_time"`
 }
 
 // TableName .
@@ -94,20 +94,20 @@ func (CustomizeAlertRule) TableName() string { return TableCustomizeAlertRule }
 
 // CustomizeAlertNotifyTemplate .
 type CustomizeAlertNotifyTemplate struct {
-	ID               uint64        `gorm:"column:id"`
-	Name             string        `gorm:"column:name"`
-	CustomizeAlertID uint64        `gorm:"column:customize_alert_id"`
-	AlertType        string        `gorm:"column:alert_type"`
-	AlertIndex       string        `gorm:"column:alert_index"`
-	Target           string        `gorm:"column:target"`
-	Trigger          string        `gorm:"column:trigger"`
-	Title            string        `gorm:"column:title"`
-	Template         string        `gorm:"column:template"`
-	Formats          utils.JSONMap `gorm:"column:formats"`
-	Version          string        `gorm:"column:version"`
-	Enable           bool          `gorm:"column:Enable"`
-	CreateTime       time.Time     `gorm:"column:create_time"`
-	UpdateTime       time.Time     `gorm:"column:update_time"`
+	ID               uint64          `gorm:"column:id"`
+	Name             string          `gorm:"column:name"`
+	CustomizeAlertID uint64          `gorm:"column:customize_alert_id"`
+	AlertType        string          `gorm:"column:alert_type"`
+	AlertIndex       string          `gorm:"column:alert_index"`
+	Target           string          `gorm:"column:target"`
+	Trigger          string          `gorm:"column:trigger"`
+	Title            string          `gorm:"column:title"`
+	Template         string          `gorm:"column:template"`
+	Formats          jsonmap.JSONMap `gorm:"column:formats"`
+	Version          string          `gorm:"column:version"`
+	Enable           bool            `gorm:"column:Enable"`
+	CreateTime       time.Time       `gorm:"column:create_time"`
+	UpdateTime       time.Time       `gorm:"column:update_time"`
 }
 
 // TableName .
@@ -115,17 +115,17 @@ func (CustomizeAlertNotifyTemplate) TableName() string { return TableCustomizeAl
 
 // AlertRule .
 type AlertRule struct {
-	ID         uint64        `gorm:"column:id"`
-	Name       string        `gorm:"column:name"`
-	AlertScope string        `gorm:"column:alert_scope"`
-	AlertType  string        `gorm:"column:alert_type"`
-	AlertIndex string        `gorm:"column:alert_index"`
-	Template   utils.JSONMap `gorm:"column:template"`
-	Attributes utils.JSONMap `gorm:"column:attributes"`
-	Version    string        `gorm:"column:version"`
-	Enable     bool          `gorm:"column:enable"`
-	CreateTime time.Time     `gorm:"column:create_time"`
-	UpdateTime time.Time     `gorm:"column:update_time"`
+	ID         uint64          `gorm:"column:id"`
+	Name       string          `gorm:"column:name"`
+	AlertScope string          `gorm:"column:alert_scope"`
+	AlertType  string          `gorm:"column:alert_type"`
+	AlertIndex string          `gorm:"column:alert_index"`
+	Template   jsonmap.JSONMap `gorm:"column:template"`
+	Attributes jsonmap.JSONMap `gorm:"column:attributes"`
+	Version    string          `gorm:"column:version"`
+	Enable     bool            `gorm:"column:enable"`
+	CreateTime time.Time       `gorm:"column:create_time"`
+	UpdateTime time.Time       `gorm:"column:update_time"`
 }
 
 // TableName .
@@ -133,16 +133,16 @@ func (AlertRule) TableName() string { return TableAlertRules }
 
 // AlertNotify .
 type AlertNotify struct {
-	ID             uint64        `gorm:"column:id"`
-	AlertID        uint64        `gorm:"column:alert_id"`
-	NotifyKey      string        `gorm:"column:notify_key"`
-	NotifyTarget   utils.JSONMap `gorm:"column:notify_target"`
-	NotifyTargetID string        `gorm:"column:notify_target_id"`
-	Silence        int64         `gorm:"column:silence"`
-	SilencePolicy  string        `gorm:"column:silence_policy"`
-	Enable         bool          `gorm:"column:enable"`
-	Created        time.Time     `gorm:"column:created"`
-	Updated        time.Time     `gorm:"column:updated"`
+	ID             uint64          `gorm:"column:id"`
+	AlertID        uint64          `gorm:"column:alert_id"`
+	NotifyKey      string          `gorm:"column:notify_key"`
+	NotifyTarget   jsonmap.JSONMap `gorm:"column:notify_target"`
+	NotifyTargetID string          `gorm:"column:notify_target_id"`
+	Silence        int64           `gorm:"column:silence"`
+	SilencePolicy  string          `gorm:"column:silence_policy"`
+	Enable         bool            `gorm:"column:enable"`
+	Created        time.Time       `gorm:"column:created"`
+	Updated        time.Time       `gorm:"column:updated"`
 }
 
 // TableName .
@@ -150,19 +150,19 @@ func (AlertNotify) TableName() string { return TableAlertNotify }
 
 // AlertNotifyTemplate .
 type AlertNotifyTemplate struct {
-	ID         uint64        `gorm:"column:id"`
-	Name       string        `gorm:"column:name"`
-	AlertType  string        `gorm:"column:alert_type"`
-	AlertIndex string        `gorm:"column:alert_index"`
-	Target     string        `gorm:"column:target"`
-	Trigger    string        `gorm:"column:trigger"`
-	Title      string        `gorm:"column:title"`
-	Template   string        `gorm:"column:template"`
-	Formats    utils.JSONMap `gorm:"column:formats"`
-	Version    string        `gorm:"column:version"`
-	Enable     bool          `gorm:"column:enable"`
-	CreateTime time.Time     `gorm:"column:create_time"`
-	UpdateTime time.Time     `gorm:"column:update_time"`
+	ID         uint64          `gorm:"column:id"`
+	Name       string          `gorm:"column:name"`
+	AlertType  string          `gorm:"column:alert_type"`
+	AlertIndex string          `gorm:"column:alert_index"`
+	Target     string          `gorm:"column:target"`
+	Trigger    string          `gorm:"column:trigger"`
+	Title      string          `gorm:"column:title"`
+	Template   string          `gorm:"column:template"`
+	Formats    jsonmap.JSONMap `gorm:"column:formats"`
+	Version    string          `gorm:"column:version"`
+	Enable     bool            `gorm:"column:enable"`
+	CreateTime time.Time       `gorm:"column:create_time"`
+	UpdateTime time.Time       `gorm:"column:update_time"`
 }
 
 // TableName 。
@@ -170,14 +170,14 @@ func (AlertNotifyTemplate) TableName() string { return TableAlertNotifyTemplate 
 
 // AlertExpression .
 type AlertExpression struct {
-	ID         uint64        `gorm:"column:id"`
-	AlertID    uint64        `gorm:"column:alert_id"`
-	Attributes utils.JSONMap `gorm:"column:attributes"`
-	Expression utils.JSONMap `gorm:"column:expression"`
-	Version    string        `gorm:"column:version"`
-	Enable     bool          `gorm:"column:enable"`
-	Created    time.Time     `gorm:"column:created"`
-	Updated    time.Time     `gorm:"column:updated"`
+	ID         uint64          `gorm:"column:id"`
+	AlertID    uint64          `gorm:"column:alert_id"`
+	Attributes jsonmap.JSONMap `gorm:"column:attributes"`
+	Expression jsonmap.JSONMap `gorm:"column:expression"`
+	Version    string          `gorm:"column:version"`
+	Enable     bool            `gorm:"column:enable"`
+	Created    time.Time       `gorm:"column:created"`
+	Updated    time.Time       `gorm:"column:updated"`
 }
 
 // TableName 。
@@ -185,14 +185,14 @@ func (AlertExpression) TableName() string { return TableAlertExpression }
 
 // Alert .
 type Alert struct {
-	ID           uint64        `gorm:"column:id"`
-	Name         string        `gorm:"column:name"`
-	AlertScope   string        `gorm:"column:alert_scope"`
-	AlertScopeID string        `gorm:"column:alert_scope_id"`
-	Attributes   utils.JSONMap `gorm:"column:attributes"`
-	Enable       bool          `gorm:"column:enable"`
-	Created      time.Time     `gorm:"column:created"`
-	Updated      time.Time     `gorm:"column:updated"`
+	ID           uint64          `gorm:"column:id"`
+	Name         string          `gorm:"column:name"`
+	AlertScope   string          `gorm:"column:alert_scope"`
+	AlertScopeID string          `gorm:"column:alert_scope_id"`
+	Attributes   jsonmap.JSONMap `gorm:"column:attributes"`
+	Enable       bool            `gorm:"column:enable"`
+	Created      time.Time       `gorm:"column:created"`
+	Updated      time.Time       `gorm:"column:updated"`
 }
 
 // TableName 。

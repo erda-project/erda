@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/uc-adaptor/endpoints"
 	"github.com/erda-project/erda/modules/uc-adaptor/service/adaptor"
 	"github.com/erda-project/erda/modules/uc-adaptor/ucclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	// "terminus.io/dice/telemetry/promxp"
 )
 

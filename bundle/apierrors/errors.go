@@ -13,7 +13,7 @@
 
 package apierrors
 
-import "github.com/erda-project/erda/pkg/httpserver/errorresp"
+import "github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 
 var (
 	ErrInvoke            = err("ErrInvoke", "调用失败")

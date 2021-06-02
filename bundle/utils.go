@@ -15,7 +15,7 @@ package bundle
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func toAPIError(statusCode int, err apistructs.ErrorResponse) *errorresp.APIError {

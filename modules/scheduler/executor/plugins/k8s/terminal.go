@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/pkg/customhttp"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 const (

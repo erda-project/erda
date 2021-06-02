@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/apim/dbclient"
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func (svc *Service) SearchOperations(req *apistructs.SearchOperationsReq) (results []*apistructs.APIOAS3IndexModel, apiError *errorresp.APIError) {

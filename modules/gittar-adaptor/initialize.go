@@ -28,8 +28,8 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/filetree"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/permission"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	//"terminus.io/dice/telemetry/promxp"
 )
 

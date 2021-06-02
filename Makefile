@@ -137,6 +137,10 @@ normalize:
 	  	golint -set_exit_status=1 $${path}; \
 	done;
 
+# check copyright header
+copyright:
+	go run tools/gotools/copyright/main.go
+
 # docker image
 build-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} build

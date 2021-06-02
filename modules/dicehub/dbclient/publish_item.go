@@ -20,7 +20,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

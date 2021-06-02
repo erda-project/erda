@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 var Bundle *bundle.Bundle

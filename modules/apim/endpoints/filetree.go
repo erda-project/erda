@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/apim/services/apidocsvc"
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) CreateNode(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

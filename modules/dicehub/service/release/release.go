@@ -28,10 +28,10 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/event"
 	"github.com/erda-project/erda/modules/dicehub/registry"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/template"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const (

@@ -24,7 +24,7 @@ package cms_test
 //	"github.com/erda-project/erda/apistructs"
 //	"github.com/erda-project/erda/modules/pipeline/cms"
 //	"github.com/erda-project/erda/modules/pipeline/dbclient"
-//	"github.com/erda-project/erda/pkg/encryption"
+//	"github.com/erda-project/erda/pkg/crypto/encryption"
 //	"github.com/erda-project/erda/pkg/strutil"
 //)
 //

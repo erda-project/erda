@@ -15,7 +15,7 @@ package dbclient
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 // PublishItemH5Targets H5的目标版本记录表

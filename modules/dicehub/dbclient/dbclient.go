@@ -17,7 +17,7 @@ package dbclient
 import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type DBClient struct {

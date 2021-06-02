@@ -25,8 +25,8 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/nat"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vpc"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func (e *Endpoints) AddCloudClusters(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {

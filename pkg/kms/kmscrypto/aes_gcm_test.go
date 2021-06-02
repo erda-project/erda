@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 
 	"github.com/stretchr/testify/assert"
 )

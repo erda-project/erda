@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/ops/dbclient"
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	resource_factory "github.com/erda-project/erda/modules/ops/impl/resource-factory"
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 type RdsFactory struct {

@@ -20,7 +20,7 @@ package bundle
 //	"github.com/stretchr/testify/assert"
 //
 //	"github.com/erda-project/erda/apistructs"
-//	"github.com/erda-project/erda/pkg/uuid"
+//	"github.com/erda-project/erda/pkg/crypto/uuid"
 //)
 //
 //var (

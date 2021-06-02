@@ -35,9 +35,9 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/services/namespace"
 	"github.com/erda-project/erda/modules/cmdb/types"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 // Application 应用操作封装

@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type define struct{}

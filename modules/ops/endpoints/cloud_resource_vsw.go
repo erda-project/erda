@@ -28,7 +28,7 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vswitch"
 	libzone "github.com/erda-project/erda/modules/ops/impl/aliyun-resources/zone"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

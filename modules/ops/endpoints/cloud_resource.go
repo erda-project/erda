@@ -36,7 +36,7 @@ import (
 	libregion "github.com/erda-project/erda/modules/ops/impl/aliyun-resources/region"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vpc"
 	libzone "github.com/erda-project/erda/modules/ops/impl/aliyun-resources/zone"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )

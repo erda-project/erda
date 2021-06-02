@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/customhttp"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 func Test_getK8sNamespace(t *testing.T) {

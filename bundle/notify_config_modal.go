@@ -18,8 +18,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (b *Bundle) CreateOrEditNotify(submitData *apistructs.EditOrCreateModalData, inParams *apistructs.InParams, userId string) error {

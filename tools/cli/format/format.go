@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/pkg/readable_time"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/time/readable_time"
 )
 
 // shortID for containerID

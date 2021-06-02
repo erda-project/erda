@@ -26,7 +26,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

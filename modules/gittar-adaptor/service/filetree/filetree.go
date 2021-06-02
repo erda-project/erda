@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/apierrors"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const gittarPrefixOpenApi = "/wb/"

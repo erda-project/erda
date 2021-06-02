@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	clientset "github.com/erda-project/erda/pkg/clientgo/kubernetes"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 const (

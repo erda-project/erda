@@ -17,7 +17,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -38,9 +38,9 @@ import (
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/slb"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vpc"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/encrypt"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/crypto/encrypt"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

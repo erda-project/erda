@@ -23,9 +23,9 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/scheduler/task"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const (

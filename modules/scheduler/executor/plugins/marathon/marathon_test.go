@@ -26,7 +26,7 @@ package marathon
 //	"github.com/erda-project/erda/apistructs"
 //	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 //	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/cpupolicy"
-//	"github.com/erda-project/erda/pkg/httpclient"
+//	"github.com/erda-project/erda/pkg/http/httpclient"
 //
 //	"github.com/stretchr/testify/assert"
 //)

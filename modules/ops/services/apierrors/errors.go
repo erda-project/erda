@@ -14,7 +14,7 @@
 package apierrors
 
 import (
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 var (

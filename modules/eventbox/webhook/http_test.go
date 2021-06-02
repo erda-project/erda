@@ -23,7 +23,7 @@ package webhook
 
 // 	"github.com/erda-project/erda/apistructs"
 // 	"github.com/erda-project/erda/modules/eventbox/server"
-// 	"github.com/erda-project/erda/pkg/httpclient"
+// 	"github.com/erda-project/erda/pkg/http/httpclient"
 
 // 	"github.com/stretchr/testify/assert"
 // )

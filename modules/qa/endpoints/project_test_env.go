@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dbclient"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 const APITestEnv = "API_TEST_ENV"

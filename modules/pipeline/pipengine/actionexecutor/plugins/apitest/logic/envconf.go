@@ -15,7 +15,7 @@ package logic
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/jsonparse"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 type EnvConfig struct {

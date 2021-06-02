@@ -18,7 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/cimysql"
+	"github.com/erda-project/erda/pkg/database/cimysql"
 )
 
 // APITestEnv maintains envs about API
