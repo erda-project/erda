@@ -278,7 +278,7 @@ services:
     platform: linux/amd64
 
   openapi:
-    image: erdaproject/openapi:1.1-20210526-440a412
+    image: erdaproject/openapi:1.1-20210602-d2be13e
     command: /app/openapi
     container_name: erda-openapi
     depends_on:
