@@ -398,7 +398,7 @@ var AggFunctions = map[string]*AggFuncDefine{
 					}
 					if next, ok := next.(elastic.Aggregations); ok {
 						if next, ok := next.Min(id); ok && next != nil && next.Value != nil {
-							if ctx.targetTimeUnit == tsql.Nanosecond {
+							if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
 								ctx.targetTimeUnit = tsql.Nanosecond
 							}
 							seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
