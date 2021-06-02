@@ -87,6 +87,10 @@ type Conf struct {
 
 	// API-Test
 	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
+
+	// initialize send running pipeline interval
+	InitializeSendIntervalTime uint64 `env:"INITIALIZE_SEND_INTERVAL_TIME" default:"10"`
+	InitializeSendIntervalNum  uint64 `env:"INITIALIZE_SEND_INTERVAL_NUM" default:"20"`
 }
 
 var cfg Conf
@@ -275,4 +279,14 @@ func QueueLoopHandleIntervalSec() uint64 {
 // APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
 func APITestNetportalAccessK8sNamespaceBlacklist() []string {
 	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
+}
+
+// InitializeSendIntervalTime return initialize send running pipeline id interval time
+func InitializeSendIntervalTime() uint64 {
+	return cfg.InitializeSendIntervalTime
+}
+
+// InitializeSendIntervalNum return initialize send running pipeline id interval num
+func InitializeSendIntervalNum() uint64 {
+	return cfg.InitializeSendIntervalNum
 }
