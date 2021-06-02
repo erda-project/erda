@@ -14,7 +14,7 @@
 package sonar_metric_rule
 
 import (
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (svc *Service) Get(ID int64) (httpserver.Responser, error) {

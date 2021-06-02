@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) GittarWebHookCallback(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

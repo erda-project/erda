@@ -16,7 +16,7 @@ package apistructs
 import (
 	"sort"
 
-	"github.com/erda-project/erda/pkg/jsonparse"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 const (

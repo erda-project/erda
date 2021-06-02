@@ -19,7 +19,7 @@ import (
 	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/cimysql"
+	"github.com/erda-project/erda/pkg/database/cimysql"
 )
 
 func FindTPRecord(tp *TPRecordDO) (*TPRecordDO, error) {

@@ -59,7 +59,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/project"
 	"github.com/erda-project/erda/modules/cmdb/services/publisher"
 	"github.com/erda-project/erda/modules/cmdb/services/ticket"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"

@@ -26,7 +26,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/modules/openapi/i18n"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentProtocolRequest, err error) {

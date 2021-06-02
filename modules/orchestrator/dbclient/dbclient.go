@@ -15,7 +15,7 @@
 package dbclient
 
 import (
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 type DBClient struct {

@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/format"
 )

@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func DeleteManifests(clusterName string, images []string) error {

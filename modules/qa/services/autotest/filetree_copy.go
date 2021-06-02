@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (svc *Service) CopyFileTreeNode(req apistructs.UnifiedFileTreeNodeCopyRequest) (*apistructs.UnifiedFileTreeNode, error) {

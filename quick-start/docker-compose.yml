@@ -1,8 +1,10 @@
 version: "3"
 services:
   ui:
-    image: registry.cn-hangzhou.aliyuncs.com/terminus/erda-ui:1.0-20210528-80e985b
+    image: erdaproject/erda-ui:1.0-20210601-0d38983
     container_name: erda-ui
+    depends_on:
+      - openapi
     env_file:
       - ./env
     environment:
@@ -47,8 +49,8 @@ services:
       - KRATOS_ADMIN_URL=http://kratos:4434/
       - PORT=4455
       - SECURITY_MODE=
-      - BASE_URL=http://one.dice.local/uc/
-      - KRATOS_BROWSER_URL=http://one.dice.local/.ory/kratos/public/
+      - BASE_URL=http://one.erda.local/uc/
+      - KRATOS_BROWSER_URL=http://one.erda.local/.ory/kratos/public/
 
     networks:
       - default
@@ -89,8 +91,10 @@ services:
       - default
 
   kms:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/kms:20200608-f11445f776ba50e1f947096f57956a3f0333ab11
+    image: erdaproject/kms:20200608-f11445f776ba50e1f947096f57956a3f0333ab11
     container_name: erda-kms
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     ports:
@@ -99,9 +103,11 @@ services:
     platform: linux/amd64
 
   eventbox:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/eventbox
     container_name: erda-eventbox
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     ports:
@@ -110,9 +116,12 @@ services:
     platform: linux/amd64
 
   pipeline:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/pipeline:4.0-20210524-b614087
+    image: erdaproject/pipeline:1.0-20210524-b614087
     command: /app/pipeline
     container_name: erda-pipeline
+    depends_on:
+      - dbmigration-4
+      - scheduler
     env_file:
       - ./env
     environment:
@@ -124,16 +133,18 @@ services:
     platform: linux/amd64
 
   ops:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/ops
     container_name: erda-ops
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     restart: always
     platform: linux/amd64
 
   qa:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/qa
     container_name: erda-qa
     env_file:
@@ -143,14 +154,18 @@ services:
     ports:
       - "3033:3033"
     depends_on:
+      - dbmigration-4
       - cmdb
     restart: always
     platform: linux/amd64
 
   scheduler:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/scheduler
     container_name: erda-scheduler
+    depends_on:
+      - dbmigration-4
+      - etcd
     env_file:
       - ./env
     environment:
@@ -163,9 +178,11 @@ services:
     platform: linux/amd64
 
   apim:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/apim
     container_name: erda-apim
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     ports:
@@ -174,7 +191,7 @@ services:
     platform: linux/amd64
 
   cmdb:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/cmdb:4.0-20210526-0a850d9
+    image: erdaproject/cmdb:1.1-20210601-6d787e3
     command: /app/cmdb
     container_name: erda-cmdb
     env_file:
@@ -184,7 +201,6 @@ services:
         source: erda-files
         target: /files
         read_only: false
-    volumes:
       - type: volume
         source: erda-avatars
         target: /avatars
@@ -199,14 +215,17 @@ services:
     ports:
        - "9093:9093"
     depends_on:
+      - dbmigration-4
       - eventbox
     restart: always
     platform: linux/amd64
 
   gittar:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/gittar
     container_name: erda-gittar
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     volumes:
@@ -227,9 +246,13 @@ services:
     platform: linux/amd64
 
   gittar-adaptor:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/gittar-adaptor
     container_name: erda-gittar-adaptor
+    depends_on:
+      - dbmigration-4
+      - gittar
+      - pipeline
     env_file:
       - ./env
     ports:
@@ -238,9 +261,11 @@ services:
     platform: linux/amd64
 
   dicehub:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/dicehub
     container_name: erda-dicehub
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     ports:
@@ -253,13 +278,30 @@ services:
     platform: linux/amd64
 
   openapi:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/openapi:1.1-20210526-440a412
+    image: erdaproject/openapi:1.1-20210602-d2be13e
     command: /app/openapi
     container_name: erda-openapi
+    depends_on:
+      - redis-sentinel
+      - redis
+      - dbmigration-4
+      - scheduler
+      - pipeline
+      - gittar
+      - apim
+      - cmdb
+      - dicehub
+      - eventbox
+      - gittar-adaptor
+      - kms
+      - hepa
+      - ops
+      - orchestrator
+      - qa
     env_file:
       - ./env
     environment:
-      SELF_PUBLIC_ADDR: "one.dice.local:9529"
+      SELF_PUBLIC_ADDR: "one.erda.local:9529"
       CUSTOM_NAMESPACE: "local"
       ORY_ENABLED: "true"
       KRATOS_ADDR: "kratos:4433"
@@ -273,18 +315,23 @@ services:
     platform: linux/amd64
 
   hepa:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/hepa
     container_name: erda-hepa
+    depends_on:
+      - dbmigration-4
     env_file:
       - ./env
     restart: always
     platform: linux/amd64
 
   orchestrator:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/erda:4.0-20210521-3a995ee
+    image: erdaproject/erda:1.0-20210521-3a995ee
     command: /app/orchestrator
     container_name: erda-orchestrator
+    depends_on:
+      - dbmigration-4
+      - scheduler
     env_file:
       - ./env
     environment:
@@ -294,19 +341,6 @@ services:
       - "8081:8081"
     restart: always
     platform: linux/amd64
-
-  # monitor:
-  #   image: registry.cn-hangzhou.aliyuncs.com/dice/monitor:4.0-20210525-f916c43
-  #   command: /app/monitor
-  #   container_name: erda-monitor
-  #   env_file:
-  #     - ./env
-  #   environment:
-  #     DEBUG: "false"
-  #   ports:
-  #     - "7096:7096"
-  #     - "7098:7098"
-  #   platform: linux/amd64
 
   etcd:
     image: bitnami/etcd:3
@@ -321,33 +355,8 @@ services:
     restart: always
     platform: linux/amd64
 
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-  #   container_name: erda-elasticsearch
-  #   environment:
-  #     - xpack.security.enabled=false
-  #     - discovery.type=single-node
-  #   ulimits:
-  #     memlock:
-  #       soft: -1
-  #       hard: -1
-  #     nofile:
-  #       soft: 65536
-  #       hard: 65536
-  #   cap_add:
-  #     - IPC_LOCK
-  #   volumes:
-  #     - type: volume
-  #       source: erda-elasticsearch
-  #       target: /usr/share/elasticsearch/data
-  #       read_only: false
-  #   ports:
-  #       - "9200:9200"
-  #       - "9300:9300"
-  #   platform: linux/amd64
-
   mysql:
-    image: registry.cn-hangzhou.aliyuncs.com/dice-third-party/mysql:5.7-quickstart
+    image: erdaproject/mysql:5.7-quickstart
     container_name: erda-mysql
     ports:
       - "3306:3306"
@@ -363,15 +372,17 @@ services:
     platform: linux/amd64
 
   dbmigration-4:
-    image: registry.cn-hangzhou.aliyuncs.com/dice/migrator-tool:20210423-110000
+    image: erdaproject/migrator-tool:20210423-110000
     container_name: erda-db-migration
+    depends_on:
+      - mysql
     environment:
       - TZ=Asia/Shanghai
       - MIGRATION_MYSQL_HOST=mysql
       - MIGRATION_MYSQL_PORT=3306
       - MIGRATION_MYSQL_USERNAME=root
       - MIGRATION_MYSQL_PASSWORD=123456
-      - MIGRATION_MYSQL_DBNAME=dice
+      - MIGRATION_MYSQL_DBNAME=erda
       - MIGRATION_DEBUGSQL=false
       - MIGRATION_ERDA_LINT=true
       - MIGRATION_DIR=/opt/action/migrations
@@ -397,11 +408,8 @@ services:
       - "16379:6379"
     restart: always
     platform: linux/amd64
-  # zookeeper:
-  #   image: zookeeper:3.4
 volumes:
   erda-mysql: {}
-  # erda-elasticsearch: {}
   erda-etcd: {}
   erda-gittar: {}
   erda-avatars: {}
