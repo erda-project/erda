@@ -24,7 +24,6 @@ import (
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
-	p.mysql.LogMode(true)
 	alertRecord := &adapt.AlertRecord{}
 	if err := json.Unmarshal(value, alertRecord); err != nil {
 		return err

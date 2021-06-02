@@ -55,8 +55,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	createReq.UserID = identityInfo.UserID
 
 	if !identityInfo.IsInternalClient() {
-		if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(createReq.AppID, 10),
-			createReq.Branch, apistructs.OperateAction); err != nil {
+		if err := e.permission.CheckRuntimeBranch(identityInfo, createReq.AppID, createReq.Branch, apistructs.OperateAction); err != nil {
 			return errorresp.ErrResp(err)
 		}
 	}
@@ -310,8 +309,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		logrus.Errorf("error to decode runRequest")
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(p.ApplicationID, 10),
-		p.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -347,7 +345,7 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckAppAction(identityInfo, p.ApplicationID, apistructs.GetAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -396,8 +394,7 @@ func (e *Endpoints) pipelineRerun(ctx context.Context, r *http.Request, vars map
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(p.ApplicationID, 10),
-		p.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -447,7 +444,7 @@ func (e *Endpoints) pipelineRerunFailed(ctx context.Context, r *http.Request, va
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckAppAction(identityInfo, p.ApplicationID, apistructs.GetAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -511,8 +508,7 @@ func (e *Endpoints) pipelineOperate(ctx context.Context, r *http.Request, vars m
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.permission.CheckBranchAction(identityInfo, strconv.FormatUint(p.ApplicationID, 10),
-		p.Branch, apistructs.OperateAction); err != nil {
+	if err := e.permission.CheckRuntimeBranch(identityInfo, p.ApplicationID, p.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
