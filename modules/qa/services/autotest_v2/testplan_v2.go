@@ -416,15 +416,10 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		return nil, err
 	}
 
-	resp, err := svc.bdl.GetTestPlanV2(req.TestPlan.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	var spec pipelineyml.Spec
 	spec.Version = "1.1"
 	var stagesValue []*pipelineyml.Stage
-	for _, v := range resp.Data.Steps {
+	for _, v := range testPlan.Steps {
 		if v.SceneSetID <= 0 {
 			continue
 		}
