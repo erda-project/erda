@@ -121,8 +121,8 @@ services:
       COLLECTOR_BROWSER_SAMPLING_RATE: "100"
       COLLECTOR_ENABLE: "true"
     resources:
-      cpu: ${request_cpu:0.3}
-      mem: ${request_mem:64}
+      cpu: ${request_cpu:1}
+      mem: ${request_mem:1024}
       max_cpu: 1
       max_mem: 1024
       network:
@@ -308,8 +308,8 @@ services:
       METRIC_INDEX_TTL: "192h"
       TRACE_TTL: "168h"
     resources:
-      cpu: ${request_cpu:0.3}
-      mem: ${request_mem:64}
+      cpu: ${request_cpu:1}
+      mem: ${request_mem:512}
       max_cpu: 1
       max_mem: 512
       network:
@@ -527,8 +527,8 @@ services:
       TRACE_GROUP_ID: "spot-monitor-trace"
       TRACE_TTL: "168h"
     resources:
-      cpu: ${request_cpu:0.1}
-      mem: ${request_mem:64}
+      cpu: ${request_cpu:1.5}
+      mem: ${request_mem:1024}
       max_cpu: 1.5
       max_mem: 1024
       network:
