@@ -43,6 +43,9 @@ const (
 )
 
 func (q *defaultQueue) RangePendingQueue() {
+	if q.getIsRangingPendingQueue() {
+		return
+	}
 	q.setIsRangingPendingQueueFlag()
 	defer q.unsetIsRangingPendingQueueFlag()
 	usage := q.Usage()
@@ -64,6 +67,9 @@ func (q *defaultQueue) RangePendingQueue() {
 				stopRange = true
 			}
 		}()
+
+		// set current itemKey at ranging
+		q.setCurrentItemKeyAtRanging(item.Key())
 
 		pipelineID := parsePipelineIDFromQueueItem(item)
 		if pipelineID == 0 {
