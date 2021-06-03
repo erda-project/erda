@@ -334,8 +334,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
         expose: true
-    envs:
-      SURVEY_DINGDING: "https://oapi.dingtalk.com/robot/send?access_token=90afaca4c771605f4a67e20931d38e37454073c0ef4159eec07567bf569c442e"
+    envs: {}
     resources:
       cpu: ${request_cpu:0.5}
       max_cpu: 0.5
@@ -420,8 +419,6 @@ services:
         l4_protocol: "TCP"
     envs:
       DEBUG: "false"
-      DINGDING: "https://oapi.dingtalk.com/robot/send?access_token=d9ebfc286e3623e81c39fd909fc58c2e45ccc7405a1c874451dfcd4588ffdec0"
-      DINGDING_pipeline: "https://oapi.dingtalk.com/robot/send?access_token=d9ebfc286e3623e81c39fd909fc58c2e45ccc7405a1c874451dfcd4588ffdec0"
       GIT_INNER_USER_NAME: "18000000000"
       GIT_INNER_USER_PASSWORD: "123456"
       PIPELINE_STORAGE_URL: "file:///devops/storage"
