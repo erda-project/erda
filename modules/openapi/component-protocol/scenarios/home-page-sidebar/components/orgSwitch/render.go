@@ -143,7 +143,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 }
 
 func RenItem(org apistructs.OrgDTO) MenuItem {
-	logo := "http://terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/06/03/9b1a8af7-0111-4c14-9158-9804bb3ebafc.png"
+	logo := "//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/06/03/9b1a8af7-0111-4c14-9158-9804bb3ebafc.png"
 	if org.Logo != "" {
 		logo = org.Logo
 	}

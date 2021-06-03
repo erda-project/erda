@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
-	"github.com/erda-project/erda/pkg/encoding/jsonparse"
+	"github.com/erda-project/erda/pkg/jsonparse"
 )
 
 const (
