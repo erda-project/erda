@@ -14,7 +14,12 @@
 package interceptors
 
 import (
+	"fmt"
 	"net/http"
+	"sort"
+	"strings"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
 // Interceptor .
@@ -40,4 +45,30 @@ func (list Interceptors) Swap(i, j int) {
 // Config .
 type Config struct {
 	Order int `file:"order"`
+}
+
+func GetInterceptorServices(hub *servicehub.Hub) (list []string) {
+	hub.ForeachServices(func(service string) bool {
+		if strings.HasPrefix(service, "openapi-interceptor-") {
+			list = append(list, service)
+		}
+		return true
+	})
+	return list
+}
+
+func GetInterceptors(ctx servicehub.Context) Interceptors {
+	var list Interceptors
+	ctx.Hub().ForeachServices(func(service string) bool {
+		if strings.HasPrefix(service, "openapi-interceptor-") {
+			inter, ok := ctx.Service(service).(Interface)
+			if !ok {
+				panic(fmt.Errorf("service %q is not interceptor", service))
+			}
+			list = append(list, inter.List()...)
+		}
+		return true
+	})
+	sort.Sort(list)
+	return list
 }

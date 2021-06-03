@@ -14,90 +14,68 @@
 package openapi
 
 import (
-	"fmt"
-	"net/http"
+	"context"
 	"reflect"
-	"sort"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/modules/openapi-ng/api"
 	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
+	discover "github.com/erda-project/erda/providers/service-discover"
+	"github.com/recallsong/go-utils/errorx"
 )
 
 // Interface .
 type Interface interface {
 	transhttp.Router
+	AddAPI(spec *api.Spec)
 }
 
-type config struct {
-	// Timeout time.Duration `file:"timeout" default:"2m"` // TODO
-}
+type config struct{}
 
 // +provider
 type provider struct {
 	Cfg          *config
 	Log          logs.Logger
-	HTTP         httpserver.Router `autowired:"http-server"`
+	HTTP         httpserver.Router  `autowired:"http-server"`
+	Discover     discover.Interface `autowired:"discover"`
 	interceptors interceptors.Interceptors
+	errors       []error
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	var inters interceptors.Interceptors
-	ctx.Hub().ForeachServices(func(service string) bool {
-		if strings.HasPrefix(service, "openapi-interceptor-") {
-			inter, ok := ctx.Service(service).(interceptors.Interface)
-			if !ok {
-				panic(fmt.Errorf("service %s is not interceptor", service))
-			}
-			inters = append(inters, inter.List()...)
-		}
-		return true
-	})
-	sort.Sort(inters)
-	p.interceptors = inters
+	p.interceptors = interceptors.GetInterceptors(ctx)
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	if len(p.errors) > 0 {
+		return errorx.Errors(p.errors)
+	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return &service{
-		p:      p,
-		name:   ctx.Caller(),
-		router: p.HTTP,
+	return &router{
+		name:         ctx.Caller(),
+		log:          p.Log,
+		discover:     p.Discover,
+		interceptors: p.interceptors,
+		http:         p.HTTP,
+		addError: func(err error) {
+			p.errors = append(p.errors, err)
+		},
 	}
-}
-
-var _ Interface = (*service)(nil)
-
-type service struct {
-	p      *provider
-	name   string
-	router httpserver.Router
-}
-
-func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
-	for i := len(s.p.interceptors) - 1; i >= 0; i-- {
-		handler = transhttp.HandlerFunc(s.p.interceptors[i].Wrapper(http.HandlerFunc(handler)))
-	}
-	s.router.Add(method, path, handler, httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
 }
 
 func init() {
 	servicehub.Register("openapi-ng", &servicehub.Spec{
-		Services: []string{"openapi-ng"},
-		DependenciesFunc: func(hub *servicehub.Hub) (list []string) {
-			hub.ForeachServices(func(service string) bool {
-				if strings.HasPrefix(service, "openapi-interceptor-") {
-					list = append(list, service)
-				}
-				return true
-			})
-			return list
-		},
-		Types:      []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
-		ConfigFunc: func() interface{} { return &config{} },
+		Services:         []string{"openapi-ng"},
+		DependenciesFunc: interceptors.GetInterceptorServices,
+		Types:            []reflect.Type{reflect.TypeOf((*transhttp.Router)(nil)).Elem()},
+		ConfigFunc:       func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

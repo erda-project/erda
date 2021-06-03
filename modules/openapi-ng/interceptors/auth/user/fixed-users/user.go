@@ -11,29 +11,35 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package services
+package fixedusers
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapi-ng"
+	"net/http"
+	"strconv"
+
+	"github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/user"
 )
 
-// +provider
-type provider struct {
-	Router openapi.Interface `autowired:"openapi-ng"`
+type userInfo struct {
+	id    string
+	orgID uint64
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	RegisterAPIs(p.Router.AddAPI)
-	RegisterOldAPIs(p.Router.AddAPI)
-	return nil
+func (u *userInfo) GetID() string {
+	return u.id
 }
 
-func init() {
-	servicehub.Register("openapi-services", &servicehub.Spec{
-		Services: []string{"openapi-services"},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
-	})
+func (u *userInfo) GetOrg() (uint64, bool) {
+	if u.orgID == 0 {
+		return 0, false
+	}
+	return u.orgID, true
+}
+
+func (u *userInfo) SetAuthInfo(r *http.Request) *http.Request {
+	var orgID string
+	if id, ok := u.GetOrg(); ok {
+		orgID = strconv.FormatUint(id, 10)
+	}
+	return user.SetAuthInfo(u.GetID(), orgID, r)
 }

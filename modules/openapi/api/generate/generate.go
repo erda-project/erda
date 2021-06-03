@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -52,10 +53,10 @@ func main() {
 		}
 
 		SpecTemplate.Execute(&buf, map[string]interface{}{
-			"Path":            quote(api.Path),
-			"BackendPath":     quote(api.BackendPath),
-			"Host":            quote(api.Host),
-			"Method":          quote(strings.ToUpper(api.Method)),
+			"Path":            strconv.Quote(api.Path),
+			"BackendPath":     strconv.Quote(api.BackendPath),
+			"Host":            strconv.Quote(api.Host),
+			"Method":          strconv.Quote(strings.ToUpper(api.Method)),
 			"Scheme":          strings.ToUpper(api.Scheme),
 			"Custom":          APINames[idx] + ".Custom",
 			"CustomResponse":  APINames[idx] + ".CustomResponse",
@@ -66,8 +67,8 @@ func main() {
 			"CheckToken":      api.CheckToken,
 			"ChunkAPI":        api.ChunkAPI,
 			"CheckBasicAuth":  api.CheckBasicAuth,
-			"MarathonHost":    quote(marathon),
-			"K8SHost":         quote(k8s),
+			"MarathonHost":    strconv.Quote(marathon),
+			"K8SHost":         strconv.Quote(k8s),
 			"Port":            port,
 		})
 	}
@@ -145,8 +146,9 @@ func convertHostAux(scheme, host string) (string, string, string, error) {
 	}
 	return marathon, k8s, u.Port(), nil
 }
+
 func trivialBegin(w io.Writer) {
-	io.WriteString(w, "//generated file, DO NOT EDIT\n")
+	io.WriteString(w, "//generated file, DO NOT EDIT.\n")
 	io.WriteString(w, "package api\n")
 	io.WriteString(w, "import (\n")
 
@@ -171,15 +173,4 @@ func trivialBegin(w io.Writer) {
 
 func trivialEnd(w io.Writer) {
 	io.WriteString(w, "}")
-}
-
-func quote(s string) string {
-	return "\"" + s + "\""
-}
-
-func method(m string) string {
-	if m == "" {
-		return "ALL"
-	}
-	return m
 }

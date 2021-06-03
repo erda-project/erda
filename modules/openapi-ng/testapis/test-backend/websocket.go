@@ -11,29 +11,34 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package services
+package testbackend
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapi-ng"
+	"fmt"
+	"net/http"
+
+	"golang.org/x/net/websocket"
 )
 
-// +provider
-type provider struct {
-	Router openapi.Interface `autowired:"openapi-ng"`
-}
+func (p *provider) handleWebSocket(resp http.ResponseWriter, req *http.Request) {
+	websocket.Handler(func(ws *websocket.Conn) {
+		defer ws.Close()
+		for {
+			// Write
+			err := websocket.Message.Send(ws, "Hello, Client!")
+			if err != nil {
+				p.Log.Error(err)
+				break
+			}
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	RegisterAPIs(p.Router.AddAPI)
-	RegisterOldAPIs(p.Router.AddAPI)
-	return nil
-}
-
-func init() {
-	servicehub.Register("openapi-services", &servicehub.Spec{
-		Services: []string{"openapi-services"},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
-	})
+			// Read
+			msg := ""
+			err = websocket.Message.Receive(ws, &msg)
+			if err != nil {
+				p.Log.Error(err)
+				break
+			}
+			fmt.Printf("%s\n", msg)
+		}
+	}).ServeHTTP(resp, req)
 }

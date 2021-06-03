@@ -9,15 +9,74 @@ openapi-interceptor-csrf:
   cookie_name: "OPENAPI-CSRF-TOKEN"
   cookie_max_age: "12h"
   token_lookup: "header:OPENAPI-CSRF-TOKEN"
+  cookie_domain: "${CSRF_COOKIE_DOMAIN}"
+  
 openapi-interceptor-filter-client-header:
   order: 1
+
+# auth
 openapi-interceptor-auth:
   order: 500
-openapi-interceptor-audit:
-  order: 1000
-openapi-services:
+openapi-auth-uc:
+  session_key: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  session_expiration: "120h" # 5 days
+  # session_cookie_domain: #
+  #   - ".terminus.io"
+  #   - ".erda.cloud"
+  redis_key_prefix: "openapi:sessionid:"
+  public_url: "${SELF_PUBLIC_URL:https://openapi.dev.terminus.io}"
+  uc_public_url: "${UC_PUBLIC_URL:https://uc.dev.terminus.io}"
+  uc_addr: "${UC_ADDR:uc.dev.terminus.io}"
+  uc_client_id: "${UC_CLIENT_ID:dice}"
+  uc_client_secret: "${UC_CLIENT_SECRET:secret}"
+  default_redirect_url: "${UI_PUBLIC_URL}"
 
+openapi-interceptor-cookie-compatibility:
+  cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
+  old_cookie_domain: "${OLD_COOKIE_DOMAIN}"
+
+# openapi-auth-fixed-users:
+#   users: 
+#     test: "test"
+
+# openapi-interceptor-audit:
+#   order: 1000
+
+# openapi-services:
 # erda-discover:
+
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
+openapi-test-apis:
+http-server@test:
+  addr: ":8080"
+test-backend-apis:
+
 fixed-discover:
   urls:
-    user-center: "http://localhost:8080"
+    test-apis: "http://localhost:8080"
+    # erda
+    orchestrator: "orchestrator.default.svc.cluster.local:8081"
+    eventbox: "eventbox.default.svc.cluster.local:9528"
+    ops: "ops.default.svc.cluster.local:9027"
+    qa: "qa.default.svc.cluster.local:3033"
+    gittar-adaptor: "gittar-adaptor.default.svc.cluster.local:1086"
+    hepa: "hepa.default.svc.cluster.local:8080"
+    fdp-master: "fdp-master.default.svc.cluster.local:8080"
+    tmc: "tmc.default.svc.cluster.local:8050"
+    scheduler: "scheduler.default.svc.cluster.local:9091"
+    apim: "apim.default.svc.cluster.local:3083"
+    cmdb: "cmdb.default.svc.cluster.local:9093"
+    dicehub: "dicehub.default.svc.cluster.local:10000"
+    elf: "elf.default.svc.cluster.local:8080"
+    officer: "officer.default.svc.cluster.local:9029"
+    monitor: "monitor.default.svc.cluster.local:7096"
+    gittar: "gittar.default.svc.cluster.local:5566"
+    onedata-analysis: "onedata-analysis.bigdata.svc.cluster.local:8080"
+    pipeline: "pipeline.default.svc.cluster.local:3081"
+    action-runner-scheduler: "action-runner-scheduler.default.svc.cluster.local:9500"
+

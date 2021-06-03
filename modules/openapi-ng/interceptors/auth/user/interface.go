@@ -11,10 +11,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package services
+package user
 
-import "net/http"
-
-func RegisterCustomAPIs(add func(method, path string, handler http.HandlerFunc)) {
-	// TODO .
+type UserInfo interface {
+	GetID() string
+	GetOrg() (uint64, bool)
 }
