@@ -18,7 +18,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/cms"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/pkg/encryption"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 )
 
 type CMSvc struct {

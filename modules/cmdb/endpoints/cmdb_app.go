@@ -20,7 +20,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/modules/cmdb/types"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // 创建service元数据，由调度器来填写

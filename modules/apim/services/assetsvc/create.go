@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/apim/dbclient"
 	"github.com/erda-project/erda/modules/apim/services/apidocsvc"
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/swagger/oas2"
 	"github.com/erda-project/erda/pkg/swagger/oas3"

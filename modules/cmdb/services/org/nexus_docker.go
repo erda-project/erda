@@ -20,9 +20,9 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 // ensureNexusDockerGroupOrgRepos

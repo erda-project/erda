@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/jsonparse"
-	"github.com/erda-project/erda/pkg/jsonpath"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
+	"github.com/erda-project/erda/pkg/encoding/jsonpath"
 )
 
 func DoAssert(value interface{}, op string, expect string) (bool, error) {

@@ -25,9 +25,9 @@ import (
 	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 	"github.com/erda-project/erda/modules/qa/services/i18n"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/expression"
-	"github.com/erda-project/erda/pkg/jsonparse"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
 )

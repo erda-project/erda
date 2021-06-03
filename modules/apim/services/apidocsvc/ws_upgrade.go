@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/apim/services/apierrors"
 	"github.com/erda-project/erda/modules/apim/services/websocket"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // http ==> ws
