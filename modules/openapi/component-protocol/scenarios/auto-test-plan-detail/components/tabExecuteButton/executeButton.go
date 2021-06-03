@@ -155,7 +155,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			return err
 		}
 	case "execute":
-		err := ca.handleClick(event)
+		err := ca.handleClick(event, gs)
 		if err != nil {
 			return err
 		}
@@ -235,7 +235,7 @@ func (a *ComponentAction) handleDefault() error {
 	return nil
 }
 
-func (a *ComponentAction) handleClick(event apistructs.ComponentEvent) error {
+func (a *ComponentAction) handleClick(event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	metaJson, err := json.Marshal(event.OperationData["meta"])
 	if err != nil {
 		return err
@@ -250,12 +250,13 @@ func (a *ComponentAction) handleClick(event apistructs.ComponentEvent) error {
 	req.ClusterName = metaData.Env
 	req.ConfigManageNamespaces = metaData.ConfigEnv
 	req.UserID = a.CtxBdl.Identity.UserID
+	a.State.ActiveKey = "Execute"
 	pipeline, err := a.CtxBdl.Bdl.ExecuteDiceAutotestTestPlan(req)
 	if err != nil {
-		return err
+		(*gs)[protocol.GlobalInnerKeyError.String()] = err.Error()
+	} else {
+		logrus.Infof("run testplan pipeline success testplan id: %v, pipelineID %v", req.TestPlan.ID, pipeline.Data.ID)
 	}
-	a.State.ActiveKey = "Execute"
-	logrus.Infof("run testplan pipeline success testplan id: %v, pipelineID %v", req.TestPlan.ID, pipeline.Data.ID)
 	return nil
 }
 
