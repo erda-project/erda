@@ -23,8 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -68,7 +68,6 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	if err != nil {
 		return apierrors.ErrCreateProject.InternalError(err).ToResp(), nil
 	}
-	e.branchRule.InitProjectRules(projectID)
 
 	return httpserver.OkResp(projectID)
 }
@@ -393,50 +392,6 @@ func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(reffered)
 }
 
-// FillBranchRule 填充已有项目分支规则
-func (e *Endpoints) FillBranchRule(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	projectRuleCount, err := e.branchRule.Count(apistructs.ProjectScope)
-	if err != nil {
-		return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-	}
-	if projectRuleCount == 0 {
-		projects, err := e.project.GetAllProjects()
-		if err != nil {
-			return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-		}
-		if len(projects) > 0 {
-			for _, project := range projects {
-				err := e.branchRule.InitProjectRules(project.ID)
-				if err != nil {
-					return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-				}
-			}
-		}
-	}
-	appRuleCount, err := e.branchRule.Count(apistructs.AppScope)
-	if err != nil {
-		return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-	}
-	if appRuleCount == 0 {
-		projectRulesMap, err := e.branchRule.GetAllProjectRulesMap()
-		if err != nil {
-			return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-		}
-		apps, err := e.app.GetAllApps()
-		if err != nil {
-			return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-		}
-		for _, app := range apps {
-			err := e.branchRule.InitAppRulesWithData(app.ID, projectRulesMap[app.ProjectID])
-			if err != nil {
-				return apierrors.ErrFillProjectBranchRule.InternalError(err).ToResp(), nil
-			}
-		}
-	}
-
-	return httpserver.OkResp("update branch rule success")
-}
-
 // GetFunctions 获取项目功能开关配置
 func (e *Endpoints) GetFunctions(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	projectIDStr := r.URL.Query().Get("projectId")
@@ -482,7 +437,9 @@ func (e *Endpoints) GetFunctions(ctx context.Context, r *http.Request, vars map[
 		return apierrors.ErrGetProject.InternalError(err).ToResp(), nil
 	}
 	var pf map[apistructs.ProjectFunction]bool
-	json.Unmarshal([]byte(project.Functions), &pf)
+	if err = json.Unmarshal([]byte(project.Functions), &pf); err != nil {
+		return apierrors.ErrGetProject.InternalError(err).ToResp(), nil
+	}
 
 	return httpserver.OkResp(pf)
 }
@@ -551,7 +508,7 @@ func (e *Endpoints) UpdateProjectActiveTime(ctx context.Context, r *http.Request
 	return httpserver.OkResp("update project active time succ")
 }
 
-// 项目列表时获取请求参数
+// getListProjectsParam 项目列表时获取请求参数
 func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, error) {
 	// 获取企业Id
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
@@ -624,7 +581,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	}, nil
 }
 
-// ListProjectResourceUsage 项目的 CPU/Memory 使用率的历史图表
+// ListProjectResourceUsage 项目的 CPU/Memory 使用率的历史图表s
 func (e *Endpoints) ListProjectResourceUsage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// 获取当前用户
 	userID, err := user.GetUserID(r)
