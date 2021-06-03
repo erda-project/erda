@@ -15,6 +15,7 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
 
 	// modules
@@ -28,7 +29,7 @@ import (
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
-	modncom.Ru(&servicehub.RunOptions{
+	modcom.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorCollectorConfigFilePath,
 		Content:    conf.MonitorCollectorDefaultConfig,
 	})
