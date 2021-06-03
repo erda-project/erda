@@ -56,7 +56,7 @@ import (
 func main() {
 	// modcom.RegisterInitializer(loghub.Init)
 	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorDefaultConfig,
-		Content:    conf.MonitorConfigFilePath,
+		ConfigFile: conf.MonitorConfigFilePath,
+		Content:    conf.MonitorDefaultConfig,
 	})
 }
