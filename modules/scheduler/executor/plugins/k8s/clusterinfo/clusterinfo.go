@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/configmap"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/dlock"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
 )

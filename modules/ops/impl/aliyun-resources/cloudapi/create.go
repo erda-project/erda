@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/slb"
-	"github.com/erda-project/erda/pkg/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 // create ApiGateway VPC grant access

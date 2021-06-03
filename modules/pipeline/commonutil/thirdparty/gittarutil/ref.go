@@ -14,8 +14,8 @@
 package gittarutil
 
 import (
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 )
 
 type Ref struct {

@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/colonyutil"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

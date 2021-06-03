@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

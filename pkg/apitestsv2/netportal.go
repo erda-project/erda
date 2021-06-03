@@ -22,8 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/customhttp"
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/customhttp"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

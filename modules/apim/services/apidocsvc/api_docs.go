@@ -29,7 +29,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 	"github.com/erda-project/erda/pkg/swagger/oasconv"

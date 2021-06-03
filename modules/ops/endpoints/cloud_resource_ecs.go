@@ -27,7 +27,7 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/ecs"
 	libregion "github.com/erda-project/erda/modules/ops/impl/aliyun-resources/region"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
