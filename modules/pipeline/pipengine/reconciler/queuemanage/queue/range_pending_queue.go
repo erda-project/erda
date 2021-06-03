@@ -136,13 +136,13 @@ func (q *defaultQueue) RangePendingQueue() {
 			}
 			// need retry, sleep specific time
 			q.emitEvent(p, PendingQueueValidate,
-				fmt.Sprintf("validate failed(need retry), waiting for retry(%dsec), reason: %s", checkResult.RetryOption.IntervalSecond, checkResult.Reason),
+				fmt.Sprintf("validate failed(need retry), waiting for retry(%dmill), reason: %s", checkResult.RetryOption.IntervalMillisecond+checkResult.RetryOption.IntervalSecond*1000, checkResult.Reason),
 				events.EventLevelNormal)
 			// judge whether need reRange before sleep
 			if q.needReRangePendingQueue() {
 				return true
 			}
-			time.Sleep(time.Second * time.Duration(checkResult.RetryOption.IntervalSecond))
+			time.Sleep(time.Millisecond * time.Duration(checkResult.RetryOption.IntervalMillisecond+checkResult.RetryOption.IntervalSecond*1000))
 			// according to queue mode, check next pipeline or skip
 			return q.IsStrictMode()
 		}
