@@ -49,6 +49,7 @@ type defaultQueue struct {
 	// ranging about
 	rangingPendingQueue         bool
 	needReRangePendingQueueFlag bool
+	currentItemKeyAtRanging     string // is meaningful only when rangingPendingQueue is true
 	rangeAtOnceCh               chan bool
 }
 
@@ -103,4 +104,16 @@ func (q *defaultQueue) unsetIsRangingPendingQueueFlag() {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	q.rangingPendingQueue = false
+}
+
+func (q *defaultQueue) setCurrentItemKeyAtRanging(itemKey string) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.currentItemKeyAtRanging = itemKey
+}
+
+func (q *defaultQueue) getIsRangingPendingQueue() bool {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+	return q.rangingPendingQueue
 }
