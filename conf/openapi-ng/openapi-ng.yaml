@@ -42,22 +42,11 @@ openapi-interceptor-cookie-compatibility:
 # openapi-interceptor-audit:
 #   order: 1000
 
-# openapi-services:
+openapi-services:
 # erda-discover:
-
-redis:
-  addr: "${REDIS_ADDR}"
-  password: "${REDIS_PASSWORD}"
-  master_name: "${REDIS_MASTER_NAME}"
-  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
-
-openapi-test-apis:
-http-server@test:
-  addr: ":8080"
-test-backend-apis:
-
 fixed-discover:
   urls:
+    # for test
     test-apis: "http://localhost:8080"
     # erda
     orchestrator: "orchestrator.default.svc.cluster.local:8081"
@@ -79,4 +68,17 @@ fixed-discover:
     onedata-analysis: "onedata-analysis.bigdata.svc.cluster.local:8080"
     pipeline: "pipeline.default.svc.cluster.local:3081"
     action-runner-scheduler: "action-runner-scheduler.default.svc.cluster.local:9500"
+
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
+openapi-test-apis:
+http-server@test:
+  addr: ":8080"
+test-backend-apis:
+
+
 
