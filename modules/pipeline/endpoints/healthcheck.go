@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) healthCheck(ctx context.Context, r *http.Request, vars map[string]string) (

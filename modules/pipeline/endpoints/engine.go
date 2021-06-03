@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (e *Endpoints) reloadActionExecutorConfig(ctx context.Context, r *http.Request, vars map[string]string) (

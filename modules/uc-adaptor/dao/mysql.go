@@ -16,7 +16,7 @@ package dao
 
 import (
 	"github.com/erda-project/erda/modules/uc-adaptor/conf"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 const BULK_INSERT_CHUNK_SIZE = 3000

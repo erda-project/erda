@@ -17,7 +17,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 func (svc *Service) Update(req apistructs.SonarMetricRulesUpdateRequest) (httpserver.Responser, error) {

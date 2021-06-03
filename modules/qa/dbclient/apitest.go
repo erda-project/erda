@@ -18,7 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/cimysql"
+	"github.com/erda-project/erda/pkg/database/cimysql"
 )
 
 // ApiTest 存储pmp上接口测试相关的信息，对应数据库表dice_api_test

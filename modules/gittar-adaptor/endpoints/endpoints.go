@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/permission"
 	"github.com/erda-project/erda/modules/gittar-adaptor/service/pipeline"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
