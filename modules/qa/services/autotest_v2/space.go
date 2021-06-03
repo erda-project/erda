@@ -287,6 +287,34 @@ func (svc *Service) CopyAutoTestSpace(sceneset *sceneset.Service, req apistructs
 	return &apistructs.AutoTestSpace{}, nil
 }
 
+// CopyAutotestSpaceV2 use AutoTestSpaceDirector make space data, then use space data copy self
+func (svc *Service) CopyAutotestSpaceV2(req apistructs.AutoTestSpace, identityInfo apistructs.IdentityInfo) *apistructs.AutoTestSpace {
+	spaceDBData := AutoTestSpaceDB{Data: &AutoTestSpaceData{
+		svc:          svc,
+		IdentityInfo: identityInfo,
+		SpaceID:      req.ID,
+		IsCopy:       true,
+		ProjectID:    uint64(req.ProjectID),
+	},
+	}
+
+	go func() {
+		creator := AutoTestSpaceDirector{}
+		creator.New(&spaceDBData)
+		if err := creator.Construct(); err != nil {
+			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+			return
+		}
+		spaceData := creator.Creator.GetSpaceData()
+		_, err := spaceData.Copy()
+		if err != nil {
+			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
+			return
+		}
+	}()
+	return &apistructs.AutoTestSpace{}
+}
+
 // copy after update scene ref sceneSet id
 func (svc *Service) UpdateAutoTestSceneRefSet(copyRefs []apistructs.AutoTestSceneCopyRef) error {
 	for _, ref := range copyRefs {

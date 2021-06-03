@@ -223,6 +223,45 @@ func (e *Endpoints) CopyAutoTestSpace(ctx context.Context, r *http.Request, vars
 	return httpserver.OkResp(space)
 }
 
+// CopyAutoTestSpaceV2 v2 use spaceData copy self, resolve input id bug
+func (e *Endpoints) CopyAutoTestSpaceV2(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetAutoTestSpace.NotLogin().ToResp(), nil
+	}
+
+	// 校验 body 合法性
+	if r.ContentLength == 0 {
+		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter("missing request body").ToResp(), nil
+	}
+	var req apistructs.AutoTestSpace
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter(err).ToResp(), nil
+	}
+	res, err := e.autotestV2.GetSpace(req.ID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if !identityInfo.IsInternalClient() {
+		// Authorize
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(res.ProjectID),
+			Resource: apistructs.TestSpaceResource,
+			Action:   apistructs.DeleteAction,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !access.Access {
+			return nil, apierrors.ErrCreateTestPlan.AccessDenied()
+		}
+	}
+	space := e.autotestV2.CopyAutotestSpaceV2(*res, identityInfo)
+	return httpserver.OkResp(space)
+}
+
 func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
