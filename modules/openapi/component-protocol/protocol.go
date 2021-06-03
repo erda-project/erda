@@ -42,6 +42,7 @@ func (s GlobalInnerKey) Normal() string {
 const (
 	GlobalInnerKeyCtxBundle GlobalInnerKey = "_ctxBundle_"
 	GlobalInnerKeyUserIDs   GlobalInnerKey = "_userIDs_"
+	GlobalInnerKeyError     GlobalInnerKey = "_error_"
 	// userID & orgID
 	GlobalInnerKeyIdentity GlobalInnerKey = "_identity_"
 
