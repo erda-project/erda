@@ -263,7 +263,8 @@ type PipelineQueueValidateResult struct {
 }
 
 type QueueValidateRetryOption struct {
-	IntervalSecond uint64 `json:"intervalSecond"`
+	IntervalSecond      uint64 `json:"intervalSecond"`
+	IntervalMillisecond uint64 `json:"intervalMillisecond"`
 }
 
 func (r PipelineQueueValidateResult) IsSuccess() bool {
