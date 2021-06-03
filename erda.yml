@@ -271,7 +271,7 @@ services:
         l4_protocol: "TCP"
         expose: true
     resources:
-      cpu: ${request_cpu:0.2}
+      cpu: ${request_cpu:0.5}
       mem: 512
       max_cpu: 0.5
       network:
