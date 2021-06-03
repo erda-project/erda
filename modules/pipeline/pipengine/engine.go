@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
@@ -135,12 +136,31 @@ func (engine *Engine) loadRunningPipelines() error {
 	if err != nil {
 		return err
 	}
-	for _, id := range pipelineIDs {
-		go func(pipelineID uint64) {
-			engine.Send(pipelineID)
-			logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
-		}(id)
+
+	// send pipeline id by interval time instead of at once
+	total := len(pipelineIDs)
+	intervalSec := time.Duration(conf.InitializeSendRunningIntervalSec())
+	intervalNum := conf.InitializeSendRunningIntervalNum()
+	maxTimes := total / int(intervalNum)
+	for i := 0; i <= maxTimes; i++ {
+		time.Sleep(intervalSec)
+		end := (i + 1) * int(intervalNum)
+		if end > total {
+			end = total
+		}
+		for _, id := range pipelineIDs[i*int(intervalNum) : end] {
+			go func(pipelineID uint64) {
+				engine.Send(pipelineID)
+				logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
+			}(id)
+		}
 	}
+	//for _, id := range pipelineIDs {
+	//	go func(pipelineID uint64) {
+	//		engine.Send(pipelineID)
+	//		logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
+	//	}(id)
+	//}
 	logrus.Infof("%s: pipengine end load running pipelines", logPrefixContinueLoading)
 	return nil
 }

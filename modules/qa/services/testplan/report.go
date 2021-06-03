@@ -45,10 +45,12 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 	var relErr error
 	var wg sync.WaitGroup
 	caseChan := make(chan struct{}, 20)
+	defer close(caseChan)
 	for _, rel := range rels {
 		caseChan <- struct{}{}
 		wg.Add(1)
 		go func(caseRel dao.TestPlanCaseRel) {
+			defer wg.Done()
 			apis, err := t.testCaseSvc.ListAPIs(int64(caseRel.TestCaseID))
 			if err != nil {
 				<-caseChan
@@ -56,6 +58,7 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 				return
 			}
 			mx.Lock()
+			defer mx.Unlock()
 			for _, api := range apis {
 				totalApiCount.Total++
 				switch api.Status {
@@ -70,12 +73,9 @@ func (t *TestPlan) GenerateReport(testPlanID uint64) (*apistructs.TestPlanReport
 				}
 			}
 			<-caseChan
-			defer wg.Done()
-			defer mx.Unlock()
 		}(rel)
 	}
 	wg.Wait()
-	defer close(caseChan)
 	if relErr != nil {
 		return nil, apierrors.ErrGetApiTestInfo.InternalError(relErr)
 	}
