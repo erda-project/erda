@@ -51,10 +51,10 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 		})
 	} else {
 		var validResult = apistructs.PipelineQueueValidateResult{Success: false}
-		// retry time should be more than the 0
-		if result.RetryOption.IntervalSecond > 0 {
+		if result.RetryOption.IntervalSecond > 0 || result.RetryOption.IntervalMillisecond > 0 {
 			validResult.RetryOption = &apistructs.QueueValidateRetryOption{
-				IntervalSecond: result.RetryOption.IntervalSecond,
+				IntervalSecond:      result.RetryOption.IntervalSecond,
+				IntervalMillisecond: result.RetryOption.IntervalMillisecond,
 			}
 		}
 		validResult.Reason = result.Message
