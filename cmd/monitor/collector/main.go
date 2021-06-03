@@ -30,7 +30,7 @@ import (
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
 	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorCollectorDefaultConfig,
-		Content:    conf.MonitorCollectorConfigFilePath,
+		ConfigFile: conf.MonitorCollectorConfigFilePath,
+		Content:    conf.MonitorCollectorDefaultConfig,
 	})
 }
