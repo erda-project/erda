@@ -262,138 +262,161 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 	num := (a.State.PageNo - 1) * (a.State.PageSize)
 	ret := a.State.PageSize
 	a.State.Total = 0
+
 	for _, each := range pipeline.PipelineStages {
+
 		a.State.Total += int64(len(each.PipelineTasks))
 		if ret == 0 {
 			continue
 		}
+
 		if int64(len(each.PipelineTasks)) <= num {
 			num -= int64(len(each.PipelineTasks))
 			continue
 		}
+
 		for _, task := range each.PipelineTasks {
+
 			if num > 0 {
 				num--
 				continue
 			}
+
+			var item map[string]interface{}
+
+			// not autotest task
+			// snippet acton remove operation add taskNum
 			if task.Labels == nil || len(task.Labels) == 0 {
-				list := map[string]interface{}{
+				operations := map[string]interface{}{}
+				var taskNum interface{}
+				if task.Type != apistructs.ActionTypeSnippet {
+					operations = map[string]interface{}{
+						"checkDetail": dataOperation{
+							Key:    "checkDetail",
+							Text:   "查看结果",
+							Reload: false,
+							Meta:   task.Result,
+						},
+						"checkLog": dataOperation{
+							Key:    "checkLog",
+							Reload: false,
+							Text:   "日志",
+							Meta: map[string]interface{}{
+								"logId":      task.Extra.UUID,
+								"pipelineId": a.State.PipelineID,
+								"nodeId":     task.ID,
+							},
+						},
+					}
+					taskNum = "-"
+				} else {
+					clickableKeys = append(clickableKeys, task.ID)
+					if task.SnippetPipelineDetail != nil {
+						taskNum = task.SnippetPipelineDetail.DirectSnippetTasksNum
+					}
+				}
+				item = map[string]interface{}{
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
 						"renderType": "tableOperation",
-						"operations": map[string]interface{}{
-							"checkDetail": dataOperation{
-								Key:    "checkDetail",
-								Text:   "查看结果",
-								Reload: false,
-								Meta:   task.Result,
-							},
-							"checkLog": dataOperation{
-								Key:    "checkLog",
-								Reload: false,
-								Text:   "日志",
-								Meta: map[string]interface{}{
-									"logId":      task.Extra.UUID,
-									"pipelineId": a.State.PipelineID,
-									"nodeId":     task.ID,
-								},
-							},
-						},
+						"operations": operations,
 					},
-					"tasksNum": "-",
+					"tasksNum": taskNum,
 					"name":     task.Name,
 					"status":   getStatus(task.Status),
 					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
 				}
-				lists = append(lists, list)
-				ret--
-				if ret == 0 {
-					break
+			} else {
+				// autotest task
+				res := apistructs.AutoTestSceneStep{}
+				value := AutoTestRunStep{
+					ApiSpec: map[string]interface{}{},
 				}
-				continue
-			}
-			res := apistructs.AutoTestSceneStep{}
-			value := AutoTestRunStep{
-				ApiSpec: map[string]interface{}{},
-			}
-			if _, ok := task.Labels[apistructs.AutotestSceneStep]; ok {
-				resByte, err := base64.StdEncoding.DecodeString(task.Labels[apistructs.AutotestSceneStep])
-				if err != nil {
-					logrus.Error("error to decode ", apistructs.AutotestSceneStep, ", err: ", err)
-					return err
-				}
-				fmt.Println(task.Labels[apistructs.AutotestSceneStep])
-				if err := json.Unmarshal(resByte, &res); err != nil {
-					return err
-				}
-				if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait {
-					err := json.Unmarshal([]byte(res.Value), &value)
+				if _, ok := task.Labels[apistructs.AutotestSceneStep]; ok {
+					resByte, err := base64.StdEncoding.DecodeString(task.Labels[apistructs.AutotestSceneStep])
 					if err != nil {
+						logrus.Error("error to decode ", apistructs.AutotestSceneStep, ", err: ", err)
 						return err
 					}
+					if err := json.Unmarshal(resByte, &res); err != nil {
+						return err
+					}
+					if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait {
+						err := json.Unmarshal([]byte(res.Value), &value)
+						if err != nil {
+							return err
+						}
+					}
+					if res.Type == apistructs.StepTypeWait {
+						res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTime, 10) + "s"
+					}
+				} else {
+					res.Name = task.Name
+					res.Type = apistructs.StepAPIType(task.Type)
 				}
-				if res.Type == apistructs.StepTypeWait {
-					res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTime, 10) + "s"
-				}
-			} else {
-				res.Name = task.Name
-				res.Type = apistructs.StepAPIType(task.Type)
-			}
-			operations := map[string]interface{}{}
-			if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait {
-				operations = map[string]interface{}{
-					"checkDetail": dataOperation{
-						Key:    "checkDetail",
-						Text:   "查看结果",
-						Reload: false,
-						Meta:   task.Result,
-					},
-					"checkLog": dataOperation{
-						Key:    "checkLog",
-						Reload: false,
-						Text:   "日志",
-						Meta: map[string]interface{}{
-							"logId":      task.Extra.UUID,
-							"pipelineId": a.State.PipelineID,
-							"nodeId":     task.ID,
+
+				// api or wait add operations
+				operations := map[string]interface{}{}
+				if res.Type == apistructs.StepTypeAPI || res.Type == apistructs.StepTypeWait {
+					operations = map[string]interface{}{
+						"checkDetail": dataOperation{
+							Key:    "checkDetail",
+							Text:   "查看结果",
+							Reload: false,
+							Meta:   task.Result,
 						},
-					},
+						"checkLog": dataOperation{
+							Key:    "checkLog",
+							Reload: false,
+							Text:   "日志",
+							Meta: map[string]interface{}{
+								"logId":      task.Extra.UUID,
+								"pipelineId": a.State.PipelineID,
+								"nodeId":     task.ID,
+							},
+						},
+					}
 				}
-			}
-			path := value.ApiSpec["url"]
-			if path == nil {
-				path = ""
-			}
-			list := map[string]interface{}{
-				"id":                task.ID,
-				"snippetPipelineID": task.SnippetPipelineID,
-				"operate": map[string]interface{}{
-					"renderType": "tableOperation",
-					"operations": operations,
-				},
-				"tasksNum": "-",
-				"name":     res.Name,
-				"status":   getStatus(task.Status),
-				"type":     transformStepType(res.Type),
-				"path":     path,
+
+				path := value.ApiSpec["url"]
+				if path == nil {
+					path = ""
+				}
+				item = map[string]interface{}{
+					"id":                task.ID,
+					"snippetPipelineID": task.SnippetPipelineID,
+					"operate": map[string]interface{}{
+						"renderType": "tableOperation",
+						"operations": operations,
+					},
+					"tasksNum": "-",
+					"name":     res.Name,
+					"status":   getStatus(task.Status),
+					"type":     transformStepType(res.Type),
+					"path":     path,
+				}
+
+				// scene or configSheet add other info
+				if task.SnippetPipelineID != nil &&
+					(res.Type == apistructs.StepTypeScene || res.Type == apistructs.StepTypeConfigSheet) {
+					clickableKeys = append(clickableKeys, task.ID)
+					if task.SnippetPipelineDetail != nil {
+						item["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
+					}
+				}
 			}
 
-			lists = append(lists, list)
-			if task.SnippetPipelineID != nil &&
-				(res.Type == apistructs.StepTypeScene || res.Type == apistructs.StepTypeConfigSheet) {
-				clickableKeys = append(clickableKeys, task.ID)
-				if task.SnippetPipelineDetail != nil {
-					list["tasksNum"] = task.SnippetPipelineDetail.DirectSnippetTasksNum
-				}
-			}
+			lists = append(lists, item)
+
 			ret--
 			if ret == 0 {
 				break
 			}
 		}
 	}
+
 	if a.State.Total <= (a.State.PageNo-1)*(a.State.PageSize) && a.State.Total > 0 {
 		a.State.PageNo = DefaultPageNo
 		return a.setData(pipeline)
