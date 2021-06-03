@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/member"
+	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -179,11 +180,7 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 
 func (a *Approve) mkMboxEmailNotify(id int64, done string, orgid uint64, projectname string,
 	member string, start, end time.Time, desc string, receivers []model.Member) error {
-	protocols := strutil.Split(os.Getenv(string(apistructs.DICE_PROTOCOL)), ",")
-	protocol := "https"
-	if len(protocols) > 0 {
-		protocol = protocols[0]
-	}
+	protocol := utils.GetProtocol()
 	domain := os.Getenv(string(apistructs.DICE_ROOT_DOMAIN))
 	org, err := a.db.GetOrg(int64(orgid))
 	if err != nil {
