@@ -63,6 +63,7 @@ func Load() {
 	cfg.SkipAuthUrls = strings.Split(cfg.SkipAuthUrlsStr, ",")
 	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, cfg.SelfAddr)
 	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, discover.Gittar())
+	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, "gittar:5566")
 }
 
 // RepoRoot 仓库存储目录
