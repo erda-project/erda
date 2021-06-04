@@ -605,7 +605,7 @@ func (e *Endpoints) GetIssue(ctx context.Context, r *http.Request, vars map[stri
 		}
 	}
 	// userIDs
-	userIDs := strutil.DedupSlice([]string{issue.Creator, issue.Assignee, issue.Owner}, true)
+	userIDs := strutil.DedupSlice(append(issue.Subscribers, issue.Creator, issue.Assignee, issue.Owner), true)
 
 	return httpserver.OkResp(issue, userIDs)
 }
@@ -730,4 +730,44 @@ func (e *Endpoints) GetIssueBugSeverityPercentage(ctx context.Context, r *http.R
 		return errorresp.ErrResp(err)
 	}
 	return httpserver.OkResp(issue)
+}
+
+// SubscribeIssue subscribe issue
+func (e *Endpoints) SubscribeIssue(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.NotLogin().ToResp(), nil
+	}
+
+	if err := e.issue.Subscribe(id, identityInfo); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	// data 返回 ID
+	return httpserver.OkResp(id)
+}
+
+// UnsubscribeIssue unsubscribe issue
+func (e *Endpoints) UnsubscribeIssue(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.NotLogin().ToResp(), nil
+	}
+
+	if err := e.issue.Unsubscribe(id, identityInfo); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	// data 返回 ID
+	return httpserver.OkResp(id)
 }
