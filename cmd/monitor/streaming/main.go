@@ -39,7 +39,7 @@ import (
 
 func main() {
 	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MonitorStreamingDefaultConfig,
-		Content:    conf.MonitorStreamingConfigFilePath,
+		ConfigFile: conf.MonitorStreamingConfigFilePath,
+		Content:    conf.MonitorStreamingDefaultConfig,
 	})
 }

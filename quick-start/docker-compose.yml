@@ -191,7 +191,7 @@ services:
     platform: linux/amd64
 
   cmdb:
-    image: erdaproject/cmdb:1.1-20210601-6d787e3
+    image: erdaproject/cmdb:1.1-20210604-14fa00c
     command: /app/cmdb
     container_name: erda-cmdb
     env_file:
