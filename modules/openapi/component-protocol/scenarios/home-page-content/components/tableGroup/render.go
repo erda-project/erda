@@ -15,6 +15,7 @@ package tableGroup
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-content/i18n"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 const (
@@ -294,6 +296,8 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		projectOperation.Command.Target = "projectAllIssue"
 		projectOperation.Command.JumpOut = true
 		projectOperation.Command.State.Query.IssueViewGroupUrlQuery = "eyJ2YWx1ZSI6ImthbmJhbiIsImNoaWxkcmVuVmFsdWUiOnsia2FuYmFuIjoiZGVhZGxpbmUifX0="
+		projectOperation.Command.State.Query.IssueTableUrlQuery = "eyJwYWdlTm8iOjF9"
+		projectOperation.Command.State.Query.IssueFilterUrlQuery = t.generateIssueUrlQuery()
 		projectOperation.Command.State.Params.ProjectId = strconv.FormatInt(int64(v.ProjectDTO.ID), 10)
 		projectOperation.Command.State.Params.OrgName = orgName
 		projectOperation.Command.Visible = true
@@ -313,6 +317,16 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 		dataList = append(dataList, pro)
 	}
 	t.Data.List = dataList
+}
+
+func (t *TableGroup) generateIssueUrlQuery() string {
+	queryMap := map[string]interface{}{
+		"stateBelongs": []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking,
+			apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen},
+		"assigneeIDs": []string{t.ctxBdl.Identity.UserID},
+	}
+	queryMapStr := jsonparse.JsonOneLine(queryMap)
+	return base64.StdEncoding.EncodeToString([]byte(queryMapStr))
 }
 
 func (t *TableGroup) setBaseComponentValue() {
