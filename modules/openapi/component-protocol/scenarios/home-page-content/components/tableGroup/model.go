@@ -152,6 +152,8 @@ type ToSpecificProjectOperation struct {
 		State   struct {
 			Query struct {
 				IssueViewGroupUrlQuery string `json:"issueViewGroup__urlQuery"`
+				IssueFilterUrlQuery    string `json:"issueFilter__urlQuery"`
+				IssueTableUrlQuery     string `json:"issueTable__urlQuery"`
 			} `json:"query"`
 			Params struct {
 				ProjectId string `json:"projectId"`
