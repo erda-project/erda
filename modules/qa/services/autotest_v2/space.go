@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
-	"github.com/erda-project/erda/modules/qa/services/sceneset"
 )
 
 // CreateSpace 创建测试空间
@@ -194,97 +193,6 @@ func convertToUnifiedFileSpace(req *dao.AutoTestSpace) *apistructs.AutoTestSpace
 		UpdatedAt:     req.UpdatedAt,
 		DeletedAt:     req.DeletedAt,
 	}
-}
-
-// CopyAutoTestSpace 复制测试空间
-func (svc *Service) CopyAutoTestSpace(sceneset *sceneset.Service, req apistructs.AutoTestSpace, identityInfo apistructs.IdentityInfo) (*apistructs.AutoTestSpace, error) {
-	sceneSet, err := svc.GetSceneSetsBySpaceID(req.ID)
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	sourceSpace, err := svc.GetSpace(req.ID)
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	if !sourceSpace.IsOpen() {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(fmt.Errorf("目标测试空间已锁定"))
-	}
-	newName, err := svc.GenerateSpaceName(sourceSpace.Name, req.ProjectID)
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	space, err := svc.CreateSpace(apistructs.AutoTestSpaceCreateRequest{
-		Name:          newName,
-		ProjectID:     req.ProjectID,
-		Description:   req.Description,
-		SourceSpaceID: &req.ID,
-		IdentityInfo:  identityInfo,
-	})
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	sourceSpace.Status = apistructs.TestSpaceLocked
-	sourceSpace, err = svc.UpdateAutoTestSpace(*sourceSpace, identityInfo.UserID)
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	space.Status = apistructs.TestSpaceCopying
-	space, err = svc.UpdateAutoTestSpace(*space, identityInfo.UserID)
-	if err != nil {
-		return nil, apierrors.ErrCopyAutoTestSpace.InternalError(err)
-	}
-	go func() {
-		var refSceneData []apistructs.AutoTestSceneCopyRef
-
-		var preID uint64 = 0
-		for _, each := range sceneSet {
-			preID, err = sceneset.CopySceneSet(apistructs.SceneSetRequest{
-				Name:         each.Name,
-				SpaceID:      space.ID,
-				Description:  each.Description,
-				PreID:        preID,
-				SetID:        each.ID,
-				IdentityInfo: identityInfo,
-			}, true)
-
-			refSceneData = append(refSceneData, apistructs.AutoTestSceneCopyRef{
-				PreSetID:     each.ID,
-				PreSpaceID:   each.SpaceID,
-				AfterSetID:   preID,
-				AfterSpaceID: space.ID,
-			})
-
-			if err != nil {
-				space.Status = apistructs.TestSpaceFailed
-				if _, err := svc.UpdateAutoTestSpace(*space, identityInfo.UserID); err != nil {
-					logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-					return
-				}
-				logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-				return
-			}
-		}
-		sourceSpace.Status = apistructs.TestSpaceOpen
-		sourceSpace, err = svc.UpdateAutoTestSpace(*sourceSpace, identityInfo.UserID)
-		if err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-		space.Status = apistructs.TestSpaceOpen
-		space, err = svc.UpdateAutoTestSpace(*space, identityInfo.UserID)
-		if err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-
-		err = svc.UpdateAutoTestSceneRefSet(refSceneData)
-		if err != nil {
-			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
-			return
-		}
-	}()
-
-	return &apistructs.AutoTestSpace{}, nil
 }
 
 // CopyAutotestSpaceV2 use AutoTestSpaceDirector make space data, then use space data copy self
