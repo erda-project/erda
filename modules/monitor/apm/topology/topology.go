@@ -86,6 +86,7 @@ const (
 	topologyNodeDb        = "topology_node_db"
 	topologyNodeCache     = "topology_node_cache"
 	topologyNodeMq        = "topology_node_mq"
+	topologyNodeOther     = "topology_node_other"
 	processAnalysisNodejs = "process_analysis_nodejs"
 	processAnalysisJava   = "process_analysis_java"
 )
@@ -1674,6 +1675,8 @@ func getDashboardId(nodeType string) string {
 		return processAnalysisJava
 	case strings.ToLower(NodeJsProcessType):
 		return processAnalysisNodejs
+	case strings.ToLower(TypeHttp):
+		return topologyNodeOther
 	default:
 		return ""
 	}
