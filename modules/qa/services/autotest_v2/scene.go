@@ -153,7 +153,9 @@ func (svc *Service) checkCycle(scene dao.AutoTestScene, allNodes []uint64, allNo
 		if err != nil {
 			return err
 		}
-		allNodes = allNodes[:len(allNodes)-1]
+		if len(allNodes) > 0 {
+			allNodes = allNodes[:len(allNodes)-1]
+		}
 		delete(allNodesMap, refScene.RefSetID)
 	}
 
