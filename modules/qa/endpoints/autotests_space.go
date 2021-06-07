@@ -179,8 +179,8 @@ func (e *Endpoints) GetAutoTestSpace(ctx context.Context, r *http.Request, vars 
 	return httpserver.OkResp(space)
 }
 
-// CopyAutoTestSpace 复制测试空间
-func (e *Endpoints) CopyAutoTestSpace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+// CopyAutoTestSpaceV2 v2 use spaceData copy self, resolve input id bug
+func (e *Endpoints) CopyAutoTestSpaceV2(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrGetAutoTestSpace.NotLogin().ToResp(), nil
@@ -194,12 +194,10 @@ func (e *Endpoints) CopyAutoTestSpace(ctx context.Context, r *http.Request, vars
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter(err).ToResp(), nil
 	}
-
 	res, err := e.autotestV2.GetSpace(req.ID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	// TODO: 鉴权
 	if !identityInfo.IsInternalClient() {
 		// Authorize
 		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
@@ -216,10 +214,7 @@ func (e *Endpoints) CopyAutoTestSpace(ctx context.Context, r *http.Request, vars
 			return nil, apierrors.ErrCreateTestPlan.AccessDenied()
 		}
 	}
-	space, err := e.autotestV2.CopyAutoTestSpace(e.sceneset, *res, identityInfo)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
+	space := e.autotestV2.CopyAutotestSpaceV2(*res, identityInfo)
 	return httpserver.OkResp(space)
 }
 
