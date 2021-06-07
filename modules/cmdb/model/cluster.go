@@ -31,6 +31,7 @@ type Cluster struct {
 	OpsConfig           string `gorm:"column:opsconfig;type:text"`
 	CloudResourceConfig string `gorm:"column:resource;type:text"`
 	SysConfig           string `gorm:"column:sys;type:text"`
+	ManageConfig        string `gorm:"column:manage_config;type:text"`
 }
 
 // TableName 设置模型对应数据库表名称
