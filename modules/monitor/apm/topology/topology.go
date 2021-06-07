@@ -839,18 +839,18 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 	}
 
 	if sort == ExceptionTimeSortStrategy {
-		sort = "timestamp DESC"
+		sort = "max(timestamp) DESC"
 	}
 
 	if sort == ExceptionCountSortStrategy {
-		sort = "count::field DESC"
+		sort = "sum(count::field) DESC"
 	}
 
 	var filter bytes.Buffer
 	if exceptionType != "" {
 		filter.WriteString(" AND type::tag=$type")
 	}
-	sql := fmt.Sprintf("SELECT instance_id::tag,method::tag,class::tag,exception_message::tag,type::tag,timestamp,count::field FROM error_alert WHERE service_id::tag=$service_id AND terminus_key::tag=$terminus_key %s ORDER BY %s LIMIT %v", filter.String(), sort, limit)
+	sql := fmt.Sprintf("SELECT instance_id::tag,method::tag,class::tag,exception_message::tag,type::tag,max(timestamp),sum(count::field) FROM error_alert WHERE service_id::tag=$service_id AND terminus_key::tag=$terminus_key %s GROUP BY error_id::tag ORDER BY %s LIMIT %v", filter.String(), sort, limit)
 
 	paramMap := map[string]interface{}{
 		"service_id":   params.ServiceId,
