@@ -269,6 +269,8 @@ type (
 const (
 	customizeAlertTypeOrg          = "org_customize"
 	customizeAlertTypeMicroService = "micro_service_customize"
+	applicationIdTag               = "application_id"
+	applicationIdValue             = "$application_id"
 )
 
 // CustomizeAlerts .
@@ -377,6 +379,10 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		// filter
 		filters := make([]*CustomizeAlertRuleFilter, 0)
 		for _, filter := range rule.Filters {
+			if filter.Tag == applicationIdTag && filter.Value == applicationIdValue {
+				continue
+			}
+
 			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] {
 				continue
 			}
