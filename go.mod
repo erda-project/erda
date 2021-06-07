@@ -36,6 +36,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210429085145-aba847b668ea
 	github.com/erda-project/erda-proto-go v0.0.0-20210422085548-44271074c652
@@ -48,8 +49,9 @@ require (
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.5.0
+	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-openapi/loads v0.19.4
-	github.com/go-openapi/spec v0.19.7
+	github.com/go-openapi/spec v0.19.8
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
@@ -63,7 +65,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
