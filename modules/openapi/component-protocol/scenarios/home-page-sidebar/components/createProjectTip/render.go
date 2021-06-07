@@ -137,7 +137,7 @@ func (p *CreateProjectTip) Render(ctx context.Context, c *apistructs.Component, 
 		"createProjectDoc": {
 			Command: Command{
 				Key:     "goto",
-				Target:  "https://docs.erda.cloud/",
+				Target:  "https://docs.erda.cloud/1.0/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E4%BC%81%E4%B8%9A",
 				JumpOut: true,
 				Visible: visible,
 			},
