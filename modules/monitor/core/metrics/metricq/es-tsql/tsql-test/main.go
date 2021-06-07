@@ -129,11 +129,15 @@ func getSources(query tsql.Query) []string {
 }
 
 func main() {
-	err := test22()
+	err := test24()
 	if err != nil {
 		panic(err)
 	}
 }
+
+func test24() error{
+	return Query(`SELECT time(),round_float(elapsed_count::field, 2) from application_http GROUP BY time(10m)`,map[string]interface{}{})
+} 
 
 func test23() error {
 	return Query(
