@@ -135,13 +135,13 @@ func main() {
 	}
 }
 
-func test24() error{
+func test24() error {
 	return Query(`
 				SELECT time(),round_float(elapsed_count::field, 2) 
 				from application_http 
 				GROUP BY time(5m)
-				`,map[string]interface{}{})
-} 
+				`, map[string]interface{}{})
+}
 
 func test23() error {
 	return Query(
