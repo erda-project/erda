@@ -129,10 +129,18 @@ func getSources(query tsql.Query) []string {
 }
 
 func main() {
-	err := test22()
+	err := test24()
 	if err != nil {
 		panic(err)
 	}
+}
+
+func test24() error {
+	return Query(`
+				SELECT time(),round_float(elapsed_count::field, 2) 
+				from application_http 
+				GROUP BY time(5m)
+				`, map[string]interface{}{})
 }
 
 func test23() error {
@@ -147,9 +155,9 @@ func test23() error {
 
 func test22() error {
 	return Query(`
-		SELECT service_id::tag,service_name::tag,min(rx_bytes::field),round_float(diff(rx_bytes::field), 2),round_float(diffps(rx_bytes::field), 2)
+		SELECT service_instance_id::tag,min(rx_bytes::field),round_float(diff(rx_bytes::field), 2),round_float(diffps(rx_bytes::field), 2)
 		FROM docker_container_summary
-		GROUP BY time(),service_id::tag;
+		GROUP BY time(10m),service_instance_id::tag LIMIT 3
 		`, map[string]interface{}{})
 }
 
