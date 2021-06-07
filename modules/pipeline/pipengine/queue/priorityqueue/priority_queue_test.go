@@ -154,3 +154,70 @@ func TestPriorityQueue_Remove(t *testing.T) {
 	removed = pq.Remove("k1")
 	assert.Nil(t, removed, "k1 already been removed")
 }
+
+func TestPriorityQueue_LeftHasHigherOrder(t *testing.T) {
+	type args struct {
+		left  Item
+		right Item
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "left right both not exist",
+			args: args{
+				left:  nil,
+				right: nil,
+			},
+			want: false,
+		},
+		{
+			name: "left exist, right not exist",
+			args: args{
+				left:  NewItem("left", 1, time.Now()),
+				right: nil,
+			},
+			want: true,
+		},
+		{
+			name: "left not exist, right exist",
+			args: args{
+				left:  nil,
+				right: NewItem("right", 1, time.Now()),
+			},
+			want: false,
+		},
+		{
+			name: "left right both exist, left's priority is higher than right",
+			args: args{
+				left:  NewItem("left", 2, time.Now()),
+				right: NewItem("right", 1, time.Now()),
+			},
+			want: true,
+		},
+		{
+			name: "left right both exist, right's priority is higher than left",
+			args: args{
+				left:  NewItem("left", 1, time.Now()),
+				right: NewItem("right", 2, time.Now()),
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pq := NewPriorityQueue()
+			if tt.args.left != nil {
+				pq.Add(tt.args.left)
+			}
+			if tt.args.right != nil {
+				pq.Add(tt.args.right)
+			}
+			if got := pq.LeftHasHigherOrder("left", "right"); got != tt.want {
+				t.Errorf("LeftHasHigherOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
