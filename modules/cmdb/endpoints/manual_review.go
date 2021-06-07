@@ -16,13 +16,22 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
+	"github.com/erda-project/erda/modules/cmdb/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -97,8 +106,52 @@ func (e *Endpoints) CreateReview(ctx context.Context, r *http.Request, vars map[
 	if err, reviewID = e.ManualReview.CreateReview(&reviewCreateReq); err != nil {
 		return apierrors.ErrCreateReview.InternalError(err).ToResp(), nil
 	}
-
+	// creat eventBox message
+	go func() {
+		if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).
+			Do(func() (bool, error) {
+				return e.createEventBoxMessage(&reviewCreateReq)
+			}); err != nil {
+			logrus.Errorf("fail to createEventBoxMessage, err: %s", err.Error())
+		}
+	}()
 	return httpserver.OkResp(reviewID)
+}
+
+// createEventBox create eventBox message
+func (e *Endpoints) createEventBoxMessage(req *apistructs.CreateReviewRequest) (bool, error) {
+	org, err := e.db.GetOrg(req.OrgId)
+	if err != nil {
+		return false, err
+	}
+
+	sponsor, err := e.uc.GetUser(req.SponsorId)
+	if err != nil {
+		return false, err
+	}
+
+	reviewers, err := e.db.GetOperatorByTaskID([]int{req.TaskId})
+	if err != nil {
+		return false, err
+	}
+	if len(reviewers) == 0 {
+		return false, errors.New("the reviewers' len is 0")
+	}
+
+	err = e.bdl.CreateMboxNotify("notify.deployapproval.launch.markdown_template",
+		map[string]string{
+			"title":       fmt.Sprintf("【重要】请及时审核%s项目%s应用部署合规性", req.ProjectName, req.ApplicationName),
+			"member":      sponsor.Name,
+			"projectname": req.ProjectName,
+			"appName":     req.ApplicationName,
+			"url": fmt.Sprintf("%s://%s-org.%s/%s/workBench/projects/%d/apps/%d/pipeline?pipelineID=%d",
+				utils.GetProtocol(), org.Name, conf.RootDomain(), org.Name, req.ProjectId, req.ApplicationId, req.BuildId),
+		},
+		i18n.ZH, uint64(req.OrgId), []string{reviewers[0].Operator})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (e *Endpoints) GetReviewsBySponsorId(ctx context.Context, r *http.Request, vars map[string]string) (

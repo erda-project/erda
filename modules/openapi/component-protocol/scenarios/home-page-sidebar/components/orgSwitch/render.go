@@ -75,6 +75,7 @@ type Meta struct {
 type State struct {
 	//OrgID string `json:"orgID"`
 	Value string `json:"value"`
+	Label string `json:"label"`
 }
 
 type Operation struct {
@@ -121,6 +122,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	}
 	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.State.Value = strconv.FormatInt(int64(orgDTO.ID), 10)
+	this.State.Label = orgDTO.DisplayName
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
@@ -143,7 +145,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 }
 
 func RenItem(org apistructs.OrgDTO) MenuItem {
-	logo := "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQY0vUTJwftJ8WqXoLiLeB--2MJkpZLpYOA&usqp=CAU"
+	logo := "//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/06/03/9b1a8af7-0111-4c14-9158-9804bb3ebafc.png"
 	if org.Logo != "" {
 		logo = org.Logo
 	}

@@ -402,7 +402,9 @@ func (a *AutoTestSpaceData) CreateNewSpace() error {
 	spaceName := a.Space.Name
 	if a.IsCopy {
 		spaceName, err = a.svc.GenerateSpaceName(spaceName, int64(a.ProjectID))
-		return err
+		if err != nil {
+			return err
+		}
 	}
 	space, err := a.svc.CreateSpace(apistructs.AutoTestSpaceCreateRequest{
 		Name:         spaceName,
