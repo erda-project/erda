@@ -262,6 +262,10 @@ func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggrega
 		}
 	} else if histogram, ok := aggs.Histogram("histogram"); ok {
 		q.ctx.AttributesCache()
+		bucketsCount := len(histogram.Buckets)
+		if bucketsCount > 0 && histogram.Buckets[bucketsCount-1].DocCount == 0 {
+			histogram.Buckets = histogram.Buckets[:bucketsCount-1]
+		}
 		for i, bucket := range histogram.Buckets {
 			if i+1 < len(histogram.Buckets) {
 				q.ctx.attributesCache["next"] = histogram.Buckets[i+1].Aggregations
@@ -281,10 +285,6 @@ func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggrega
 		}
 		delete(q.ctx.attributesCache, "next")
 		delete(q.ctx.attributesCache, "previous")
-		bucketsCount := len(histogram.Buckets)
-		if bucketsCount > 0 && histogram.Buckets[bucketsCount-1].DocCount == 0 {
-			histogram.Buckets = histogram.Buckets[:bucketsCount-1]
-		}
 	} else if rng, ok := aggs.Range("range"); ok {
 		for _, bucket := range rng.Buckets {
 			err := q.parseDimensionsAggsData(rs, bucket.Aggregations, append(buckets, bucket))
