@@ -377,7 +377,11 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		// filter
 		filters := make([]*CustomizeAlertRuleFilter, 0)
 		for _, filter := range rule.Filters {
-			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] && a.microServiceOtherFilterTags[filter.Tag] {
+			if filter.Tag == "application" && filter.Value == "$application_id" {
+				continue
+			}
+
+			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] {
 				continue
 			}
 			if alert.AlertType == customizeAlertTypeOrg && a.orgFilterTags[filter.Tag] {
