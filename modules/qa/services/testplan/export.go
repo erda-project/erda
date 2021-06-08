@@ -43,7 +43,7 @@ func (t *TestPlan) Export(w io.Writer, req apistructs.TestPlanCaseRelExportReque
 	}
 	total := totalResult.Total
 	// 以 size=200 并行获取 testCase，加快速度
-	pageSize := uint64(200)
+	pageSize := 200
 	count := int(total)/int(pageSize) + 1
 	var wg sync.WaitGroup
 	var errs []string
@@ -54,8 +54,8 @@ func (t *TestPlan) Export(w io.Writer, req apistructs.TestPlanCaseRelExportReque
 		if !ok {
 			panic("should not be here")
 		}
-		copiedReq.PageNo = uint64(i + 1)
-		copiedReq.PageSize = pageSize
+		copiedReq.PageNo = int64(i + 1)
+		copiedReq.PageSize = int64(pageSize)
 		wg.Add(1)
 		go func(order int, req apistructs.TestPlanCaseRelPagingRequest, testSetMap map[int][]apistructs.TestSetWithPlanCaseRels) {
 			defer wg.Done()
