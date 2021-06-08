@@ -38,6 +38,10 @@ We split the codes of erda into multiple repositories according to different fun
 
 [erda-ui]: (https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
+## Quickstart
+
+Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full.md)
+
 ## Installation
 
 Please follow How to install Erda.
