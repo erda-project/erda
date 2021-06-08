@@ -46,7 +46,7 @@ Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full
 
 Please follow How to install Erda.
 
-- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [Installation Document](./docs/guides/deploy/How-to-install-the-Erda.md)
 
 ## User Documentation
 
