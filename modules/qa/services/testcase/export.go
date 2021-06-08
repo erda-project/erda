@@ -27,6 +27,8 @@ import (
 	"github.com/erda-project/erda/pkg/xmind"
 )
 
+const maxAllowedNumberForTestCaseNumberExport = 2000
+
 func (svc *Service) Export(w io.Writer, req apistructs.TestCaseExportRequest) error {
 	// 参数校验
 	if !req.FileType.Valid() {
@@ -42,6 +44,12 @@ func (svc *Service) Export(w io.Writer, req apistructs.TestCaseExportRequest) er
 	}
 	endPaging := time.Now()
 	logrus.Debugf("export paging testcases cost: %fs", endPaging.Sub(beginPaging).Seconds())
+
+	// limit
+	if totalResult.Total > maxAllowedNumberForTestCaseNumberExport && req.FileType == apistructs.TestCaseFileTypeExcel {
+		return apierrors.ErrExportTestCases.InvalidParameter(
+			fmt.Sprintf("to many testcases: %d, max allowed number for export excel is: %d, please use xmind", totalResult.Total, maxAllowedNumberForTestCaseNumberExport))
+	}
 
 	// 结果处理
 	var testCases []apistructs.TestCaseWithSimpleSetInfo
