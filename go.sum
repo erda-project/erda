@@ -365,11 +365,11 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-infra v0.0.0-20210406064843-766ab170fe54/go.mod h1:Ku5j0Xu0O4KT5VVW8pVz/6n2oijNpdIn+wJBXeX8L48=
+github.com/erda-project/erda-infra v0.0.0-20210412035315-b1699f584b1e/go.mod h1:ypd23/X24n98Y0sOmFWGZPJQSmD9ywTJUX7bx+nzluY=
 github.com/erda-project/erda-infra v0.0.0-20210429085145-aba847b668ea h1:R4YrvXxk4GqvdVj3CPAd9uWzTcdDVXBYnIIUdz4Q/fE=
 github.com/erda-project/erda-infra v0.0.0-20210429085145-aba847b668ea/go.mod h1:JzDud6McvHHuTs6IO7CzxQMl4c5z50/uxiNaFeeeUkc=
-github.com/erda-project/erda-proto-go v0.0.0-20210422085548-44271074c652 h1:mBnzPAgo9eQ6e9xm47Vz/+E/EnsakpWsAQhBgsBlJ6c=
-github.com/erda-project/erda-proto-go v0.0.0-20210422085548-44271074c652/go.mod h1:SKarso8Zg5BJu6sxw3jpf+bIi0MXjaOR4Jc6AzGD6hU=
+github.com/erda-project/erda-proto-go v0.0.0-20210608065321-ce8fc89bec63 h1:l4cv/4uJ002T5D8uIS+jmjwCg2ebJPPQ6cwnSUE6+mE=
+github.com/erda-project/erda-proto-go v0.0.0-20210608065321-ce8fc89bec63/go.mod h1:HMAMTt/3zX78N7KvDSiTmNpJrljO6KxiO82M+UO6IO4=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210518122121-2ff7d3d4deea h1:496X41IvO3ovFbYh4adY7jr/2yGDJOJDVbqTAVNZapY=
@@ -2072,6 +2072,7 @@ google.golang.org/genproto v0.0.0-20200729003335-053ba62fc06f/go.mod h1:FWY/as6D
 google.golang.org/genproto v0.0.0-20200804131852-c06518451d9c/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20200825200019-8632dd797987/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20210317182105-75c7a8546eb9/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
+google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46/go.mod h1:P3QM42oQyzQSnHPnZ/vqoCdDmzH28fzWByN9asMeM8A=
 google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62 h1:T+FUWTu3APzbXjK+kXH0xGm+CcCBQo6u5IKpH3i1NiQ=
 google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62/go.mod h1:P3QM42oQyzQSnHPnZ/vqoCdDmzH28fzWByN9asMeM8A=
 google.golang.org/grpc v1.26.0 h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=
