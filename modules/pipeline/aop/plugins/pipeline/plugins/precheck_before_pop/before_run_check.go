@@ -34,7 +34,8 @@ type HttpBeforeCheckRun struct {
 }
 
 type RetryOption struct {
-	IntervalSecond uint64 `json:"intervalSecond"`
+	IntervalSecond      uint64 `json:"intervalSecond"`
+	IntervalMillisecond uint64 `json:"intervalMillisecond"`
 }
 
 type CheckRunResult struct {
