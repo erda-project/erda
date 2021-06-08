@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	// "terminus.io/dice/telemetry/promxp"
 )

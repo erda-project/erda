@@ -19,7 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dao"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Create 创建测试集

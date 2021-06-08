@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // 获取项目资源信息，包括service和addon

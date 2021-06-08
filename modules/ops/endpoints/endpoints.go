@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/ops/services/kubernetes"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 
 	"github.com/erda-project/erda/modules/ops/dbclient"

@@ -30,10 +30,10 @@ import (
 	"github.com/erda-project/erda/modules/ops/endpoints/kubernetes"
 	"github.com/erda-project/erda/modules/ops/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dumpstack"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
