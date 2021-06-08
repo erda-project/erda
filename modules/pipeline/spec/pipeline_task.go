@@ -135,6 +135,7 @@ var (
 	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
 	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
+	PipelineTaskExecutorKindK8sJob    PipelineTaskExecutorKind = "k8sjob"
 )
 
 var (
