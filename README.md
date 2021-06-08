@@ -42,7 +42,7 @@ We split the codes of erda into multiple repositories according to different fun
 
 Please follow How to install Erda.
 
-- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [Installation Document](./docs/guides/deploy/How-to-install-the-Erda.md)
 
 ## User Documentation
 
