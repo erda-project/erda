@@ -46,7 +46,7 @@ Since the user management page is now broken, all users must create it by themse
 
 ### Create an org
 Admin user can create org by entering required fields.
-grant the normal user we created before as org manager.
+Grant the normal user we created before as org manager.
 
 ![](../../assets/quickstart_create_org.jpg)
 
