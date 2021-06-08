@@ -40,6 +40,8 @@ We split the codes of erda into multiple repositories according to different fun
 
 ## Quickstart
 
+Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full.md)
+
 ## Installation
 
 Please follow How to install Erda.
