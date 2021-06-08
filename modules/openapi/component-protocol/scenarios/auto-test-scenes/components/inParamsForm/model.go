@@ -88,6 +88,7 @@ type PropChangeOption struct {
 	Label    string             `json:"label"`
 	Value    string             `json:"value"`
 	IsLeaf   bool               `json:"isLeaf"`
+	ToolTip  string             `json:"tooltip"`
 	Children []PropChangeOption `json:"children"`
 }
 
@@ -130,9 +131,6 @@ const (
 	GlobalValueOptionValue       OptionValue = "globalValue"       // 全局参数环境
 	GlobalGlobalOptionValue      OptionValue = "globalGlobal"      // 全局参数环境Global
 )
-
-var MockString = []string{"string", "integer", "float", "boolean", "upper", "lower", "mobile", "digital_letters", "letters", "character", "timestamp",
-	"timestamp_hour", "timestamp_ns", "timestamp_ns_hour", "date", "date_day", "datetime", "datetime_hour"}
 
 type State struct {
 	AutotestSceneRequest apistructs.AutotestSceneRequest `json:"autotestSceneRequest"`

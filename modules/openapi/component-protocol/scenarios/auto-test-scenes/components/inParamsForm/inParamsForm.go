@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/expression"
 )
 
 func (i *ComponentInParamsForm) SetProps() {
@@ -270,11 +271,13 @@ func (i *ComponentInParamsForm) RenderOnSelect(opsData interface{}) error {
 					children = append(children, o)
 				}
 			} else if strings.HasPrefix(value.Value, MockOptionValue.String()) {
-				for _, v := range MockString {
+				i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
+				for _, v := range expression.MockString {
 					o := PropChangeOption{
-						Label:  v,
-						Value:  "${{ random." + v + " }}",
-						IsLeaf: true,
+						Label:   v,
+						Value:   expression.GenRandomRef(v),
+						IsLeaf:  true,
+						ToolTip: i18nLocale.Get("wb.content.autotest.scene."+v, v),
 					}
 					children = append(children, o)
 				}

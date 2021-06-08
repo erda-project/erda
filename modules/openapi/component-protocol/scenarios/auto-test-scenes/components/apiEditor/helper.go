@@ -21,87 +21,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/pkg/expression"
 )
-
-const mockInputStr string = `{
-	"label": "mock",
-	"value": "mock",
-	"isLeaf": false,
-	"children": [{
-		"label": "string",
-		"value": "${{ random.string }}",
-		"isLeaf": true
-	}, {
-		"label": "integer",
-		"value": "${{ random.integer }}",
-		"isLeaf": true
-	}, {
-		"label": "float",
-		"value": "${{ random.float }}",
-		"isLeaf": true
-	}, {
-		"label": "boolean",
-		"value": "${{ random.boolean }}",
-		"isLeaf": true
-	}, {
-		"label": "upper",
-		"value": "${{ random.upper }}",
-		"isLeaf": true
-	}, {
-		"label": "lower",
-		"value": "${{ random.lower }}",
-		"isLeaf": true
-	}, {
-		"label": "mobile",
-		"value": "${{ random.mobile }}",
-		"isLeaf": true
-	}, {
-		"label": "digital_letters",
-		"value": "${{ random.digital_letters }}",
-		"isLeaf": true
-	}, {
-		"label": "letters",
-		"value": "${{ random.letters }}",
-		"isLeaf": true
-	}, {
-		"label": "character",
-		"value": "${{ random.character }}",
-		"isLeaf": true
-	}, {
-		"label": "timestamp",
-		"value": "${{ random.timestamp }}",
-		"isLeaf": true
-	}, {
-		"label": "timestamp_hour",
-		"value": "${{ random.timestamp_hour }}",
-		"isLeaf": true
-	}, {
-		"label": "timestamp_ns",
-		"value": "${{ random.timestamp_ns }}",
-		"isLeaf": true
-	}, {
-		"label": "timestamp_ns_hour",
-		"value": "${{ random.timestamp_ns_hour }}",
-		"isLeaf": true
-	}, {
-		"label": "date",
-		"value": "${{ random.date }}",
-		"isLeaf": true
-	}, {
-		"label": "date_day",
-		"value": "${{ random.date_day }}",
-		"isLeaf": true
-	}, {
-		"label": "datetime",
-		"value": "${{ random.datetime }}",
-		"isLeaf": true
-	}, {
-		"label": "datetime_hour",
-		"value": "${{ random.datetime_hour }}",
-		"isLeaf": true
-	}]
-}`
 
 const props1 string = `{
   "methodList": [
@@ -384,19 +306,29 @@ type Input struct {
 	Label    string  `json:"label"`
 	Value    string  `json:"value"`
 	IsLeaf   bool    `json:"isLeaf"`
+	ToolTip  string  `json:"tooltip"`
 	Children []Input `json:"children"`
 }
 
-func genMockInput() Input {
+func genMockInput(bdl protocol.ContextBundle) Input {
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	var mockInput Input
-	if err := json.Unmarshal([]byte(mockInputStr), &mockInput); err != nil {
-		logrus.Errorf("init mockInput name=testplan component=formModal err: errMsg: %v", err)
+	mockInput.Label = "mock"
+	mockInput.Value = "mock"
+	mockInput.IsLeaf = false
+	var children []Input
+	for _, v := range expression.MockString {
+		o := Input{
+			Label:   v,
+			Value:   expression.GenRandomRef(v),
+			IsLeaf:  true,
+			ToolTip: i18nLocale.Get("wb.content.autotest.scene."+v, v),
+		}
+		children = append(children, o)
 	}
-
+	mockInput.Children = children
 	return mockInput
 }
-
-var mockInput = genMockInput()
 
 // APISpec step.value 的json解析
 type APISpec struct {
