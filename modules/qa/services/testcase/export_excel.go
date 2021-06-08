@@ -15,7 +15,9 @@ package testcase
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/services/i18n"
@@ -27,6 +29,11 @@ const (
 )
 
 func (svc *Service) convert2Excel(tcs []apistructs.TestCaseWithSimpleSetInfo, locale string) ([][]excel.Cell, error) {
+	begin := time.Now()
+	defer func() {
+		end := time.Now()
+		fmt.Println("convert excel: ", end.Sub(begin).Seconds(), "s")
+	}()
 	l := svc.bdl.GetLocale(locale)
 	title1 := []excel.Cell{
 		excel.NewVMergeCell(l.Get(i18n.I18nKeyCaseNum), 1),

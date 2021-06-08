@@ -39,3 +39,10 @@ var (
 	MonitorStreamingDefaultConfig  string
 	MonitorStreamingConfigFilePath string = "conf/monitor/streaming/streaming.yaml"
 )
+
+// msp
+var (
+	//go:embed msp/msp.yaml
+	MSPDefaultConfig  string
+	MSPConfigFilePath string = "conf/msp/msp.yaml"
+)
