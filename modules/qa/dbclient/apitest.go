@@ -14,6 +14,7 @@
 package dbclient
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -104,4 +105,31 @@ func GetApiTestListByUsecaseID(usecaseID int64) ([]ApiTest, error) {
 	}
 
 	return apiTestsList, nil
+}
+
+func ListAPIsByTestCaseIDs(projectID uint64, tcIDs []uint64) (map[uint64][]*ApiTest, error) {
+	var apis []ApiTest
+	sql := cimysql.Engine.In("usecase_id", tcIDs)
+	if len(tcIDs) > 1000 {
+		sql = cimysql.Engine.Where("project_id = ?", projectID)
+	}
+	err := sql.Find(&apis)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list apis by testcases, err: %v", err)
+	}
+	// filter by tcIDs
+	tcIDMap := make(map[uint64]struct{})
+	for _, tcID := range tcIDs {
+		tcIDMap[tcID] = struct{}{}
+	}
+	m := make(map[uint64][]*ApiTest)
+	for _, api := range apis {
+		api := api
+		tcID := uint64(api.UsecaseID)
+		if _, ok := tcIDMap[tcID]; !ok {
+			continue
+		}
+		m[tcID] = append(m[tcID], &api)
+	}
+	return m, nil
 }

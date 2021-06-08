@@ -50,18 +50,6 @@ func (svc *Service) createOrUpdateAPIs(caseID, projectID uint64, apis []*apistru
 	return nil
 }
 
-func (svc *Service) GetApiTestListByUsecaseID(usecaseID int64) ([]*apistructs.ApiTestInfo, error) {
-	ats, err := dbclient.GetApiTestListByUsecaseID(usecaseID)
-	if err != nil {
-		return nil, err
-	}
-	apiTestList := make([]*apistructs.ApiTestInfo, 0)
-	for _, at := range ats {
-		apiTestList = append(apiTestList, convert2ReqStruct(&at))
-	}
-	return apiTestList, nil
-}
-
 // ExecuteAPIs return created pipelien id
 func (svc *Service) ExecuteAPIs(req apistructs.ApiTestsActionRequest) (uint64, error) {
 	if req.ProjectID == 0 {

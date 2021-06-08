@@ -165,8 +165,8 @@ type TestCaseListResponse struct {
 // TestCasePagingRequest 测试用例分页查询
 type TestCasePagingRequest struct {
 	// 分页参数
-	PageNo   uint64 `schema:"pageNo"`
-	PageSize uint64 `schema:"pageSize"`
+	PageNo   int64 `schema:"pageNo"`
+	PageSize int64 `schema:"pageSize"`
 
 	// 项目 ID，目前必填，因为测试用例的 testSetID 可以为 0，若无 projectID 只有 testSetID，会查到别的 project
 	ProjectID        uint64              `schema:"projectID"`       // 当前项目 ID，用于权限校验
