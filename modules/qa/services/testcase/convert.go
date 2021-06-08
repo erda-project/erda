@@ -14,56 +14,81 @@
 package testcase
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dao"
-	"github.com/erda-project/erda/modules/qa/services/apierrors"
 )
 
-// convertTestCase 将 model 转换为 apistruct
-func (svc *Service) convertTestCase(model dao.TestCase) (*apistructs.TestCase, error) {
-	// 获取 API 信息
-	apiTests, err := svc.GetApiTestListByUsecaseID(int64(model.ID))
+func (svc *Service) batchConvertTestCases(projectID uint64, models []dao.TestCase) ([]*apistructs.TestCase, error) {
+	if len(models) == 0 {
+		return nil, nil
+	}
+	// batch query api infos
+	var tcIDs []uint64
+	for _, model := range models {
+		tcIDs = append(tcIDs, model.ID)
+	}
+	apis, err := svc.BatchListAPIs(projectID, tcIDs)
 	if err != nil {
-		return nil, apierrors.ErrGetApiTestInfo.InternalError(err)
+		return nil, err
 	}
-	// apiCount
-	var apiCount apistructs.TestCaseAPICount
-	for _, api := range apiTests {
-		apiCount.Total++
-		switch api.Status {
-		case apistructs.ApiTestCreated:
-			apiCount.Created++
-		case apistructs.ApiTestRunning:
-			apiCount.Running++
-		case apistructs.ApiTestPassed:
-			apiCount.Passed++
-		case apistructs.ApiTestFailed:
-			apiCount.Failed++
+
+	// batch convert models
+	var tcs []*apistructs.TestCase
+	for _, model := range models {
+		// apiCount
+		var apiCount apistructs.TestCaseAPICount
+		for _, api := range apis[model.ID] {
+			apiCount.Total++
+			switch api.Status {
+			case apistructs.ApiTestCreated:
+				apiCount.Created++
+			case apistructs.ApiTestRunning:
+				apiCount.Running++
+			case apistructs.ApiTestPassed:
+				apiCount.Passed++
+			case apistructs.ApiTestFailed:
+				apiCount.Failed++
+			}
 		}
+		// convert
+		testCase := apistructs.TestCase{
+			ID:             uint64(model.ID),
+			Name:           model.Name,
+			Priority:       model.Priority,
+			PreCondition:   model.PreCondition,
+			Desc:           model.Desc,
+			Recycled:       model.Recycled,
+			TestSetID:      model.TestSetID,
+			ProjectID:      model.ProjectID,
+			CreatorID:      model.CreatorID,
+			UpdaterID:      model.UpdaterID,
+			BugIDs:         nil,
+			LabelIDs:       nil,
+			Attachments:    nil,
+			StepAndResults: model.StepAndResults,
+			Labels:         nil,
+			APIs:           apis[model.ID],
+			APICount:       apiCount,
+			CreatedAt:      model.CreatedAt,
+			UpdatedAt:      model.UpdatedAt,
+		}
+		tcs = append(tcs, &testCase)
 	}
 
-	// convert
-	testCase := apistructs.TestCase{
-		ID:             uint64(model.ID),
-		Name:           model.Name,
-		Priority:       model.Priority,
-		PreCondition:   model.PreCondition,
-		Desc:           model.Desc,
-		Recycled:       model.Recycled,
-		TestSetID:      model.TestSetID,
-		ProjectID:      model.ProjectID,
-		CreatorID:      model.CreatorID,
-		UpdaterID:      model.UpdaterID,
-		BugIDs:         nil,
-		LabelIDs:       nil,
-		Attachments:    nil,
-		StepAndResults: model.StepAndResults,
-		Labels:         nil,
-		APIs:           apiTests,
-		APICount:       apiCount,
-		CreatedAt:      model.CreatedAt,
-		UpdatedAt:      model.UpdatedAt,
-	}
+	return tcs, nil
+}
 
-	return &testCase, nil
+// convertTestCase
+// consider if you can use batchConvertTestCases firstly.
+func (svc *Service) convertTestCase(model dao.TestCase) (*apistructs.TestCase, error) {
+	tcs, err := svc.batchConvertTestCases(model.ProjectID, []dao.TestCase{model})
+	if err != nil {
+		return nil, err
+	}
+	if len(tcs) == 0 {
+		return nil, fmt.Errorf("not found model")
+	}
+	return tcs[0], nil
 }
