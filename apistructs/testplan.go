@@ -156,8 +156,8 @@ type TestPlanTestSetListResponse TestSetListResponse
 
 // TestPlanCaseRelPagingRequest 测试计划内测试用例列表请求
 type TestPlanCaseRelPagingRequest struct {
-	PageNo   uint64 `schema:"pageNo"`
-	PageSize uint64 `schema:"pageSize"`
+	PageNo   int64 `schema:"pageNo"`
+	PageSize int64 `schema:"pageSize"`
 
 	RelIDs       []uint64             `schema:"relationID"`
 	TestPlanID   uint64               `schema:"-"`
