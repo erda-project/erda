@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/pkg/cron"
@@ -33,7 +34,8 @@ import (
 )
 
 const (
-	CronBugStatisticsLock        = "/devops/cmdb/cron/issue/lock"
+	CronBugStatisticsLock        = "/devops/cmdb/cron/bug-add-and-repair/lock"
+	CronStatisticsLock           = "/devops/cmdb/cron/issue/lock"
 	waitTimeIfLostDLock          = time.Minute
 	CronBugStatistics            = "cron_bug_statistics"
 	IssueMetricsName             = "issue_metrics_statistics"
@@ -87,7 +89,6 @@ func (r *StatisticsAddAndRepairBugRequest) check() error {
 }
 
 func doMetrics(issueMonitor *IssueMonitor, bdl *bundle.Bundle) {
-	logrus.Info(" doMetrics CollectMetrics start ")
 	metricsObject := apistructs.Metrics{}
 	metricsObject.Metric = []apistructs.Metric{
 		{
@@ -111,11 +112,9 @@ func doMetrics(issueMonitor *IssueMonitor, bdl *bundle.Bundle) {
 		}
 		break
 	}
-	logrus.Info(" doMetrics CollectMetrics end ")
 }
 
 func batchMetrics(issueMonitor []IssueMonitor, bdl *bundle.Bundle) {
-	logrus.Info(" batchMetrics CollectMetrics start ")
 	metricsObject := apistructs.Metrics{}
 	var list []apistructs.Metric
 	for _, v := range issueMonitor {
@@ -141,7 +140,6 @@ func batchMetrics(issueMonitor []IssueMonitor, bdl *bundle.Bundle) {
 		}
 		break
 	}
-	logrus.Info(" batchMetrics CollectMetrics end ")
 }
 
 func RunIssueHistoryData(db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle.Bundle) {
@@ -154,27 +152,23 @@ func RunIssueHistoryData(db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle.Bund
 	}
 
 	for _, project := range allProject {
-		projectObj := project
-		func(projectId uint64) {
-			iterations, err := db.FindIterations(projectId)
-			if err != nil {
-				logrus.Errorf("issue cron FindIterations error %v, projectId %v ", err, project.ID)
-				return
-			}
-			iterations = append(iterations, dao.Iteration{BaseModel: dao.BaseModel{ID: -1, CreatedAt: project.CreatedAt}})
-			for _, iteration := range iterations {
-				request := apistructs.IssueListRequest{ProjectID: uint64(project.ID), IterationID: iteration.ID}
-				issueList, err := db.ListIssue(request)
-				if err == nil && issueList != nil {
-					for _, issue := range issueList {
-						MetricsIssueById(int(issue.ID), db, uc, bdl)
-					}
+		iterations, err := db.FindIterations(uint64(project.ID))
+		if err != nil {
+			logrus.Errorf("issue cron FindIterations error %v, projectId %v ", err, project.ID)
+			return
+		}
+		iterations = append(iterations, dao.Iteration{BaseModel: dao.BaseModel{ID: -1, CreatedAt: project.CreatedAt}})
+		for _, iteration := range iterations {
+			request := apistructs.IssueListRequest{ProjectID: uint64(project.ID), IterationID: iteration.ID, OnlyIDResult: true}
+			issueList, err := db.ListIssue(request)
+			if err == nil && issueList != nil {
+				for _, issue := range issueList {
+					MetricsIssueById(int(issue.ID), db, uc, bdl)
 				}
 			}
-			logrus.Infof("RunIssueHistoryData issue end project %v", project.ID)
-		}(uint64(projectObj.ID))
+		}
+		logrus.Infof("RunIssueHistoryData issue end project %v", project.ID)
 	}
-
 	logrus.Infof("end RunIssueHistoryData time %v", time.Now().Unix())
 }
 
@@ -321,7 +315,66 @@ func MetricsIssueById(ID int, db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle
 	doMetrics(issueMonitor, bdl)
 }
 
-func MetricsAddAndRepairBug(db *dao.DBClient, bdl *bundle.Bundle) {
+func TimedTaskMetricsIssue(db *dao.DBClient, uc *ucauth.UCClient, bdl *bundle.Bundle) {
+	if db == nil {
+		logrus.Errorf("db is empty")
+		return
+	}
+	crond := cron.New()
+	crond.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	lock, err := dlock.New(
+		CronStatisticsLock,
+		func() {
+			logrus.Errorf("[alert] dlock lost, stop current issue cron")
+			cancel()
+			time.Sleep(waitTimeIfLostDLock)
+			logrus.Warn("try to continue issue cron again")
+			go TimedTaskMetricsIssue(db, uc, bdl)
+		},
+		dlock.WithTTL(30),
+	)
+	if err != nil {
+		logrus.Errorf("[alert] failed to get dlock, err: %v", err)
+		time.Sleep(waitTimeIfLostDLock)
+		go TimedTaskMetricsIssue(db, uc, bdl)
+		return
+	}
+	if err := lock.Lock(context.Background()); err != nil {
+		logrus.Errorf("[alert] failed to lock dlock, err: %v", err)
+		time.Sleep(waitTimeIfLostDLock)
+		go TimedTaskMetricsIssue(db, uc, bdl)
+		return
+	}
+
+	defer func() {
+		if lock != nil {
+			_ = lock.UnlockAndClose()
+		}
+	}()
+
+	logrus.Info("issue cron: start")
+
+	if err = crond.AddFunc(conf.MetricsIssueCron(), func() {
+		logrus.Info("cron run start TimedTaskMetricsIssue")
+		go RunIssueHistoryData(db, uc, bdl)
+	}, CronBugStatistics); err != nil {
+		logrus.Errorf("failed to load issue cron item: %s, err: %v", CronBugStatistics, err)
+		return
+	}
+
+	select {
+	case <-ctx.Done():
+		_ = crond.Remove(CronBugStatistics)
+		crond.Stop()
+		logrus.Info("stop issue cron, received cancel signal from channel")
+		return
+	}
+}
+
+func TimedTaskMetricsAddAndRepairBug(db *dao.DBClient, bdl *bundle.Bundle) {
 	if db == nil {
 		logrus.Errorf("db is empty")
 		return
@@ -332,8 +385,27 @@ func MetricsAddAndRepairBug(db *dao.DBClient, bdl *bundle.Bundle) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	lock, err := getCronStatisticsLock(cancel, db, bdl)
+	lock, err := dlock.New(
+		CronBugStatisticsLock,
+		func() {
+			logrus.Errorf("[alert] dlock lost, stop current issue cron")
+			cancel()
+			time.Sleep(waitTimeIfLostDLock)
+			logrus.Warn("try to continue issue cron again")
+			go TimedTaskMetricsAddAndRepairBug(db, bdl)
+		},
+		dlock.WithTTL(30),
+	)
 	if err != nil {
+		logrus.Errorf("[alert] failed to get dlock, err: %v", err)
+		time.Sleep(waitTimeIfLostDLock)
+		go TimedTaskMetricsAddAndRepairBug(db, bdl)
+		return
+	}
+	if err := lock.Lock(context.Background()); err != nil {
+		logrus.Errorf("[alert] failed to lock dlock, err: %v", err)
+		time.Sleep(waitTimeIfLostDLock)
+		go TimedTaskMetricsAddAndRepairBug(db, bdl)
 		return
 	}
 
@@ -402,33 +474,6 @@ func DoCronStatisticsAddAndRepairBug(db *dao.DBClient, bdl *bundle.Bundle) {
 			batchMetrics(batchList, bdl)
 		}
 	}
-}
-
-func getCronStatisticsLock(cancel func(), db *dao.DBClient, bdl *bundle.Bundle) (*dlock.DLock, error) {
-	lock, err := dlock.New(
-		CronBugStatisticsLock,
-		func() {
-			logrus.Errorf("[alert] dlock lost, stop current issue cron")
-			cancel()
-			time.Sleep(waitTimeIfLostDLock)
-			logrus.Warn("try to continue issue cron again")
-			go MetricsAddAndRepairBug(db, bdl)
-		},
-		dlock.WithTTL(30),
-	)
-	if err != nil {
-		logrus.Errorf("[alert] failed to get dlock, err: %v", err)
-		time.Sleep(waitTimeIfLostDLock)
-		go MetricsAddAndRepairBug(db, bdl)
-		return nil, err
-	}
-	if err := lock.Lock(context.Background()); err != nil {
-		logrus.Errorf("[alert] failed to lock dlock, err: %v", err)
-		time.Sleep(waitTimeIfLostDLock)
-		go MetricsAddAndRepairBug(db, bdl)
-		return nil, err
-	}
-	return lock, nil
 }
 
 func statisticsAddAndRepairBug(r StatisticsAddAndRepairBugRequest) (*IssueMonitor, error) {

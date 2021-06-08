@@ -433,6 +433,10 @@ func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
 }
 
+func (e *Endpoints) UCClient() *ucauth.UCClient {
+	return e.uc
+}
+
 // GetLocale 获取本地化资源
 func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 	return e.bdl.GetLocaleByRequest(request)

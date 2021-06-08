@@ -133,9 +133,8 @@ func Initialize() error {
 	)
 
 	//定时上报issue
-	go func() {
-		monitor.MetricsAddAndRepairBug(ep.DBClient(), bdl)
-	}()
+	go monitor.TimedTaskMetricsAddAndRepairBug(ep.DBClient(), bdl)
+	go monitor.TimedTaskMetricsIssue(ep.DBClient(), ep.UCClient(), bdl)
 
 	registerWebHook(bdl)
 
