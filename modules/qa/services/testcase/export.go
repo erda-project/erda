@@ -16,15 +16,14 @@ package testcase
 import (
 	"fmt"
 	"io"
-	"sync"
+	"time"
 
-	"github.com/mohae/deepcopy"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 	"github.com/erda-project/erda/modules/qa/services/i18n"
 	"github.com/erda-project/erda/pkg/excel"
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/xmind"
 )
 
@@ -33,59 +32,22 @@ func (svc *Service) Export(w io.Writer, req apistructs.TestCaseExportRequest) er
 	if !req.FileType.Valid() {
 		return apierrors.ErrExportTestCases.InvalidParameter("fileType")
 	}
+	beginPaging := time.Now()
 	// 根据分页查询条件，获取总数，进行优化
-	req.PageNo = 1
-	req.PageSize = 1
+	req.PageNo = -1
+	req.PageSize = -1
 	totalResult, err := svc.PagingTestCases(req.TestCasePagingRequest)
 	if err != nil {
 		return err
 	}
-	total := totalResult.Total
-
-	// 以 size=200 并行获取 testCase，加快速度
-	pageSize := uint64(200)
-	count := int(total)/int(pageSize) + 1
-	var wg sync.WaitGroup
-	var errs []string
-	testSetMap := make(map[int][]apistructs.TestSetWithCases)
-	for i := 0; i < count; i++ {
-		c := deepcopy.Copy(req.TestCasePagingRequest)
-		copiedReq, ok := c.(apistructs.TestCasePagingRequest)
-		if !ok {
-			panic("should not be here")
-		}
-		copiedReq.PageNo = uint64(i + 1)
-		copiedReq.PageSize = pageSize
-
-		wg.Add(1)
-		go func(order int, req apistructs.TestCasePagingRequest, testSetMap map[int][]apistructs.TestSetWithCases) {
-			defer wg.Done()
-			pagingResult, err := svc.PagingTestCases(req)
-			if err != nil {
-				errs = append(errs, err.Error())
-				return
-			}
-			testSetMap[order] = pagingResult.TestSets
-		}(i, copiedReq, testSetMap)
-	}
-	wg.Wait()
-
-	// 错误处理
-	if len(errs) > 0 {
-		return fmt.Errorf(strutil.Join(errs, ",", true))
-	}
+	endPaging := time.Now()
+	logrus.Debugf("export paging testcases cost: %fs", endPaging.Sub(beginPaging).Seconds())
 
 	// 结果处理
 	var testCases []apistructs.TestCaseWithSimpleSetInfo
-	testSets := make([][]apistructs.TestSetWithCases, 0, count)
-	for i := 0; i < count; i++ {
-		testSets = append(testSets, testSetMap[i])
-	}
-	for _, testSets := range testSets {
-		for _, ts := range testSets {
-			for _, tc := range ts.TestCases {
-				testCases = append(testCases, apistructs.TestCaseWithSimpleSetInfo{TestCase: tc, Directory: ts.Directory})
-			}
+	for _, ts := range totalResult.TestSets {
+		for _, tc := range ts.TestCases {
+			testCases = append(testCases, apistructs.TestCaseWithSimpleSetInfo{TestCase: tc, Directory: ts.Directory})
 		}
 	}
 
