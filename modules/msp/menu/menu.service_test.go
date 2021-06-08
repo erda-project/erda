@@ -14,12 +14,12 @@
 package menu
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/menu/pb"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 )
 
 func Test_menuService_GetMenu(t *testing.T) {

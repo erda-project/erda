@@ -14,6 +14,8 @@
 package menu
 
 import (
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -22,7 +24,6 @@ import (
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	db "github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {
@@ -49,6 +50,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			instanceDB:       &instancedb.InstanceDB{DB: p.DB},
 			bdl:              p.bdl,
 		}
+		// p.menuService.GetMenu
+
 		pb.RegisterMenuServiceImp(p.Register, p.menuService, apis.Options())
 	}
 	return nil
