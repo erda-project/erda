@@ -42,7 +42,7 @@ And register your first account, this account will automatically become the admi
 ![](../../assets/quickstart_switch_to_signup.jpg)
 
 It is best to log out first, register a normal user, and then login back to the admin.
-since the user management page is now broken, all users must create it by themselves at this time, we are fixing this bug.
+Since the user management page is now broken, all users must create it by themselves at this time, we are fixing this bug.
 
 ### Create an org
 Admin user can create org by entering required fields.
@@ -66,7 +66,7 @@ https://docs.erda.cloud
 * you must have a dedicated admin account (admin cannot access DOP, MSP)
 * user management page is broken, all users must create by self (signup page)
 * you must do host binding (erda.local in /etc/hosts)
-* only guaranteed DOP (DevOps Platform) works, and others such as MSP, ECP are not
+* only guarantee DOP (DevOps Platform) works, and others such as MSP, ECP are not
 
 ## Cleanup
 
