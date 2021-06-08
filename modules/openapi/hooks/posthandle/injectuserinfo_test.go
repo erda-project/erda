@@ -19,34 +19,30 @@ import (
 	"strings"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestInjectUserInfo(t *testing.T) {
-	testHookUC = func(b *[]User) {
-		*b = []User{
-			{
-				ID:        "1234",
-				Name:      "name",
-				AvatarURL: "avatar_url",
-				Phone:     "123",
+	monkey.Patch(GetUsers, func(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
+		return map[string]apistructs.UserInfo{
+			"1": {
+				ID:     "123",
+				Name:   "name",
+				Avatar: "avatar_url1",
+				Phone:  "123",
 			},
-			{
-				ID:        "2222",
-				Name:      "name2",
-				AvatarURL: "avatar_url2",
-				Phone:     "1232",
+			"2": {
+				ID:     "314",
+				Name:   "name",
+				Avatar: "avatar_url2",
+				Phone:  "312",
 			},
-			{
-				ID:        "333",
-				Name:      "name3",
-				AvatarURL: "avatar_url3",
-				Phone:     "12333",
-			},
-		}
-	}
+		}, nil
+	})
 	r := http.Response{Header: http.Header{}, Body: ioutil.NopCloser(strings.NewReader(`{"userIDs": ["123", "2345"], "data": {"a": "1", "b": 2}}`))}
 	assert.Nil(t, InjectUserInfo(&r, false))
 	body, err := ioutil.ReadAll(r.Body)
@@ -56,22 +52,10 @@ func TestInjectUserInfo(t *testing.T) {
 }
 
 func TestInjectUserInfo2(t *testing.T) {
-	testHookUC = func(b *[]User) {
-		*b = []User{
-			{
-				ID:        "333",
-				Name:      "name3",
-				AvatarURL: "avatar_url3",
-				Phone:     "12333",
-			},
-		}
-	}
 	originbody := `{"NOuserIDs":["123","2345"],"data":{"a":"1","b":2}}`
 	r := http.Response{Body: ioutil.NopCloser(strings.NewReader(originbody))}
 	assert.Nil(t, InjectUserInfo(&r, false))
 	body, err := ioutil.ReadAll(r.Body)
 	assert.Nil(t, err)
-
 	assert.Equal(t, len(originbody), len(string(body)))
-
 }

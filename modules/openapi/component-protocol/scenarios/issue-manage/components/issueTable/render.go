@@ -662,8 +662,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		{
 			"dataIndex": "id",
 			"title": "ID",
-			"width": 100,
-			"align": "center"
+			"width": 100
         },
         {
             "dataIndex": "title",
