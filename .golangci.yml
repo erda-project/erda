@@ -9,7 +9,7 @@ run:
     - tools/cli/command/generate
     - modules/openapi/api/generate
     - pkg/parser/pipelineyml/pipelineymlv1
-    - modules/openapi/api/generate/api.go
+    - modules/openapi/api/api.go
     - third_party
   skip-files:
     - apistructs/generated_desc.go
