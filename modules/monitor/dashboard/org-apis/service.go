@@ -75,13 +75,17 @@ func calculateStatus(raws []rawStatus, name string) uint8 {
 		}
 		if item.HealthStatus == 2 {
 			if item.Weight == 0 {
-				status.update(1)
+				if name == "machine" {
+					status.update(2)
+				} else {
+					status.update(1)
+				}
+
 			}
 			if item.Weight == 1 {
-				switch name {
-				case "machine":
+				if name == "machine" {
 					status.update(3)
-				default:
+				} else {
 					status.update(2)
 				}
 				failureCnt++
