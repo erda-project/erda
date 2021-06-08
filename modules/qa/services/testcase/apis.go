@@ -14,10 +14,32 @@
 package testcase
 
 import (
+	"time"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/qa/dbclient"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 )
+
+func (svc *Service) BatchListAPIs(projectID uint64, tcIDs []uint64) (map[uint64][]*apistructs.ApiTestInfo, error) {
+	begin := time.Now()
+	m, err := dbclient.ListAPIsByTestCaseIDs(projectID, tcIDs)
+	if err != nil {
+		return nil, err
+	}
+	end := time.Now()
+	logrus.Debugf("batch list APIs cost: %fs", end.Sub(begin).Seconds())
+
+	r := make(map[uint64][]*apistructs.ApiTestInfo)
+	for tcID := range m {
+		for _, api := range m[tcID] {
+			r[tcID] = append(r[tcID], convert2ReqStruct(api))
+		}
+	}
+	return r, nil
+}
 
 func (svc *Service) ListAPIs(testCaseID int64) ([]*apistructs.ApiTestInfo, error) {
 	apis, err := dbclient.GetApiTestListByUsecaseID(testCaseID)

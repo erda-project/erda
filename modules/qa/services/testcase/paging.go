@@ -325,17 +325,25 @@ func (svc *Service) PagingTestCases(req apistructs.TestCasePagingRequest) (*apis
 	)
 
 	// offset, limit
-	offset := (req.PageNo - 1) * req.PageSize
-	limit := req.PageSize
-	sql = sql.Offset(offset).Limit(limit)
+	if req.PageNo == -1 && req.PageSize == -1 {
+		// fetch all records, get total from results
+		sql = sql.Find(&testCases)
+	} else {
+		// fetch requested page number
+		offset := (req.PageNo - 1) * req.PageSize
+		limit := req.PageSize
+		sql = sql.Offset(offset).Limit(limit).Find(&testCases)
+		// reset offset & limit before count
+		sql = sql.Offset(0).Limit(-1).Count(&total)
+	}
 
 	// 执行 sql
-	if err := sql.
-		Offset(offset).Limit(limit).Find(&testCases).
-		// reset offset & limit before count
-		Offset(0).Limit(-1).Count(&total).
-		Error; err != nil {
+	if err := sql.Error; err != nil {
 		return nil, apierrors.ErrPagingTestCases.InternalError(err)
+	}
+
+	if req.PageNo == -1 && req.PageSize == -1 {
+		total = uint64(len(testCases))
 	}
 
 	//当更新人没有更新过用例的时候,传入更新人
@@ -352,8 +360,13 @@ func (svc *Service) PagingTestCases(req apistructs.TestCasePagingRequest) (*apis
 	var testSetIDOrdered []uint64
 
 	// 将 测试用例 按序归类到 测试集
+	// batchConvert testCases
+	convertedTCs, err := svc.batchConvertTestCases(req.ProjectID, testCases)
+	if err != nil {
+		return nil, err
+	}
 	// map: ts.ID -> TestSetWithCases ([]tc)
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		// testSetID 排序
 		if _, ok := resultTestSetMap[tc.TestSetID]; !ok {
 			testSetIDOrdered = append(testSetIDOrdered, tc.TestSetID)
@@ -362,11 +375,7 @@ func (svc *Service) PagingTestCases(req apistructs.TestCasePagingRequest) (*apis
 		tmp := resultTestSetMap[tc.TestSetID]
 		tmp.Directory = mapOfTestSetIDAndDir[tc.TestSetID]
 		tmp.TestSetID = tc.TestSetID
-		_tc, err := svc.convertTestCase(tc)
-		if err != nil {
-			return nil, err
-		}
-		tmp.TestCases = append(tmp.TestCases, *_tc)
+		tmp.TestCases = append(tmp.TestCases, *convertedTCs[i])
 		resultTestSetMap[tc.TestSetID] = tmp
 	}
 	resultTestSets := make([]apistructs.TestSetWithCases, 0)
