@@ -1,0 +1,18 @@
+http-server:
+    addr: ":8080"
+health:
+
+grpc-server:
+    addr: ":7080"
+
+service-register:
+
+mysql:
+# host: "${MYSQL_HOST:localhost}"
+# port: ${MYSQL_PORT:3306}
+# username: "${MYSQL_USERNAME:root}"
+# password: "${MYSQL_PASSWORD:123456}"
+# database: "${MYSQL_DATABASE:dice}"
+
+erda.msp.menu:
+
