@@ -21,6 +21,7 @@ import (
 const (
 	TableInstance       = "tb_tmc_instance"
 	TableInstanceTenant = "tb_tmc_instance_tenant"
+	TableTmc            = "tb_tmc"
 )
 
 // InstanceTenant .
@@ -58,3 +59,18 @@ type Instance struct {
 
 // TableName .
 func (Instance) TableName() string { return TableInstance }
+
+// Tmc .
+type Tmc struct {
+	ID          int       `gorm:"column:id;primary_key"`
+	Name        string    `gorm:"column:name"`
+	Engine      string    `gorm:"column:engine"`
+	ServiceType string    `gorm:"column:service_type"`
+	DeployMode  string    `gorm:"column:deploy_mode"`
+	IsDeleted   string    `gorm:"column:is_deleted"`
+	CreateTime  time.Time `gorm:"column:create_time"`
+	UpdateTime  time.Time `gorm:"column:update_time"`
+}
+
+// TableName .
+func (Tmc) TableName() string { return TableTmc }
