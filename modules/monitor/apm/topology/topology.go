@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	"log"
 	"math"
 	"net/http"
@@ -41,6 +40,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 )
 
 type Vo struct {
