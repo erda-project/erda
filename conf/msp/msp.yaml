@@ -14,5 +14,7 @@ mysql:
 # password: "${MYSQL_PASSWORD:123456}"
 # database: "${MYSQL_DATABASE:dice}"
 
-erda.msp.menu:
+permission:
 
+msp.permission:
+erda.msp.menu:
