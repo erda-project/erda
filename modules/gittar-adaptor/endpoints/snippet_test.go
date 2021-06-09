@@ -47,22 +47,31 @@ func Test_getBranchFromYmlPath(t *testing.T) {
 	var tables = []struct {
 		path   string
 		branch string
+		name   string
 	}{
 		{
 			path:   "name/dev/master/dice.yml",
 			branch: "master",
+			name:   "/dice.yml",
 		},
 		{
-			path:   "/baseName/dev/dev/dice.yml",
+			path:   "/baseName/dev/dev/aa/dice.yml",
 			branch: "dev",
+			name:   "/aa/dice.yml",
 		},
 		{
 			path:   "64/DEV/feature/local/pipeline.yml",
 			branch: "feature/local",
+			name:   "/pipeline.yml",
+		},
+		{
+			path:   "docker-spring-boot-java-web-service-example/TEST/develop/.dice/pipelines/xxx.yml",
+			branch: "develop",
+			name:   "/.dice/pipelines/xxx.yml",
 		},
 	}
 
 	for _, v := range tables {
-		assert.Equal(t, getBranchFromYmlPath(v.path), v.branch)
+		assert.Equal(t, getBranchFromYmlPath(v.path, v.name), v.branch)
 	}
 }
