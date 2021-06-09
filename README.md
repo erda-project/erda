@@ -46,7 +46,7 @@ Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full
 
 Please follow How to install Erda.
 
-- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [Installation Document](./docs/guides/deploy/How-to-install-the-Erda.md)
 
 ## User Documentation
 
@@ -64,6 +64,7 @@ Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRI
 If you have any questions, please feel free to contact us.
 
 - Email: erda@terminus.io
+- Twitter: [@ErdaProject](https://twitter.com/ErdaProject)
 - Zhihu：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - WeChat Official Account:
 

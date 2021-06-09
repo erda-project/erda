@@ -62,12 +62,13 @@ type Conf struct {
 	OpenAPIDomain         string        `env:"OPENAPI_PUBLIC_ADDR"` // Deprecated: after cli refactored
 	AvatarStorageURL      string        `env:"AVATAR_STORAGE_URL"`  // file:///avatars or oss://appkey:appsecret@endpoint/bucket
 	LicenseKey            string        `env:"LICENSE_KEY"`
-	HostSyncInterval      time.Duration `env:"INTERVAL" default:"2m"`                    // 主机实际资源使用同步间隔
-	TaskSyncDuration      time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`          // 任务状态信息同步间隔
-	TaskCleanDuration     time.Duration `env:"TASK_CLEAN_DURATION" default:"24h"`        // 任务信息回收间隔
-	AuditCleanCron        string        `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`   // 审计软删除任务执行周期
-	AuditArchiveCron      string        `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"` // 审计归档任务执行周期
-	SysAuditCleanIterval  int           `env:"SYS_AUDIT_CLEAN_ITERVAL" default:"-7"`     // 系统审计清除周期
+	HostSyncInterval      time.Duration `env:"INTERVAL" default:"2m"`                      // 主机实际资源使用同步间隔
+	TaskSyncDuration      time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`            // 任务状态信息同步间隔
+	TaskCleanDuration     time.Duration `env:"TASK_CLEAN_DURATION" default:"24h"`          // 任务信息回收间隔
+	AuditCleanCron        string        `env:"AUDIT_CLEAN_CRON" default:"0 0 3 * * ?"`     // 审计软删除任务执行周期
+	AuditArchiveCron      string        `env:"AUDIT_ARCHIVE_CRON" default:"0 0 4 * * ?"`   // 审计归档任务执行周期
+	MetricsIssueCron      string        `env:"METRICS_ISSUE_CRON" default:"0 0 0 1/7 * ?"` // metrics issue report monitor execution cycle
+	SysAuditCleanIterval  int           `env:"SYS_AUDIT_CLEAN_ITERVAL" default:"-7"`       // 系统审计清除周期
 	RedisMasterName       string        `default:"my-master" env:"REDIS_MASTER_NAME"`
 	RedisSentinelAddrs    string        `default:"" env:"REDIS_SENTINELS_ADDR"`
 	RedisAddr             string        `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
@@ -575,4 +576,8 @@ func OryCompatibleClientID() string {
 
 func OryCompatibleClientSecret() string {
 	return ""
+}
+
+func MetricsIssueCron() string {
+	return cfg.MetricsIssueCron
 }
