@@ -24,7 +24,7 @@ import (
 
 // CreateTestAPI 创建API 测试
 func (b *Bundle) CreateTestAPI(req apistructs.ApiTestInfo) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) CreateTestAPI(req apistructs.ApiTestInfo) error {
 
 // UpdateTestAPI 更新 API 测试
 func (b *Bundle) UpdateTestAPI(req apistructs.ApiTestInfo) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (b *Bundle) UpdateTestAPI(req apistructs.ApiTestInfo) error {
 
 // DeleteTestAPI 删除 API 测试
 func (b *Bundle) DeleteTestAPI(apiID int64) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (b *Bundle) DeleteTestAPI(apiID int64) error {
 
 // GetTestAPI 获取指定 API 测试信息
 func (b *Bundle) GetTestAPI(apiID int64) (*apistructs.ApiTestInfo, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (b *Bundle) GetTestAPI(apiID int64) (*apistructs.ApiTestInfo, error) {
 
 // ListTestAPI 获取 API 测试列表
 func (b *Bundle) ListTestAPI(usecaseID int64) ([]*apistructs.ApiTestInfo, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

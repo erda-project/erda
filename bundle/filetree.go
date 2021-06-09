@@ -27,7 +27,7 @@ import (
 func (b *Bundle) ListGittarFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) (results []apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (b *Bundle) ListGittarFileTreeNodes(req apistructs.UnifiedFileTreeNodeListR
 func (b *Bundle) GetGittarFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (b *Bundle) FuzzySearchGittarFileTreeNodes(query apistructs.UnifiedFileTree
 		req.Scope = apistructs.FileTreeScopeProjectApp
 	}
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (b *Bundle) FuzzySearchGittarFileTreeNodes(query apistructs.UnifiedFileTree
 func (b *Bundle) CreateGittarFileTreeNodes(req apistructs.UnifiedFileTreeNodeCreateRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (b *Bundle) CreateGittarFileTreeNodes(req apistructs.UnifiedFileTreeNodeCre
 func (b *Bundle) DeleteGittarFileTreeNodes(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (b *Bundle) FindGittarFileTreeNodeAncestors(req apistructs.UnifiedFileTreeN
 	var request *httpclient.Request
 	var response apistructs.UnifiedFileTreeNodeFindAncestorsResponse
 
-	host, err := b.urls.GittarAdaptor()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (b *Bundle) FindGittarFileTreeNodeAncestors(req apistructs.UnifiedFileTreeN
 func (b *Bundle) ListQaFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) (results []apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (b *Bundle) ListQaFileTreeNodes(req apistructs.UnifiedFileTreeNodeListReque
 func (b *Bundle) GetQaFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (b *Bundle) FuzzySearchQaFileTreeNodes(query apistructs.UnifiedFileTreeNode
 			req := query
 			req.Scope = scope
 
-			host, err := b.urls.QA()
+			host, err := b.urls.DOP()
 			if err != nil {
 				warn = err
 				return
@@ -313,7 +313,7 @@ func (b *Bundle) FuzzySearchQaFileTreeNodes(query apistructs.UnifiedFileTreeNode
 func (b *Bundle) CreateQaFileTreeNodes(req apistructs.UnifiedFileTreeNodeCreateRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func (b *Bundle) CreateQaFileTreeNodes(req apistructs.UnifiedFileTreeNodeCreateR
 func (b *Bundle) DeleteQaFileTreeNodes(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	var request *httpclient.Request
 
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func (b *Bundle) FindQaFileTreeNodeAncestors(req apistructs.UnifiedFileTreeNodeF
 	var request *httpclient.Request
 	var response apistructs.UnifiedFileTreeNodeFindAncestorsResponse
 
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

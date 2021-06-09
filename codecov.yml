@@ -40,3 +40,4 @@ ignore:
   - "modules/*/conf"
   - "modules/*/dbclient"
   - "modules/*/dao"
+  - "bundle"

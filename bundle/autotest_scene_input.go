@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) ListAutoTestSceneInput(req apistructs.AutotestSceneRequest) ([]apistructs.AutoTestSceneInput, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) ListAutoTestSceneInput(req apistructs.AutotestSceneRequest) ([]
 }
 
 func (b *Bundle) UpdateAutoTestSceneInputs(req apistructs.AutotestSceneInputUpdateRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -65,7 +65,7 @@ func (b *Bundle) UpdateAutoTestSceneInputs(req apistructs.AutotestSceneInputUpda
 }
 
 func (b *Bundle) DeleteAutoTestSceneInput(req apistructs.AutotestSceneRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -85,7 +85,7 @@ func (b *Bundle) DeleteAutoTestSceneInput(req apistructs.AutotestSceneRequest) (
 }
 
 func (b *Bundle) CreateAutoTestSceneInput(req apistructs.AutotestSceneRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}

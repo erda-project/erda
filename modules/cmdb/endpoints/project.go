@@ -624,7 +624,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	}, nil
 }
 
-// ListProjectResourceUsage 项目的 CPU/Memory 使用率的历史图表s
+// ListProjectResourceUsage 项目的 CPU/Memory 使用率的历史图表
 func (e *Endpoints) ListProjectResourceUsage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// 获取当前用户
 	userID, err := user.GetUserID(r)

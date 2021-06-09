@@ -39,7 +39,7 @@ type CreateAPIAssetResponse struct {
 
 // CreateAPIAsset 创建 API Asset
 func (b *Bundle) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apistructs.APIAssetID, error) {
-	host, err := b.urls.APIM()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return "", err
 	}

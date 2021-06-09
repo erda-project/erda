@@ -22,7 +22,7 @@ import (
 )
 
 func (b *Bundle) ListTestPlanCaseRel(testCaseIDs []uint64) ([]apistructs.TestPlanCaseRel, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

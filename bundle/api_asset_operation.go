@@ -37,7 +37,7 @@ type SearchAPIOperationHandle interface {
 // SearchAPIOperations 从集市中搜索 API 列表
 // keyword 可以为接口名(对应 oas3 文件中的 operationId) 或路径
 func (b *Bundle) SearchAPIOperations(orgID uint64, userID string, keyword string) ([]*apistructs.APIOperationSummary, error) {
-	host, err := b.urls.APIM()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (b *Bundle) SearchAPIOperations(orgID uint64, userID string, keyword string
 // GetAPIOperation 查询 operation 详情
 // id: apistructs.APIOperationSummary{}.ID
 func (b *Bundle) GetAPIOperation(orgID uint64, userID string, id uint64) (*apistructs.APIOperation, error) {
-	host, err := b.urls.APIM()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
