@@ -3,13 +3,13 @@
 ### Prerequisites
 
 - Kubernetes 1.16 +
-  - Each node needs at least 4 core CPU, 16G memory
   - At least 4 Nodes (1 Master and 3 Workers)
+  - Each node needs at least 4 core CPU, 16G memory
   - **Don't Install the ingress-controller-manager component**
 - Docker 19.03+
 - CentOS 7.4 +
 - Helm 3 +
-- Generic Domain Name (which is used to visit the Erda cluster，e.g. *.erda.io, Optional)
+- Generic Domain Name (Optional, which is used to visit the Erda cluster，e.g. *.erda.io)
 
 
 
@@ -29,6 +29,13 @@
 2. Apply Erda necessary configurations on the **Kubernetes Master Node**.
 
    - make sure the **kubeconfig** file on the ~/.kube/config.
+
+     - Make sure the kubeconfig contains following configuration
+       - `certificate-authority-data`
+       - `client-certificate-data`
+       - `client-key-data`
+
+     
 
    - set configuration to prepare the Erda and execute the `prepare.sh` script
 
@@ -57,7 +64,7 @@
    - update `insecure-registries` in the config of the docker daemon 
 
      ```shell
-     # edit the /etc/docker/daemon.json on each node
+     # edit the /etc/docker/daemon.json on *each node*
      ...
          "insecure-registries": [
              "0.0.0.0/0"
@@ -70,9 +77,9 @@
 
      
 
-   - set NFS storage as network storage to each node. 
+   - set NFS share storage as network storage to each node. 
 
-     - if you already have share storage like AliCloud NAS, you need to set them to each node with command like:
+     - if you already have share storage like AliCloud NAS, you need to set them to **each node** with command like:
 
        ```shell
        mount -t <storage_type> <your-share-storage-node-ip>:<your-share-storage-dir> /netdata
@@ -97,7 +104,7 @@
       ```shell
       # you can find the LB machine on your Kubernetes cluster with the command：
       
-      kubectl get node -o wide --show-labels | grep lb
+      kubectl get node -o wide --show-labels | grep dice/lb
       ```
 
       - keep the node IP， you will use it when  you set the **generic domain name**
@@ -130,6 +137,8 @@
      bash scripts/push-ext.sh
      ```
 
+     
+
    - If you have a real generic domain name, you need to set the generic domain name with the LB Node IP.
 
      > For example, suppose the IP of the LB node is 10.0.0.1 and the generic domain name( ERDA_GENERIC_DOMAIN ) is *.erda.io. you need to bind the two together on the specified resolver like DNS or F5 Server.
@@ -148,6 +157,8 @@
      # Note: The org-name of this example is erda-test
      10.0.0.1 erda-test-org.erda.io
      ```
+
+     
 
    - set your Kubernetes nodes label with your created organization name（organization is a name for a group in Erda）
 
