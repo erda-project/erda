@@ -87,12 +87,6 @@ func Test_getMethodName(t *testing.T) {
 		},
 		{
 			args: args{
-				method: func() {},
-			},
-			want: "func1",
-		},
-		{
-			args: args{
 				method: testInterface.TestFunc_1,
 			},
 			want: "TestFunc_1",
