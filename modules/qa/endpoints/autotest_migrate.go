@@ -17,8 +17,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 type migrateRequest struct {

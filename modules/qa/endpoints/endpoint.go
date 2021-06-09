@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/qa/services/testcase"
 	"github.com/erda-project/erda/modules/qa/services/testplan"
 	"github.com/erda-project/erda/modules/qa/services/testset"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
@@ -150,7 +150,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/spaces", Method: http.MethodGet, Handler: e.GetAutoTestSpaceList},
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodGet, Handler: e.GetAutoTestSpace},
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodDelete, Handler: e.DeleteAutoTestSpace},
-		{Path: "/api/autotests/spaces/actions/copy", Method: http.MethodPost, Handler: e.CopyAutoTestSpace},
+		{Path: "/api/autotests/spaces/actions/copy", Method: http.MethodPost, Handler: e.CopyAutoTestSpaceV2},
 		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, WriterHandler: e.ExportAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/import", Method: http.MethodPost, Handler: e.ImportAutotestSpace},
 

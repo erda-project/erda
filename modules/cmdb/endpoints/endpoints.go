@@ -58,7 +58,7 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/project"
 	"github.com/erda-project/erda/modules/cmdb/services/publisher"
 	"github.com/erda-project/erda/modules/cmdb/services/ticket"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -431,6 +431,10 @@ func WithGittarFileTree(fileTree *filetree.FileTree) Option {
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
+}
+
+func (e *Endpoints) UCClient() *ucauth.UCClient {
+	return e.uc
 }
 
 // GetLocale 获取本地化资源

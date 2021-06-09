@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type OryKratosSession struct {
@@ -153,7 +153,7 @@ func getUserByKey(kratosPrivateAddr string, key string) ([]User, error) {
 			return nil, err
 		}
 		for _, u := range ul {
-			if strings.Contains(u.Email, key) {
+			if strings.Contains(u.Name, key) || strings.Contains(u.Email, key) {
 				users = append(users, u)
 				cnt++
 			}

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -29,9 +30,9 @@ import (
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/i18n"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	i18npkg "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -119,6 +120,16 @@ func RenderResponse(req *apistructs.ComponentProtocolRequest) *apistructs.Compon
 		}
 		rsp.UserInfo = userInfo
 	}
+
+	err := protocol.GetGlobalStateKV(req.Protocol, protocol.GlobalInnerKeyError.String())
+	if err != nil {
+		rsp.Error = apistructs.ErrorResponse{
+			Code: strconv.Itoa(http.StatusInternalServerError),
+			Msg:  err.(string),
+		}
+		rsp.Success = false
+	}
+
 	return &rsp
 }
 

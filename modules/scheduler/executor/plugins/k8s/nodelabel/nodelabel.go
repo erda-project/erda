@@ -19,7 +19,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type NodeLabel struct {

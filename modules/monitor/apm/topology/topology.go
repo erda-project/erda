@@ -86,6 +86,7 @@ const (
 	topologyNodeDb        = "topology_node_db"
 	topologyNodeCache     = "topology_node_cache"
 	topologyNodeMq        = "topology_node_mq"
+	topologyNodeOther     = "topology_node_other"
 	processAnalysisNodejs = "process_analysis_nodejs"
 	processAnalysisJava   = "process_analysis_java"
 )
@@ -664,7 +665,7 @@ const (
 )
 
 func (topology *provider) GetExceptionTypes(language i18n.LanguageCodes, params ServiceParams) ([]string, interface{}) {
-	descriptions, err := topology.GetExceptionDescription(language, params)
+	descriptions, err := topology.GetExceptionDescription(language, params, 50, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -811,17 +812,8 @@ func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
 }
 
 func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
-	// default limit 10
-	if limit == 0 || limit > 50 {
-		limit = 10
-	}
-	// default order by time
-	if sort != ExceptionTimeSortStrategy && sort != ExceptionCountSortStrategy {
-		sort = ExceptionTimeSortStrategy
-	}
-
 	result := []ExceptionDescription{}
-	descriptions, err := topology.GetExceptionDescription(language, params)
+	descriptions, err := topology.GetExceptionDescription(language, params, limit, sort, exceptionType)
 	if exceptionType != "" {
 		for _, description := range descriptions {
 			if description.ExceptionType == exceptionType {
@@ -832,50 +824,68 @@ func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, param
 		result = descriptions
 	}
 
-	// execute sort
-	result = ExceptionOrderByStrategyExecute(sort, result)
-
-	// execute limit
-	if len(result) > int(limit) {
-		result = result[0:limit]
-	}
-
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams) ([]ExceptionDescription, error) {
-	sql := "SELECT * FROM error_description_v2 WHERE terminus_key = ? AND service_name = ? ALLOW FILTERING;"
-
-	sliceMap, _ := topology.cassandraSession.Query(sql,
-		params.ScopeId, params.ServiceName).Iter().SliceMap()
-
-	countSql := "SELECT count(0) FROM error_count WHERE error_id = ? ALLOW FILTERING;"
-	var descriptions []ExceptionDescription
-	for _, row := range sliceMap {
-		timeMS := row["timestamp"].(int64) / 1e6
-		if timeMS < params.StartTime || timeMS > params.EndTime {
-			continue
-		}
-
-		tags := row["tags"].(map[string]string)
-		instanceId := tags["instance_id"]
-		var exceptionDescription ExceptionDescription
-		exceptionDescription.InstanceId = instanceId
-		exceptionDescription.Method = tags["method"]
-		exceptionDescription.Class = tags["class"]
-		exceptionDescription.Message = tags["message"]
-		exceptionDescription.ExceptionType = tags["type"]
-		exceptionDescription.Time = time.Unix(0, row["timestamp"].(int64)).Format(TimeLayout)
-		count, _ := topology.cassandraSession.Query(countSql,
-			row["error_id"]).Iter().SliceMap()
-		exceptionDescription.Count = count[0]["count"].(int64)
-		descriptions = append(descriptions, exceptionDescription)
+func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 10
 	}
 
-	return descriptions, nil
+	if sort != ExceptionTimeSortStrategy && sort != ExceptionCountSortStrategy {
+		sort = ExceptionTimeSortStrategy
+	}
+
+	if sort == ExceptionTimeSortStrategy {
+		sort = "max(timestamp) DESC"
+	}
+
+	if sort == ExceptionCountSortStrategy {
+		sort = "sum(count::field) DESC"
+	}
+
+	var filter bytes.Buffer
+	if exceptionType != "" {
+		filter.WriteString(" AND type::tag=$type")
+	}
+	sql := fmt.Sprintf("SELECT instance_id::tag,method::tag,class::tag,exception_message::tag,type::tag,max(timestamp),sum(count::field) FROM error_alert WHERE service_id::tag=$service_id AND terminus_key::tag=$terminus_key %s GROUP BY error_id::tag ORDER BY %s LIMIT %v", filter.String(), sort, limit)
+
+	paramMap := map[string]interface{}{
+		"service_id":   params.ServiceId,
+		"type":         exceptionType,
+		"terminus_key": params.ScopeId,
+	}
+
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.StartTime, 10))
+	options.Set("end", strconv.FormatInt(params.EndTime, 10))
+	source, err := topology.metricq.Query(
+		metricq.InfluxQL,
+		sql,
+		paramMap,
+		options)
+	if err != nil {
+		return nil, err
+	}
+
+	var exceptionDescriptions []ExceptionDescription
+
+	for _, detail := range source.ResultSet.Rows {
+		var exceptionDescription ExceptionDescription
+		exceptionDescription.InstanceId = detail[0].(string)
+		exceptionDescription.Method = detail[1].(string)
+		exceptionDescription.Class = detail[2].(string)
+		exceptionDescription.Message = detail[3].(string)
+		exceptionDescription.ExceptionType = detail[4].(string)
+		exceptionDescription.Time = time.Unix(0, int64(detail[5].(float64))).Format(TimeLayout)
+		exceptionDescription.Count = int64(detail[6].(float64))
+		exceptionDescriptions = append(exceptionDescriptions, exceptionDescription)
+	}
+
+	return exceptionDescriptions, nil
 }
 
 func (topology *provider) GetDashBoardByServiceType(params ProcessParams) (string, error) {
@@ -1665,6 +1675,8 @@ func getDashboardId(nodeType string) string {
 		return processAnalysisJava
 	case strings.ToLower(NodeJsProcessType):
 		return processAnalysisNodejs
+	case strings.ToLower(TypeHttp):
+		return topologyNodeOther
 	default:
 		return ""
 	}

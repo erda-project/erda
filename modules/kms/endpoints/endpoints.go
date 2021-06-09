@@ -17,7 +17,7 @@ package endpoints
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/kms"
 )
 

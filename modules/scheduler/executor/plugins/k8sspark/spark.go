@@ -34,7 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8sspark/sparkapplication"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

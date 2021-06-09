@@ -31,7 +31,7 @@ import (
 	aliyun_resources "github.com/erda-project/erda/modules/ops/impl/aliyun-resources"
 	"github.com/erda-project/erda/modules/ops/impl/aliyun-resources/vpc"
 	"github.com/erda-project/erda/pkg/aliyunclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 type cachedRegionItem struct {

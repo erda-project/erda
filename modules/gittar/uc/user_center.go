@@ -26,7 +26,8 @@ import (
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type Token struct {
@@ -70,6 +71,24 @@ func FindUserById(id string) (*apistructs.UserInfoDto, error) {
 	}
 	if id == "0" {
 		return nil, nil
+	}
+	if conf.OryEnabled() {
+		uc := ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
+		user, err := uc.GetUser(id)
+		if err != nil {
+			return nil, err
+		}
+		userInfo := &apistructs.UserInfoDto{
+			AvatarURL: user.AvatarURL,
+			Email:     user.Email,
+			UserID:    user.ID,
+			NickName:  user.Nick,
+			Phone:     user.Phone,
+			RealName:  user.Name,
+			Username:  user.Name,
+		}
+		userCache.Set(id, userInfo, cache.DefaultExpiration)
+		return userInfo, nil
 	}
 	token, err := GetToken(false)
 	if err != nil {

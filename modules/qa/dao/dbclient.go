@@ -19,7 +19,7 @@ import (
 	"reflect"
 
 	"github.com/erda-project/erda/modules/qa/conf"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 
 	"github.com/jinzhu/gorm"
 	gormbulk "github.com/t-tiger/gorm-bulk-insert"

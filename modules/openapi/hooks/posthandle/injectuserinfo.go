@@ -19,55 +19,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"sync"
-	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 var (
-	once      sync.Once
-	tokenAuth *ucauth.UCTokenAuth
-	client    *httpclient.HTTPClient
-
-	// 用于 ut
-	testHookUC func(*[]User)
+	once sync.Once
+	uc   *ucauth.UCClient
 )
-
-// USERID user id 可能是 int 或 string
-type USERID string
-
-// UnmarshalJSON maybe int or string, unmarshal them to string(USERID)
-func (u *USERID) UnmarshalJSON(b []byte) error {
-	var intid int
-	if err := json.Unmarshal(b, &intid); err != nil {
-		var stringid string
-		if err := json.Unmarshal(b, &stringid); err != nil {
-			return err
-		}
-		*u = USERID(stringid)
-		return nil
-	}
-	*u = USERID(strconv.Itoa(intid))
-	return nil
-}
-
-// User 用户中心用户数据结构
-type User struct {
-	ID        USERID `json:"user_id"`
-	Name      string `json:"username"`
-	AvatarURL string `json:"avatar_url"`
-	Phone     string `json:"phone_number"`
-	Email     string `json:"email"`
-	Nick      string `json:"nickname"`
-}
 
 // InjectUserInfo 对 resp 的 body 中注入 userinfo
 func InjectUserInfo(resp *http.Response, needDesensitize bool) error {
@@ -124,67 +88,18 @@ func InjectUserInfo(resp *http.Response, needDesensitize bool) error {
 
 func GetUsers(IDs []string, needDesensitize bool) (map[string]apistructs.UserInfo, error) {
 	once.Do(func() {
-		if testHookUC == nil {
-			var err error
-			tokenAuth, err = ucauth.NewUCTokenAuth(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
-			if err != nil {
-				panic(err)
-			}
+		uc = ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+		if conf.OryEnabled() {
+			uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 		}
-		client = httpclient.New(httpclient.WithDialerKeepAlive(10 * time.Second))
 	})
-	var (
-		err   error
-		token ucauth.OAuthToken
-	)
-	if testHookUC == nil {
-		if token, err = tokenAuth.GetServerToken(false); err != nil {
-			return nil, err
-		}
-	}
-	parts := make([]string, len(IDs))
-	for i := range IDs {
-		parts[i] = strutil.Concat("user_id:", IDs[i])
-	}
-	query := strutil.Join(parts, " OR ")
-	b := []User{}
-	var body bytes.Buffer
-	if testHookUC != nil {
-		testHookUC(&b)
-	} else {
-		f := func() (*httpclient.Response, error) {
-			resp, err := client.Get(discover.UC()).Path("/api/open/v1/users").Param("query", query).
-				Header("Authorization", strutil.Concat("Bearer ", token.AccessToken)).Do().Body(&body)
-			return resp, err
-		}
-		resp, err := f()
-		if err != nil {
-			return nil, err
-		}
-		if resp.StatusCode() > 400 {
-			// token 过期, 重新申请, 但是只会重试一次
-			tokenAuth.ExpireServerToken()
-			if token, err = tokenAuth.GetServerToken(true); err != nil {
-				return nil, err
-			}
-			resp2, err := f()
-			if err != nil {
-				return nil, err
-			}
-			if !resp2.IsOK() {
-				return nil, fmt.Errorf("failed to get users(token refreshed), status code: %d",
-					resp.StatusCode())
-			}
 
-		} else if !resp.IsOK() {
-			return nil, fmt.Errorf("failed to get users, status code: %d", resp.StatusCode())
-		}
-		if err := json.NewDecoder(&body).Decode(&b); err != nil {
-			return nil, err
-		}
+	b, err := uc.FindUsers(IDs)
+	if err != nil {
+		return nil, err
 	}
+
 	users := make(map[string]apistructs.UserInfo, len(b))
-	// 是否需要脱敏处理
 	if needDesensitize {
 		for i := range b {
 			users[string(b[i].ID)] = apistructs.UserInfo{

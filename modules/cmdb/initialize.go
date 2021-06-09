@@ -71,10 +71,10 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/publisher"
 	"github.com/erda-project/erda/modules/cmdb/services/ticket"
 	"github.com/erda-project/erda/modules/cmdb/utils"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/encryption"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
@@ -133,9 +133,8 @@ func Initialize() error {
 	)
 
 	//定时上报issue
-	go func() {
-		monitor.MetricsAddAndRepairBug(ep.DBClient(), bdl)
-	}()
+	go monitor.TimedTaskMetricsAddAndRepairBug(ep.DBClient(), bdl)
+	go monitor.TimedTaskMetricsIssue(ep.DBClient(), ep.UCClient(), bdl)
 
 	registerWebHook(bdl)
 

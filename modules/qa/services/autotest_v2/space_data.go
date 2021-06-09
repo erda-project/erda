@@ -25,9 +25,9 @@ import (
 	"github.com/erda-project/erda/modules/qa/dao"
 	"github.com/erda-project/erda/modules/qa/services/apierrors"
 	"github.com/erda-project/erda/modules/qa/services/i18n"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/expression"
-	"github.com/erda-project/erda/pkg/jsonparse"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -402,7 +402,9 @@ func (a *AutoTestSpaceData) CreateNewSpace() error {
 	spaceName := a.Space.Name
 	if a.IsCopy {
 		spaceName, err = a.svc.GenerateSpaceName(spaceName, int64(a.ProjectID))
-		return err
+		if err != nil {
+			return err
+		}
 	}
 	space, err := a.svc.CreateSpace(apistructs.AutoTestSpaceCreateRequest{
 		Name:         spaceName,

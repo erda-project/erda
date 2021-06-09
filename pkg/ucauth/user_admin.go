@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -122,6 +122,10 @@ func (c *UCClient) FindUsersByKey(key string) ([]User, error) {
 }
 
 func (c *UCClient) FuzzSearchUserByName(req *apistructs.UserPagingRequest) ([]User, error) {
+	if c.oryEnabled() {
+		return getUserByKey(c.oryKratosPrivateAddr(), req.Name)
+	}
+
 	token, err := c.ucTokenAuth.GetServerToken(false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get token when finding users")
