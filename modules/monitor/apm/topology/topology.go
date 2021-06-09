@@ -941,12 +941,6 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 
 	// instance status
 	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
-	statement = "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
-	queryParams = map[string]interface{}{
-		"terminus_key": params.ScopeId,
-		"service_id":   params.ServiceId,
-	}
 	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	instanceListForStatus := topology.handleInstanceInfo(response)
 
