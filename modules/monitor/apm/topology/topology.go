@@ -916,18 +916,18 @@ func (topology *provider) GetProcessType(language string, params ServiceParams) 
 
 type InstanceInfo struct {
 	Id     string `json:"instanceId"`
+	Ip     string `json:"ip"`
 	Status bool   `json:"status"`
 }
 
 func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
-	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
-		"service_name": params.ServiceName,
 		"service_id":   params.ServiceId,
 	}
 	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
@@ -938,12 +938,13 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	instanceIds := []InstanceInfo{}
 	for _, row := range rows {
 
-		status, err := strconv.ParseBool(row[1].(string))
+		status, err := strconv.ParseBool(row[2].(string))
 		if err != nil {
 			status = false
 		}
 		instance := InstanceInfo{
 			Id:     row[0].(string),
+			Ip:     row[1].(string),
 			Status: status,
 		}
 		instanceIds = append(instanceIds, instance)
