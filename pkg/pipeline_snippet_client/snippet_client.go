@@ -27,10 +27,6 @@ import (
 
 var snippetClientMap map[string]*apistructs.DicePipelineSnippetClient
 
-var httpClient = httpclient.New(
-	httpclient.WithTimeout(time.Second, time.Second*3),
-)
-
 func SetSnippetClientMap(clientMap map[string]*apistructs.DicePipelineSnippetClient) {
 	snippetClientMap = clientMap
 }
@@ -60,7 +56,7 @@ func BatchGetSnippetPipelineYml(snippetConfig []apistructs.SnippetConfig) ([]api
 		}
 
 		var buffer bytes.Buffer
-		r, err := httpClient.Post(clientConfig.Host).
+		r, err := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*3)).Post(clientConfig.Host).
 			Path(clientConfig.Extra.UrlPathPrefix+"/actions/batch-query-snippet-yml").
 			Header(httputil.InternalHeader, "pipeline_snippet_client").
 			JSONBody(&v).
@@ -96,7 +92,7 @@ func GetSnippetPipelineYml(snippetConfig apistructs.SnippetConfig) (string, erro
 	}
 
 	var buffer bytes.Buffer
-	r, err := httpClient.Post(clientConfig.Host).
+	r, err := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*3)).Post(clientConfig.Host).
 		Path(clientConfig.Extra.UrlPathPrefix+"/actions/query-snippet-yml").
 		Header(httputil.InternalHeader, "pipeline_snippet_client").
 		JSONBody(&snippetConfig).
