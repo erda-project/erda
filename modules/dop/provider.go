@@ -28,13 +28,31 @@ package dop
 
 import (
 	"context"
+	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
 type provider struct{}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+func (p *provider) Run(ctx context.Context) error {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05.000000000",
+	})
+	logrus.SetOutput(os.Stdout)
+
+	dumpstack.Open()
+	logrus.Infoln(version.String())
+
+	return Initialize()
+
+}
 
 func init() {
 	servicehub.Register("dop", &servicehub.Spec{

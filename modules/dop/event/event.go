@@ -76,7 +76,7 @@ func (e *Event) Register(ed *EventData) error {
 
 	e.Events[ed.Name] = &apistructs.GittarRegisterHookRequest{
 		Name:       ed.Name,
-		URL:        fmt.Sprint("http://", discover.GittarAdaptor(), ed.Path),
+		URL:        fmt.Sprint("http://", discover.DOP(), ed.Path),
 		PushEvents: ed.IsPush,
 	}
 

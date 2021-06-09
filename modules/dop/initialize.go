@@ -90,7 +90,6 @@ func initEndpoints(db *dao.DBClient) *endpoints.Endpoints {
 		bundle.WithGittar(),
 		bundle.WithPipeline(),
 		bundle.WithMonitor(),
-		bundle.WithQA(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
 		)),

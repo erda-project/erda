@@ -33,7 +33,7 @@ func (e *Endpoints) RegisterWebhooks() error {
 		hook := apistructs.CreateHookRequest{
 			Name:   callback.Name,
 			Events: callback.Events,
-			URL:    strutil.Concat("http://", discover.QA(), callback.Path),
+			URL:    strutil.Concat("http://", discover.DOP(), callback.Path),
 			Active: true,
 			HookLocation: apistructs.HookLocation{
 				Org:         "-1",

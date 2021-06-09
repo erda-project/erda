@@ -77,7 +77,7 @@ func (e *Endpoints) querySnippetYml(ctx context.Context, r *http.Request, vars m
 	}
 	appID := matchApp.ID
 
-	branch := getBranchFromYmlPath(ymlPath)
+	branch := getBranchFromYmlPath(ymlPath, req.Name)
 
 	if appID <= 0 {
 		return apierrors.ErrGetSnippetYaml.InvalidParameter(errors.New("labels key appID value is empty")).ToResp(), nil
@@ -177,13 +177,13 @@ func getAppNameFromYmlPath(ymlPath string) string {
 	return strings.SplitN(ymlPath, "/", 2)[0]
 }
 
-func getBranchFromYmlPath(ymlPath string) string {
+func getBranchFromYmlPath(ymlPath string, name string) string {
 	ymlPath = strings.TrimPrefix(ymlPath, "/")
+	ymlPath = strings.Replace(ymlPath, name, "", 1)
 	splits := strings.Split(ymlPath, "/")
 	var branch string
-	for i := 2; i < len(splits)-1; i++ {
+	for i := 2; i < len(splits); i++ {
 		branch += splits[i] + "/"
 	}
-	branch = branch[:len(branch)-1]
-	return branch
+	return branch[:len(branch)-1]
 }
