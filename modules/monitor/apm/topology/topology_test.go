@@ -104,3 +104,32 @@ func TestFloat64ToString(t *testing.T) {
 	float := strconv.FormatFloat(f, 'f', 2, 64)
 	fmt.Println(float)
 }
+
+func Test_getDashboardId(t *testing.T) {
+
+	type args struct {
+		nodeType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: TypeService, args: args{TypeService}, want: "topology_node_service"},
+		{name: TypeGateway, args: args{TypeGateway}, want: "topology_node_gateway"},
+		{name: TypeMysql, args: args{TypeMysql}, want: "topology_node_db"},
+		{name: TypeRedis, args: args{TypeRedis}, want: "topology_node_cache"},
+		{name: TypeRocketMQ, args: args{TypeRocketMQ}, want: "topology_node_mq"},
+		{name: TypeHttp, args: args{TypeHttp}, want: "topology_node_other"},
+		{name: JavaProcessType, args: args{JavaProcessType}, want: "process_analysis_java"},
+		{name: NodeJsProcessType, args: args{NodeJsProcessType}, want: "process_analysis_nodejs"},
+		{name: "not", args: args{"not"}, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getDashboardId(tt.args.nodeType); got != tt.want {
+				t.Errorf("getDashboardId() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
