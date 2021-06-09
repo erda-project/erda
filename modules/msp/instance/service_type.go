@@ -11,24 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package instance
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda/conf"
+type ServiceType string
 
-	// modules and providers
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
-	_ "github.com/erda-project/erda/modules/msp/instance/permission"
-	_ "github.com/erda-project/erda/modules/msp/menu"
-	_ "github.com/erda-project/erda/pkg/common/permission"
+const (
+	ServiceTypeMicroService   ServiceType = "MICRO_SERVICE"
+	ServiceTypeGeneralAbility ServiceType = "GENERAL_ABILITY"
+	ServiceTypeAddon          ServiceType = "ADDON"
 )
-
-func main() {
-	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MSPConfigFilePath,
-		Content:    conf.MSPDefaultConfig,
-	})
-}

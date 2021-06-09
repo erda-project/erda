@@ -11,24 +11,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package db
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda/conf"
+import "github.com/jinzhu/gorm"
 
-	// modules and providers
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
-	_ "github.com/erda-project/erda/modules/msp/instance/permission"
-	_ "github.com/erda-project/erda/modules/msp/menu"
-	_ "github.com/erda-project/erda/pkg/common/permission"
-)
+// TmcDB .
+type TmcDB struct {
+	*gorm.DB
+}
 
-func main() {
-	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MSPConfigFilePath,
-		Content:    conf.MSPDefaultConfig,
-	})
+func (db *TmcDB) GetByEngine(engine string) (*Tmc, error) {
+	if len(engine) <= 0 {
+		return nil, nil
+	}
+	var list []*Tmc
+	if err := db.Table(TableTmc).
+		Where("`engine`=?", engine).Limit(1).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	if len(list) <= 0 {
+		return nil, nil
+	}
+	return list[0], nil
 }

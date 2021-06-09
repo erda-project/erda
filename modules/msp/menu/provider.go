@@ -22,8 +22,10 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
+	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
 	db "github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
 type config struct {
@@ -33,8 +35,10 @@ type config struct {
 type provider struct {
 	Cfg         *config
 	Log         logs.Logger
-	Register    transport.Register
-	DB          *gorm.DB `autowired:"mysql-client"`
+	Register    transport.Register `autowired:"service-register" optional:"true"`
+	DB          *gorm.DB           `autowired:"mysql-client"`
+	Perm        perm.Interface     `autowired:"permission"`
+	MPerm       mperm.Interface    `autowired:"msp.permission"`
 	menuService *menuService
 	bdl         *bundle.Bundle
 }
@@ -50,9 +54,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			instanceDB:       &instancedb.InstanceDB{DB: p.DB},
 			bdl:              p.bdl,
 		}
-		// p.menuService.GetMenu
-
-		pb.RegisterMenuServiceImp(p.Register, p.menuService, apis.Options())
+		type MenuService = pb.MenuServiceServer
+		pb.RegisterMenuServiceImp(p.Register, p.menuService, apis.Options(), p.Perm.Check(
+			perm.Method(MenuService.GetMenu, perm.ScopeProject, "menu", perm.ActionGet, p.MPerm.TenantToProjectID("TenantGroup", "TenantId")),
+			perm.Method(MenuService.GetSetting, perm.ScopeProject, "settings", perm.ActionGet, p.MPerm.TenantToProjectID("TenantGroup", "TenantId")),
+		))
 	}
 	return nil
 }
@@ -67,10 +73,8 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register("erda.msp.menu", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
-		OptionalDependencies: []string{"service-register"},
-		Description:          "",
+		Services: pb.ServiceNames(),
+		Types:    pb.Types(),
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

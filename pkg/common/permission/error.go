@@ -11,24 +11,38 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package permission
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda/conf"
+	"fmt"
+	"net/http"
 
-	// modules and providers
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
-	_ "github.com/erda-project/erda/modules/msp/instance/permission"
-	_ "github.com/erda-project/erda/modules/msp/menu"
-	_ "github.com/erda-project/erda/pkg/common/permission"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
-func main() {
-	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MSPConfigFilePath,
-		Content:    conf.MSPDefaultConfig,
-	})
+// PermError .
+type PermError struct {
+	method string
+	msg    string
+}
+
+var _ transhttp.Error = (*PermError)(nil)
+
+// NewPermError .
+func NewPermError(method, msg string) error {
+	return &PermError{
+		method: method,
+		msg:    msg,
+	}
+}
+
+func (e *PermError) HTTPStatus() int {
+	return http.StatusUnauthorized
+}
+
+func (e *PermError) Error() string {
+	if len(e.msg) > 0 {
+		return fmt.Sprintf("permission denied to call %q: %s", e.method, e.msg)
+	}
+	return fmt.Sprintf("permission denied to call %q", e.method)
 }

@@ -20,6 +20,21 @@ type InstanceTenantDB struct {
 	*gorm.DB
 }
 
+func (db *InstanceTenantDB) GetByID(id string) (*InstanceTenant, error) {
+	if len(id) <= 0 {
+		return nil, nil
+	}
+	var list []*InstanceTenant
+	if err := db.Table(TableInstanceTenant).
+		Where("`id`=?", id).Limit(1).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	if len(list) <= 0 {
+		return nil, nil
+	}
+	return list[0], nil
+}
+
 func (db *InstanceTenantDB) GetByTenantGroup(group string) ([]*InstanceTenant, error) {
 	if len(group) <= 0 {
 		return nil, nil
