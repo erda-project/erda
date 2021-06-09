@@ -76,22 +76,26 @@ func Test_getMethodName(t *testing.T) {
 		wantError bool
 	}{
 		{
+			name: "test empty",
 			args: args{},
 			want: "",
 		},
 		{
+			name: "test string",
 			args: args{
 				method: "hello",
 			},
 			want: "hello",
 		},
 		{
+			name: "interafce method",
 			args: args{
 				method: testInterface.TestFunc_1,
 			},
 			want: "TestFunc_1",
 		},
 		{
+			name: "interafce Chinese method name",
 			args: args{
 				method: testInterface.函数_1,
 			},

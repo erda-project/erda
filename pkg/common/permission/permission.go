@@ -180,7 +180,14 @@ func getMethodFullName(method interface{}) string {
 }
 
 func getMethodName(method interface{}) string {
-	name := getMethodFullName(method)
+	if method == nil {
+		return ""
+	}
+	name, ok := method.(string)
+	if ok {
+		return name
+	}
+	name = getMethodFullName(method)
 	parts := strings.Split(name, ".")
 	if len(parts) < 2 {
 		panic(fmt.Errorf("function %s is not method of type", name))
