@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 	"log"
 	"math"
 	"net/http"
@@ -921,9 +922,11 @@ type InstanceInfo struct {
 }
 
 func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+	// instance list
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
-	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
+
 	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
 		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
@@ -934,8 +937,33 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	if err != nil {
 		return nil, err
 	}
+	instanceList := topology.handleInstanceInfo(response)
+
+	// instance status
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	statement = "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
+	queryParams = map[string]interface{}{
+		"terminus_key": params.ScopeId,
+		"service_id":   params.ServiceId,
+	}
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	instanceListForStatus := topology.handleInstanceInfo(response)
+
+	for _, instance := range instanceList {
+		for _, statusInstance := range instanceListForStatus {
+			if instance.Id == statusInstance.Id {
+				instance.Status = statusInstance.Status
+			}
+		}
+	}
+
+	return instanceList, nil
+}
+
+func (topology *provider) handleInstanceInfo(response *query.ResultSet) []*InstanceInfo {
 	rows := response.ResultSet.Rows
-	instanceIds := []InstanceInfo{}
+	instanceIds := []*InstanceInfo{}
 	for _, row := range rows {
 
 		status, err := strconv.ParseBool(row[2].(string))
@@ -947,9 +975,9 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 			Ip:     row[1].(string),
 			Status: status,
 		}
-		instanceIds = append(instanceIds, instance)
+		instanceIds = append(instanceIds, &instance)
 	}
-	return instanceIds, nil
+	return instanceIds
 }
 
 func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
