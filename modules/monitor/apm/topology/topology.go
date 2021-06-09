@@ -951,9 +951,11 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	instanceListForStatus := topology.handleInstanceInfo(response)
 
 	for _, instance := range instanceList {
-		for _, statusInstance := range instanceListForStatus {
+		for i, statusInstance := range instanceListForStatus {
 			if instance.Id == statusInstance.Id {
 				instance.Status = statusInstance.Status
+				instanceListForStatus = append(instanceListForStatus[:i], instanceListForStatus[i+1:]...)
+				i--
 			}
 		}
 	}
