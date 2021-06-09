@@ -20,15 +20,13 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/bundle"
-	bundlecmdb "github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // +provider
 type provider struct {
-	Log  logs.Logger
-	bdl  *bundle.Bundle
-	cmdb *bundlecmdb.Cmdb // 为了调用 /api/orgs/clusters/relations 接口
+	Log logs.Logger
+	bdl *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -37,7 +35,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithHTTPClient(hc),
 		bundle.WithCMDB(),
 	)
-	p.cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 	return nil
 }
 
