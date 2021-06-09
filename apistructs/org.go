@@ -37,6 +37,7 @@ type OrgCreateRequest struct {
 
 	// 发布商名称
 	PublisherName string `json:"publisherName"`
+	IsPublic      bool   `json:"isPublic"`
 }
 
 // OrgCreateResponse POST /api/orgs 创建组织响应结构

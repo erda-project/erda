@@ -213,6 +213,9 @@ const (
 	NotifyDelete OperationKey = "delete"
 	NotifySwitch OperationKey = "switch"
 	NotifyEdit   OperationKey = "edit"
+
+	// workbench
+	SubmitOrgOperationKey OperationKey = "submitOrg"
 )
 
 type ComponentProtocolParams interface{}
