@@ -46,14 +46,14 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler())
 
+	p.menuService = &menuService{
+		p:                p,
+		db:               &db.MenuConfigDB{DB: p.DB},
+		instanceTenantDB: &instancedb.InstanceTenantDB{DB: p.DB},
+		instanceDB:       &instancedb.InstanceDB{DB: p.DB},
+		bdl:              p.bdl,
+	}
 	if p.Register != nil {
-		p.menuService = &menuService{
-			p:                p,
-			db:               &db.MenuConfigDB{DB: p.DB},
-			instanceTenantDB: &instancedb.InstanceTenantDB{DB: p.DB},
-			instanceDB:       &instancedb.InstanceDB{DB: p.DB},
-			bdl:              p.bdl,
-		}
 		type MenuService = pb.MenuServiceServer
 		pb.RegisterMenuServiceImp(p.Register, p.menuService, apis.Options(), p.Perm.Check(
 			perm.Method(MenuService.GetMenu, perm.ScopeProject, "menu", perm.ActionGet, p.MPerm.TenantToProjectID("TenantGroup", "TenantId")),
