@@ -23,7 +23,7 @@ import (
 
 // ListTestSpace 获取测试空间列表
 func (b *Bundle) ListTestSpace(projectID int64, pageSize int64, pageNo int64) (*apistructs.AutoTestSpaceList, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (b *Bundle) ListTestSpace(projectID int64, pageSize int64, pageNo int64) (*
 
 // DeleteTestSpace 删除测试空间
 func (b *Bundle) DeleteTestSpace(id uint64, userID string) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (b *Bundle) DeleteTestSpace(id uint64, userID string) error {
 
 // CreateTestSpace 创建测试空间
 func (b *Bundle) CreateTestSpace(name string, projectID int64, description string, userID string) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (b *Bundle) CreateTestSpace(name string, projectID int64, description strin
 
 // UpdateTestSpace 更新测试空间
 func (b *Bundle) UpdateTestSpace(name string, id uint64, description string, userID string) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (b *Bundle) UpdateTestSpace(name string, id uint64, description string, use
 
 // ListTestSpace 获取测试空间列表
 func (b *Bundle) GetTestSpace(id uint64) (*apistructs.AutoTestSpace, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (b *Bundle) GetTestSpace(id uint64) (*apistructs.AutoTestSpace, error) {
 
 // CopyTestSpace 复制测试空间
 func (b *Bundle) CopyTestSpace(spaceID uint64, userID string) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
