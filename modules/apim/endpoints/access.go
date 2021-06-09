@@ -164,3 +164,7 @@ func (e *Endpoints) UpdateAccess(ctx context.Context, r *http.Request, vars map[
 
 	return httpserver.OkResp(map[string]interface{}{"access": access})
 }
+
+func Add(a, b int) int {
+	return a + b
+}
