@@ -11,38 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package permission
+package errors
 
 import (
-	"fmt"
-	"net/http"
-
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
-// PermError .
-type PermError struct {
-	method string
-	msg    string
+type Error interface {
+	error
+	transhttp.Error
+	i18n.Internationalizable
 }
 
-var _ transhttp.Error = (*PermError)(nil)
-
-// NewPermError .
-func NewPermError(method, msg string) error {
-	return &PermError{
-		method: method,
-		msg:    msg,
+func suffixIfNotEmpty(sep, err string) string {
+	if len(err) > 0 {
+		return sep + " " + err
 	}
-}
-
-func (e *PermError) HTTPStatus() int {
-	return http.StatusUnauthorized
-}
-
-func (e *PermError) Error() string {
-	if len(e.msg) > 0 {
-		return fmt.Sprintf("permission denied to call %q: %s", e.method, e.msg)
-	}
-	return fmt.Sprintf("permission denied to call %q", e.method)
+	return ""
 }

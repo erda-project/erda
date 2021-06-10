@@ -26,6 +26,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 // Interface .
@@ -98,24 +99,24 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 			info := transport.ContextServiceInfo(ctx)
 			perm := methods[info.Method()]
 			if perm == nil {
-				return nil, NewPermError(info.Method(), "")
+				return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), "", "permission undefined")
 			}
 			if perm.resource != nil {
 				scope, err := perm.scope(ctx, req)
 				if err != nil {
-					return nil, NewPermError(info.Method(), err.Error())
+					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), err.Error())
 				}
 				resource, err := perm.resource(ctx, req)
 				if err != nil {
-					return nil, NewPermError(info.Method(), err.Error())
+					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), err.Error())
 				}
 				id, err := perm.id(ctx, req)
 				if err != nil {
-					return nil, NewPermError(info.Method(), err.Error())
+					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), err.Error())
 				}
 				idval, err := strconv.ParseUint(id, 10, 64)
 				if err != nil {
-					return nil, NewPermError(info.Method(), fmt.Sprintf("invalid scope id %q", id))
+					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), fmt.Sprintf("invalid %s id=%q", scope, id))
 				}
 
 				// TODO: get userID from http or grpc
@@ -133,10 +134,10 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 					Action:   string(perm.action),
 				})
 				if err != nil {
-					return nil, NewPermError(info.Method(), err.Error())
+					return nil, errors.NewServiceInvokingError("CheckPermission", err)
 				}
 				if !resp.Access {
-					return nil, NewPermError(info.Method(), fmt.Sprintf("user:%s, scope:%s/%s, res:%s, action:%s", userID, scope, id, resource, perm.action))
+					return nil, errors.NewPermissionError(fmt.Sprintf("user/%s/%s/%s/resource/%s", userID, scope, id, resource), string(perm.action), "")
 				}
 			}
 			return h(ctx, req)

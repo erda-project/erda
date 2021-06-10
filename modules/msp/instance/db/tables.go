@@ -27,7 +27,7 @@ const (
 // InstanceTenant .
 type InstanceTenant struct {
 	ID          string    `gorm:"column:id;primary_key"`
-	InstanceId  string    `gorm:"column:instance_id"`
+	InstanceID  string    `gorm:"column:instance_id"`
 	Config      string    `gorm:"column:config"`
 	Options     string    `gorm:"column:options"`
 	TenantGroup string    `gorm:"column:tenant_group"`
@@ -46,7 +46,7 @@ type Instance struct {
 	ID         string    `gorm:"column:id;primary_key"`
 	Engine     string    `gorm:"column:engine"`
 	Version    string    `gorm:"column:version"`
-	ReleaseId  string    `gorm:"column:release_id"`
+	ReleaseID  string    `gorm:"column:release_id"`
 	Status     string    `gorm:"column:status"`
 	Az         string    `gorm:"column:az"`
 	Config     string    `gorm:"column:config"`
