@@ -6,7 +6,7 @@
   - 至少需要 4 个节点 (1 个 Master 和 3 个 Worker)
   - 每个节点 4 CPU 16 G 内存
   - **不要在集群上安装 ingress controller 组件**
-- Docker 19.03+
+- Docker 19.03 +
 - CentOS 7.4 +
 - Helm 3 +
 - 泛域名(可选项，用于访问 Erda 平台，如 *.erda.io)
@@ -15,7 +15,7 @@
 
 ### 安装 Erda
 
-1. 在您的 Kubernetes Master 节点上下载[压缩包](https://github.com/erda-project/erda/releases) 并解压
+1. 在您的 Kubernetes Master 节点上下载 [压缩包](https://github.com/erda-project/erda/releases) 并解压
 	
    > **Note**: 当前仅支持 Linux 系统
    
@@ -80,7 +80,7 @@
    
       - 如您有如阿里云的网络共享存储您可以用如下命令将其设置在**每台节点**上:
       
-        ```
+        ```shell
         mount -t <storage_type> <your-share-storage-node-ip>:<your-share-storage-dir> /netdata
         
         # 举例如下：假设您拥有阿里云 NAS v4 服务作为共享网络存储，阿里云 NAS 的 Host 为 file-system-id.region.nas.aliyuncs.com 您需要通过如下命令挂载目录:
