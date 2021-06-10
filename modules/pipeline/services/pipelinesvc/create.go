@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -145,6 +146,13 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 		p.TriggerMode = apistructs.PipelineTriggerModeCron
 	}
 	p.Status = apistructs.PipelineStatusAnalyzed
+
+	// set storageConfig
+	p.Extra.StorageConfig.EnableNFS = true
+	if conf.DisablePipelineVolume() {
+		p.Extra.StorageConfig.EnableNFS = false
+		p.Extra.StorageConfig.EnableLocal = false
+	}
 
 	// --- extra ---
 	p.Extra.ConfigManageNamespaceOfSecretsDefault = s.cmSvc.MakeDefaultSecretNamespace(strconv.FormatUint(req.AppID, 10))
