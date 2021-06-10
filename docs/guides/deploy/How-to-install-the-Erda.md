@@ -6,7 +6,7 @@
   - At least 4 Nodes (1 Master and 3 Workers)
   - Each node needs at least 4 core CPU, 16G memory
   - **Don't Install the ingress-controller-manager component**
-- Docker 19.03+
+- Docker 19.03 +
 - CentOS 7.4 +
 - Helm 3 +
 - Generic Domain Name (Optional, which is used to visit the Erda cluster，e.g. *.erda.io)
@@ -147,7 +147,7 @@
 
    - If not, you should write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**
 
-     > For example, suppose the IP of the LB node is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda.io`, org-name is `erda-test`. so I can write the following info to `/etc/hosts` 
+     > For example, suppose the IP of the LB node is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda.io`, org-name is `erda-test`. so you need to write the following info to `/etc/hosts` 
 
      ```shell
      10.0.0.1 collector.erda.io
