@@ -122,6 +122,10 @@ func (c *UCClient) FindUsersByKey(key string) ([]User, error) {
 }
 
 func (c *UCClient) FuzzSearchUserByName(req *apistructs.UserPagingRequest) ([]User, error) {
+	if c.oryEnabled() {
+		return getUserByKey(c.oryKratosPrivateAddr(), req.Name)
+	}
+
 	token, err := c.ucTokenAuth.GetServerToken(false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get token when finding users")
