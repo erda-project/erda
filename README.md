@@ -44,15 +44,16 @@ Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full
 
 ## Installation
 
-Please follow How to install Erda.
+Please use the following installation documents to install Erda.
 
-- [Installation Document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [English](./docs/guides/deploy/How-to-install-Erda.md)
+- [简体中文](./docs/guides/deploy/How-to-install-Erda-zh.md)
 
 ## User Documentation
 
 To start using Erda, please see the documentation.
 
-- [中文](https://docs.erda.cloud)
+- [简体中文](https://docs.erda.cloud)
 - English
 
 ## Contributing
