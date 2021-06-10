@@ -22,7 +22,6 @@ type IssueSubscriber struct {
 	UserID  string
 }
 
-// TableName 表名
 func (IssueSubscriber) TableName() string {
 	return "erda_issue_subscriber"
 }

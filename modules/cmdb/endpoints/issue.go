@@ -748,7 +748,6 @@ func (e *Endpoints) SubscribeIssue(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	// data 返回 ID
 	return httpserver.OkResp(id)
 }
 
@@ -768,6 +767,5 @@ func (e *Endpoints) UnsubscribeIssue(ctx context.Context, r *http.Request, vars 
 		return errorresp.ErrResp(err)
 	}
 
-	// data 返回 ID
 	return httpserver.OkResp(id)
 }

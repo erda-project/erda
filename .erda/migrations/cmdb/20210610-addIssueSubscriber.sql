@@ -1,9 +1,9 @@
 CREATE TABLE `erda_issue_subscriber` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `issue_id` bigint(20) NOT NULL COMMENT '事件ID',
-  `user_id` varchar(255) NOT NULL COMMENT '订阅人',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  `issue_id` bigint(20) NOT NULL COMMENT 'issuer id',
+  `user_id` varchar(255) NOT NULL COMMENT 'subscriber',
   PRIMARY KEY (`id`),
   KEY `idx_issue_id_user_id` (`issue_id`,`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='issue订阅表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='subscribe for issue';
