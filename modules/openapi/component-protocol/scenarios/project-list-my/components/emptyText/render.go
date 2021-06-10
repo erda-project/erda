@@ -78,10 +78,12 @@ func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ a
 		"toPublicProject": Operation{
 			Key:    "toPublicProject",
 			Reload: false,
+			Show:   false,
 			Command: Command{
-				Key:          "changeScenario",
-				ScenarioType: "project-list-all",
-				ScenarioKey:  "project-list-all",
+				Key:     "goto",
+				Target:  "workBenchPublicProjects",
+				JumpOut: false,
+				Visible: false,
 			},
 		},
 	}

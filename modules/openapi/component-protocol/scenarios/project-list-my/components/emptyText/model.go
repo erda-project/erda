@@ -34,12 +34,14 @@ type Operation struct {
 	Key     string  `json:"key"`
 	Reload  bool    `json:"reload"`
 	Command Command `json:"command"`
+	Show    bool    `json:"show"`
 }
 
 type Command struct {
-	Key          string `json:"key"`
-	ScenarioType string `json:"scenarioType"`
-	ScenarioKey  string `json:"scenarioKey"`
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
+	Visible bool   `json:"visible"`
 }
 
 type StyleConfig struct {
