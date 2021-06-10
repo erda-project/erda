@@ -20,8 +20,8 @@ import (
 )
 
 var CMDB_ISSUE_UNSUBSCRIBE = apis.ApiSpec{
-	Path:        "/api/issues/<id>/unsubscribe",
-	BackendPath: "/api/issues/<id>/unsubscribe",
+	Path:        "/api/issues/<id>/actions/unsubscribe",
+	BackendPath: "/api/issues/<id>/actions/unsubscribe",
 	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
 	Scheme:      "http",
 	Method:      http.MethodPost,

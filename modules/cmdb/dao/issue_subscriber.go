@@ -24,7 +24,7 @@ type IssueSubscriber struct {
 
 // TableName 表名
 func (IssueSubscriber) TableName() string {
-	return "dice_issue_subscriber"
+	return "erda_issue_subscriber"
 }
 
 // CreateIssueSubscriber Create relationship between issue and subscriber

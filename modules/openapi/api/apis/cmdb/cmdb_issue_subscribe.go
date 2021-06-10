@@ -20,8 +20,8 @@ import (
 )
 
 var CMDB_ISSUE_SUBSCRIBE = apis.ApiSpec{
-	Path:        "/api/issues/<id>/subscribe",
-	BackendPath: "/api/issues/<id>/subscribe",
+	Path:        "/api/issues/<id>/actions/subscribe",
+	BackendPath: "/api/issues/<id>/actions/subscribe",
 	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
 	Scheme:      "http",
 	Method:      http.MethodPost,
