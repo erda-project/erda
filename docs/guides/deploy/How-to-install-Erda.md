@@ -1,4 +1,4 @@
-# How to install the Erda
+# How to install Erda
 
 ### Prerequisites
 
@@ -37,7 +37,7 @@
 
      
 
-   - set configuration to prepare the Erda and execute the `prepare.sh` script
+   - set configuration to prepare to install Erda and execute the `prepare.sh` script
 
      - The script will do the following tasks:
        - generate etc SSL
@@ -126,7 +126,7 @@
 
    
 
-4. After Installed the Erda
+4. After Installed Erda
 
    - set administrator user name and password to push the Erda extensions（the extension is a plugin which uses in the pipeline）
 
@@ -145,7 +145,7 @@
 
      
 
-   - If not, you should write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**
+   - If not, you need to write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**
 
      > For example, suppose the IP of the LB node is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda.io`, org-name is `erda-test`. so you need to write the following info to `/etc/hosts` 
 
