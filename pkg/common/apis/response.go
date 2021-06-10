@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -72,6 +73,27 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 		resp, err := h(ctx, req)
 		if err != nil {
 			return resp, err
+		}
+		if resp != nil {
+			val := reflect.ValueOf(resp)
+			for val.Kind() == reflect.Ptr {
+				val = val.Elem()
+			}
+			if val.Kind() == reflect.Struct {
+				var fields int
+				for i, n := 0, val.NumField(); i < n; i++ {
+					field := val.Field(i)
+					if field.CanSet() {
+						fields++
+					}
+				}
+				if fields == 1 {
+					field := val.FieldByName("Data")
+					if field.IsValid() {
+						resp = field.Interface()
+					}
+				}
+			}
 		}
 		return &Response{
 			Success: true,

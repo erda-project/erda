@@ -687,6 +687,8 @@ type IssueListRequest struct {
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
 	External bool `json:"-"`
+
+	OnlyIDResult bool `json:"onlyIdResult"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
