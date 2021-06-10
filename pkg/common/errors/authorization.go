@@ -36,7 +36,7 @@ func (e *UnauthorizedError) Error() string {
 }
 func (e *UnauthorizedError) HTTPStatus() int { return http.StatusUnauthorized }
 func (e *UnauthorizedError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
-	return t.Sprintf(langs, "unauthorized", suffixIfNotEmpty(":", e.Reason))
+	return t.Sprintf(langs, "unauthorized%s", suffixIfNotEmpty(":", e.Reason))
 }
 
 // PermissionError .
