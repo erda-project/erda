@@ -51,8 +51,9 @@ type Conf struct {
 	GitGCCronExpression      string `env:"GIT_GC_CRON_EXPRESSION" default:"0 0 1 * * ?"`
 
 	// ory/kratos config
-	OryEnabled    bool   `default:"false" env:"ORY_ENABLED"`
-	OryKratosAddr string `default:"kratos:4433" env:"KRATOS_ADDR"`
+	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
+	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
+	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
 }
 
 var cfg Conf
@@ -63,6 +64,7 @@ func Load() {
 	cfg.SkipAuthUrls = strings.Split(cfg.SkipAuthUrlsStr, ",")
 	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, cfg.SelfAddr)
 	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, discover.Gittar())
+	cfg.SkipAuthUrls = append(cfg.SkipAuthUrls, "gittar:5566")
 }
 
 // RepoRoot 仓库存储目录
@@ -194,4 +196,8 @@ func OryCompatibleClientID() string {
 
 func OryCompatibleClientSecret() string {
 	return ""
+}
+
+func OryKratosPrivateAddr() string {
+	return cfg.OryKratosPrivateAddr
 }

@@ -38,11 +38,15 @@ We split the codes of erda into multiple repositories according to different fun
 
 [erda-ui]: (https://github.com/erda-project/erda-ui) It is erda's web system and an essential component of erda. Due to the separation of front-end and back-end, it is an independent repository.
 
+## Quickstart
+
+Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full.md)
+
 ## Installation
 
 Please follow How to install Erda.
 
-- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [Installation Document](./docs/guides/deploy/How-to-install-the-Erda.md)
 
 ## User Documentation
 
@@ -60,6 +64,7 @@ Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRI
 If you have any questions, please feel free to contact us.
 
 - Email: erda@terminus.io
+- Twitter: [@ErdaProject](https://twitter.com/ErdaProject)
 - Zhihu：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - WeChat Official Account:
 
