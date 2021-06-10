@@ -950,6 +950,7 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 				instance.Status = statusInstance.Status
 				instanceListForStatus = append(instanceListForStatus[:i], instanceListForStatus[i+1:]...)
 				i--
+				break
 			}
 		}
 	}
