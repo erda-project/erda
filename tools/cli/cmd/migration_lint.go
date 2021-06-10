@@ -80,13 +80,23 @@ var MigrationLint = command.Command{
 	Run: RunMigrationLint,
 }
 
-func RunMigrationLint(ctx *command.Context, input, config string, detail bool, output string, ignoreBase bool) error {
+func RunMigrationLint(ctx *command.Context, input, config string, detail bool, output string, ignoreBase bool) (err error) {
+	exitFunc := func(_ int) {
+		if err != nil {
+			os.Exit(1)
+		}
+	}
+	defer exitFunc(1)
+
 	log.Printf("Erda MySQL Lint the input file or directory: %s", input)
 	files := new(walk).walk(input, ".sql").filenames()
 
-	var rulers = configuration.DefaultRulers()
+	var (
+		rulers  = configuration.DefaultRulers()
+		lintCfg *configuration.Configuration
+	)
 	if config != "" {
-		lintCfg, err := configuration.FromLocal(config)
+		lintCfg, err = configuration.FromLocal(config)
 		if err != nil {
 			return errors.Wrapf(err, "filed to read lint configuration from local")
 		}
@@ -99,26 +109,29 @@ func RunMigrationLint(ctx *command.Context, input, config string, detail bool, o
 	linter := sqllint.New(rulers...)
 
 	for _, filename := range files {
-		data, err := ioutil.ReadFile(filename)
+		var data []byte
+		data, err = ioutil.ReadFile(filename)
 		if err != nil {
 			return errors.Wrapf(err, "failed to open file, filename: %s", filename)
 		}
 		if ignoreBase && isBaseScript(data) {
 			continue
 		}
-		if err := linter.Input(data, filename); err != nil {
+		if err = linter.Input(data, filename); err != nil {
 			return errors.Wrapf(err, "failed to run Erda MySQL Lint on the SQL script, filename: %s", filename)
 		}
 	}
 
 	if len(linter.Errors()) == 0 {
-		log.Println("Erda MySQL Lint pass")
+		log.Println("Erda MySQL Lint OK")
+		return nil
 	}
+	exitFunc = os.Exit
 
 	var out = log.Writer()
 	if output != "" {
-
-		f, err := os.OpenFile(output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		var f *os.File
+		f, err = os.OpenFile(output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Printf("failed to OpenFile, filename: %s", output)
 		} else {
@@ -127,25 +140,24 @@ func RunMigrationLint(ctx *command.Context, input, config string, detail bool, o
 		}
 	}
 
+	if _, err = fmt.Fprintln(out, linter.Report()); err != nil {
+		return errors.Wrapf(err, "failed to print lint report")
+	}
+
 	if detail {
 		for src, errs := range linter.Errors() {
-			if _, err := fmt.Fprintln(out, src); err != nil {
+			if _, err = fmt.Fprintln(out, src); err != nil {
 				return errors.Wrapf(err, "failed to print lint error")
 			}
 			for _, e := range errs {
-				if _, err := fmt.Fprintln(out, e); err != nil {
+				if _, err = fmt.Fprintln(out, e); err != nil {
 					return errors.Wrapf(err, "failed to print lint error")
 				}
 			}
 		}
-		return nil
 	}
 
-	if _, err := fmt.Fprintln(out, linter.Report()); err != nil {
-		return errors.Wrapf(err, "failed to print lint report")
-	}
-
-	return nil
+	return errors.New("some errors in your migrations")
 }
 
 type walk struct {
