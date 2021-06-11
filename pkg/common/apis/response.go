@@ -31,7 +31,6 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	validator "github.com/mwitkow/go-proto-validators"
 )
 
 // Response .
