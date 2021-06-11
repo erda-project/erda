@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -28,6 +29,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	validator "github.com/mwitkow/go-proto-validators"
 )
 
 // Response .
@@ -71,12 +73,19 @@ func init() {
 	})
 }
 
+var validateErrorType = reflect.TypeOf(validator.FieldError("", nil))
+
 func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	var status int
 	if e, ok := err.(transhttp.Error); ok {
 		status = e.HTTPStatus()
 	} else {
-		status = http.StatusInternalServerError
+		typ := reflect.TypeOf(err)
+		if typ == validateErrorType {
+			status = http.StatusBadRequest
+		} else {
+			status = http.StatusInternalServerError
+		}
 	}
 	var msg string
 	if e, ok := err.(i18n.Internationalizable); I18n != nil && ok {
@@ -130,17 +139,13 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	}
 }
 
-// Validater .
-type Validater interface {
-	Validate() error
-}
-
 func validRequest(h interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		if v, ok := req.(Validater); ok {
+		if v, ok := req.(validator.Validator); ok {
 			err := v.Validate()
 			if err != nil {
 				return nil, err
+				// return nil, errors.ParseValidateError(err)
 			}
 		}
 		return h(ctx, req)
@@ -154,4 +159,20 @@ func Options() transport.ServiceOption {
 		transport.WithHTTPOptions(transhttp.WithInterceptor(wrapResponse))(opts)
 		transport.WithHTTPOptions(transhttp.WithErrorEncoder(encodeError))(opts)
 	})
+}
+
+func getMethodFullName(method interface{}) string {
+	if method == nil {
+		return ""
+	}
+	name, ok := method.(string)
+	if ok {
+		return name
+	}
+	val := reflect.ValueOf(method)
+	if val.Kind() != reflect.Func {
+		panic(fmt.Errorf("method %V not function", method))
+	}
+	fn := runtime.FuncForPC(val.Pointer())
+	return fn.Name()
 }

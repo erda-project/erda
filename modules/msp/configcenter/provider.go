@@ -14,11 +14,15 @@
 package configcenter
 
 import (
+	"net/http"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-proto-go/msp/configcenter/pb"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -43,7 +47,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		instanceDB:       &instancedb.InstanceDB{DB: p.DB},
 	}
 	if p.Register != nil {
-		pb.RegisterConfigCenterServiceImp(p.Register, p.configCenterService, apis.Options())
+		pb.RegisterConfigCenterServiceImp(p.Register, p.configCenterService, apis.Options(),
+			// compatibility with api "/api/tmc/config/tenants/{tenantID}/groups/{groupID}" response
+			transport.WithHTTPOptions(transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
+				if resp, ok := data.(*pb.GetGroupPropertiesResponse); ok && resp != nil {
+					m := make(map[string]interface{})
+					for _, item := range resp.Data {
+						m[item.Group] = item.Properties
+					}
+					data = m
+				}
+				return encoding.EncodeResponse(rw, r, data)
+			})),
+		)
 	}
 	return nil
 }

@@ -38,8 +38,8 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210610035959-62f34292e6e5
-	github.com/erda-project/erda-proto-go v0.0.0-20210610093643-933c79276cd1
+	github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab
+	github.com/erda-project/erda-proto-go v0.0.0-20210611083939-98eea673f2ed
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -90,6 +90,7 @@ require (
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+	github.com/mwitkow/go-proto-validators v0.3.2
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/olivere/elastic v6.2.35+incompatible
 	github.com/otiai10/copy v1.5.0
