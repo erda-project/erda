@@ -28,31 +28,6 @@ var (
 	ErrCreateCluster     = err("ErrCreateCluster", "failed to create cluster")
 )
 
-var (
-	ErrListEdgeSite         = err("ErrListEdgeSite", "failed to list edge site")
-	ErrGetEdgeSite          = err("ErrGetEdgeSite", "failed to get edge site")
-	ErrCreateEdgeSite       = err("ErrCreateEdgeSite", "failed to create edge site")
-	ErrUpdateEdgeSite       = err("ErrUpdateEdgeSite", "failed to update edge site")
-	ErrDeleteEdgeSite       = err("ErrDeleteEdgeSite", "failed to delete edge site")
-	ErrGetEdgeSiteInit      = err("ErrGetEdgeSiteInit", "failed to get edge site init shell")
-	ErrOfflineEdgeSite      = err("ErrOfflineEdgeSite", "failed to offline edge site")
-	ErrListEdgeConfigSet    = err("ErrListEdgeConfigSet", "failed to list configSet")
-	ErrCreateEdgeConfigSet  = err("ErrCreateEdgeConfigSet", "failed to create edge  configSet")
-	ErrUpdateEdgeConfigSet  = err("ErrUpdateEdgeConfigSet", "failed to update edge  configSet")
-	ErrDeleteEdgeConfigSet  = err("ErrDeleteEdgeConfigSet", "failed to delete edge  configSet")
-	ErrListEdgeCfgSetItem   = err("ErrListEdgeCfgSetItem", "failed to list  configSet")
-	ErrCreateEdgeCfgSetItem = err("ErrCreateEdgeCfgSetItem", "failed to create edge configSet item")
-	ErrUpdateEdgeCfgSetItem = err("ErrUpdateEdgeCfgSetItem", "failed to update edge configSet item")
-	ErrDeleteEdgeCfgSetItem = err("ErrDeleteEdgeCfgSetItem", "failed to delete edge configSet item")
-	ErrListEdgeApp          = err("ErrListEdgeSite", "failed to list edge app")
-	ErrCreateEdgeApp        = err("ErrCreateEdgeApp", "failed to create edge app")
-	ErrUpdateEdgeApp        = err("ErrUpdateEdgeSite", "failed to update edge app")
-	ErrDeleteEdgeApp        = err("ErrDeleteEdgeSite", "failed to delete edge app")
-	ErrRestartEdgeApp       = err("ErrRestartEdgeApp", "failed to restart edge app")
-	ErrOfflineEdgeAppSite   = err("ErrOfflineEdgeAppSite", "failed to offline specified site in edge app ")
-	AccessDeny              = err("ErrAccessDeny", "permission denied")
-)
-
 func err(template, defaultValue string) *errorresp.APIError {
 	return errorresp.New(errorresp.WithTemplateMessage(template, defaultValue))
 }
