@@ -57,6 +57,9 @@ var (
 	ErrGetOpenapiOAuth2Token = err("ErrGetOpenapiOAuth2Token", "申请 openapi oauth2 token 失败")
 	ErrQuerySnippetYaml      = err("ErrQuerySnippetYaml", "查询嵌套流水线片段失败")
 
+	ErrCreatePipelineLabel = err("ErrCreatePipelineLabel", "创建流水线标签失败")
+	ErrListPipelineLabel   = err("ErrListPipelineLabel", "查询流水线标签失败")
+
 	ErrCheckSecrets          = err("ErrCheckSecrets", "校验私有配置失败")
 	ErrMakeConfigNamespace   = err("ErrMakeConfigNamespace", "创建私有配置命名空间失败")
 	ErrGetBranchWorkspaceMap = err("ErrGetBranchWorkspaceMap", "获取分支与环境映射关系失败")
