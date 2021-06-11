@@ -25,6 +25,7 @@ import (
 )
 
 const MicroServiceScope = "micro_service"
+const CUSTOM_ALERT_TYPE = "micro_service_customize"
 
 const (
 	Domain              = "alert_domain"
@@ -665,4 +666,24 @@ func (p *provider) deleteCustomizeAlert(params struct {
 	return api.Success(map[string]interface{}{
 		"name": data.Name,
 	})
+}
+
+func (p *provider) getAlertRecordAttrs(r *http.Request, params struct {
+	ScopeID string `query:"tenantGroup" validate:"required"`
+}) interface{} {
+	data, err := p.microAlertAPI.GetAlertRecordAttr(api.Language(r), MicroServiceScope)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if data == nil {
+		return api.Success(nil)
+	}
+	if data.AlertType == nil {
+		return api.Success(data)
+	}
+	data.AlertType = append(data.AlertType, &adapt.DisplayKey{
+		Key:     CUSTOM_ALERT_TYPE,
+		Display: "微服务自定义",
+	})
+	return api.Success(data)
 }

@@ -48,6 +48,9 @@ type (
 		UpdateCustomizeAlert(alertDetail *adapt.CustomizeAlertDetail) (err error)
 		UpdateCustomizeAlertEnable(id uint64, enable bool) (err error)
 		DeleteCustomizeAlert(id uint64) (err error)
+
+		//micro custom alert records
+		GetAlertRecordAttr(lang i18n.LanguageCodes, scope string) (*adapt.AlertRecordAttr, error)
 	}
 )
 
@@ -132,4 +135,8 @@ func (p *provider) UpdateCustomizeAlertEnable(id uint64, enable bool) (err error
 
 func (p *provider) DeleteCustomizeAlert(id uint64) (err error) {
 	return p.a.DeleteCustomizeAlert(id)
+}
+
+func (p *provider) GetAlertRecordAttr(lang i18n.LanguageCodes, scope string) (*adapt.AlertRecordAttr, error) {
+	return p.a.GetAlertRecordAttr(lang, scope)
 }

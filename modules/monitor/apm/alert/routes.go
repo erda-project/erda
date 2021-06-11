@@ -40,5 +40,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.DELETE("/api/apm/customize/alert/:id", p.deleteCustomizeAlert, p.getPermissionByTenantGroup(permission.ActionDelete))               // √
 
 	// 微服务告警记录
+	routes.GET("/api/apm/alert-record-attrs", p.getAlertRecordAttrs, p.getPermissionByTenantGroup(permission.ActionList))
+
 	return nil
 }
