@@ -16,21 +16,17 @@ package endpoints
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/modules/ops/services/kubernetes"
-
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/jsonstore"
-
 	"github.com/erda-project/erda/modules/ops/dbclient"
 	"github.com/erda-project/erda/modules/ops/impl/addons"
 	cloud_account "github.com/erda-project/erda/modules/ops/impl/cloud-account"
 	"github.com/erda-project/erda/modules/ops/impl/clusters"
-	"github.com/erda-project/erda/modules/ops/impl/edge"
 	"github.com/erda-project/erda/modules/ops/impl/ess"
 	"github.com/erda-project/erda/modules/ops/impl/labels"
 	"github.com/erda-project/erda/modules/ops/impl/mns"
 	"github.com/erda-project/erda/modules/ops/impl/nodes"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 type Endpoints struct {
@@ -46,7 +42,6 @@ type Endpoints struct {
 	Addons       *addons.Addons
 	JS           jsonstore.JsonStore
 	CachedJS     jsonstore.JsonStore
-	edge         *edge.Edge
 }
 
 type Option func(*Endpoints)
@@ -67,13 +62,7 @@ func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonS
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.CachedJS = cachedJS
-	e.edge = edge.New(
-		edge.WithDBClient(db),
-		edge.WithBundle(e.bdl),
-		edge.WithKubernetes(
-			kubernetes.New(kubernetes.WithBundle(e.bdl)),
-		),
-	)
+
 	return e
 }
 
@@ -201,37 +190,5 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/aliyun-client", Method: http.MethodPost, WriterHandler: e.DoRemoteAction},
 
 		{Path: "/api/internal-cloud-account", Method: http.MethodGet, Handler: i18nPrinter(e.GetCloudAccount)},
-
-		// edge
-		// TODO: auth and i18n
-		{Path: "/api/edge/site", Method: http.MethodGet, Handler: e.ListEdgeSite},
-		{Path: "/api/edge/site/{ID}", Method: http.MethodGet, Handler: e.GetEdgeSite},
-		{Path: "/api/edge/site", Method: http.MethodPost, Handler: e.CreateEdgeSite},
-		{Path: "/api/edge/site/{ID}", Method: http.MethodPut, Handler: e.UpdateEdgeSite},
-		{Path: "/api/edge/site/{ID}", Method: http.MethodDelete, Handler: e.DeleteEdgeSite},
-		{Path: "/api/edge/site/init/{ID}", Method: http.MethodGet, Handler: e.GetInitEdgeSiteShell},
-		{Path: "/api/edge/site/offline/{ID}", Method: http.MethodDelete, Handler: e.OfflineEdgeHost},
-
-		{Path: "/api/edge/configset", Method: http.MethodGet, Handler: e.ListEdgeConfigSet},
-		{Path: "/api/edge/configset/{ID}", Method: http.MethodGet, Handler: e.GetEdgeConfigSet},
-		{Path: "/api/edge/configset", Method: http.MethodPost, Handler: e.CreateEdgeConfigSet},
-		{Path: "/api/edge/configset/{ID}", Method: http.MethodPut, Handler: e.UpdateEdgeConfigSet},
-		{Path: "/api/edge/configset/{ID}", Method: http.MethodDelete, Handler: e.DeleteEdgeConfigSet},
-
-		{Path: "/api/edge/configset-item", Method: http.MethodGet, Handler: e.ListEdgeConfigSetItem},
-		{Path: "/api/edge/configset-item/{ID}", Method: http.MethodGet, Handler: e.GetEdgeConfigSetItem},
-		{Path: "/api/edge/configset-item", Method: http.MethodPost, Handler: e.CreateEdgeConfigSetItem},
-		{Path: "/api/edge/configset-item/{ID}", Method: http.MethodPut, Handler: e.UpdateEdgeConfigSetItem},
-		{Path: "/api/edge/configset-item/{ID}", Method: http.MethodDelete, Handler: e.DeleteEdgeConfigSetItem},
-
-		{Path: "/api/edge/app", Method: http.MethodGet, Handler: e.ListEdgeApp},
-		{Path: "/api/edge/app", Method: http.MethodPost, Handler: e.CreateEdgeApp},
-		{Path: "/api/edge/app/{ID}", Method: http.MethodGet, Handler: e.GetEdgeApp},
-		{Path: "/api/edge/app/status/{ID}", Method: http.MethodGet, Handler: e.GetEdgeAppStatus},
-		{Path: "/api/edge/app/{ID}", Method: http.MethodPut, Handler: e.UpdateEdgeApp},
-		{Path: "/api/edge/app/{ID}", Method: http.MethodDelete, Handler: e.DeleteEdgeApp},
-
-		{Path: "/api/edge/app/site/offline/{ID}", Method: http.MethodPost, Handler: e.OfflineAppSite},
-		{Path: "/api/edge/app/site/restart/{ID}", Method: http.MethodPost, Handler: e.RestartAppSite},
 	}
 }
