@@ -11,25 +11,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package ecp
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda/conf"
+	"context"
 
-	// modules and providers
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/instance/permission"
-	_ "github.com/erda-project/erda/modules/msp/menu"
-	_ "github.com/erda-project/erda/pkg/common/permission"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/ecp/conf"
 )
 
-func main() {
-	modcom.Run(&servicehub.RunOptions{
-		ConfigFile: conf.MSPConfigFilePath,
-		Content:    conf.MSPDefaultConfig,
+type provider struct {
+	Cfg *conf.Conf
+}
+
+// Run Run the provider
+func (p *provider) Run(ctx context.Context) error {
+	return p.initialize()
+}
+
+func init() {
+	servicehub.Register("ecp", &servicehub.Spec{
+		Services:    []string{"ecp"},
+		Description: "Core components of edge computing platform.",
+		ConfigFunc:  func() interface{} { return &conf.Conf{} },
+		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }
