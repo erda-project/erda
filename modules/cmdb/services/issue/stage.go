@@ -25,12 +25,16 @@ func (svc *Issue) CreateIssueStage(req *apistructs.IssueStageRequest) error {
 	}
 	var stages []dao.IssueStage
 	for _, v := range req.List {
-		stages = append(stages, dao.IssueStage{
+		stage := dao.IssueStage{
 			OrgID:     req.OrgID,
 			IssueType: req.IssueType,
 			Name:      v.Name,
 			Value:     v.Value,
-		})
+		}
+		if stage.Value == "" {
+			stage.Value = v.Name
+		}
+		stages = append(stages, stage)
 	}
 	return svc.db.CreateIssueStage(stages)
 }
