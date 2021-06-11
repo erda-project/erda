@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"strconv"
 
+	validator "github.com/mwitkow/go-proto-validators"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda-infra/modcom/api"
@@ -29,7 +31,6 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	validator "github.com/mwitkow/go-proto-validators"
 )
 
 // Response .
