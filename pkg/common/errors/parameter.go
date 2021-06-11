@@ -16,6 +16,7 @@ package errors
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
@@ -95,4 +96,25 @@ func (e *ParameterTypeError) Translate(t i18n.Translator, langs i18n.LanguageCod
 		return t.Sprintf(langs, "${parameter} %s ${want} %s ${type}", t.Text(langs, e.Name), t.Text(langs, e.ValidType))
 	}
 	return t.Sprintf(langs, "${parameter} %s ${type error}", t.Text(langs, e.Name))
+}
+
+// ParseValidateError
+func ParseValidateError(err error) error {
+	if err == nil {
+		return err
+	}
+	msg := err.Error()
+	if !strings.HasPrefix(msg, "invalid field ") {
+		return err
+	}
+	idx := strings.Index(msg, ": ")
+	if idx <= 0 {
+		return err
+	}
+	field := msg[len("invalid field "):idx]
+	msg = msg[idx+2:]
+	if strings.Contains(msg, "message must exist") || strings.Contains(msg, "must not be an empty string") {
+		return NewMissingParameterError(field)
+	}
+	return NewInvalidParameterError(field, msg)
 }

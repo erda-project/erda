@@ -27,11 +27,11 @@ import (
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
-type ConfigCenterPropertySource string
+type PropertySource string
 
 const (
-	ConfigCenterPropertySourceDeploy ConfigCenterPropertySource = "DEPLOY"
-	ConfigCenterPropertySourceDice   ConfigCenterPropertySource = "DICE"
+	PropertySourceDeploy PropertySource = "DEPLOY"
+	PropertySourceDice   PropertySource = "DICE"
 )
 
 type configCenterService struct {
@@ -41,7 +41,7 @@ type configCenterService struct {
 }
 
 func (s *configCenterService) GetGroups(ctx context.Context, req *pb.GetGroupRequest) (*pb.GetGroupResponse, error) {
-	cfg, err := s.extractConfig(req.TenantId)
+	cfg, err := s.extractConfig(req.TenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *configCenterService) GetGroups(ctx context.Context, req *pb.GetGroupReq
 }
 
 func (s *configCenterService) GetGroupProperties(ctx context.Context, req *pb.GetGroupPropertiesRequest) (*pb.GetGroupPropertiesResponse, error) {
-	cfg, err := s.extractConfig(req.TenantId)
+	cfg, err := s.extractConfig(req.TenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *configCenterService) GetGroupProperties(ctx context.Context, req *pb.Ge
 	// get config
 	var list []*nacos.ConfigItem
 	for i, pages := 1, 1; i <= pages; i++ {
-		resp, err := adp.SearchConfig(nacos.SearchModeAccurate, cfg.TenantName, req.GroupId, "", i, 100)
+		resp, err := adp.SearchConfig(nacos.SearchModeAccurate, cfg.TenantName, req.GroupID, "", i, 100)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError("nacos.SearchConfig", err)
 		}
@@ -87,7 +87,7 @@ func (s *configCenterService) GetGroupProperties(ctx context.Context, req *pb.Ge
 	}
 
 	// convert config
-	var props []*pb.ConfigCenterProperty
+	var props []*pb.Property
 	for _, item := range list {
 		if item.DataID == "application.yml" {
 			prop := make(map[string]interface{})
@@ -103,47 +103,47 @@ func (s *configCenterService) GetGroupProperties(ctx context.Context, req *pb.Ge
 				} else {
 					val = fmt.Sprint(v)
 				}
-				props = append(props, &pb.ConfigCenterProperty{
+				props = append(props, &pb.Property{
 					Key:    k,
 					Value:  val,
-					Source: string(ConfigCenterPropertySourceDice),
+					Source: string(PropertySourceDice),
 				})
 			}
 		} else {
-			props = append(props, &pb.ConfigCenterProperty{
+			props = append(props, &pb.Property{
 				Key:    item.DataID,
 				Value:  item.Content,
-				Source: string(ConfigCenterPropertySourceDeploy),
+				Source: string(PropertySourceDeploy),
 			})
 		}
 	}
-
 	return &pb.GetGroupPropertiesResponse{
-		Data: map[string]*pb.ConfigCenterPropertyList{
-			req.GroupId: {List: props},
-		},
+		Data: []*pb.GroupProperties{{
+			Group:      req.GroupID,
+			Properties: props,
+		}},
 	}, nil
 }
 
 func (s *configCenterService) SaveGroupProperties(ctx context.Context, req *pb.SaveGroupPropertiesRequest) (*pb.SaveGroupPropertiesResponse, error) {
-	cfg, err := s.extractConfig(req.TenantId)
+	cfg, err := s.extractConfig(req.TenantID)
 	if err != nil {
 		return nil, err
 	}
 	adp := newNacosAdapter(cfg)
 	data := make(map[string]string)
 	for _, prop := range req.Properties {
-		if prop.Source == string(ConfigCenterPropertySourceDice) {
+		if prop.Source == string(PropertySourceDice) {
 			data[prop.Key] = prop.Value
 		} else {
-			err := adp.SaveConfig(cfg.TenantName, req.GroupId, prop.Key, prop.Value)
+			err := adp.SaveConfig(cfg.TenantName, req.GroupID, prop.Key, prop.Value)
 			if err != nil {
 				return nil, errors.NewServiceInvokingError("nacos.SaveConfig", err)
 			}
 		}
 	}
 	byts, _ := yaml.Marshal(data)
-	err = adp.SaveConfig(cfg.TenantName, req.GroupId, "application.yml", string(byts))
+	err = adp.SaveConfig(cfg.TenantName, req.GroupID, "application.yml", string(byts))
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("nacos.SaveConfig", err)
 	}
