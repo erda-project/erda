@@ -33,6 +33,7 @@ const (
 	SenderDiceHub      Sender = "dicehub"
 	SenderScheduler    Sender = "scheduler"
 	SenderOrchestrator Sender = "orchestrator"
+	SenderCoreServices Sender = "coreServices"
 )
 
 // Event types
