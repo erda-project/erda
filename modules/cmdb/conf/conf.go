@@ -114,6 +114,9 @@ type Conf struct {
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
 	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
 	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
+
+	// Allow people who are not admin to create org
+	CreateOrgEnabled bool `default:"false" env:"CREATE_ORG_ENABLED"`
 }
 
 var (
@@ -580,4 +583,8 @@ func OryCompatibleClientSecret() string {
 
 func MetricsIssueCron() string {
 	return cfg.MetricsIssueCron
+}
+
+func CreateOrgEnabled() bool {
+	return cfg.CreateOrgEnabled
 }

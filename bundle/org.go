@@ -118,3 +118,23 @@ func (b *Bundle) GetOrgByDomain(domain string, userID string) (*apistructs.OrgDT
 	}
 	return resp.Data, nil
 }
+
+func (b *Bundle) CreateOrg(userID string, req *apistructs.OrgCreateRequest) (*apistructs.OrgDTO, error) {
+	host, err := b.urls.CMDB()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var resp apistructs.OrgCreateResponse
+	r, err := hc.Post(host).Path("/api/orgs").
+		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&resp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return nil, toAPIError(r.StatusCode(), resp.Error)
+	}
+	return &resp.Data, nil
+}
