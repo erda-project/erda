@@ -31,8 +31,7 @@ type K8sClient struct {
 
 // New new K8sClient with clusterName.
 func New(clusterName string) (*K8sClient, error) {
-	// TODO: Get clusterInfo from cluster manager, request cmdb for the temporary use.
-	b := bundle.New(bundle.WithCMDB())
+	b := bundle.New(bundle.WithClusterManager())
 
 	ci, err := b.GetCluster(clusterName)
 	if err != nil {

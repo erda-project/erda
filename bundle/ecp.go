@@ -48,7 +48,7 @@ func (b *Bundle) ListEdgeApp(req *apistructs.EdgeAppListPageRequest, identify ap
 		reqParam   map[string]string
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (b *Bundle) GetEdgeApp(appID uint64, identify apistructs.Identity) (*apistr
 		httpReqRes httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (b *Bundle) CreateEdgeApp(req *apistructs.EdgeAppCreateRequest, identify ap
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (b *Bundle) UpdateEdgeApp(req *apistructs.EdgeAppUpdateRequest, appID uint6
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (b *Bundle) DeleteEdgeApp(appID int64, identify apistructs.Identity) error 
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (b *Bundle) GetEdgeAppStatus(req *apistructs.EdgeAppStatusListRequest, iden
 		httpReqRes httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func (b *Bundle) ListEdgeSite(req *apistructs.EdgeSiteListPageRequest, identify 
 		reqParam   map[string]string
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (b *Bundle) GetEdgeSite(siteID int64, identify apistructs.Identity) (*apist
 		httpReqRes httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +428,7 @@ func (b *Bundle) CreateEdgeSite(req *apistructs.EdgeSiteCreateRequest, identify 
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -457,7 +457,7 @@ func (b *Bundle) UpdateEdgeSite(req *apistructs.EdgeSiteUpdateRequest, siteID in
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -486,7 +486,7 @@ func (b *Bundle) DeleteEdgeSite(siteID int64, identify apistructs.Identity) erro
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -517,7 +517,7 @@ func (b *Bundle) ListEdgeConfigset(req *apistructs.EdgeConfigSetListPageRequest,
 		reqParam   map[string]string
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -590,7 +590,7 @@ func (b *Bundle) GetEdgeConfigSet(itemID int64, identify apistructs.Identity) (*
 		httpReqRes httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +634,7 @@ func (b *Bundle) CreateEdgeConfigset(req *apistructs.EdgeConfigSetCreateRequest,
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -663,7 +663,7 @@ func (b *Bundle) UpdateEdgeConfigset(req *apistructs.EdgeConfigSetUpdateRequest,
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -692,7 +692,7 @@ func (b *Bundle) DeleteEdgeConfigset(siteID int64, identify apistructs.Identity)
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -722,7 +722,7 @@ func (b *Bundle) ListEdgeCfgSetItem(req *apistructs.EdgeCfgSetItemListPageReques
 		buffer     bytes.Buffer
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +784,7 @@ func (b *Bundle) GetEdgeCfgSetItem(itemID int64, identify apistructs.Identity) (
 		httpReqRes httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -829,7 +829,7 @@ func (b *Bundle) CreateEdgeCfgSetItem(req *apistructs.EdgeCfgSetItemCreateReques
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -858,7 +858,7 @@ func (b *Bundle) UpdateEdgeCfgSetItem(req *apistructs.EdgeCfgSetItemUpdateReques
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -887,7 +887,7 @@ func (b *Bundle) DeleteEdgeCfgSetItem(siteID int64, identify apistructs.Identity
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -1081,7 +1081,7 @@ func (b *Bundle) GetEdgeSiteInitShell(siteID int64, identify apistructs.Identity
 		buffer     bytes.Buffer
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return nil, err
 	}
@@ -1214,7 +1214,7 @@ func (b *Bundle) RestartEdgeAppSite(appID uint64, req *apistructs.EdgeAppSiteReq
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
@@ -1243,7 +1243,7 @@ func (b *Bundle) OfflineEdgeAppSite(appID uint64, req *apistructs.EdgeAppSiteReq
 		resp httpserver.Resp
 	)
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.ECP()
 	if err != nil {
 		return err
 	}
