@@ -23,7 +23,7 @@ import (
 var FILETREE_NODE_MOVE = apis.ApiSpec{
 	Path:         "/api/autotests/filetree/<inode>/actions/move",
 	BackendPath:  "/api/autotests/filetree/<inode>/actions/move",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

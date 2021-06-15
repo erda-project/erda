@@ -23,7 +23,7 @@ import (
 var FILETREE_NODE_SAVE_PIPELINE = apis.ApiSpec{
 	Path:         "/api/autotests/filetree/<inode>/actions/save-pipeline",
 	BackendPath:  "/api/autotests/filetree/<inode>/actions/save-pipeline",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,
