@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var DELETE = apis.ApiSpec{
 	Path:        "/api/testplans/<id>",
 	BackendPath: "/api/testplans/<id>",
-	Host:        "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "DELETE",
 	CheckLogin:  true,

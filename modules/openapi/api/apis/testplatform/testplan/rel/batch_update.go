@@ -23,7 +23,7 @@ import (
 var BATCH_UPDATE = apis.ApiSpec{
 	Path:        "/api/testplans/<testPlanID>/testcase-relations/actions/batch-update",
 	BackendPath: "/api/testplans/<testPlanID>/testcase-relations/actions/batch-update",
-	Host:        "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
