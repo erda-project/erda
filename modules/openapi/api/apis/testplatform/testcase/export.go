@@ -23,7 +23,7 @@ import (
 var EXPORT = apis.ApiSpec{
 	Path:         "/api/testcases/actions/export",
 	BackendPath:  "/api/testcases/actions/export",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,

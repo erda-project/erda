@@ -23,7 +23,7 @@ import (
 var BATCH_COPY = apis.ApiSpec{
 	Path:         "/api/testcases/actions/batch-copy",
 	BackendPath:  "/api/testcases/actions/batch-copy",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

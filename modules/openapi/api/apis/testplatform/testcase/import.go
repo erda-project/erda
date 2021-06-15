@@ -23,7 +23,7 @@ import (
 var Import = apis.ApiSpec{
 	Path:         "/api/testcases/actions/import",
 	BackendPath:  "/api/testcases/actions/import",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

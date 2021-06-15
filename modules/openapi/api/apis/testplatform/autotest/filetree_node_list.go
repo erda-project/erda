@@ -23,7 +23,7 @@ import (
 var FILETREE_NODE_LIST = apis.ApiSpec{
 	Path:         "/api/autotests/filetree",
 	BackendPath:  "/api/autotests/filetree",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,

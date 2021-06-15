@@ -23,7 +23,7 @@ import (
 var FILETREE_NODE_DELETE = apis.ApiSpec{
 	Path:         "/api/autotests/filetree/<inode>",
 	BackendPath:  "/api/autotests/filetree/<inode>",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodDelete,
 	CheckLogin:   true,

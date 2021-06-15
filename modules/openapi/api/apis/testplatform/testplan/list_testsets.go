@@ -23,7 +23,7 @@ import (
 var LIST_TESTSETS = apis.ApiSpec{
 	Path:         "/api/testplans/<testPlanID>/testsets",
 	BackendPath:  "/api/testplans/<testPlanID>/testsets",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	CheckLogin:   true,

@@ -23,7 +23,7 @@ import (
 var UPDATE = apis.ApiSpec{
 	Path:         "/api/testcases/<testCaseID>",
 	BackendPath:  "/api/testcases/<testCaseID>",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,

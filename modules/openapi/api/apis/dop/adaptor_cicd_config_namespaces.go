@@ -23,7 +23,7 @@ import (
 var ADAPTOR_CICD_CONFIG_NAMESPACES = apis.ApiSpec{
 	Path:         "/api/cicds/actions/fetch-config-namespaces",
 	BackendPath:  "/api/cicds/actions/fetch-config-namespaces",
-	Host:         "gittar-adaptor.default.svc.cluster.local:1086",
+	Host:         "dop.default.svc.cluster.local:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,

@@ -22,7 +22,7 @@ import (
 var AUTOTESTS_TESTPLAN_EXECUTE = apis.ApiSpec{
 	Path:           "/api/autotests/testplans/<testPlanID>/actions/execute",
 	BackendPath:    "/api/autotests/testplans/<testPlanID>/actions/execute",
-	Host:           "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:           "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:         "http",
 	Method:         http.MethodPost,
 	CheckLogin:     true,

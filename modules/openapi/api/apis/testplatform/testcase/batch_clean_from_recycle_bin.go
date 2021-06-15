@@ -23,7 +23,7 @@ import (
 var BATCH_CLEAN_FROM_RECYCLE_BIN = apis.ApiSpec{
 	Path:         "/api/testcases/actions/batch-clean-from-recycle-bin",
 	BackendPath:  "/api/testcases/actions/batch-clean-from-recycle-bin",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodDelete,
 	CheckLogin:   true,

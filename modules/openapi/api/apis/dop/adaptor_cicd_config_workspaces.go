@@ -23,7 +23,7 @@ import (
 var ADAPTOR_CICD_CONFIG_WORKSPACES = apis.ApiSpec{
 	Path:         "/api/cicds/actions/list-workspaces",
 	BackendPath:  "/api/cicds/actions/list-workspaces",
-	Host:         "gittar-adaptor.default.svc.cluster.local:1086",
+	Host:         "dop.default.svc.cluster.local:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,
