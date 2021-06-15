@@ -19,9 +19,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
-	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
-	"github.com/erda-project/erda/modules/pkg/innerdomain"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -47,8 +46,7 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	// get permissions
 	client := httpclient.New()
 	var perms apistructs.ScopeRoleList
-	cmdb := innerdomain.MustParseWithEnv("cmdb.marathon.l4lb.thisdcos.directory", conf.UseK8S())
-	cr := client.Get(cmdb+":9093").
+	cr := client.Get(discover.CMDB()).
 		Path("/api/permissions").
 		Header("User-ID", userID).
 		Header("Org-ID", orgID)
@@ -65,8 +63,7 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data json.RawMessage
-	orchestrator := innerdomain.MustParseWithEnv("orchestrator.marathon.l4lb.thisdcos.directory", conf.UseK8S())
-	cr = client.Get(orchestrator+":8081").
+	cr = client.Get(discover.Orchestrator()).
 		Header("User-ID", userID).
 		Header("Org-ID", orgID).
 		Path(r.URL.Path).Params(params)
