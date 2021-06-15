@@ -17,14 +17,15 @@ import (
 	"bytes"
 	context "context"
 	"fmt"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	"github.com/erda-project/erda/modules/monitor/trace/query"
-	"github.com/erda-project/erda/pkg/common/errors"
 	"math"
 	"net/url"
 	"strconv"
 	"time"
+
+	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/monitor/trace/query"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type traceService struct {
