@@ -28,9 +28,9 @@ type config struct {
 	// Usually injected directly from metadata.namespace
 	ProvisionerNamespace string `env:"PROVISIONER_NAMESPACE" default:"default"`
 	// LocalProvisionerName Name of local volume provisioner
-	LocalProvisionerName string `env:"LOCAL_PROVISIONER_NAME" default:"erda/local-volume"`
+	LocalProvisionerName string `env:"LOCAL_PROVISIONER_NAME" default:"dice/local-volume"`
 	// NetProvisionerName Name of netData volume provisioner
-	NetProvisionerName string `env:"NET_PROVISIONER_NAME" default:"erda/netdata-volume"`
+	NetProvisionerName string `env:"NET_PROVISIONER_NAME" default:"dice/netdata-volume"`
 	// LocalMatchLabel Match label for execute on specified pods
 	LocalMatchLabel string `env:"LOCAL_MATCH_LABEL" default:"app=volume-provisioner"`
 	// ModeEdge Used for edge computing,
