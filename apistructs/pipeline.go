@@ -225,14 +225,18 @@ type PipelineBatchCreateResponse struct {
 }
 
 // pipeline detail
+type PipelineDetailRequest struct {
+	SimplePipelineBaseResult bool   `json:"simplePipelineBaseResult"`
+	PipelineID               uint64 `json:"pipelineID"`
+}
 
+// pipeline detail
 type PipelineDetailResponse struct {
 	Header
 	Data *PipelineDetailDTO `json:"data"`
 }
 
 // pipeline page list
-
 type PipelinePageListRequest struct {
 	// Deprecated, use schema `branch`
 	CommaBranches string `schema:"branches"`
