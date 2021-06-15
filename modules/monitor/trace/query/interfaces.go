@@ -14,8 +14,9 @@
 package query
 
 import (
-	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/gocql/gocql"
+
+	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 )
 
 type (

@@ -14,10 +14,10 @@
 package trace
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/modules/monitor/trace/query"
 	"github.com/erda-project/erda/pkg/common/apis"
