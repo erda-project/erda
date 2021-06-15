@@ -1,0 +1,80 @@
+package trace
+
+import (
+	"bytes"
+	context "context"
+	"fmt"
+	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/monitor/trace/query"
+	"github.com/erda-project/erda/pkg/common/errors"
+	"math"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+type traceService struct {
+	p       *provider
+	metricq metricq.Queryer
+	spanq   query.SpanQueryAPI
+}
+
+func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
+	if req.Limit <= 0 || req.Limit > 1000 {
+		req.Limit = 1000
+	}
+	spans := s.spanq.SelectSpans(req.TraceId, req.Limit)
+	return &pb.GetSpansResponse{Data: spans}, nil
+}
+func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
+	if req.EndTime <= 0 {
+		req.EndTime = time.Now().UnixNano() / 1e6
+		h, _ := time.ParseDuration("-1h")
+		req.StartTime = time.Now().Add(h).UnixNano() / 1e6
+	}
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(req.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(req.EndTime, 10))
+
+	queryParams := make(map[string]interface{})
+	queryParams["terminus_keys"] = req.ScopeId
+	queryParams["limit"] = strconv.FormatInt(req.Limit, 10)
+	var where bytes.Buffer
+	if req.ApplicationId > 0 {
+		queryParams["applications_ids"] = strconv.FormatInt(req.ApplicationId, 10)
+		where.WriteString("applications_ids::field=$applications_ids AND ")
+	}
+	//-1 error, 0 both, 1 success
+	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
+		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
+		"ORDER BY start_time::field LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
+	response, err := s.metricq.Query(metricq.InfluxQL, statement, queryParams, metricsParams)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+
+	traces := make([]*pb.Trace, 0, len(response.ResultSet.Rows))
+	for _, row := range response.ResultSet.Rows {
+		status := row[4].(string)
+		if status == "error" && req.Status == 1 {
+			continue
+		} else if status == "success" && req.Status == -1 {
+			continue
+		}
+
+		var trace pb.Trace
+		trace.Elapsed = math.Abs(row[1].(float64) - row[0].(float64))
+		trace.StartTime = int64(row[0].(float64) / 1e6)
+		var services []string
+		for _, s := range row[2].([]interface{}) {
+			services = append(services, s.(string))
+		}
+		trace.Services = services
+		trace.Id = row[3].(string)
+
+		traces = append(traces, &trace)
+	}
+
+	return &pb.GetTracesResponse{Data: traces}, nil
+}

@@ -1,0 +1,1576 @@
+name: "MySQL Internal Metrics"
+tags:
+    addon_id:
+        name: "Addon ID"
+    cluster_name:
+        name: "Cluster Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    is_slave:
+        name: "Is Slave"
+    org_name:
+        name: "Org Name"
+    server:
+        name: "Server"
+    server_id:
+        name: "Server ID"
+fields:
+    aborted_clients:
+        type: "number"
+        name: "Aborted Clients"
+        uint: 
+    aborted_connects:
+        type: "number"
+        name: "Aborted Connects"
+        uint: 
+    binary_files_count:
+        type: "number"
+        name: "Binary Files Count"
+        uint: 
+    binary_size_bytes:
+        type: "number"
+        name: "Binary Size Bytes"
+        uint: 
+    binlog_cache_disk_use:
+        type: "number"
+        name: "Binlog Cache Disk Use"
+        uint: 
+    binlog_cache_use:
+        type: "number"
+        name: "Binlog Cache Use"
+        uint: 
+    binlog_stmt_cache_disk_use:
+        type: "number"
+        name: "Binlog Stmt Cache Disk Use"
+        uint: 
+    binlog_stmt_cache_use:
+        type: "number"
+        name: "Binlog Stmt Cache Use"
+        uint: 
+    bytes_received:
+        type: "number"
+        name: "Bytes Received"
+        uint: 
+    bytes_sent:
+        type: "number"
+        name: "Bytes Sent"
+        uint: 
+    com_admin_commands:
+        type: "number"
+        name: "Com Admin Commands"
+        uint: 
+    com_alter_db:
+        type: "number"
+        name: "Com Alter Db"
+        uint: 
+    com_alter_db_upgrade:
+        type: "number"
+        name: "Com Alter Db Upgrade"
+        uint: 
+    com_alter_event:
+        type: "number"
+        name: "Com Alter Event"
+        uint: 
+    com_alter_function:
+        type: "number"
+        name: "Com Alter Function"
+        uint: 
+    com_alter_instance:
+        type: "number"
+        name: "Com Alter Instance"
+        uint: 
+    com_alter_procedure:
+        type: "number"
+        name: "Com Alter Procedure"
+        uint: 
+    com_alter_server:
+        type: "number"
+        name: "Com Alter Server"
+        uint: 
+    com_alter_table:
+        type: "number"
+        name: "Com Alter Table"
+        uint: 
+    com_alter_tablespace:
+        type: "number"
+        name: "Com Alter Tablespace"
+        uint: 
+    com_alter_user:
+        type: "number"
+        name: "Com Alter User"
+        uint: 
+    com_analyze:
+        type: "number"
+        name: "Com Analyze"
+        uint: 
+    com_assign_to_keycache:
+        type: "number"
+        name: "Com Assign To Keycache"
+        uint: 
+    com_begin:
+        type: "number"
+        name: "Com Begin"
+        uint: 
+    com_binlog:
+        type: "number"
+        name: "Com Binlog"
+        uint: 
+    com_call_procedure:
+        type: "number"
+        name: "Com Call Procedure"
+        uint: 
+    com_change_db:
+        type: "number"
+        name: "Com Change Db"
+        uint: 
+    com_change_master:
+        type: "number"
+        name: "Com Change Master"
+        uint: 
+    com_change_repl_filter:
+        type: "number"
+        name: "Com Change Repl Filter"
+        uint: 
+    com_check:
+        type: "number"
+        name: "Com Check"
+        uint: 
+    com_checksum:
+        type: "number"
+        name: "Com Checksum"
+        uint: 
+    com_commit:
+        type: "number"
+        name: "Com Commit"
+        uint: 
+    com_create_db:
+        type: "number"
+        name: "Com Create Db"
+        uint: 
+    com_create_event:
+        type: "number"
+        name: "Com Create Event"
+        uint: 
+    com_create_function:
+        type: "number"
+        name: "Com Create Function"
+        uint: 
+    com_create_index:
+        type: "number"
+        name: "Com Create Index"
+        uint: 
+    com_create_procedure:
+        type: "number"
+        name: "Com Create Procedure"
+        uint: 
+    com_create_server:
+        type: "number"
+        name: "Com Create Server"
+        uint: 
+    com_create_table:
+        type: "number"
+        name: "Com Create Table"
+        uint: 
+    com_create_trigger:
+        type: "number"
+        name: "Com Create Trigger"
+        uint: 
+    com_create_udf:
+        type: "number"
+        name: "Com Create Udf"
+        uint: 
+    com_create_user:
+        type: "number"
+        name: "Com Create User"
+        uint: 
+    com_create_view:
+        type: "number"
+        name: "Com Create View"
+        uint: 
+    com_dealloc_sql:
+        type: "number"
+        name: "Com Dealloc Sql"
+        uint: 
+    com_delete:
+        type: "number"
+        name: "Com Delete"
+        uint: 
+    com_delete_multi:
+        type: "number"
+        name: "Com Delete Multi"
+        uint: 
+    com_do:
+        type: "number"
+        name: "Com Do"
+        uint: 
+    com_drop_db:
+        type: "number"
+        name: "Com Drop Db"
+        uint: 
+    com_drop_event:
+        type: "number"
+        name: "Com Drop Event"
+        uint: 
+    com_drop_function:
+        type: "number"
+        name: "Com Drop Function"
+        uint: 
+    com_drop_index:
+        type: "number"
+        name: "Com Drop Index"
+        uint: 
+    com_drop_procedure:
+        type: "number"
+        name: "Com Drop Procedure"
+        uint: 
+    com_drop_server:
+        type: "number"
+        name: "Com Drop Server"
+        uint: 
+    com_drop_table:
+        type: "number"
+        name: "Com Drop Table"
+        uint: 
+    com_drop_trigger:
+        type: "number"
+        name: "Com Drop Trigger"
+        uint: 
+    com_drop_user:
+        type: "number"
+        name: "Com Drop User"
+        uint: 
+    com_drop_view:
+        type: "number"
+        name: "Com Drop View"
+        uint: 
+    com_empty_query:
+        type: "number"
+        name: "Com Empty Query"
+        uint: 
+    com_execute_sql:
+        type: "number"
+        name: "Com Execute Sql"
+        uint: 
+    com_explain_other:
+        type: "number"
+        name: "Com Explain Other"
+        uint: 
+    com_flush:
+        type: "number"
+        name: "Com Flush"
+        uint: 
+    com_get_diagnostics:
+        type: "number"
+        name: "Com Get Diagnostics"
+        uint: 
+    com_grant:
+        type: "number"
+        name: "Com Grant"
+        uint: 
+    com_group_replication_start:
+        type: "number"
+        name: "Com Group Replication Start"
+        uint: 
+    com_group_replication_stop:
+        type: "number"
+        name: "Com Group Replication Stop"
+        uint: 
+    com_ha_close:
+        type: "number"
+        name: "Com Ha Close"
+        uint: 
+    com_ha_open:
+        type: "number"
+        name: "Com Ha Open"
+        uint: 
+    com_ha_read:
+        type: "number"
+        name: "Com Ha Read"
+        uint: 
+    com_help:
+        type: "number"
+        name: "Com Help"
+        uint: 
+    com_insert:
+        type: "number"
+        name: "Com Insert"
+        uint: 
+    com_insert_select:
+        type: "number"
+        name: "Com Insert Select"
+        uint: 
+    com_install_plugin:
+        type: "number"
+        name: "Com Install Plugin"
+        uint: 
+    com_kill:
+        type: "number"
+        name: "Com Kill"
+        uint: 
+    com_load:
+        type: "number"
+        name: "Com Load"
+        uint: 
+    com_lock_tables:
+        type: "number"
+        name: "Com Lock Tables"
+        uint: 
+    com_optimize:
+        type: "number"
+        name: "Com Optimize"
+        uint: 
+    com_preload_keys:
+        type: "number"
+        name: "Com Preload Keys"
+        uint: 
+    com_prepare_sql:
+        type: "number"
+        name: "Com Prepare Sql"
+        uint: 
+    com_purge:
+        type: "number"
+        name: "Com Purge"
+        uint: 
+    com_purge_before_date:
+        type: "number"
+        name: "Com Purge Before Date"
+        uint: 
+    com_release_savepoint:
+        type: "number"
+        name: "Com Release Savepoint"
+        uint: 
+    com_rename_table:
+        type: "number"
+        name: "Com Rename Table"
+        uint: 
+    com_rename_user:
+        type: "number"
+        name: "Com Rename User"
+        uint: 
+    com_repair:
+        type: "number"
+        name: "Com Repair"
+        uint: 
+    com_replace:
+        type: "number"
+        name: "Com Replace"
+        uint: 
+    com_replace_select:
+        type: "number"
+        name: "Com Replace Select"
+        uint: 
+    com_reset:
+        type: "number"
+        name: "Com Reset"
+        uint: 
+    com_resignal:
+        type: "number"
+        name: "Com Resignal"
+        uint: 
+    com_revoke:
+        type: "number"
+        name: "Com Revoke"
+        uint: 
+    com_revoke_all:
+        type: "number"
+        name: "Com Revoke All"
+        uint: 
+    com_rollback:
+        type: "number"
+        name: "Com Rollback"
+        uint: 
+    com_rollback_to_savepoint:
+        type: "number"
+        name: "Com Rollback To Savepoint"
+        uint: 
+    com_savepoint:
+        type: "number"
+        name: "Com Savepoint"
+        uint: 
+    com_select:
+        type: "number"
+        name: "Com Select"
+        uint: 
+    com_set_option:
+        type: "number"
+        name: "Com Set Option"
+        uint: 
+    com_show_binlog_events:
+        type: "number"
+        name: "Com Show Binlog Events"
+        uint: 
+    com_show_binlogs:
+        type: "number"
+        name: "Com Show Binlogs"
+        uint: 
+    com_show_charsets:
+        type: "number"
+        name: "Com Show Charsets"
+        uint: 
+    com_show_collations:
+        type: "number"
+        name: "Com Show Collations"
+        uint: 
+    com_show_create_db:
+        type: "number"
+        name: "Com Show Create Db"
+        uint: 
+    com_show_create_event:
+        type: "number"
+        name: "Com Show Create Event"
+        uint: 
+    com_show_create_func:
+        type: "number"
+        name: "Com Show Create Func"
+        uint: 
+    com_show_create_proc:
+        type: "number"
+        name: "Com Show Create Proc"
+        uint: 
+    com_show_create_table:
+        type: "number"
+        name: "Com Show Create Table"
+        uint: 
+    com_show_create_trigger:
+        type: "number"
+        name: "Com Show Create Trigger"
+        uint: 
+    com_show_create_user:
+        type: "number"
+        name: "Com Show Create User"
+        uint: 
+    com_show_databases:
+        type: "number"
+        name: "Com Show Databases"
+        uint: 
+    com_show_engine_logs:
+        type: "number"
+        name: "Com Show Engine Logs"
+        uint: 
+    com_show_engine_mutex:
+        type: "number"
+        name: "Com Show Engine Mutex"
+        uint: 
+    com_show_engine_status:
+        type: "number"
+        name: "Com Show Engine Status"
+        uint: 
+    com_show_errors:
+        type: "number"
+        name: "Com Show Errors"
+        uint: 
+    com_show_events:
+        type: "number"
+        name: "Com Show Events"
+        uint: 
+    com_show_fields:
+        type: "number"
+        name: "Com Show Fields"
+        uint: 
+    com_show_function_code:
+        type: "number"
+        name: "Com Show Function Code"
+        uint: 
+    com_show_function_status:
+        type: "number"
+        name: "Com Show Function Status"
+        uint: 
+    com_show_grants:
+        type: "number"
+        name: "Com Show Grants"
+        uint: 
+    com_show_keys:
+        type: "number"
+        name: "Com Show Keys"
+        uint: 
+    com_show_master_status:
+        type: "number"
+        name: "Com Show Master Status"
+        uint: 
+    com_show_open_tables:
+        type: "number"
+        name: "Com Show Open Tables"
+        uint: 
+    com_show_plugins:
+        type: "number"
+        name: "Com Show Plugins"
+        uint: 
+    com_show_privileges:
+        type: "number"
+        name: "Com Show Privileges"
+        uint: 
+    com_show_procedure_code:
+        type: "number"
+        name: "Com Show Procedure Code"
+        uint: 
+    com_show_procedure_status:
+        type: "number"
+        name: "Com Show Procedure Status"
+        uint: 
+    com_show_processlist:
+        type: "number"
+        name: "Com Show Processlist"
+        uint: 
+    com_show_profile:
+        type: "number"
+        name: "Com Show Profile"
+        uint: 
+    com_show_profiles:
+        type: "number"
+        name: "Com Show Profiles"
+        uint: 
+    com_show_relaylog_events:
+        type: "number"
+        name: "Com Show Relaylog Events"
+        uint: 
+    com_show_slave_hosts:
+        type: "number"
+        name: "Com Show Slave Hosts"
+        uint: 
+    com_show_slave_status:
+        type: "number"
+        name: "Com Show Slave Status"
+        uint: 
+    com_show_status:
+        type: "number"
+        name: "Com Show Status"
+        uint: 
+    com_show_storage_engines:
+        type: "number"
+        name: "Com Show Storage Engines"
+        uint: 
+    com_show_table_status:
+        type: "number"
+        name: "Com Show Table Status"
+        uint: 
+    com_show_tables:
+        type: "number"
+        name: "Com Show Tables"
+        uint: 
+    com_show_triggers:
+        type: "number"
+        name: "Com Show Triggers"
+        uint: 
+    com_show_variables:
+        type: "number"
+        name: "Com Show Variables"
+        uint: 
+    com_show_warnings:
+        type: "number"
+        name: "Com Show Warnings"
+        uint: 
+    com_shutdown:
+        type: "number"
+        name: "Com Shutdown"
+        uint: 
+    com_signal:
+        type: "number"
+        name: "Com Signal"
+        uint: 
+    com_slave_start:
+        type: "number"
+        name: "Com Slave Start"
+        uint: 
+    com_slave_stop:
+        type: "number"
+        name: "Com Slave Stop"
+        uint: 
+    com_stmt_close:
+        type: "number"
+        name: "Com Stmt Close"
+        uint: 
+    com_stmt_execute:
+        type: "number"
+        name: "Com Stmt Execute"
+        uint: 
+    com_stmt_fetch:
+        type: "number"
+        name: "Com Stmt Fetch"
+        uint: 
+    com_stmt_prepare:
+        type: "number"
+        name: "Com Stmt Prepare"
+        uint: 
+    com_stmt_reprepare:
+        type: "number"
+        name: "Com Stmt Reprepare"
+        uint: 
+    com_stmt_reset:
+        type: "number"
+        name: "Com Stmt Reset"
+        uint: 
+    com_stmt_send_long_data:
+        type: "number"
+        name: "Com Stmt Send Long Data"
+        uint: 
+    com_truncate:
+        type: "number"
+        name: "Com Truncate"
+        uint: 
+    com_uninstall_plugin:
+        type: "number"
+        name: "Com Uninstall Plugin"
+        uint: 
+    com_unlock_tables:
+        type: "number"
+        name: "Com Unlock Tables"
+        uint: 
+    com_update:
+        type: "number"
+        name: "Com Update"
+        uint: 
+    com_update_multi:
+        type: "number"
+        name: "Com Update Multi"
+        uint: 
+    com_xa_commit:
+        type: "number"
+        name: "Com Xa Commit"
+        uint: 
+    com_xa_end:
+        type: "number"
+        name: "Com Xa End"
+        uint: 
+    com_xa_prepare:
+        type: "number"
+        name: "Com Xa Prepare"
+        uint: 
+    com_xa_recover:
+        type: "number"
+        name: "Com Xa Recover"
+        uint: 
+    com_xa_rollback:
+        type: "number"
+        name: "Com Xa Rollback"
+        uint: 
+    com_xa_start:
+        type: "number"
+        name: "Com Xa Start"
+        uint: 
+    connection_errors_accept:
+        type: "number"
+        name: "Connection Errors Accept"
+        uint: 
+    connection_errors_internal:
+        type: "number"
+        name: "Connection Errors Internal"
+        uint: 
+    connection_errors_max_connections:
+        type: "number"
+        name: "Connection Errors Maximum Connections"
+        uint: 
+    connection_errors_peer_address:
+        type: "number"
+        name: "Connection Errors Peer Address"
+        uint: 
+    connection_errors_select:
+        type: "number"
+        name: "Connection Errors Select"
+        uint: 
+    connection_errors_tcpwrap:
+        type: "number"
+        name: "Connection Errors Tcpwrap"
+        uint: 
+    connections:
+        type: "number"
+        name: "Connections"
+        uint: 
+    created_tmp_disk_tables:
+        type: "number"
+        name: "Created Tmp Disk Tables"
+        uint: 
+    created_tmp_files:
+        type: "number"
+        name: "Created Tmp Files"
+        uint: 
+    created_tmp_tables:
+        type: "number"
+        name: "Created Tmp Tables"
+        uint: 
+    delayed_errors:
+        type: "number"
+        name: "Delayed Errors"
+        uint: 
+    delayed_insert_threads:
+        type: "number"
+        name: "Delayed Insert Threads"
+        uint: 
+    delayed_writes:
+        type: "number"
+        name: "Delayed Writes"
+        uint: 
+    flush_commands:
+        type: "number"
+        name: "Flush Commands"
+        uint: 
+    handler_commit:
+        type: "number"
+        name: "Handler Commit"
+        uint: 
+    handler_delete:
+        type: "number"
+        name: "Handler Delete"
+        uint: 
+    handler_discover:
+        type: "number"
+        name: "Handler Discover"
+        uint: 
+    handler_external_lock:
+        type: "number"
+        name: "Handler External Lock"
+        uint: 
+    handler_mrr_init:
+        type: "number"
+        name: "Handler Mrr Init"
+        uint: 
+    handler_prepare:
+        type: "number"
+        name: "Handler Prepare"
+        uint: 
+    handler_read_first:
+        type: "number"
+        name: "Handler Read First"
+        uint: 
+    handler_read_key:
+        type: "number"
+        name: "Handler Read Key"
+        uint: 
+    handler_read_last:
+        type: "number"
+        name: "Handler Read Last"
+        uint: 
+    handler_read_next:
+        type: "number"
+        name: "Handler Read Next"
+        uint: 
+    handler_read_prev:
+        type: "number"
+        name: "Handler Read Prev"
+        uint: 
+    handler_read_rnd:
+        type: "number"
+        name: "Handler Read Rnd"
+        uint: 
+    handler_read_rnd_next:
+        type: "number"
+        name: "Handler Read Rnd Next"
+        uint: 
+    handler_rollback:
+        type: "number"
+        name: "Handler Rollback"
+        uint: 
+    handler_savepoint:
+        type: "number"
+        name: "Handler Savepoint"
+        uint: 
+    handler_savepoint_rollback:
+        type: "number"
+        name: "Handler Savepoint Rollback"
+        uint: 
+    handler_update:
+        type: "number"
+        name: "Handler Update"
+        uint: 
+    handler_write:
+        type: "number"
+        name: "Handler Write"
+        uint: 
+    innodb_available_undo_logs:
+        type: "number"
+        name: "Innodb Available Undo Logs"
+        uint: 
+    innodb_buffer_pool_bytes_data:
+        type: "number"
+        name: "Innodb Buffer Pool Bytes Data"
+        uint: 
+    innodb_buffer_pool_bytes_dirty:
+        type: "number"
+        name: "Innodb Buffer Pool Bytes Dirty"
+        uint: 
+    innodb_buffer_pool_dump_status:
+        type: "string"
+        name: "Innodb Buffer Pool Dump Status"
+        uint: 
+    innodb_buffer_pool_load_status:
+        type: "string"
+        name: "Innodb Buffer Pool Load Status"
+        uint: 
+    innodb_buffer_pool_pages_data:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Data"
+        uint: 
+    innodb_buffer_pool_pages_dirty:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Dirty"
+        uint: 
+    innodb_buffer_pool_pages_flushed:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Flushed"
+        uint: 
+    innodb_buffer_pool_pages_free:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Free"
+        uint: 
+    innodb_buffer_pool_pages_misc:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Misc"
+        uint: 
+    innodb_buffer_pool_pages_total:
+        type: "number"
+        name: "Innodb Buffer Pool Pages Total"
+        uint: 
+    innodb_buffer_pool_read_ahead:
+        type: "number"
+        name: "Innodb Buffer Pool Read Ahead"
+        uint: 
+    innodb_buffer_pool_read_ahead_evicted:
+        type: "number"
+        name: "Innodb Buffer Pool Read Ahead Evicted"
+        uint: 
+    innodb_buffer_pool_read_ahead_rnd:
+        type: "number"
+        name: "Innodb Buffer Pool Read Ahead Rnd"
+        uint: 
+    innodb_buffer_pool_read_requests:
+        type: "number"
+        name: "Innodb Buffer Pool Read Requests"
+        uint: 
+    innodb_buffer_pool_reads:
+        type: "number"
+        name: "Innodb Buffer Pool Reads"
+        uint: 
+    innodb_buffer_pool_wait_free:
+        type: "number"
+        name: "Innodb Buffer Pool Wait Free"
+        uint: 
+    innodb_buffer_pool_write_requests:
+        type: "number"
+        name: "Innodb Buffer Pool Write Requests"
+        uint: 
+    innodb_data_fsyncs:
+        type: "number"
+        name: "Innodb Data Fsyncs"
+        uint: 
+    innodb_data_pending_fsyncs:
+        type: "number"
+        name: "Innodb Data Pending Fsyncs"
+        uint: 
+    innodb_data_pending_reads:
+        type: "number"
+        name: "Innodb Data Pending Reads"
+        uint: 
+    innodb_data_pending_writes:
+        type: "number"
+        name: "Innodb Data Pending Writes"
+        uint: 
+    innodb_data_read:
+        type: "number"
+        name: "Innodb Data Read"
+        uint: 
+    innodb_data_reads:
+        type: "number"
+        name: "Innodb Data Reads"
+        uint: 
+    innodb_data_writes:
+        type: "number"
+        name: "Innodb Data Writes"
+        uint: 
+    innodb_data_written:
+        type: "number"
+        name: "Innodb Data Written"
+        uint: 
+    innodb_dblwr_pages_written:
+        type: "number"
+        name: "Innodb Dblwr Pages Written"
+        uint: 
+    innodb_dblwr_writes:
+        type: "number"
+        name: "Innodb Dblwr Writes"
+        uint: 
+    innodb_log_waits:
+        type: "number"
+        name: "Innodb Log Waits"
+        uint: 
+    innodb_log_write_requests:
+        type: "number"
+        name: "Innodb Log Write Requests"
+        uint: 
+    innodb_log_writes:
+        type: "number"
+        name: "Innodb Log Writes"
+        uint: 
+    innodb_num_open_files:
+        type: "number"
+        name: "Innodb Num Open Files"
+        uint: 
+    innodb_os_log_fsyncs:
+        type: "number"
+        name: "Innodb OS Log Fsyncs"
+        uint: 
+    innodb_os_log_pending_fsyncs:
+        type: "number"
+        name: "Innodb OS Log Pending Fsyncs"
+        uint: 
+    innodb_os_log_pending_writes:
+        type: "number"
+        name: "Innodb OS Log Pending Writes"
+        uint: 
+    innodb_os_log_written:
+        type: "number"
+        name: "Innodb OS Log Written"
+        uint: 
+    innodb_page_size:
+        type: "number"
+        name: "Innodb Page Size"
+        uint: 
+    innodb_pages_created:
+        type: "number"
+        name: "Innodb Pages Created"
+        uint: 
+    innodb_pages_read:
+        type: "number"
+        name: "Innodb Pages Read"
+        uint: 
+    innodb_pages_written:
+        type: "number"
+        name: "Innodb Pages Written"
+        uint: 
+    innodb_row_lock_current_waits:
+        type: "number"
+        name: "Innodb Row Lock Current Waits"
+        uint: 
+    innodb_row_lock_time:
+        type: "number"
+        name: "Innodb Row Lock Time"
+        uint: 
+    innodb_row_lock_time_avg:
+        type: "number"
+        name: "Innodb Row Lock Time Avg"
+        uint: 
+    innodb_row_lock_time_max:
+        type: "number"
+        name: "Innodb Row Lock Time Maximum"
+        uint: 
+    innodb_row_lock_waits:
+        type: "number"
+        name: "Innodb Row Lock Waits"
+        uint: 
+    innodb_rows_deleted:
+        type: "number"
+        name: "Innodb Rows Deleted"
+        uint: 
+    innodb_rows_inserted:
+        type: "number"
+        name: "Innodb Rows Inserted"
+        uint: 
+    innodb_rows_read:
+        type: "number"
+        name: "Innodb Rows Read"
+        uint: 
+    innodb_rows_updated:
+        type: "number"
+        name: "Innodb Rows Updated"
+        uint: 
+    innodb_truncated_status_writes:
+        type: "number"
+        name: "Innodb Truncated Status Writes"
+        uint: 
+    key_blocks_not_flushed:
+        type: "number"
+        name: "Key Blocks Not Flushed"
+        uint: 
+    key_blocks_unused:
+        type: "number"
+        name: "Key Blocks Unused"
+        uint: 
+    key_blocks_used:
+        type: "number"
+        name: "Key Blocks Used"
+        uint: 
+    key_read_requests:
+        type: "number"
+        name: "Key Read Requests"
+        uint: 
+    key_reads:
+        type: "number"
+        name: "Key Reads"
+        uint: 
+    key_write_requests:
+        type: "number"
+        name: "Key Write Requests"
+        uint: 
+    key_writes:
+        type: "number"
+        name: "Key Writes"
+        uint: 
+    locked_connects:
+        type: "number"
+        name: "Locked Connects"
+        uint: 
+    max_execution_time_exceeded:
+        type: "number"
+        name: "Maximum Execution Time Exceeded"
+        uint: 
+    max_execution_time_set:
+        type: "number"
+        name: "Maximum Execution Time Set"
+        uint: 
+    max_execution_time_set_failed:
+        type: "number"
+        name: "Maximum Execution Time Set Failed"
+        uint: 
+    max_used_connections:
+        type: "number"
+        name: "Maximum Used Connections"
+        uint: 
+    max_used_connections_time:
+        type: "string"
+        name: "Maximum Used Connections Time"
+        uint: 
+    not_flushed_delayed_rows:
+        type: "number"
+        name: "Not Flushed Delayed Rows"
+        uint: 
+    ongoing_anonymous_transaction_count:
+        type: "number"
+        name: "Ongoing Anonymous Transaction Count"
+        uint: 
+    open_files:
+        type: "number"
+        name: "Open Files"
+        uint: 
+    open_streams:
+        type: "number"
+        name: "Open Streams"
+        uint: 
+    open_table_definitions:
+        type: "number"
+        name: "Open Table Definitions"
+        uint: 
+    open_tables:
+        type: "number"
+        name: "Open Tables"
+        uint: 
+    opened_files:
+        type: "number"
+        name: "Opened Files"
+        uint: 
+    opened_table_definitions:
+        type: "number"
+        name: "Opened Table Definitions"
+        uint: 
+    opened_tables:
+        type: "number"
+        name: "Opened Tables"
+        uint: 
+    performance_schema_accounts_lost:
+        type: "number"
+        name: "Performance Schema Accounts Lost"
+        uint: 
+    performance_schema_cond_classes_lost:
+        type: "number"
+        name: "Performance Schema Cond Classes Lost"
+        uint: 
+    performance_schema_cond_instances_lost:
+        type: "number"
+        name: "Performance Schema Cond Instances Lost"
+        uint: 
+    performance_schema_digest_lost:
+        type: "number"
+        name: "Performance Schema Digest Lost"
+        uint: 
+    performance_schema_file_classes_lost:
+        type: "number"
+        name: "Performance Schema File Classes Lost"
+        uint: 
+    performance_schema_file_handles_lost:
+        type: "number"
+        name: "Performance Schema File Handles Lost"
+        uint: 
+    performance_schema_file_instances_lost:
+        type: "number"
+        name: "Performance Schema File Instances Lost"
+        uint: 
+    performance_schema_hosts_lost:
+        type: "number"
+        name: "Performance Schema Hosts Lost"
+        uint: 
+    performance_schema_index_stat_lost:
+        type: "number"
+        name: "Performance Schema Index Stat Lost"
+        uint: 
+    performance_schema_locker_lost:
+        type: "number"
+        name: "Performance Schema Locker Lost"
+        uint: 
+    performance_schema_memory_classes_lost:
+        type: "number"
+        name: "Performance Schema Memory Classes Lost"
+        uint: 
+    performance_schema_metadata_lock_lost:
+        type: "number"
+        name: "Performance Schema Metadata Lock Lost"
+        uint: 
+    performance_schema_mutex_classes_lost:
+        type: "number"
+        name: "Performance Schema Mutex Classes Lost"
+        uint: 
+    performance_schema_mutex_instances_lost:
+        type: "number"
+        name: "Performance Schema Mutex Instances Lost"
+        uint: 
+    performance_schema_nested_statement_lost:
+        type: "number"
+        name: "Performance Schema Nested Statement Lost"
+        uint: 
+    performance_schema_prepared_statements_lost:
+        type: "number"
+        name: "Performance Schema Prepared Statements Lost"
+        uint: 
+    performance_schema_program_lost:
+        type: "number"
+        name: "Performance Schema Program Lost"
+        uint: 
+    performance_schema_rwlock_classes_lost:
+        type: "number"
+        name: "Performance Schema Rwlock Classes Lost"
+        uint: 
+    performance_schema_rwlock_instances_lost:
+        type: "number"
+        name: "Performance Schema Rwlock Instances Lost"
+        uint: 
+    performance_schema_session_connect_attrs_lost:
+        type: "number"
+        name: "Performance Schema Session Connect Attrs Lost"
+        uint: 
+    performance_schema_socket_classes_lost:
+        type: "number"
+        name: "Performance Schema Socket Classes Lost"
+        uint: 
+    performance_schema_socket_instances_lost:
+        type: "number"
+        name: "Performance Schema Socket Instances Lost"
+        uint: 
+    performance_schema_stage_classes_lost:
+        type: "number"
+        name: "Performance Schema Stage Classes Lost"
+        uint: 
+    performance_schema_statement_classes_lost:
+        type: "number"
+        name: "Performance Schema Statement Classes Lost"
+        uint: 
+    performance_schema_table_handles_lost:
+        type: "number"
+        name: "Performance Schema Table Handles Lost"
+        uint: 
+    performance_schema_table_instances_lost:
+        type: "number"
+        name: "Performance Schema Table Instances Lost"
+        uint: 
+    performance_schema_table_lock_stat_lost:
+        type: "number"
+        name: "Performance Schema Table Lock Stat Lost"
+        uint: 
+    performance_schema_thread_classes_lost:
+        type: "number"
+        name: "Performance Schema Thread Classes Lost"
+        uint: 
+    performance_schema_thread_instances_lost:
+        type: "number"
+        name: "Performance Schema Thread Instances Lost"
+        uint: 
+    performance_schema_users_lost:
+        type: "number"
+        name: "Performance Schema Users Lost"
+        uint: 
+    prepared_stmt_count:
+        type: "number"
+        name: "Prepared Stmt Count"
+        uint: 
+    qcache_free_blocks:
+        type: "number"
+        name: "Qcache Free Blocks"
+        uint: 
+    qcache_free_memory:
+        type: "number"
+        name: "Qcache Free Memory"
+        uint: 
+    qcache_hits:
+        type: "number"
+        name: "Qcache Hits"
+        uint: 
+    qcache_inserts:
+        type: "number"
+        name: "Qcache Inserts"
+        uint: 
+    qcache_lowmem_prunes:
+        type: "number"
+        name: "Qcache Lowmem Prunes"
+        uint: 
+    qcache_not_cached:
+        type: "number"
+        name: "Qcache Not Cached"
+        uint: 
+    qcache_queries_in_cache:
+        type: "number"
+        name: "Qcache Queries In Cache"
+        uint: 
+    qcache_total_blocks:
+        type: "number"
+        name: "Qcache Total Blocks"
+        uint: 
+    queries:
+        type: "number"
+        name: "Queries"
+        uint: 
+    questions:
+        type: "number"
+        name: "Questions"
+        uint: 
+    rsa_public_key:
+        type: "string"
+        name: "Rsa Public Key"
+        uint: 
+    select_full_join:
+        type: "number"
+        name: "Select Full Join"
+        uint: 
+    select_full_range_join:
+        type: "number"
+        name: "Select Full Range Join"
+        uint: 
+    select_range:
+        type: "number"
+        name: "Select Range"
+        uint: 
+    select_range_check:
+        type: "number"
+        name: "Select Range Check"
+        uint: 
+    select_scan:
+        type: "number"
+        name: "Select Scan"
+        uint: 
+    slave_auto_position:
+        type: "number"
+        name: "Slave Auto Position"
+        uint: 
+    slave_connect_retry:
+        type: "number"
+        name: "Slave Connect Retry"
+        uint: 
+    slave_exec_master_log_pos:
+        type: "number"
+        name: "Slave Exec Master Log Pos"
+        uint: 
+    slave_executed_gtid_set:
+        type: "string"
+        name: "Slave Executed Gtid Set"
+        uint: 
+    slave_last_errno:
+        type: "number"
+        name: "Slave Last Errno"
+        uint: 
+    slave_last_error:
+        type: "string"
+        name: "Slave Last Error"
+        uint: 
+    slave_last_io_errno:
+        type: "number"
+        name: "Slave Last Io Errno"
+        uint: 
+    slave_last_sql_errno:
+        type: "number"
+        name: "Slave Last Sql Errno"
+        uint: 
+    slave_last_sql_error:
+        type: "string"
+        name: "Slave Last Sql Error"
+        uint: 
+    slave_last_sql_error_timestamp:
+        type: "string"
+        name: "Slave Last Sql Error Timestamp"
+        uint: 
+    slave_master_host:
+        type: "string"
+        name: "Slave Master Host"
+        uint: 
+    slave_master_info_file:
+        type: "string"
+        name: "Slave Master Info File"
+        uint: 
+    slave_master_log_file:
+        type: "string"
+        name: "Slave Master Log File"
+        uint: 
+    slave_master_port:
+        type: "number"
+        name: "Slave Master Port"
+        uint: 
+    slave_master_retry_count:
+        type: "number"
+        name: "Slave Master Retry Count"
+        uint: 
+    slave_master_server_id:
+        type: "number"
+        name: "Slave Master Server ID"
+        uint: 
+    slave_master_ssl_allowed:
+        type: "number"
+        name: "Slave Master Ssl Allowed"
+        uint: 
+    slave_master_ssl_verify_server_cert:
+        type: "number"
+        name: "Slave Master Ssl Verify Server Cert"
+        uint: 
+    slave_master_user:
+        type: "string"
+        name: "Slave Master User"
+        uint: 
+    slave_master_uuid:
+        type: "string"
+        name: "Slave Master Uuid"
+        uint: 
+    slave_open_temp_tables:
+        type: "number"
+        name: "Slave Open Temp Tables"
+        uint: 
+    slave_read_master_log_pos:
+        type: "number"
+        name: "Slave Read Master Log Pos"
+        uint: 
+    slave_relay_log_file:
+        type: "string"
+        name: "Slave Relay Log File"
+        uint: 
+    slave_relay_log_pos:
+        type: "number"
+        name: "Slave Relay Log Pos"
+        uint: 
+    slave_relay_log_space:
+        type: "number"
+        name: "Slave Relay Log Space"
+        uint: 
+    slave_relay_master_log_file:
+        type: "string"
+        name: "Slave Relay Master Log File"
+        uint: 
+    slave_replicate_ignore_db:
+        type: "string"
+        name: "Slave Replicate Ignore Db"
+        uint: 
+    slave_replicate_wild_ignore_table:
+        type: "string"
+        name: "Slave Replicate Wild Ignore Table"
+        uint: 
+    slave_retrieved_gtid_set:
+        type: "string"
+        name: "Slave Retrieved Gtid Set"
+        uint: 
+    slave_seconds_behind_master:
+        type: "number"
+        name: "Slave Seconds Behind Master"
+        uint: 
+    slave_skip_counter:
+        type: "number"
+        name: "Slave Skip Counter"
+        uint: 
+    slave_slave_io_running:
+        type: "number"
+        name: "Slave Slave Io Running"
+        uint: 
+    slave_slave_io_state:
+        type: "string"
+        name: "Slave Slave Io State"
+        uint: 
+    slave_slave_sql_running:
+        type: "number"
+        name: "Slave Slave Sql Running"
+        uint: 
+    slave_slave_sql_running_state:
+        type: "string"
+        name: "Slave Slave Sql Running State"
+        uint: 
+    slave_sql_delay:
+        type: "number"
+        name: "Slave Sql Delay"
+        uint: 
+    slave_until_condition:
+        type: "string"
+        name: "Slave Until Condition"
+        uint: 
+    slave_until_log_pos:
+        type: "number"
+        name: "Slave Until Log Pos"
+        uint: 
+    slow_launch_threads:
+        type: "number"
+        name: "Slow Launch Threads"
+        uint: 
+    slow_queries:
+        type: "number"
+        name: "Slow Queries"
+        uint: 
+    sort_merge_passes:
+        type: "number"
+        name: "Sort Merge Passes"
+        uint: 
+    sort_range:
+        type: "number"
+        name: "Sort Range"
+        uint: 
+    sort_rows:
+        type: "number"
+        name: "Sort Rows"
+        uint: 
+    sort_scan:
+        type: "number"
+        name: "Sort Scan"
+        uint: 
+    ssl_accept_renegotiates:
+        type: "number"
+        name: "Ssl Accept Renegotiates"
+        uint: 
+    ssl_accepts:
+        type: "number"
+        name: "Ssl Accepts"
+        uint: 
+    ssl_callback_cache_hits:
+        type: "number"
+        name: "Ssl Callback Cache Hits"
+        uint: 
+    ssl_client_connects:
+        type: "number"
+        name: "Ssl Client Connects"
+        uint: 
+    ssl_connect_renegotiates:
+        type: "number"
+        name: "Ssl Connect Renegotiates"
+        uint: 
+    ssl_ctx_verify_depth:
+        type: "number"
+        name: "Ssl Ctx Verify Depth"
+        uint: 
+    ssl_ctx_verify_mode:
+        type: "number"
+        name: "Ssl Ctx Verify Mode"
+        uint: 
+    ssl_default_timeout:
+        type: "number"
+        name: "Ssl Default Timeout"
+        uint: 
+    ssl_finished_accepts:
+        type: "number"
+        name: "Ssl Finished Accepts"
+        uint: 
+    ssl_finished_connects:
+        type: "number"
+        name: "Ssl Finished Connects"
+        uint: 
+    ssl_server_not_after:
+        type: "string"
+        name: "Ssl Server Not After"
+        uint: 
+    ssl_server_not_before:
+        type: "string"
+        name: "Ssl Server Not Before"
+        uint: 
+    ssl_session_cache_hits:
+        type: "number"
+        name: "Ssl Session Cache Hits"
+        uint: 
+    ssl_session_cache_misses:
+        type: "number"
+        name: "Ssl Session Cache Misses"
+        uint: 
+    ssl_session_cache_mode:
+        type: "string"
+        name: "Ssl Session Cache Mode"
+        uint: 
+    ssl_session_cache_overflows:
+        type: "number"
+        name: "Ssl Session Cache Overflows"
+        uint: 
+    ssl_session_cache_size:
+        type: "number"
+        name: "Ssl Session Cache Size"
+        uint: 
+    ssl_session_cache_timeouts:
+        type: "number"
+        name: "Ssl Session Cache Timeouts"
+        uint: 
+    ssl_sessions_reused:
+        type: "number"
+        name: "Ssl Sessions Reused"
+        uint: 
+    ssl_used_session_cache_entries:
+        type: "number"
+        name: "Ssl Used Session Cache Entries"
+        uint: 
+    ssl_verify_depth:
+        type: "number"
+        name: "Ssl Verify Depth"
+        uint: 
+    ssl_verify_mode:
+        type: "number"
+        name: "Ssl Verify Mode"
+        uint: 
+    table_locks_immediate:
+        type: "number"
+        name: "Table Locks Immediate"
+        uint: 
+    table_locks_waited:
+        type: "number"
+        name: "Table Locks Waited"
+        uint: 
+    table_open_cache_hits:
+        type: "number"
+        name: "Table Open Cache Hits"
+        uint: 
+    table_open_cache_misses:
+        type: "number"
+        name: "Table Open Cache Misses"
+        uint: 
+    table_open_cache_overflows:
+        type: "number"
+        name: "Table Open Cache Overflows"
+        uint: 
+    tc_log_max_pages_used:
+        type: "number"
+        name: "Tc Log Maximum Pages Used"
+        uint: 
+    tc_log_page_size:
+        type: "number"
+        name: "Tc Log Page Size"
+        uint: 
+    tc_log_page_waits:
+        type: "number"
+        name: "Tc Log Page Waits"
+        uint: 
+    threads_cached:
+        type: "number"
+        name: "Threads Cached"
+        uint: 
+    threads_connected:
+        type: "number"
+        name: "Threads Connected"
+        uint: 
+    threads_created:
+        type: "number"
+        name: "Threads Created"
+        uint: 
+    threads_running:
+        type: "number"
+        name: "Threads Running"
+        uint: 
+    uptime:
+        type: "number"
+        name: "Uptime"
+        uint: 
+    uptime_since_flush_status:
+        type: "number"
+        name: "Uptime Since Flush Status"
+        uint: 
+

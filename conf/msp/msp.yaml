@@ -19,3 +19,73 @@ permission:
 msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
+
+i18n:
+    common:
+        - conf/common/i18n/common.yml
+        - conf/common/i18n/apis.yml
+    files:
+        - ${CONFIG_PATH}/i18n/settings.yml
+        - ${CONFIG_PATH}/i18n/org-resource.yml
+        - ${CONFIG_PATH}/i18n/alert.yml
+        - ${CONFIG_PATH}/i18n/log-metrics.yml
+        - ${CONFIG_PATH}/i18n/charts.yml
+        - ${CONFIG_PATH}/i18n/topology.yml
+i18n@metric:
+    common:
+        - ${CONFIG_PATH}/metricmeta/i18n/_common.yml
+    files:
+        - ${CONFIG_PATH}/metricmeta/i18n
+
+elasticsearch:
+    urls: "${ES_URL:http://localhost:9200}"
+    security: ${ES_SECURITY_ENABLE:false}
+    username: "${ES_SECURITY_USERNAME}"
+    password: "${ES_SECURITY_PASSWORD}"
+
+elasticsearch@logs:
+    urls: "${ES_URL:http://localhost:9200}"
+    security: ${LOGS_ES_SECURITY_ENABLE:false}
+    username: "${LOGS_ES_SECURITY_USERNAME}"
+    password: "${LOGS_ES_SECURITY_PASSWORD}"
+
+cassandra:
+# host: "${CASSANDRA_ADDR:localhost:9042}"
+# security: ${CASSANDRA_SECURITY_ENABLE:false}
+# username: ${CASSANDRA_SECURITY_USERNAME:}
+# password: ${CASSANDRA_SECURITY_PASSWORD:}
+# timeout: "${CASSANDRA_TIMEOUT:3s}"
+
+metrics-index-manager:
+    request_timeout: "20s"
+    default_namespace: "full_cluster"
+    index_type: "spot"
+    index_prefix: "spot"
+    query_index_time_range: true
+    index_reload_interval: "2m"
+
+metrics-query:
+    _enable: ${DASHBOARD_ENABLE:true}
+    chart_meta:
+        path: ${CONFIG_PATH}/charts
+        reload_interval: "30s"
+    metric_meta:
+        sources:
+            - "index"
+            - "file"
+            - "database"
+        group_files:
+            - "${CONFIG_PATH}/metricmeta/groups/org.yml"
+            - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
+        metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
+trace-query:
+    _enable: ${LOGS_QUERY_ENABLE:true}
+    cassandra:
+        keyspace:
+            name: "spot_prod"
+            auto: true # 自动创建 keyspace
+            replication:
+                class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+                factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+# apm
+erda.msp.apm.trace:

@@ -1,0 +1,362 @@
+name: "Elasticsearch Indices"
+tags:
+    addon_id:
+        name: "Addon ID"
+    addon_type:
+        name: "Addon Type"
+    cluster_name:
+        name: "Cluster Name"
+    component_name:
+        name: "Component Name"
+    host:
+        name: "Host"
+    host_ip:
+        name: "Host IP"
+    node_host:
+        name: "Node Host"
+    node_id:
+        name: "Node ID"
+    node_name:
+        name: "Node Name"
+    node_roles:
+        name: "Node Roles"
+    org_name:
+        name: "Org Name"
+fields:
+    completion_size_in_bytes:
+        type: "number"
+        name: "Completion Size In Bytes"
+        uint: 
+    docs_count:
+        type: "number"
+        name: "Docs Count"
+        uint: 
+    docs_deleted:
+        type: "number"
+        name: "Docs Deleted"
+        uint: 
+    fielddata_evictions:
+        type: "number"
+        name: "Fielddata Evictions"
+        uint: 
+    fielddata_memory_size_in_bytes:
+        type: "number"
+        name: "Fielddata Memory Size In Bytes"
+        uint: 
+    flush_total:
+        type: "number"
+        name: "Flush Total"
+        uint: 
+    flush_total_time_in_millis:
+        type: "number"
+        name: "Flush Total Time In Millis"
+        uint: 
+    get_current:
+        type: "number"
+        name: "Get Current"
+        uint: 
+    get_exists_time_in_millis:
+        type: "number"
+        name: "Get Exists Time In Millis"
+        uint: 
+    get_exists_total:
+        type: "number"
+        name: "Get Exists Total"
+        uint: 
+    get_missing_time_in_millis:
+        type: "number"
+        name: "Get Missing Time In Millis"
+        uint: 
+    get_missing_total:
+        type: "number"
+        name: "Get Missing Total"
+        uint: 
+    get_time_in_millis:
+        type: "number"
+        name: "Get Time In Millis"
+        uint: 
+    get_total:
+        type: "number"
+        name: "Get Total"
+        uint: 
+    indexing_delete_current:
+        type: "number"
+        name: "Indexing Delete Current"
+        uint: 
+    indexing_delete_time_in_millis:
+        type: "number"
+        name: "Indexing Delete Time In Millis"
+        uint: 
+    indexing_delete_total:
+        type: "number"
+        name: "Indexing Delete Total"
+        uint: 
+    indexing_index_current:
+        type: "number"
+        name: "Indexing Index Current"
+        uint: 
+    indexing_index_failed:
+        type: "number"
+        name: "Indexing Index Failed"
+        uint: 
+    indexing_index_time_in_millis:
+        type: "number"
+        name: "Indexing Index Time In Millis"
+        uint: 
+    indexing_index_total:
+        type: "number"
+        name: "Indexing Index Total"
+        uint: 
+    indexing_noop_update_total:
+        type: "number"
+        name: "Indexing Noop Update Total"
+        uint: 
+    indexing_throttle_time_in_millis:
+        type: "number"
+        name: "Indexing Throttle Time In Millis"
+        uint: 
+    merges_current:
+        type: "number"
+        name: "Merges Current"
+        uint: 
+    merges_current_docs:
+        type: "number"
+        name: "Merges Current Docs"
+        uint: 
+    merges_current_size_in_bytes:
+        type: "number"
+        name: "Merges Current Size In Bytes"
+        uint: 
+    merges_total:
+        type: "number"
+        name: "Merges Total"
+        uint: 
+    merges_total_auto_throttle_in_bytes:
+        type: "number"
+        name: "Merges Total Auto Throttle In Bytes"
+        uint: 
+    merges_total_docs:
+        type: "number"
+        name: "Merges Total Docs"
+        uint: 
+    merges_total_size_in_bytes:
+        type: "number"
+        name: "Merges Total Size In Bytes"
+        uint: 
+    merges_total_stopped_time_in_millis:
+        type: "number"
+        name: "Merges Total Stopped Time In Millis"
+        uint: 
+    merges_total_throttled_time_in_millis:
+        type: "number"
+        name: "Merges Total Throttled Time In Millis"
+        uint: 
+    merges_total_time_in_millis:
+        type: "number"
+        name: "Merges Total Time In Millis"
+        uint: 
+    query_cache_cache_count:
+        type: "number"
+        name: "Query Cache Cache Count"
+        uint: 
+    query_cache_cache_size:
+        type: "number"
+        name: "Query Cache Cache Size"
+        uint: 
+    query_cache_evictions:
+        type: "number"
+        name: "Query Cache Evictions"
+        uint: 
+    query_cache_hit_count:
+        type: "number"
+        name: "Query Cache Hit Count"
+        uint: 
+    query_cache_memory_size_in_bytes:
+        type: "number"
+        name: "Query Cache Memory Size In Bytes"
+        uint: 
+    query_cache_miss_count:
+        type: "number"
+        name: "Query Cache Miss Count"
+        uint: 
+    query_cache_total_count:
+        type: "number"
+        name: "Query Cache Total Count"
+        uint: 
+    recovery_current_as_source:
+        type: "number"
+        name: "Recovery Current As Source"
+        uint: 
+    recovery_current_as_target:
+        type: "number"
+        name: "Recovery Current As Target"
+        uint: 
+    recovery_throttle_time_in_millis:
+        type: "number"
+        name: "Recovery Throttle Time In Millis"
+        uint: 
+    refresh_listeners:
+        type: "number"
+        name: "Refresh Listeners"
+        uint: 
+    refresh_total:
+        type: "number"
+        name: "Refresh Total"
+        uint: 
+    refresh_total_time_in_millis:
+        type: "number"
+        name: "Refresh Total Time In Millis"
+        uint: 
+    request_cache_evictions:
+        type: "number"
+        name: "Request Cache Evictions"
+        uint: 
+    request_cache_hit_count:
+        type: "number"
+        name: "Request Cache Hit Count"
+        uint: 
+    request_cache_memory_size_in_bytes:
+        type: "number"
+        name: "Request Cache Memory Size In Bytes"
+        uint: 
+    request_cache_miss_count:
+        type: "number"
+        name: "Request Cache Miss Count"
+        uint: 
+    search_fetch_current:
+        type: "number"
+        name: "Search Fetch Current"
+        uint: 
+    search_fetch_time_in_millis:
+        type: "number"
+        name: "Search Fetch Time In Millis"
+        uint: 
+    search_fetch_total:
+        type: "number"
+        name: "Search Fetch Total"
+        uint: 
+    search_open_contexts:
+        type: "number"
+        name: "Search Open Contexts"
+        uint: 
+    search_query_current:
+        type: "number"
+        name: "Search Query Current"
+        uint: 
+    search_query_time_in_millis:
+        type: "number"
+        name: "Search Query Time In Millis"
+        uint: 
+    search_query_total:
+        type: "number"
+        name: "Search Query Total"
+        uint: 
+    search_scroll_current:
+        type: "number"
+        name: "Search Scroll Current"
+        uint: 
+    search_scroll_time_in_millis:
+        type: "number"
+        name: "Search Scroll Time In Millis"
+        uint: 
+    search_scroll_total:
+        type: "number"
+        name: "Search Scroll Total"
+        uint: 
+    search_suggest_current:
+        type: "number"
+        name: "Search Suggest Current"
+        uint: 
+    search_suggest_time_in_millis:
+        type: "number"
+        name: "Search Suggest Time In Millis"
+        uint: 
+    search_suggest_total:
+        type: "number"
+        name: "Search Suggest Total"
+        uint: 
+    segments_count:
+        type: "number"
+        name: "Segments Count"
+        uint: 
+    segments_doc_values_memory_in_bytes:
+        type: "number"
+        name: "Segments Doc Values Memory In Bytes"
+        uint: 
+    segments_fixed_bit_set_memory_in_bytes:
+        type: "number"
+        name: "Segments Fixed Bit Set Memory In Bytes"
+        uint: 
+    segments_index_writer_memory_in_bytes:
+        type: "number"
+        name: "Segments Index Writer Memory In Bytes"
+        uint: 
+    segments_max_unsafe_auto_id_timestamp:
+        type: "number"
+        name: "Segments Maximum Unsafe Auto ID Timestamp"
+        uint: 
+    segments_memory_in_bytes:
+        type: "number"
+        name: "Segments Memory In Bytes"
+        uint: 
+    segments_norms_memory_in_bytes:
+        type: "number"
+        name: "Segments Norms Memory In Bytes"
+        uint: 
+    segments_points_memory_in_bytes:
+        type: "number"
+        name: "Segments Points Memory In Bytes"
+        uint: 
+    segments_stored_fields_memory_in_bytes:
+        type: "number"
+        name: "Segments Stored Fields Memory In Bytes"
+        uint: 
+    segments_term_vectors_memory_in_bytes:
+        type: "number"
+        name: "Segments Term Vectors Memory In Bytes"
+        uint: 
+    segments_terms_memory_in_bytes:
+        type: "number"
+        name: "Segments Terms Memory In Bytes"
+        uint: 
+    segments_version_map_memory_in_bytes:
+        type: "number"
+        name: "Segments Version Map Memory In Bytes"
+        uint: 
+    store_size_in_bytes:
+        type: "number"
+        name: "Store Size In Bytes"
+        uint: 
+    store_throttle_time_in_millis:
+        type: "number"
+        name: "Store Throttle Time In Millis"
+        uint: 
+    translog_operations:
+        type: "number"
+        name: "Translog Operations"
+        uint: 
+    translog_size_in_bytes:
+        type: "number"
+        name: "Translog Size In Bytes"
+        uint: 
+    translog_uncommitted_operations:
+        type: "number"
+        name: "Translog Uncommitted Operations"
+        uint: 
+    translog_uncommitted_size_in_bytes:
+        type: "number"
+        name: "Translog Uncommitted Size In Bytes"
+        uint: 
+    warmer_current:
+        type: "number"
+        name: "Warmer Current"
+        uint: 
+    warmer_total:
+        type: "number"
+        name: "Warmer Total"
+        uint: 
+    warmer_total_time_in_millis:
+        type: "number"
+        name: "Warmer Total Time In Millis"
+        uint: 
+
