@@ -611,12 +611,8 @@ func (svc *Issue) UpdateIssueType(req *apistructs.IssueTypeUpdateRequest) (int64
 		return 0, apierrors.ErrUpdateIssue.InvalidParameter("该类型缺少默认事件状态")
 	}
 	issueModel.Type = req.Type
-	issueModel.CreatedAt = time.Now()
-	issueModel.Creator = req.IdentityInfo.UserID
 	issueModel.State = states[0].ID
-	issueModel.Assignee = req.IdentityInfo.UserID
 	if issueModel.Type == apistructs.IssueTypeRequirement {
-		issueModel.ManHour = ""
 		issueModel.Stage = ""
 		issueModel.Owner = ""
 	} else if issueModel.Type == apistructs.IssueTypeBug {
