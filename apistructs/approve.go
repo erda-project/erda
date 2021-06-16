@@ -64,7 +64,7 @@ type ApproveUpdateRequest struct {
 	Approver string            `json:"approver"`
 }
 
-//  ApproveUpdateResponse PUT /api/approves/{approveId} 更新审批响应结构
+// ApproveUpdateResponse PUT /api/approves/{approveId} 更新审批响应结构
 type ApproveUpdateResponse struct {
 	Header
 	Data interface{} `json:"data"`

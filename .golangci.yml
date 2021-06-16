@@ -12,6 +12,7 @@ run:
     - third_party
   skip-files:
     - apistructs/generated_desc.go
+    - modules/openapi/api/api.go
   build-tags:
     - musl
 

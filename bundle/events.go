@@ -29,10 +29,12 @@ type Sender = string
 
 // Event sender collections
 const (
-	SenderCMDB         Sender = "cmdb"
-	SenderDiceHub      Sender = "dicehub"
-	SenderScheduler    Sender = "scheduler"
-	SenderOrchestrator Sender = "orchestrator"
+	SenderCMDB           Sender = "cmdb"
+	SenderDiceHub        Sender = "dicehub"
+	SenderScheduler      Sender = "scheduler"
+	SenderOrchestrator   Sender = "orchestrator"
+	SenderCoreServices   Sender = "coreServices"
+	SenderClusterManager Sender = "clusterManager"
 )
 
 // Event types
