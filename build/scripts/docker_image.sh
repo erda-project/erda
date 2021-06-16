@@ -119,6 +119,7 @@ build_image()  {
         fi
     fi
     docker build -t "${DOCKER_IMAGE}" \
+        --platform linux/amd64 \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \
