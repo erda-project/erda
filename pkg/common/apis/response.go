@@ -18,11 +18,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 // Response .
@@ -48,6 +53,24 @@ func (s *Error) Error() string {
 	return fmt.Sprintf("{code: %s, msg: %s}", s.Code, s.Msg)
 }
 
+// I18n .
+var I18n i18n.I18n
+
+func init() {
+	modcom.RegisterHubListener(&servicehub.DefaultListener{
+		BeforeInitFunc: func(h *servicehub.Hub, config map[string]interface{}) error {
+			if _, ok := config["i18n"]; !ok {
+				config["i18n"] = nil // i18n is required
+			}
+			return nil
+		},
+		AfterInitFunc: func(h *servicehub.Hub) error {
+			I18n = h.Service("i18n").(i18n.I18n)
+			return nil
+		},
+	})
+}
+
 func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	var status int
 	if e, ok := err.(transhttp.Error); ok {
@@ -55,12 +78,18 @@ func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	} else {
 		status = http.StatusInternalServerError
 	}
+	var msg string
+	if e, ok := err.(i18n.Internationalizable); I18n != nil && ok {
+		msg = e.Translate(I18n.Translator("apis"), api.Language(r))
+	} else {
+		msg = err.Error()
+	}
 	w.WriteHeader(status)
 	byts, _ := json.Marshal(&Response{
 		Success: false,
 		Err: &Error{
 			Code: strconv.Itoa(status),
-			Msg:  err.Error(),
+			Msg:  msg,
 			Ctx:  r.URL.String(),
 		},
 	})
@@ -73,6 +102,27 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 		if err != nil {
 			return resp, err
 		}
+		if resp != nil {
+			val := reflect.ValueOf(resp)
+			for val.Kind() == reflect.Ptr {
+				val = val.Elem()
+			}
+			if val.Kind() == reflect.Struct {
+				var fields int
+				for i, n := 0, val.NumField(); i < n; i++ {
+					field := val.Field(i)
+					if field.CanSet() {
+						fields++
+					}
+				}
+				if fields == 1 {
+					field := val.FieldByName("Data")
+					if field.IsValid() {
+						resp = field.Interface()
+					}
+				}
+			}
+		}
 		return &Response{
 			Success: true,
 			Data:    resp,
@@ -80,10 +130,28 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	}
 }
 
+// Validater .
+type Validater interface {
+	Validate() error
+}
+
+func validRequest(h interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		if v, ok := req.(Validater); ok {
+			err := v.Validate()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return h(ctx, req)
+	}
+}
+
 // Options .
 func Options() transport.ServiceOption {
 	return transport.ServiceOption(func(opts *transport.ServiceOptions) {
-		transport.WithInterceptors(wrapResponse)(opts)
+		transport.WithInterceptors(validRequest)(opts)
+		transport.WithHTTPOptions(transhttp.WithInterceptor(wrapResponse))(opts)
 		transport.WithHTTPOptions(transhttp.WithErrorEncoder(encodeError))(opts)
 	})
 }

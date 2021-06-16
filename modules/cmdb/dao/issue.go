@@ -348,8 +348,14 @@ func (client *DBClient) ListIssue(req apistructs.IssueListRequest) ([]Issue, err
 	if len(req.State) > 0 {
 		sql = sql.Where("state IN (?)", req.State)
 	}
+	sql = sql.Where("deleted = ?", 0).Order("id DESC")
 
-	if err := sql.Where("deleted = ?", 0).Order("id DESC").Find(&issues).Error; err != nil {
+	if req.OnlyIDResult {
+		sql.Select("id")
+	}
+
+	sql = sql.Find(&issues)
+	if err := sql.Error; err != nil {
 		return nil, err
 	}
 

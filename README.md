@@ -44,15 +44,16 @@ Quick start in your local: [quickstart](./docs/guides/quickstart/quickstart-full
 
 ## Installation
 
-Please follow How to install Erda.
+Please use the following installation documents to install Erda.
 
-- [installation document](./docs/guides/deploy/How-to-install-the-Erda.md)
+- [English](./docs/guides/deploy/How-to-install-Erda.md)
+- [简体中文](./docs/guides/deploy/How-to-install-Erda-zh.md)
 
 ## User Documentation
 
 To start using Erda, please see the documentation.
 
-- [中文](https://docs.erda.cloud)
+- [简体中文](https://docs.erda.cloud)
 - English
 
 ## Contributing
@@ -64,6 +65,7 @@ Contributions are always welcomed. Please refer to [Contributing to Erda](CONTRI
 If you have any questions, please feel free to contact us.
 
 - Email: erda@terminus.io
+- Twitter: [@ErdaProject](https://twitter.com/ErdaProject)
 - Zhihu：[Erda技术团队](https://www.zhihu.com/people/erda-project) (A Chinese knowledge community, similar to Quora.)
 - WeChat Official Account:
 

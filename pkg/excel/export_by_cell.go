@@ -16,12 +16,20 @@ package excel
 import (
 	"fmt"
 	"io"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/tealeg/xlsx/v3"
 )
 
 // ExportExcelByCell 支持 cell 粒度配置，可以实现单元格合并，样式调整等
 func ExportExcelByCell(w io.Writer, data [][]Cell, sheetName string) error {
+	begin := time.Now()
+	defer func() {
+		end := time.Now()
+		logrus.Debugf("export excel cost: %fs", end.Sub(begin).Seconds())
+	}()
+
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet(sheetName)
 	if err != nil {
