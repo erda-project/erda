@@ -231,6 +231,11 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 		Status:      "ACTIVE",
 		IsPublic:    createReq.IsPublic,
 	}
+	if createReq.IsFree {
+		org.Config = model.OrgConfig{
+			IsFree: true,
+		}
+	}
 	if err := o.db.CreateOrg(org); err != nil {
 		logrus.Warnf("failed to insert info to db, (%v)", err)
 		return nil, errors.Errorf("failed to insert org info to db")

@@ -51,10 +51,12 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateOrg.NotLogin().ToResp(), nil
 	}
 
+	isAdmin := e.member.IsAdmin(userID.String())
+
 	// 操作鉴权, 只有系统管理员可创建企业
 	// when env: create_org_enabled is true, allow all people create org
 	if !conf.CreateOrgEnabled() {
-		if !e.member.IsAdmin(userID.String()) {
+		if !isAdmin {
 			return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
 		}
 	}
@@ -74,6 +76,12 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateOrg.InvalidParameter(errors.Errorf("org name is invalid %s",
 			orgCreateReq.Name)).ToResp(), nil
 	}
+
+	// check if it is free org
+	if !orgCreateReq.IsFree && !isAdmin {
+		return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
+	}
+
 	logrus.Infof("request body: %+v", orgCreateReq)
 
 	// 第一次创建企业的时候还没有集群，没有集群创建ingress会出错，先注释掉了
@@ -567,6 +575,7 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		DisplayName: org.DisplayName,
 		PublisherID: e.org.GetPublisherID(org.ID),
 		Config: &apistructs.OrgConfig{
+			IsFree:                     org.Config.IsFree,
 			EnableMS:                   org.Config.EnableMS,
 			SMTPHost:                   org.Config.SMTPHost,
 			SMTPUser:                   org.Config.SMTPUser,

@@ -50,6 +50,7 @@ type BlockoutConfig struct {
 }
 
 type OrgConfig struct {
+	IsFree                     bool   `json:"isFree"`
 	EnableMS                   bool   `json:"enableMs"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`
