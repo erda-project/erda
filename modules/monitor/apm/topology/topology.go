@@ -772,8 +772,8 @@ func handleSpeed(rows [][]interface{}) []ReadWriteBytesSpeed {
 	var itemResult []ReadWriteBytes
 	for _, row := range rows {
 		timeMs := row[1].(time.Time).UnixNano() / 1e6
-		rxBytes := row[2].(float64)
-		txBytes := row[3].(float64)
+		rxBytes := conv.ToFloat64(row[2], 0)
+		txBytes := conv.ToFloat64(row[3], 0)
 		writeBytes := ReadWriteBytes{
 			Timestamp:  timeMs,
 			ReadBytes:  rxBytes,
@@ -939,12 +939,12 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	instanceIds := []InstanceInfo{}
 	for _, row := range rows {
 
-		status, err := strconv.ParseBool(row[1].(string))
+		status, err := strconv.ParseBool(conv.ToString(row[1]))
 		if err != nil {
 			status = false
 		}
 		instance := InstanceInfo{
-			Id:     row[0].(string),
+			Id:     conv.ToString(row[0]),
 			Status: status,
 		}
 		instanceIds = append(instanceIds, instance)
@@ -971,10 +971,10 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	var result []*ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceInstanceId: row[0].(string),
-			PlatformVersion:   row[1].(string),
-			StartTime:         row[2].(string),
-			LastHeartbeatTime: row[3].(string),
+			ServiceInstanceId: conv.ToString(row[0]),
+			PlatformVersion:   conv.ToString(row[1]),
+			StartTime:         conv.ToString(row[2]),
+			LastHeartbeatTime: conv.ToString(row[3]),
 		}
 		result = append(result, &instance)
 	}
@@ -989,8 +989,8 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	rows = response.ResultSet.Rows
 	for _, instance := range result {
 		for i, row := range rows {
-			if row[0].(string) == instance.ServiceInstanceId {
-				state, err := strconv.ParseBool(row[1].(string))
+			if conv.ToString(row[0]) == instance.ServiceInstanceId {
+				state, err := strconv.ParseBool(conv.ToString(row[1]))
 				if err != nil {
 					return nil, err
 				}
@@ -1049,9 +1049,9 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceName:         row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
+			ServiceName:         conv.ToString(row[0]),
+			ServiceInstanceName: conv.ToString(row[1]),
+			InstanceState:       conv.ToString(row[2]),
 		}
 		result = append(result, instance)
 	}
@@ -1129,7 +1129,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	rows := response.ResultSet.Rows
 	serviceCount := float64(0)
 	for _, row := range rows {
-		count := row[0].(float64)
+		count := conv.ToFloat64(row[0], 0)
 		serviceCount += count
 	}
 	overviewMap["service_count"] = serviceCount
@@ -1208,7 +1208,7 @@ func (topology *provider) globalReqCount(metricScopeName string, params GlobalPa
 	if err != nil {
 		return 0, err
 	}
-	rows := response.ResultSet.Rows[0][0].(float64)
+	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1244,14 +1244,14 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 	}
 
 	row := response.ResultSet.Rows
-	requestTransaction.RequestCount = row[0][0].(float64)
+	requestTransaction.RequestCount = conv.ToFloat64(row[0][0], 0)
 	if row[0][1] != nil {
-		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
+		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(conv.ToFloat64(row[0][1], 0) / 1e6)
 	} else {
 		requestTransaction.RequestAvgTime = 0
 	}
 	if row[0][2] != nil {
-		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(row[0][2].(float64) * 100)
+		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(conv.ToFloat64(row[0][2], 0) * 100)
 	} else {
 		requestTransaction.RequestErrorRate = 0
 	}
@@ -1279,7 +1279,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 	if err != nil {
 		return 0, err
 	}
-	rows := response.ResultSet.Rows[0][0].(float64)
+	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1309,7 +1309,7 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 	rows := response.ResultSet.Rows
 	var itemResult []string
 	for _, name := range rows {
-		itemResult = append(itemResult, name[0].(string))
+		itemResult = append(itemResult, conv.ToString(name[0]))
 	}
 	return itemResult, nil
 }
@@ -1394,9 +1394,9 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceId:           row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
+			ServiceId:           conv.ToString(row[0]),
+			ServiceInstanceName: conv.ToString(row[1]),
+			InstanceState:       conv.ToString(row[2]),
 		}
 		result = append(result, instance)
 	}
@@ -1877,7 +1877,7 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 			metricq.InfluxQL,
 			sql,
 			map[string]interface{}{
-				"field":             r[0].(string),
+				"field":             conv.ToString(r[0]),
 				"terminusKey":       params.TerminusKey,
 				"filterServiceName": params.FilterServiceName,
 				"serviceId":         params.ServiceId,
@@ -1955,7 +1955,7 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 			metricq.InfluxQL,
 			sql,
 			map[string]interface{}{
-				"field":             r[0].(string),
+				"field":             conv.ToString(r[0]),
 				"terminusKey":       params.TerminusKey,
 				"filterServiceName": params.FilterServiceName,
 				"serviceId":         params.ServiceId,
