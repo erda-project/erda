@@ -32,7 +32,7 @@ type Org struct {
 	UserID         string `gorm:"column:creator"` // 所属用户Id
 	Config         OrgConfig
 	BlockoutConfig BlockoutConfig
-	Type           string // TODO deprecated 待admin下线后删除
+	Type           string
 	Status         string // TODO deprecated 待admin下线后删除
 	IsPublic       bool
 }
@@ -50,7 +50,6 @@ type BlockoutConfig struct {
 }
 
 type OrgConfig struct {
-	IsFree                     bool   `json:"isFree"`
 	EnableMS                   bool   `json:"enableMs"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`

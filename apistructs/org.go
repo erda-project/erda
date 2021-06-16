@@ -25,6 +25,19 @@ import (
 
 const SECRECT_PLACEHOLDER = "******"
 
+// OrgType organization type
+type OrgType string
+
+const (
+	EnterpriseOrgType OrgType = "ENTERPRISE"
+	TeamOrgType       OrgType = "TEAM"
+	FreeOrgType       OrgType = "FREE"
+)
+
+func (ot OrgType) String() string {
+	return string(ot)
+}
+
 // OrgCreateRequest POST /api/orgs 创建组织请求结构
 type OrgCreateRequest struct {
 	Logo        string `json:"logo"`
@@ -36,9 +49,9 @@ type OrgCreateRequest struct {
 	Admins []string `json:"admins"` // TODO 改为企业owner,只有一个
 
 	// 发布商名称
-	PublisherName string `json:"publisherName"`
-	IsPublic      bool   `json:"isPublic"`
-	IsFree        bool   `json:"isFree"`
+	PublisherName string  `json:"publisherName"`
+	IsPublic      bool    `json:"isPublic"`
+	Type          OrgType `json:"type"`
 }
 
 // OrgCreateResponse POST /api/orgs 创建组织响应结构
@@ -173,7 +186,6 @@ func (org *OrgDTO) HidePassword() {
 }
 
 type OrgConfig struct {
-	IsFree                     bool   `json:"isFree"`
 	EnableMS                   bool   `json:"enableMS"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`
