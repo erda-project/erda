@@ -23,7 +23,7 @@ import (
 var FILETREE_NODE_HISTORY_LIST = apis.ApiSpec{
 	Path:        "/api/autotests/filetree/<inode>/actions/get-histories",
 	BackendPath: "/api/autotests/filetree/<inode>/actions/get-histories",
-	Host:        "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	CheckLogin:  true,

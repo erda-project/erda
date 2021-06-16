@@ -23,7 +23,7 @@ import (
 var GLOBAL_CONFIG_CREATE = apis.ApiSpec{
 	Path:         "/api/autotests/global-configs",
 	BackendPath:  "/api/autotests/global-configs",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

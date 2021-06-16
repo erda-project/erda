@@ -23,7 +23,7 @@ import (
 var BATCH_QUERY_PIPELINE_SNIPPET_YAML = apis.ApiSpec{
 	Path:        "/api/autotests/pipeline-snippets/actions/batch-query-snippet-yml",
 	BackendPath: "/api/autotests/pipeline-snippets/actions/batch-query-snippet-yml",
-	Host:        "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
