@@ -77,9 +77,13 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 			orgCreateReq.Name)).ToResp(), nil
 	}
 
-	// check if it is free org
-	if !orgCreateReq.IsFree && !isAdmin {
+	// check if it is free org, currently only admin can create paid organizations
+	if orgCreateReq.Type != apistructs.FreeOrgType && !isAdmin {
 		return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
+	}
+	// compatible logic, delete this after perfecting the logic of organization creation
+	if orgCreateReq.Type == "" && isAdmin {
+		orgCreateReq.Type = apistructs.EnterpriseOrgType
 	}
 
 	logrus.Infof("request body: %+v", orgCreateReq)
@@ -573,9 +577,9 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		Creator:     org.UserID,
 		OpenFdp:     org.OpenFdp,
 		DisplayName: org.DisplayName,
+		Type:        org.Type,
 		PublisherID: e.org.GetPublisherID(org.ID),
 		Config: &apistructs.OrgConfig{
-			IsFree:                     org.Config.IsFree,
 			EnableMS:                   org.Config.EnableMS,
 			SMTPHost:                   org.Config.SMTPHost,
 			SMTPUser:                   org.Config.SMTPUser,
