@@ -115,7 +115,6 @@ type Spec struct {
 	TryCheckLogin   bool // 和CheckLogin区别为如果不登录也会通过,只是没有user-id
 	CheckToken      bool
 	CheckBasicAuth  bool
-	CheckAPIKey     bool // auth with access key and secret key
 	ChunkAPI        bool
 	// `Host` 是API原始配置
 	// 分别转化为 marathon 和 k8s 的host
