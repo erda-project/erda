@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/conv"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -875,13 +876,13 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 
 	for _, detail := range source.ResultSet.Rows {
 		var exceptionDescription ExceptionDescription
-		exceptionDescription.InstanceId = detail[0].(string)
-		exceptionDescription.Method = detail[1].(string)
-		exceptionDescription.Class = detail[2].(string)
-		exceptionDescription.Message = detail[3].(string)
-		exceptionDescription.ExceptionType = detail[4].(string)
-		exceptionDescription.Time = time.Unix(0, int64(detail[5].(float64))).Format(TimeLayout)
-		exceptionDescription.Count = int64(detail[6].(float64))
+		exceptionDescription.InstanceId = conv.ToString(detail[0])
+		exceptionDescription.Method = conv.ToString(detail[1])
+		exceptionDescription.Class = conv.ToString(detail[2])
+		exceptionDescription.Message = conv.ToString(detail[3])
+		exceptionDescription.ExceptionType = conv.ToString(detail[4])
+		exceptionDescription.Time = time.Unix(0, int64(conv.ToFloat64(detail[5], 0))).Format(TimeLayout)
+		exceptionDescription.Count = int64(conv.ToFloat64(detail[6], 0))
 		exceptionDescriptions = append(exceptionDescriptions, exceptionDescription)
 	}
 
@@ -1797,9 +1798,7 @@ func findNodeBuckets(bucketKeyItems []*elastic.AggregationBucketKeyItem, field *
 		} else {
 			bucketsAgg := buckets.Aggregations
 			terms, _ := bucketsAgg.Terms(field.Name)
-			for _, bucket := range terms.Buckets {
-				*nodeBuckets = append(*nodeBuckets, bucket)
-			}
+			*nodeBuckets = append(*nodeBuckets, terms.Buckets...)
 		}
 	}
 }
