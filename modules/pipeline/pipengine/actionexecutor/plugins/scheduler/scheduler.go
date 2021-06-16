@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/pkg"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -145,40 +146,41 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, nil
 	}
 
-	job, err := transferToSchedulerJob(action)
-	if err != nil {
-		return nil, errors.Errorf("transfer to scheduler job err: %v", err)
-	}
-
-	var body bytes.Buffer
-	resp, err := httpclient.New().Put(s.addr).
-		Path("/v1/job/create").JSONBody(apistructs.JobCreateRequest(job)).
-		Do().Body(&body)
-	if err != nil {
-		return nil, httpInvokeErr(err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobCreateResponse
-	err = json.Unmarshal([]byte(respBody), &result)
-	if err != nil {
-		return nil, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	logrus.Debugf("scheduler: invoke scheduler to create task, pipelineID: %d, actionInfo: %s, statusCode: %d, respBody: %s",
-		action.PipelineID, printActionInfo(action), statusCode, respBody)
-	if result.Error != "" {
-		// 幂等
-		if isJobIdempotentErrMsg(result.Error) {
-			logrus.Warnf("scheduler: action already created, pipelineID: %d, actionInfo: %s, err: %v",
-				action.PipelineID, printActionInfo(action), result.Error)
-			return nil, nil
-		}
-		return nil, errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
-	}
-
-	return result.Job, nil
+	//job, err := transferToSchedulerJob(action)
+	//if err != nil {
+	//	return nil, errors.Errorf("transfer to scheduler job err: %v", err)
+	//}
+	//
+	//var body bytes.Buffer
+	//resp, err := httpclient.New().Put(s.addr).
+	//	Path("/v1/job/create").JSONBody(apistructs.JobCreateRequest(job)).
+	//	Do().Body(&body)
+	//if err != nil {
+	//	return nil, httpInvokeErr(err)
+	//}
+	//
+	//statusCode := resp.StatusCode()
+	//respBody := body.String()
+	//
+	//var result apistructs.JobCreateResponse
+	//err = json.Unmarshal([]byte(respBody), &result)
+	//if err != nil {
+	//	return nil, respBodyDecodeErr(statusCode, respBody, err)
+	//}
+	//logrus.Debugf("scheduler: invoke scheduler to create task, pipelineID: %d, actionInfo: %s, statusCode: %d, respBody: %s",
+	//	action.PipelineID, printActionInfo(action), statusCode, respBody)
+	//if result.Error != "" {
+	//	// 幂等
+	//	if isJobIdempotentErrMsg(result.Error) {
+	//		logrus.Warnf("scheduler: action already created, pipelineID: %d, actionInfo: %s, err: %v",
+	//			action.PipelineID, printActionInfo(action), result.Error)
+	//		return nil, nil
+	//	}
+	//	return nil, errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
+	//}
+	//
+	//return result.Job, nil
+	return pkg.ForwardCreate(action)
 }
 
 func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
@@ -205,35 +207,36 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 		return nil, nil
 	}
 
-	var body bytes.Buffer
-	resp, err := httpclient.New().Post(s.addr).
-		Path(fmt.Sprintf("/v1/job/%s/%s/start", action.Extra.Namespace, task_uuid.MakeJobID(action))).
-		Do().Body(&body)
-	if err != nil {
-		return nil, errors.Errorf("http invoke err: %v", err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobStartResponse
-	err = json.Unmarshal([]byte(respBody), &result)
-	if err != nil {
-		return nil, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	logrus.Debugf("scheduler: invoke scheduler to start task, pipelineID: %d, actionInfo: %s, statusCode: %d, respBody: %s",
-		action.PipelineID, printActionInfo(action), statusCode, respBody)
-	if result.Error != "" {
-		// 幂等
-		if isJobIdempotentErrMsg(result.Error) {
-			logrus.Warnf("scheduler: action already started, pipelineID: %d, actionInfo: %s, result.error: %s",
-				action.PipelineID, printActionInfo(action), result.Error)
-			return nil, nil
-		}
-		return nil, errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
-	}
-
-	return result.Job, nil
+	//var body bytes.Buffer
+	//resp, err := httpclient.New().Post(s.addr).
+	//	Path(fmt.Sprintf("/v1/job/%s/%s/start", action.Extra.Namespace, task_uuid.MakeJobID(action))).
+	//	Do().Body(&body)
+	//if err != nil {
+	//	return nil, errors.Errorf("http invoke err: %v", err)
+	//}
+	//
+	//statusCode := resp.StatusCode()
+	//respBody := body.String()
+	//
+	//var result apistructs.JobStartResponse
+	//err = json.Unmarshal([]byte(respBody), &result)
+	//if err != nil {
+	//	return nil, respBodyDecodeErr(statusCode, respBody, err)
+	//}
+	//logrus.Debugf("scheduler: invoke scheduler to start task, pipelineID: %d, actionInfo: %s, statusCode: %d, respBody: %s",
+	//	action.PipelineID, printActionInfo(action), statusCode, respBody)
+	//if result.Error != "" {
+	//	// 幂等
+	//	if isJobIdempotentErrMsg(result.Error) {
+	//		logrus.Warnf("scheduler: action already started, pipelineID: %d, actionInfo: %s, result.error: %s",
+	//			action.PipelineID, printActionInfo(action), result.Error)
+	//		return nil, nil
+	//	}
+	//	return nil, errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
+	//}
+	//
+	//return result.Job, nil
+	return pkg.ForwardStart(action)
 }
 
 func (s *Sched) Update(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
@@ -247,28 +250,32 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 		return apistructs.PipelineStatusDesc{}, err
 	}
 
-	var body bytes.Buffer
-	resp, err := httpclient.New().Get(s.addr, httpclient.RetryErrResp).
-		Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, task_uuid.MakeJobID(action))).
-		Do().Body(&body)
+	//var body bytes.Buffer
+	//resp, err := httpclient.New().Get(s.addr, httpclient.RetryErrResp).
+	//	Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, task_uuid.MakeJobID(action))).
+	//	Do().Body(&body)
+	//if err != nil {
+	//	return apistructs.PipelineStatusDesc{}, httpInvokeErr(err)
+	//}
+	//
+	//statusCode := resp.StatusCode()
+	//respBody := body.String()
+	//
+	//var result struct {
+	//	Status      string `json:"status"`
+	//	LastMessage string `json:"last_message"`
+	//}
+	//if err := json.NewDecoder(&body).Decode(&result); err != nil {
+	//	return apistructs.PipelineStatusDesc{}, respBodyDecodeErr(statusCode, respBody, err)
+	//}
+	//if result.Status == "" {
+	//	return apistructs.PipelineStatusDesc{}, errors.Errorf("get empty status from scheduler, respBody: %s", respBody)
+	//}
+	result, err := pkg.ForwardStatus(action)
 	if err != nil {
-		return apistructs.PipelineStatusDesc{}, httpInvokeErr(err)
+		return apistructs.PipelineStatusDesc{}, err
 	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result struct {
-		Status      string `json:"status"`
-		LastMessage string `json:"last_message"`
-	}
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return apistructs.PipelineStatusDesc{}, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	if result.Status == "" {
-		return apistructs.PipelineStatusDesc{}, errors.Errorf("get empty status from scheduler, respBody: %s", respBody)
-	}
-	transferredStatus := transferStatus(result.Status)
+	transferredStatus := transferStatus(string(result.Status))
 	logrus.Debugf("pipelineID: %d, taskID: %d, schedulerStatus: %s, transferredStatus: %s, lastMessage: %s",
 		action.PipelineID, action.ID, result.Status, transferredStatus, result.LastMessage)
 	return apistructs.PipelineStatusDesc{

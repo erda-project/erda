@@ -32,22 +32,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
-
-	"github.com/erda-project/erda/modules/scheduler/executor/util"
-
-	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -83,7 +78,15 @@ var (
 
 type K8sJob struct {
 	name   types.Name
-	client k8sclient.K8sClient
+	client *k8sclient.K8sClient
+}
+
+func New(clustername string) (*K8sJob, error) {
+	k, err := k8sclient.New(clustername)
+	if err != nil {
+		return nil, err
+	}
+	return &K8sJob{name: types.Name("k8sjob"), client: k}, nil
 }
 
 func (k *K8sJob) Kind() types.Kind {
@@ -109,7 +112,7 @@ func printActionInfo(action *spec.PipelineTask) string {
 		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, task_uuid.MakeJobID(action))
 }
 
-func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
+func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc apistructs.StatusDesc, err error) {
 	var (
 		job     *batchv1.Job
 		jobPods *corev1.PodList
@@ -117,6 +120,10 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 	jobName := strutil.Concat(action.Extra.Namespace, ".", action.Extra.UUID)
 	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
+		if util.IsNotFound(err) {
+			desc.Status = apistructs.StatusNotFoundInCluster
+			return desc, nil
+		}
 		return
 	}
 
@@ -140,58 +147,57 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		return
 	}
 
-	status := generatePipelineStatus(job, jobPods)
-	desc.Status = status
-	desc.Desc = lastMsg
+	//status := generatePipelineStatus(job, jobPods)
+	desc = generateKubeJobStatus(job, jobPods, lastMsg)
 	return
 }
 
-func (k *K8sJob) Exist(ctx context.Context, action *spec.PipelineTask) (created, started bool, err error) {
-	statusDesc, err := k.Status(ctx, action)
-	if err != nil {
-		created = false
-		started = false
-		// 该 ErrMsg 表示记录在 etcd 中不存在，即未创建
-		if strutil.Contains(err.Error(), "failed to inspect job, err: not found") {
-			err = nil
-			return
-		}
-		// 获取 job 状态失败
-		return
-	}
-	// err 为空，说明在 etcd 中存在记录，即已经创建成功
-	created = true
-
-	// 根据状态判断是否实际 job(k8s job, DC/OS job) 是否已开始执行
-	switch statusDesc.Status {
-	// err
-	case apistructs.PipelineStatusError, apistructs.PipelineStatusUnknown:
-		err = errors.Errorf("failed to judge job exist or not, detail: %s", statusDesc)
-	// not started
-	case apistructs.PipelineStatusCreated, apistructs.PipelineStatusStartError:
-		started = false
-	// started
-	case apistructs.PipelineStatusQueue, apistructs.PipelineStatusRunning,
-		apistructs.PipelineStatusSuccess, apistructs.PipelineStatusFailed,
-		apistructs.PipelineStatusStopByUser:
-		started = true
-
-	// default
-	default:
-		started = false
-	}
-	return
-}
+//func (k *K8sJob) Exist(ctx context.Context, action *spec.PipelineTask) (created, started bool, err error) {
+//	statusDesc, err := k.Status(ctx, action)
+//	if err != nil {
+//		created = false
+//		started = false
+//		// 该 ErrMsg 表示记录在 etcd 中不存在，即未创建
+//		if strutil.Contains(err.Error(), "failed to inspect job, err: not found") {
+//			err = nil
+//			return
+//		}
+//		// 获取 job 状态失败
+//		return
+//	}
+//	// err 为空，说明在 etcd 中存在记录，即已经创建成功
+//	created = true
+//
+//	// 根据状态判断是否实际 job(k8s job, DC/OS job) 是否已开始执行
+//	switch statusDesc.Status {
+//	// err
+//	case apistructs.PipelineStatusError, apistructs.PipelineStatusUnknown:
+//		err = errors.Errorf("failed to judge job exist or not, detail: %s", statusDesc)
+//	// not started
+//	case apistructs.PipelineStatusCreated, apistructs.PipelineStatusStartError:
+//		started = false
+//	// started
+//	case apistructs.PipelineStatusQueue, apistructs.PipelineStatusRunning,
+//		apistructs.PipelineStatusSuccess, apistructs.PipelineStatusFailed,
+//		apistructs.PipelineStatusStopByUser:
+//		started = true
+//
+//	// default
+//	default:
+//		started = false
+//	}
+//	return
+//}
 
 func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
-	created, _, err := k.Exist(ctx, action)
-	if err != nil {
-		return nil, err
-	}
-	if created {
-		logrus.Warnf("job already created")
-		return nil, nil
-	}
+	//created, _, err := k.Exist(ctx, action)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if created {
+	//	logrus.Warnf("job already created")
+	//	return nil, nil
+	//}
 	job, err := transferToSchedulerJob(action)
 	if err != nil {
 		return nil, err
@@ -232,7 +238,110 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 		return nil, errors.Errorf(errMsg)
 	}
 
-	return job, nil
+	return apistructs.Job{
+		JobFromUser: job,
+	}, nil
+}
+
+func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	job, err := transferToSchedulerJob(task)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeJob, err := k.generateKubeJob(job)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to remove k8s job")
+	}
+
+	name := kubeJob.Name
+	namespace := job.Namespace
+	propagationPolicy := metav1.DeletePropagationBackground
+
+	jb, err := k.client.ClientSet.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if !util.IsNotFound(err) {
+			return nil, err
+		}
+		logrus.Warningf("get the job %s in namespace %s is not found", name, namespace)
+	}
+
+	// when the err is nil, the job and DeletionTimestamp is not nil. scheduler should delete the job.
+	if err == nil && jb.DeletionTimestamp == nil {
+		logrus.Infof("start to delete job %s", name)
+		err = k.client.ClientSet.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
+		if err != nil {
+			if !util.IsNotFound(err) {
+				return nil, errors.Wrapf(err, "failed to remove k8s job, name: %s", name)
+			}
+			logrus.Warningf("delete the job %s in namespace %s is not found", name, namespace)
+		}
+		logrus.Infof("finish to delete job %s", name)
+
+		for index := range job.Volumes {
+			pvcName := fmt.Sprintf("%s-%s-%d", namespace, job.Name, index)
+			logrus.Infof("start to delete pvc %s", pvcName)
+			err = k.client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+			if err != nil {
+				if !util.IsNotFound(err) {
+					return nil, errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
+				}
+				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", job.Name, pvcName, namespace)
+			}
+			logrus.Infof("finish to delete pvc %s", pvcName)
+		}
+	}
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" {
+		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
+			return nil, errMsg
+		}
+
+		remainCount := 0
+		if len(jobs.Items) != 0 {
+			for _, j := range jobs.Items {
+				if j.DeletionTimestamp == nil {
+					remainCount++
+				}
+			}
+		}
+
+		retainNamespace, err := strconv.ParseBool(job.Env[EnvRetainNamespace])
+		if err != nil {
+			logrus.Debugf("parse bool err %v when delete job %s in the namespace %s", err, job.Name, job.Namespace)
+			retainNamespace = false
+		}
+		if remainCount < 1 && retainNamespace == false {
+			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			if err != nil {
+				if util.IsNotFound(err) {
+					logrus.Warningf("get namespace %s not found", namespace)
+					return nil, nil
+				}
+				errMsg := fmt.Errorf("get the job's namespace error: %+v", err)
+				return nil, errMsg
+			}
+
+			if ns.DeletionTimestamp == nil {
+				logrus.Infof("start to delete the job's namespace %s", namespace)
+				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				if err != nil {
+					if !util.IsNotFound(err) {
+						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
+						return nil, errMsg
+					}
+					logrus.Warningf("not found the namespace %s", namespace)
+				}
+				logrus.Infof("clean namespace %s successfully", namespace)
+			}
+		}
+	}
+	return apistructs.Job{
+		JobFromUser: job,
+	}, nil
 }
 
 func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
@@ -890,4 +999,41 @@ func whichStorageClass(tp string) string {
 	default:
 		return "dice-local-volume"
 	}
+}
+
+func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg string) apistructs.StatusDesc {
+	var statusDesc apistructs.StatusDesc
+
+	var podsPending bool
+	for _, pod := range jobpods.Items {
+		if pod.Status.Phase == corev1.PodPending {
+			podsPending = true
+		}
+	}
+
+	// job controller Have not yet processed the job
+	if job.Status.StartTime == nil {
+		statusDesc.Status = apistructs.StatusUnschedulable
+		return statusDesc
+	}
+
+	if job.Status.Failed > 0 {
+		statusDesc.Status = apistructs.StatusStoppedOnFailed
+	} else if job.Status.CompletionTime == nil {
+		if job.Status.Active > 0 && !podsPending {
+			statusDesc.Status = apistructs.StatusRunning
+		} else {
+			statusDesc.Status = apistructs.StatusUnschedulable
+		}
+	} else {
+		// TODO: How to determine if a job is stopped?
+		if job.Status.Succeeded >= *job.Spec.Completions {
+			statusDesc.Status = apistructs.StatusStoppedOnOK
+		} else {
+			statusDesc.Status = apistructs.StatusStoppedOnFailed
+		}
+	}
+
+	statusDesc.LastMessage = lastMsg
+	return statusDesc
 }
