@@ -199,7 +199,9 @@ func (o *OrgFormModal) Render(ctx context.Context, c *apistructs.Component, scen
 			Desc:        o.State.FormData.Desc,
 			Admins:      []string{o.ctxBdl.Identity.UserID},
 			IsPublic:    o.State.FormData.IsPublic,
+			IsFree:      true,
 		}
+		// personal workbench can only create free org at present
 		_, err := o.ctxBdl.Bdl.CreateOrg(o.ctxBdl.Identity.UserID, &req)
 		if err != nil {
 			return err

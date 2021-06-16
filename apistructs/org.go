@@ -38,6 +38,7 @@ type OrgCreateRequest struct {
 	// 发布商名称
 	PublisherName string `json:"publisherName"`
 	IsPublic      bool   `json:"isPublic"`
+	IsFree        bool   `json:"isFree"`
 }
 
 // OrgCreateResponse POST /api/orgs 创建组织响应结构
@@ -172,6 +173,7 @@ func (org *OrgDTO) HidePassword() {
 }
 
 type OrgConfig struct {
+	IsFree                     bool   `json:"isFree"`
 	EnableMS                   bool   `json:"enableMS"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`
