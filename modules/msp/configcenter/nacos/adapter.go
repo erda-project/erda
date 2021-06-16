@@ -162,7 +162,7 @@ func (a *Adapter) loginNacos() (string, error) {
 	return "", nil
 }
 
-func (a *Adapter) newRequest(method, path string, params url.Values, body io.Reader) (req *http.Request, err error) {
+func (a *Adapter) newRequest(method, path string, params url.Values, body io.Reader) (*http.Request, error) {
 	var ustr string
 	if len(params) > 0 {
 		ustr = fmt.Sprintf("%s%s?%s", a.Addr, path, params.Encode())
