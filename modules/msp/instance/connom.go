@@ -16,8 +16,9 @@ package instance
 import (
 	"encoding/json"
 
-	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/msp/instance/db"
 )
 
 // Instance .
