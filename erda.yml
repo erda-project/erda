@@ -343,6 +343,25 @@ services:
         path: "/api/openapi/version"
         duration: 120
       exec: {}
+  ecp:
+    cmd: "/app/ecp"
+    ports:
+      - port: 9029
+        protocol: "TCP"
+        l4_protocol: "TCP"
+    resources:
+      cpu: ${request_cpu:0.2}
+      max_cpu: 0.2
+      mem: 128
+      network:
+        mode: "container"
+    deployments:
+      replicas: 1
+      labels:
+        GROUP: "dice"
+    health_check:
+      http: {}
+      exec: {}
   ops:
     cmd: "/app/ops"
     ports:
