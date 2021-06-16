@@ -16,7 +16,7 @@ package hmac
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // nolint
 	"encoding/hex"
 	"net/http"
 	"sort"
