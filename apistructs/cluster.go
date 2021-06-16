@@ -13,9 +13,7 @@
 
 package apistructs
 
-import (
-	"time"
-)
+import "time"
 
 // 集群类型
 const (
@@ -38,18 +36,16 @@ const (
 	ClusterStatusOffline string = "offline"
 )
 
-// token / client-cert&client-key / proxy(dialer) / inet(self-innovate)
+// token / client-cert&client-key / proxy(dialer)
 const (
 	ManageToken = "token"
 	ManageCert  = "cert"
 	ManageProxy = "proxy"
-	ManageInet  = "inet"
 )
 
 // ClusterCreateRequest 集群创建请求
 // TODO 逐步废弃 urls & settings, 统一使用config
 type ClusterCreateRequest struct {
-	OrgID           int64               `json:"orgID"`
 	Name            string              `json:"name"`
 	CloudVendor     string              `json:"cloudVendor"`
 	DisplayName     string              `json:"displayName"`
@@ -57,13 +53,19 @@ type ClusterCreateRequest struct {
 	Type            string              `json:"type"` // dcos, edas, k8s
 	Logo            string              `json:"logo"`
 	WildcardDomain  string              `json:"wildcardDomain"`
-	URLs            map[string]string   `json:"urls"`
-	Settings        map[string]string   `json:"settings"`
-	Config          map[string]string   `json:"config"` // 集群基本配置
 	SchedulerConfig *ClusterSchedConfig `json:"scheduler"`
 	OpsConfig       *OpsConfig          `json:"opsConfig"`
 	SysConfig       *Sysconf            `json:"sysConfig"`
 	ManageConfig    *ManageConfig       `json:"manageConfig"` // e.g. token, cert, proxy
+
+	// Deprecated
+	OrgID int64 `json:"orgID"`
+	// Deprecated
+	URLs map[string]string `json:"urls"`
+	// Deprecated
+	Settings map[string]string `json:"settings"`
+	// Deprecated
+	Config map[string]string `json:"config"` // 集群基本配置
 }
 
 // ClusterCreateResponse 集群创建响应
@@ -74,24 +76,33 @@ type ClusterCreateResponse struct {
 
 // ClusterUpdateRequest 集群更新请求
 type ClusterUpdateRequest struct {
-	OrgID           int                 `json:"orgID"`
 	Name            string              `json:"name"`
 	DisplayName     string              `json:"displayName"`
 	Type            string              `json:"type"`
 	Logo            string              `json:"logo"`
 	Description     string              `json:"description"`
 	WildcardDomain  string              `json:"wildcardDomain"`
-	URLs            map[string]string   `json:"urls"`
 	SchedulerConfig *ClusterSchedConfig `json:"scheduler"`
 	OpsConfig       *OpsConfig          `json:"opsConfig"`
 	SysConfig       *Sysconf            `json:"sysConfig"`
 	ManageConfig    *ManageConfig       `json:"manageConfig"`
+
+	// Deprecated
+	OrgID int `json:"orgID"`
+	// Deprecated
+	URLs map[string]string `json:"urls"`
 }
 
 // ClusterUpdateResponse 集群更新响应
 type ClusterUpdateResponse struct {
 	Header
 	Data interface{} `json:"data"`
+}
+
+// ClusterPatchRequest cluster patch request
+type ClusterPatchRequest struct {
+	Name         string        `json:"name"`
+	ManageConfig *ManageConfig `json:"manageConfig"`
 }
 
 // ClusterFetchResponse 集群详情响应
@@ -167,27 +178,33 @@ const (
 
 // ClusterInfo 集群信息
 type ClusterInfo struct {
-	ID             int                    `json:"id"`
-	OrgID          int                    `json:"orgID"`
-	Name           string                 `json:"name"`
-	DisplayName    string                 `json:"displayName"`
-	Type           string                 `json:"type"` // dcos, edas, k8s
-	CloudVendor    string                 `json:"cloudVendor"`
-	Logo           string                 `json:"logo"`
-	Description    string                 `json:"description"`
-	WildcardDomain string                 `json:"wildcardDomain"`
-	URLs           map[string]string      `json:"urls,omitempty"`
-	Settings       map[string]interface{} `json:"settings,omitempty"`
-	Config         map[string]string      `json:"config,omitempty"`
-	SchedConfig    *ClusterSchedConfig    `json:"scheduler,omitempty"`
-	OpsConfig      *OpsConfig             `json:"opsConfig,omitempty"`
+	ID             int                 `json:"id"`
+	Name           string              `json:"name"`
+	DisplayName    string              `json:"displayName"`
+	Type           string              `json:"type"` // dcos, edas, k8s
+	CloudVendor    string              `json:"cloudVendor"`
+	Logo           string              `json:"logo"`
+	Description    string              `json:"description"`
+	WildcardDomain string              `json:"wildcardDomain"`
+	SchedConfig    *ClusterSchedConfig `json:"scheduler,omitempty"`
+	OpsConfig      *OpsConfig          `json:"opsConfig,omitempty"`
+	System         *Sysconf            `json:"system,omitempty"`
+	ManageConfig   *ManageConfig       `json:"manageConfig"`
+	CreatedAt      time.Time           `json:"createdAt"`
+	UpdatedAt      time.Time           `json:"updatedAt"`
+
+	// Deprecated
+	OrgID int `json:"orgID"`
+	// Deprecated
+	URLs map[string]string `json:"urls,omitempty"`
+	// Deprecated
+	Settings map[string]interface{} `json:"settings,omitempty"`
+	// Deprecated
+	Config map[string]string `json:"config,omitempty"`
 	//Resource       *aliyun.AliyunResources `json:"resource"`  // TODO: 重构优化
-	System       *Sysconf      `json:"system,omitempty"`
-	ManageConfig *ManageConfig `json:"manageConfig"`
 	// 是否关联集群，Y: 是，N: 否
-	IsRelation string    `json:"isRelation"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	// Deprecated
+	IsRelation string `json:"isRelation"`
 }
 
 // GetClusterResponse 根据集群名称或集群ID获取集群信息

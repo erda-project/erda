@@ -14,8 +14,6 @@
 package dto
 
 import (
-	"strings"
-
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +41,7 @@ func (impl GetOpenapiDto) GenSelectOptions() []orm.SelectOption {
 		options = append(options, orm.SelectOption{
 			Type:   orm.FuzzyMatch,
 			Column: "api_path",
-			Value:  strings.ReplaceAll(impl.ApiPath, `_`, `\_`),
+			Value:  impl.ApiPath,
 		})
 	}
 	if impl.Method != "" {

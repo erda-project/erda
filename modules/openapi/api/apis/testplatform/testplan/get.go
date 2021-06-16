@@ -21,7 +21,7 @@ import (
 var GET = apis.ApiSpec{
 	Path:         "/api/testplans/<id>",
 	BackendPath:  "/api/testplans/<id>",
-	Host:         "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
