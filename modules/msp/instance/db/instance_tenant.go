@@ -13,7 +13,11 @@
 
 package db
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
+)
 
 // InstanceTenantDB .
 type InstanceTenantDB struct {
@@ -60,4 +64,20 @@ func (db *InstanceTenantDB) GetClusterNameByTenantGroup(group string) (string, e
 		return "", nil
 	}
 	return list[0].Az, nil
+}
+
+func (db *InstanceTenantDB) GetByFields(fields map[string]interface{}) (*InstanceTenant, error) {
+	query := db.Table(TableInstanceTenant)
+	query, err := gormutil.GetQueryFilterByFields(query, instanceTenantFieldColumns, fields)
+	if err != nil {
+		return nil, err
+	}
+	var list []*InstanceTenant
+	if err := query.Limit(1).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	if len(list) <= 0 {
+		return nil, nil
+	}
+	return list[0], nil
 }

@@ -14,7 +14,10 @@
 package db
 
 import (
+	"reflect"
 	"time"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
 // tables name
@@ -41,6 +44,8 @@ type InstanceTenant struct {
 // TableName .
 func (InstanceTenant) TableName() string { return TableInstanceTenant }
 
+var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+
 // Instance .
 type Instance struct {
 	ID         string    `gorm:"column:id;primary_key"`
@@ -60,6 +65,8 @@ type Instance struct {
 // TableName .
 func (Instance) TableName() string { return TableInstance }
 
+var instanceFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+
 // Tmc .
 type Tmc struct {
 	ID          int       `gorm:"column:id;primary_key"`
@@ -74,3 +81,5 @@ type Tmc struct {
 
 // TableName .
 func (Tmc) TableName() string { return TableTmc }
+
+var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))

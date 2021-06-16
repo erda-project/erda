@@ -186,7 +186,7 @@ func parseConfigInfo(instance *instancedb.Instance, tenant *instancedb.InstanceT
 	tcfg := make(map[string]interface{})
 	json.Unmarshal([]byte(instance.Config), &cfg)
 	json.Unmarshal([]byte(instance.Options), &opts)
-	json.Unmarshal([]byte(instance.Options), &tcfg)
+	json.Unmarshal([]byte(tenant.Options), &tcfg)
 	if host, ok := cfg["CONFIGCENTER_ADDRESS"].(string); ok {
 		c.Host = host
 	}
