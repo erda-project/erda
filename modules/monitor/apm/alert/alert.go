@@ -16,9 +16,13 @@ package alert
 import (
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/mitchellh/mapstructure"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
@@ -686,4 +690,229 @@ func (p *provider) getAlertRecordAttrs(r *http.Request, params struct {
 		Display: "微服务自定义",
 	})
 	return api.Success(data)
+}
+
+func (p *provider) getAlertRecords(r *http.Request, params struct {
+	ScopeID     string   `query:"tenantGroup" validate:"required"`
+	AlertGroup  []string `query:"alertGroup"`
+	AlertState  []string `query:"alertState"`
+	AlertType   []string `query:"alertType"`
+	HandleState []string `query:"handleState"`
+	HandlerId   []string `query:"handlerId"`
+	PageNo      int64    `query:"pageNo"`
+	PageSize    int64    `query:"pageSize"`
+}) interface{} {
+	tk, err := p.authDb.InstanceTenant.QueryTkByTenantGroup(params.ScopeID)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if tk == "" {
+		return api.Errors.Internal("tenantGroup has no tk")
+	}
+	monitorInstance, err := p.authDb.Monitor.GetInstanceByTk(tk)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if params.PageNo == 0 || params.PageNo < 1 {
+		params.PageNo = 1
+	}
+	if params.PageSize == 0 || params.PageSize <= 0 || params.PageSize > 100 {
+		params.PageSize = 20
+	}
+	data, err := p.microAlertAPI.QueryAlertRecord(api.Language(r), MicroServiceScope, params.ScopeID, params.AlertGroup,
+		params.AlertState, params.AlertType, params.HandleState, params.HandlerId, params.PageNo, params.PageSize)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	var projectId int
+	if monitorInstance.ProjectId != "" {
+		projectId, err = strconv.Atoi(monitorInstance.ProjectId)
+		if err != nil {
+			return api.Errors.Internal(err)
+		}
+	}
+	userIds := make([]string, 0)
+	if data != nil {
+		for index, value := range data {
+			userIds = append(userIds, value.HandlerID)
+			if projectId != 0 {
+				data[index].ProjectID = uint64(projectId)
+			}
+		}
+	}
+	total, err := p.microAlertAPI.CountAlertRecord(MicroServiceScope, params.ScopeID, params.AlertGroup, params.AlertState, params.AlertType,
+		params.HandleState, params.HandlerId)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+
+	return api.Success(map[string]interface{}{
+		"list":    data,
+		"total":   total,
+		"userIds": userIds,
+	})
+}
+
+func (p *provider) getAlertRecord(r *http.Request, params struct {
+	GroupId string `param:"groupId" validate:"required"`
+	ScopeID string `query:"tenantGroup" validate:"required"`
+}) interface{} {
+	tk, err := p.authDb.InstanceTenant.QueryTkByTenantGroup(params.ScopeID)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if tk == "" {
+		return api.Errors.Internal("tenantGroup has no tk")
+	}
+	monitorInstance, err := p.authDb.Monitor.GetInstanceByTk(tk)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	var projectId int
+	if monitorInstance.ProjectId != "" {
+		projectId, err = strconv.Atoi(monitorInstance.ProjectId)
+		if err != nil {
+			return api.Errors.Internal(err)
+		}
+	}
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	data, err := p.microAlertAPI.GetAlertRecord(api.Language(r), params.GroupId)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if data == nil {
+		return api.Success(nil)
+	}
+	if data.Scope != MicroServiceScope || data.ScopeKey != params.ScopeID {
+		return api.Errors.AccessDenied()
+	}
+	if projectId != 0 {
+		data.ProjectID = uint64(projectId)
+	}
+	return api.Success(data)
+}
+
+func (p *provider) getAlertHistories(r *http.Request, params struct {
+	GroupId string `param:"groupId" validate:"required"`
+	ScopeID string `query:"tenantGroup" validate:"required"`
+	Start   int    `query:"start"`
+	End     int    `query:"end"`
+	Limit   uint   `query:"limit"`
+}) interface{} {
+	if params.End < params.Start {
+		return api.Success(nil)
+	}
+	if params.End == 0 {
+		params.End = int(utils.ConvertTimeToMS(time.Now()))
+	}
+	if params.Start == 0 {
+		params.Start = params.End - int(time.Hour.Milliseconds())
+	}
+	if params.Limit == 0 {
+		params.Limit = 50
+	}
+	data, err := p.microAlertAPI.QueryAlertHistory(api.Language(r), params.GroupId, params.Start, params.End, params.Limit)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(data)
+}
+
+func (p *provider) createAlertRecordIssue(r *http.Request, params struct {
+	GroupId string                 `param:"groupId" validate:"required"`
+	ScopeID string                 `query:"tenantGroup" validate:"required"`
+	Body    map[string]interface{} `query:"body"`
+}) interface{} {
+	tk, err := p.authDb.InstanceTenant.QueryTkByTenantGroup(params.ScopeID)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if tk == "" {
+		return api.Errors.Internal("tenantGroup has no tk")
+	}
+	monitorInstance, err := p.authDb.Monitor.GetInstanceByTk(tk)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	userId := r.Header.Get("User-ID")
+	record, err := p.microAlertAPI.GetAlertRecord(api.Language(r), params.GroupId)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if record == nil || record.IssueID != 0 {
+		return api.Success(nil)
+	}
+	if record.Scope != MicroServiceScope || record.ScopeKey != params.ScopeID {
+		return api.Errors.AccessDenied()
+	}
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if monitorInstance.ProjectId == "" {
+		return api.Errors.Internal("monitor has no project id")
+	}
+	projectId, err := strconv.Atoi(monitorInstance.ProjectId)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if params.Body == nil {
+		params.Body = make(map[string]interface{})
+		params.Body["creator"] = userId
+		params.Body["projectID"] = projectId
+	}
+	createIssue := &apistructs.IssueCreateRequest{}
+	err = mapstructure.Decode(params.Body, createIssue)
+	_, err = p.microAlertAPI.CreateAlertRecordIssue(params.GroupId, createIssue)
+	if err != nil {
+		return api.Errors.Internal("alert record issue crate fail")
+	}
+	return api.Success(nil)
+}
+
+func (p *provider) updateAlertRecordIssue(r *http.Request, params struct {
+	GroupId string                 `param:"groupId" validate:"required"`
+	ScopeID string                 `query:"tenantGroup" validate:"required"`
+	Body    map[string]interface{} `query:"body"`
+}) interface{} {
+	record, err := p.microAlertAPI.GetAlertRecord(api.Language(r), params.GroupId)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if record == nil || record.IssueID != 0 {
+		return api.Success(nil)
+	}
+	if record.Scope != MicroServiceScope || record.ScopeKey != params.ScopeID {
+		return api.Errors.AccessDenied()
+	}
+	issueUpdate := &apistructs.IssueUpdateRequest{}
+	err = mapstructure.Decode(params.Body, issueUpdate)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	err = p.microAlertAPI.UpdateAlertRecordIssue(params.GroupId, record.IssueID, issueUpdate)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(nil)
+}
+
+func (p *provider) dashboardPreview(r *http.Request, params struct {
+	ScopeID string `query:"tenantGroup" validate:"required"`
+}, alert *adapt.CustomizeAlertDetail) interface{} {
+	alert.AlertScope = MicroServiceScope
+	tk, err := p.authDb.InstanceTenant.QueryTkByTenantGroup(params.ScopeID)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	if tk == "" {
+		return api.Errors.Internal("no monitor")
+	}
+	alert.AlertScopeID = tk
+	view, err := p.microAlertAPI.DashboardPreview(alert)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(view)
 }

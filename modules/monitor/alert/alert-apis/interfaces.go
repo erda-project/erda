@@ -14,6 +14,8 @@
 package apis
 
 import (
+	"github.com/erda-project/erda/apistructs"
+	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/modcom/api"
@@ -51,6 +53,14 @@ type (
 
 		//micro custom alert records
 		GetAlertRecordAttr(lang i18n.LanguageCodes, scope string) (*adapt.AlertRecordAttr, error)
+		QueryAlertRecord(lang i18n.LanguageCodes, scope, scopeId string, alertGroup, alertState, alertType,
+			handleState, handlerId []string, pageNo, pageSize int64) ([]*adapt.AlertRecord, error)
+		CountAlertRecord(scope, scopeId string, alertGroups, alertStates, alertTypes, handleStates, handlerIDs []string) (int, error)
+		GetAlertRecord(lang i18n.LanguageCodes, groupId string) (*adapt.AlertRecord, error)
+		QueryAlertHistory(lang i18n.LanguageCodes, groupId string, start, end int, limit uint) ([]*adapt.AlertHistory, error)
+		CreateAlertRecordIssue(groupId string, issueCreate *apistructs.IssueCreateRequest) (uint64, error)
+		UpdateAlertRecordIssue(groupId string, issueId uint64, request *apistructs.IssueUpdateRequest) error
+		DashboardPreview(alert *adapt.CustomizeAlertDetail) (res *block.View, err error)
 	}
 )
 
@@ -139,4 +149,34 @@ func (p *provider) DeleteCustomizeAlert(id uint64) (err error) {
 
 func (p *provider) GetAlertRecordAttr(lang i18n.LanguageCodes, scope string) (*adapt.AlertRecordAttr, error) {
 	return p.a.GetAlertRecordAttr(lang, scope)
+}
+
+func (p *provider) QueryAlertRecord(lang i18n.LanguageCodes, scope, scopeId string, alertGroup, alertState, alertType,
+	handleState, handlerId []string, pageNo, pageSize int64) ([]*adapt.AlertRecord, error) {
+	return p.a.QueryAlertRecord(lang, scope, scopeId, alertGroup, alertState, alertType, handleState,
+		handlerId, uint(pageNo), uint(pageSize))
+}
+
+func (p *provider) CountAlertRecord(scope, scopeId string, alertGroups, alertStates, alertTypes, handleStates, handlerIDs []string) (int, error) {
+	return p.a.CountAlertRecord(scope, scopeId, alertGroups, alertStates, alertTypes, handleStates, handlerIDs)
+}
+
+func (p *provider) GetAlertRecord(lang i18n.LanguageCodes, groupId string) (*adapt.AlertRecord, error) {
+	return p.a.GetAlertRecord(lang, groupId)
+}
+
+func (p *provider) QueryAlertHistory(lang i18n.LanguageCodes, groupId string, start, end int64, limit uint) ([]*adapt.AlertHistory, error) {
+	return p.a.QueryAlertHistory(lang, groupId, start, end, limit)
+}
+
+func (p *provider) CreateAlertRecordIssue(groupId string, issueCreate *apistructs.IssueCreateRequest) (uint64, error) {
+	return p.a.CreateAlertIssue(groupId, *issueCreate)
+}
+
+func (p *provider) UpdateAlertRecordIssue(groupId string, issueId uint64, request *apistructs.IssueUpdateRequest) error {
+	return p.a.UpdateAlertIssue(groupId, issueId, *request)
+}
+
+func (p *provider) DashboardPreview(alert *adapt.CustomizeAlertDetail) (res *block.View, err error) {
+	return adapt.NewDashboard(p.a).GenerateDashboardPreView(alert)
 }

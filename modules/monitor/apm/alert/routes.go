@@ -41,6 +41,11 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 
 	// 微服务告警记录
 	routes.GET("/api/apm/alert-record-attrs", p.getAlertRecordAttrs, p.getPermissionByTenantGroup(permission.ActionList))
-
+	routes.GET("/api/apm/alert-records", p.getAlertRecords, p.getPermissionByTenantGroup(permission.ActionList))
+	routes.GET("/api/apm/alert-records/:groupId", p.getAlertRecord, p.getPermissionByTenantGroup(permission.ActionGet))
+	routes.GET("/api/apm/alert-records/:groupId/histories", p.getAlertHistories, p.getPermissionByTenantGroup(permission.ActionList))
+	routes.POST("/api/apm/alert-records/:groupId/issues", p.createAlertRecordIssue, p.getPermissionByTenantGroup(permission.ActionCreate))
+	routes.PUT("/api/apm/alert-records/:groupId/issues", p.updateAlertRecordIssue, p.getPermissionByTenantGroup(permission.ActionUpdate))
+	routes.POST("/api/apm/alert-records/customize/alerts/dash-preview/query", p.dashboardPreview, p.getPermissionByTenantGroup(permission.ActionUpdate))
 	return nil
 }
