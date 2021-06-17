@@ -62,7 +62,7 @@ type Spec struct {
 	Desc              string            `json:"desc" yaml:"desc"`
 	Labels            map[string]string `json:"labels" yaml:"labels"`
 	LogoUrl           string            `json:"logoUrl" yaml:"logoUrl"`
-	SupportedVersions []string          `json:"supportedVersions" yaml:"supportedVersions"`
+	SupportedVersions []string          `json:"supportedErdaVersions" yaml:"supportedErdaVersions"`
 	Public            bool              `json:"public" yaml:"public"`
 	IsDefault         bool              `json:"isDefault" yaml:"isDefault"`
 }
