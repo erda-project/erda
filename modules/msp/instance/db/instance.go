@@ -13,7 +13,11 @@
 
 package db
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
+)
 
 // InstanceDB .
 type InstanceDB struct {
@@ -27,6 +31,22 @@ func (db *InstanceDB) GetByID(id string) (*Instance, error) {
 	var list []*Instance
 	if err := db.Table(TableInstance).
 		Where("`id`=?", id).Limit(1).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	if len(list) <= 0 {
+		return nil, nil
+	}
+	return list[0], nil
+}
+
+func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, error) {
+	query := db.Table(TableInstance)
+	query, err := gormutil.GetQueryFilterByFields(query, instanceFieldColumns, fields)
+	if err != nil {
+		return nil, err
+	}
+	var list []*Instance
+	if err := query.Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	if len(list) <= 0 {
