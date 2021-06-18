@@ -43,6 +43,7 @@ const (
 	EnvUC            = "UC_ADDR"
 	EnvClusterDialer = "CLUSTER_DIALER_ADDR"
 	EnvDOP           = "DOP_ADDR"
+	EnvCoreServices  = "CORESERVICES_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
@@ -69,6 +70,7 @@ const (
 	SvcUC            = "uc"
 	SvcClusterDialer = "cluster-dialer"
 	SvcDOP           = "dop"
+	SvcCoreServices  = "core-services"
 )
 
 func EventBox() string {
@@ -157,6 +159,10 @@ func ClusterDialer() string {
 
 func DOP() string {
 	return getURL(EnvDOP, SvcDOP)
+}
+
+func CoreServices() string {
+	return getURL(EnvCoreServices, SvcCoreServices)
 }
 
 func getURL(envKey, srvName string) string {

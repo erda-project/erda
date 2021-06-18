@@ -129,6 +129,10 @@ func (u urls) DOP() (string, error) {
 	return u.getURL(discover.EnvDOP, discover.SvcDOP)
 }
 
+func (u urls) CoreServices() (string, error) {
+	return u.getURL(discover.EnvCoreServices, discover.SvcCoreServices)
+}
+
 func (u urls) getURL(k, srvName string) (string, error) {
 	v, ok := u[k]
 	if ok {

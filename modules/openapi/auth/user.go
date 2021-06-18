@@ -148,7 +148,7 @@ func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (i
 			orgID = org.ID
 		} else {
 			domain := strutil.Split(req.Host, ":")[0]
-			org, err := u.bundle.GetOrgByDomain(domain, string(u.info.ID))
+			org, err := u.bundle.GetDopOrgByDomain(domain, string(u.info.ID))
 			if err != nil {
 				return nil, AuthResult{InternalAuthErr, err.Error()}
 			} else if org == nil {

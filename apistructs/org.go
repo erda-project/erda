@@ -75,6 +75,11 @@ type OrgFetchResponse struct {
 	Data OrgDTO `json:"data"`
 }
 
+type OrgDeleteResponse struct {
+	Header
+	Data OrgDTO `json:"data"`
+}
+
 // OrgUpdateRequest PUT /api/orgs/<orgId> 更新组织请求结构
 type OrgUpdateRequest struct {
 	OrgID int                  `json:"-" path:"orgId"`
@@ -198,6 +203,11 @@ type NotifyConfigUpdateRequestBody struct {
 type NotifyConfigGetResponse struct {
 	Header
 	Data NotifyConfigUpdateRequestBody `json:"data"`
+}
+
+type OrgClusterRelationDTOResponse struct {
+	Header
+	Data []OrgClusterRelationDTO `json:"data"`
 }
 
 // OrgClusterRelationDTO 企业对应集群关系结构
