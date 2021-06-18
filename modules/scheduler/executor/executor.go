@@ -39,6 +39,7 @@ func GetManager() *Manager {
 	err := mgr.initialize()
 	if err != nil {
 		// init failed, just panic here
+		logrus.Error(err)
 		panic(err)
 	}
 	return &mgr
@@ -193,6 +194,7 @@ func (m *Manager) Pool(name executortypes.Name) *goroutinepool.GoroutinePool {
 
 // Get returns the executor with name.
 func (m *Manager) Get(name executortypes.Name) (executortypes.Executor, error) {
+
 	c, ok := m.executors[name]
 	if !ok {
 		return nil, errors.Errorf("not found executor: %s", name)

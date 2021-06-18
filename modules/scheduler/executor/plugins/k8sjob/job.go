@@ -158,6 +158,8 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		job.Namespace = namespace
 	}
 
 	if err := k.createImageSecretIfNotExist(namespace); err != nil {
@@ -184,7 +186,7 @@ func (k *k8sJob) Create(ctx context.Context, specObj interface{}) (interface{}, 
 		}
 	}
 
-	kubeJob, err := k.generateKubeJob(specObj)
+	kubeJob, err := k.generateKubeJob(job)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create k8s job")
 	}
@@ -219,7 +221,7 @@ func (k *k8sJob) Status(ctx context.Context, specObj interface{}) (apistructs.St
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
-	name := strutil.Concat(kubeJob.Namespace, ".", kubeJob.Name)
+	name := strutil.Concat(namespace, ".", kubeJob.Name)
 
 	job, err = k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
@@ -276,17 +278,11 @@ func (k *k8sJob) Remove(ctx context.Context, specObj interface{}) error {
 	if namespace == "" {
 		namespace = job.Namespace
 	}
+	name := strutil.Concat(namespace, ".", job.Name)
 
-	logrus.Infof("delete job name %s, namespace %s", job.Name, namespace)
+	logrus.Infof("delete job name %s, namespace %s", name, namespace)
 
-	kubeJob, err := k.generateKubeJob(specObj)
-	if err != nil {
-		return errors.Wrapf(err, "failed to remove k8s job")
-	}
-
-	name := kubeJob.Name
 	propagationPolicy := metav1.DeletePropagationBackground
-
 	jb, err := k.client.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !util.IsNotFound(err) {
@@ -966,4 +962,8 @@ func (k *k8sJob) CreatePVCIfNotExists(pvc *corev1.PersistentVolumeClaim) error {
 	}
 
 	return nil
+}
+
+func (k *k8sJob) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for k8s job")
 }

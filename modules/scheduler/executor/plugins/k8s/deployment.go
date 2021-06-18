@@ -51,6 +51,78 @@ func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistruct
 	return k.deploy.Create(deployment)
 }
 
+func (k *Kubernetes) scaleDeployment(sg *apistructs.ServiceGroup) error {
+	// only support scale the first one service
+	scalingService := sg.Services[0]
+	deploymentName := getDeployName(&scalingService)
+	ns := sg.ProjectNamespace
+	if ns == "" {
+		ns = MakeNamespace(sg)
+	}
+	deploy, err := k.getDeployment(ns, deploymentName)
+	if err != nil {
+		getErr := fmt.Errorf("failed to get the deployment, err is: %s", err.Error())
+		return getErr
+	}
+
+	deploy.Spec.Replicas = func(i int32) *int32 { return &i }(int32(scalingService.Scale))
+
+	// only support one container on Erda currently
+	container := deploy.Spec.Template.Spec.Containers[0]
+
+	err = k.setContainerResources(scalingService, &container, sg.Extra)
+	if err != nil {
+		setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
+		return setContainerErr
+	}
+
+	deploy.Spec.Template.Spec.Containers[0] = container
+	err = k.deploy.Put(deploy)
+	if err != nil {
+		updateErr := fmt.Errorf("failed to update the deployment, err is: %s", err.Error())
+		return updateErr
+	}
+	return nil
+}
+
+func (k *Kubernetes) setContainerResources(service apistructs.Service, container *apiv1.Container,
+	extra map[string]string) error {
+	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
+	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
+
+	container.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(cpu),
+			apiv1.ResourceMemory: resource.MustParse(memory),
+		},
+	}
+
+	//Set the over-score ratio according to the environment
+	cpuSubscribeRatio := k.cpuSubscribeRatio
+	memSubscribeRatio := k.memSubscribeRatio
+	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
+	case "DEV":
+		cpuSubscribeRatio = k.devCpuSubscribeRatio
+		memSubscribeRatio = k.devMemSubscribeRatio
+	case "TEST":
+		cpuSubscribeRatio = k.testCpuSubscribeRatio
+		memSubscribeRatio = k.testMemSubscribeRatio
+	case "STAGING":
+		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
+		memSubscribeRatio = k.stagingMemSubscribeRatio
+	}
+
+	// Set fine-grained CPU based on the oversold ratio
+	if err := k.SetFineGrainedCPU(container, extra, cpuSubscribeRatio); err != nil {
+		return err
+	}
+
+	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (k *Kubernetes) getDeploymentStatus(service *apistructs.Service) (apistructs.StatusDesc, error) {
 	var statusDesc apistructs.StatusDesc
 	// in version 1.10.3, the following two apis are equal

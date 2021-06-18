@@ -21,6 +21,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -380,6 +381,117 @@ func (e *EDAS) Remove(ctx context.Context, specObj interface{}) error {
 	}
 
 	return nil
+}
+
+func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, error) {
+	sg, ok := specObj.(apistructs.ServiceGroup)
+	if !ok {
+		errMsg := fmt.Sprintf("edas k8s scale: invalid service group spec")
+		logrus.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	// only support scale one service resources
+	if len(sg.Services) != 1 {
+		errMsg := fmt.Sprintf("the scaling service count is not equal 1")
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	if err := checkRuntime(&sg); err != nil {
+		errMsg := fmt.Sprintf("check the runtime struct err: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	services := []apistructs.Service{}
+	destService := sg.Services[0]
+	originService := &apistructs.Service{}
+
+	appName := sg.Type + "-" + sg.ID + "-" + destService.Name
+	var (
+		appID string
+		err   error
+	)
+	if appID, err = e.getAppID(appName); err != nil {
+		errMsg := fmt.Sprintf("get appID errL: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	logrus.Infof("[EDAS] start to get k8s deployment %s", strutil.Concat(sg.Type, "-", sg.ID))
+	if _, err = e.getK8sDeployList(sg.Type, sg.ID, &services); err != nil {
+		logrus.Debugf("[EDAS] Get deploy from k8s error: %+v", err)
+		return nil, err
+	}
+	for _, service := range services {
+		if service.Name == destService.Name {
+			service.Resources.Cpu = service.Resources.Cpu / 1000
+			service.Resources.Mem = service.Resources.Mem / 1024 / 1024
+			originService = &service
+			break
+		}
+	}
+	var errString = make(chan string, 0)
+	go func() {
+		if originService != nil {
+			if destService.Scale != originService.Scale &&
+				reflect.DeepEqual(destService.Resources, originService.Resources) {
+				request := e.composeApplicationScale(destService.Scale)
+				request.AppId = appID
+				resp, err := e.client.ScaleK8sApplication(request)
+				if err != nil {
+					errMsg := fmt.Sprintf("scale k8s application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				if resp.Code != 200 {
+					errMsg := fmt.Sprintf("scale k8s application resp err: %v", resp.Message)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+			} else {
+				request := e.composeGetApplicationRequest(appID)
+				resp, err := e.client.GetK8sApplication(request)
+				if err != nil {
+					errMsg := fmt.Sprintf("get k8s application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				if resp.Code != 200 {
+					errMsg := fmt.Sprintf("get k8s application resp err: %v", resp.Message)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				spec, err := e.composeServiceSpecFromApplication(resp.Applcation)
+				if err != nil {
+					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				spec.CPU = int(destService.Resources.Cpu)
+				spec.Mem = int(destService.Resources.Mem)
+				spec.Mcpu = int(destService.Resources.Cpu * 1000)
+				spec.Instances = destService.Scale
+				err = e.deployApp(appID, spec)
+				if err != nil {
+					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+			}
+			errString <- ""
+		}
+		errString <- fmt.Sprintf("not found service %s", destService.Name)
+	}()
+	select {
+	case str := <-errString:
+		if str != "" {
+			return nil, fmt.Errorf(str)
+		}
+	case <-time.After(5 * time.Second):
+	}
+	return sg, nil
 }
 
 // Update edas update runtime
@@ -2176,4 +2288,40 @@ func (*EDAS) JobVolumeCreate(ctx context.Context, spec interface{}) (string, err
 }
 func (*EDAS) KillPod(podname string) error {
 	return fmt.Errorf("not support for edas")
+}
+
+func (e *EDAS) composeApplicationScale(replica int) *api.ScaleK8sApplicationRequest {
+	scaleRequest := api.CreateScaleK8sApplicationRequest()
+	scaleRequest.Replicas = requests.NewInteger(replica)
+	scaleRequest.SetDomain(e.addr)
+	scaleRequest.Headers["Content-Type"] = "application/json"
+	scaleRequest.RegionId = e.regionID
+	return scaleRequest
+}
+
+func (e *EDAS) composeGetApplicationRequest(appID string) *api.GetK8sApplicationRequest {
+	request := api.CreateGetK8sApplicationRequest()
+	request.AppId = appID
+	request.SetDomain(e.addr)
+	request.Headers["Content-Type"] = "application/json"
+	request.RegionId = e.regionID
+	return request
+}
+
+func (e *EDAS) composeServiceSpecFromApplication(application api.Applcation) (*ServiceSpec, error) {
+	envs, err := json.Marshal(application.App.EnvList.Env)
+	if err != nil {
+		return nil, err
+	}
+	spec := ServiceSpec{}
+	spec.Name = application.Name
+	spec.Args = application.Conf.K8sCmdArgs
+	spec.Cmd = application.Conf.K8sCmd
+	spec.LocalVolume = application.Conf.K8sLocalvolumeInfo
+	spec.Liveness = application.Conf.Liveness
+	spec.Readiness = application.Conf.Readiness
+	spec.Envs = string(envs)
+	spec.Image = application.ImageInfo.ImageUrl
+
+	return &spec, nil
 }

@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/mohae/deepcopy"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -501,6 +500,31 @@ func (k *Kubernetes) Status(ctx context.Context, specObj interface{}) (apistruct
 	}
 
 	return k.getGroupStatus(ctx, runtime)
+}
+
+// Scale implements update the replica and resources for one service
+func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	sg, err := ValidateRuntime(spec, "TaskScale")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
+		k.setProjectNamespaceEnvs(sg)
+	}
+
+	// only support scale one service resources
+	if len(sg.Services) != 1 {
+		return nil, fmt.Errorf("the scaling service count is not equal 1")
+	}
+
+	if err = k.scaleDeployment(sg); err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return sg, nil
 }
 
 // Remove implements removing servicegroup based on k8s api

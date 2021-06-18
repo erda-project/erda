@@ -554,24 +554,12 @@ func (h *HTTPEndpoints) JobStart(ctx context.Context, r *http.Request, vars map[
 			},
 		}, nil
 	}
-	var job apistructs.Job
-	if err := json.NewDecoder(r.Body).Decode(&job); err != nil && r.ContentLength != 0 {
-		errstr := fmt.Sprintf("failed to decode jobStart body, err: %v", err)
-		logrus.Error(errstr)
-		return httpserver.HTTPResponse{
-			Status: http.StatusBadRequest,
-			Content: apistructs.JobStartResponse{
-				Error: errstr,
-			},
-		}, nil
-	}
 
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-		job.Namespace = namespace
 	}
 
-	resultJob, err := h.job.Start(namespace, name, job.Env)
+	resultJob, err := h.job.Start(namespace, name, nil)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to start job, err: %v", err)
 		logrus.Error(errstr)
@@ -662,9 +650,8 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 		}, nil
 	}
 
-	var namespace = job.Namespace
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+		job.Namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 
 	if job.Env == nil {
@@ -679,7 +666,7 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 			Status: http.StatusBadRequest,
 			Content: apistructs.JobDeleteResponse{
 				Name:      job.Name,
-				Namespace: namespace,
+				Namespace: job.Namespace,
 				Error:     errstr,
 			},
 		}, nil
@@ -714,17 +701,16 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 		}
 		job.Env[RetainNamespace] = "false"
 
-		var namespace = job.Namespace
 		if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-			namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			job.Namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 		}
 
 		if err := h.job.Delete(job); err != nil {
-			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, namespace, err)
+			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, job.Namespace, err)
 			logrus.Error(errstr)
 			deleteResponseList = append(deleteResponseList, apistructs.JobDeleteResponse{
 				Name:      job.Name,
-				Namespace: namespace,
+				Namespace: job.Namespace,
 				Error:     errstr,
 			})
 		}
@@ -893,6 +879,36 @@ func (h *HTTPEndpoints) LabelList(ctx context.Context, r *http.Request, vars map
 	return mkResponse(apistructs.ScheduleLabelListResponse{
 		Header: apistructs.Header{Success: true},
 		Data:   apistructs.ScheduleLabelListData{Labels: h.labelManager.List()},
+	})
+}
+
+func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+
+	sg := apistructs.ServiceGroup{}
+	err := json.NewDecoder(r.Body).Decode(&sg)
+	if err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("unmarshall to decoder the service err: %v", err),
+				}},
+		})
+	}
+	if err = h.serviceGroupImpl.Scale(&sg); err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("scale service %s error: %v", sg.Services[0].Name, err),
+				}},
+		})
+	}
+	return mkResponse(apistructs.ScheduleLabelSetResponse{
+		Header: apistructs.Header{
+			Success: true,
+		},
 	})
 }
 
