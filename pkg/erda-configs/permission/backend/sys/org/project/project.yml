@@ -134,7 +134,7 @@
 ## 迭代 end
 
 ## issue类型转换 start
-- role: Owner,Lead,PM
+- role: Owner,Lead,PM,PD,Dev,QA
   scope: project
   resource: issue-type
   action: UPDATE
