@@ -33,8 +33,11 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster-dialer/auth"
 	"github.com/erda-project/erda/modules/cluster-dialer/config"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 var (
@@ -58,6 +61,11 @@ type cluster struct {
 
 func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool) {
 	if needClusterInfo {
+		clusterKey := req.Header.Get("Authorization")
+		if clusterKey == "" {
+			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
+			return
+		}
 		info := req.Header.Get("X-Erda-Cluster-Info")
 		if info == "" {
 			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:X-Erda-Cluster-Info"))
@@ -88,7 +96,32 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 400, err)
 			return
 		}
-		// TODO: register cluster info
+
+		bdl := bundle.New(bundle.WithClusterManager())
+		c, err := bdl.GetCluster(clusterKey)
+		if err != nil {
+			logrus.Debugf("failed to get cluster from cluster-manager: %s, err: %v", clusterKey, err)
+			remotedialer.DefaultErrorWriter(rw, req, 500, err)
+			return
+		}
+		if c.ManageConfig != nil && c.ManageConfig.Type != apistructs.ManageProxy {
+			err = fmt.Errorf("cluster %s is not proxy type", clusterKey)
+			logrus.Debug(err)
+			remotedialer.DefaultErrorWriter(rw, req, 500, err)
+			return
+		}
+		if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+			Name: clusterKey,
+			ManageConfig: &apistructs.ManageConfig{
+				Type:    apistructs.ManageProxy,
+				Address: clusterInfo.Address,
+				CaData:  clusterInfo.CACert,
+				Token:   clusterInfo.Token,
+			},
+		}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+			remotedialer.DefaultErrorWriter(rw, req, 500, err)
+			return
+		}
 	}
 	server.ServeHTTP(rw, req)
 }
