@@ -24,7 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor"
+	tasktypes "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -37,7 +40,8 @@ import (
 var Kind = types.Kind(spec.PipelineTaskExecutorKindScheduler)
 
 const (
-	OPTION_ADDR = "ADDR"
+	OPTION_ADDR          = "ADDR"
+	CLUSTER_MANAGER_ADDR = "CLUSTER_MANAGER_ADDR"
 
 	notFoundError = "not found"
 )
@@ -57,18 +61,26 @@ func init() {
 			addr = discover.Scheduler()
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
+
+		clusterInfos := clusterinfo.GetClustersFirst()
+		mgr := executor.GetManager()
+		if err := mgr.Initialize(clusterInfos); err != nil {
+			return nil, err
+		}
 		return &Sched{
-			name:    name,
-			options: options,
-			addr:    addr,
+			name:        name,
+			options:     options,
+			addr:        addr,
+			taskManager: mgr,
 		}, nil
 	})
 }
 
 type Sched struct {
-	name    types.Name
-	options map[string]string
-	addr    string
+	name        types.Name
+	options     map[string]string
+	addr        string
+	taskManager *executor.Manager
 }
 
 func (s *Sched) Kind() types.Kind {
@@ -77,6 +89,25 @@ func (s *Sched) Kind() types.Kind {
 
 func (s *Sched) Name() types.Name {
 	return s.name
+}
+
+func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (tasktypes.TaskExecutor, error) {
+	var executorName string
+	// TODO judge executor type and cluster name
+	switch executorType {
+	case "flink":
+		executorName = "flink"
+	case "spark":
+		executorName = "spark"
+	default:
+		executorName = ""
+	}
+	name := fmt.Sprintf("%sfor%s", clusterName, executorName)
+	taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
+	if err != nil {
+		return nil, err
+	}
+	return taskExecutor, nil
 }
 
 func validateAction(action *spec.PipelineTask) error {
@@ -145,6 +176,12 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, nil
 	}
 
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		return nil, nil
+	}
+
 	job, err := transferToSchedulerJob(action)
 	if err != nil {
 		return nil, errors.Errorf("transfer to scheduler job err: %v", err)
@@ -205,6 +242,12 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 		return nil, nil
 	}
 
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		return taskExecutor.Create(ctx, action)
+	}
+
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
 		Path(fmt.Sprintf("/v1/job/%s/%s/start", action.Extra.Namespace, task_uuid.MakeJobID(action))).
@@ -247,28 +290,34 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 		return apistructs.PipelineStatusDesc{}, err
 	}
 
-	var body bytes.Buffer
-	resp, err := httpclient.New().Get(s.addr, httpclient.RetryErrResp).
-		Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, task_uuid.MakeJobID(action))).
-		Do().Body(&body)
-	if err != nil {
-		return apistructs.PipelineStatusDesc{}, httpInvokeErr(err)
-	}
+	var result apistructs.StatusDesc
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		result, err = taskExecutor.Status(ctx, action)
+		if err != nil {
+			return apistructs.PipelineStatusDesc{}, err
+		}
+	} else {
+		var body bytes.Buffer
+		resp, err := httpclient.New().Get(s.addr, httpclient.RetryErrResp).
+			Path(fmt.Sprintf("/v1/job/%s/%s", action.Extra.Namespace, task_uuid.MakeJobID(action))).
+			Do().Body(&body)
+		if err != nil {
+			return apistructs.PipelineStatusDesc{}, httpInvokeErr(err)
+		}
 
-	statusCode := resp.StatusCode()
-	respBody := body.String()
+		statusCode := resp.StatusCode()
+		respBody := body.String()
 
-	var result struct {
-		Status      string `json:"status"`
-		LastMessage string `json:"last_message"`
-	}
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return apistructs.PipelineStatusDesc{}, respBodyDecodeErr(statusCode, respBody, err)
+		if err := json.NewDecoder(&body).Decode(&result); err != nil {
+			return apistructs.PipelineStatusDesc{}, respBodyDecodeErr(statusCode, respBody, err)
+		}
 	}
 	if result.Status == "" {
-		return apistructs.PipelineStatusDesc{}, errors.Errorf("get empty status from scheduler, respBody: %s", respBody)
+		return apistructs.PipelineStatusDesc{}, errors.Errorf("get empty status from scheduler, statusCode: %s, lastMsg: %s", result.Status, result.LastMessage)
 	}
-	transferredStatus := transferStatus(result.Status)
+	transferredStatus := transferStatus(string(result.Status))
 	logrus.Debugf("pipelineID: %d, taskID: %d, schedulerStatus: %s, transferredStatus: %s, lastMessage: %s",
 		action.PipelineID, action.ID, result.Status, transferredStatus, result.LastMessage)
 	return apistructs.PipelineStatusDesc{
@@ -288,6 +337,11 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, err
 	}
 
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		return taskExecutor.Remove(ctx, action)
+	}
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
 		Path(fmt.Sprintf("/v1/job/%s/%s/stop", action.Extra.Namespace, task_uuid.MakeJobID(action))).
@@ -314,6 +368,12 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 
 	if err = validateAction(action); err != nil {
 		return nil, err
+	}
+
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		return taskExecutor.Remove(ctx, action)
 	}
 
 	var body bytes.Buffer
@@ -350,6 +410,12 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 
 	if err = validateAction(action); err != nil {
 		return nil, err
+	}
+
+	var taskExecutor tasktypes.TaskExecutor
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	if taskExecutor != nil {
+		return taskExecutor.BatchDelete(ctx, actions)
 	}
 
 	var req []apistructs.JobFromUser
