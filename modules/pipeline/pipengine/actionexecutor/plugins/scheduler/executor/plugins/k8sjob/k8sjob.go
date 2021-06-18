@@ -35,6 +35,17 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
+	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -49,6 +60,7 @@ var (
 )
 
 const (
+	executorKind       = "K8SJOB"
 	jobKind            = "Job"
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"

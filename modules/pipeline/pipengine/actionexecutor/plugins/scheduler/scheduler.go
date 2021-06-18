@@ -100,6 +100,25 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (taskty
 	case "spark":
 		executorName = "spark"
 	default:
+		executorName = ""
+	}
+	name := fmt.Sprintf("%sfor%s", clusterName, executorName)
+	taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
+	if err != nil {
+		return nil, err
+	}
+	return taskExecutor, nil
+}
+
+func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (tasktypes.TaskExecutor, error) {
+	var executorName string
+	// TODO judge executor type and cluster name
+	switch executorType {
+	case "flink":
+		executorName = "flink"
+	case "spark":
+		executorName = "spark"
+	default:
 		executorName = "k8sjob"
 	}
 	name := fmt.Sprintf("%sfor%s", clusterName, executorName)

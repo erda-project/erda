@@ -62,6 +62,27 @@ func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
 		return err
 	}
 	go m.listenClusterEventSync(context.Background(), eventChan)
+	m.Lock()
+	defer m.Unlock()
+	for i := range cfgs {
+		switch cfgs[i].Type {
+		case CLUSTERTYPEK8S:
+			k8sjobCreate, ok := m.factory[k8sjob.Kind]
+			if ok {
+				name := types.Name(fmt.Sprintf("%sfor%s", cfgs[i].Name, k8sjob.Kind))
+				k8sjobExecutor, err := k8sjobCreate(name, cfgs[i].Name, nil)
+				if err != nil {
+					logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+					return err
+				}
+				m.executors[name] = k8sjobExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+			}
+		default:
+
+		}
+		// TODO sync load cluster info and change executor map
+	}
 	logrus.Info("pipengine task executor manager Initialize Done .")
 
 	return nil
