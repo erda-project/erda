@@ -122,12 +122,16 @@ func RenderResponse(req *apistructs.ComponentProtocolRequest) *apistructs.Compon
 	}
 
 	err := protocol.GetGlobalStateKV(req.Protocol, protocol.GlobalInnerKeyError.String())
+
 	if err != nil {
-		rsp.Error = apistructs.ErrorResponse{
-			Code: strconv.Itoa(http.StatusInternalServerError),
-			Msg:  err.(string),
+		errStr, ok := err.(string)
+		if ok && len(errStr) > 0 {
+			rsp.Error = apistructs.ErrorResponse{
+				Code: strconv.Itoa(http.StatusInternalServerError),
+				Msg:  err.(string),
+			}
+			rsp.Success = false
 		}
-		rsp.Success = false
 	}
 
 	return &rsp
