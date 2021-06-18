@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -135,6 +136,11 @@ func do() (*httpserver.Server, error) {
 	}
 
 	snippetSvc := snippetsvc.New(dbClient, bdl)
+
+	// init cluster info
+	if err := clusterinfo.Initialize(bdl); err != nil {
+		return nil, err
+	}
 
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
