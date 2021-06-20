@@ -15,5 +15,5 @@ package conf
 
 type Conf struct {
 	Debug  bool   `default:"false"`
-	Listen string `default:":8080"`
+	Listen string `default:":9094"`
 }
