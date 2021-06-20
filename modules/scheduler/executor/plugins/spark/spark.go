@@ -322,3 +322,7 @@ func (*Spark) JobVolumeCreate(ctx context.Context, spec interface{}) (string, er
 func (*Spark) KillPod(podname string) error {
 	return fmt.Errorf("not support for spark")
 }
+
+func (*Spark) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for spark")
+}
