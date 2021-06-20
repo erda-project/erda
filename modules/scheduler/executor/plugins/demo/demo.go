@@ -116,3 +116,7 @@ func (k *Demo) JobVolumeCreate(ctx context.Context, spec interface{}) (string, e
 func (*Demo) KillPod(podname string) error {
 	return fmt.Errorf("not support for demo")
 }
+
+func (*Demo) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for demo")
+}

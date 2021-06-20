@@ -80,6 +80,7 @@ type Executor interface {
 	Update(ctx context.Context, spec interface{}) (interface{}, error)
 	Inspect(ctx context.Context, spec interface{}) (interface{}, error)
 	Cancel(ctx context.Context, spec interface{}) (interface{}, error)
+	Scale(ctx context.Context, spec interface{}) (interface{}, error)
 	Precheck(ctx context.Context, spec interface{}) (apistructs.ServiceGroupPrecheckData, error)
 
 	// only k8s-job executor supported

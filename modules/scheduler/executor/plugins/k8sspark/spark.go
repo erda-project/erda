@@ -334,3 +334,7 @@ func (*k8sSpark) JobVolumeCreate(ctx context.Context, spec interface{}) (string,
 func (*k8sSpark) KillPod(podname string) error {
 	return fmt.Errorf("not support for k8sspark")
 }
+
+func (s *k8sSpark) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for k8s spark")
+}

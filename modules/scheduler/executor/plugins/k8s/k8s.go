@@ -1088,3 +1088,27 @@ func (k *Kubernetes) composeNewKey(keys []string) string {
 	}
 	return newKey.String()
 }
+
+func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	sg, err := ValidateRuntime(spec, "TaskScale")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
+		k.setProjectNamespaceEnvs(sg)
+	}
+
+	// only support scale one service resources
+	if len(sg.Services) != 1 {
+		return nil, fmt.Errorf("the scaling service count is not equal 1")
+	}
+
+	if err = k.scaleDeployment(sg); err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return sg, nil
+}

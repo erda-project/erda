@@ -605,3 +605,7 @@ func (*Metronome) JobVolumeCreate(ctx context.Context, spec interface{}) (string
 func (*Metronome) KillPod(podname string) error {
 	return fmt.Errorf("not support for metronome")
 }
+
+func (*Metronome) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for metronome")
+}

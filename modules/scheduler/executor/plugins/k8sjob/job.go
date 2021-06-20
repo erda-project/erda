@@ -967,3 +967,7 @@ func (k *k8sJob) CreatePVCIfNotExists(pvc *corev1.PersistentVolumeClaim) error {
 
 	return nil
 }
+
+func (k *k8sJob) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for k8s job")
+}

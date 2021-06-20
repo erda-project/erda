@@ -38,6 +38,7 @@ const (
 	TaskPrecheck
 	TaskJobVolumeCreate
 	TaskKillPod
+	TaskScale
 )
 
 var (
@@ -218,6 +219,12 @@ func (t *Task) Run(ctx context.Context) TaskResponse {
 		return TaskResponse{
 			err: err,
 		}
+	case TaskScale:
+		r, err := executor.Scale(ctx, t.Spec)
+		return TaskResponse{
+			err:   err,
+			Extra: r,
+		}
 	default:
 		return TaskResponse{
 			err: errors.Errorf("invlaid action: %d", t.Action),
@@ -278,6 +285,8 @@ func (a *Action) String() string {
 		return "TaskJobVolumeCreate"
 	case TaskKillPod:
 		return "TaskKillPod"
+	case TaskScale:
+		return "TaskScale"
 	}
 	panic("unreachable")
 }

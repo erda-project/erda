@@ -227,6 +227,7 @@ func (s *Server) initEndpoints() {
 		{"/api/servicegroup/actions/precheck", http.MethodPost, s.httpendpoints.ServiceGroupPrecheck},
 		{"/api/servicegroup/actions/config", http.MethodPut, s.httpendpoints.ServiceGroupConfigUpdate},
 		{"/api/servicegroup/actions/killpod", http.MethodPost, s.httpendpoints.ServiceGroupKillPod},
+		{"/api/servicegroup/actions/scale", http.MethodPut, s.httpendpoints.ServiceScaling},
 
 		// creating cluster by hooking colony-soldier's event
 		{"/clusterhook", http.MethodPost, s.httpendpoints.ClusterHook},

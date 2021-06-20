@@ -1213,6 +1213,36 @@ func (h *HTTPEndpoints) CapacityInfo(ctx context.Context, r *http.Request, vars 
 	})
 }
 
+func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+
+	sg := apistructs.ServiceGroup{}
+	err := json.NewDecoder(r.Body).Decode(&sg)
+	if err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("unmarshall to decoder the service err: %v", err),
+				}},
+		})
+	}
+	if _, err = h.serviceGroupImpl.Scale(&sg); err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("scale service %s error: %v", sg.Services[0].Name, err),
+				}},
+		})
+	}
+	return mkResponse(apistructs.ScheduleLabelSetResponse{
+		Header: apistructs.Header{
+			Success: true,
+		},
+	})
+}
+
 func mkResponse(content interface{}) (httpserver.Responser, error) {
 	return httpserver.HTTPResponse{
 		Status:  http.StatusOK,

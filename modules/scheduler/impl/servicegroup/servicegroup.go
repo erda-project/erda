@@ -55,6 +55,7 @@ type ServiceGroup interface {
 	Precheck(sg apistructs.ServiceGroupPrecheckRequest) (apistructs.ServiceGroupPrecheckData, error)
 	ConfigUpdate(sg apistructs.ServiceGroup) error
 	KillPod(ctx context.Context, namespace string, name string, podname string) error
+	Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error)
 }
 
 type ServiceGroupImpl struct {
