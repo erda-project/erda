@@ -16,13 +16,14 @@ package alert
 import (
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/monitor/utils"
-	"github.com/mitchellh/mapstructure"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
