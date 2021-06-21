@@ -868,7 +868,7 @@ func (p *provider) createAlertRecordIssue(r *http.Request, params struct {
 	err = mapstructure.Decode(params.Body, createIssue)
 	_, err = p.microAlertAPI.CreateAlertRecordIssue(params.GroupId, createIssue)
 	if err != nil {
-		return api.Errors.Internal("alert record issue crate fail")
+		return api.Errors.Internal("alert record issue create fail")
 	}
 	return api.Success(nil)
 }
