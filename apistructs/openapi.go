@@ -13,9 +13,6 @@
 
 package apistructs
 
-// DefaultDomain 默认域名
-const DefaultDomain string = ".default.svc.cluster.local"
-
 type OpenapiOAuth2Token struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int64  `json:"expires_in"`

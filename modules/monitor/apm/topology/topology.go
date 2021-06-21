@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/conv"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -86,6 +87,7 @@ const (
 	topologyNodeDb        = "topology_node_db"
 	topologyNodeCache     = "topology_node_cache"
 	topologyNodeMq        = "topology_node_mq"
+	topologyNodeOther     = "topology_node_other"
 	processAnalysisNodejs = "process_analysis_nodejs"
 	processAnalysisJava   = "process_analysis_java"
 )
@@ -664,7 +666,7 @@ const (
 )
 
 func (topology *provider) GetExceptionTypes(language i18n.LanguageCodes, params ServiceParams) ([]string, interface{}) {
-	descriptions, err := topology.GetExceptionDescription(language, params)
+	descriptions, err := topology.GetExceptionDescription(language, params, 50, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -770,8 +772,8 @@ func handleSpeed(rows [][]interface{}) []ReadWriteBytesSpeed {
 	var itemResult []ReadWriteBytes
 	for _, row := range rows {
 		timeMs := row[1].(time.Time).UnixNano() / 1e6
-		rxBytes := row[2].(float64)
-		txBytes := row[3].(float64)
+		rxBytes := conv.ToFloat64(row[2], 0)
+		txBytes := conv.ToFloat64(row[3], 0)
 		writeBytes := ReadWriteBytes{
 			Timestamp:  timeMs,
 			ReadBytes:  rxBytes,
@@ -811,17 +813,8 @@ func calculateSpeed(curr, next float64, currTime, nextTime int64) float64 {
 }
 
 func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
-	// default limit 10
-	if limit == 0 || limit > 50 {
-		limit = 10
-	}
-	// default order by time
-	if sort != ExceptionTimeSortStrategy && sort != ExceptionCountSortStrategy {
-		sort = ExceptionTimeSortStrategy
-	}
-
 	result := []ExceptionDescription{}
-	descriptions, err := topology.GetExceptionDescription(language, params)
+	descriptions, err := topology.GetExceptionDescription(language, params, limit, sort, exceptionType)
 	if exceptionType != "" {
 		for _, description := range descriptions {
 			if description.ExceptionType == exceptionType {
@@ -832,50 +825,68 @@ func (topology *provider) GetExceptionMessage(language i18n.LanguageCodes, param
 		result = descriptions
 	}
 
-	// execute sort
-	result = ExceptionOrderByStrategyExecute(sort, result)
-
-	// execute limit
-	if len(result) > int(limit) {
-		result = result[0:limit]
-	}
-
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams) ([]ExceptionDescription, error) {
-	sql := "SELECT * FROM error_description_v2 WHERE terminus_key = ? AND service_name = ? ALLOW FILTERING;"
-
-	sliceMap, _ := topology.cassandraSession.Query(sql,
-		params.ScopeId, params.ServiceName).Iter().SliceMap()
-
-	countSql := "SELECT count(0) FROM error_count WHERE error_id = ? ALLOW FILTERING;"
-	var descriptions []ExceptionDescription
-	for _, row := range sliceMap {
-		timeMS := row["timestamp"].(int64) / 1e6
-		if timeMS < params.StartTime || timeMS > params.EndTime {
-			continue
-		}
-
-		tags := row["tags"].(map[string]string)
-		instanceId := tags["instance_id"]
-		var exceptionDescription ExceptionDescription
-		exceptionDescription.InstanceId = instanceId
-		exceptionDescription.Method = tags["method"]
-		exceptionDescription.Class = tags["class"]
-		exceptionDescription.Message = tags["message"]
-		exceptionDescription.ExceptionType = tags["type"]
-		exceptionDescription.Time = time.Unix(0, row["timestamp"].(int64)).Format(TimeLayout)
-		count, _ := topology.cassandraSession.Query(countSql,
-			row["error_id"]).Iter().SliceMap()
-		exceptionDescription.Count = count[0]["count"].(int64)
-		descriptions = append(descriptions, exceptionDescription)
+func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, params ServiceParams, limit int64, sort, exceptionType string) ([]ExceptionDescription, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 10
 	}
 
-	return descriptions, nil
+	if sort != ExceptionTimeSortStrategy && sort != ExceptionCountSortStrategy {
+		sort = ExceptionTimeSortStrategy
+	}
+
+	if sort == ExceptionTimeSortStrategy {
+		sort = "max(timestamp) DESC"
+	}
+
+	if sort == ExceptionCountSortStrategy {
+		sort = "sum(count::field) DESC"
+	}
+
+	var filter bytes.Buffer
+	if exceptionType != "" {
+		filter.WriteString(" AND type::tag=$type")
+	}
+	sql := fmt.Sprintf("SELECT instance_id::tag,method::tag,class::tag,exception_message::tag,type::tag,max(timestamp),sum(count::field) FROM error_alert WHERE service_id::tag=$service_id AND terminus_key::tag=$terminus_key %s GROUP BY error_id::tag ORDER BY %s LIMIT %v", filter.String(), sort, limit)
+
+	paramMap := map[string]interface{}{
+		"service_id":   params.ServiceId,
+		"type":         exceptionType,
+		"terminus_key": params.ScopeId,
+	}
+
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.StartTime, 10))
+	options.Set("end", strconv.FormatInt(params.EndTime, 10))
+	source, err := topology.metricq.Query(
+		metricq.InfluxQL,
+		sql,
+		paramMap,
+		options)
+	if err != nil {
+		return nil, err
+	}
+
+	var exceptionDescriptions []ExceptionDescription
+
+	for _, detail := range source.ResultSet.Rows {
+		var exceptionDescription ExceptionDescription
+		exceptionDescription.InstanceId = conv.ToString(detail[0])
+		exceptionDescription.Method = conv.ToString(detail[1])
+		exceptionDescription.Class = conv.ToString(detail[2])
+		exceptionDescription.Message = conv.ToString(detail[3])
+		exceptionDescription.ExceptionType = conv.ToString(detail[4])
+		exceptionDescription.Time = time.Unix(0, int64(conv.ToFloat64(detail[5], 0))).Format(TimeLayout)
+		exceptionDescription.Count = int64(conv.ToFloat64(detail[6], 0))
+		exceptionDescriptions = append(exceptionDescriptions, exceptionDescription)
+	}
+
+	return exceptionDescriptions, nil
 }
 
 func (topology *provider) GetDashBoardByServiceType(params ProcessParams) (string, error) {
@@ -928,12 +939,12 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	instanceIds := []InstanceInfo{}
 	for _, row := range rows {
 
-		status, err := strconv.ParseBool(row[1].(string))
+		status, err := strconv.ParseBool(conv.ToString(row[1]))
 		if err != nil {
 			status = false
 		}
 		instance := InstanceInfo{
-			Id:     row[0].(string),
+			Id:     conv.ToString(row[0]),
 			Status: status,
 		}
 		instanceIds = append(instanceIds, instance)
@@ -960,10 +971,10 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	var result []*ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceInstanceId: row[0].(string),
-			PlatformVersion:   row[1].(string),
-			StartTime:         row[2].(string),
-			LastHeartbeatTime: row[3].(string),
+			ServiceInstanceId: conv.ToString(row[0]),
+			PlatformVersion:   conv.ToString(row[1]),
+			StartTime:         conv.ToString(row[2]),
+			LastHeartbeatTime: conv.ToString(row[3]),
 		}
 		result = append(result, &instance)
 	}
@@ -978,8 +989,8 @@ func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, param
 	rows = response.ResultSet.Rows
 	for _, instance := range result {
 		for i, row := range rows {
-			if row[0].(string) == instance.ServiceInstanceId {
-				state, err := strconv.ParseBool(row[1].(string))
+			if conv.ToString(row[0]) == instance.ServiceInstanceId {
+				state, err := strconv.ParseBool(conv.ToString(row[1]))
 				if err != nil {
 					return nil, err
 				}
@@ -1038,9 +1049,9 @@ func (topology *provider) GetServiceOverview(language i18n.LanguageCodes, params
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceName:         row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
+			ServiceName:         conv.ToString(row[0]),
+			ServiceInstanceName: conv.ToString(row[1]),
+			InstanceState:       conv.ToString(row[2]),
 		}
 		result = append(result, instance)
 	}
@@ -1118,7 +1129,7 @@ func (topology *provider) GetOverview(language i18n.LanguageCodes, params Global
 	rows := response.ResultSet.Rows
 	serviceCount := float64(0)
 	for _, row := range rows {
-		count := row[0].(float64)
+		count := conv.ToFloat64(row[0], 0)
 		serviceCount += count
 	}
 	overviewMap["service_count"] = serviceCount
@@ -1197,7 +1208,7 @@ func (topology *provider) globalReqCount(metricScopeName string, params GlobalPa
 	if err != nil {
 		return 0, err
 	}
-	rows := response.ResultSet.Rows[0][0].(float64)
+	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1233,14 +1244,14 @@ func (topology *provider) serviceReqInfo(metricScopeName, metricScopeNameDesc st
 	}
 
 	row := response.ResultSet.Rows
-	requestTransaction.RequestCount = row[0][0].(float64)
+	requestTransaction.RequestCount = conv.ToFloat64(row[0][0], 0)
 	if row[0][1] != nil {
-		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(row[0][1].(float64) / 1e6)
+		requestTransaction.RequestAvgTime = toTwoDecimalPlaces(conv.ToFloat64(row[0][1], 0) / 1e6)
 	} else {
 		requestTransaction.RequestAvgTime = 0
 	}
 	if row[0][2] != nil {
-		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(row[0][2].(float64) * 100)
+		requestTransaction.RequestErrorRate = toTwoDecimalPlaces(conv.ToFloat64(row[0][2], 0) * 100)
 	} else {
 		requestTransaction.RequestErrorRate = 0
 	}
@@ -1268,7 +1279,7 @@ func (topology *provider) serviceReqErrorCount(metricScopeName string, params Se
 	if err != nil {
 		return 0, err
 	}
-	rows := response.ResultSet.Rows[0][0].(float64)
+	rows := conv.ToFloat64(response.ResultSet.Rows[0][0], 0)
 	return rows, nil
 }
 
@@ -1298,7 +1309,7 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 	rows := response.ResultSet.Rows
 	var itemResult []string
 	for _, name := range rows {
-		itemResult = append(itemResult, name[0].(string))
+		itemResult = append(itemResult, conv.ToString(name[0]))
 	}
 	return itemResult, nil
 }
@@ -1383,9 +1394,9 @@ func (topology *provider) GetInstances(language i18n.LanguageCodes, params Vo) (
 	var result []ServiceInstance
 	for _, row := range rows {
 		instance := ServiceInstance{
-			ServiceId:           row[0].(string),
-			ServiceInstanceName: row[1].(string),
-			InstanceState:       row[2].(string),
+			ServiceId:           conv.ToString(row[0]),
+			ServiceInstanceName: conv.ToString(row[1]),
+			InstanceState:       conv.ToString(row[2]),
 		}
 		result = append(result, instance)
 	}
@@ -1665,6 +1676,8 @@ func getDashboardId(nodeType string) string {
 		return processAnalysisJava
 	case strings.ToLower(NodeJsProcessType):
 		return processAnalysisNodejs
+	case strings.ToLower(TypeHttp):
+		return topologyNodeOther
 	default:
 		return ""
 	}
@@ -1785,9 +1798,7 @@ func findNodeBuckets(bucketKeyItems []*elastic.AggregationBucketKeyItem, field *
 		} else {
 			bucketsAgg := buckets.Aggregations
 			terms, _ := bucketsAgg.Terms(field.Name)
-			for _, bucket := range terms.Buckets {
-				*nodeBuckets = append(*nodeBuckets, bucket)
-			}
+			*nodeBuckets = append(*nodeBuckets, terms.Buckets...)
 		}
 	}
 }
@@ -1866,7 +1877,7 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 			metricq.InfluxQL,
 			sql,
 			map[string]interface{}{
-				"field":             r[0].(string),
+				"field":             conv.ToString(r[0]),
 				"terminusKey":       params.TerminusKey,
 				"filterServiceName": params.FilterServiceName,
 				"serviceId":         params.ServiceId,
@@ -1944,7 +1955,7 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 			metricq.InfluxQL,
 			sql,
 			map[string]interface{}{
-				"field":             r[0].(string),
+				"field":             conv.ToString(r[0]),
 				"terminusKey":       params.TerminusKey,
 				"filterServiceName": params.FilterServiceName,
 				"serviceId":         params.ServiceId,

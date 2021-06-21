@@ -227,9 +227,9 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 		Logo:        createReq.Logo,
 		Locale:      createReq.Locale,
 		UserID:      userID,
-		Type:        "ENTERPRISE",
+		Type:        createReq.Type.String(),
 		Status:      "ACTIVE",
-		IsPublic:    false,
+		IsPublic:    createReq.IsPublic,
 	}
 	if err := o.db.CreateOrg(org); err != nil {
 		logrus.Warnf("failed to insert info to db, (%v)", err)

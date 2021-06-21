@@ -52,6 +52,7 @@ type Issue struct {
 	TaskType         string             `json:"taskType"` // 任务类型
 	BugStage         string             `json:"bugStage"` // BUG阶段
 	Owner            string             `json:"owner"`    // 责任人
+	Subscribers      []string           `json:"subscribers"`
 
 	// 切换到已完成状态的时间 （等事件可以记录历史信息了 删除该字段）
 	FinishTime *time.Time `json:"finishTime"`
@@ -686,6 +687,8 @@ type IssueListRequest struct {
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
 	External bool `json:"-"`
+
+	OnlyIDResult bool `json:"onlyIdResult"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {

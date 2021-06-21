@@ -1,0 +1,22 @@
+@url = http://localhost:8080/api
+
+### GetGroups
+GET {{url}}/tmc/config/tenants/c18d8cb4e2e9dd25d6b15dd3f01b2ea2/groups
+Accept: application/json
+User-ID: 1100
+
+### GetGroupProperties
+GET {{url}}/tmc/config/tenants/testTenantID/groups/testGroupID
+Accept: application/json
+User-ID: 1100
+
+### SaveGroupProperties
+POST {{url}}/tmc/config/tenants/tenantId/groups/groupId
+Content-Type: application/json
+Accept: application/json
+User-ID: 1100
+
+[
+    {"key": "testkey", "value": "testvalue", "source": "dice"},
+    {"key": "testkey", "value": "testvalue", "source": "deploy"}
+]

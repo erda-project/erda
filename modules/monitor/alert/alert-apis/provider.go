@@ -51,7 +51,7 @@ func (d *define) Creator() servicehub.Creator {
 type config struct {
 	OrgFilterTags               string `file:"org_filter_tags"`
 	MicroServiceFilterTags      string `file:"micro_service_filter_tags"`
-	MicroServiceOtherFilterTags string `file:micro_service_other_filter_tags`
+	MicroServiceOtherFilterTags string `file:"micro_service_other_filter_tags"`
 	SilencePolicy               string `file:"silence_policy"`
 	Cassandra                   struct {
 		cassandra.SessionConfig `file:"session"`

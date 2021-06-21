@@ -94,3 +94,21 @@ func (pq *PriorityQueue) Range(f func(Item) (stopRange bool)) {
 		}
 	}
 }
+
+// LeftHasHigherOrder judge order of two items.
+// return true if left has higher order.
+func (pq *PriorityQueue) LeftHasHigherOrder(left, right string) bool {
+	leftItem, leftExist := pq.data.itemByKey[left]
+	rightItem, rightExist := pq.data.itemByKey[right]
+	if !leftExist && !rightExist {
+		return false
+	}
+	if !leftExist {
+		return false
+	}
+	if !rightExist {
+		return true
+	}
+	// both exist, judge by index
+	return leftItem.Index() < rightItem.Index()
+}

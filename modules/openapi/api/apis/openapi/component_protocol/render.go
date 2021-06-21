@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -119,6 +120,20 @@ func RenderResponse(req *apistructs.ComponentProtocolRequest) *apistructs.Compon
 		}
 		rsp.UserInfo = userInfo
 	}
+
+	err := protocol.GetGlobalStateKV(req.Protocol, protocol.GlobalInnerKeyError.String())
+
+	if err != nil {
+		errStr, ok := err.(string)
+		if ok && len(errStr) > 0 {
+			rsp.Error = apistructs.ErrorResponse{
+				Code: strconv.Itoa(http.StatusInternalServerError),
+				Msg:  err.(string),
+			}
+			rsp.Success = false
+		}
+	}
+
 	return &rsp
 }
 
