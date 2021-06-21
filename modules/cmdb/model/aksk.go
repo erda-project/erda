@@ -19,18 +19,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// store secret key pair
 type AkSk struct {
-	ID          int64          `json:"id" gorm:"primary_key"`
-	Ak          string         `json:"ak" gorm:"size:24;unique"`
-	Sk          string         `json:"sk" gorm:"size:32;unique"`
-	Internal    bool           `json:"internal"`
-	Scope       string         `json:"scope"`
-	Owner       string         `json:"owner"`
-	Description string         `json:"description"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	DeletedAt   gorm.DeletedAt `json:"deletedAt,omitempty"`
+	ID          int64          `json:"id" gorm:"primary_key;comment:'Primary Key'"`
+	Ak          string         `json:"ak" gorm:"size:24;unique;comment:'Access Key ID'"`
+	Sk          string         `json:"sk" gorm:"size:32;unique;comment:'Secret Key'"`
+	Internal    bool           `json:"internal" gorm:"comment:'identify weather used for internal component communication'"`
+	Scope       string         `json:"scope" gorm:"comment:'affect scope. eg: organization, micro_service'"`
+	Owner       string         `json:"owner" gorm:"comment:'owner identifier. eg: <orgID>'"`
+	Description string         `json:"description" gorm:"comment:'description'"`
+	CreatedAt   time.Time      `json:"createdAt" gorm:"comment:'created time'"`
+	DeletedAt   gorm.DeletedAt `json:"deletedAt,omitempty" gorm:"index;comment:'deleted time, marked for deletion'"`
 }
 
 func (ak AkSk) TableName() string {
-	return "dice_aksks"
+	return "dice_aksk"
 }
