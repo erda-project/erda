@@ -734,7 +734,9 @@ func (p *provider) getAlertRecords(r *http.Request, params struct {
 	userIds := make([]string, 0)
 	if data != nil {
 		for index, value := range data {
-			userIds = append(userIds, value.HandlerID)
+			if value.HandlerID != "" {
+				userIds = append(userIds, value.HandlerID)
+			}
 			if projectId != 0 {
 				data[index].ProjectID = uint64(projectId)
 			}
@@ -797,18 +799,18 @@ func (p *provider) getAlertRecord(r *http.Request, params struct {
 func (p *provider) getAlertHistories(r *http.Request, params struct {
 	GroupId string `param:"groupId" validate:"required"`
 	ScopeID string `query:"tenantGroup" validate:"required"`
-	Start   int    `query:"start"`
-	End     int    `query:"end"`
+	Start   int64  `query:"start"`
+	End     int64  `query:"end"`
 	Limit   uint   `query:"limit"`
 }) interface{} {
 	if params.End < params.Start {
 		return api.Success(nil)
 	}
 	if params.End == 0 {
-		params.End = int(utils.ConvertTimeToMS(time.Now()))
+		params.End = utils.ConvertTimeToMS(time.Now())
 	}
 	if params.Start == 0 {
-		params.Start = params.End - int(time.Hour.Milliseconds())
+		params.Start = params.End - time.Hour.Milliseconds()
 	}
 	if params.Limit == 0 {
 		params.Limit = 50

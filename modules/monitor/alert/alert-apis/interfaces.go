@@ -57,7 +57,7 @@ type (
 			handleState, handlerId []string, pageNo, pageSize int64) ([]*adapt.AlertRecord, error)
 		CountAlertRecord(scope, scopeId string, alertGroups, alertStates, alertTypes, handleStates, handlerIDs []string) (int, error)
 		GetAlertRecord(lang i18n.LanguageCodes, groupId string) (*adapt.AlertRecord, error)
-		QueryAlertHistory(lang i18n.LanguageCodes, groupId string, start, end int, limit uint) ([]*adapt.AlertHistory, error)
+		QueryAlertHistory(lang i18n.LanguageCodes, groupId string, start, end int64, limit uint) ([]*adapt.AlertHistory, error)
 		CreateAlertRecordIssue(groupId string, issueCreate *apistructs.IssueCreateRequest) (uint64, error)
 		UpdateAlertRecordIssue(groupId string, issueId uint64, request *apistructs.IssueUpdateRequest) error
 		DashboardPreview(alert *adapt.CustomizeAlertDetail) (res *block.View, err error)
