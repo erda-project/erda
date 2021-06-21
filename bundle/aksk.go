@@ -19,7 +19,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-// PushLog 推日志
 func (b *Bundle) GetAkSkByAk(ak string) (model.AkSk, error) {
 	host, err := b.urls.CMDB()
 	if err != nil {

@@ -47,13 +47,13 @@ func (c *collector) intRoutes(routes httpserver.Router) error {
 
 	// logs and metrics
 	auth := c.basicAuth()
-	if c.Cfg.SignAuth.Enable {
-		auth = c.authSignedRequest()
-	}
-	routes.POST("/collect/logs/:source", c.collectLogs, auth)
 	routes.POST("/collect/:metric", c.collectMetric, auth)
-
 	routes.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
+	routes.POST("/collect/logs/:source", c.collectLogs, auth)
+
+	// standard API version one
+	signAuth := c.authSignedRequest()
+	routes.POST("/api/v1/collect/logs/:source", c.collectLogV1, signAuth)
 	return nil
 }
 
@@ -87,6 +87,10 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 		return err
 	}
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (c *collector) collectLogV1() error {
+	return nil
 }
 
 func (c *collector) collectAnalytics(ctx echo.Context) error {

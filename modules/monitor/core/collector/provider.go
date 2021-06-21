@@ -35,7 +35,6 @@ type config struct {
 		Force    bool   `file:"force"`
 	}
 	SignAuth struct {
-		Enable     bool              `file:"enable"`
 		SKProvider string            `file:"sk_provider"`
 		Config     map[string]string `file:"config"`
 	} `file:"sign_auth"`
