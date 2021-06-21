@@ -181,7 +181,7 @@ func (b *Bundle) GetOrgByDomain(domain, orgName, userID string) (*apistructs.Org
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID). // TODO: for compatibility
 		Param("domain", domain).
-		Param("domain", orgName).
+		Param("orgName", orgName).
 		Do().
 		JSON(&resp)
 	if err != nil {

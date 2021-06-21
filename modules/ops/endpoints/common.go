@@ -67,44 +67,6 @@ func (e *Endpoints) OrgPermCheck(userID, orgID, action string) error {
 	return nil
 }
 
-// Edge Permission check
-func (e *Endpoints) EdgePermissionCheck(userID, orgID, projectID, action string) error {
-	if orgID == "" {
-		return e.IsManager(userID, apistructs.SysScope, "")
-	}
-	// org permission check
-	err := e.EdgeOrgPermCheck(userID, orgID, action)
-	if err != nil && strings.Contains(err.Error(), "access denied") && projectID != "" {
-		// project permission check
-		return e.IsManager(userID, apistructs.ProjectScope, projectID)
-	}
-	return err
-}
-
-func (e *Endpoints) EdgeOrgPermCheck(userID, orgID, action string) error {
-	orgid, _ := strconv.Atoi(orgID)
-	p := apistructs.PermissionCheckRequest{
-		UserID:   userID,
-		Scope:    apistructs.OrgScope,
-		ScopeID:  uint64(orgid),
-		Resource: "edgeresource",
-		Action:   action,
-	}
-	logrus.Infof("perm check request:%+v", p)
-	rspData, err := e.bdl.CheckPermission(&p)
-	if err != nil {
-		err = fmt.Errorf("check permission error: %v", err)
-		logrus.Errorf("permission check failed, request:%+v, error:%v", p, err)
-		return err
-	}
-	if !rspData.Access {
-		err = fmt.Errorf("access denied")
-		logrus.Errorf("access denied, request:%v, error:%+v", p, err)
-		return err
-	}
-	return nil
-}
-
 func (e *Endpoints) IsManager(userID string, scopeType apistructs.ScopeType, scopeID string) error {
 	req := apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
