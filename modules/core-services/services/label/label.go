@@ -146,7 +146,7 @@ func (l *Label) GetByID(id int64) (apistructs.ProjectLabel, error) {
 
 // ListByNamesAndProjectID list label by names and projectID
 func (l *Label) ListByNamesAndProjectID(req apistructs.ListByNamesAndProjectIDRequest) ([]apistructs.ProjectLabel, error) {
-	labels, err := l.db.ListLabelByNames(req.ProjectID, req.Names)
+	labels, err := l.db.ListLabelByNames(req.ProjectID, req.Name)
 	if err != nil {
 		return nil, err
 	}

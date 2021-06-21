@@ -70,7 +70,7 @@ func New(options ...Option) *FileService {
 			},
 		})
 		if err != nil {
-			logrus.Errorf("cmdb files kms cmk describe failed, keyID: %s", kmsKey)
+			logrus.Errorf("dop files kms cmk describe failed, keyID: %s", kmsKey)
 			ApplyKmsCmk(svc)
 			return
 		}

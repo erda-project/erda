@@ -453,7 +453,13 @@ var (
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
 
-	ErrApprovalStatusChanged = err("ErrApprovalStatusChanged", "审批流状态变更通知失败")
+	ErrApprovalStatusChanged     = err("ErrApprovalStatusChanged", "审批流状态变更通知失败")
+	ErrListFileTreeNodes         = err("ErrListFileTreeNodes", "查询目录树节点列表失败")
+	ErrGetFileTreeNode           = err("ErrGetFileTreeNode", "查询目录树节点详情失败")
+	ErrFuzzySearchFileTreeNodes  = err("ErrFuzzySearchFileTreeNodes", "模糊搜索目录树节点失败")
+	ErrCreateFileTreeNode        = err("ErrCreateFileTreeNode", "创建目录树节点失败")
+	ErrDeleteFileTreeNode        = err("ErrDeleteFileTreeNode", "删除目录树节点失败")
+	ErrFindFileTreeNodeAncestors = err("ErrFindFileTreeNodeAncestors", "目录树节点寻祖失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

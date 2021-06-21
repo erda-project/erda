@@ -253,14 +253,13 @@ func (e *Endpoints) ListTicket(ctx context.Context, r *http.Request, vars map[st
 			permissionReq.ScopeID = orgID
 			permissionReq.Action = apistructs.OperateAction
 		}
-		// TODO 鉴权走core-service
-		//access, err := e.permission.CheckPermission(&permissionReq)
-		//if err != nil {
-		//	return apierrors.ErrListTicket.InternalError(err).ToResp(), nil
-		//}
-		//if !access {
-		//	return apierrors.ErrListTicket.AccessDenied().ToResp(), nil
-		//}
+		access, err := e.bdl.CheckPermission(&permissionReq)
+		if err != nil {
+			return apierrors.ErrListTicket.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrListTicket.AccessDenied().ToResp(), nil
+		}
 	}
 
 	total, tickets, err := e.ticket.List(params)

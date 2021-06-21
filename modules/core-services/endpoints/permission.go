@@ -69,10 +69,6 @@ func (e *Endpoints) StateCheckPermission(ctx context.Context, r *http.Request, v
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCheckPermission.InvalidParameter(err).ToResp(), nil
 	}
-	// body字段合法性校验
-	if err := e.checkPermissionParam(&req); err != nil {
-		return apierrors.ErrCheckPermission.InvalidParameter(err).ToResp(), nil
-	}
 
 	access, roles, err := e.permission.StateCheckPermission(&req)
 	if err != nil {

@@ -704,7 +704,7 @@ func (e *Endpoints) GetProjectListByStates(ctx context.Context, r *http.Request,
 	if err != nil {
 		return apierrors.ErrListProjectByStates.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp(apistructs.GetProjectIDListByStatesResponse{
+	return httpserver.OkResp(apistructs.GetProjectIDListByStatesData{
 		Total: total,
 		List:  list,
 	})

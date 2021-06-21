@@ -30,6 +30,7 @@ type Sender = string
 // Event sender collections
 const (
 	SenderCMDB         Sender = "cmdb"
+	SenderDOP          Sender = "dop"
 	SenderDiceHub      Sender = "dicehub"
 	SenderScheduler    Sender = "scheduler"
 	SenderOrchestrator Sender = "orchestrator"

@@ -101,7 +101,7 @@ func (o *Org) CreateWithEvent(userID string, createReq apistructs.OrgCreateReque
 			ApplicationID: "-1",
 			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 		},
-		Sender:  bundle.SenderCMDB,
+		Sender:  bundle.SenderCoreServices,
 		Content: *org,
 	}
 	// 发送企业创建事件
@@ -214,7 +214,7 @@ func (o *Org) UpdateWithEvent(orgID int64, updateReq apistructs.OrgUpdateRequest
 			ApplicationID: "-1",
 			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 		},
-		Sender:  bundle.SenderCMDB,
+		Sender:  bundle.SenderCoreServices,
 		Content: *org,
 	}
 	// 发送企业更新事件

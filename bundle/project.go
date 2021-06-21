@@ -317,7 +317,7 @@ func (b *Bundle) GetMyProjectIDs(orgID uint64, userID string) ([]uint64, error) 
 }
 
 // GetProjectListByStates list projects by states
-func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesRequest) (*apistructs.GetProjectIDListByStatesResponse, error) {
+func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesRequest) (*apistructs.GetProjectIDListByStatesData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -330,11 +330,11 @@ func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesR
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !resp.IsOK() {
+	if !resp.IsOK() || !fetchResp.Success {
 		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
 	}
 
-	return &fetchResp, nil
+	return &fetchResp.Data, nil
 }
 
 // GetAllProjects get all projects
@@ -390,7 +390,7 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 	hc := b.hc
 
 	var fetchResp apistructs.ProjectDeleteResponse
-	resp, err := hc.Post(host).Path(fmt.Sprintf("/api/projects/%d", id)).
+	resp, err := hc.Delete(host).Path(fmt.Sprintf("/api/projects/%d", id)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).

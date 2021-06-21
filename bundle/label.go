@@ -52,7 +52,7 @@ func (b *Bundle) ListLabelByNameAndProjectID(projectID uint64, names []string) (
 	hc := b.hc
 
 	var rsp apistructs.ProjectLabelsResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/labels/list-by-projectID-and-names")).
+	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/labels/actions/list-by-projectID-and-names")).
 		Header(httputil.InternalHeader, "bundle").
 		Param("projectID", strconv.FormatUint(projectID, 10)).
 		Params(map[string][]string{"name": names}).
@@ -78,7 +78,12 @@ func (b *Bundle) ListLabel(req apistructs.ProjectLabelListRequest) (*apistructs.
 	var rsp apistructs.ProjectLabelListResponse
 	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/labels")).
 		Header(httputil.InternalHeader, "bundle").
-		JSONBody(&req).Do().JSON(&rsp)
+		Param("projectID", strconv.FormatUint(req.ProjectID, 10)).
+		Param("type", string(req.Type)).
+		Param("key", req.Key).
+		Param("pageNo", strconv.FormatUint(req.PageNo, 10)).
+		Param("pageSize", strconv.FormatUint(req.PageSize, 10)).
+		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -97,11 +102,15 @@ func (b *Bundle) ListLabelByIDs(ids []uint64) ([]apistructs.ProjectLabel, error)
 	}
 	hc := b.hc
 
-	req := apistructs.ListLabelByIDsRequest{IDs: ids}
+	idStrList := make([]string, 0, len(ids))
+	for _, v := range ids {
+		idStrList = append(idStrList, strconv.FormatUint(v, 10))
+	}
 	var rsp apistructs.ProjectLabelsResponse
-	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/labels")).
+	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/labels/actions/list-by-ids")).
 		Header(httputil.InternalHeader, "bundle").
-		JSONBody(&req).Do().JSON(&rsp)
+		Params(map[string][]string{"ids": idStrList}).
+		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}

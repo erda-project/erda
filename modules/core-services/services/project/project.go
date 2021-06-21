@@ -102,7 +102,7 @@ func (p *Project) CreateWithEvent(userID string, createReq *apistructs.ProjectCr
 			ApplicationID: "-1",
 			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 		},
-		Sender:  bundle.SenderCMDB,
+		Sender:  bundle.SenderCoreServices,
 		Content: *project,
 	}
 	// 发送项目创建事件

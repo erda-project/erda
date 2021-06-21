@@ -43,7 +43,7 @@ const (
 	EnvUC            = "UC_ADDR"
 	EnvClusterDialer = "CLUSTER_DIALER_ADDR"
 	EnvDOP           = "DOP_ADDR"
-	EnvCoreServices  = "CORESERVICES_ADDR"
+	EnvCoreServices  = "CORE_SERVICES_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称

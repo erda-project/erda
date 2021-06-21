@@ -58,6 +58,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/org"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
@@ -165,6 +166,8 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
 		)),
+		bundle.WithKMS(),
+		bundle.WithCoreServices(),
 	)
 
 	// init pipeline
@@ -183,6 +186,11 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
 	fileTree := filetree.New(filetree.WithBundle(bdl.Bdl))
+
+	// 查询
+	pFileTree := projectpipelinefiletree.New(
+		projectpipelinefiletree.WithBundle(bdl.Bdl),
+	)
 
 	// init service
 	assetSvc := assetsvc.New()
@@ -363,6 +371,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithPermission(perm),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithGittarFileTree(fileTree),
+		endpoints.WithProjectPipelineFileTree(pFileTree),
 
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAssetSvc(assetSvc),

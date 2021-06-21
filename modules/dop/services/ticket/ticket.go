@@ -506,7 +506,7 @@ func (t *Ticket) GetClusterTicketsNum(ticketType, targetType, targetID string) (
 // more info about dingding, please refer: https://open-doc.dingtalk.com/microapp/serverapi2/pgoxpy
 func (t *Ticket) sendAlertMessage(req *apistructs.TicketCreateRequest) error {
 	msgReq := apistructs.MessageCreateRequest{
-		Sender:  bundle.SenderCMDB,
+		Sender:  bundle.SenderDOP,
 		Content: req.Content,
 	}
 

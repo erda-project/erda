@@ -53,6 +53,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/org"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
@@ -557,6 +558,14 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/lib-references", Method: http.MethodGet, Handler: e.ListLibReference},
 		{Path: "/api/lib-references/actions/fetch-versions", Method: http.MethodGet, Handler: e.ListLibReferenceVersion},
 
+		// 流水线filetree查询
+		{Path: "/api/project-pipeline/filetree/{inode}/actions/find-ancestors", Method: http.MethodGet, Handler: e.FindFileTreeNodeAncestors},
+		{Path: "/api/project-pipeline/filetree", Method: http.MethodPost, Handler: e.CreateFileTreeNode},
+		{Path: "/api/project-pipeline/filetree/{inode}", Method: http.MethodDelete, Handler: e.DeleteFileTreeNode},
+		{Path: "/api/project-pipeline/filetree", Method: http.MethodGet, Handler: e.ListFileTreeNodes},
+		{Path: "/api/project-pipeline/filetree/{inode}", Method: http.MethodGet, Handler: e.GetFileTreeNode},
+		{Path: "/api/project-pipeline/filetree/actions/fuzzy-search", Method: http.MethodGet, Handler: e.FuzzySearchFileTreeNodes},
+
 		{Path: "/api/orgs/{orgID}/nexus", Method: http.MethodGet, Handler: e.GetOrgNexus},
 		{Path: "/api/orgs/{orgID}/actions/show-nexus-password", Method: http.MethodGet, Handler: e.ShowOrgNexusPassword},
 		{Path: "/api/orgs/{orgID}/actions/get-nexus-docker-credential-by-image", Method: http.MethodGet, Handler: e.GetNexusOrgDockerCredentialByImage},
@@ -569,6 +578,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{idOrName}", Method: http.MethodDelete, Handler: e.DeleteOrg},
 		{Path: "/api/orgs", Method: http.MethodGet, Handler: e.ListOrg},
 		{Path: "/api/orgs/actions/list-public", Method: http.MethodGet, Handler: e.ListPublicOrg},
+		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
 		// core-services project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
@@ -598,6 +608,7 @@ type Endpoints struct {
 	event              *event.Event
 	permission         *permission.Permission
 	fileTree           *filetree.GittarFileTree
+	pFileTree          *projectpipelinefiletree.FileTree
 
 	db              *dao.DBClient
 	testcase        *testcase.Service
@@ -661,6 +672,12 @@ func WithAssetSvc(svc *assetsvc.Service) Option {
 func WithFileTreeSvc(svc *apidocsvc.Service) Option {
 	return func(e *Endpoints) {
 		e.fileTreeSvc = svc
+	}
+}
+
+func WithProjectPipelineFileTree(fileTree *projectpipelinefiletree.FileTree) Option {
+	return func(e *Endpoints) {
+		e.pFileTree = fileTree
 	}
 }
 

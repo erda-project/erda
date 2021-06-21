@@ -193,7 +193,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 				ApplicationID: "-1",
 				TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 			},
-			Sender: bundle.SenderCMDB,
+			Sender: bundle.SenderDOP,
 			Content: apistructs.IssueEventData{
 				Title:     create.Title,
 				Content:   content,
@@ -990,7 +990,7 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 					ApplicationID: "-1",
 					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 				},
-				Sender: bundle.SenderCMDB,
+				Sender: bundle.SenderDOP,
 				Content: apistructs.IssueEventData{
 					Title:      issue.Title,
 					Content:    content,

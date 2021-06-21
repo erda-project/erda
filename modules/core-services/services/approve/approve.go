@@ -325,7 +325,7 @@ func (a *Approve) Update(approveID int64, updateReq *apistructs.ApproveUpdateReq
 			OrgID:     strconv.FormatUint(updateReq.OrgID, 10),
 			TimeStamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
-		Sender:  bundle.SenderCMDB,
+		Sender:  bundle.SenderCoreServices,
 		Content: eventContent,
 	}
 	// 发送应用创建事件

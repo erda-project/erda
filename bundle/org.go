@@ -63,7 +63,7 @@ func (b *Bundle) GetDopOrg(idOrName interface{}) (*apistructs.OrgDTO, error) {
 }
 
 // ListOrgs 分页查询企业
-func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingOrgDTO, error) {
+func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest, orgID string) (*apistructs.PagingOrgDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -73,7 +73,8 @@ func (b *Bundle) ListOrgs(req *apistructs.OrgSearchRequest) (*apistructs.PagingO
 	var resp apistructs.OrgSearchResponse
 	r, err := hc.Get(host).Path("/api/orgs").
 		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", req.UserID).
+		Header(httputil.UserHeader, req.UserID).
+		Header(httputil.OrgHeader, orgID).
 		Param("q", req.Q).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
@@ -167,7 +168,7 @@ func (b *Bundle) ListDopPublicOrgs(req *apistructs.OrgSearchRequest) (*apistruct
 }
 
 // GetOrgByDomain 通过域名获取企业
-func (b *Bundle) GetOrgByDomain(domain string, userID string) (*apistructs.OrgDTO, error) {
+func (b *Bundle) GetOrgByDomain(domain, orgName, userID string) (*apistructs.OrgDTO, error) {
 	// TODO: userID should be deprecated
 	host, err := b.urls.CoreServices()
 	if err != nil {
@@ -178,8 +179,9 @@ func (b *Bundle) GetOrgByDomain(domain string, userID string) (*apistructs.OrgDT
 	var resp apistructs.OrgGetByDomainResponse
 	r, err := hc.Get(host).Path("/api/orgs/actions/get-by-domain").
 		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", userID). // TODO: for compatibility
+		Header(httputil.UserHeader, userID). // TODO: for compatibility
 		Param("domain", domain).
+		Param("domain", orgName).
 		Do().
 		JSON(&resp)
 	if err != nil {
@@ -260,16 +262,17 @@ func (b *Bundle) CreateDopOrg(userID string, req *apistructs.OrgCreateRequest) (
 }
 
 // UpdateOrg update org
-func (b *Bundle) UpdateOrg(userID string, req *apistructs.OrgUpdateRequest) (*apistructs.OrgDTO, error) {
+func (b *Bundle) UpdateOrg(userID string, orgID int64, req *apistructs.OrgUpdateRequestBody) (*apistructs.OrgDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	var resp apistructs.OrgCreateResponse
-	r, err := hc.Post(host).Path(fmt.Sprintf("/api/orgs/%d", req.OrgID)).
-		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, userID).
+	var resp apistructs.OrgUpdateResponse
+	r, err := hc.Post(host).Path(fmt.Sprintf("/api/orgs/%d", orgID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
 		JSONBody(req).Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

@@ -356,7 +356,7 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 	}
 	// 更新
 	if err := e.issue.UpdateIssue(updateReq); err != nil {
-		return errorresp.ErrResp(err)
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 	}
 
 	// 更新项目活跃时间
@@ -365,6 +365,7 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 		ActiveTime: time.Now(),
 	}); err != nil {
 		logrus.Errorf("update project active time err: %v", err)
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 	}
 
 	// 更新 关联测试计划用例
@@ -372,11 +373,11 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 		// 批量查询测试计划用例
 		testPlanCaseRels, err := e.bdl.ListTestPlanCaseRel(updateReq.TestPlanCaseRelIDs)
 		if err != nil {
-			return nil, err
+			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
 		// 批量删除原有关联
 		if err := e.db.DeleteIssueTestCaseRelationsByIssueID(updateReq.ID); err != nil {
-			return nil, apierrors.ErrDeleteIssueTestCaseRel.InternalError(err)
+			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
 		// 批量创建关联
 		var issueCaseRels []dao.IssueTestCaseRelation
@@ -390,19 +391,19 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 			})
 		}
 		if err := e.db.BatchCreateIssueTestCaseRelations(issueCaseRels); err != nil {
-			return nil, apierrors.ErrBatchCreateIssueTestCaseRel.InternalError(err)
+			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
 	}
 	// 批量删除原有关联
 	if updateReq.RemoveTestPlanCaseRelIDs {
 		if err := e.db.DeleteIssueTestCaseRelationsByIssueID(updateReq.ID); err != nil {
-			return nil, apierrors.ErrDeleteIssueTestCaseRel.InternalError(err)
+			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
 	}
 
-	issue, err := e.issue.GetIssue(apistructs.IssueGetRequest{ID: updateReq.ID})
+	issue, err := e.issue.GetIssue(apistructs.IssueGetRequest{ID: updateReq.ID, IdentityInfo: identityInfo})
 	if err != nil {
-		return nil, apierrors.ErrGetIssue.InternalError(err)
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 	}
 	currentLabelMap := make(map[string]bool)
 	newLabelMap := make(map[string]bool)

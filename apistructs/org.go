@@ -46,6 +46,11 @@ type OrgCreateResponse struct {
 	Data OrgDTO `json:"data"`
 }
 
+type OrgUpdateResponse struct {
+	Header
+	Data OrgDTO `json:"data"`
+}
+
 // OrgSearchRequest GET /api/orgs 组织查询请求结构
 type OrgSearchRequest struct {
 	// 用此对组织名进行模糊查询
@@ -86,8 +91,7 @@ type OrgUpdateRequest struct {
 	Body  OrgUpdateRequestBody `json:"body"`
 }
 
-// OrgUpdateResponse PUT /api/orgs/<orgId> 更新组织响应结构
-type OrgUpdateResponse struct {
+type OrgUpdateIngressResponse struct {
 	Header
 	Data bool `json:"data"`
 }

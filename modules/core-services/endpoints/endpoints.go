@@ -342,8 +342,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/labels/{id}", Method: http.MethodPut, Handler: e.UpdateLabel},
 		{Path: "/api/labels/{id}", Method: http.MethodGet, Handler: e.GetLabel},
 		{Path: "/api/labels", Method: http.MethodGet, Handler: e.ListLabel},
-		{Path: "/api/labels/list-by-projectID-and-names", Method: http.MethodGet, Handler: e.ListByNamesAndProjectID},
-		{Path: "/api/labels/list-by-ids", Method: http.MethodGet, Handler: e.ListLabelByIDs},
+		{Path: "/api/labels/actions/list-by-projectID-and-names", Method: http.MethodGet, Handler: e.ListByNamesAndProjectID},
+		{Path: "/api/labels/actions/list-by-ids", Method: http.MethodGet, Handler: e.ListLabelByIDs},
 
 		// the interface of mbox
 		{Path: "/api/mboxs", Method: http.MethodGet, Handler: e.QueryMBox},

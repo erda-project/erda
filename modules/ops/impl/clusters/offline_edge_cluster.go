@@ -54,7 +54,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	if !fakecluster {
 		// Check project whether to use cluster
 		projectRefer := precheckResp{}
-		resp, err := httpclient.New().Get(discover.CMDB()).
+		resp, err := httpclient.New().Get(discover.CoreServices()).
 			Header("Internal-Client", "ops").
 			Path("/api/projects/actions/refer-cluster").
 			Param("cluster", req.ClusterName).Do().JSON(&projectRefer)
@@ -103,7 +103,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
 		deletecluster := cmdbDeleteClusterResp{}
-		resp, err := httpclient.New().Delete(discover.CMDB()).
+		resp, err := httpclient.New().Delete(discover.CoreServices()).
 			Header("Internal-Client", "ops").
 			Path(fmt.Sprintf("/api/clusters/%s", req.ClusterName)).
 			Do().JSON(&deletecluster)

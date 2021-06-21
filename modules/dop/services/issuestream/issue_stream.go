@@ -98,7 +98,7 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 					ApplicationID: "-1",
 					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
 				},
-				Sender: bundle.SenderCMDB,
+				Sender: bundle.SenderDOP,
 				Content: apistructs.IssueEventData{
 					Title:     issue.Title,
 					Content:   content,

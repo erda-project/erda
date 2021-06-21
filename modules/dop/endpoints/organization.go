@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -75,10 +76,11 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		if len(orgCreateReq.Admins) > 0 {
 			managerID = orgCreateReq.Admins[0]
 		}
-		_, err = e.publisher.Create(managerID, pub)
+		pubID, err := e.publisher.Create(managerID, pub)
 		if err != nil {
 			return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
 		}
+		org.PublisherID = pubID
 	}
 
 	// 异步保证企业级别 nexus group repo
@@ -159,13 +161,11 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrUpdateOrg.AccessDenied().ToResp(), nil
 	}
 	// update org
-	org, err := e.bdl.UpdateOrg(identityInfo.UserID, &apistructs.OrgUpdateRequest{
-		OrgID: int(orgID),
-		Body:  orgUpdateReq,
-	})
+	org, err := e.bdl.UpdateOrg(identityInfo.UserID, orgID, &orgUpdateReq)
 	if err != nil {
 		return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), nil
 	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
 	// 传递了publisherName并且当前org没有publisher才创建
 	if orgUpdateReq.PublisherName != "" && org.PublisherID == 0 {
 		publisherID, err := e.publisher.Create(identityInfo.UserID, &apistructs.PublisherCreateRequest{
@@ -178,7 +178,6 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 		}
 		org.PublisherID = publisherID
 	}
-
 	// 异步保证企业级别 nexus group repo
 	go func() {
 		if err := e.org.EnsureNexusOrgGroupRepos(org); err != nil {
@@ -193,6 +192,12 @@ func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[str
 
 // GetOrg 获取企业详情
 func (e *Endpoints) GetOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// 获取当前用户
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateOrg.NotLogin().ToResp(), nil
+	}
+
 	orgStr := vars["idOrName"]
 	org, err := e.bdl.GetOrg(orgStr)
 	if err != nil {
@@ -211,7 +216,13 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 	}
 	orgStr := vars["idOrName"]
 
-	org, err := e.bdl.DeleteOrg(orgStr)
+	org, err := e.bdl.GetOrg(orgStr)
+	if err != nil {
+		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+
+	_, err = e.bdl.DeleteOrg(orgStr)
 	if err != nil {
 		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
 	}
@@ -222,12 +233,16 @@ func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[str
 
 // ListOrg list org
 func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListOrg.NotLogin().ToResp(), nil
+	}
 	// 获取请求参数
 	req, err := getOrgListParam(r)
 	if err != nil {
 		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
 	}
-	orgResp, err := e.bdl.ListOrgs(req)
+	orgResp, err := e.bdl.ListOrgs(req, r.Header.Get(httputil.OrgHeader))
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
@@ -262,13 +277,17 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 // GetOrgByDomain 通过域名查询企业
 func (e *Endpoints) GetOrgByDomain(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
+	identity, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListPublicOrg.NotLogin().ToResp(), nil
+	}
 	domain := r.URL.Query().Get("domain")
 	orgName := r.URL.Query().Get("orgName")
 	if domain == "" {
 		return apierrors.ErrGetOrg.MissingParameter("domain").ToResp(), nil
 	}
 
-	org, err := e.bdl.GetOrgByDomain(domain, orgName)
+	org, err := e.bdl.GetOrgByDomain(domain, orgName, identity.UserID)
 	if err != nil {
 		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
 	}

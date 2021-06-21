@@ -49,7 +49,7 @@ type ProjectLabelCreateRequest struct {
 
 type ListByNamesAndProjectIDRequest struct {
 	ProjectID uint64   `json:"projectID"`
-	Names     []string `json:"name"`
+	Name      []string `json:"name"`
 }
 
 type ListLabelByIDsRequest struct {

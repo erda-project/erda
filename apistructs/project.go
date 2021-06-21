@@ -322,6 +322,10 @@ type GetProjectIDListByStatesRequest struct {
 type GetProjectIDListByStatesResponse struct {
 	Header
 
+	Data GetProjectIDListByStatesData `json:"data"`
+}
+
+type GetProjectIDListByStatesData struct {
 	Total int          `json:"total"`
 	List  []ProjectDTO `json:"list"`
 }

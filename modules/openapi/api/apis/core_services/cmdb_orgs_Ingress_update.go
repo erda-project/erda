@@ -27,6 +27,6 @@ var CMDB_ORG_INGRESS_UPDATE = apis.ApiSpec{
 	CheckLogin:   true,
 	CheckToken:   true,
 	IsOpenAPI:    true,
-	ResponseType: apistructs.OrgUpdateResponse{},
+	ResponseType: apistructs.OrgUpdateIngressResponse{},
 	Doc:          "summary: 更新组织入口",
 }

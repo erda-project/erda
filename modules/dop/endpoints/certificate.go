@@ -427,7 +427,7 @@ func (e *Endpoints) QuoteCertificate(ctx context.Context, r *http.Request, vars 
 	// 操作鉴权
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrGetUser.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrQuoteCertificate.InvalidParameter(err).ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
 		req := apistructs.PermissionCheckRequest{
@@ -445,7 +445,7 @@ func (e *Endpoints) QuoteCertificate(ctx context.Context, r *http.Request, vars 
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
 	if err != nil {
-		return apierrors.ErrUpdateCertificate.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrQuoteCertificate.InvalidParameter(err).ToResp(), nil
 	}
 
 	err = e.appCertificate.Create(identityInfo.UserID, orgID, &certificateQuoteReq)
