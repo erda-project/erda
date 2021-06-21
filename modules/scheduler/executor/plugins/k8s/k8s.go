@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/mohae/deepcopy"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -55,6 +54,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -79,11 +79,14 @@ const (
 	MIN_CPU_SIZE = 0.1
 
 	// ProjectNamespace Env
-	LabelServiceGroupID                = "servicegroup-id"
-	KeyServiceGroupID                  = "SERVICE_GROUP_ID"
-	KeyOriginServiceName               = "ORIGIN_SERVICE_NAME"
-	ProjectNamespaceServiceNameNameKey = "PROJECT_NAMESPACE_SERVICE_NAME"
-	ProjectNamespace                   = "PROJECT_NAMESPACE"
+	LabelServiceGroupID = "servicegroup-id"
+)
+
+type RuntimeServiceOperator string
+
+const (
+	RuntimeServiceRetain RuntimeServiceOperator = "Retain"
+	RuntimeServiceDelete RuntimeServiceOperator = "Delete"
 )
 
 // K8S plugin's configure
@@ -422,7 +425,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 	}
 
 	if runtime.ProjectNamespace != "" {
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 
 	logrus.Debugf("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
@@ -465,7 +468,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 	if runtime.ProjectNamespace == "" {
 		if err := k.destroyRuntime(ns); err != nil {
@@ -531,7 +534,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 
 	notFound, err := k.NotfoundNamespace(ns)
@@ -660,27 +663,16 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	if service == nil {
 		return errors.Errorf("service empty")
 	}
-
-	if sg.ProjectNamespace != "" && len(service.Ports) > 0 {
-		var runtimeService, _ = deepcopy.Copy(service).(*apistructs.Service)
-
-		runtimeService.Env[KeyOriginServiceName] = service.Name
-		runtimeService.Name = service.Env[ProjectNamespaceServiceNameNameKey]
-		if err := k.updateService(runtimeService); err != nil {
-			return err
-		}
-
-		if k.istioEngine != istioctl.EmptyEngine {
-			if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, runtimeService); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Step 1. Firstly create service
 	// Only create k8s service for services with exposed ports
 	if len(service.Ports) > 0 {
-		if err := k.updateService(service); err != nil {
+		if err := k.updateService(service, nil); err != nil {
+			return err
+		}
+	}
+	if service.ProjectServiceName != "" {
+		err := k.createProjectService(service, sg.ID)
+		if err != nil {
 			return err
 		}
 	}
@@ -702,6 +694,14 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	if k.istioEngine != istioctl.EmptyEngine {
 		if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, service); err != nil {
 			return err
+		}
+		if service.ProjectServiceName != "" {
+			if projectService, ok := deepcopy.Copy(service).(*apistructs.Service); ok {
+				projectService.Name = service.ProjectServiceName
+				if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, projectService); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -761,51 +761,26 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 		labelSelector[LabelServiceGroupID] = sg.ID
 	}
 
-	visited := make([]string, 0)
-	oldSpecServices, err := k.listServiceName(ns, labelSelector)
+	runtimeServiceMap, err := k.getRuntimeServiceMap(ns, labelSelector)
 	if err != nil {
 		//TODO:
-		return err
+		errMsg := fmt.Sprintf("list runtime service name err %v", err)
+		logrus.Errorf(errMsg)
+		return fmt.Errorf(errMsg)
 	}
-	// runtime.Services are services with desired states
+
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
-		// find it in oldServices
-		found := false
-		deployName := getDeployName(&svc)
-		for _, s := range oldSpecServices {
-			if deployName != s {
-				continue
-			}
-			found = true
-			break
-		}
-		if found {
-			// Existing in the old service collection, do the put operation
-			// The visited record has been updated service
-			visited = append(visited, deployName)
-			continue
-		}
-
-		// Does not exist in the old service collection, do the create operation
-		// TODO: what to do if errors in Create ? before k8s create deployment ?
-		// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
-		if err := k.createOne(&svc, sg); err != nil {
-			logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
-			return err
-		}
-	}
-
-	for _, svc := range sg.Services {
-		deployName := getDeployName(&svc)
-		for _, s := range visited {
-			if s != deployName {
-				continue
-			}
-
+		runtimeServiceName := getDeployName(&svc)
+		// Existing in the old service collection, do the put operation
+		// The visited record has been updated service
+		if _, ok := runtimeServiceMap[runtimeServiceName]; ok {
 			// firstly update the service
 			// service is not the same as deployment, service is only created for services with exposed ports
-			if err := k.updateService(&svc); err != nil {
+			if err := k.updateService(&svc, nil); err != nil {
+				return err
+			}
+			if err := k.updateProjectService(&svc, sg.ID); err != nil {
 				return err
 			}
 			switch svc.WorkLoad {
@@ -834,79 +809,63 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 					return err
 				}
 			}
-			break
-		}
-	}
-
-	if len(visited) == len(oldSpecServices) {
-		return nil
-	}
-
-	// Remove the updated service from the old service, that is, the service that needs to be deleted
-	toBeDeleted := make([]string, 0)
-	for _, s := range oldSpecServices {
-		existed := false
-		for _, v := range visited {
-			if s == v {
-				existed = true
-				break
-			}
-		}
-		if !existed {
-			toBeDeleted = append(toBeDeleted, s)
-		}
-	}
-
-	k8sServices := []string{}
-
-	for _, svc := range sg.Services {
-		deployName := getDeployName(&svc)
-		for _, svcName := range toBeDeleted {
-			if deployName == svcName {
-				k8sServices = append(k8sServices, svc.Name)
-				break
-			}
-		}
-	}
-
-	for _, svcName := range toBeDeleted {
-		// logrus.Debugf("in Update interface, going to delete service(%s/%s)", ns, svcName)
-		// TODO: what to do if errors in DELETE ?
-		if err := k.tryDelete(ns, svcName); err != nil {
-			logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-			return err
-		}
-	}
-
-	for _, svcName := range toBeDeleted {
-		if err = k.service.Delete(ns, svcName); err != nil {
-			logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-			return err
-		}
-	}
-
-	for _, svc := range k8sServices {
-		deploys, err := k.deploy.List(ns, map[string]string{"app": svc})
-		if err != nil {
-			logrus.Errorf("failed to get deploys in ns %s", ns)
-			return err
-		}
-
-		remainCount := 0
-		for _, deploy := range deploys.Items {
-			if deploy.DeletionTimestamp == nil {
-				remainCount++
-			}
-		}
-		if remainCount < 1 {
-			err = k.service.Delete(ns, svc)
-			if err != nil {
-				logrus.Errorf("failed to delete global service %s in ns %s", svc, ns)
+			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
+		} else {
+			// Does not exist in the old service collection, do the create operation
+			// TODO: what to do if errors in Create ? before k8s create deployment ?
+			// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
+			if err := k.createOne(&svc, sg); err != nil {
+				logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
 				return err
 			}
+			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
 		}
 	}
 
+	for svcName, operator := range runtimeServiceMap {
+		if operator == RuntimeServiceDelete {
+			if err := k.tryDelete(ns, svcName); err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			svc, err := k.service.Get(ns, svcName)
+			if err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to get k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			if err = k.service.Delete(ns, svcName); err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			appLabelValue := svc.Spec.Selector["app"]
+			deploys, err := k.deploy.List(ns, map[string]string{"app": appLabelValue})
+			if err != nil {
+				logrus.Errorf("failed to get deploys in ns %s", ns)
+				return err
+			}
+			remainCount := 0
+			for _, deploy := range deploys.Items {
+				if deploy.DeletionTimestamp == nil {
+					remainCount++
+				}
+			}
+			if remainCount < 1 {
+				err = k.service.Delete(ns, appLabelValue)
+				if err != nil {
+					if !util.IsNotFound(err) {
+						logrus.Errorf("failed to delete global service %s in ns %s", svc.Name, ns)
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -921,7 +880,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
-		k.setProjectNamespaceEnvs(sg)
+		k.setProjectServiceName(sg)
 	}
 	isReady := true
 	for i := range sg.Services {
@@ -1072,11 +1031,9 @@ func GenTolerations() []apiv1.Toleration {
 	}
 }
 
-func (k *Kubernetes) setProjectNamespaceEnvs(sg *apistructs.ServiceGroup) {
+func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
 	for index, service := range sg.Services {
-		service.Env[ProjectNamespaceServiceNameNameKey] = k.composeNewKey([]string{service.Name, "-", sg.ID})
-		service.Env[KeyServiceGroupID] = sg.ID
-		service.Env[ProjectNamespace] = "true"
+		service.ProjectServiceName = k.composeNewKey([]string{service.Name, "-", sg.ID})
 		sg.Services[index] = service
 	}
 }
@@ -1089,6 +1046,7 @@ func (k *Kubernetes) composeNewKey(keys []string) string {
 	return newKey.String()
 }
 
+// Scale implements update the replica and resources for one service
 func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
 	sg, err := ValidateRuntime(spec, "TaskScale")
 
@@ -1097,7 +1055,7 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 	}
 
 	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
-		k.setProjectNamespaceEnvs(sg)
+		k.setProjectServiceName(sg)
 	}
 
 	// only support scale one service resources
