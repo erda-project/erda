@@ -20,3 +20,4 @@ msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
+erda.msp.tmc.metric:
