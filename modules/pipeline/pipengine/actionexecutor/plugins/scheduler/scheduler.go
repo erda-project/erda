@@ -62,7 +62,7 @@ func init() {
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 
-		clusterInfos := clusterinfo.GetClustersFirst()
+		clusterInfos := clusterinfo.GetClustersInitialize()
 		mgr := executor.GetManager()
 		if err := mgr.Initialize(clusterInfos); err != nil {
 			return nil, err
@@ -100,7 +100,7 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (taskty
 	case "spark":
 		executorName = "spark"
 	default:
-		executorName = ""
+		executorName = "k8sjob"
 	}
 	name := fmt.Sprintf("%sfor%s", clusterName, executorName)
 	taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))

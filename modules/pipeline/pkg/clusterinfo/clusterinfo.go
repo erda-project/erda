@@ -16,18 +16,26 @@ package clusterinfo
 import (
 	"sync"
 
+	"github.com/gogap/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
 
+const (
+	ClusterEventListenerLimit = 100
+)
+
 var (
-	once     sync.Once
-	clusters []apistructs.ClusterInfo
+	once              sync.Once
+	clusters          []apistructs.ClusterInfo
+	clusterEventChans []chan apistructs.ClusterEvent
 )
 
 func Initialize(bdl *bundle.Bundle) error {
 	var err error
 	once.Do(func() {
+		clusterEventChans = []chan apistructs.ClusterEvent{}
 		clusters, err = bdl.ListClusters("", 0)
 		if err != nil {
 			return
@@ -38,6 +46,22 @@ func Initialize(bdl *bundle.Bundle) error {
 
 // GetClusterInfosFirst return all clusters after initialize
 // clusters will not change, Just for initial use
-func GetClustersFirst() []apistructs.ClusterInfo {
+func GetClustersInitialize() []apistructs.ClusterInfo {
 	return clusters
+}
+
+// DispatchClusterEvent dispatch every cluster event to registered chan
+func DispatchClusterEvent(clusterEvent apistructs.ClusterEvent) {
+	for _, ch := range clusterEventChans {
+		ch <- clusterEvent
+	}
+}
+
+func RegisterClusterEvent() (<-chan apistructs.ClusterEvent, error) {
+	if len(clusterEventChans) >= ClusterEventListenerLimit {
+		return nil, errors.Errorf("number of register cluster event limited, limit num: %d", ClusterEventListenerLimit)
+	}
+	ch := make(chan apistructs.ClusterEvent, 0)
+	clusterEventChans = append(clusterEventChans, ch)
+	return ch, nil
 }
