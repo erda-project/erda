@@ -289,6 +289,9 @@ type Service struct {
 	//support Kubernetes workload DaemonSet(Per-Node), Statefulset and Deployment
 	WorkLoad string `json:"workLoad,omitempty"`
 
+	// ProjectServiceName means use service name with servicegroup id when create k8s service
+	ProjectServiceName string `json:"projectServiceName,omitempty"`
+
 	StatusDesc
 }
 

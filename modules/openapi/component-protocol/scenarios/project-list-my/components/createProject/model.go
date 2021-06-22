@@ -11,17 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package filter
+package createProject
 
 import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
-type ComponentFilter struct {
+type ComponentProjectCreation struct {
 	ctxBdl protocol.ContextBundle
 
-	CommonFilter
-}
-
-type CommonFilter struct {
 	Version    string                 `json:"version,omitempty"`
 	Name       string                 `json:"name,omitempty"`
 	Type       string                 `json:"type,omitempty"`
@@ -30,35 +26,24 @@ type CommonFilter struct {
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
-type Operations struct {
-	Reload bool   `json:"reload"`
-	Key    string `json:"key"`
+type Operation struct {
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Command Command `json:"command"`
 }
 
-type Options struct {
-	Key        string `json:"key"`
-	Text       string `json:"text"`
-	Operations map[string]interface{}
+type Command struct {
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
 }
 
 type Props struct {
-	Delay   uint64 `json:"delay"`
 	Visible bool   `json:"visible"`
-}
-
-type StateConditions struct {
-	Key         string `json:"key"`
-	Label       string `json:"label"`
-	EmptyText   string `json:"emptyText"`
-	Fixed       bool   `json:"fixed"`
-	ShowIndex   uint64 `json:"showIndex"`
-	Placeholder string `json:"placeholder"`
-	Type        string `json:"type"`
+	Text    string `json:"text"`
+	Type    string `json:"type"`
 }
 
 type State struct {
-	Values        map[string]interface{} `json:"values"`
-	Conditions    []StateConditions      `json:"conditions"`
-	IsFirstFilter bool                   `json:"isFirstFilter"`
-	IsEmpty       bool                   `json:"isEmpty"`
+	IsEmpty bool `json:"isEmpty"`
 }
