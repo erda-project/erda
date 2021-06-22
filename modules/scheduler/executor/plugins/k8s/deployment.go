@@ -117,7 +117,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	serviceName := service.Name
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
-		serviceName = service.Env[ProjectNamespaceServiceNameNameKey]
+		serviceName = service.ProjectServiceName
 	}
 
 	// User-injected environment variables
@@ -474,7 +474,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	deployment.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["app"] = service.Name
 
-	setDeploymentLabels(service, deployment)
+	setDeploymentLabels(service, deployment, sg.ID)
 
 	if deployment.Spec.Template.Annotations == nil {
 		deployment.Spec.Template.Annotations = make(map[string]string)
@@ -761,17 +761,17 @@ func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec) {
 }
 
 func getDeployName(service *apistructs.Service) string {
-	if service.Env[ProjectNamespace] == "true" {
-		return service.Env[ProjectNamespaceServiceNameNameKey]
+	if service.ProjectServiceName != "" {
+		return service.ProjectServiceName
 	}
 	return service.Name
 }
 
-func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment) {
-	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" {
-		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-		deployment.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-		deployment.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment, sgID string) {
+	if service.ProjectServiceName != "" {
+		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = sgID
+		deployment.Spec.Template.Labels[LabelServiceGroupID] = sgID
+		deployment.Labels[LabelServiceGroupID] = sgID
 	}
 }
 
