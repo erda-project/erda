@@ -243,6 +243,9 @@ func RunScenarioRender(ctx context.Context, req *apistructs.ComponentProtocolReq
 		req.Protocol.GlobalState = &gs
 	}
 
+	// clean pre render error
+	SetGlobalStateKV(req.Protocol, GlobalInnerKeyError.String(), "")
+
 	PolishProtocol(req.Protocol)
 
 	for _, v := range compRending {
