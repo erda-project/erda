@@ -27,7 +27,7 @@ func (client *DBClient) CreateAkSk(obj model.AkSk) (model.AkSk, error) {
 
 func (client *DBClient) ListAkSk(interval bool) ([]model.AkSk, error) {
 	var objs []model.AkSk
-	res := client.Where(&model.AkSk{Internal: interval}).Find(&objs)
+	res := client.Where(&model.AkSk{IsInternal: interval}).Find(&objs)
 	if res.Error != nil {
 		return nil, res.Error
 	}

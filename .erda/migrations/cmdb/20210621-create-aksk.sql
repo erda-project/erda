@@ -1,4 +1,4 @@
-CREATE TABLE `dice_aksk` (
+CREATE TABLE `erda_aksk` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
   `ak` char(24) NOT NULL COMMENT 'Access Key ID',
   `sk` char(32) NOT NULL COMMENT 'Secret Key',

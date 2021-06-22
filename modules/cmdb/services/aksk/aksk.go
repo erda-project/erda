@@ -88,7 +88,7 @@ func (s *Service) CreateAkSk(ctx context.Context, req apistructs.AkSkCreateReque
 	if err != nil {
 		return model.AkSk{}, err
 	}
-	if obj.Internal {
+	if obj.IsInternal {
 		s.cache.Set(AccessKeyID(obj.Ak), obj)
 	}
 	return obj, nil
@@ -103,7 +103,7 @@ func (s *Service) GetAkSkByAk(ctx context.Context, ak string) (model.AkSk, error
 	if err != nil {
 		return model.AkSk{}, err
 	}
-	if obj.Internal {
+	if obj.IsInternal {
 		s.cache.Set(AccessKeyID(obj.Ak), obj)
 	}
 	return obj, nil
@@ -134,7 +134,7 @@ func toModel(req apistructs.AkSkCreateRequest) model.AkSk {
 	return model.AkSk{
 		Ak:          pair.AccessKeyID,
 		Sk:          pair.SecretKey,
-		Internal:    req.Internal,
+		IsInternal:  req.Internal,
 		Owner:       req.Owner,
 		Scope:       req.Scope,
 		Description: req.Description,
