@@ -15,6 +15,7 @@ package bundle
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -63,6 +64,27 @@ func (b *Bundle) CreatePipeline(req interface{}) (*apistructs.PipelineDTO, error
 	}
 
 	return createResp.Data, nil
+}
+
+func (b *Bundle) GetPipelineV2(req apistructs.PipelineDetailRequest) (*apistructs.PipelineDetailDTO, error) {
+	host, err := b.urls.Pipeline()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var pipelineResp apistructs.PipelineDetailResponse
+	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/pipelines/%d", req.PipelineID)).
+		Header(httputil.InternalHeader, "bundle").
+		Param("simplePipelineBaseResult", strconv.FormatBool(req.SimplePipelineBaseResult)).
+		Do().JSON(&pipelineResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !httpResp.IsOK() || !pipelineResp.Success {
+		return nil, toAPIError(httpResp.StatusCode(), pipelineResp.Error)
+	}
+	return pipelineResp.Data, nil
 }
 
 func (b *Bundle) GetPipeline(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {

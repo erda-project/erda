@@ -14,14 +14,58 @@
 package pipelinesvc
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
+
+func Test_SimplePipelineBaseDetail(t *testing.T) {
+	var tables = []struct {
+		find  bool
+		error bool
+	}{
+		{
+			true,
+			true,
+		},
+		{
+			false,
+			true,
+		},
+		{
+			true,
+			false,
+		},
+		{
+			false,
+			false,
+		},
+	}
+
+	for _, data := range tables {
+		var client = &dbclient.Client{}
+		guard := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineBase", func(client *dbclient.Client, id uint64, ops ...dbclient.SessionOption) (spec.PipelineBase, bool, error) {
+			if data.error {
+				return spec.PipelineBase{}, data.find, fmt.Errorf("")
+			}
+			return spec.PipelineBase{}, data.find, fmt.Errorf("")
+		})
+		p := PipelineSvc{dbClient: client}
+		_, err := p.SimplePipelineBaseDetail(uint64(0))
+		if data.find || data.error {
+			assert.Error(t, err)
+		}
+		guard.Unpatch()
+	}
+}
 
 func TestCanCancel(t *testing.T) {
 	require.False(t, canCancel(spec.Pipeline{PipelineBase: spec.PipelineBase{Status: apistructs.PipelineStatusInitializing}}))

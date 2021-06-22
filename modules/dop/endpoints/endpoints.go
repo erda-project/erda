@@ -173,6 +173,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// pipeline
 		{Path: "/api/cicds", Method: http.MethodPost, Handler: e.pipelineCreate},
 		{Path: "/api/cicds", Method: http.MethodGet, Handler: e.pipelineList},
+		{Path: "/api/cicds/actions/pipeline-detail", Method: http.MethodGet, Handler: e.pipelineDetail},
 		{Path: "/api/cicds/actions/pipelineYmls", Method: http.MethodGet, Handler: e.pipelineYmlList},
 		{Path: "/api/cicds/actions/app-invoked-combos", Method: http.MethodGet, Handler: e.pipelineAppInvokedCombos},
 		{Path: "/api/cicds/actions/fetch-pipeline-id", Method: http.MethodGet, Handler: e.fetchPipelineByAppInfo},
