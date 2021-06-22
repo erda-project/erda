@@ -11,22 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package emptyContainer
+package bannerImage
 
-import (
-	"context"
-	"encoding/json"
+import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
-	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-)
-
-type ComponentAction struct{}
-
-func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{ "className": "center-flex-box" }`), &c.Props)
+type ComponentImage struct {
+	ctxBdl  protocol.ContextBundle
+	Version string `json:"version,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Props   Props  `json:"props,omitempty"`
+	State   State  `json:"state,omitempty"`
 }
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentAction{}
+type Props struct {
+	Visible bool   `json:"visible"`
+	Size    string `json:"size"`
+	Src     string `json:"src"`
+}
+
+type State struct {
+	IsEmpty bool `json:"isEmpty"`
 }

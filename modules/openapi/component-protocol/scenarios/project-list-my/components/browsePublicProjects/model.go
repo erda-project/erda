@@ -11,17 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package filter
+package browsePublicProjects
 
 import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
-type ComponentFilter struct {
-	ctxBdl protocol.ContextBundle
-
-	CommonFilter
-}
-
-type CommonFilter struct {
+type ComponentBrowsePublic struct {
+	ctxBdl     protocol.ContextBundle
 	Version    string                 `json:"version,omitempty"`
 	Name       string                 `json:"name,omitempty"`
 	Type       string                 `json:"type,omitempty"`
@@ -30,35 +25,32 @@ type CommonFilter struct {
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
-type Operations struct {
-	Reload bool   `json:"reload"`
-	Key    string `json:"key"`
+type Operation struct {
+	Key     string  `json:"key"`
+	Reload  bool    `json:"reload"`
+	Command Command `json:"command"`
+	Show    bool    `json:"show"`
 }
 
-type Options struct {
-	Key        string `json:"key"`
-	Text       string `json:"text"`
-	Operations map[string]interface{}
-}
-
-type Props struct {
-	Delay   uint64 `json:"delay"`
+type Command struct {
+	Key     string `json:"key"`
+	Target  string `json:"target"`
+	JumpOut bool   `json:"jumpOut"`
 	Visible bool   `json:"visible"`
 }
 
-type StateConditions struct {
-	Key         string `json:"key"`
-	Label       string `json:"label"`
-	EmptyText   string `json:"emptyText"`
-	Fixed       bool   `json:"fixed"`
-	ShowIndex   uint64 `json:"showIndex"`
-	Placeholder string `json:"placeholder"`
-	Type        string `json:"type"`
+type StyleConfig struct {
+	FontSize   uint64 `json:"fontSize"`
+	LineHeight uint64 `json:"lineHeight"`
+}
+
+type Props struct {
+	Visible     bool                   `json:"visible"`
+	RenderType  string                 `json:"renderType"`
+	StyleConfig StyleConfig            `json:"styleConfig"`
+	Value       map[string]interface{} `json:"value"`
 }
 
 type State struct {
-	Values        map[string]interface{} `json:"values"`
-	Conditions    []StateConditions      `json:"conditions"`
-	IsFirstFilter bool                   `json:"isFirstFilter"`
-	IsEmpty       bool                   `json:"isEmpty"`
+	IsEmpty bool `json:"isEmpty"`
 }

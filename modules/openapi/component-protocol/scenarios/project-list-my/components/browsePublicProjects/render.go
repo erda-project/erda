@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package emptyText
+package browsePublicProjects
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 )
 
 // GenComponentState 获取state
-func (i *ComponentText) GenComponentState(c *apistructs.Component) error {
+func (i *ComponentBrowsePublic) GenComponentState(c *apistructs.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -43,7 +43,7 @@ func (i *ComponentText) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
-func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
 	if err := i.GenComponentState(c); err != nil {
 		return err
 	}
@@ -63,15 +63,34 @@ func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ a
 		},
 		Value: map[string]interface{}{
 			"text": []interface{}{
-				"您当前还未被邀请加入任何项目",
+				map[string]interface{}{
+					"text":         "浏览该组织下的公开项目",
+					"operationKey": "toPublicProject",
+					"styleConfig":  map[string]interface{}{"bold": true},
+				},
 			},
 		},
 	}
 
+	i.Operations = map[string]interface{}{
+		"toPublicProject": Operation{
+			Key:    "toPublicProject",
+			Reload: false,
+			Show:   false,
+			Command: Command{
+				Key:     "goto",
+				Target:  "workBenchPublicProjects",
+				JumpOut: false,
+				Visible: false,
+			},
+		},
+	}
+
+	c.Operations = i.Operations
 	c.Props = i.Props
 	return
 }
 
 func RenderCreator() protocol.CompRender {
-	return &ComponentText{}
+	return &ComponentBrowsePublic{}
 }
