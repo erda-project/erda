@@ -50,10 +50,12 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateOrg.NotLogin().ToResp(), nil
 	}
 
+	isAdmin := e.member.IsAdmin(userID.String())
+
 	// 操作鉴权, 只有系统管理员可创建企业
 	// when env: create_org_enabled is true, allow all people create org
 	if !conf.CreateOrgEnabled() {
-		if !e.member.IsAdmin(userID.String()) {
+		if !isAdmin {
 			return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
 		}
 	}
@@ -73,6 +75,16 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateOrg.InvalidParameter(errors.Errorf("org name is invalid %s",
 			orgCreateReq.Name)).ToResp(), nil
 	}
+
+	// check if it is free org, currently only admin can create paid organizations
+	if orgCreateReq.Type != apistructs.FreeOrgType && !isAdmin {
+		return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
+	}
+	// compatible logic, delete this after perfecting the logic of organization creation
+	if orgCreateReq.Type == "" && isAdmin {
+		orgCreateReq.Type = apistructs.EnterpriseOrgType
+	}
+
 	logrus.Infof("request body: %+v", orgCreateReq)
 
 	// 第一次创建企业的时候还没有集群，没有集群创建ingress会出错，先注释掉了
@@ -564,6 +576,7 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		Creator:     org.UserID,
 		OpenFdp:     org.OpenFdp,
 		DisplayName: org.DisplayName,
+		Type:        org.Type,
 		PublisherID: e.org.GetPublisherID(org.ID),
 		Config: &apistructs.OrgConfig{
 			EnableMS:                   org.Config.EnableMS,
