@@ -18,9 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogap/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -56,4 +58,18 @@ func (s *PipelineSvc) retryQueryClusterInfo(clusterName string, pipelineID uint6
 		})
 
 	return result, queryErr
+}
+
+func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
+	if !strutil.Equal(clusterEvent.Content.Type, apistructs.ClusterTypeK8S, true) &&
+		!strutil.Equal(clusterEvent.Content.Type, apistructs.ClusterTypeEdas, true) &&
+		!strutil.Equal(clusterEvent.Content.Type, apistructs.ClusterTypeDcos, true) {
+		return errors.Errorf("invalid cluster event type: %s", clusterEvent.Content.Type)
+	}
+
+	if clusterEvent.Action != apistructs.ClusterActionCreate && clusterEvent.Action != apistructs.ClusterActionUpdate {
+		return errors.Errorf("invalid cluster event action: %s", clusterEvent.Action)
+	}
+	clusterinfo.DispatchClusterEvent(clusterEvent)
+	return nil
 }

@@ -237,5 +237,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// reports
 		{Path: "/api/pipeline-reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryPipelineReportSet},
 		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
+
+		// cluster info
+		{Path: "/clusterhook", Method: http.MethodPost, Handler: e.clusterHook},
 	}
 }

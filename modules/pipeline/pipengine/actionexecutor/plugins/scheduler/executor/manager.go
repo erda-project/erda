@@ -14,6 +14,7 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 )
 
 const (
@@ -49,27 +51,17 @@ func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
-	m.Lock()
-	defer m.Unlock()
 	for i := range cfgs {
-		switch cfgs[i].Type {
-		case CLUSTERTYPEK8S:
-			k8sjobCreate, ok := m.factory[k8sjob.Kind]
-			if ok {
-				name := types.Name(fmt.Sprintf("%sfor%s", cfgs[i].Name, k8sjob.Kind))
-				k8sjobExecutor, err := k8sjobCreate(name, cfgs[i].Name, nil)
-				if err != nil {
-					logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
-					return err
-				}
-				m.executors[name] = k8sjobExecutor
-				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
-			}
-		default:
-
+		err := m.addExecutor(cfgs[i])
+		if err != nil {
+			return err
 		}
-		// TODO sync load cluster info and change executor map
 	}
+	eventChan, err := clusterinfo.RegisterClusterEvent()
+	if err != nil {
+		return err
+	}
+	go m.listenClusterEventSync(context.Background(), eventChan)
 	logrus.Info("pipengine task executor manager Initialize Done .")
 
 	return nil
@@ -86,4 +78,96 @@ func (m *Manager) Get(name types.Name) (types.TaskExecutor, error) {
 		return nil, errors.Errorf("not found task executor [%s]", name)
 	}
 	return e, nil
+}
+
+func (m *Manager) addExecutor(cluster apistructs.ClusterInfo) error {
+	m.Lock()
+	defer m.Unlock()
+
+	switch cluster.Type {
+	case CLUSTERTYPEK8S:
+		k8sjobCreate, ok := m.factory[k8sjob.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
+			if _, exist := m.executors[name]; exist {
+				return errors.Errorf("task executor name: %s already existed", name)
+			}
+			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, nil)
+			if err != nil {
+				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8sjobExecutor
+			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+		}
+	default:
+
+	}
+	return nil
+}
+
+func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
+	m.Lock()
+	defer m.Unlock()
+
+	switch cluster.Type {
+	case CLUSTERTYPEK8S:
+		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
+		if _, exist := m.executors[name]; exist {
+			delete(m.executors, name)
+		}
+	default:
+
+	}
+}
+
+func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
+	m.Lock()
+	defer m.Unlock()
+
+	switch cluster.Type {
+	case CLUSTERTYPEK8S:
+		k8sjobCreate, ok := m.factory[k8sjob.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
+			if _, exist := m.executors[name]; exist {
+				delete(m.executors, name)
+			}
+			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, nil)
+			if err != nil {
+				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8sjobExecutor
+			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+		}
+	default:
+
+	}
+	return nil
+}
+
+func (m *Manager) listenClusterEventSync(ctx context.Context, eventChan <-chan apistructs.ClusterEvent) {
+	var err error
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-eventChan:
+			switch event.Action {
+			case apistructs.ClusterActionCreate:
+				err = m.addExecutor(event.Content)
+				if err != nil {
+					logrus.Errorf("failed to add task executor, err: %v", err)
+				}
+			case apistructs.ClusterActionUpdate:
+				err = m.updateExecutor(event.Content)
+				if err != nil {
+					logrus.Errorf("failed to update task executor, err: %v", err)
+				}
+			default:
+
+			}
+		}
+	}
 }
