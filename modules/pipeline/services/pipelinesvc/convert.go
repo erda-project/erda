@@ -21,18 +21,12 @@ import (
 	"github.com/erda-project/erda/pkg/numeral"
 )
 
-func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO {
-	if p == nil {
-		return nil
-	}
-
+func (s *PipelineSvc) convertPipelineBase(p spec.PipelineBase) apistructs.PipelineDTO {
 	var result apistructs.PipelineDTO
-	// from base
 	result.ID = p.ID
 	result.CronID = p.CronID
 	result.Source = p.PipelineSource
 	result.YmlName = p.PipelineYmlName
-	result.Namespace = p.Extra.Namespace
 	result.Type = p.Type.String()
 	result.TriggerMode = p.TriggerMode.String()
 	result.ClusterName = p.ClusterName
@@ -41,14 +35,23 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 	result.TimeBegin = p.TimeBegin
 	result.TimeEnd = p.TimeEnd
 	result.TimeCreated = p.TimeCreated
+	result.TimeUpdated = p.TimeUpdated
+	return result
+}
+
+func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO {
+	if p == nil {
+		return nil
+	}
+
+	var result = s.convertPipelineBase(p.PipelineBase)
+
+	// from extra
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron && p.Extra.CronTriggerTime != nil {
 		result.TimeCreated = p.Extra.CronTriggerTime
 		result.TimeBegin = p.Extra.CronTriggerTime
 	}
-
-	result.TimeUpdated = p.TimeUpdated
-
-	// from extra
+	result.Namespace = p.Extra.Namespace
 	result.OrgName = p.GetOrgName()
 	result.ProjectName = p.NormalLabels[apistructs.LabelProjectName]
 	result.ApplicationName = p.NormalLabels[apistructs.LabelAppName]

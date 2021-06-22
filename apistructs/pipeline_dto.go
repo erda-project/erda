@@ -182,9 +182,15 @@ type PipelineStageDetailDTO struct {
 }
 
 func (user *UserInfo) ConvertToPipelineUser() *PipelineUser {
+
+	var name = user.Nick
+	if len(name) <= 0 {
+		name = user.Name
+	}
+
 	return &PipelineUser{
 		ID:     user.ID,
-		Name:   user.Name,
+		Name:   name,
 		Avatar: user.Avatar,
 	}
 }

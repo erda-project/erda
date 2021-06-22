@@ -24,6 +24,12 @@ type CICDPipelineListRequest struct {
 	PageSize int    `schema:"pageSize"`
 }
 
+// CICD pipeline detail
+type CICDPipelineDetailRequest struct {
+	SimplePipelineBaseResult bool   `json:"simplePipelineBaseResult"`
+	PipelineID               uint64 `json:"pipelineID"`
+}
+
 // CICDPipelineYmlListRequest /api/cicds/actions/pipelineYmls 获取 pipeline yml列表
 type CICDPipelineYmlListRequest struct {
 	AppID  int64  `schema:"appID"`
