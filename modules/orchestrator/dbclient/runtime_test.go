@@ -122,9 +122,13 @@ func TestInitScheduleName(t *testing.T) {
 }
 
 func TestFnvV(t *testing.T) {
-	s := "5-DEV-Srm"
-	str1 := fnvV(s)
-	str2 := fnvV(s)
-	assert.Equal(t, str1, str2)
+	s1 := "1-STAGING-hotfix/1"
+	s2 := "1-STAGING-hotfix/2"
+	str1 := fnvV(s1)
+	str11 := fnvV(s1)
+	str2 := fnvV(s2)
+	assert.NotEqual(t, str1, str2)
+	assert.Equal(t, str1, str11)
 	assert.Equal(t, 10, len(str1))
+	assert.Equal(t, 10, len(str2))
 }

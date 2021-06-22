@@ -545,6 +545,19 @@ type ServiceGroupConfigUpdateResponse struct {
 	Header
 }
 
+// UpdateServiceGroupScaleRequst request body for update servicegroup
+type UpdateServiceGroupScaleRequst struct {
+	Namespace   string    `json:"namespace"`
+	Name        string    `json:"name"`
+	ClusterName string    `json:"clusterName"`
+	Services    []Service `json:"services"`
+}
+
+// UpdateServiceGroupScaleResponse response for update servicegroup
+type UpdateServiceGroupScaleResponse struct {
+	Header
+}
+
 type PodInfoRequest struct {
 	Cluster         string `query:"cluster"`
 	OrgName         string `query:"orgName"`

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
@@ -120,6 +121,7 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 	if overlay.Envs != nil {
 		oldOverlay.Envs = overlay.Envs
 	}
+	var needUpdateServices []string
 	for k, v := range overlay.Services {
 		oldService, exists := oldOverlay.Services[k]
 		if !exists || oldService == nil {
@@ -133,6 +135,11 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		if v.Envs != nil {
 			oldService.Envs = v.Envs
 		}
+		// record need update scale's service
+		if oldService.Resources.CPU != v.Resources.CPU || oldService.Resources.Mem != v.Resources.Mem ||
+			oldService.Resources.Disk != v.Resources.Disk || oldService.Deployments.Replicas != v.Deployments.Replicas {
+			needUpdateServices = append(needUpdateServices, k)
+		}
 		// Replicas
 		oldService.Deployments.Replicas = v.Deployments.Replicas
 		// Resources
@@ -140,6 +147,44 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		oldService.Resources.Mem = v.Resources.Mem
 		oldService.Resources.Disk = v.Resources.Disk
 	}
+
+	// really update scale
+	if len(needUpdateServices) != 0 {
+		runtime, err := s.db.FindRuntime(uniqueId)
+		if err != nil {
+			return utils.ErrResp0101(err, funcErrMsg)
+		}
+		if runtime == nil {
+			return utils.ErrResp0101(errors.Errorf("runtime %s is not existed", uniqueId.Name), funcErrMsg)
+		}
+		namespace, name := runtime.ScheduleName.Args()
+		sg := apistructs.UpdateServiceGroupScaleRequst{
+			Name:        name,
+			Namespace:   namespace,
+			ClusterName: runtime.ClusterName,
+		}
+
+		// TODO really update service to k8s deployment
+		for _, svcName := range needUpdateServices {
+			sg.Services = append(sg.Services, apistructs.Service{
+				Name:  svcName,
+				Scale: oldOverlay.Services[svcName].Deployments.Replicas,
+				Resources: apistructs.Resources{
+					Cpu:  oldOverlay.Services[svcName].Resources.CPU,
+					Mem:  float64(oldOverlay.Services[svcName].Resources.Mem),
+					Disk: float64(oldOverlay.Services[svcName].Resources.Disk),
+				},
+			})
+		}
+
+		sgb, _ := json.Marshal(&sg)
+		logrus.Debugf("scale service group body is %s", string(sgb))
+		// TODO: Need to increase the mechanism of failure compensation
+		if err := s.bdl.ScaleServiceGroup(sg); err != nil {
+			return utils.ErrResp0101(err, funcErrMsg)
+		}
+	}
+
 	// save changes
 	o_, err := json.Marshal(oldOverlay)
 	if err != nil {
@@ -149,5 +194,6 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 	if err := s.db.UpdatePreDeployment(pre); err != nil {
 		return utils.ErrResp0101(err, funcErrMsg)
 	}
+
 	return httpserver.OkResp(nil)
 }
