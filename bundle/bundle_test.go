@@ -61,7 +61,7 @@ func TestBundleOption(t *testing.T) {
 		err error
 	)
 
-	v, err = b.urls.DOP()
+	v, err = b.urls.CMDB()
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 

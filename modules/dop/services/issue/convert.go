@@ -115,6 +115,14 @@ func (svc *Issue) Convert(model dao.Issue, identityInfo apistructs.IdentityInfo)
 	}
 	issue.IssueButton = button
 
+	subscribers, err := svc.db.GetIssueSubscribersByIssueID(issue.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range subscribers {
+		issue.Subscribers = append(issue.Subscribers, v.UserID)
+	}
+
 	return issue, nil
 }
 

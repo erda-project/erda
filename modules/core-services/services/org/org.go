@@ -149,7 +149,7 @@ func (o *Org) Create(createReq apistructs.OrgCreateRequest) (*model.Org, error) 
 		Logo:        createReq.Logo,
 		Locale:      createReq.Locale,
 		UserID:      userID,
-		Type:        "ENTERPRISE",
+		Type:        createReq.Type.String(),
 		Status:      "ACTIVE",
 		IsPublic:    createReq.IsPublic,
 	}

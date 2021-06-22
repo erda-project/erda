@@ -602,12 +602,8 @@ func (svc *Issue) UpdateIssueType(req *apistructs.IssueTypeUpdateRequest) (int64
 		return 0, apierrors.ErrUpdateIssue.InvalidParameter("该类型缺少默认事件状态")
 	}
 	issueModel.Type = req.Type
-	issueModel.CreatedAt = time.Now()
-	issueModel.Creator = req.IdentityInfo.UserID
 	issueModel.State = int64(states[0].ID)
-	issueModel.Assignee = req.IdentityInfo.UserID
 	if issueModel.Type == apistructs.IssueTypeRequirement {
-		issueModel.ManHour = ""
 		issueModel.Stage = ""
 		issueModel.Owner = ""
 	} else if issueModel.Type == apistructs.IssueTypeBug {
@@ -1351,4 +1347,70 @@ func (svc *Issue) StateCheckPermission(req *apistructs.PermissionCheckRequest, s
 		}
 	}
 	return false, nil
+}
+
+// Subscribe subscribe issue
+func (svc *Issue) Subscribe(id int64, identityInfo apistructs.IdentityInfo) error {
+	issue, err := svc.db.GetIssue(id)
+	if err != nil {
+		return err
+	}
+
+	if !identityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  issue.ProjectID,
+			Resource: issue.Type.GetCorrespondingResource(),
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrSubscribeIssue.InternalError(err)
+		}
+		if !access.Access {
+			return apierrors.ErrSubscribeIssue.AccessDenied()
+		}
+	}
+
+	is, err := svc.db.GetIssueSubscriber(id, identityInfo.UserID)
+	if err != nil {
+		return err
+	}
+	if is != nil {
+		return errors.New("already subscribed")
+	}
+
+	// 创建 issue
+	create := dao.IssueSubscriber{
+		IssueID: int64(issue.ID),
+		UserID:  identityInfo.UserID,
+	}
+
+	return svc.db.CreateIssueSubscriber(&create)
+}
+
+// Unsubscribe unsubscribe issue
+func (svc *Issue) Unsubscribe(id int64, identityInfo apistructs.IdentityInfo) error {
+	issue, err := svc.db.GetIssue(id)
+	if err != nil {
+		return err
+	}
+
+	if !identityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  issue.ProjectID,
+			Resource: issue.Type.GetCorrespondingResource(),
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrSubscribeIssue.InternalError(err)
+		}
+		if !access.Access {
+			return apierrors.ErrSubscribeIssue.AccessDenied()
+		}
+	}
+
+	return svc.db.DeleteIssueSubscriber(id, identityInfo.UserID)
 }

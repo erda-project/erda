@@ -359,6 +359,7 @@ var (
 	ErrBatchUpdateIssue              = err("ErrBatchUpdateIssue", "批量更新 issue 失败")
 	ErrUpdateIssueState              = err("ErrUpdateIssueState", "更新 issue 状态失败")
 	ErrGetIssue                      = err("ErrGetIssue", "查询 issue 失败")
+	ErrSubscribeIssue                = err("ErrSubscribeIssue", "订阅 issue 失败")
 	ErrExportExcelIssue              = err("ErrExportExcelIssue", "导出 issue 失败")
 	ErrImportExcelIssue              = err("ErrImportExcelIssue", "导入 issue 失败")
 	ErrGetIssueManHourSum            = err("ErrGetIssueManHourSum", "查询任务总和失败")
