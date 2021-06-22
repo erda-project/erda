@@ -21,8 +21,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	dashboardapi "github.com/erda-project/erda/modules/msp/apm/tmc/spot/common/service"
 )
 
 type TSQLQueryRequest struct {
@@ -40,7 +38,6 @@ func (m *provider) proxy(metric, agg string, request *http.Request) (interface{}
 		return nil, err
 	}
 	if metric == "" && agg == "" {
-		// 大盘查询接口，metric的名字需要从查询语句中获取
 		q := request.URL.Query().Get("q")
 		if q != "" {
 			// "SELECT * FROM index WHERE ..."
@@ -110,12 +107,12 @@ func (m *provider) proxy(metric, agg string, request *http.Request) (interface{}
 	}
 	var path string
 	if agg == "" {
-		path = m.cfg.MonitorServiceMetricApiPath + "/" + metric
+		path = m.Cfg.MonitorServiceMetricApiPath + "/" + metric
 	} else {
-		path = m.cfg.MonitorServiceMetricApiPath + "/" + metric + "/" + agg
+		path = m.Cfg.MonitorServiceMetricApiPath + "/" + metric + "/" + agg
 	}
 
-	return dashboardapi.Proxy(path, request, params, bodyReader, request.URL.Query().Get("debug") != "")
+	return m.Proxy(path, request, params, bodyReader, request.URL.Query().Get("debug") != "")
 }
 
 func (m *provider) proxyBlocks(scopeId, id string, request *http.Request) (interface{}, error) {
@@ -123,9 +120,9 @@ func (m *provider) proxyBlocks(scopeId, id string, request *http.Request) (inter
 	params["scope"] = append(params["scope"], "micro_service")
 	params["scopeId"] = append(params["scopeId"], scopeId)
 	if id == "" {
-		return dashboardapi.ProxyBody("/api/dashboard/blocks", request, params, request.URL.Query().Get("debug") != "")
+		return m.ProxyBody("/api/dashboard/blocks", request, params, request.URL.Query().Get("debug") != "")
 	}
-	return dashboardapi.ProxyBody("/api/dashboard/blocks/"+id, request, params, request.URL.Query().Get("debug") != "")
+	return m.ProxyBody("/api/dashboard/blocks/"+id, request, params, request.URL.Query().Get("debug") != "")
 }
 
 func (m *provider) proxyGroups(scopeId, id string, request *http.Request) (interface{}, error) {
@@ -133,9 +130,9 @@ func (m *provider) proxyGroups(scopeId, id string, request *http.Request) (inter
 	params["scope"] = append(params["scope"], "micro_service")
 	params["scopeId"] = append(params["scopeId"], scopeId)
 	if id == "" {
-		return dashboardapi.ProxyBody("/api/metric/groups", request, params, request.URL.Query().Get("debug") != "")
+		return m.ProxyBody("/api/metric/groups", request, params, request.URL.Query().Get("debug") != "")
 	}
-	return dashboardapi.ProxyBody("/api/metric/groups/"+id, request, params, request.URL.Query().Get("debug") != "")
+	return m.ProxyBody("/api/metric/groups/"+id, request, params, request.URL.Query().Get("debug") != "")
 }
 
 func getRequestValue(request *http.Request, keys ...string) []string {
