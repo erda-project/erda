@@ -51,8 +51,11 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 	}
 
 	// 操作鉴权, 只有系统管理员可创建企业
-	if !e.member.IsAdmin(userID.String()) {
-		return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
+	// when env: create_org_enabled is true, allow all people create org
+	if !conf.CreateOrgEnabled() {
+		if !e.member.IsAdmin(userID.String()) {
+			return apierrors.ErrCreateOrg.AccessDenied().ToResp(), nil
+		}
 	}
 
 	// 检查body合法性
