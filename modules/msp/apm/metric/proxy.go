@@ -15,6 +15,7 @@ package metric
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -55,10 +56,10 @@ func (p *provider) ProxyUrl(path, method string, params interface{}, headers *ht
 	if params != nil {
 		switch v := params.(type) {
 		case string:
-			if v, err := url.ParseQuery(v); err != nil {
+			if u, err := url.ParseQuery(v); err != nil {
 				return nil, err
 			} else {
-				urlValues = v
+				urlValues = u
 			}
 		case map[string][]string:
 			for key, values := range v {
@@ -71,6 +72,7 @@ func (p *provider) ProxyUrl(path, method string, params interface{}, headers *ht
 					}
 				}
 			}
+			urlValues = encodedParams
 		case map[string]interface{}:
 			for key, v := range v {
 				if v != nil {
@@ -95,9 +97,8 @@ func (p *provider) ProxyUrl(path, method string, params interface{}, headers *ht
 					}
 				}
 			}
+			urlValues = encodedParams
 		}
-	} else {
-		urlValues = encodedParams
 	}
 
 	client := httpclient.New()
@@ -121,12 +122,13 @@ func (p *provider) ProxyUrl(path, method string, params interface{}, headers *ht
 	_, err := req.Do().Body(&buf)
 	if debug {
 		println(req.GetUrl())
-		println(buf.String())
 	}
 	if err != nil {
 		return err, nil
 	}
-	return buf.String(), nil
+	var i interface{}
+	json.Unmarshal(buf.Bytes(), &i)
+	return i, nil
 }
 
 func inputToByte(inStream io.ReadCloser) ([]byte, error) {
