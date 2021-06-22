@@ -214,7 +214,7 @@ func (ro *RedisOperator) Inspect(sg *apistructs.ServiceGroup) (*apistructs.Servi
 	if err != nil {
 		return nil, err
 	}
-	svclist, err := ro.service.List(genK8SNamespace(sg.Type, sg.ID))
+	svclist, err := ro.service.List(genK8SNamespace(sg.Type, sg.ID), nil)
 	if err != nil {
 		return nil, err
 	}

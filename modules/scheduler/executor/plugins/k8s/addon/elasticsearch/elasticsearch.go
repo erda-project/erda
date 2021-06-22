@@ -194,7 +194,7 @@ func (eo *ElasticsearchOperator) Inspect(sg *apistructs.ServiceGroup) (*apistruc
 	if err != nil {
 		return nil, err
 	}
-	svclist, err := eo.service.List(genK8SNamespace(sg.Type, sg.ID))
+	svclist, err := eo.service.List(genK8SNamespace(sg.Type, sg.ID), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -19,7 +19,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,8 +33,8 @@ import (
 )
 
 // CreateService create k8s service
-func (k *Kubernetes) CreateService(service *apistructs.Service) error {
-	svc := newService(service)
+func (k *Kubernetes) CreateService(service *apistructs.Service, selectors map[string]string) error {
+	svc := newService(service, selectors)
 	return k.service.Create(svc)
 }
 
@@ -51,8 +53,12 @@ func (k *Kubernetes) DeleteService(namespace, name string) error {
 	return k.service.Delete(namespace, name)
 }
 
+func (k *Kubernetes) ListService(namespace string, selectors map[string]string) (apiv1.ServiceList, error) {
+	return k.service.List(namespace, selectors)
+}
+
 // Port changes in the service description will cause changes in services and ingress
-func (k *Kubernetes) updateService(service *apistructs.Service) error {
+func (k *Kubernetes) updateService(service *apistructs.Service, selectors map[string]string) error {
 	// Service.Ports is empty, indicating that no service is expected
 	if len(service.Ports) == 0 {
 		// There is a service before the update, if there is no service, delete the servicece
@@ -70,34 +76,22 @@ func (k *Kubernetes) updateService(service *apistructs.Service) error {
 
 	// If not found, create a new k8s service
 	if getErr == k8serror.ErrNotFound {
-		if err := k.CreateService(service); err != nil {
+		if err := k.CreateService(service, selectors); err != nil {
 			return err
 		}
+
 	} else {
-		// If there is service before the update, if there is a service, then update the service
-		desiredService := newService(service)
-
-		if diffServiceMetadata(desiredService, svc) {
-			desiredService.ResourceVersion = svc.ResourceVersion
-			desiredService.Spec.ClusterIP = svc.Spec.ClusterIP
-
-			if err := k.PutService(desiredService); err != nil {
-				return err
-			}
+		if err := k.UpdateK8sService(svc, service, selectors); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func newService(service *apistructs.Service) *apiv1.Service {
+func newService(service *apistructs.Service, selectors map[string]string) *apiv1.Service {
 	if len(service.Ports) == 0 {
 		return nil
-	}
-
-	appValue := service.Env[KeyOriginServiceName]
-	if appValue == "" {
-		appValue = service.Name
 	}
 
 	k8sService := &apiv1.Service{
@@ -114,12 +108,12 @@ func newService(service *apistructs.Service) *apiv1.Service {
 			// TODO: type?
 			//Type: ServiceTypeLoadBalancer,
 			Selector: map[string]string{
-				"app": appValue,
+				"app": service.Name,
 			},
 		},
 	}
 
-	setServiceLabelSelector(service, k8sService)
+	setServiceLabelSelector(k8sService, selectors)
 
 	for i, port := range service.Ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
@@ -177,31 +171,136 @@ func (k *Kubernetes) listServiceName(namespace string, labelSelector map[string]
 	return strs, nil
 }
 
+func (k *Kubernetes) getRuntimeServiceMap(namespace string, labelSelector map[string]string) (map[string]RuntimeServiceOperator, error) {
+	m := map[string]RuntimeServiceOperator{}
+	deployList, err := k.deploy.List(namespace, labelSelector)
+	if err != nil {
+		return map[string]RuntimeServiceOperator{}, err
+	}
+
+	for _, item := range deployList.Items {
+		m[item.Name] = RuntimeServiceDelete
+	}
+
+	daemonSets, err := k.ds.List(namespace, labelSelector)
+	if err != nil {
+		return map[string]RuntimeServiceOperator{}, err
+	}
+	for _, item := range daemonSets.Items {
+		m[item.Name] = RuntimeServiceDelete
+	}
+
+	return m, nil
+}
+
 func getServiceName(service *apistructs.Service) string {
-	if service.Env[ProjectNamespace] == "true" {
-		return service.Env[ProjectNamespaceServiceNameNameKey]
+	if service.ProjectServiceName != "" {
+		return service.ProjectServiceName
 	}
 	return service.Name
 }
 
-func setServiceLabelSelector(service *apistructs.Service, k8sService *apiv1.Service) {
-	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" && service.Name == service.Env[ProjectNamespaceServiceNameNameKey] {
-		k8sService.Spec.Selector[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+func setServiceLabelSelector(k8sService *apiv1.Service, selectors map[string]string) {
+	for k, v := range selectors {
+		k8sService.Spec.Selector[k] = v
 	}
 }
 
 func (k *Kubernetes) deleteRuntimeServiceWithProjectNamespace(service apistructs.Service) error {
-	if service.Env[ProjectNamespace] == "true" {
-		err := k.service.Delete(service.Namespace, service.Env[ProjectNamespaceServiceNameNameKey])
+	if service.ProjectServiceName != "" {
+		err := k.service.Delete(service.Namespace, service.ProjectServiceName)
 		if err != nil {
 			return fmt.Errorf("delete service %s error: %v", service.Name, err)
 		}
 	}
-	if k.istioEngine != istioctl.EmptyEngine {
-		err := k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &service)
-		if err != nil {
-			return fmt.Errorf("delete istio resource error: %v", err)
+	if projectService, ok := deepcopy.Copy(service).(apistructs.Service); ok {
+		projectService.Name = projectService.ProjectServiceName
+		if k.istioEngine != istioctl.EmptyEngine {
+			err := k.istioEngine.OnServiceOperator(istioctl.ServiceDelete, &projectService)
+			if err != nil {
+				return fmt.Errorf("delete istio resource error: %v", err)
+			}
 		}
+	}
+	return nil
+}
+
+func (k *Kubernetes) createProjectService(service *apistructs.Service, sgID string) error {
+	if service.ProjectServiceName != "" {
+		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
+		if ok {
+			selectors := map[string]string{
+				LabelServiceGroupID: sgID,
+				"app":               service.Name,
+			}
+			projectService.Name = service.ProjectServiceName
+			projectServiceErr := k.CreateService(projectService, selectors)
+			if projectServiceErr != nil {
+				errMsg := fmt.Sprintf("Create project service %s err %v", projectService.Name, projectServiceErr)
+				logrus.Errorf(errMsg)
+				return fmt.Errorf(errMsg)
+			}
+		}
+	}
+	return nil
+}
+
+func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
+	if service.ProjectServiceName != "" {
+		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
+		if ok {
+			projectService.Name = service.ProjectServiceName
+			projectServiceErr := k.DeleteService(projectService.Namespace, projectService.Name)
+			if projectServiceErr != nil {
+				errMsg := fmt.Sprintf("Delete project service %s err %v", projectService.Name, projectServiceErr)
+				logrus.Errorf(errMsg)
+				return fmt.Errorf(errMsg)
+			}
+		}
+	}
+	return nil
+}
+
+func (k *Kubernetes) updateProjectService(service *apistructs.Service, sgID string) error {
+	if service.ProjectServiceName != "" {
+		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
+		if ok {
+			selectors := map[string]string{
+				LabelServiceGroupID: sgID,
+				"app":               service.Name,
+			}
+			projectService.Name = service.ProjectServiceName
+
+			projectServiceErr := k.updateService(projectService, selectors)
+			if projectServiceErr != nil {
+				errMsg := fmt.Sprintf("Update project service %s err %v", projectService.Name, projectServiceErr)
+				logrus.Errorf(errMsg)
+				return fmt.Errorf(errMsg)
+			}
+		}
+	}
+	return nil
+}
+
+func (k *Kubernetes) UpdateK8sService(k8sService *apiv1.Service, service *apistructs.Service, selectors map[string]string) error {
+	newPorts := []apiv1.ServicePort{}
+	for i, p := range service.Ports {
+		port := apiv1.ServicePort{
+			Name:       strutil.Concat(strings.ToLower(p.Protocol), "-", strconv.Itoa(i)),
+			Port:       int32(p.Port),
+			TargetPort: intstr.FromInt(p.Port),
+			Protocol:   p.L4Protocol,
+		}
+		newPorts = append(newPorts, port)
+	}
+
+	setServiceLabelSelector(k8sService, selectors)
+	k8sService.Spec.Ports = newPorts
+
+	if err := k.PutService(k8sService); err != nil {
+		errMsg := fmt.Sprintf("update service err %v", err)
+		logrus.Error(errMsg)
+		return fmt.Errorf(errMsg)
 	}
 	return nil
 }

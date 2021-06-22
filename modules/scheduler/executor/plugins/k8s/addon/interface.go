@@ -64,7 +64,7 @@ type DaemonsetUtil interface {
 }
 
 type ServiceUtil interface {
-	List(namespace string) (corev1.ServiceList, error)
+	List(namespace string, selectors map[string]string) (corev1.ServiceList, error)
 }
 
 type NamespaceUtil interface {

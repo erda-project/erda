@@ -171,9 +171,9 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		daemonset.Spec.Template.Spec.InitContainers = initcontainers
 	}
 
-	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = sg.ID
+	daemonset.Spec.Template.Labels[LabelServiceGroupID] = sg.ID
+	daemonset.Labels[LabelServiceGroupID] = sg.ID
 	daemonset.Labels["app"] = service.Name
 	daemonset.Spec.Template.Labels["app"] = service.Name
 

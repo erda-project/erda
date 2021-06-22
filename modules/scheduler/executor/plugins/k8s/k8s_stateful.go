@@ -317,9 +317,8 @@ func (k *Kubernetes) createStatefulService(sg *apistructs.ServiceGroup) error {
 	// Build a statefulset service
 	svc := sg.Services[0]
 
-	newService(&svc)
 	svc.Name = statefulsetName(sg)
-	k8sSvc := newService(&svc)
+	k8sSvc := newService(&svc, nil)
 
 	if err := k.service.Create(k8sSvc); err != nil {
 		return err
