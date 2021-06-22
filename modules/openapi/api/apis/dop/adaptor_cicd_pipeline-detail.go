@@ -11,9 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package conf
+package dop
 
-type Conf struct {
-	Debug  bool   `default:"false"`
-	Listen string `default:":9094"`
+import (
+	"net/http"
+
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
+
+var ADAPTOR_CICD_PIPELINE_DETAIL = apis.ApiSpec{
+	Path:        "/api/cicds/actions/pipeline-detail",
+	BackendPath: "/api/cicds/actions/pipeline-detail",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: pipeline 详情",
 }
