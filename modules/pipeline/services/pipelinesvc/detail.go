@@ -37,6 +37,21 @@ func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
 	return &p, nil
 }
 
+func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
+	base, find, err := s.dbClient.GetPipelineBase(pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	if !find {
+		return nil, fmt.Errorf("not find this pipeline id %v", pipelineID)
+	}
+
+	var detail apistructs.PipelineDetailDTO
+	detail.PipelineDTO = s.convertPipelineBase(base)
+
+	return &detail, nil
+}
+
 func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
 	p, err := s.dbClient.GetPipeline(pipelineID)
 
