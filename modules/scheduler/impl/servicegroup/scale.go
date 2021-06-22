@@ -33,6 +33,13 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 	if len(sg.Services) != 1 {
 		return apistructs.ServiceGroup{}, fmt.Errorf("services count more than 1")
 	}
+
+	// get sg info from etcd storage, and set the project namespace to the scale sg
+	// when the project namespace is not empty
+	if oldSg.ProjectNamespace != "" {
+		sg.ProjectNamespace = oldSg.ProjectNamespace
+	}
+
 	newService := sg.Services[0]
 	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
 	if err != nil {

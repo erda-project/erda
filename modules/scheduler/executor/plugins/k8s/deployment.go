@@ -792,12 +792,13 @@ func ConvertToHostAlias(hosts []string) []apiv1.HostAlias {
 
 func (k *Kubernetes) scaleDeployment(sg *apistructs.ServiceGroup) error {
 	// only support scale the first one service
-	scalingService := sg.Services[0]
-	deploymentName := getDeployName(&scalingService)
 	ns := sg.ProjectNamespace
 	if ns == "" {
 		ns = MakeNamespace(sg)
 	}
+
+	scalingService := sg.Services[0]
+	deploymentName := getDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
 		getErr := fmt.Errorf("failed to get the deployment, err is: %s", err.Error())
