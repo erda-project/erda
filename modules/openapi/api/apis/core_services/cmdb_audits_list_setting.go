@@ -23,7 +23,7 @@ import (
 var CMDB_AUDITS_LIST_SET = apis.ApiSpec{
 	Path:         "/api/audits/actions/setting",
 	BackendPath:  "/api/audits/actions/setting",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,

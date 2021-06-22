@@ -168,6 +168,7 @@ func DOP() string {
 func CoreServices() string {
 	return getURL(EnvCoreServices, SvcCoreServices)
 }
+
 func ECP() string {
 	return getURL(EnvECP, SvcECP)
 }

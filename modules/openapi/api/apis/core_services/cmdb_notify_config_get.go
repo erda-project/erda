@@ -21,7 +21,7 @@ import (
 var CMDB_NOTIFY_CONFIG_GET = apis.ApiSpec{
 	Path:         "/api/orgs/<orgID>/actions/get-notify-config",
 	BackendPath:  "/api/orgs/<orgID>/actions/get-notify-config",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

@@ -24,7 +24,7 @@ import (
 var CMDB_NOTICE_UNPUBLISH = apis.ApiSpec{
 	Path:        "/api/notices/<id>/actions/unpublish",
 	BackendPath: "/api/notices/<id>/actions/unpublish",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      http.MethodPut,
 	CheckLogin:  true,

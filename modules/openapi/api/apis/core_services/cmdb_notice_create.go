@@ -24,7 +24,7 @@ import (
 var CMDB_NOTICE_CREATE = apis.ApiSpec{
 	Path:         "/api/notices",
 	BackendPath:  "/api/notices",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

@@ -23,7 +23,7 @@ import (
 var CMDB_AUDITS_EXPORT = apis.ApiSpec{
 	Path:        "/api/audits/actions/export-excel",
 	BackendPath: "/api/audits/actions/export-excel",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	IsOpenAPI:   true,

@@ -23,7 +23,7 @@ import (
 var CMDB_NOTIFYGROUP_UPDATE = apis.ApiSpec{
 	Path:         "/api/notify-groups/<notifyGroupID>",
 	BackendPath:  "/api/notify-groups/<notifyGroupID>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

@@ -24,7 +24,7 @@ add for standard
 var CMDB_APPLICATIONS_LIST = apis.ApiSpec{
 	Path:         "/api/applications",
 	BackendPath:  "/api/applications",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

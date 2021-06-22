@@ -21,7 +21,7 @@ import (
 var CMDB_APPLICATION_INIT = apis.ApiSpec{
 	Path:        "/api/applications/<applicationId>/actions/init",
 	BackendPath: "/api/applications/<applicationId>/actions/init",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "PUT",
 	RequestType: apistructs.ApplicationInitRequest{},

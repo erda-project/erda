@@ -20,7 +20,7 @@ import (
 var CMDB_PROJECT_FUNCTIONS_GET = apis.ApiSpec{
 	Path:        "/api/projects/actions/get-project-functions",
 	BackendPath: "/api/projects/actions/get-project-functions",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

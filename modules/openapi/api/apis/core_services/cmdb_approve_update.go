@@ -21,7 +21,7 @@ import (
 var CMDB_APPROVE_UPDATE = apis.ApiSpec{
 	Path:         "/api/approves/<approveId>",
 	BackendPath:  "/api/approves/<approveId>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

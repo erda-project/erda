@@ -23,7 +23,7 @@ import (
 var CMDB_ORG_VERIFICODE_GEN = apis.ApiSpec{
 	Path:         "/api/orgs/actions/gen-verify-code",
 	BackendPath:  "/api/orgs/actions/gen-verify-code",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	CheckLogin:   true,

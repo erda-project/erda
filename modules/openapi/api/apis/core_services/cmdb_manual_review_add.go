@@ -20,7 +20,7 @@ import (
 var CMDB_MANUAL_REVIEW_ADD = apis.ApiSpec{
 	Path:        "/api/reviews/actions/review/approve",
 	BackendPath: "/api/reviews/actions/review/approve",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

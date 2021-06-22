@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_NOTIFY_FUZZY_QUERY = apis.ApiSpec{
 	Path:        "/api/notifies/actions/fuzzy-query-by-source",
 	BackendPath: "/api/notifies/actions/fuzzy-query-by-source",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

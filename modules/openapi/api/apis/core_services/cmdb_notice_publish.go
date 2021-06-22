@@ -24,7 +24,7 @@ import (
 var CMDB_NOTICE_PUBLISH = apis.ApiSpec{
 	Path:         "/api/notices/<id>/actions/publish",
 	BackendPath:  "/api/notices/<id>/actions/publish",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,

@@ -103,7 +103,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
 		deletecluster := cmdbDeleteClusterResp{}
-		resp, err := httpclient.New().Delete(discover.CoreServices()).
+		resp, err := httpclient.New().Delete(discover.CMDB()).
 			Header("Internal-Client", "ops").
 			Path(fmt.Sprintf("/api/clusters/%s", req.ClusterName)).
 			Do().JSON(&deletecluster)

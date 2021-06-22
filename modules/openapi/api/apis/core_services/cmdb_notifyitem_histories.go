@@ -21,7 +21,7 @@ import (
 var CMDB_NOTIFY_HISTORIES = apis.ApiSpec{
 	Path:         "/api/notify-histories",
 	BackendPath:  "/api/notify-histories",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

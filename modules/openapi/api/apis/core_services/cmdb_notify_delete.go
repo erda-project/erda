@@ -22,7 +22,7 @@ import (
 var CMDB_NOTIFY_DELETE = apis.ApiSpec{
 	Path:         "/api/notifies/<notifyID>",
 	BackendPath:  "/api/notifies/<notifyID>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "DELETE",
 	CheckLogin:   true,

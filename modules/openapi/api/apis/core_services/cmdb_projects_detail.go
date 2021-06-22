@@ -21,7 +21,7 @@ import (
 var CMDB_PROJECT_DETAIL = apis.ApiSpec{
 	Path:         "/api/projects/<projectIdOrName>",
 	BackendPath:  "/api/projects/<projectIdOrName>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

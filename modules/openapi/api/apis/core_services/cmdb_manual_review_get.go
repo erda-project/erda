@@ -21,7 +21,7 @@ import (
 var CMDB_MANUAL_REVIEW_GET = apis.ApiSpec{
 	Path:         "/api/reviews/actions/<id>",
 	BackendPath:  "/api/reviews/actions/<id>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

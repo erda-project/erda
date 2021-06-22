@@ -46,7 +46,7 @@ func (b *Bundle) PageIssues(req apistructs.IssuePagingRequest) (*apistructs.Issu
 
 // https://terminus-test-org.test.terminus.io/api/labels?type=issue&projectID=1&pageNo=1&pageSize=300
 func (b *Bundle) Labels(tp string, projectID uint64, userID string) (*apistructs.ProjectLabelListResponseData, error) {
-	host, err := b.urls.DOP()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}

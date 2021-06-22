@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_APPLICATION_UNPIN = apis.ApiSpec{
 	Path:        "/api/applications/<applicationId>/actions/unpin",
 	BackendPath: "/api/applications/<applicationId>/actions/unpin",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,

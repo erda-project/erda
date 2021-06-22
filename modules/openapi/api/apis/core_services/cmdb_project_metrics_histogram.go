@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_PROJECT_METRICS_HISTOGRAM = apis.ApiSpec{
 	Path:        "/api/projects/resource/<resourceType>/actions/list-usage-histogram",
 	BackendPath: "/api/projects/resource/<resourceType>/actions/list-usage-histogram",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

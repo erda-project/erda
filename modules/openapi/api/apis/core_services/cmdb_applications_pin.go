@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_APPLICATION_PIN = apis.ApiSpec{
 	Path:        "/api/applications/<applicationId>/actions/pin",
 	BackendPath: "/api/applications/<applicationId>/actions/pin",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,

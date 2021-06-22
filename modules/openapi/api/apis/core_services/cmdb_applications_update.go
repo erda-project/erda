@@ -22,7 +22,7 @@ import (
 var CMDB_APPLICATION_UPDATE = apis.ApiSpec{
 	Path:         "/api/applications/<applicationId>",
 	BackendPath:  "/api/applications/<applicationId>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

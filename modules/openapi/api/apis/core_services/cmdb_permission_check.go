@@ -21,7 +21,7 @@ import (
 var CMDB_PERMISSION_CHECK = apis.ApiSpec{
 	Path:         "/api/permissions/actions/check",
 	BackendPath:  "/api/permissions/actions/check",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

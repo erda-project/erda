@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_PROJECT_FILETREE_GET = apis.ApiSpec{
 	Path:        "/api/project-pipeline/filetree/<inode>",
 	BackendPath: "/api/project-pipeline/filetree/<inode>",
-	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

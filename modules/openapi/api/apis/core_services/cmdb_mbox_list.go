@@ -21,7 +21,7 @@ import (
 var CMDB_MBOX_LIST = apis.ApiSpec{
 	Path:         "/api/mboxs",
 	BackendPath:  "/api/mboxs",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

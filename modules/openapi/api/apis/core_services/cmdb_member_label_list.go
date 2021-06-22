@@ -21,7 +21,7 @@ import (
 var CMDB_MEMBER_LABEL_LIST = apis.ApiSpec{
 	Path:         "/api/members/actions/list-labels",
 	BackendPath:  "/api/members/actions/list-labels",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_APP_LIST_TEMPLATES = apis.ApiSpec{
 	Path:        "/api/applications/actions/list-templates",
 	BackendPath: "/api/applications/actions/list-templates",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,

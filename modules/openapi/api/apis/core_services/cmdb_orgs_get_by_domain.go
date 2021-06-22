@@ -21,7 +21,7 @@ import (
 var CMDB_ORG_GET_BY_DOMAIN = apis.ApiSpec{
 	Path:          "/api/orgs/actions/get-by-domain",
 	BackendPath:   "/api/orgs/actions/get-by-domain",
-	Host:          "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:        "http",
 	Method:        "GET",
 	TryCheckLogin: true,

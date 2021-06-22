@@ -22,7 +22,7 @@ import (
 var CMDB_ORG_CLUSTER_RELATE_OPENAPI = apis.ApiSpec{
 	Path:        "/api/orgs/actions/relate-cluster",
 	BackendPath: "/api/orgs/actions/relate-cluster",
-	Host:        "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
 	Method:      "POST",
 	IsOpenAPI:   true,

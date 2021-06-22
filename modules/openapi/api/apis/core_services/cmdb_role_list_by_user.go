@@ -21,7 +21,7 @@ import (
 var CMDB_ROLES_LIST_BY_USER = apis.ApiSpec{
 	Path:         "/api/members/actions/list-user-roles",
 	BackendPath:  "/api/members/actions/list-user-roles",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

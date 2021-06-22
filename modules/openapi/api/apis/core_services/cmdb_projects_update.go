@@ -25,7 +25,7 @@ already migration
 var CMDB_PROJECT_UPDATE = apis.ApiSpec{
 	Path:         "/api/projects/<projectId>",
 	BackendPath:  "/api/projects/<projectId>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

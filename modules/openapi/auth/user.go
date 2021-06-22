@@ -80,7 +80,7 @@ func NewUser(redisCli *redis.Client) *User {
 		ucUserAuth.ClientID = conf.OryCompatibleClientID()
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
-	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: bundle.New(bundle.WithCMDB())}
+	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: bundle.New(bundle.WithCMDB(), bundle.WithCoreServices(), bundle.WithDOP())}
 }
 
 func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (interface{}, AuthResult) {

@@ -21,7 +21,7 @@ import (
 var CMDB_ORG_INGRESS_UPDATE = apis.ApiSpec{
 	Path:         "/api/orgs/ingress/<orgID>",
 	BackendPath:  "/api/orgs/ingress/<orgID>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

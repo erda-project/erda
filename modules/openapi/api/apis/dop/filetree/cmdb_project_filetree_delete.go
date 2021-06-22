@@ -15,12 +15,12 @@ package filetree
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var CMDB_PROJECT_FILETREE_CREATE = apis.ApiSpec{
-	Path:        "/api/project-pipeline/filetree",
-	BackendPath: "/api/project-pipeline/filetree",
-	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
+var CMDB_PROJECT_FILETREE_DELETE = apis.ApiSpec{
+	Path:        "/api/project-pipeline/filetree/<inode>",
+	BackendPath: "/api/project-pipeline/filetree/<inode>",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
-	Method:      "POST",
+	Method:      "DELETE",
 	CheckLogin:  true,
-	Doc:         "summary: 创建节点",
+	Doc:         "summary: 删除节点",
 }

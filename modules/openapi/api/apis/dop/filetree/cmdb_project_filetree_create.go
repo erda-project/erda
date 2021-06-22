@@ -15,12 +15,12 @@ package filetree
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var CMDB_PROJECT_FILETREE_FUZZY_SEARCH = apis.ApiSpec{
-	Path:        "/api/project-pipeline/filetree/actions/fuzzy-search",
-	BackendPath: "/api/project-pipeline/filetree/actions/fuzzy-search",
-	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
+var CMDB_PROJECT_FILETREE_CREATE = apis.ApiSpec{
+	Path:        "/api/project-pipeline/filetree",
+	BackendPath: "/api/project-pipeline/filetree",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
-	Doc:         "summary: 模糊搜索节点",
+	Doc:         "summary: 创建节点",
 }

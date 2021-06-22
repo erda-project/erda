@@ -168,6 +168,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		)),
 		bundle.WithKMS(),
 		bundle.WithCoreServices(),
+		bundle.WithDOP(),
 	)
 
 	// init pipeline

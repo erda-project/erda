@@ -21,7 +21,7 @@ import (
 var CMDB_MANUAL_REVIEW_LISTBYSPONSORID = apis.ApiSpec{
 	Path:         "/api/reviews/actions/list-launched-approval",
 	BackendPath:  "/api/reviews/actions/list-launched-approval",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,

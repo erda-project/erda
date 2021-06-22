@@ -21,7 +21,7 @@ import (
 var CMDB_NOTIFYITEM_UPDATE = apis.ApiSpec{
 	Path:         "/api/notify-items/<notifyItemID>",
 	BackendPath:  "/api/notify-items/<notifyItemID>",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

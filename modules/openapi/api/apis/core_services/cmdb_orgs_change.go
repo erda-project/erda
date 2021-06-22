@@ -21,7 +21,7 @@ import (
 var CMDB_ORG_CHANGE = apis.ApiSpec{
 	Path:         "/api/orgs/actions/change-current-org",
 	BackendPath:  "/api/orgs/actions/switch",
-	Host:         "coreservices.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,
