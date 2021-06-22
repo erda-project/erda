@@ -58,5 +58,3 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 func init() {
 	servicehub.RegisterProvider("erda.msp.apm.metric", &define{})
 }
-
-
