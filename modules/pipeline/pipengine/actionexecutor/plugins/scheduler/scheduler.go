@@ -23,6 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor"
 	tasktypes "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
@@ -32,8 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -182,7 +182,7 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, nil
 	}
 
-	job, err := transferToSchedulerJob(action)
+	job, err := logic.TransferToSchedulerJob(action)
 	if err != nil {
 		return nil, errors.Errorf("transfer to scheduler job err: %v", err)
 	}
@@ -427,7 +427,7 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 			Name:        action.Extra.UUID,
 			Namespace:   action.Extra.Namespace,
 			ClusterName: action.Extra.ClusterName,
-			Volumes:     makeVolume(action),
+			Volumes:     logic.MakeVolume(action),
 		})
 	}
 	var body bytes.Buffer
@@ -463,87 +463,6 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 		return nil, fmt.Errorf("statusCode: %d, results: %+v", resp.StatusCode(), filteredErrResults)
 	}
 	return "", nil
-}
-
-func transferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Errorf("%v", r)
-		}
-	}()
-
-	return apistructs.JobFromUser{
-		Name: task_uuid.MakeJobID(task),
-		Kind: func() string {
-			switch task.Type {
-			case string(pipelineymlv1.RES_TYPE_FLINK):
-				return string(apistructs.Flink)
-			case string(pipelineymlv1.RES_TYPE_SPARK):
-				return string(apistructs.Spark)
-			default:
-				return ""
-			}
-		}(),
-		Namespace: task.Extra.Namespace,
-		ClusterName: func() string {
-			if len(task.Extra.ClusterName) == 0 {
-				panic(errors.New("missing cluster name in pipeline task"))
-			}
-			return task.Extra.ClusterName
-		}(),
-		Image:      task.Extra.Image,
-		Cmd:        strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
-		CPU:        task.Extra.RuntimeResource.CPU,
-		Memory:     task.Extra.RuntimeResource.Memory,
-		Binds:      task.Extra.Binds,
-		Volumes:    makeVolume(task),
-		PreFetcher: task.Extra.PreFetcher,
-		Env:        task.Extra.PublicEnvs,
-		Labels:     task.Extra.Labels,
-		// flink/spark
-		Resource:  task.Extra.FlinkSparkConf.JarResource,
-		MainClass: task.Extra.FlinkSparkConf.MainClass,
-		MainArgs:  task.Extra.FlinkSparkConf.MainArgs,
-		// 重试不依赖 scheduler，由 pipeline engine 自己实现，保证所有 action executor 均适用
-		Params: task.Extra.Action.Params,
-	}, nil
-}
-
-func makeVolume(task *spec.PipelineTask) []diceyml.Volume {
-	diceVolumes := make([]diceyml.Volume, 0)
-	for _, vo := range task.Extra.Volumes {
-		if vo.Type == string(spec.StoreTypeDiceVolumeFake) || vo.Type == string(spec.StoreTypeDiceCacheNFS) {
-			// fake volume,没有实际挂载行为,不传给scheduler
-			continue
-		}
-		diceVolume := diceyml.Volume{
-			Path: vo.Value,
-			Storage: func() string {
-				switch vo.Type {
-				case string(spec.StoreTypeDiceVolumeNFS):
-					return "nfs"
-				case string(spec.StoreTypeDiceVolumeLocal):
-					return "local"
-				default:
-					panic(errors.Errorf("%q has not supported volume type: %s", vo.Name, vo.Type))
-				}
-			}(),
-		}
-		if vo.Labels != nil {
-			if id, ok := vo.Labels["ID"]; ok {
-				diceVolume.ID = &id
-				goto AppendDiceVolume
-			}
-		}
-		// labels == nil or labels["ID"] not exist
-		// 如果 id 不存在，说明上一次没有生成 volume，并且是 optional 的，则不创建 diceVolume
-		if vo.Optional {
-			continue
-		}
-	AppendDiceVolume:
-		diceVolumes = append(diceVolumes, diceVolume)
-	}
-	return diceVolumes
 }
 
 func transferStatus(status string) apistructs.PipelineStatus {
