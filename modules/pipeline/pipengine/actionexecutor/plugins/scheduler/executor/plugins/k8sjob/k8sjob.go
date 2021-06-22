@@ -58,7 +58,6 @@ var (
 )
 
 const (
-	executorKind       = "K8SJOB"
 	jobKind            = "Job"
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"
