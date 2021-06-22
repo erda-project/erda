@@ -8,8 +8,6 @@ hierarchy:
     page: 
       children:
         - myPage
-      tabBarExtraContent:
-        - createButton
     myPage:
       - filter
       - list
@@ -19,8 +17,6 @@ components:
     type: Tabs
   myPage:
     type: Container
-  createButton:
-    type: Button
   filter:
     type: ContractiveFilter
   list:
