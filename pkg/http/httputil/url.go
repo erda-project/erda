@@ -11,9 +11,30 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package conf
+package httputil
 
-type Conf struct {
-	Debug  bool   `default:"false"`
-	Listen string `default:":9094"`
+import (
+	"net/url"
+	"strings"
+)
+
+// JoinPath .
+func JoinPath(appendRoot bool, segments ...string) string {
+	sb := &strings.Builder{}
+	if appendRoot {
+		sb.WriteString("/")
+	}
+	last := len(segments) - 1
+	for i, s := range segments {
+		sb.WriteString(url.PathEscape(s))
+		if i < last {
+			sb.WriteRune('/')
+		}
+	}
+	return sb.String()
+}
+
+// JoinPathR .
+func JoinPathR(segments ...string) string {
+	return JoinPath(true)
 }

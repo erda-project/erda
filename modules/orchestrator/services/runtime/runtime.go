@@ -1222,7 +1222,7 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 	}
 
 	// check four env perm
-	rtEnvPermMark := make(map[string]struct{})
+	rtEnvPermMark := make(map[string]*apistructs.WorkspaceRuntimeInfo)
 	anyPerm := false
 	for _, env := range []string{"dev", "test", "staging", "prod"} {
 		perm, err := r.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
@@ -1236,7 +1236,7 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 			return nil, apierrors.ErrGetRuntime.InternalError(err)
 		}
 		if perm.Access {
-			rtEnvPermMark[env] = struct{}{}
+			rtEnvPermMark[env] = &apistructs.WorkspaceRuntimeInfo{HavePermission: true}
 			anyPerm = true
 		}
 	}
@@ -1252,9 +1252,9 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		}
 		env := strutil.ToLower(runtime.Workspace)
 		if _, exists := rtEnvPermMark[env]; !exists {
+			rtEnvPermMark[env].HaveRuntime = false
 			continue
 		}
-		delete(rtEnvPermMark, env)
 		deployment, err := r.db.FindLastDeployment(runtime.ID)
 		if err != nil {
 			logrus.Errorf("[alert] failed to build summary item, runtime %v get last deployment failed, err: %v",
@@ -1317,11 +1317,13 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 	// through the release, but we should let users know that thisruntime is being created.
 	if len(workspace) == 0 && len(name) == 0 {
 		for env := range rtEnvPermMark {
-			creatingRTs, err := utils.FindCreatingRuntimesByRelease(appID, env, "", r.bdl)
-			if err != nil {
-				return nil, err
+			if !rtEnvPermMark[env].HaveRuntime {
+				creatingRTs, err := utils.FindCreatingRuntimesByRelease(appID, env, "", r.bdl)
+				if err != nil {
+					return nil, err
+				}
+				data = append(data, creatingRTs...)
 			}
-			data = append(data, creatingRTs...)
 		}
 	}
 

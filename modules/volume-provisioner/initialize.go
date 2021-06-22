@@ -67,6 +67,10 @@ func initialize(config *config, ctx context.Context) error {
 		logrus.Errorf("Failed to create config: %v", err)
 		return err
 	}
+
+	csConfig.QPS = 100
+	csConfig.Burst = 100
+
 	cs, err := kubernetes.NewForConfig(csConfig)
 	if err != nil {
 		logrus.Errorf("Failed to create client: %v", err)
@@ -78,13 +82,10 @@ func initialize(config *config, ctx context.Context) error {
 		return err
 	}
 
-	if config.ModeEdge {
-		logrus.Infof("Edge mode, create localvolumeProvisioner only")
-		initLocalVolumeProvisioner(config, csConfig, cs, serverVersion)
-	} else {
-		initLocalVolumeProvisioner(config, csConfig, cs, serverVersion)
+	if !config.ModeEdge {
 		initNetDataVolumeProvisioner(config, csConfig, cs, serverVersion)
 	}
+	initLocalVolumeProvisioner(config, csConfig, cs, serverVersion)
 
 	select {
 	case <-ctx.Done():

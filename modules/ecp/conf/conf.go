@@ -16,5 +16,5 @@ package conf
 // Conf Define the configuration
 type Conf struct {
 	Debug  bool   `env:"DEBUG" default:"false"`
-	Listen string `env:"LISTEN_ADDR" default:":9027"`
+	Listen string `env:"LISTEN_ADDR" default:":9029"`
 }
