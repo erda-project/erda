@@ -87,13 +87,6 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	this.Props.Value = make([]interface{}, 0)
 	this.Props.Value = append(this.Props.Value, map[string]interface{}{
 		"props": map[string]interface{}{
-			"renderType": "text",
-			"visible":    visible,
-			"value":      i18nLocale.Get(i18n.I18nKeyOrgNoAdded),
-		},
-	})
-	this.Props.Value = append(this.Props.Value, map[string]interface{}{
-		"props": map[string]interface{}{
 			"renderType": "linkText",
 			"visible":    visible,
 			"value": map[string]interface{}{
