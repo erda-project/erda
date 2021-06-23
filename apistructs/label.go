@@ -47,6 +47,15 @@ type ProjectLabelCreateRequest struct {
 	IdentityInfo
 }
 
+type ListByNamesAndProjectIDRequest struct {
+	ProjectID uint64   `json:"projectID"`
+	Name      []string `json:"name"`
+}
+
+type ListLabelByIDsRequest struct {
+	IDs []uint64 `json:"ids"`
+}
+
 // ProjectLabelCreateResponse POST /api/labels 创建标签响应结构
 type ProjectLabelCreateResponse struct {
 	Header
@@ -90,4 +99,9 @@ type ProjectLabelListResponseData struct {
 type ProjectLabelGetByIDResponseData struct {
 	Header
 	Data ProjectLabel
+}
+
+type ProjectLabelsResponse struct {
+	Header
+	Data []ProjectLabel `json:"data"`
 }
