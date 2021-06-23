@@ -411,43 +411,17 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	// inject hosts
 	deployment.Spec.Template.Spec.HostAliases = ConvertToHostAlias(service.Hosts)
 
-	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
-
 	container := apiv1.Container{
 		// TODO, container name e.g. redis-1528180634
 		Name:  service.Name,
 		Image: service.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse(cpu),
-				apiv1.ResourceMemory: resource.MustParse(memory),
-			},
-		},
 	}
 
-	//Set the over-score ratio according to the environment
-	cpuSubscribeRatio := k.cpuSubscribeRatio
-	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
-	case "DEV":
-		cpuSubscribeRatio = k.devCpuSubscribeRatio
-		memSubscribeRatio = k.devMemSubscribeRatio
-	case "TEST":
-		cpuSubscribeRatio = k.testCpuSubscribeRatio
-		memSubscribeRatio = k.testMemSubscribeRatio
-	case "STAGING":
-		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
-		memSubscribeRatio = k.stagingMemSubscribeRatio
-	}
-
-	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
-		return nil, err
-	}
-
-	if err := k.SetOverCommitMem(&container, memSubscribeRatio); err != nil {
-		return nil, err
+	err := k.setContainerResources(*service, &container)
+	if err != nil {
+		errMsg := fmt.Sprintf("set container resource err: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
 	}
 
 	// Generate sidecars container configuration
@@ -810,7 +784,7 @@ func (k *Kubernetes) scaleDeployment(sg *apistructs.ServiceGroup) error {
 	// only support one container on Erda currently
 	container := deploy.Spec.Template.Spec.Containers[0]
 
-	err = k.setContainerResources(scalingService, &container, sg.Extra)
+	err = k.setContainerResources(scalingService, &container)
 	if err != nil {
 		setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
 		return setContainerErr
@@ -825,21 +799,12 @@ func (k *Kubernetes) scaleDeployment(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
-func (k *Kubernetes) setContainerResources(service apistructs.Service, container *apiv1.Container,
-	extra map[string]string) error {
-	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
-
-	container.Resources = apiv1.ResourceRequirements{
-		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(cpu),
-			apiv1.ResourceMemory: resource.MustParse(memory),
-		},
-	}
+func (k *Kubernetes) setContainerResources(service apistructs.Service, container *apiv1.Container) error {
 
 	//Set the over-score ratio according to the environment
 	cpuSubscribeRatio := k.cpuSubscribeRatio
 	memSubscribeRatio := k.memSubscribeRatio
+	logrus.Info("set container resource %+v", service)
 	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
 	case "DEV":
 		cpuSubscribeRatio = k.devCpuSubscribeRatio
@@ -851,14 +816,32 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
 		memSubscribeRatio = k.stagingMemSubscribeRatio
 	}
-
-	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(container, extra, cpuSubscribeRatio); err != nil {
-		return err
+	if cpuSubscribeRatio < 1.0 {
+		cpuSubscribeRatio = 1.0
+	}
+	if memSubscribeRatio < 1.0 {
+		memSubscribeRatio = 1.0
 	}
 
-	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
-		return err
+	requestCPU := fmt.Sprintf("%dm", 100)
+	if service.Resources.Cpu*1000/cpuSubscribeRatio > 100 {
+		requestCPU = fmt.Sprintf("%dm", int(service.Resources.Cpu*1000/cpuSubscribeRatio))
 	}
+	requestMem := fmt.Sprintf("%dMi", int(service.Resources.Mem/memSubscribeRatio))
+
+	cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
+	memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
+
+	container.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(requestCPU),
+			apiv1.ResourceMemory: resource.MustParse(requestMem),
+		},
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(cpu),
+			apiv1.ResourceMemory: resource.MustParse(memory),
+		},
+	}
+
 	return nil
 }
