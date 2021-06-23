@@ -179,7 +179,7 @@ func GetMergeRequests(ctx *webcontext.Context) {
 		ctx.Abort(err)
 		return
 	}
-	userIDs := []string{}
+	var userIDs []string
 	for _, mergeRequestInfo := range response.List {
 		userIDs = append(userIDs,
 			mergeRequestInfo.AssigneeId,
