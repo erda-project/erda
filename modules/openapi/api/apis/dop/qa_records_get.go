@@ -11,22 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package emptyContainer
+package dop
 
 import (
-	"context"
-	"encoding/json"
-
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type ComponentAction struct{}
-
-func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{ "className": "center-flex-box" }`), &c.Props)
-}
-
-func RenderCreator() protocol.CompRender {
-	return &ComponentAction{}
+var QA_RECORDS_GET = apis.ApiSpec{
+	Path:         "/api/test-file-records/<id>",
+	BackendPath:  "/api/test-file-records/<id>",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	Doc:          "summary: get file record",
+	ResponseType: apistructs.GetTestFileRecordResponse{},
+	IsOpenAPI:    true,
 }

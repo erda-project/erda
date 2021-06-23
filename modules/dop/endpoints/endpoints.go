@@ -268,7 +268,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/testcases/actions/batch-update", Method: http.MethodPost, Handler: e.BatchUpdateTestCases},
 		{Path: "/api/testcases/actions/batch-copy", Method: http.MethodPost, Handler: e.BatchCopyTestCases},
 		{Path: "/api/testcases/actions/batch-clean-from-recycle-bin", Method: http.MethodDelete, Handler: e.BatchCleanTestCasesFromRecycleBin},
-		{Path: "/api/testcases/actions/export", Method: http.MethodGet, WriterHandler: e.ExportTestCases},
+		{Path: "/api/testcases/actions/export", Method: http.MethodGet, Handler: e.ExportTestCases},
 		{Path: "/api/testcases/actions/import", Method: http.MethodPost, Handler: e.ImportTestCases},
 
 		// 测试集 管理
@@ -398,6 +398,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// migrate
 		{Path: "/api/autotests/actions/migrate-from-autotestv1", Method: http.MethodGet, Handler: e.MigrateFromAutoTestV1},
+
+		// test file records
+		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
+		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
 	}
 }
 
@@ -429,6 +433,9 @@ type Endpoints struct {
 	cq              *cq.CQ
 	sceneset        *sceneset.Service
 	migrate         *migrate.Service
+
+	ImportChannel chan uint64
+	ExportChannel chan uint64
 }
 
 type Option func(*Endpoints)
@@ -591,4 +598,8 @@ var queryStringDecoder *schema.Decoder
 func init() {
 	queryStringDecoder = schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+}
+
+func (e *Endpoints) TestCaseService() *testcase.Service {
+	return e.testcase
 }
