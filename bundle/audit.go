@@ -24,7 +24,7 @@ import (
 
 // CreateAuditEvent 创建审计事件
 func (b *Bundle) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (b *Bundle) CreateAuditEvent(audits *apistructs.AuditCreateRequest) error {
 
 // BatchCreateAuditEvent 批量创建审计事件
 func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}

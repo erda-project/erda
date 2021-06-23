@@ -162,12 +162,12 @@ func ListAllOrgs() (res []apistructs.OrgDTO, err error) {
 		PageNo:   1,
 		PageSize: 1,
 	}
-	resp, err := bdl.ListOrgs(req)
+	resp, err := bdl.ListDopOrgs(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "ListOrgs err")
 	}
 	req.PageSize = resp.Total
-	resp, err = bdl.ListOrgs(req)
+	resp, err = bdl.ListDopOrgs(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "ListOrgs err")
 	}

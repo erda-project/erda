@@ -24,7 +24,7 @@ import (
 )
 
 func (b *Bundle) PageIssues(req apistructs.IssuePagingRequest) (*apistructs.IssuePagingResponse, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) PageIssues(req apistructs.IssuePagingRequest) (*apistructs.Issu
 
 // https://terminus-test-org.test.terminus.io/api/labels?type=issue&projectID=1&pageNo=1&pageSize=300
 func (b *Bundle) Labels(tp string, projectID uint64, userID string) (*apistructs.ProjectLabelListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (b *Bundle) Labels(tp string, projectID uint64, userID string) (*apistructs
 
 // GetIssue 通过id获取事件
 func (b *Bundle) GetIssue(id uint64) (*apistructs.Issue, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (b *Bundle) GetIssue(id uint64) (*apistructs.Issue, error) {
 // CreateIssueTicket 创建工单
 // TODO 和ps_ticket的bundle同名了，待前者废弃后改回
 func (b *Bundle) CreateIssueTicket(createReq apistructs.IssueCreateRequest) (uint64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -118,7 +118,7 @@ func (b *Bundle) CreateIssueTicket(createReq apistructs.IssueCreateRequest) (uin
 
 // UpdateIssueTicket 更新ticket
 func (b *Bundle) UpdateIssueTicket(updateReq apistructs.IssueUpdateRequest, issueID uint64) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (b *Bundle) UpdateIssueTicket(updateReq apistructs.IssueUpdateRequest, issu
 
 // UpdateIssueTicketUser 更新ticket，带User-ID
 func (b *Bundle) UpdateIssueTicketUser(UserID string, updateReq apistructs.IssueUpdateRequest, issueID uint64) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (b *Bundle) UpdateIssueTicketUser(UserID string, updateReq apistructs.Issue
 }
 
 func (b *Bundle) GetIssueStateBelong(req apistructs.IssueStateRelationGetRequest) ([]apistructs.IssueStateState, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (b *Bundle) GetIssueStateBelong(req apistructs.IssueStateRelationGetRequest
 }
 
 func (b *Bundle) GetIssueStatesByID(req []int64) ([]apistructs.IssueStatus, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (b *Bundle) GetIssueStatesByID(req []int64) ([]apistructs.IssueStatus, erro
 
 // UpdateIssuePanelIssue 更新事件所属看板
 func (b *Bundle) UpdateIssuePanelIssue(userID string, panelID, issueID, projectID int64) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (b *Bundle) UpdateIssuePanelIssue(userID string, panelID, issueID, projectI
 	return nil
 }
 func (b *Bundle) GetIssuePanel(req apistructs.IssuePanelRequest) ([]apistructs.IssuePanelIssues, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (b *Bundle) GetIssuePanel(req apistructs.IssuePanelRequest) ([]apistructs.I
 }
 
 func (b *Bundle) GetIssuePanelIssue(req apistructs.IssuePanelRequest) (*apistructs.IssuePanelIssueIDs, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (b *Bundle) GetIssuePanelIssue(req apistructs.IssuePanelRequest) (*apistruc
 }
 
 func (b *Bundle) CreateIssuePanel(req apistructs.IssuePanelRequest) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -302,7 +302,7 @@ func (b *Bundle) CreateIssuePanel(req apistructs.IssuePanelRequest) (int64, erro
 }
 
 func (b *Bundle) DeleteIssuePanel(req apistructs.IssuePanelRequest) (*apistructs.IssuePanel, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func (b *Bundle) DeleteIssuePanel(req apistructs.IssuePanelRequest) (*apistructs
 }
 
 func (b *Bundle) UpdateIssuePanel(req apistructs.IssuePanelRequest) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -350,7 +350,7 @@ func (b *Bundle) UpdateIssuePanel(req apistructs.IssuePanelRequest) (int64, erro
 	return isp.Data, nil
 }
 func (b *Bundle) GetIssueStage(orgID int64, issueType apistructs.IssueType) ([]apistructs.IssueStage, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

@@ -56,7 +56,7 @@ func (as *AutoScanner) Run() {
 
 func (as *AutoScanner) CheckNoticeExist() {
 	// list all org
-	orgInfo, err := as.bdl.ListOrgs(&apistructs.OrgSearchRequest{})
+	orgInfo, err := as.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{})
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -87,7 +87,7 @@ func (as *AutoScanner) CheckNoticeExist() {
 
 func (as *AutoScanner) CheckNoticeExpired() {
 	// list all org
-	orgInfo, err := as.bdl.ListOrgs(&apistructs.OrgSearchRequest{})
+	orgInfo, err := as.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{})
 	if err != nil {
 		logrus.Error(err)
 		return

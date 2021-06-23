@@ -22,10 +22,8 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -122,7 +120,6 @@ type Conf struct {
 var (
 	cfg Conf
 	// 存储权限配置
-	permissions []model.RolePermission
 	// 审计模版配置
 	auditsTemplate apistructs.AuditTemplateMap
 	// 域名白名单
@@ -130,10 +127,6 @@ var (
 	// legacy redirect paths
 	RedirectPathList map[string]bool
 )
-
-func initPermissions() {
-	permissions = getAllFiles("erda-configs/permission", permissions)
-}
 
 func initAuditTemplate() {
 	auditsTemplate = genTempFromFiles("erda-configs/audit/template.json")
@@ -157,34 +150,8 @@ func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
 	return result
 }
 
-func getAllFiles(pathname string, perms []model.RolePermission) []model.RolePermission {
-	rd, err := ioutil.ReadDir(pathname)
-	if err != nil {
-		panic(err)
-	}
-	for _, fi := range rd {
-		if fi.IsDir() {
-			fullDir := pathname + "/" + fi.Name()
-			perms = getAllFiles(fullDir, perms)
-		} else {
-			fullName := pathname + "/" + fi.Name()
-			yamlFile, err := ioutil.ReadFile(fullName)
-			if err != nil {
-				panic(err)
-			}
-			var per []model.RolePermission
-			if err := yaml.Unmarshal(yamlFile, &per); err != nil {
-				panic(err)
-			}
-			perms = append(perms, per...)
-		}
-	}
-	return perms
-}
-
 // Load 加载配置项.
 func Load() {
-	initPermissions()
 	initAuditTemplate()
 	envconf.MustLoad(&cfg)
 
@@ -228,38 +195,6 @@ func Load() {
 // AuditTemplate 返回权限列表
 func AuditTemplate() apistructs.AuditTemplateMap {
 	return auditsTemplate
-}
-
-// Permissions 获取权限配置
-func Permissions() map[string]model.RolePermission {
-	pm := make(map[string]model.RolePermission, len(permissions))
-	for _, v := range permissions {
-		k := strutil.Concat(v.Scope, v.Resource, v.Action)
-		pm[k] = v
-	}
-	return pm
-}
-
-// RolePermissions 获取角色对应的权限配置
-func RolePermissions(roles []string) (map[string]model.RolePermission, []model.RolePermission) {
-	pm := make(map[string]model.RolePermission, len(permissions))
-	resourceRoles := make([]model.RolePermission, 0)
-	for _, v := range permissions {
-		for _, role := range roles {
-			confRoles := strings.SplitN(v.Role, ",", -1)
-			for _, cR := range confRoles {
-				if role == cR {
-					k := strutil.Concat(v.Scope, v.Resource, v.Action)
-					pm[k] = v
-				}
-			}
-
-			if v.ResourceRole != "" {
-				resourceRoles = append(resourceRoles, v)
-			}
-		}
-	}
-	return pm, resourceRoles
 }
 
 // ListenAddr 返回 ListenAddr 选项.

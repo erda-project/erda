@@ -67,7 +67,7 @@ func (e *Endpoints) CreateCloudAccount(ctx context.Context, r *http.Request, var
 		Resource: apistructs.CloudAccountResource,
 		Action:   apistructs.OperateAction,
 	}
-	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrCreateCloudAccount.AccessDenied().ToResp(), nil
 	}
 
@@ -121,7 +121,7 @@ func (e *Endpoints) UpdateCloudAccount(ctx context.Context, r *http.Request, var
 		Resource: apistructs.CloudAccountResource,
 		Action:   apistructs.OperateAction,
 	}
-	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrUpdateProject.AccessDenied().ToResp(), nil
 	}
 
@@ -165,7 +165,7 @@ func (e *Endpoints) DeleteCloudAccount(ctx context.Context, r *http.Request, var
 		Resource: apistructs.CloudAccountResource,
 		Action:   apistructs.OperateAction,
 	}
-	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrDeleteCloudAccount.AccessDenied().ToResp(), nil
 	}
 
@@ -203,7 +203,7 @@ func (e *Endpoints) ListCloudAccount(ctx context.Context, r *http.Request, vars 
 		Resource: apistructs.CloudAccountResource,
 		Action:   apistructs.OperateAction,
 	}
-	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrListCloudAccount.AccessDenied().ToResp(), nil
 	}
 

@@ -25,7 +25,7 @@ import (
 
 func (b *Bundle) CreateNoticeRequest(req *apistructs.NoticeCreateRequest,
 	orgID uint64) (*apistructs.NoticeCreateResponse, error) {
-	cmdbURL, err := b.urls.CMDB()
+	cmdbURL, err := b.urls.DOP()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -56,7 +56,7 @@ func (b *Bundle) CreateNoticeRequest(req *apistructs.NoticeCreateRequest,
 }
 
 func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, publishType string) error {
-	cmdbURL, err := b.urls.CMDB()
+	cmdbURL, err := b.urls.DOP()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
@@ -83,7 +83,7 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, publish
 }
 
 func (b *Bundle) ListNoticeByOrgID(orgID uint64) (*apistructs.NoticeListResponse, error) {
-	cmdbURL, err := b.urls.CMDB()
+	cmdbURL, err := b.urls.DOP()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}

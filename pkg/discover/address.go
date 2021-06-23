@@ -45,6 +45,7 @@ const (
 	EnvDOP            = "DOP_ADDR"
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
+	EnvCoreServices   = "CORE_SERVICES_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
@@ -73,6 +74,7 @@ const (
 	SvcDOP            = "dop"
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
+	SvcCoreServices   = "core-services"
 )
 
 func EventBox() string {
@@ -161,6 +163,10 @@ func ClusterDialer() string {
 
 func DOP() string {
 	return getURL(EnvDOP, SvcDOP)
+}
+
+func CoreServices() string {
+	return getURL(EnvCoreServices, SvcCoreServices)
 }
 
 func ECP() string {

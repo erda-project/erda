@@ -1,0 +1,89 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package issuestate
+
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+)
+
+// GetIssueStatesRelations 获取工作流
+func (is *IssueState) GetIssueStatesRelations(req apistructs.IssueStateRelationGetRequest) ([]apistructs.IssueStateRelation, error) {
+	issueRelations, err := is.db.GetIssuesStateRelations(req.ProjectID, req.IssueType)
+	if err != nil {
+		return nil, err
+	}
+	var response []apistructs.IssueStateRelation
+	var index int = -1
+	for _, v := range issueRelations {
+		// 按照开始状态归类
+		if index == -1 || v.ID != response[index].StateID {
+			index++
+			response = append(response, apistructs.IssueStateRelation{
+				IssueStatus: apistructs.IssueStatus{
+					ProjectID:   v.ProjectID,
+					IssueType:   v.IssueType,
+					StateID:     v.ID,
+					StateName:   v.Name,
+					StateBelong: v.Belong,
+					Index:       v.Index,
+				},
+			})
+		}
+		if v.EndStateID != 0 {
+			response[index].StateRelation = append(response[index].StateRelation, v.EndStateID)
+		}
+	}
+	return response, err
+}
+
+// UpdateIssueStates 更新工作流
+func (is *IssueState) UpdateIssueStates(updateReq *apistructs.IssueStateUpdateRequest) (apistructs.IssueType, error) {
+	for _, v := range updateReq.Data {
+		sta := &dao.IssueState{
+			BaseModel: dbengine.BaseModel{
+				ID: uint64(v.StateID),
+			},
+			ProjectID: v.ProjectID,
+			IssueType: v.IssueType,
+			Name:      v.StateName,
+			Belong:    v.StateBelong,
+			Index:     v.Index,
+			Role:      "Ops,Dev,QA,Owner,Lead",
+		}
+		if err := is.db.UpdateIssueState(sta); err != nil {
+			return "", err
+		}
+	}
+	var updateIssueStateRelations []dao.IssueStateRelation
+	for _, st := range updateReq.Data {
+		for _, endID := range st.StateRelation {
+			if endID == st.StateID {
+				continue
+			}
+			updateIssueStateRelations = append(updateIssueStateRelations, dao.IssueStateRelation{
+				ProjectID:    updateReq.ProjectID,
+				IssueType:    st.IssueType,
+				StartStateID: st.StateID,
+				EndStateID:   endID,
+			})
+		}
+	}
+	if len(updateIssueStateRelations) == 0 {
+		return "", apierrors.ErrUpdateIssueState.MissingParameter("工作流不能为空")
+	}
+	return updateReq.Data[0].IssueType, is.db.UpdateIssueStateRelations(updateReq.ProjectID, updateReq.Data[0].IssueType, updateIssueStateRelations)
+}

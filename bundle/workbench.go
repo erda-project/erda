@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest) (*apistructs.WorkbenchResponse, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest
 }
 
 func (b *Bundle) GetIssuesForWorkbench(req apistructs.IssuePagingRequest) (*apistructs.IssuePagingResponse, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

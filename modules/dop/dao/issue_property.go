@@ -1,0 +1,112 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package dao
+
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+)
+
+// IssueProperty 事件属性表
+type IssueProperty struct {
+	dbengine.BaseModel
+
+	ScopeType         apistructs.ScopeType         `gorm:"column:scope_type"`          // 系统管理员(sys)/企业(org)/项目(project)/应用(app)
+	ScopeID           int64                        `gorm:"column:scope_id"`            // 企业ID/项目ID/应用ID
+	OrgID             int64                        `gorm:"column:org_id"`              // 冗余 OrgID，方便删除企业时删除所有相关issue
+	Required          bool                         `gorm:"column:required"`            // 是否是必填项
+	PropertyType      apistructs.PropertyType      `gorm:"column:property_type"`       // 属性的的类型（单选，多选，文本）
+	PropertyName      string                       `gorm:"column:property_name"`       // 属性的名称
+	DisplayName       string                       `gorm:"column:display_name"`        // 属性的展示名称
+	PropertyIssueType apistructs.PropertyIssueType `gorm:"column:property_issue_type"` // 事件类型
+	Relation          int64                        `gorm:"column:relation"`            // 关联公用事件
+	Index             int64                        `gorm:"column:index"`               // 字段排序级
+}
+
+func (IssueProperty) TableName() string {
+	return "dice_issue_property"
+}
+
+func (client *DBClient) CreateIssueProperty(property *IssueProperty) error {
+	return client.Create(property).Error
+}
+
+func (client *DBClient) DeleteIssueProperty(orgId int64, propertyIssueType apistructs.PropertyIssueType, id int64, index int64) error {
+	return client.Where(&IssueProperty{}).Where("id = ?", id).Delete(&IssueProperty{}).Error
+}
+
+func (client *DBClient) UpdateIssuePropertiesIndex(properties []IssueProperty) error {
+	for i := range properties {
+		property := properties[i]
+		if err := client.Save(&property).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (client *DBClient) UpdateIssueProperty(property *IssueProperty) error {
+	return client.Save(property).Error
+}
+
+func (client *DBClient) GetIssueProperties(req apistructs.IssuePropertiesGetRequest) ([]IssueProperty, error) {
+	var properties []IssueProperty
+	db := client.Where(IssueProperty{}).Where("org_id = ?", req.OrgID)
+	if req.PropertyIssueType != "" {
+		db = db.Where("property_issue_type = ?", req.PropertyIssueType)
+	}
+	str := "%" + req.PropertyName + "%"
+	if req.PropertyName != "" {
+		db = db.Where("property_name LIKE ?", str)
+	}
+	if err := db.Order("index").Find(&properties).Error; err != nil {
+		return nil, err
+	}
+
+	return properties, nil
+}
+
+func (client *DBClient) GetIssuePropertyByID(id int64) (*IssueProperty, error) {
+	var property IssueProperty
+	if err := client.Where(IssueProperty{}).Where("id = ?", id).Limit(1).Find(&property).Error; err != nil {
+		return nil, err
+	}
+	return &property, nil
+}
+
+func (client *DBClient) GetIssuePropertiesByTime(orgID int64) ([]IssueProperty, error) {
+	var properties []IssueProperty
+	if err := client.Where(IssueProperty{}).Where("org_id = ?", orgID).Order("updated_at").Find(&properties).Error; err != nil {
+		return nil, err
+	}
+	return properties, nil
+}
+
+func (client *DBClient) GetIssuePropertiesByRelation(ID int64) (*IssueProperty, error) {
+	var property IssueProperty
+	if err := client.Table("dice_issue_property").Where("relation = ?", ID).First(&property).Error; err != nil {
+		return nil, err
+	}
+	return &property, nil
+}
+
+// GetIssuePropertyByName 根据 name 获取 property 信息
+func (client *DBClient) GetIssuePropertyByName(orgID int64, Name string, PropertyIssueType apistructs.PropertyIssueType) (*IssueProperty, error) {
+	var property IssueProperty
+	if err := client.Table("dice_issue_property").Where("org_id = ?", orgID).
+		Where("property_name = ?", Name).Where("property_issue_type = ?", PropertyIssueType).First(&property).Error; err != nil {
+		return nil, err
+	}
+	return &property, nil
+}

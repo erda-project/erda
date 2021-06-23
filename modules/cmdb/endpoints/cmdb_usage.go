@@ -18,12 +18,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (e *Endpoints) getOrgByRequest(r *http.Request) (*model.Org, error) {
+func (e *Endpoints) getOrgByRequest(r *http.Request) (*apistructs.OrgDTO, error) {
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	if orgIDStr == "" {
 		return nil, errors.Errorf("missing org id header")
@@ -32,7 +32,7 @@ func (e *Endpoints) getOrgByRequest(r *http.Request) (*model.Org, error) {
 	if err != nil {
 		return nil, errors.Errorf("invalid org id")
 	}
-	org, err := e.org.Get(orgID)
+	org, err := e.bdl.GetOrg(orgID)
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ import (
 
 // FetchPublisher 获取 publisher 详情
 func (b *Bundle) FetchPublisher(publisherID uint64) (*apistructs.PublisherDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (b *Bundle) FetchPublisher(publisherID uint64) (*apistructs.PublisherDTO, e
 }
 
 func (b *Bundle) GetUserRelationPublisher(userID string, orgID string) (*apistructs.PagingPublisherDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

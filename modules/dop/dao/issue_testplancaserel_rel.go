@@ -23,6 +23,7 @@ import (
 // IssueTestCaseRelation 事件与用例关联
 type IssueTestCaseRelation struct {
 	dbengine.BaseModel
+
 	IssueID           uint64 `json:"issueID"`
 	TestPlanID        uint64 `json:"testPlanID"`
 	TestPlanCaseRelID uint64 `json:"testPlanCaseRelID"`
@@ -91,4 +92,9 @@ func (client *DBClient) DeleteIssueTestCaseRelationsByIDs(ids []uint64) error {
 // DeleteIssueTestCaseRelationsByTestPlanCaseRelIDs 根据 测试计划用例 ids 删除
 func (client *DBClient) DeleteIssueTestCaseRelationsByTestPlanCaseRelIDs(testPlanCaseRelIDs []uint64) error {
 	return client.Debug().Where("`test_plan_case_rel_id` IN (?)", testPlanCaseRelIDs).Delete(&IssueTestCaseRelation{}).Error
+}
+
+// DeleteIssueTestCaseRelationsByIssueID 根据 issue id 删除关联关系
+func (client *DBClient) DeleteIssueTestCaseRelationsByIssueID(issueID uint64) error {
+	return client.Where("`issue_id` = ?", issueID).Delete(&IssueTestCaseRelation{}).Error
 }

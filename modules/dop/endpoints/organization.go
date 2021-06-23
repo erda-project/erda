@@ -1,0 +1,397 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package endpoints
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+// CreateOrg 创建企业
+func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// 获取当前用户
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateOrg.NotLogin().ToResp(), nil
+	}
+
+	// 检查body合法性
+	if r.Body == nil {
+		return apierrors.ErrCreateOrg.MissingParameter("body").ToResp(), nil
+	}
+
+	var orgCreateReq apistructs.OrgCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&orgCreateReq); err != nil {
+		return apierrors.ErrCreateOrg.InvalidParameter(err).ToResp(), nil
+	}
+
+	// check the org name is invalid
+	if !strutil.IsValidPrjOrAppName(orgCreateReq.Name) {
+		return apierrors.ErrCreateOrg.InvalidParameter(errors.Errorf("org name is invalid %s", orgCreateReq.Name)).ToResp(), nil
+	}
+
+	logrus.Infof("request body: %+v", orgCreateReq)
+
+	// create org
+	org, err := e.bdl.CreateOrg(identityInfo.UserID, &orgCreateReq)
+	if err != nil {
+		return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
+	}
+
+	// create publisher
+	if orgCreateReq.PublisherName != "" {
+		pub := &apistructs.PublisherCreateRequest{
+			Name:          orgCreateReq.PublisherName,
+			PublisherType: "ORG",
+			OrgID:         org.ID,
+		}
+
+		// 将企业管理员作为 publisher 管理员
+		// 若无企业管理员，则将创建企业者作为管理员
+		var managerID = identityInfo.UserID
+		if len(orgCreateReq.Admins) > 0 {
+			managerID = orgCreateReq.Admins[0]
+		}
+		pubID, err := e.publisher.Create(managerID, pub)
+		if err != nil {
+			return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
+		}
+		org.PublisherID = pubID
+	}
+
+	// 异步保证企业级别 nexus group repo
+	go func() {
+		if err := e.org.EnsureNexusOrgGroupRepos(org); err != nil {
+			logrus.Errorf("[alert] org nexus: failed to ensure org group repo when create org, orgID: %d, err: %v", org.ID, err)
+			return
+		}
+	}()
+
+	// create issueStage
+	stageName := []string{
+		"设计", "开发", "测试", "实施", "部署", "运维",
+		"需求设计", "架构设计", "代码研发",
+	}
+	stage := []string{
+		"design", "dev", "test", "implement", "deploy", "operator",
+		"demandDesign", "architectureDesign", "codeDevelopment",
+	}
+	// stage
+	var stages []dao.IssueStage
+	for i := 0; i < 9; i++ {
+		if i < 6 {
+			stages = append(stages, dao.IssueStage{
+				OrgID:     int64(org.ID),
+				IssueType: apistructs.IssueTypeTask,
+				Name:      stageName[i],
+				Value:     stage[i],
+			})
+		} else {
+			stages = append(stages, dao.IssueStage{
+				OrgID:     int64(org.ID),
+				IssueType: apistructs.IssueTypeBug,
+				Name:      stageName[i],
+				Value:     stage[i],
+			})
+		}
+	}
+	err = e.db.CreateIssueStage(stages)
+	if err != nil {
+		return apierrors.ErrCreateOrg.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(org)
+}
+
+// UpdateOrg update org
+func (e *Endpoints) UpdateOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// 获取当前用户
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateOrg.NotLogin().ToResp(), nil
+	}
+
+	// 检查orgID合法性
+	orgID, err := strutil.Atoi64(vars["orgID"])
+	if err != nil {
+		return apierrors.ErrUpdateOrg.InvalidParameter(err).ToResp(), nil
+	}
+
+	// 检查body合法性
+	if r.Body == nil {
+		return apierrors.ErrUpdateOrg.MissingParameter("body").ToResp(), nil
+	}
+	var orgUpdateReq apistructs.OrgUpdateRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&orgUpdateReq); err != nil {
+		return apierrors.ErrUpdateOrg.InvalidParameter(err).ToResp(), nil
+	}
+	logrus.Infof("request body: %+v", orgUpdateReq)
+	// 操作鉴权
+	req := apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.OrgScope,
+		ScopeID:  uint64(orgID),
+		Resource: apistructs.OrgResource,
+		Action:   apistructs.UpdateAction,
+	}
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+		return apierrors.ErrUpdateOrg.AccessDenied().ToResp(), nil
+	}
+	// update org
+	org, err := e.bdl.UpdateOrg(identityInfo.UserID, orgID, &orgUpdateReq)
+	if err != nil {
+		return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), nil
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+	// 传递了publisherName并且当前org没有publisher才创建
+	if orgUpdateReq.PublisherName != "" && org.PublisherID == 0 {
+		publisherID, err := e.publisher.Create(identityInfo.UserID, &apistructs.PublisherCreateRequest{
+			Name:          orgUpdateReq.PublisherName,
+			PublisherType: "ORG",
+			OrgID:         org.ID,
+		})
+		if err != nil {
+			return apierrors.ErrUpdateOrg.InternalError(err).ToResp(), err
+		}
+		org.PublisherID = publisherID
+	}
+	// 异步保证企业级别 nexus group repo
+	go func() {
+		if err := e.org.EnsureNexusOrgGroupRepos(org); err != nil {
+			logrus.Errorf("[alert] org nexus: failed to ensure org group repo when update org, orgID: %d, err: %v", org.ID, err)
+			return
+		}
+		// TODO 写入 etcd 记录
+	}()
+
+	return httpserver.OkResp(org)
+}
+
+// GetOrg 获取企业详情
+func (e *Endpoints) GetOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// 获取当前用户
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateOrg.NotLogin().ToResp(), nil
+	}
+
+	orgStr := vars["idOrName"]
+	org, err := e.bdl.GetOrg(orgStr)
+	if err != nil {
+		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+
+	return httpserver.OkResp(org)
+}
+
+// DeleteOrg 删除企业
+func (e *Endpoints) DeleteOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrDeleteOrg.NotLogin().ToResp(), nil
+	}
+	orgStr := vars["idOrName"]
+
+	org, err := e.bdl.GetOrg(orgStr)
+	if err != nil {
+		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+
+	_, err = e.bdl.DeleteOrg(orgStr)
+	if err != nil {
+		return apierrors.ErrDeleteOrg.InternalError(err).ToResp(), nil
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+
+	return httpserver.OkResp(org)
+}
+
+// ListOrg list org
+func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListOrg.NotLogin().ToResp(), nil
+	}
+	// 获取请求参数
+	req, err := getOrgListParam(r)
+	if err != nil {
+		return apierrors.ErrListOrg.InvalidParameter(err).ToResp(), nil
+	}
+	orgResp, err := e.bdl.ListOrgs(req, r.Header.Get(httputil.OrgHeader))
+	if err != nil {
+		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
+	}
+	for i := range orgResp.List {
+		orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
+	}
+	return httpserver.OkResp(orgResp)
+}
+
+// ListPublicOrg list public org
+func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListPublicOrg.NotLogin().ToResp(), nil
+	}
+
+	req, err := getOrgListParam(r)
+	if err != nil {
+		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
+	}
+	orgResp, err := e.bdl.ListPublicOrgs(req)
+	if err != nil {
+		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
+	}
+	for i := range orgResp.List {
+		orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
+	}
+
+	return httpserver.OkResp(orgResp)
+}
+
+// GetOrgByDomain 通过域名查询企业
+func (e *Endpoints) GetOrgByDomain(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	identity, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListPublicOrg.NotLogin().ToResp(), nil
+	}
+	domain := r.URL.Query().Get("domain")
+	orgName := r.URL.Query().Get("orgName")
+	if domain == "" {
+		return apierrors.ErrGetOrg.MissingParameter("domain").ToResp(), nil
+	}
+
+	org, err := e.bdl.GetOrgByDomain(domain, orgName, identity.UserID)
+	if err != nil {
+		return apierrors.ErrGetOrg.InternalError(err).ToResp(), nil
+	}
+	if org == nil {
+		return httpserver.OkResp(nil)
+	}
+	org.PublisherID = e.org.GetPublisherID(int64(org.ID))
+	return httpserver.OkResp(org)
+}
+
+// CreateOrgPublisher 创建发布商
+func (e *Endpoints) CreateOrgPublisher(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	// 获取当前用户
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		return apierrors.ErrCreateOrgPublisher.NotLogin().ToResp(), nil
+	}
+
+	orgID, err := strconv.ParseUint(vars["orgID"], 10, 64)
+	if err != nil {
+		return apierrors.ErrCreateOrgPublisher.InvalidParameter(err).ToResp(), nil
+	}
+
+	// check permission
+	if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.OrgScope,
+		ScopeID:  orgID,
+		Resource: apistructs.OrgResource,
+		Action:   apistructs.CreateAction,
+	}); err != nil || !access.Access {
+		if err != nil {
+			logrus.Errorf("failed to check permission when create org publisher, err: %v", err)
+		}
+		return apierrors.ErrCreateOrgPublisher.AccessDenied().ToResp(), nil
+	}
+
+	pubID := e.org.GetPublisherID(int64(orgID))
+	if pubID != 0 {
+		return apierrors.ErrUpdateOrg.InvalidParameter(errors.New("org already has publisher")).ToResp(), nil
+	}
+
+	publisherName := ""
+	if r.Method == "POST" {
+		var publisherCreateReq apistructs.CreateOrgPublisherRequest
+		if err := json.NewDecoder(r.Body).Decode(&publisherCreateReq); err != nil {
+			return apierrors.ErrCreateOrg.InvalidParameter(err).ToResp(), nil
+		}
+		publisherName = publisherCreateReq.Name
+	} else {
+		publisherName = r.URL.Query().Get("name")
+	}
+
+	if publisherName == "" {
+		return apierrors.ErrUpdateOrg.InvalidParameter(errors.New("name is empty")).ToResp(), nil
+	}
+
+	pub := &apistructs.PublisherCreateRequest{
+		Name:          publisherName,
+		PublisherType: "ORG",
+		OrgID:         orgID,
+	}
+
+	_, err = e.publisher.Create(userID.String(), pub)
+	if err != nil {
+		return apierrors.ErrUpdateOrg.InvalidParameter(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("")
+}
+
+// getOrgListParam get org params
+func getOrgListParam(r *http.Request) (*apistructs.OrgSearchRequest, error) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		// Deprecated: TODO: remove it
+		q = r.URL.Query().Get("key")
+	}
+	// Get paging info
+	pageSizeStr := r.URL.Query().Get("pageSize")
+	if pageSizeStr == "" {
+		pageSizeStr = "20"
+	}
+	pageNumStr := r.URL.Query().Get("pageNo")
+	if pageNumStr == "" {
+		pageNumStr = "1"
+	}
+	size, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		return nil, apierrors.ErrListOrg.InvalidParameter(strutil.Concat("PageSize: ", pageSizeStr))
+	}
+	num, err := strconv.Atoi(pageNumStr)
+	if err != nil {
+		return nil, apierrors.ErrListOrg.InvalidParameter(strutil.Concat("PageNo: ", pageNumStr))
+	}
+	if num <= 0 {
+		num = 1
+	}
+	if size <= 0 {
+		size = 20
+	}
+	return &apistructs.OrgSearchRequest{
+		Q:        q,
+		PageNo:   num,
+		PageSize: size,
+	}, nil
+}

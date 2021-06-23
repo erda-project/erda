@@ -27,9 +27,9 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// GetProject get project by id from cmdb.
+// GetProject get project by id from core-services.
 func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,37 @@ func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
 }
 
 func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp apistructs.ProjectListResponse
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/projects")).
+		Param("orgId", strconv.FormatUint(req.OrgID, 10)).
+		Param("q", req.Query).
+		Param("name", req.Name).
+		Param("joined", strconv.FormatBool(req.Joined)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("isPublic", strconv.FormatBool(req.IsPublic)).
+		Header("User-ID", userID).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+	if rsp.Data.Total == 0 {
+		return nil, nil
+	}
+	return &rsp.Data, nil
+}
+
+func (b *Bundle) ListDopProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +111,7 @@ func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (
 
 // ListMyProject 获取用户加入的项目
 func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +143,9 @@ func (b *Bundle) ListMyProject(userID string, req apistructs.ProjectListRequest)
 	return &rsp.Data, nil
 }
 
-// 获取公开项目列表
+// ListPublicProject 获取公开项目列表
 func (b *Bundle) ListPublicProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +176,7 @@ func (b *Bundle) ListPublicProject(userID string, req apistructs.ProjectListRequ
 
 // UpdateProjectActiveTime 更新项目活跃时间
 func (b *Bundle) UpdateProjectActiveTime(req apistructs.ProjectActiveTimeUpdateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -205,7 +235,7 @@ func (b *Bundle) GetWorkspaceClusterByAppBranch(appID uint64, gitRef string) (
 
 // GetProjectNamespaceInfo 获取项目级命名空间信息
 func (b *Bundle) GetProjectNamespaceInfo(projectID uint64) (*apistructs.ProjectNameSpaceInfo, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -260,4 +290,117 @@ func (b *Bundle) GetProjectNamespaceWithoutErr(projectID uint64, workspace strin
 	}
 
 	return prjNs.Namespaces[workspace]
+}
+
+// GetMyProjectIDs get projectIDs by orgID adn userID from core-services.
+func (b *Bundle) GetMyProjectIDs(orgID uint64, userID string) ([]uint64, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.MyProjectIDsResponse
+	resp, err := hc.Get(host, httpclient.RetryOption{}).
+		Path(fmt.Sprintf("/api/projects/actions/list-my-projectIDs")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(int64(orgID), 10)).
+		Header(httputil.UserHeader, userID).
+		Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !fetchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+	return fetchResp.Data, nil
+}
+
+// GetProjectListByStates list projects by states
+func (b *Bundle) GetProjectListByStates(req apistructs.GetProjectIDListByStatesRequest) (*apistructs.GetProjectIDListByStatesData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.GetProjectIDListByStatesResponse
+	resp, err := hc.Get(host).Path("/api/projects/actions/list-by-states").
+		Header(httputil.InternalHeader, "bundle").JSONBody(&req).Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !fetchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return &fetchResp.Data, nil
+}
+
+// GetAllProjects get all projects
+func (b *Bundle) GetAllProjects() ([]apistructs.ProjectDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.GetAllProjectsResponse
+	resp, err := hc.Get(host).Path("/api/projects/actions/list-all").
+		Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return fetchResp.Data, nil
+}
+
+// CreateProject create project
+func (b *Bundle) CreateProject(req apistructs.ProjectCreateRequest, userID string) (uint64, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return 0, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.ProjectCreateResponse
+	resp, err := hc.Post(host).Path("/api/projects").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		JSONBody(&req).Do().JSON(&fetchResp)
+	if err != nil {
+		return 0, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return 0, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return fetchResp.Data, nil
+}
+
+// DeleteProject delete project
+func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.ProjectDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.ProjectDeleteResponse
+	resp, err := hc.Delete(host).Path(fmt.Sprintf("/api/projects/%d", id)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return &fetchResp.Data, nil
 }

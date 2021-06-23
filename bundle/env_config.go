@@ -25,7 +25,7 @@ import (
 
 // CreateNamespace 创建配置中心 Namespace
 func (b *Bundle) CreateNamespace(createReq apistructs.NamespaceCreateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (b *Bundle) CreateNamespace(createReq apistructs.NamespaceCreateRequest) er
 
 // CreateNamespaceRelations 创建 Namespace 关联关系
 func (b *Bundle) CreateNamespaceRelations(createReq apistructs.NamespaceRelationCreateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (b *Bundle) CreateNamespaceRelations(createReq apistructs.NamespaceRelation
 
 // DeleteNamespace 删除配置中心 Namespace
 func (b *Bundle) DeleteNamespace(name string) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (b *Bundle) DeleteNamespace(name string) error {
 
 // DeleteNamespaceRelation 删除配置中心 namespace relation
 func (b *Bundle) DeleteNamespaceRelation(defaultNamespace string) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (b *Bundle) DeleteNamespaceRelation(defaultNamespace string) error {
 // FetchDeploymentConfig 通过 namespace 查询部署配置
 // return (ENV, FILE, error)
 func (b *Bundle) FetchDeploymentConfig(namespace string) (map[string]string, map[string]string, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -142,7 +142,7 @@ func (b *Bundle) FetchDeploymentConfig(namespace string) (map[string]string, map
 
 // FetchNamespaceConfig 通过 namespace 查询配置.
 func (b *Bundle) FetchNamespaceConfig(fetchReq apistructs.EnvConfigFetchRequest) (map[string]string, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (b *Bundle) FetchNamespaceConfig(fetchReq apistructs.EnvConfigFetchRequest)
 
 // AddOrUpdateNamespaceConfig 新增或更新 namespace config .
 func (b *Bundle) AddOrUpdateNamespaceConfig(namespace string, items []apistructs.EnvConfig, encrypt bool) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (b *Bundle) AddOrUpdateNamespaceConfig(namespace string, items []apistructs
 
 // DeleteNamespaceConfig 删除 namespace 配置.
 func (b *Bundle) DeleteNamespaceConfig(namespace string, key string) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}

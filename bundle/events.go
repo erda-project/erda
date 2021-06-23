@@ -35,6 +35,7 @@ const (
 	SenderOrchestrator   Sender = "orchestrator"
 	SenderCoreServices   Sender = "coreServices"
 	SenderClusterManager Sender = "clusterManager"
+	SenderDOP            Sender = "dop"
 )
 
 // Event types

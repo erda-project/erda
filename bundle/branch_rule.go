@@ -34,7 +34,7 @@ func (b *Bundle) GetAppBranchRules(appId uint64) ([]*apistructs.BranchRule, erro
 
 // GetBranchRules 查询分支规则
 func (b *Bundle) GetBranchRules(scopeType apistructs.ScopeType, scopeID uint64) ([]*apistructs.BranchRule, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (b *Bundle) GetBranchRules(scopeType apistructs.ScopeType, scopeID uint64) 
 }
 
 func (b *Bundle) GetAllValidBranchWorkspace(appId uint64) ([]apistructs.ValidBranch, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

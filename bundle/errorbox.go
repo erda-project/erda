@@ -24,7 +24,7 @@ import (
 
 // CreateErrorLog 创建错误日志
 func (b *Bundle) CreateErrorLog(errorLog *apistructs.ErrorLogCreateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}

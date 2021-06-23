@@ -21,7 +21,7 @@ import (
 
 // CheckPermission 鉴权
 func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +41,31 @@ func (b *Bundle) CheckPermission(req *apistructs.PermissionCheckRequest) (*apist
 	return &permissionResp.Data, nil
 }
 
+// StateCheckPermission 鉴权
+func (b *Bundle) StateCheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.StatePermissionCheckResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var permissionResp apistructs.StatePermissionCheckResponse
+	resp, err := hc.Post(host).Path("/api/permissions/actions/stateCheck").
+		JSONBody(req).
+		Do().JSON(&permissionResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !permissionResp.Success {
+		return nil, toAPIError(resp.StatusCode(), permissionResp.Error)
+	}
+
+	return &permissionResp.Data, nil
+}
+
 // ScopeRoleAccess 查询给定用户是否有相应权限
 func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessRequest) (*apistructs.ScopeRole, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +88,7 @@ func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessR
 
 // ListScopeRole 获取给定用户所有角色权限
 func (b *Bundle) ListScopeRole(userID, orgID string) (*apistructs.ScopeRoleList, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}

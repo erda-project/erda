@@ -21,7 +21,7 @@ import (
 )
 
 func (b *Bundle) GetNexusOrgDockerCredentialByImage(orgID uint64, image string) (*apistructs.NexusUser, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

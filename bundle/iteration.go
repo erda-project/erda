@@ -24,7 +24,7 @@ import (
 
 // GetIteration 通过id获取迭代
 func (b *Bundle) GetIteration(id uint64) (*apistructs.Iteration, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (b *Bundle) GetIteration(id uint64) (*apistructs.Iteration, error) {
 
 // ListProjectIterations 查询项目迭代
 func (b *Bundle) ListProjectIterations(req apistructs.IterationPagingRequest, orgID string) ([]apistructs.Iteration, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

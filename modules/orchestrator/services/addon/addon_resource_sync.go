@@ -52,11 +52,11 @@ func (a *Addon) SyncAddonResources() {
 }
 
 func (a *Addon) getAllOrgIDs() []uint64 {
-	orgs, err := a.bdl.ListOrgs(&apistructs.OrgSearchRequest{PageSize: 99999})
+	orgs, err := a.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{PageSize: 99999})
 	if err != nil {
 		return nil
 	}
-	orgids := []uint64{}
+	var orgids []uint64
 	for _, org := range orgs.List {
 		orgids = append(orgids, org.ID)
 	}

@@ -265,7 +265,7 @@ func (ctx *AuditContext) GetOrg(idObject interface{}) (*apistructs.OrgDTO, error
 		if err != nil {
 			return nil, err
 		}
-		orgDTO, err := ctx.Bundle.GetOrg(id)
+		orgDTO, err := ctx.Bundle.GetDopOrg(id)
 		if err != nil {
 			return nil, err
 		}

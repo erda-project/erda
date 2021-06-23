@@ -143,7 +143,7 @@ func (a *Addons) ProjectQuotaCheck(identity apistructs.Identity, req apistructs.
 	preq.OrgID = uint64(oid)
 	preq.Name = p.Name
 
-	rsp, err := a.bdl.ListProject(identity.UserID, preq)
+	rsp, err := a.bdl.ListDopProject(identity.UserID, preq)
 	if err != nil {
 		logrus.Errorf("list project failed, user id:%s, request:%+v, error:%v", identity.UserID, preq, err)
 		return nil, err

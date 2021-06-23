@@ -130,6 +130,18 @@ type PermissionCheckResponseData struct {
 	Access bool `json:"access"`
 }
 
+// StatePermissionCheckResponse 鉴权响应
+type StatePermissionCheckResponse struct {
+	Header
+	Data StatePermissionCheckResponseData `json:"data"`
+}
+
+// StatePermissionCheckResponseData 鉴权响应数据
+type StatePermissionCheckResponseData struct {
+	Access bool     `json:"access"`
+	Roles  []string `json:"roles"`
+}
+
 // ScopeResource Scope 对应的权限信息
 type ScopeResource struct {
 	// Resource 资源类型， eg: ticket/release

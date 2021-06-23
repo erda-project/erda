@@ -156,7 +156,7 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.G
 		now.Sub(info.UpdateTime).Seconds() > 0)) {
 		return info, nil
 	}
-	code, body, err := util.CommonRequest("GET", discover.CMDB()+"/api/projects/"+cond.ProjectId, nil,
+	code, body, err := util.CommonRequest("GET", discover.CoreServices()+"/api/projects/"+cond.ProjectId, nil,
 		map[string]string{"Internal-Client": "hepa-gateway"})
 	if err != nil {
 		err = errors.WithMessage(err, "request dice admin failed")
