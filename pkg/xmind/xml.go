@@ -17,8 +17,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -111,12 +109,6 @@ func ParseXML(r io.Reader) (XMLContent, error) {
 }
 
 func Export(w io.Writer, content XMLContent, filename string) error {
-	// set headers to http ResponseWriter `w` before write into `w`.
-	if rw, ok := w.(http.ResponseWriter); ok {
-		rw.Header().Add("Content-Disposition", "attachment;fileName="+url.QueryEscape(filename+".xmind"))
-		//rw.Header().Add("Content-Type", "application/vnd.ms-xmind")
-	}
-
 	// 创建临时目录用于制作 .xmind (zip)
 	tmpDir := os.TempDir()
 

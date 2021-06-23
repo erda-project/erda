@@ -351,7 +351,7 @@ type TestCaseExportRequest struct {
 }
 type TestCaseExportResponse struct {
 	Header
-	Data int64 `json:"data"`
+	Data uint64 `json:"data"`
 }
 
 // TestCaseImportRequest 用例从 Excel 导入请求
@@ -368,6 +368,7 @@ type TestCaseImportResponse struct {
 }
 type TestCaseImportResult struct {
 	SuccessCount uint64 `json:"successCount"`
+	Id           uint64 `json:"id"`
 }
 
 // TestCaseExcel 测试用例 Excel

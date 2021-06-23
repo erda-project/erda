@@ -322,11 +322,10 @@ func (r *Request) MultipartFormDataBody(fields map[string]MultipartItem) *Reques
 					item.Filename = filepath.Base(item.Reader.(*os.File).Name())
 				}
 				fw, err = w.CreateFormFile(field, item.Filename)
-			case multipart.File:
-				fw, err = w.CreateFormFile(field, item.Filename)
 			default:
-				fw, err = w.CreateFormField(field)
+				fw, err = w.CreateFormFile(field, item.Filename)
 			}
+
 			if err != nil {
 				r.err = err
 				return

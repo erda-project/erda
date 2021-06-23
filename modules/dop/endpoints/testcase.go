@@ -246,15 +246,15 @@ func (e *Endpoints) PagingTestCases(ctx context.Context, r *http.Request, vars m
 }
 
 // ExportTestCases 导出测试用例
-func (e *Endpoints) ExportTestCases(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+func (e *Endpoints) ExportTestCases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrExportTestCases.NotLogin()
+		return apierrors.ErrExportTestCases.NotLogin().ToResp(), nil
 	}
 
 	var req apistructs.TestCaseExportRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
-		return apierrors.ErrExportTestCases.InvalidParameter(err)
+		return apierrors.ErrExportTestCases.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
 
@@ -263,12 +263,17 @@ func (e *Endpoints) ExportTestCases(ctx context.Context, w http.ResponseWriter, 
 
 	// TODO:鉴权
 
-	err = e.testcase.Export(w, req)
+	fileId, err := e.testcase.Export(req)
 	if err != nil {
-		return apierrors.ErrExportTestCases.InternalError(err)
+		return apierrors.ErrExportTestCases.InternalError(err).ToResp(), nil
 	}
 
-	return nil
+	e.ExportChannel <- fileId
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: fileId,
+	}, nil
 }
 
 // ImportTestCases 导入测试用例
@@ -291,5 +296,10 @@ func (e *Endpoints) ImportTestCases(ctx context.Context, r *http.Request, vars m
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(importResult)
+	e.ImportChannel <- importResult.Id
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: importResult,
+	}, nil
 }

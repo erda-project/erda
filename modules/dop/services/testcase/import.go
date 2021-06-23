@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -50,27 +51,107 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 		return nil, apierrors.ErrImportTestCases.InvalidParameter("projectID")
 	}
 
-	// 获取测试用例数据
-	f, _, err := r.FormFile("file")
+	// get testsets data
+	f, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	switch req.FileType {
-	case apistructs.TestCaseFileTypeExcel:
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileHeader.Filename,
+		FileReader:      f,
+		From:            "testcase",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
+	if err != nil {
+		return nil, err
+	}
+
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileHeader.Filename,
+		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", req.ProjectID, req.TestSetID),
+		ProjectID:    req.ProjectID,
+		TestSetID:    req.TestSetID,
+		Type:         apistructs.FileActionTypeImport,
+		ApiFileUUID:  file.UUID,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				ImportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return nil, err
+	}
+	return &apistructs.TestCaseImportResult{Id: id}, nil
+}
+
+func (svc *Service) ImportFile(record *dao.TestFileRecord) {
+	req := record.Extra.ManualTestFileExtraInfo.ImportRequest
+	ts := dao.FakeRootTestSet(req.ProjectID, false)
+	if req.TestSetID != 0 {
+		_ts, err := svc.db.GetTestSetByID(req.TestSetID)
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				logrus.Error(apierrors.ErrImportTestCases.InvalidParameter(fmt.Errorf("testSet not found, id: %d", req.TestSetID)))
+				return
+			}
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			return
+		}
+		ts = *_ts
+	}
+	if ts.ProjectID != req.ProjectID {
+		logrus.Error(apierrors.ErrImportTestCases.InvalidParameter("projectID"))
+		return
+	}
+
+	id := record.ID
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		return
+	}
+
+	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if req.FileType == apistructs.TestCaseFileTypeExcel {
 		excelTcs, err := svc.decodeFromExcelFile(f)
 		if err != nil {
-			return nil, err
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			}
+			return
 		}
-		return svc.storeExcel2DB(req, ts, excelTcs)
-	case apistructs.TestCaseFileTypeXmind:
+		if _, err := svc.storeExcel2DB(*req, ts, excelTcs); err != nil {
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			return
+		}
+	} else {
 		xmindTcs, err := svc.decodeFromXMindFile(f)
 		if err != nil {
-			return nil, err
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			}
+			return
 		}
-		return svc.storeXmind2DB(req, ts, xmindTcs)
-	default:
-		return nil, fmt.Errorf("import from %s is not supported yet", req.FileType)
+		if _, err := svc.storeXmind2DB(*req, ts, xmindTcs); err != nil {
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+			return
+		}
+	}
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
 	}
 }
