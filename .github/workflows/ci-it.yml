@@ -54,4 +54,3 @@ jobs:
       - name: Run Test
         run: |
           go test -v -tags=musl -work -cpu=2 -timeout 30s -race -coverprofile=coverage.txt -covermode=atomic ./...
-          curl -s https://codecov.io/bash | bash
