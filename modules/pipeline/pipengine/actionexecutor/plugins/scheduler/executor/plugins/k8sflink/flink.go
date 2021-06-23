@@ -24,14 +24,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -155,7 +154,9 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 	}
 	if err := k.client.CRClient.Create(ctx, flinkCluster); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return flinkCluster, nil
+			return apistructs.Job{
+				JobFromUser: job,
+			}, nil
 		}
 		if delErr := k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{}); delErr != nil {
 			return nil, fmt.Errorf("delete namespace err: %v", delErr)

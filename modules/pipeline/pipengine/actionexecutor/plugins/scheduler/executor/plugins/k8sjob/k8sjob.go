@@ -16,7 +16,6 @@ package k8sjob
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -31,18 +30,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -92,12 +88,12 @@ type K8sJob struct {
 	clusterName string
 }
 
-func New(name types.Name, clustername string, options map[string]string) (*K8sJob, error) {
-	k, err := k8sclient.New(clustername)
+func New(name types.Name, clusterName string, options map[string]string) (*K8sJob, error) {
+	k, err := k8sclient.New(clusterName)
 	if err != nil {
 		return nil, err
 	}
-	return &K8sJob{name: name, client: k, clusterName: clustername}, nil
+	return &K8sJob{name: name, client: k, clusterName: clusterName}, nil
 }
 
 func (k *K8sJob) Kind() types.Kind {
@@ -445,7 +441,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 	}
 
 	// get cluster info
-	clusterInfo, err := k.getCLusterInfo()
+	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
 	if err != nil {
 		return nil, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
 	}
@@ -508,29 +504,6 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 
 	// logrus.Debugf("generate k8s job, body: %+v", kubeJob)
 	return kubeJob, nil
-}
-
-func (k *K8sJob) getCLusterInfo() (map[string]string, error) {
-	var clusterInfoRes struct {
-		Data map[string]string `json:"data"`
-	}
-
-	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Scheduler()).
-		Path(strutil.Concat("/api/clusterinfo/", k.clusterName)).
-		Do().Body(&body)
-	if err != nil {
-		return nil, errors.Errorf("get cluster info failed, err: %v", err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	if err := json.Unmarshal([]byte(respBody), &clusterInfoRes); err != nil {
-		return nil, errors.Errorf("get cluster info failed, statueCode: %d, err: %v", statusCode, err)
-	}
-
-	return clusterInfoRes.Data, nil
 }
 
 func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, clusterInfo map[string]string) error {
