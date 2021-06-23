@@ -160,6 +160,8 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 			apistructs.LabelAppID:         strconv.FormatUint(releaseReq.ApplicationID, 10),
 			apistructs.LabelDiceWorkspace: releaseReq.Workspace,
 			apistructs.LabelCommitDetail:  string(commitdetail),
+			apistructs.LabelAppName:       app.Name,
+			apistructs.LabelProjectName:   app.ProjectName,
 		},
 		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s", branch),
 		ClusterName:     releaseResp.ClusterName,
@@ -447,6 +449,8 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 			apistructs.LabelAppID:         strconv.FormatUint(runtime.ApplicationID, 10),
 			apistructs.LabelDiceWorkspace: runtime.Workspace,
 			apistructs.LabelCommitDetail:  string(commitdetail),
+			apistructs.LabelAppName:       app.Name,
+			apistructs.LabelProjectName:   app.ProjectName,
 		},
 		PipelineYmlName: fmt.Sprintf("dice-deploy-redeploy-%d", runtime.ID),
 		ClusterName:     runtime.ClusterName,
@@ -857,6 +861,8 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 			apistructs.LabelAppID:         strconv.FormatUint(runtime.ApplicationID, 10),
 			apistructs.LabelDiceWorkspace: runtime.Workspace,
 			apistructs.LabelCommitDetail:  string(commitdetail),
+			apistructs.LabelAppName:       app.Name,
+			apistructs.LabelProjectName:   app.ProjectName,
 		},
 		PipelineYmlName: fmt.Sprintf("dice-deploy-rollback-%d", runtime.ID),
 		ClusterName:     runtime.ClusterName,
@@ -1382,7 +1388,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 
 	cluster, err := r.bdl.GetCluster(runtime.ClusterName)
 	if err != nil {
-		return nil, apierrors.ErrCreateRuntime.InvalidState(fmt.Sprintf("cluster: %v not found", runtime.ClusterName))
+		return nil, apierrors.ErrGetRuntime.InvalidState(fmt.Sprintf("cluster: %v not found", runtime.ClusterName))
 	}
 
 	// return value
@@ -1429,45 +1435,47 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	data.TimeCreated = runtime.CreatedAt
 	data.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 
+	fillRuntimeDataWithServiceGroup(&data, dice.Services, sg, domainMap, string(deployment.Status))
+
+	updateStatusToDisplay(&data)
+	if deployment.Status == apistructs.DeploymentStatusDeploying {
+		updateStatusWhenDeploying(&data)
+	}
+
+	return &data, nil
+}
+
+// fillRuntimeDataWithServiceGroup use serviceGroup's data to fill RuntimeInspectDTO
+func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetService diceyml.Services,
+	sg *apistructs.ServiceGroup, domainMap map[string][]string, status string) {
 	statusServiceMap := map[string]string{}
 	replicaMap := map[string]int{}
+	resourceMap := map[string]apistructs.RuntimeServiceResourceDTO{}
+	statusMap := map[string]map[string]string{}
 	if sg != nil {
+		if sg.Status != apistructs.StatusReady && sg.Status != apistructs.StatusHealthy {
+			for _, serviceItem := range sg.Services {
+				statusMap[serviceItem.Name] = map[string]string{
+					"Msg":    serviceItem.LastMessage,
+					"Reason": serviceItem.Reason,
+				}
+			}
+		}
+		data.ModuleErrMsg = statusMap
+
 		for _, v := range sg.Services {
 			statusServiceMap[v.Name] = string(v.StatusDesc.Status)
 			replicaMap[v.Name] = v.Scale
-		}
-	}
-	for k, v := range dice.Services {
-		var errs []apistructs.ErrorResponse
-		runtimeInspectService := &apistructs.RuntimeInspectServiceDTO{
-			Resources: apistructs.RuntimeServiceResourceDTO{
-				CPU:  v.Resources.CPU,
+			resourceMap[v.Name] = apistructs.RuntimeServiceResourceDTO{
+				CPU:  v.Resources.Cpu,
 				Mem:  int(v.Resources.Mem),
 				Disk: int(v.Resources.Disk),
-			},
-			Envs:   v.Envs,
-			Addrs:  convertInternalAddrs(sg, k),
-			Errors: errs,
-		}
-		if v, ok := statusServiceMap[k]; ok {
-			runtimeInspectService.Status = v
-		} else {
-			runtimeInspectService.Status = string(deployment.Status)
-		}
-		if v, ok := replicaMap[k]; ok {
-			runtimeInspectService.Deployments = apistructs.RuntimeServiceDeploymentsDTO{
-				Replicas: v,
-			}
-		} else {
-			runtimeInspectService.Deployments = apistructs.RuntimeServiceDeploymentsDTO{
-				Replicas: 0,
 			}
 		}
-		data.Services[k] = runtimeInspectService
-
 	}
+
 	// TODO: no diceJson and no overlay, we just read dice from releaseId
-	for k, v := range dice.Services {
+	for k, v := range targetService {
 		var expose []string
 		var svcPortExpose bool
 		// serv.Expose will abandoned, serv.Ports.Expose is recommended
@@ -1476,7 +1484,6 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 				svcPortExpose = true
 			}
 		}
-
 		if len(v.Expose) != 0 || svcPortExpose {
 			expose = domainMap[k]
 		}
@@ -1487,55 +1494,31 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 				Mem:  int(v.Resources.Mem),
 				Disk: int(v.Resources.Disk),
 			},
-			Envs:   v.Envs,
-			Addrs:  convertInternalAddrs(sg, k),
-			Expose: expose,
+			Envs:        v.Envs,
+			Addrs:       convertInternalAddrs(sg, k),
+			Expose:      expose,
+			Status:      status,
+			Deployments: apistructs.RuntimeServiceDeploymentsDTO{Replicas: 0},
 		}
-		if v, ok := statusServiceMap[k]; ok {
-			runtimeInspectService.Status = v
-		} else {
-			runtimeInspectService.Status = string(deployment.Status)
+		if sgStatus, ok := statusServiceMap[k]; ok {
+			runtimeInspectService.Status = sgStatus
 		}
-		if v, ok := replicaMap[k]; ok {
-			runtimeInspectService.Deployments = apistructs.RuntimeServiceDeploymentsDTO{
-				Replicas: v,
-			}
-		} else {
-			runtimeInspectService.Deployments = apistructs.RuntimeServiceDeploymentsDTO{
-				Replicas: 0,
-			}
+		if sgReplicas, ok := replicaMap[k]; ok {
+			runtimeInspectService.Deployments.Replicas = sgReplicas
 		}
+		if sgResources, ok := resourceMap[k]; ok {
+			runtimeInspectService.Resources = sgResources
+		}
+
 		data.Services[k] = runtimeInspectService
 	}
+
 	data.Resources = apistructs.RuntimeServiceResourceDTO{CPU: 0, Mem: 0, Disk: 0}
 	for _, v := range data.Services {
 		data.Resources.CPU += v.Resources.CPU * float64(v.Deployments.Replicas)
 		data.Resources.Mem += v.Resources.Mem * v.Deployments.Replicas
 		data.Resources.Disk += v.Resources.Disk * v.Deployments.Replicas
 	}
-	updateStatusToDisplay(&data)
-	if deployment.Status == apistructs.DeploymentStatusDeploying {
-		updateStatusWhenDeploying(&data)
-	}
-
-	statusMap := map[string]map[string]string{}
-	statusResp, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
-	if err != nil {
-		logrus.Errorf("Failed to query service status in runtime, %+v", err)
-	} else {
-		if statusResp != nil {
-			if statusResp.Status != apistructs.StatusReady && statusResp.Status != apistructs.StatusHealthy {
-				for _, serviceItem := range statusResp.Services {
-					statusMap[serviceItem.Name] = map[string]string{
-						"Msg":    serviceItem.LastMessage,
-						"Reason": serviceItem.Reason,
-					}
-				}
-			}
-		}
-	}
-	data.ModuleErrMsg = statusMap
-	return &data, nil
 }
 
 // GetSpec 查询应用实例规格

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
@@ -27,23 +28,46 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/event"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
+	"github.com/erda-project/erda/modules/dop/services/appcertificate"
 	"github.com/erda-project/erda/modules/dop/services/assetsvc"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	atv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/cdp"
+	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
+	"github.com/erda-project/erda/modules/dop/services/environment"
+	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
+	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuepanel"
+	"github.com/erda-project/erda/modules/dop/services/issueproperty"
+	"github.com/erda-project/erda/modules/dop/services/issuerelated"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
+	"github.com/erda-project/erda/modules/dop/services/issuestream"
+	"github.com/erda-project/erda/modules/dop/services/iteration"
+	"github.com/erda-project/erda/modules/dop/services/libreference"
 	"github.com/erda-project/erda/modules/dop/services/migrate"
+	"github.com/erda-project/erda/modules/dop/services/namespace"
+	"github.com/erda-project/erda/modules/dop/services/org"
 	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
+	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
+	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 const (
@@ -83,7 +107,7 @@ var eventCallbacks = []EventCallback{
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
-		{Path: "/health", Method: http.MethodGet, Handler: e.Health},
+		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
 
 		{Path: "/api/api-assets", Method: http.MethodPost, Handler: e.CreateAPIAsset},
 		{Path: "/api/api-assets", Method: http.MethodGet, Handler: e.PagingAPIAssets},
@@ -268,7 +292,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/testcases/actions/batch-update", Method: http.MethodPost, Handler: e.BatchUpdateTestCases},
 		{Path: "/api/testcases/actions/batch-copy", Method: http.MethodPost, Handler: e.BatchCopyTestCases},
 		{Path: "/api/testcases/actions/batch-clean-from-recycle-bin", Method: http.MethodDelete, Handler: e.BatchCleanTestCasesFromRecycleBin},
-		{Path: "/api/testcases/actions/export", Method: http.MethodGet, WriterHandler: e.ExportTestCases},
+		{Path: "/api/testcases/actions/export", Method: http.MethodGet, Handler: e.ExportTestCases},
 		{Path: "/api/testcases/actions/import", Method: http.MethodPost, Handler: e.ImportTestCases},
 
 		// 测试集 管理
@@ -398,6 +422,181 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// migrate
 		{Path: "/api/autotests/actions/migrate-from-autotestv1", Method: http.MethodGet, Handler: e.MigrateFromAutoTestV1},
+
+		// 工单相关
+		{Path: "/api/tickets", Method: http.MethodPost, Handler: e.CreateTicket},
+		{Path: "/api/tickets/{ticketID}", Method: http.MethodPut, Handler: e.UpdateTicket},
+		{Path: "/api/tickets/{ticketID}/actions/close", Method: http.MethodPut, Handler: e.CloseTicket},
+		{Path: "/api/tickets/actions/close-by-key", Method: http.MethodPut, Handler: e.CloseTicketByKey},
+		{Path: "/api/tickets/{ticketID}/actions/reopen", Method: http.MethodPut, Handler: e.ReopenTicket},
+		{Path: "/api/tickets/{ticketID}", Method: http.MethodGet, Handler: e.GetTicket},
+		{Path: "/api/tickets", Method: http.MethodGet, Handler: e.ListTicket},
+		{Path: "/api/tickets/actions/batch-delete", Method: http.MethodDelete, Handler: e.DeleteTicket},
+
+		// 工单评论相关
+		{Path: "/api/comments", Method: http.MethodPost, Handler: e.CreateComment},
+		{Path: "/api/comments/{commentID}", Method: http.MethodPut, Handler: e.UpdateComment},
+		{Path: "/api/comments", Method: http.MethodGet, Handler: e.ListComments},
+		{Path: "/api/comments/{commentID}", Method: http.MethodDelete, Handler: e.DeleteComment},
+
+		// 分支规则
+		{Path: "/api/branch-rules", Method: http.MethodPost, Handler: e.CreateBranchRule},
+		{Path: "/api/branch-rules", Method: http.MethodGet, Handler: e.QueryBranchRules},
+		{Path: "/api/branch-rules/{id}", Method: http.MethodPut, Handler: e.UpdateBranchRule},
+		{Path: "/api/branch-rules/{id}", Method: http.MethodDelete, Handler: e.DeleteBranchRule},
+		{Path: "/api/branch-rules/actions/app-all-valid-branch-workspaces", Method: http.MethodGet, Handler: e.GetAllValidBranchWorkspaces},
+
+		// 配置管理相关
+		{Path: "/api/config/namespace", Method: http.MethodPost, Handler: e.CreateNamespace},
+		{Path: "/api/config/namespace", Method: http.MethodDelete, Handler: e.DeleteNamespace},
+		{Path: "/api/config/namespace/relation", Method: http.MethodPost, Handler: e.CreateNamespaceRelation},
+		{Path: "/api/config/namespace/relation", Method: http.MethodDelete, Handler: e.DeleteNamespaceRelation},
+		{Path: "/api/config", Method: http.MethodPost, Handler: e.AddConfigs},
+		{Path: "/api/config", Method: http.MethodGet, Handler: e.GetConfigs},
+		{Path: "/api/config", Method: http.MethodPut, Handler: e.UpdateConfigs},
+		{Path: "/api/config", Method: http.MethodDelete, Handler: e.DeleteConfig},
+		{Path: "/api/config/actions/export", Method: http.MethodGet, Handler: e.ExportConfigs},
+		{Path: "/api/config/actions/import", Method: http.MethodPost, Handler: e.ImportConfigs},
+		{Path: "/api/config/deployment", Method: http.MethodGet, Handler: e.GetDeployConfigs},
+		//{"/api/configmanage/configs/publish",Method:http.MethodPost,Handler: e.PublishConfig},
+		//{"/api/configmanage/configs/publish/all",Method:http.MethodPost,Handler: e.PublishConfigs},
+		{Path: "/api/config/actions/list-multinamespace-configs", Method: http.MethodPost, Handler: e.GetMultiNamespaceConfigs},
+		// 以前的dice_config_namespace表数据不全，里面很多name没有了，导致check ns exist时报错，用这个接口修复
+		{Path: "/api/config/namespace/fix-namespace-data-err", Method: http.MethodGet, Handler: e.FixDataErr},
+
+		// issue 管理
+		{Path: "/api/issues", Method: http.MethodPost, Handler: e.CreateIssue},
+		{Path: "/api/issues", Method: http.MethodGet, Handler: e.PagingIssues},
+		{Path: "/api/issues/{id}", Method: http.MethodGet, Handler: e.GetIssue},
+		{Path: "/api/issues/{id}", Method: http.MethodPut, Handler: e.UpdateIssue},
+		{Path: "/api/issues/{id}", Method: http.MethodDelete, Handler: e.DeleteIssue},
+		{Path: "/api/issues/actions/batch-update", Method: http.MethodPut, Handler: e.BatchUpdateIssue},
+		{Path: "/api/issues/actions/export-excel", Method: http.MethodGet, WriterHandler: e.ExportExcelIssue},
+		{Path: "/api/issues/actions/import-excel", Method: http.MethodPost, Handler: e.ImportExcelIssue},
+		{Path: "/api/issues/actions/man-hour", Method: http.MethodGet, Handler: e.GetIssueManHourSum},
+		{Path: "/api/issues/actions/bug-percentage", Method: http.MethodGet, Handler: e.GetIssueBugPercentage},
+		{Path: "/api/issues/actions/bug-status-percentage", Method: http.MethodGet, Handler: e.GetIssueBugStatusPercentage},
+		{Path: "/api/issues/actions/bug-severity-percentage", Method: http.MethodGet, Handler: e.GetIssueBugSeverityPercentage},
+		{Path: "/api/issues/{id}/streams", Method: http.MethodPost, Handler: e.CreateCommentIssueStream},
+		{Path: "/api/issues/{id}/streams", Method: http.MethodGet, Handler: e.PagingIssueStreams},
+		{Path: "/api/issues/{id}/relations", Method: http.MethodPost, Handler: e.AddIssueRelation},
+		{Path: "/api/issues/{id}/relations/{relatedIssueID}", Method: http.MethodDelete, Handler: e.DeleteIssueRelation},
+		{Path: "/api/issues/{id}/relations", Method: http.MethodGet, Handler: e.GetIssueRelations},
+		{Path: "/api/issues/actions/update-issue-type", Method: http.MethodPut, Handler: e.UpdateIssueType},
+		{Path: "/api/issues/{id}/actions/subscribe", Method: http.MethodPost, Handler: e.SubscribeIssue},
+		{Path: "/api/issues/{id}/actions/unsubscribe", Method: http.MethodPost, Handler: e.UnsubscribeIssue},
+		// issue state
+		{Path: "/api/issues/actions/create-state", Method: http.MethodPost, Handler: e.CreateIssueState},
+		{Path: "/api/issues/actions/delete-state", Method: http.MethodDelete, Handler: e.DeleteIssueState},
+		{Path: "/api/issues/actions/update-state-relation", Method: http.MethodPut, Handler: e.UpdateIssueStateRelation},
+		{Path: "/api/issues/actions/get-states", Method: http.MethodGet, Handler: e.GetIssueStates},
+		{Path: "/api/issues/actions/get-state-relations", Method: http.MethodGet, Handler: e.GetIssueStateRelation},
+		{Path: "/api/issues/actions/get-state-belong", Method: http.MethodGet, Handler: e.GetIssueStatesBelong},
+		{Path: "/api/issues/actions/get-state-name", Method: http.MethodGet, Handler: e.GetIssueStatesByIDs},
+		// issue property
+		{Path: "/api/issues/actions/create-property", Method: http.MethodPost, Handler: e.CreateIssueProperty},
+		{Path: "/api/issues/actions/delete-property", Method: http.MethodDelete, Handler: e.DeleteIssueProperty},
+		{Path: "/api/issues/actions/update-property", Method: http.MethodPut, Handler: e.UpdateIssueProperty},
+		{Path: "/api/issues/actions/get-properties", Method: http.MethodGet, Handler: e.GetIssueProperties},
+		{Path: "/api/issues/actions/update-properties-index", Method: http.MethodPut, Handler: e.UpdateIssuePropertiesIndex},
+		{Path: "/api/issues/actions/get-properties-time", Method: http.MethodGet, Handler: e.GetIssuePropertyUpdateTime},
+		// issue panel
+		{Path: "/api/issues/actions/create-panel", Method: http.MethodPost, Handler: e.CreateIssuePanel},
+		{Path: "/api/issues/actions/delete-panel", Method: http.MethodDelete, Handler: e.DeleteIssuePanel},
+		{Path: "/api/issues/actions/update-panel-issue", Method: http.MethodPut, Handler: e.UpdateIssuePanelIssue},
+		{Path: "/api/issues/actions/update-panel", Method: http.MethodPut, Handler: e.UpdateIssuePanel},
+		{Path: "/api/issues/actions/get-panel", Method: http.MethodGet, Handler: e.GetIssuePanel},
+		{Path: "/api/issues/actions/get-panel-issue", Method: http.MethodGet, Handler: e.GetIssuePanelIssue},
+		// issue instance
+		{Path: "/api/issues/actions/create-property-instance", Method: http.MethodPost, Handler: e.CreateIssuePropertyInstance},
+		{Path: "/api/issues/actions/update-property-instance", Method: http.MethodPut, Handler: e.UpdateIssuePropertyInstance},
+		{Path: "/api/issues/actions/get-property-instance", Method: http.MethodGet, Handler: e.GetIssuePropertyInstance},
+		// issue stage
+		{Path: "/api/issues/action/update-stage", Method: http.MethodPut, Handler: e.CreateIssueStage},
+		{Path: "/api/issues/action/get-stage", Method: http.MethodGet, Handler: e.GetIssueStage},
+		//执行issue的历史数据推送到监控平台
+		{Path: "/api/issues/monitor/history", Method: http.MethodGet, Handler: e.RunIssueHistory},
+		{Path: "/api/issues/monitor/addOrRepairHistory", Method: http.MethodGet, Handler: e.RunIssueAddOrRepairHistory},
+
+		{Path: "/api/iterations", Method: http.MethodPost, Handler: e.CreateIteration},
+		{Path: "/api/iterations/{id}", Method: http.MethodPut, Handler: e.UpdateIteration},
+		{Path: "/api/iterations/{id}", Method: http.MethodDelete, Handler: e.DeleteIteration},
+		{Path: "/api/iterations/{id}", Method: http.MethodGet, Handler: e.GetIteration},
+		{Path: "/api/iterations", Method: http.MethodGet, Handler: e.PagingIterations},
+
+		{Path: "/api/publishers", Method: http.MethodPost, Handler: e.CreatePublisher},
+		{Path: "/api/publishers", Method: http.MethodPut, Handler: e.UpdatePublisher},
+		{Path: "/api/publishers/{publisherID}", Method: http.MethodGet, Handler: e.GetPublisher},
+		{Path: "/api/publishers/{publisherID}", Method: http.MethodDelete, Handler: e.DeletePublisher},
+		{Path: "/api/publishers", Method: http.MethodGet, Handler: e.ListPublishers},
+		{Path: "/api/publishers/actions/list-my-publishers", Method: http.MethodGet, Handler: e.ListMyPublishers},
+
+		// Certificate
+		{Path: "/api/certificates", Method: http.MethodPost, Handler: e.CreateCertificate},
+		{Path: "/api/certificates/{certificateID}", Method: http.MethodPut, Handler: e.UpdateCertificate},
+		{Path: "/api/certificates/{certificateID}", Method: http.MethodGet, Handler: e.GetCertificate},
+		{Path: "/api/certificates/{certificateID}", Method: http.MethodDelete, Handler: e.DeleteCertificate},
+		{Path: "/api/certificates/actions/list-certificates", Method: http.MethodGet, Handler: e.ListCertificates},
+		// Application Certificate
+		{Path: "/api/certificates/actions/application-quote", Method: http.MethodPost, Handler: e.QuoteCertificate},
+		{Path: "/api/certificates/actions/application-cancel-quote", Method: http.MethodDelete, Handler: e.CancelQuoteCertificate},
+		{Path: "/api/certificates/actions/list-application-quotes", Method: http.MethodGet, Handler: e.ListQuoteCertificates},
+		// push certificate config
+		{Path: "/api/certificates/actions/push-configs", Method: http.MethodPost, Handler: e.PushCertificateConfig},
+
+		// 文件服务
+		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
+		{Path: "/api/files", Method: http.MethodGet, WriterHandler: e.DownloadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodGet, WriterHandler: e.DownloadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
+		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
+
+		// user-workbench
+		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
+		{Path: "/api/workbench/issues/actions/list", Method: http.MethodGet, Handler: e.GetIssuesForWorkbench},
+
+		{Path: "/api/lib-references", Method: http.MethodPost, Handler: e.CreateLibReference},
+		{Path: "/api/lib-references/{id}", Method: http.MethodDelete, Handler: e.DeleteLibReference},
+		{Path: "/api/lib-references", Method: http.MethodGet, Handler: e.ListLibReference},
+		{Path: "/api/lib-references/actions/fetch-versions", Method: http.MethodGet, Handler: e.ListLibReferenceVersion},
+
+		// 流水线filetree查询
+		{Path: "/api/project-pipeline/filetree/{inode}/actions/find-ancestors", Method: http.MethodGet, Handler: e.FindFileTreeNodeAncestors},
+		{Path: "/api/project-pipeline/filetree", Method: http.MethodPost, Handler: e.CreateFileTreeNode},
+		{Path: "/api/project-pipeline/filetree/{inode}", Method: http.MethodDelete, Handler: e.DeleteFileTreeNode},
+		{Path: "/api/project-pipeline/filetree", Method: http.MethodGet, Handler: e.ListFileTreeNodes},
+		{Path: "/api/project-pipeline/filetree/{inode}", Method: http.MethodGet, Handler: e.GetFileTreeNode},
+		{Path: "/api/project-pipeline/filetree/actions/fuzzy-search", Method: http.MethodGet, Handler: e.FuzzySearchFileTreeNodes},
+
+		{Path: "/api/orgs/{orgID}/nexus", Method: http.MethodGet, Handler: e.GetOrgNexus},
+		{Path: "/api/orgs/{orgID}/actions/show-nexus-password", Method: http.MethodGet, Handler: e.ShowOrgNexusPassword},
+		{Path: "/api/orgs/{orgID}/actions/get-nexus-docker-credential-by-image", Method: http.MethodGet, Handler: e.GetNexusOrgDockerCredentialByImage},
+		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodPost, Handler: e.CreateOrgPublisher},
+		{Path: "/api/orgs/{orgID}/actions/create-publisher", Method: http.MethodGet, Handler: e.CreateOrgPublisher},
+		// core-services org
+		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
+		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
+		{Path: "/api/orgs/{idOrName}", Method: http.MethodGet, Handler: e.GetOrg},
+		{Path: "/api/orgs/{idOrName}", Method: http.MethodDelete, Handler: e.DeleteOrg},
+		{Path: "/api/orgs", Method: http.MethodGet, Handler: e.ListOrg},
+		{Path: "/api/orgs/actions/list-public", Method: http.MethodGet, Handler: e.ListPublicOrg},
+		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
+		// core-services project
+		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
+		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
+		{Path: "/api/projects", Method: http.MethodGet, Handler: e.ListProject},
+		// core-services application
+		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
+		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
+		// core-services member
+		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
+		// approve
+		{Path: "/api/approvals/actions/watch-status", Method: http.MethodPost, Handler: e.WatchApprovalStatusChanged},
+
+		// test file records
+		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
+		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
 	}
 }
 
@@ -408,16 +607,15 @@ func NotImplemented(ctx context.Context, request *http.Request, m map[string]str
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
 	queryStringDecoder *schema.Decoder
-
-	assetSvc    *assetsvc.Service
-	fileTreeSvc *apidocsvc.Service
-
-	bdl        *bundle.Bundle
-	pipeline   *pipeline.Pipeline
-	cdp        *cdp.CDP
-	event      *event.Event
-	permission *permission.Permission
-	fileTree   *filetree.GittarFileTree
+	assetSvc           *assetsvc.Service
+	fileTreeSvc        *apidocsvc.Service
+	bdl                *bundle.Bundle
+	pipeline           *pipeline.Pipeline
+	cdp                *cdp.CDP
+	event              *event.Event
+	permission         *permission.Permission
+	fileTree           *filetree.GittarFileTree
+	pFileTree          *projectpipelinefiletree.FileTree
 
 	db              *dao.DBClient
 	testcase        *testcase.Service
@@ -429,6 +627,32 @@ type Endpoints struct {
 	cq              *cq.CQ
 	sceneset        *sceneset.Service
 	migrate         *migrate.Service
+
+	store          jsonstore.JsonStore
+	ossClient      *oss.Client
+	etcdStore      *etcd.Store
+	ticket         *ticket.Ticket
+	comment        *comment.Comment
+	branchRule     *branchrule.BranchRule
+	namespace      *namespace.Namespace
+	envConfig      *environment.EnvConfig
+	issue          *issue.Issue
+	issueStream    *issuestream.IssueStream
+	issueRelated   *issuerelated.IssueRelated
+	issueProperty  *issueproperty.IssueProperty
+	issueState     *issuestate.IssueState
+	issuePanel     *issuepanel.IssuePanel
+	uc             *ucauth.UCClient
+	iteration      *iteration.Iteration
+	publisher      *publisher.Publisher
+	certificate    *certificate.Certificate
+	appCertificate *appcertificate.AppCertificate
+	fileSvc        *filesvc.FileService
+	libReference   *libreference.LibReference
+	org            *org.Org
+
+	ImportChannel chan uint64
+	ExportChannel chan uint64
 }
 
 type Option func(*Endpoints)
@@ -458,6 +682,12 @@ func WithAssetSvc(svc *assetsvc.Service) Option {
 func WithFileTreeSvc(svc *apidocsvc.Service) Option {
 	return func(e *Endpoints) {
 		e.fileTreeSvc = svc
+	}
+}
+
+func WithProjectPipelineFileTree(fileTree *projectpipelinefiletree.FileTree) Option {
+	return func(e *Endpoints) {
+		e.pFileTree = fileTree
 	}
 }
 
@@ -500,6 +730,20 @@ func WithGittarFileTree(fileTree *filetree.GittarFileTree) Option {
 	return func(e *Endpoints) {
 		e.fileTree = fileTree
 	}
+}
+
+// DBClient 获取db client
+func (e *Endpoints) DBClient() *dao.DBClient {
+	return e.db
+}
+
+func (e *Endpoints) UCClient() *ucauth.UCClient {
+	return e.uc
+}
+
+// GetLocale 获取本地化资源
+func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
+	return e.bdl.GetLocaleByRequest(request)
 }
 
 func (e *Endpoints) RegisterEvents() error {
@@ -586,9 +830,163 @@ func WithMigrate(svc *migrate.Service) Option {
 	}
 }
 
+// WithTicket 配置 ticket service
+func WithTicket(ticket *ticket.Ticket) Option {
+	return func(e *Endpoints) {
+		e.ticket = ticket
+	}
+}
+
+// WithComment 配置 comment service
+func WithComment(comment *comment.Comment) Option {
+	return func(e *Endpoints) {
+		e.comment = comment
+	}
+}
+
+// WithBranchRule 配置 branchRule
+func WithBranchRule(branchRule *branchrule.BranchRule) Option {
+	return func(e *Endpoints) {
+		e.branchRule = branchRule
+	}
+}
+
+// WithNamespace 配置 namespace service
+func WithNamespace(namespace *namespace.Namespace) Option {
+	return func(e *Endpoints) {
+		e.namespace = namespace
+	}
+}
+
+// WithEnvConfig 配置 env config
+func WithEnvConfig(envConfig *environment.EnvConfig) Option {
+	return func(e *Endpoints) {
+		e.envConfig = envConfig
+	}
+}
+
+// WithIssue 配置 issue
+func WithIssue(issue *issue.Issue) Option {
+	return func(e *Endpoints) {
+		e.issue = issue
+	}
+}
+
+func WithIssueRelated(ir *issuerelated.IssueRelated) Option {
+	return func(e *Endpoints) {
+		e.issueRelated = ir
+	}
+}
+
+func WithIssueState(state *issuestate.IssueState) Option {
+	return func(e *Endpoints) {
+		e.issueState = state
+	}
+}
+
+func WithIssuePanel(panel *issuepanel.IssuePanel) Option {
+	return func(e *Endpoints) {
+		e.issuePanel = panel
+	}
+}
+
+// WithIssueStream 配置 issueStream
+func WithIssueStream(stream *issuestream.IssueStream) Option {
+	return func(e *Endpoints) {
+		e.issueStream = stream
+	}
+}
+
+// WithIssueProperty 配置 issueStream
+func WithIssueProperty(property *issueproperty.IssueProperty) Option {
+	return func(e *Endpoints) {
+		e.issueProperty = property
+	}
+}
+
+// WithUCClient 配置 UC Client
+func WithUCClient(uc *ucauth.UCClient) Option {
+	return func(e *Endpoints) {
+		e.uc = uc
+	}
+}
+
+// WithIteration 配置 iteration
+func WithIteration(itr *iteration.Iteration) Option {
+	return func(e *Endpoints) {
+		e.iteration = itr
+	}
+}
+
+// WithPublisher 配置 publisher service
+func WithPublisher(pub *publisher.Publisher) Option {
+	return func(e *Endpoints) {
+		e.publisher = pub
+	}
+}
+
+// WithCertificate 配置证书 service
+func WithCertificate(cer *certificate.Certificate) Option {
+	return func(e *Endpoints) {
+		e.certificate = cer
+	}
+}
+
+// WithAppCertificate 配置证书 service
+func WithAppCertificate(cer *appcertificate.AppCertificate) Option {
+	return func(e *Endpoints) {
+		e.appCertificate = cer
+	}
+}
+
+func WithFileSvc(svc *filesvc.FileService) Option {
+	return func(e *Endpoints) {
+		e.fileSvc = svc
+	}
+}
+
+// WithOSSClient 配置OSS Client
+func WithOSSClient(client *oss.Client) Option {
+	return func(e *Endpoints) {
+		e.ossClient = client
+	}
+}
+
+// WithEtcdStore 配置 etcdStore
+func WithEtcdStore(etcdStore *etcd.Store) Option {
+	return func(e *Endpoints) {
+		e.etcdStore = etcdStore
+	}
+}
+
+// WithJSONStore 配置 jsonstore
+func WithJSONStore(store jsonstore.JsonStore) Option {
+	return func(e *Endpoints) {
+		e.store = store
+	}
+}
+
+// WithLibReference 设置 libReference service
+func WithLibReference(libReference *libreference.LibReference) Option {
+	return func(e *Endpoints) {
+		e.libReference = libReference
+	}
+}
+
+// WithOrg 配置 org service
+func WithOrg(org *org.Org) Option {
+	return func(e *Endpoints) {
+		e.org = org
+	}
+}
+
 var queryStringDecoder *schema.Decoder
 
 func init() {
 	queryStringDecoder = schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+}
+
+func (e *Endpoints) TestCaseService() *testcase.Service {
+	return e.testcase
 }

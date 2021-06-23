@@ -39,7 +39,7 @@ func CheckAuth(c *gin.Context, projectIDStr string) (bool, error) {
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
-	code, body, err := util.CommonRequest("POST", discover.CMDB()+"/api/permissions/actions/check",
+	code, body, err := util.CommonRequest("POST", discover.CoreServices()+"/api/permissions/actions/check",
 		dto.ApiAuthReqDto{
 			UserID:   userID,
 			Scope:    "project",
