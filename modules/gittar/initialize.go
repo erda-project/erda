@@ -66,6 +66,7 @@ func Initialize() error {
 	diceBundle := bundle.New(
 		bundle.WithCMDB(),
 		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 	)
 
 	dbClient, err := models.OpenDB()
