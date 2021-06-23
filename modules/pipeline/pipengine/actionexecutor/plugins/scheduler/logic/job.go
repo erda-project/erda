@@ -14,6 +14,7 @@
 package logic
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -23,8 +24,11 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
@@ -125,4 +129,27 @@ func GetBigDataConf(task *spec.PipelineTask) (apistructs.BigdataConf, error) {
 		return conf, fmt.Errorf("unmarshal bigdata config error: %s", err.Error())
 	}
 	return conf, nil
+}
+
+func GetCLusterInfo(clusterName string) (map[string]string, error) {
+	var clusterInfoRes struct {
+		Data map[string]string `json:"data"`
+	}
+
+	var body bytes.Buffer
+	resp, err := httpclient.New().Get(discover.Scheduler()).
+		Path(strutil.Concat("/api/clusterinfo/", clusterName)).
+		Do().Body(&body)
+	if err != nil {
+		return nil, errors.Errorf("get cluster info failed, err: %v", err)
+	}
+
+	statusCode := resp.StatusCode()
+	respBody := body.String()
+
+	if err := json.Unmarshal([]byte(respBody), &clusterInfoRes); err != nil {
+		return nil, errors.Errorf("get cluster info failed, statueCode: %d, err: %v", statusCode, err)
+	}
+
+	return clusterInfoRes.Data, nil
 }
