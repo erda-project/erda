@@ -29,18 +29,19 @@ type Conf struct {
 	GittarAddr       string `env:"GITTAR_ADDR"`
 	BundleTimeoutSec int    `env:"BUNDLE_TIMEOUT_SECOND" default:"30"`
 
-	ConsumerNum       int    `env:"CONSUMER_NUM" default:"5"`
-	DiceClusterName   string `env:"DICE_CLUSTER_NAME" required:"true"`
-	EventboxAddr      string `env:"EVENTBOX_ADDR"`
-	CMDBAddr          string `env:"CMDB_ADDR"`
-	PipelineAddr      string `env:"PIPELINE_ADDR"`
-	NexusAddr         string `env:"NEXUS_ADDR" required:"true"`
-	NexusUsername     string `env:"NEXUS_USERNAME" required:"true"`
-	NexusPassword     string `env:"NEXUS_PASSWORD" required:"true"`
-	SonarAddr         string `env:"SONAR_ADDR" required:"true"`
-	SonarPublicURL    string `env:"SONAR_PUBLIC_URL" required:"true"`
-	SonarAdminToken   string `env:"SONAR_ADMIN_TOKEN" required:"true"` // dice.yml 里依赖了 sonar，由工具链注入 SONAR_ADMIN_TOKEN
-	GolangCILintImage string `env:"GOLANGCI_LINT_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/terminus/terminus-golangci-lint:1.27"`
+	ConsumerNum                int    `env:"CONSUMER_NUM" default:"5"`
+	DiceClusterName            string `env:"DICE_CLUSTER_NAME" required:"true"`
+	EventboxAddr               string `env:"EVENTBOX_ADDR"`
+	CMDBAddr                   string `env:"CMDB_ADDR"`
+	PipelineAddr               string `env:"PIPELINE_ADDR"`
+	NexusAddr                  string `env:"NEXUS_ADDR" required:"true"`
+	NexusUsername              string `env:"NEXUS_USERNAME" required:"true"`
+	NexusPassword              string `env:"NEXUS_PASSWORD" required:"true"`
+	SonarAddr                  string `env:"SONAR_ADDR" required:"true"`
+	SonarPublicURL             string `env:"SONAR_PUBLIC_URL" required:"true"`
+	SonarAdminToken            string `env:"SONAR_ADMIN_TOKEN" required:"true"` // dice.yml 里依赖了 sonar，由工具链注入 SONAR_ADMIN_TOKEN
+	GolangCILintImage          string `env:"GOLANGCI_LINT_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/terminus/terminus-golangci-lint:1.27"`
+	TestFilePollingIntervalSec int    `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
 }
 
 var cfg Conf
@@ -128,4 +129,8 @@ func GolangCILintImage() string {
 
 func CMDBAddr() string {
 	return cfg.CMDBAddr
+}
+
+func TestFileIntervalSec() int {
+	return cfg.TestFilePollingIntervalSec
 }

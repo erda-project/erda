@@ -11,30 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package createButton
+package dop
 
 import (
-	"context"
-
 	"github.com/erda-project/erda/apistructs"
-
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type ComponentAction struct {
-	Props map[string]interface{} `json:"props"`
-}
-
-func (i *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	i.Props = map[string]interface{}{
-		"text":        "创建组织",
-		"disabled":    true,
-		"disabledTip": "敬请期待",
-	}
-	c.Props = i.Props
-	return nil
-}
-
-func RenderCreator() protocol.CompRender {
-	return &ComponentAction{}
+var QA_RECORDS_GET = apis.ApiSpec{
+	Path:         "/api/test-file-records/<id>",
+	BackendPath:  "/api/test-file-records/<id>",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	Doc:          "summary: get file record",
+	ResponseType: apistructs.GetTestFileRecordResponse{},
+	IsOpenAPI:    true,
 }

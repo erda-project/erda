@@ -9,7 +9,10 @@ hierarchy:
       - list
       - emptyContainer
     emptyContainer:
+      - bannerImage
       - emptyText
+      - createProject
+      - browsePublicProjects
 
 components:
   myPage:
@@ -21,8 +24,14 @@ components:
   alert:
     type: Alert
   emptyContainer:
-    type: RowContainer
+    type: Container
   emptyText:
+    type: Text
+  bannerImage:
+    type: Image
+  createProject:
+    type: Button
+  browsePublicProjects:
     type: Text
 rendering:
   filter:
@@ -32,22 +41,49 @@ rendering:
           value: "{{ filter.values }}"
         - name: "isFirstFilter"
           value: "{{ filter.isFirstFilter }}"
-    - name: emptyText
-      state:
-        - name: "isEmpty"
-          value: "{{ list.isEmpty }}"
   list:
     - name: emptyText
       state:
         - name: "isEmpty"
           value: "{{ list.isEmpty }}"
+    - name: browsePublicProjects
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: bannerImage
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: filter
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: createProject
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
   __DefaultRendering__:
     - name: myPage
-    - name: filter
     - name: list
     - name: alert
     - name: emptyContainer
     - name: emptyText
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: browsePublicProjects
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: bannerImage
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: createProject
+      state:
+        - name: "isEmpty"
+          value: "{{ list.isEmpty }}"
+    - name: filter
       state:
         - name: "isEmpty"
           value: "{{ list.isEmpty }}"
