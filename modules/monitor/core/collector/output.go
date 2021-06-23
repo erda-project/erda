@@ -13,6 +13,10 @@
 
 package collector
 
-func (c *collector) collectLogV1() error {
-	return nil
+import (
+	"context"
+)
+
+type Output interface {
+	Send(ctx context.Context, data []byte) error
 }

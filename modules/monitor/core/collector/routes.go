@@ -53,7 +53,7 @@ func (c *collector) intRoutes(routes httpserver.Router) error {
 
 	// standard API version one
 	signAuth := c.authSignedRequest()
-	routes.POST("/api/v1/collect/logs/:source", c.collectLogV1, signAuth)
+	routes.POST("/api/v1/collect/logs", c.collectLogV1, signAuth)
 	return nil
 }
 
@@ -87,10 +87,6 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 		return err
 	}
 	return ctx.NoContent(http.StatusNoContent)
-}
-
-func (c *collector) collectLogV1() error {
-	return nil
 }
 
 func (c *collector) collectAnalytics(ctx echo.Context) error {

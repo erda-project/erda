@@ -22,9 +22,9 @@ monitor-collector:
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
     sign_auth:
-#        sk_provider: static
-#        config:
-#            secret_key: "0O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6"
+        sk_provider: static
+        config:
+            secret_key: "0O2Hn0TrTrRwrds1q0un0p9AvX4JB8V6"
 
 pprof:
 http-server@admin:

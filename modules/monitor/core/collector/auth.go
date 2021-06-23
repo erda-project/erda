@@ -27,7 +27,7 @@ import (
 
 var bdl = bundle.New(bundle.WithCMDB())
 
-type staticSKProvider struct {
+type staticSKProviderConfig struct {
 	SecretKey string `file:"secretKey"`
 }
 
@@ -42,7 +42,7 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 			var sk string
 			switch c.Cfg.SignAuth.SKProvider {
 			case "static":
-				sk, ok = c.Cfg.SignAuth.Config["secret_key"]
+				// todo BindConfig
 				if !ok {
 					return echo.NewHTTPError(http.StatusUnauthorized, "no secret_key in config with static sk_provider")
 				}

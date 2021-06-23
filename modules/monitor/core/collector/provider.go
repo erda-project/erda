@@ -15,10 +15,6 @@ package collector
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -35,8 +31,8 @@ type config struct {
 		Force    bool   `file:"force"`
 	}
 	SignAuth struct {
-		SKProvider string            `file:"sk_provider"`
-		Config     map[string]string `file:"config"`
+		SKProvider string      `file:"sk_provider"`
+		Config     interface{} `file:"config"`
 	} `file:"sign_auth"`
 	Output         kafka.ProducerConfig `file:"output"`
 	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
@@ -70,7 +66,6 @@ func (c *collector) Init(ctx servicehub.Context) error {
 
 	routes := ctx.Service("http-server",
 		// telemetry.HttpMetric(),
-		c.logrusMiddleware(),
 		interceptors.CORS(),
 		interceptors.Recover(c.Logger),
 	).(httpserver.Router)
@@ -79,39 +74,6 @@ func (c *collector) Init(ctx servicehub.Context) error {
 		return fmt.Errorf("fail to init routes: %s", err)
 	}
 	return nil
-}
-
-// `${time_rfc3339} ${remote_ip} ${header:terminus-request-id} ${method} ${host} ${uri} ${status} ${latency_human} in ${bytes_in} out ${bytes_out} ${error}` + "\n"
-func (c *collector) logrusMiddleware(skipper ...middleware.Skipper) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) (err error) {
-			req := ctx.Request()
-			res := ctx.Response()
-			start := time.Now()
-			if err = next(ctx); err != nil {
-				ctx.Error(err)
-			}
-			stop := time.Now()
-			statusCode := res.Status
-			if stop.Sub(start).Milliseconds() > 50 || statusCode >= 300 {
-				errorMessage := ""
-				if err != nil {
-					errorMessage = err.Error()
-				}
-				c.Logger.Warnf("%s %s %s %s %s %d %s %s %s",
-					ctx.RealIP(),
-					req.Header.Get("terminus-request-id"),
-					req.Method,
-					req.Host,
-					req.RequestURI,
-					statusCode,
-					stop.Sub(start).String(),
-					req.Header.Get("Custom-Content-Encoding"),
-					errorMessage)
-			}
-			return err
-		}
-	}
 }
 
 func init() {
