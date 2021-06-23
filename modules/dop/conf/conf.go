@@ -281,3 +281,8 @@ func MetricsIssueCron() string {
 func AvatarStorageURL() string {
 	return cfg.AvatarStorageURL
 }
+
+// DisableFileDownloadPermissionValidate return switch for file download permission check.
+func DisableFileDownloadPermissionValidate() bool {
+	return cfg.DisableFileDownloadPermissionValidate
+}

@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/model"
 	"github.com/erda-project/erda/modules/cmdb/services/container"
-	"github.com/erda-project/erda/modules/cmdb/services/ticket"
 )
 
 // Host 资源对象操作封装
@@ -29,7 +28,6 @@ type Host struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
 	cs  *container.Container
-	t   *ticket.Ticket
 }
 
 // Option 定义 Host 对象的配置选项
@@ -62,13 +60,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithContainer(cs *container.Container) Option {
 	return func(h *Host) {
 		h.cs = cs
-	}
-}
-
-// WithTicketService 配置 ticket  service
-func WithTicketService(t *ticket.Ticket) Option {
-	return func(h *Host) {
-		h.t = t
 	}
 }
 
