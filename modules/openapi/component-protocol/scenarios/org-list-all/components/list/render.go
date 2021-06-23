@@ -114,14 +114,14 @@ func (i *ComponentList) RenderPublicOrgs() error {
 		Q:        i.State.SearchEntry,
 	}
 	req.UserID = i.CtxBdl.Identity.UserID
-	orgs, err := i.CtxBdl.Bdl.ListPublicOrgs(&req)
+	orgs, err := i.CtxBdl.Bdl.ListDopPublicOrgs(&req)
 	if err != nil {
 		return err
 	}
 
 	req = apistructs.OrgSearchRequest{}
 	req.UserID = i.CtxBdl.Identity.UserID
-	myOrgs, err := i.CtxBdl.Bdl.ListOrgs(&req)
+	myOrgs, err := i.CtxBdl.Bdl.ListDopOrgs(&req)
 	if err != nil {
 		return err
 	}
