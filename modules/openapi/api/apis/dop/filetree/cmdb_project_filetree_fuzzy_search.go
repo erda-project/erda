@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var CMDB_PROJECT_FILETREE_FUZZY_SEARCH = apis.ApiSpec{
 	Path:        "/api/project-pipeline/filetree/actions/fuzzy-search",
 	BackendPath: "/api/project-pipeline/filetree/actions/fuzzy-search",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

@@ -11,16 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package filetree
+package bannerImage
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
-var CMDB_PROJECT_FILETREE_CREATE = apis.ApiSpec{
-	Path:        "/api/project-pipeline/filetree",
-	BackendPath: "/api/project-pipeline/filetree",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	Doc:         "summary: 创建节点",
+type ComponentImage struct {
+	ctxBdl  protocol.ContextBundle
+	Version string `json:"version,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Props   Props  `json:"props,omitempty"`
+	State   State  `json:"state,omitempty"`
+}
+
+type Props struct {
+	Visible bool   `json:"visible"`
+	Size    string `json:"size"`
+	Src     string `json:"src"`
+}
+
+type State struct {
+	IsEmpty bool `json:"isEmpty"`
 }

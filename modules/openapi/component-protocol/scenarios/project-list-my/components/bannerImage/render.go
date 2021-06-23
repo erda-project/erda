@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package emptyText
+package bannerImage
 
 import (
 	"context"
@@ -23,8 +23,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
-// GenComponentState 获取state
-func (i *ComponentText) GenComponentState(c *apistructs.Component) error {
+func (i *ComponentImage) GenComponentState(c *apistructs.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -43,35 +42,22 @@ func (i *ComponentText) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
-func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+func (i *ComponentImage) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	if err := i.GenComponentState(c); err != nil {
 		return err
 	}
-
-	// 如果list组件的数据不为空，则直接返回
-	if !i.State.IsEmpty {
-		c.Props = map[string]interface{}{"visible": false}
-		return nil
-	}
-
 	i.Props = Props{
-		Visible:    true,
-		RenderType: "linkText",
-		StyleConfig: StyleConfig{
-			FontSize:   16,
-			LineHeight: 24,
-		},
-		Value: map[string]interface{}{
-			"text": []interface{}{
-				"您当前还未被邀请加入任何项目",
-			},
-		},
+		Size:    "large",
+		Src:     "/static/empty-project.png",
+		Visible: false,
 	}
-
+	if i.State.IsEmpty {
+		i.Props.Visible = true
+	}
 	c.Props = i.Props
-	return
+	return nil
 }
 
 func RenderCreator() protocol.CompRender {
-	return &ComponentText{}
+	return &ComponentImage{}
 }

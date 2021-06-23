@@ -149,28 +149,31 @@ func (i *ComponentList) RenderPublicOrgs() error {
 			item.PrefixImg = org.Logo
 		}
 
+		command := Command{
+			Key:     "goto",
+			Target:  "workBenchRoot",
+			JumpOut: false,
+			State: CommandState{
+				Params{
+					OrgName: org.Name,
+				},
+			},
+		}
+
 		if _, ok := orgMap[org.ID]; ok {
 			item.ExtraInfos = append(item.ExtraInfos, ExtraInfo{
 				Icon: "user",
 				Text: "已加入",
 			})
+			command.Target = "workBenchPublicProjects"
 		}
 
 		item.Operations = map[string]interface{}{
 			"click": ClickOperation{
-				Key:    "click",
-				Show:   false,
-				Reload: false,
-				Command: Command{
-					Key:     "goto",
-					Target:  "workBenchRoot",
-					JumpOut: false,
-					State: CommandState{
-						Params{
-							OrgName: org.Name,
-						},
-					},
-				},
+				Key:     "click",
+				Show:    false,
+				Reload:  false,
+				Command: command,
 			},
 		}
 
