@@ -20,7 +20,7 @@ import (
 
 // CreateMBox 创建站内信记录
 func (b *Bundle) CreateMBox(request *apistructs.CreateMBoxRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
