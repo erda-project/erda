@@ -107,6 +107,9 @@ func Initialize() error {
 	gitApiGroupV2 := e.Group("/wb/:project/:app", webcontext.WrapMiddlewareHandler(auth.AuthenticateV2))
 	addApiRoutes(gitApiGroupV2)
 
+	gitApiGroupV3 := e.Group("/:org/dop/:project/:app", webcontext.WrapMiddlewareHandler(auth.AuthenticateV3))
+	addApiRoutes(gitApiGroupV3)
+
 	logger := middleware.Logger()
 	e.Use(logger)
 

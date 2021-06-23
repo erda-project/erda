@@ -160,6 +160,46 @@ func AuthenticateV2(c *webcontext.Context) {
 	doAuth(c, repo, repoName)
 }
 
+func AuthenticateV3(c *webcontext.Context) {
+	org := c.Param("org")
+	project := c.Param("project")
+	app := strings.TrimSuffix(c.Param("app"), ".git")
+
+	orgID, err := getOrgIDV3(c, org)
+	if err != nil {
+		c.EchoContext.String(404, "org not found")
+		return
+	}
+	repo, err := c.Service.GetRepoByNames(orgID, project, app)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.AbortWithStatus(http.StatusNotFound, errors.New("repo not found"))
+			return
+		}
+		c.EchoContext.String(500, err.Error())
+		return
+	}
+
+	//todo delete redirect
+	echoReqPath := c.EchoContext.Path()
+	//没有子path尝试重定向到UI
+	if c.EchoContext.Request().Method == "GET" &&
+		(echoReqPath == "/:org/dop/:project/:app" || echoReqPath == "/:org/dop/:project/:app/*") &&
+		c.EchoContext.QueryString() == "" {
+		params := map[string]string{
+			"projectId": strconv.FormatInt(repo.ProjectID, 10),
+			"appId":     strconv.FormatInt(repo.AppID, 10),
+			"orgId":     strconv.FormatInt(repo.OrgID, 10),
+		}
+		redirectUrlPrefix := c.EchoContext.Scheme() + "://" + c.Host()
+		c.EchoContext.Redirect(301, redirectUrlPrefix+renderTemplate(conf.RepoPathTemplate(), params))
+		return
+	}
+
+	repoName := path.Join(strconv.FormatInt(orgID, 10), project, app)
+	doAuth(c, repo, repoName)
+}
+
 func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	// Git Protocol version v2
 	version := c.GetHeader("Git-Protocol")
@@ -424,4 +464,18 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository.IsExternal = repo.IsExternal
 
 	return gitRepository, nil
+}
+
+// getOrgIDV3 get orgID v3
+func getOrgIDV3(c *webcontext.Context, orgName string) (int64, error) {
+	orgDto, err := c.Bundle.GetOrg(orgName)
+	if err == nil {
+		return int64(orgDto.ID), nil
+	}
+	orgIdStr := c.HttpRequest().Header.Get("Org-ID")
+	orgID, err := strconv.ParseInt(orgIdStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return orgID, nil
 }
