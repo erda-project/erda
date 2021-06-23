@@ -135,7 +135,7 @@ func (client *Client) BatchListPipelineReportsByPipelineID(pipelineIDs []uint64,
 		sql.In("type", types)
 	}
 
-	sql = sql.Desc("created_at")
+	sql = sql.Desc("id")
 
 	if err := sql.Find(&reports); err != nil {
 		return nil, err
