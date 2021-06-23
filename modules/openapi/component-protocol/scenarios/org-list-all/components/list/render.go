@@ -151,7 +151,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 
 		command := Command{
 			Key:     "goto",
-			Target:  "workBenchRoot",
+			Target:  "workBenchPublicProjects",
 			JumpOut: false,
 			State: CommandState{
 				Params{
@@ -165,7 +165,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 				Icon: "user",
 				Text: "已加入",
 			})
-			command.Target = "workBenchPublicProjects"
+			command.Target = "workBenchRoot"
 		}
 
 		item.Operations = map[string]interface{}{
