@@ -397,6 +397,7 @@ func (b *Bundle) ResourceInfo(clustername string, brief bool) (*apistructs.Clust
 	}
 	return &resp.Data, nil
 }
+
 func (b *Bundle) PrecheckServiceGroup(sg apistructs.ServiceGroupPrecheckRequest) (
 	*apistructs.ServiceGroupPrecheckData, error) {
 	var resp apistructs.ServiceGroupPrecheckResponse
@@ -407,6 +408,19 @@ func (b *Bundle) PrecheckServiceGroup(sg apistructs.ServiceGroupPrecheckRequest)
 		return nil, toAPIError(200, resp.Error)
 	}
 	return &resp.Data, nil
+}
+
+// ScaleServiceGroup scale service group
+func (b *Bundle) ScaleServiceGroup(sg apistructs.UpdateServiceGroupScaleRequst) error {
+	var resp apistructs.UpdateServiceGroupScaleResponse
+	if err := callScheduler(b, sg, &resp, "/api/servicegroup/actions/scale", b.hc.Put); err != nil {
+		return err
+	}
+	if !resp.Success {
+		return toAPIError(200, resp.Error)
+	}
+
+	return nil
 }
 
 func callScheduler(b *Bundle, req, resp interface{}, path string,
