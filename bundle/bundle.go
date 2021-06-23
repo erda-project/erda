@@ -98,6 +98,22 @@ func WithCMDB() Option {
 	}
 }
 
+func WithCoreServices() Option {
+	return func(b *Bundle) {
+		k := discover.EnvCoreServices
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
+func WithDOP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvDOP
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
 // WithDiceHub 根据环境变量配置创建 dicehub 客户端.
 func WithDiceHub() Option {
 	return func(b *Bundle) {

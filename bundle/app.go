@@ -24,9 +24,9 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-// GetApp get app by id from cmdb.
+// GetApp get app by id from core-service.
 func (b *Bundle) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (b *Bundle) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
 }
 
 func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.Application
 
 // GetAppsByProject 根据 projectID 获取应用列表
 func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 
 // get applications by projectID and app name
 func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID stri
 
 // GetAppsByProjectSimple 根据 projectID 获取应用列表简单信息
 func (b *Bundle) GetAppsByProjectSimple(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ type AbilityAppReq struct {
 
 // GetAppPublishItemRelationsGroupByENV 根据 appID 获取应用关联的发布内容
 func (b *Bundle) GetAppPublishItemRelationsGroupByENV(appID uint64) (*apistructs.QueryAppPublishItemRelationGroupByENVResponse, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (b *Bundle) GetAppPublishItemRelationsGroupByENV(appID uint64) (*apistructs
 
 // QueryAppPublishItemRelations 查询应用关联的发布内容
 func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishItemRelationRequest) (*apistructs.QueryAppPublishItemRelationResponse, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishIte
 }
 
 func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
 
 // get my apps by paging
 func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -261,4 +261,73 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 		return nil, toAPIError(resp.StatusCode(), listResp.Error)
 	}
 	return &listResp.Data, nil
+}
+
+// CreateApp create app
+func (b *Bundle) CreateApp(req apistructs.ApplicationCreateRequest, userID string) (*apistructs.ApplicationDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.ApplicationCreateResponse
+	resp, err := hc.Post(host).Path("/api/applications").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		JSONBody(&req).Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return &fetchResp.Data, nil
+}
+
+// UpdateApp update app
+func (b *Bundle) UpdateApp(req apistructs.ApplicationUpdateRequestBody, appID uint64, userID string) (interface{}, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.ApplicationUpdateResponse
+	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/applications/%d", appID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		JSONBody(&req).Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return &fetchResp.Data, nil
+}
+
+// DeleteApp delete app
+func (b *Bundle) DeleteApp(appID uint64, userID string) (*apistructs.ApplicationDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.ApplicationDeleteResponse
+	resp, err := hc.Delete(host).Path(fmt.Sprintf("/api/applications/%d", appID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return &fetchResp.Data, nil
 }
