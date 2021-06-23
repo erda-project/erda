@@ -39,7 +39,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab
-	github.com/erda-project/erda-proto-go v0.0.0-20210616071654-aec4bc48c85a
+	github.com/erda-project/erda-proto-go v0.0.0-20210623061846-36a1224f2cc9
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -129,11 +129,11 @@ require (
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
-	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62
-	google.golang.org/grpc v1.37.0
+	google.golang.org/genproto v0.0.0-20210617175327-b9e0b3197ced
+	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
