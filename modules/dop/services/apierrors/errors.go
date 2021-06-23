@@ -461,6 +461,11 @@ var (
 	ErrCreateFileTreeNode        = err("ErrCreateFileTreeNode", "创建目录树节点失败")
 	ErrDeleteFileTreeNode        = err("ErrDeleteFileTreeNode", "删除目录树节点失败")
 	ErrFindFileTreeNodeAncestors = err("ErrFindFileTreeNodeAncestors", "目录树节点寻祖失败")
+
+	ErrGetFileRecord    = err("ErrGetFileRecord", "获取文件记录失败")
+	ErrCreateFileRecord = err("ErrCreateAutoTestSceneSet", "创建文件记录失败")
+	ErrUpdateFileRecord = err("ErrUpdateAutoTestSceneSet", "更新文件记录失败")
+	ErrListFileRecord   = err("ErrListAutoTestSceneSet", "获取文件记录列表失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

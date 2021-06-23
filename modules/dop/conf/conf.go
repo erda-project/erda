@@ -88,6 +88,8 @@ type Conf struct {
 	MetricsIssueCron string `env:"METRICS_ISSUE_CRON" default:"0 0 0 1/7 * ?"` // metrics issue report monitor execution cycle
 
 	AvatarStorageURL string `env:"AVATAR_STORAGE_URL"` // file:///avatars or oss://appkey:appsecret@endpoint/bucket
+
+	TestFilePollingIntervalSec int `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
 }
 
 var cfg Conf
@@ -285,4 +287,8 @@ func AvatarStorageURL() string {
 // DisableFileDownloadPermissionValidate return switch for file download permission check.
 func DisableFileDownloadPermissionValidate() bool {
 	return cfg.DisableFileDownloadPermissionValidate
+}
+
+func TestFileIntervalSec() int {
+	return cfg.TestFilePollingIntervalSec
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/endpoints"
 	"github.com/erda-project/erda/modules/dop/event"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/appcertificate"
 	"github.com/erda-project/erda/modules/dop/services/assetsvc"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
@@ -119,7 +120,51 @@ func Initialize() error {
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 
 	loadMetricKeysFromDb((*dao.DBClient)(dbclient.DB))
-	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
+	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
+
+	interval := time.Duration(conf.TestFileIntervalSec())
+	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	// Scheduled polling export task
+	go func() {
+		ticker := time.NewTicker(time.Second * interval)
+		for {
+			select {
+			case <-ticker.C:
+				exportTestFileTask(ep)
+			case <-ep.ExportChannel:
+				exportTestFileTask(ep)
+			}
+		}
+	}()
+
+	// Scheduled polling import task
+	go func() {
+		ticker := time.NewTicker(time.Second * interval)
+		for {
+			select {
+			case <-ticker.C:
+				importTestFileTask(ep)
+			case <-ep.ImportChannel:
+				importTestFileTask(ep)
+			}
+		}
+	}()
+
+	// Daily clear test file records
+	go func() {
+		day := time.NewTicker(time.Hour * 24)
+		for {
+			select {
+			case <-day.C:
+				if err := ep.TestCaseService().DeleteRecordApiFilesByTime(time.Now().AddDate(0, 0, -1)); err != nil {
+					logrus.Error(err)
+				}
+			}
+		}
+	}()
 
 	return server.ListenAndServe()
 }
@@ -412,6 +457,8 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithOrg(o),
 	)
 
+	ep.ImportChannel = make(chan uint64)
+	ep.ExportChannel = make(chan uint64)
 	return ep, nil
 }
 
@@ -442,4 +489,29 @@ func registerWebHook(bdl *bundle.Bundle) {
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register approval status changed event, %v", err)
 	}
+}
+func exportTestFileTask(ep *endpoints.Endpoints) {
+	svc := ep.TestCaseService()
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		return
+	}
+	if !ok {
+		return
+	}
+	svc.ExportFile(record)
+}
+
+func importTestFileTask(ep *endpoints.Endpoints) {
+	svc := ep.TestCaseService()
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		return
+	}
+	if !ok {
+		return
+	}
+	svc.ImportFile(record)
 }
