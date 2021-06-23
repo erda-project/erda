@@ -323,6 +323,11 @@ var (
 	ErrGetAutoTestSceneSet    = err("ErrGetAutoTestSceneSet", "获取自动化测试场景集失败")
 	ErrListAutoTestSceneSet   = err("ErrListAutoTestSceneSet", "获取自动化测试场景集列表失败")
 	ErrDragAutoTestSceneSet   = err("ErrDragAutoTestSceneSet", "拖动自动化测试场景集失败")
+
+	ErrGetFileRecord    = err("ErrGetFileRecord", "获取文件记录失败")
+	ErrCreateFileRecord = err("ErrCreateAutoTestSceneSet", "创建文件记录失败")
+	ErrUpdateFileRecord = err("ErrUpdateAutoTestSceneSet", "更新文件记录失败")
+	ErrListFileRecord   = err("ErrListAutoTestSceneSet", "获取文件记录列表失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
