@@ -57,5 +57,5 @@ jobs:
         run: make GO_BUILD_OPTIONS="-tags=musl"
       - name: Run Test
         run: |
-          go test -v -tags=musl -work -cpu=2 -timeout 30s -race -coverprofile=coverage.txt -covermode=atomic ./...
+          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
           curl -s https://codecov.io/bash | bash
