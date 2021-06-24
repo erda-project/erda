@@ -17,9 +17,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"strings"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
@@ -30,6 +34,87 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+// ParseJobHostBindTemplate Analyze the hostPath template and convert it to the cluster info value
+func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (string, error) {
+	var b bytes.Buffer
+
+	if hostPath == "" {
+		return "", errors.New("hostPath is empty")
+	}
+
+	t, err := template.New("jobBind").
+		Option("missingkey=error").
+		Parse(hostPath)
+	if err != nil {
+		return "", errors.Errorf("failed to parse bind, hostPath: %s, (%v)", hostPath, err)
+	}
+
+	err = t.Execute(&b, &clusterInfo)
+	if err != nil {
+		return "", errors.Errorf("failed to execute bind, hostPath: %s, (%v)", hostPath, err)
+	}
+
+	return b.String(), nil
+}
+
+// GenerateK8SVolumes According to job configuration, production volume related configuration
+func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
+	vols := []corev1.Volume{}
+	volMounts := []corev1.VolumeMount{}
+	pvcs := []*corev1.PersistentVolumeClaim{}
+	for i, v := range job.Volumes {
+		var pvcid string
+		if v.ID == nil { // if ID == nil, we need to create a new pvc
+			sc := whichStorageClass(v.Storage)
+			id := fmt.Sprintf("%s-%s-%d", job.Namespace, job.Name, i)
+			pvcs = append(pvcs, &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      id,
+					Namespace: job.Namespace,
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("10Gi"),
+						},
+					},
+					StorageClassName: &sc,
+				},
+			})
+			pvcid = id
+		} else {
+			pvcs = append(pvcs, nil) // append a placeholder
+			pvcid = *v.ID
+		}
+		volName := fmt.Sprintf("vol-%d", i)
+		vols = append(vols, corev1.Volume{
+			Name: volName,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvcid,
+				},
+			},
+		})
+		volMounts = append(volMounts, corev1.VolumeMount{
+			Name:      volName,
+			MountPath: v.Path,
+		})
+	}
+	return vols, volMounts, pvcs
+}
+
+func whichStorageClass(tp string) string {
+	switch tp {
+	case "local":
+		return "dice-local-volume"
+	case "nfs":
+		return "dice-nfs-volume"
+	default:
+		return "dice-local-volume"
+	}
+}
 
 func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
 	defer func() {

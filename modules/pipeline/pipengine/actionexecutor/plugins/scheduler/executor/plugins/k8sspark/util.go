@@ -23,8 +23,6 @@ import (
 )
 
 const (
-	AliyunPullSecret = "aliyun-registry"
-
 	jobKind                 = "SparkApplication"
 	sparkVersion            = "2.4.0"
 	jobAPIVersion           = "sparkoperator.k8s.io/v1beta2"
