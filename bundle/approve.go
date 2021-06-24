@@ -19,8 +19,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest) (*apistructs.ApproveDTO, error) {
-	host, err := b.urls.CMDB()
+func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID string) (*apistructs.ApproveDTO, error) {
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -29,6 +29,7 @@ func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest) (*apistruct
 	var createResp apistructs.ApproveCreateResponse
 	resp, err := hc.Post(host).Path("/api/approves").
 		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
 		JSONBody(req).Do().JSON(&createResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

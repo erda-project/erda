@@ -135,7 +135,7 @@ func (b *Bundle) GetAllGroups(scope, scopeId, orgId, userId string) ([]apistruct
 }
 
 func (b *Bundle) GetNotifyConfigMS(userId, orgId string) (bool, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return false, err
 	}

@@ -54,7 +54,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	if !fakecluster {
 		// Check project whether to use cluster
 		projectRefer := precheckResp{}
-		resp, err := httpclient.New().Get(discover.CMDB()).
+		resp, err := httpclient.New().Get(discover.CoreServices()).
 			Header("Internal-Client", "ops").
 			Path("/api/projects/actions/refer-cluster").
 			Param("cluster", req.ClusterName).Do().JSON(&projectRefer)
