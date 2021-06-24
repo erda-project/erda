@@ -15,7 +15,9 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -63,6 +65,72 @@ func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateReques
 	if !resp.IsOK() {
 		return apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to create Audit, status code: %d, body: %v",
+				resp.StatusCode(),
+				buf.String(),
+			))
+	}
+	return nil
+}
+
+func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID string) (*apistructs.AuditsListResponse, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var buf bytes.Buffer
+	resp, err := hc.
+		Get(host).
+		Path("/api/audits/actions/list").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
+		Header(httputil.UserHeader, userID).
+		JSONBody(audits).
+		Do().
+		Body(&buf)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to list Audit, status code: %d, body: %v",
+				resp.StatusCode(),
+				buf.String(),
+			))
+	}
+	var listAudit apistructs.AuditsListResponse
+	err = json.Unmarshal(buf.Bytes(), &listAudit)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return &listAudit, nil
+}
+
+func (b *Bundle) ExportAuditExcel(audits *apistructs.AuditsListRequest, userID string) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var buf bytes.Buffer
+	resp, err := hc.
+		Get(host).
+		Path("/api/audits/actions/export-excel").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
+		Header(httputil.UserHeader, userID).
+		JSONBody(audits).
+		Do().
+		Body(&buf)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to export audit excel, status code: %d, body: %v",
 				resp.StatusCode(),
 				buf.String(),
 			))

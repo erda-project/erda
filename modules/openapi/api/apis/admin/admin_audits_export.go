@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"net/http"
@@ -20,16 +20,15 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_NOTICE_LIST = apis.ApiSpec{
-	Path:         "/api/notices",
-	BackendPath:  "/api/notices",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.NoticeListRequest{},
-	ResponseType: apistructs.NoticeListResponse{},
-	IsOpenAPI:    true,
-	Doc:          "summary: 平台公告列表",
+var ADMIN_AUDITS_EXPORT = apis.ApiSpec{
+	Path:        "/api/audits/actions/export-excel",
+	BackendPath: "/api/audits/actions/export-excel",
+	Host:        "admin.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.AuditsListRequest{},
+	Doc:         "summary: 导出审计事件",
 }

@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"net/http"
@@ -20,10 +20,10 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_AUDITS_LIST = apis.ApiSpec{
+var ADMIN_AUDITS_LIST = apis.ApiSpec{
 	Path:         "/api/audits/actions/list",
 	BackendPath:  "/api/audits/actions/list",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,

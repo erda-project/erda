@@ -11,21 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package admin
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_HOST_LIST = apis.ApiSpec{
-	Path:         "/api/hosts",
-	BackendPath:  "/api/hosts",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
+var ADMIN_CLUSTER_LIST = apis.ApiSpec{
+	Path:         "/api/clusters",
+	BackendPath:  "/api/clusters",
 	Method:       "GET",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:       "http",
 	CheckLogin:   true,
-	RequestType:  apistructs.HostListRequest{},
-	ResponseType: apistructs.HostListResponse{},
-	IsOpenAPI:    true,
+	RequestType:  apistructs.ClusterListRequest{},
+	ResponseType: apistructs.ClusterListResponse{},
+	Doc:          "summary: 集群列表",
 }

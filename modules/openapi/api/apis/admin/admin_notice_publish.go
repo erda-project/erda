@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"net/http"
@@ -21,31 +21,29 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
-var CMDB_NOTICE_CREATE = apis.ApiSpec{
-	Path:         "/api/notices",
-	BackendPath:  "/api/notices",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+var ADMIN_NOTICE_PUBLISH = apis.ApiSpec{
+	Path:         "/api/notices/<id>/actions/publish",
+	BackendPath:  "/api/notices/<id>/actions/publish",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:       "http",
-	Method:       http.MethodPost,
+	Method:       http.MethodPut,
 	CheckLogin:   true,
 	CheckToken:   true,
-	RequestType:  apistructs.NoticeCreateRequest{},
-	ResponseType: apistructs.NoticeCreateResponse{},
 	IsOpenAPI:    true,
-	Doc:          "summary: 创建平台公告",
+	Doc:          "summary: 发布平台公告",
+	ResponseType: apistructs.NoticePublishResponse{},
 	Audit: func(ctx *spec.AuditContext) error {
 
-		var resp apistructs.NoticeCreateResponse
+		var resp apistructs.NoticePublishResponse
 		err := ctx.BindResponseData(&resp)
 		if err != nil {
 			return err
 		}
-
 		if resp.Success {
 			return ctx.CreateAudit(&apistructs.Audit{
 				ScopeType:    apistructs.OrgScope,
 				ScopeID:      uint64(ctx.OrgID),
-				TemplateName: apistructs.CreateNoticesTemplate,
+				TemplateName: apistructs.PublishNoticesTemplate,
 				Context:      map[string]interface{}{"notices": resp.Data.Content},
 			})
 		} else {
