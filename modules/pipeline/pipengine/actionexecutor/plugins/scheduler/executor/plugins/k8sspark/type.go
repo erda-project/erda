@@ -14,6 +14,7 @@
 package k8sspark
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -24,14 +25,15 @@ type K8sSpark struct {
 	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
+	cluster     apistructs.ClusterInfo
 }
 
-func New(name types.Name, clusterName string, options map[string]string) (*K8sSpark, error) {
+func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sSpark, error) {
 	kc, err := k8sclient.New(clusterName)
 	if err != nil {
 		return nil, err
 	}
-	return &K8sSpark{name: name, clusterName: clusterName, client: kc}, nil
+	return &K8sSpark{name: name, clusterName: clusterName, client: kc, cluster: cluster}, nil
 }
 
 func (k *K8sSpark) Kind() types.Kind {

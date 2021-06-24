@@ -47,7 +47,7 @@ type TaskExecutor interface {
 	BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (interface{}, error)
 }
 
-type CreateFn func(name Name, clusterName string, options map[string]string) (TaskExecutor, error)
+type CreateFn func(name Name, clusterName string, cluster apistructs.ClusterInfo) (TaskExecutor, error)
 
 var Factory = map[Kind]CreateFn{}
 

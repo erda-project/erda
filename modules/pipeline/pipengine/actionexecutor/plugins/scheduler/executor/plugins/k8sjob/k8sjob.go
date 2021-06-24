@@ -80,8 +80,8 @@ var (
 )
 
 func init() {
-	types.MustRegister(Kind, func(name types.Name, clusterName string, options map[string]string) (types.TaskExecutor, error) {
-		k, err := New(name, clusterName, options)
+	types.MustRegister(Kind, func(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (types.TaskExecutor, error) {
+		k, err := New(name, clusterName, cluster)
 		if err != nil {
 			return nil, err
 		}
@@ -93,14 +93,15 @@ type K8sJob struct {
 	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
+	cluster     apistructs.ClusterInfo
 }
 
-func New(name types.Name, clusterName string, options map[string]string) (*K8sJob, error) {
+func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
 	k, err := k8sclient.New(clusterName)
 	if err != nil {
 		return nil, err
 	}
-	return &K8sJob{name: name, client: k, clusterName: clusterName}, nil
+	return &K8sJob{name: name, client: k, clusterName: clusterName, cluster: cluster}, nil
 }
 
 func (k *K8sJob) Kind() types.Kind {

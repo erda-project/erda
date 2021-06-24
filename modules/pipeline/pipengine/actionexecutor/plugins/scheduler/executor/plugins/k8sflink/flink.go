@@ -40,8 +40,8 @@ const (
 var Kind = types.Kind("k8sflink")
 
 func init() {
-	types.MustRegister(Kind, func(name types.Name, clusterName string, options map[string]string) (types.TaskExecutor, error) {
-		k, err := New(name, clusterName, options)
+	types.MustRegister(Kind, func(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (types.TaskExecutor, error) {
+		k, err := New(name, clusterName, cluster)
 		if err != nil {
 			return nil, err
 		}

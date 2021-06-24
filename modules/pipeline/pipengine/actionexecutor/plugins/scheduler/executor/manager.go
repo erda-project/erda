@@ -113,7 +113,7 @@ func (m *Manager) addExecutor(cluster apistructs.ClusterInfo) error {
 			if _, exist := m.executors[name]; exist {
 				return errors.Errorf("task executor name: %s already existed", name)
 			}
-			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, nil)
+			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
@@ -154,7 +154,7 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 			if _, exist := m.executors[name]; exist {
 				delete(m.executors, name)
 			}
-			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, nil)
+			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
