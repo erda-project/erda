@@ -687,6 +687,8 @@ type IssueListRequest struct {
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
 	External bool `json:"-"`
+	// Optional custom panel id for issues
+	CustomPanelID int64 `json:"customPanelID"`
 
 	OnlyIDResult bool `json:"onlyIdResult"`
 }

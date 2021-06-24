@@ -195,9 +195,14 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		cond.RequirementID = req.RequirementID
 	}
 
-	sql := client.Debug().Where(cond).Where("deleted = ?", 0)
+	sql := client.Debug()
+	if req.CustomPanelID != 0 {
+		joinSQL := "LEFT OUTER JOIN dice_issue_panel on dice_issues.id=dice_issue_panel.issue_id"
+		sql = sql.Joins(joinSQL).Where("relation = ?", req.CustomPanelID)
+	}
+	sql = sql.Where(cond).Where("deleted = ?", 0)
 	if len(req.IDs) > 0 {
-		sql = sql.Where("id IN (?)", req.IDs)
+		sql = sql.Where("dice_issues.id IN (?)", req.IDs)
 	} else if queryIDs {
 		return nil, 0, nil
 	}
@@ -238,11 +243,11 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 	}
 	if req.StartCreatedAt > 0 {
 		startCreatedAt := time.Unix(req.StartCreatedAt/1000, 0)
-		sql = sql.Where("created_at >= ?", startCreatedAt)
+		sql = sql.Where("dice_issues.created_at >= ?", startCreatedAt)
 	}
 	if req.EndCreatedAt > 0 {
 		endCreatedAt := time.Unix(req.EndCreatedAt/1000, 0)
-		sql = sql.Where("created_at <= ?", endCreatedAt)
+		sql = sql.Where("dice_issues.created_at <= ?", endCreatedAt)
 	}
 	if req.IsEmptyPlanFinishedAt {
 		sql = sql.Where("plan_finished_at IS NULL")
@@ -268,7 +273,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 	if req.Title != "" {
 		title := strings.ReplaceAll(req.Title, "%", "\\%")
 		if _, err := strutil.Atoi64(title); err == nil {
-			sql = sql.Where("title LIKE ? OR id LIKE ?", "%"+title+"%", "%"+title+"%")
+			sql = sql.Where("title LIKE ? OR dice_issues.id LIKE ?", "%"+title+"%", "%"+title+"%")
 		} else {
 			sql = sql.Where("title LIKE ?", "%"+title+"%")
 		}
@@ -288,7 +293,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 			sql = sql.Order(fmt.Sprintf("%s DESC", req.OrderBy))
 		}
 	} else {
-		sql = sql.Order("id DESC")
+		sql = sql.Order("dice_issues.id DESC")
 	}
 
 	offset := (req.PageNo - 1) * req.PageSize
