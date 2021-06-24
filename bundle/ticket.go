@@ -29,7 +29,7 @@ import (
 // CreateTicket 创建工单
 // - param: requestID http header，用于幂等性校验
 func (b *Bundle) CreateTicket(requestID string, req *apistructs.TicketCreateRequest) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -53,7 +53,7 @@ func (b *Bundle) CreateTicket(requestID string, req *apistructs.TicketCreateRequ
 
 // CloseTicket 关闭工单
 func (b *Bundle) CloseTicket(ticketID int64, userID string) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -76,7 +76,7 @@ func (b *Bundle) CloseTicket(ticketID int64, userID string) (int64, error) {
 
 // ReopenTicket 重新打开工单
 func (b *Bundle) ReopenTicket(ticketID int64, userID string) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -99,7 +99,7 @@ func (b *Bundle) ReopenTicket(ticketID int64, userID string) (int64, error) {
 
 // ListTicket 工单列表
 func (b *Bundle) ListTicket(req apistructs.TicketListRequest) (*apistructs.TicketListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (b *Bundle) ListTicket(req apistructs.TicketListRequest) (*apistructs.Ticke
 
 // DeleteTicket 删除工单
 func (b *Bundle) DeleteTicket(ticketID int64) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -155,7 +155,7 @@ func (b *Bundle) DeleteTicket(ticketID int64) (int64, error) {
 
 // DeleteTicketByTargetID 根据targetID删除工单
 func (b *Bundle) DeleteTicketByTargetID(targetID int64, ticketType string, targetType string) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (b *Bundle) DeleteTicketByTargetID(targetID int64, ticketType string, targe
 
 // CreateComment 创建评论
 func (b *Bundle) CreateComment(req *apistructs.CommentCreateRequest) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}

@@ -202,7 +202,7 @@ func (o *OrgFormModal) Render(ctx context.Context, c *apistructs.Component, scen
 			Type:        apistructs.FreeOrgType,
 		}
 		// personal workbench can only create free org at present
-		_, err := o.ctxBdl.Bdl.CreateOrg(o.ctxBdl.Identity.UserID, &req)
+		_, err := o.ctxBdl.Bdl.CreateDopOrg(o.ctxBdl.Identity.UserID, &req)
 		if err != nil {
 			return err
 		}

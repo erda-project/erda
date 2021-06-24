@@ -129,6 +129,10 @@ func (u urls) DOP() (string, error) {
 	return u.getURL(discover.EnvDOP, discover.SvcDOP)
 }
 
+func (u urls) CoreServices() (string, error) {
+	return u.getURL(discover.EnvCoreServices, discover.SvcCoreServices)
+}
+
 func (u urls) ClusterManager() (string, error) {
 	return u.getURL(discover.EnvClusterManager, discover.SvcClusterManager)
 }

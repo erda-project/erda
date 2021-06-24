@@ -308,3 +308,30 @@ type ProjectNameSpaceInfo struct {
 	Enabled    bool              `json:"enabled"`
 	Namespaces map[string]string `json:"namespaces"`
 }
+
+type MyProjectIDsResponse struct {
+	Header
+	Data []uint64 `json:"data"`
+}
+
+type GetProjectIDListByStatesRequest struct {
+	StateReq IssuePagingRequest `json:"stateReq"`
+	ProIDs   []uint64           `json:"proIDs"`
+}
+
+type GetProjectIDListByStatesResponse struct {
+	Header
+
+	Data GetProjectIDListByStatesData `json:"data"`
+}
+
+type GetProjectIDListByStatesData struct {
+	Total int          `json:"total"`
+	List  []ProjectDTO `json:"list"`
+}
+
+type GetAllProjectsResponse struct {
+	Header
+
+	Data []ProjectDTO `json:"data"`
+}
