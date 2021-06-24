@@ -75,6 +75,7 @@ type Meta struct {
 type State struct {
 	//OrgID string `json:"orgID"`
 	Value string `json:"value"`
+	Label string `json:"label"`
 }
 
 type Operation struct {
@@ -121,6 +122,7 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	}
 	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.State.Value = strconv.FormatInt(int64(orgDTO.ID), 10)
+	this.State.Label = orgDTO.DisplayName
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
