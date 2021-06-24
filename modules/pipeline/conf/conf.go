@@ -87,6 +87,9 @@ type Conf struct {
 
 	// API-Test
 	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
+
+	// cron compensate time
+	CronCompensateTimeMinute int64 `env:"CRON_COMPENSATE_TIME_MINUTE" default:"5"`
 }
 
 var cfg Conf
@@ -275,4 +278,8 @@ func QueueLoopHandleIntervalSec() uint64 {
 // APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
 func APITestNetportalAccessK8sNamespaceBlacklist() []string {
 	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
+}
+
+func CronCompensateTimeMinute() int64 {
+	return cfg.CronCompensateTimeMinute
 }
