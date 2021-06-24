@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
@@ -365,6 +366,11 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		imagePullPolicy = corev1.PullIfNotPresent
 	}
 
+	scheduleInfo2, err := logic.GetScheduleInfo2(k.cluster, string(k.Name()), string(Kind), job)
+	if err != nil {
+		return nil, err
+	}
+
 	backofflimit := int32(job.BackoffLimit)
 	kubeJob := &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
@@ -394,7 +400,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 				Spec: corev1.PodSpec{
 					Tolerations:      logic.GenTolerations(),
 					ImagePullSecrets: []corev1.LocalObjectReference{{Name: apistructs.AliyunRegistry}},
-					Affinity:         nil,
+					Affinity:         &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
 					Containers: []corev1.Container{
 						{
 							Name:  job.Name,
