@@ -14,18 +14,17 @@
 package k8sjob
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/events"
@@ -33,11 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
-	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -104,21 +99,6 @@ func (k *K8sJob) Name() types.Name {
 	return k.name
 }
 
-func validateAction(action *spec.PipelineTask) error {
-	if action.Extra.Namespace == "" {
-		return errMissingNamespace
-	}
-	if action.Extra.UUID == "" {
-		return errMissingUUID
-	}
-	return nil
-}
-
-func printActionInfo(action *spec.PipelineTask) string {
-	return fmt.Sprintf("pipelineID: %d, id: %d, name: %s, namespace: %s, schedulerJobID: %s",
-		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, task_uuid.MakeJobID(action))
-}
-
 func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc apistructs.StatusDesc, err error) {
 	var (
 		job     *batchv1.Job
@@ -127,7 +107,7 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 	jobName := strutil.Concat(action.Extra.Namespace, ".", action.Extra.UUID)
 	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
-		if util.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			desc.Status = apistructs.StatusNotFoundInCluster
 			return desc, nil
 		}
@@ -169,7 +149,7 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 	}
 
 	if len(job.Volumes) != 0 {
-		_, _, pvcs := GenerateK8SVolumes(&job)
+		_, _, pvcs := logic.GenerateK8SVolumes(&job)
 		for _, pvc := range pvcs {
 			if pvc == nil {
 				continue
@@ -222,7 +202,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 
 	jb, err := k.client.ClientSet.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if !util.IsNotFound(err) {
+		if !k8serrors.IsNotFound(err) {
 			return nil, err
 		}
 		logrus.Warningf("get the job %s in namespace %s is not found", name, namespace)
@@ -235,7 +215,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 			PropagationPolicy: &propagationPolicy,
 		})
 		if err != nil {
-			if !util.IsNotFound(err) {
+			if !k8serrors.IsNotFound(err) {
 				return nil, errors.Wrapf(err, "failed to remove k8s job, name: %s", name)
 			}
 			logrus.Warningf("delete the job %s in namespace %s is not found", name, namespace)
@@ -247,7 +227,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 			logrus.Infof("start to delete pvc %s", pvcName)
 			err = k.client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 			if err != nil {
-				if !util.IsNotFound(err) {
+				if !k8serrors.IsNotFound(err) {
 					return nil, errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
 				}
 				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", job.Name, pvcName, namespace)
@@ -279,7 +259,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 		if remainCount < 1 && retainNamespace == false {
 			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 			if err != nil {
-				if util.IsNotFound(err) {
+				if k8serrors.IsNotFound(err) {
 					logrus.Warningf("get namespace %s not found", namespace)
 					return nil, nil
 				}
@@ -291,7 +271,7 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 				logrus.Infof("start to delete the job's namespace %s", namespace)
 				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 				if err != nil {
-					if !util.IsNotFound(err) {
+					if !k8serrors.IsNotFound(err) {
 						errMsg := fmt.Errorf("delete the job's namespace error: %+v", err)
 						return nil, errMsg
 					}
@@ -320,7 +300,7 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
 	_, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if !util.IsNotFound(err) {
+		if !k8serrors.IsNotFound(err) {
 			errMsg := fmt.Sprintf("failed to get k8s namespace %s: %v", name, err)
 			logrus.Errorf(errMsg)
 			return errors.Errorf(errMsg)
@@ -359,7 +339,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 	)
 
 	if len(job.Volumes) != 0 {
-		vols, volMounts, _ = GenerateK8SVolumes(&job)
+		vols, volMounts, _ = logic.GenerateK8SVolumes(&job)
 	}
 
 	var imagePullPolicy corev1.PullPolicy
@@ -399,8 +379,8 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 					Labels:    jobLabels(),
 				},
 				Spec: corev1.PodSpec{
-					Tolerations:      toleration.GenTolerations(),
-					ImagePullSecrets: []corev1.LocalObjectReference{{Name: k8s.AliyunRegistry}},
+					Tolerations:      logic.GenTolerations(),
+					ImagePullSecrets: []corev1.LocalObjectReference{{Name: apistructs.AliyunRegistry}},
 					Affinity:         nil,
 					Containers: []corev1.Container{
 						{
@@ -515,7 +495,7 @@ func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, 
 			continue
 		}
 
-		hostPath, err := ParseJobHostBindTemplate(bind.HostPath, clusterInfo)
+		hostPath, err := logic.ParseJobHostBindTemplate(bind.HostPath, clusterInfo)
 		if err != nil {
 			return err
 		}
@@ -615,29 +595,6 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 	}
 
 	return env, nil
-}
-
-// ParseJobHostBindTemplate Analyze the hostPath template and convert it to the cluster info value
-func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (string, error) {
-	var b bytes.Buffer
-
-	if hostPath == "" {
-		return "", errors.New("hostPath is empty")
-	}
-
-	t, err := template.New("jobBind").
-		Option("missingkey=error").
-		Parse(hostPath)
-	if err != nil {
-		return "", errors.Errorf("failed to parse bind, hostPath: %s, (%v)", hostPath, err)
-	}
-
-	err = t.Execute(&b, &clusterInfo)
-	if err != nil {
-		return "", errors.Errorf("failed to execute bind, hostPath: %s, (%v)", hostPath, err)
-	}
-
-	return b.String(), nil
 }
 
 func jobLabels() map[string]string {
@@ -768,64 +725,6 @@ func generatePipelineStatus(job *batchv1.Job, jobPods *corev1.PodList) (status a
 		}
 	}
 	return
-}
-
-// GenerateK8SVolumes According to job configuration, production volume related configuration
-func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
-	vols := []corev1.Volume{}
-	volMounts := []corev1.VolumeMount{}
-	pvcs := []*corev1.PersistentVolumeClaim{}
-	for i, v := range job.Volumes {
-		var pvcid string
-		if v.ID == nil { // if ID == nil, we need to create a new pvc
-			sc := whichStorageClass(v.Storage)
-			id := fmt.Sprintf("%s-%s-%d", job.Namespace, job.Name, i)
-			pvcs = append(pvcs, &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      id,
-					Namespace: job.Namespace,
-				},
-				Spec: corev1.PersistentVolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("10Gi"),
-						},
-					},
-					StorageClassName: &sc,
-				},
-			})
-			pvcid = id
-		} else {
-			pvcs = append(pvcs, nil) // append a placeholder
-			pvcid = *v.ID
-		}
-		volName := fmt.Sprintf("vol-%d", i)
-		vols = append(vols, corev1.Volume{
-			Name: volName,
-			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: pvcid,
-				},
-			},
-		})
-		volMounts = append(volMounts, corev1.VolumeMount{
-			Name:      volName,
-			MountPath: v.Path,
-		})
-	}
-	return vols, volMounts, pvcs
-}
-
-func whichStorageClass(tp string) string {
-	switch tp {
-	case "local":
-		return "dice-local-volume"
-	case "nfs":
-		return "dice-nfs-volume"
-	default:
-		return "dice-local-volume"
-	}
 }
 
 func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg string) apistructs.StatusDesc {

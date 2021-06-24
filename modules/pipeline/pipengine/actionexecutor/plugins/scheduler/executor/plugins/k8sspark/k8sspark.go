@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -80,7 +79,7 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, fmt.Errorf("failed to create spark rolebinding, namespace: %s, err: %v", job.Namespace, err)
 	}
 
-	_, _, pvcs := k8sjob.GenerateK8SVolumes(&job)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job)
 	logrus.Infof("create spark application pvcs: %v, vol: %+v", pvcs, job.Volumes)
 	for _, pvc := range pvcs {
 		if pvc == nil {
@@ -218,11 +217,11 @@ func (k *K8sSpark) removePipelineJobs(ns string) error {
 }
 
 func (k *K8sSpark) createImageSecretIfNotExist(ns string) error {
-	if _, err := k.client.ClientSet.CoreV1().Secrets(ns).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{}); err == nil {
+	if _, err := k.client.ClientSet.CoreV1().Secrets(ns).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{})
+	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -370,7 +369,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 			SparkVersion:     sparkVersion,
 			Mode:             sparkv1beta2.DeployMode(conf.Spec.SparkConf.Kind),
 			ImagePullPolicy:  stringptr(imagePullPolicyAlways),
-			ImagePullSecrets: []string{AliyunPullSecret},
+			ImagePullSecrets: []string{apistructs.AliyunRegistry},
 			MainClass:        stringptr(conf.Spec.Class),
 			Arguments:        conf.Spec.Args,
 			RestartPolicy: sparkv1beta2.RestartPolicy{
@@ -393,14 +392,14 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	}
 	sparkApp.Spec.MainApplicationFile = &jarPath
 
-	vols, volMounts, _ := k8sjob.GenerateK8SVolumes(job)
+	vols, volMounts, _ := logic.GenerateK8SVolumes(job)
 
 	if job.PreFetcher != nil && job.PreFetcher.FileFromHost != "" {
 		clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
 		if err != nil {
 			return nil, errors.Errorf("failed to get cluster info, cluster name: %s, err: %v", k.clusterName, err)
 		}
-		hostPath, err := k8sjob.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterInfo)
+		hostPath, err := logic.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterInfo)
 		if err != nil {
 			return nil, err
 		}

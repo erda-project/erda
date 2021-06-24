@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	AliyunPullSecret   = "aliyun-registry"
 	FlinkIngressPrefix = "flinkcluster"
 )
 
@@ -81,7 +80,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 				PullPolicy: corev1.PullAlways,
 				PullSecrets: []corev1.LocalObjectReference{
 					{
-						Name: AliyunPullSecret,
+						Name: apistructs.AliyunRegistry,
 					},
 				},
 			},

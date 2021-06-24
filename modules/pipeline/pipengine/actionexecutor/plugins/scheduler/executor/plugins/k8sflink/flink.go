@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -122,7 +121,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		}, err
 	}
 
-	_, _, pvcs := k8sjob.GenerateK8SVolumes(&job)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -231,11 +230,11 @@ func (k *K8sFlink) GetClusterInfo(name string) (map[string]string, error) {
 }
 
 func (k *K8sFlink) createImageSecretIfNotExist(namespace string) error {
-	if _, err := k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{}); err == nil {
+	if _, err := k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), AliyunPullSecret, metav1.GetOptions{})
+	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
