@@ -16,8 +16,8 @@ package cluster
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 )
 
 const (
@@ -81,8 +81,8 @@ type ClusterInfo struct {
 	//"CA_CRT"
 	//"CLIENT_CRT"
 	//"CLIENT_KEY"
-	Options     map[string]string `json:"options,omitempty"`
-	OptionsPlus *conf.OptPlus     `json:"optionsPlus,omitempty"`
+	Options     map[string]string       `json:"options,omitempty"`
+	OptionsPlus *executorconfig.OptPlus `json:"optionsPlus,omitempty"`
 }
 
 // Cluster clusterimpl interface
