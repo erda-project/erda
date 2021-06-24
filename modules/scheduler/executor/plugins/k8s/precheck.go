@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

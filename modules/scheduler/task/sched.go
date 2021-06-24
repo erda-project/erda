@@ -25,9 +25,9 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume/driver"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
 type Sched struct {

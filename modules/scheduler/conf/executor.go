@@ -13,36 +13,13 @@
 
 package conf
 
-import "sync"
+import (
+	"sync"
+)
 
 const (
 	CLUSTERS_CONFIG_PATH = "/dice/scheduler/configs/cluster/"
 )
-
-type ExecutorConfig struct {
-	Kind        string            `json:"kind,omitempty"`
-	Name        string            `json:"name,omitempty"`
-	ClusterName string            `json:"clusterName,omitempty"`
-	Options     map[string]string `json:"options,omitempty"`
-	OptionsPlus *OptPlus          `json:"optionsPlus,omitempty"`
-}
-
-type OptPlus struct {
-	Orgs []Org `json:"orgs,omitempty"`
-}
-
-// Org organization, Corresponding tenant concept
-type Org struct {
-	Name       string            `json:"name,omitempty"`
-	Workspaces []Workspace       `json:"workspaces,omitempty"`
-	Options    map[string]string `json:"options,omitempty"`
-}
-
-// Environment
-type Workspace struct {
-	Name    string            `json:"name,omitempty"`
-	Options map[string]string `json:"options,omitempty"`
-}
 
 var confStore ConfStore
 

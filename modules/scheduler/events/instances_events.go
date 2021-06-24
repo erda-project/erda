@@ -17,11 +17,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
-
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 )
 
 func convertInstanceStatus(originEventStatus string) string {
@@ -40,7 +41,7 @@ func convertInstanceStatus(originEventStatus string) string {
 
 func executorName2ClusterName(executorName string) string {
 	if v, ok := conf.GetConfStore().ExecutorStore.Load(executorName); ok {
-		config := v.(*conf.ExecutorConfig)
+		config := v.(*executorconfig.ExecutorConfig)
 		return config.ClusterName
 	}
 	return ""

@@ -14,10 +14,10 @@
 package schedulepolicy
 
 import (
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelpipeline"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelpipeline"
 )
 
 // request
@@ -26,7 +26,7 @@ import (
 type Pass1ScheduleInfo labelconfig.LabelInfo
 
 func NewPass1ScheduleInfo(executorName string, executorKind string, labels map[string]string,
-	configs *executortypes.ExecutorWholeConfigs, objName string,
+	configs *executorconfig.ExecutorWholeConfigs, objName string,
 	selectors map[string]diceyml.Selectors) Pass1ScheduleInfo {
 	return Pass1ScheduleInfo{
 		Label:          labels,

@@ -14,24 +14,25 @@
 package labelpipeline
 
 import (
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"strings"
+
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
-// LocationLabelFilter LabelInfo.Selectors
-func LocationLabelFilter(
+func SpecificHostLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	if r.Location == nil {
-		r.Location = make(map[string]interface{})
+	v, ok := li.Label[labelconfig.SPECIFIC_HOSTS]
+	if !ok {
+		return
 	}
-	if r2.Location == nil {
-		r2.Location = make(map[string]interface{})
-	}
-	for service, selectors := range li.Selectors {
-		selector, ok := selectors["location"]
-		if !ok {
-			continue
+	result := []string{}
+	hosts := strings.Split(v, ",")
+	for _, host := range hosts {
+		trimmedHost := strings.TrimSpace(host)
+		if trimmedHost != "" {
+			result = append(result, trimmedHost)
 		}
-		r.Location[service] = selector
-		r2.Location[service] = selector
 	}
+	r.SpecificHost = result
+	r2.SpecificHost = result
 }

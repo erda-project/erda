@@ -14,28 +14,24 @@
 package labelpipeline
 
 import (
-	"encoding/json"
-
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-
-	"github.com/sirupsen/logrus"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
-// HostUniqueLabelFilter Process HOST_UNIQUE in Pass1ScheduleInfo.label
-func HostUniqueLabelFilter(
+// LocationLabelFilter LabelInfo.Selectors
+func LocationLabelFilter(
 	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	hostUniqueStr, ok := li.Label[labelconfig.HOST_UNIQUE]
-	if !ok {
-		return
+	if r.Location == nil {
+		r.Location = make(map[string]interface{})
 	}
-	var hostUniqueGroup [][]string
-	if err := json.Unmarshal([]byte(hostUniqueStr), &hostUniqueGroup); err != nil {
-		logrus.Errorf("bad input label: %v, err: %v", labelconfig.HOST_UNIQUE, err)
-		return
+	if r2.Location == nil {
+		r2.Location = make(map[string]interface{})
 	}
-	r.HostUnique = true
-	r.HostUniqueInfo = hostUniqueGroup
-
-	r2.HasHostUnique = true
-	r2.HostUnique = hostUniqueGroup
+	for service, selectors := range li.Selectors {
+		selector, ok := selectors["location"]
+		if !ok {
+			continue
+		}
+		r.Location[service] = selector
+		r2.Location[service] = selector
+	}
 }

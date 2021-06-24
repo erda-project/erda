@@ -11,14 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package executortypes
+package executorconfig
 
 import (
 	"strconv"
 
-	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+type ExecutorWholeConfigs struct {
+	// Common cluster configuration
+	BasicConfig map[string]string
+	// Accurate cluster configuration
+	PlusConfigs *OptPlus
+}
 
 // EnableLabelSchedule Whether tag scheduling is turned on
 func (c *ExecutorWholeConfigs) EnableLabelSchedule() bool {
@@ -84,12 +90,6 @@ func (c *ExecutorWholeConfigs) ProdJobAvailDest() ([]string, bool) {
 	return strutil.TrimSlice(strutil.Split(dests, ",", true)), true
 }
 
-// OrgOpt org level configuration
-type OrgOpt conf.Org
-
-// WorkspaceOpt workspace level configuration
-type WorkspaceOpt conf.Workspace
-
 // OrgOpt Take out the configuration of `org' from all configurations
 func (c *ExecutorWholeConfigs) OrgOpt(org string) *OrgOpt {
 	for _, orgopt := range c.PlusConfigs.Orgs {
@@ -100,6 +100,25 @@ func (c *ExecutorWholeConfigs) OrgOpt(org string) *OrgOpt {
 	}
 	return nil
 }
+
+// Org organization, Corresponding tenant concept
+type Org struct {
+	Name       string            `json:"name,omitempty"`
+	Workspaces []Workspace       `json:"workspaces,omitempty"`
+	Options    map[string]string `json:"options,omitempty"`
+}
+
+// Environment
+type Workspace struct {
+	Name    string            `json:"name,omitempty"`
+	Options map[string]string `json:"options,omitempty"`
+}
+
+// OrgOpt org level configuration
+type OrgOpt Org
+
+// WorkspaceOpt workspace level configuration
+type WorkspaceOpt Workspace
 
 // WorkspaceOpt Take out the configuration of `workspace' from the org configuration
 func (c *OrgOpt) WorkspaceOpt(workspace string) *WorkspaceOpt {
@@ -136,4 +155,16 @@ func (c *WorkspaceOpt) ProdJobAvailDest() ([]string, bool) {
 		return nil, ok
 	}
 	return strutil.TrimSlice(strutil.Split(dests, ",", true)), true
+}
+
+type OptPlus struct {
+	Orgs []Org `json:"orgs,omitempty"`
+}
+
+type ExecutorConfig struct {
+	Kind        string            `json:"kind,omitempty"`
+	Name        string            `json:"name,omitempty"`
+	ClusterName string            `json:"clusterName,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
+	OptionsPlus *OptPlus          `json:"optionsPlus,omitempty"`
 }

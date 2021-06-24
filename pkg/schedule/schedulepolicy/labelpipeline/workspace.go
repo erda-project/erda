@@ -19,8 +19,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -44,8 +44,8 @@ func WorkspaceLabelFilter(
 	}
 
 	var (
-		workspaceopt *executortypes.WorkspaceOpt
-		orgopt       *executortypes.OrgOpt
+		workspaceopt *executorconfig.WorkspaceOpt
+		orgopt       *executorconfig.OrgOpt
 	)
 	// Get whether workspace scheduling is enabled from the fine configuration of the cluster, and the workspace configuration is under org
 	orgName, orgOK := li.Label[labelconfig.ORG_KEY]
@@ -121,7 +121,7 @@ basic:
 // fixJobDest For Staging and Prod jobs, additional destination workspaces can be configured, and the corresponding configuration is as follows:
 // "STAGING_JOB_DEST":"dev"
 // "PROD_JOB_DEST":"dev,test"
-func fixJobDest(r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo, org, workspace string, options *executortypes.ExecutorWholeConfigs, basicconfig bool) bool {
+func fixJobDest(r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo, org, workspace string, options *executorconfig.ExecutorWholeConfigs, basicconfig bool) bool {
 	if (li.ExecutorKind != labelconfig.EXECUTOR_METRONOME) && (li.ExecutorKind != labelconfig.EXECUTOR_K8SJOB) {
 		return false
 	}

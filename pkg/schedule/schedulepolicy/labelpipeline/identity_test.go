@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
 // The test cases that are not enabled for tag scheduling are placed in policy_test.go for execution
@@ -42,20 +41,20 @@ func TestIdentityLabelFilter1(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
 
 	li := &labelconfig.LabelInfo{
 		Label:          make(map[string]string),
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -87,10 +86,10 @@ func TestIdentityLabelFilter2(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
@@ -99,10 +98,10 @@ func TestIdentityLabelFilter2(t *testing.T) {
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "dev",
 			"SERVICE_TYPE":   "STATELESS"},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -131,20 +130,20 @@ func TestIdentityLabelFilter2B(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
 	li := &labelconfig.LabelInfo{
 		Label: map[string]string{
 			"SERVICE_TYPE": "ADDONS"},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -194,10 +193,10 @@ func TestIdentityLabelFilter3(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.NotNil(t, config.OptionsPlus)
+	assert.NotNil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
@@ -206,10 +205,10 @@ func TestIdentityLabelFilter3(t *testing.T) {
 			"DICE_ORG_NAME":  "1",
 			"DICE_WORKSPACE": "dev",
 			"SERVICE_TYPE":   "STATELESS"},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -239,20 +238,20 @@ func TestIdentityLabelFilter4(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
 	// The org and workspace information of the current job are stored in ENV
 	li := &labelconfig.LabelInfo{
 		Label:          map[string]string{},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -273,10 +272,10 @@ func TestIdentityLabelFilter4(t *testing.T) {
 			"DICE_ORG_NAME":  "xx",
 			"DICE_WORKSPACE": "TEST",
 		},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -302,20 +301,20 @@ func TestIdentityLabelFilter6(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
 	// The org and workspace information of the current job are stored in ENV
 	li := &labelconfig.LabelInfo{
 		Label:          map[string]string{"JOB_KIND": "bigdata"},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 

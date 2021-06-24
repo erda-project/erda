@@ -19,10 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
 // Tested in the following situations:
@@ -43,10 +42,10 @@ func TestOrgLabelFilter1(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
@@ -54,10 +53,10 @@ func TestOrgLabelFilter1(t *testing.T) {
 	li := &labelconfig.LabelInfo{
 		// There is no org tag in the label
 		Label:          make(map[string]string),
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -79,10 +78,10 @@ func TestOrgLabelFilter1(t *testing.T) {
 			"DICE_ORG_NAME":  "org-1",
 			"DICE_WORKSPACE": "test",
 		},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -101,10 +100,10 @@ func TestOrgLabelFilter1(t *testing.T) {
 
 	li3 := &labelconfig.LabelInfo{
 		Label:          map[string]string{},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-12345",
 		Selectors: map[string]diceyml.Selectors{
 			"placehold": {
@@ -139,10 +138,10 @@ func TestOrgLabelFilter2(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
 	var result labelconfig.RawLabelRuleResult
 	var result2 labelconfig.RawLabelRuleResult2
@@ -153,10 +152,10 @@ func TestOrgLabelFilter2(t *testing.T) {
 			"DICE_ORG_NAME":  "1xx",
 			"DICE_WORKSPACE": "test",
 		},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1221",
 	}
 
@@ -199,8 +198,8 @@ func TestOrgLabelFilter3(t *testing.T) {
         ]
     }
 }`)
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
 	var result labelconfig.RawLabelRuleResult
@@ -211,10 +210,10 @@ func TestOrgLabelFilter3(t *testing.T) {
 			"DICE_ORG_NAME":  "2",
 			"DICE_WORKSPACE": "test",
 		},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -257,8 +256,8 @@ func TestOrgLabelFilter4(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
 	var result labelconfig.RawLabelRuleResult
@@ -266,10 +265,10 @@ func TestOrgLabelFilter4(t *testing.T) {
 
 	li2 := &labelconfig.LabelInfo{
 		Label:          map[string]string{},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1111",
 	}
 
@@ -318,8 +317,8 @@ func TestOrgLabelFilter5(t *testing.T) {
         ]
     }
 }`)
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
 	var result labelconfig.RawLabelRuleResult
@@ -330,10 +329,10 @@ func TestOrgLabelFilter5(t *testing.T) {
 			"DICE_ORG_NAME":  "3",
 			"DICE_WORKSPACE": "test",
 		},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 	}
 
@@ -346,10 +345,10 @@ func TestOrgLabelFilter5(t *testing.T) {
 
 	li1 := &labelconfig.LabelInfo{
 		Label:          map[string]string{},
-		ExecutorName:   config.Name,
-		ExecutorKind:   config.Kind,
-		ExecutorConfig: &executortypes.ExecutorWholeConfigs{BasicConfig: config.Options, PlusConfigs: config.OptionsPlus},
-		OptionsPlus:    config.OptionsPlus,
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
 		ObjName:        "test-1234",
 		Selectors: map[string]diceyml.Selectors{
 			"placehold": {
