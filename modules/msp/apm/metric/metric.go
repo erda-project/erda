@@ -70,7 +70,7 @@ func (p *provider) metricQueryByQL(req *http.Request) interface{} {
 func (p *provider) listGroups(req *http.Request, params struct {
 	ScopeId string `query:"scopeId" validate:"required"`
 }) interface{} {
-	result, err := p.proxyBlocks(params.ScopeId, "", req)
+	result, err := p.proxyGroups(params.ScopeId, "", req)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
@@ -81,7 +81,7 @@ func (p *provider) getGroup(req *http.Request, params struct {
 	Id      string `query:"id" validate:"required"`
 	ScopeId string `query:"scopeId" validate:"required"`
 }) interface{} {
-	result, err := p.proxyBlocks(params.ScopeId, params.Id, req)
+	result, err := p.proxyGroups(params.ScopeId, params.Id, req)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
