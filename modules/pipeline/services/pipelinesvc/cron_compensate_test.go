@@ -157,3 +157,51 @@ func Test_orderByCronTriggerTime(t *testing.T) {
 		})
 	}
 }
+
+func Test_getCronInterruptCompensateInterval1(t *testing.T) {
+	type args struct {
+		interval int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Duration
+	}{
+		{
+			args: args{interval: 5},
+			name: "normal",
+			want: 5 * time.Minute * 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCronInterruptCompensateInterval(tt.args.interval); got != tt.want {
+				t.Errorf("getCronInterruptCompensateInterval() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getCronCompensateInterval(t *testing.T) {
+	type args struct {
+		interval int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Duration
+	}{
+		{
+			args: args{interval: 5},
+			name: "normal",
+			want: 5 * time.Minute,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCronCompensateInterval(tt.args.interval); got != tt.want {
+				t.Errorf("getCronCompensateInterval() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

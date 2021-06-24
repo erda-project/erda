@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/dlock"
@@ -32,16 +33,21 @@ import (
 )
 
 const (
-	baseMultiple                    = 5
-	cronCompensateInterval          = time.Minute * baseMultiple
-	cronInterruptCompensateInterval = time.Minute * baseMultiple * 2
-	cronCompensateDLockKey          = "/devops/pipeline/crond/compensator"
-	waitTimeIfLostDLock             = time.Minute
-	waitTimeIfQueryDBError          = time.Minute
-	indexFirst                      = 0 //数组的下标0
+	cronCompensateDLockKey = "/devops/pipeline/crond/compensator"
+	waitTimeIfLostDLock    = time.Minute
+	waitTimeIfQueryDBError = time.Minute
+	indexFirst             = 0 //数组的下标0
 )
 
 var compensateLog = logrus.WithField("type", "cron compensator")
+
+func getCronCompensateInterval(interval int64) time.Duration {
+	return time.Duration(interval) * time.Minute
+}
+
+func getCronInterruptCompensateInterval(interval int64) time.Duration {
+	return time.Duration(interval) * time.Minute * 2
+}
 
 func (s *PipelineSvc) ContinueCompensate() {
 	// 获取分布式锁成功才能执行中断补偿
@@ -62,9 +68,9 @@ func (s *PipelineSvc) ContinueCompensate() {
 
 	compensateLog.Info("cron compensator: start")
 	//执行策略补偿定时任务
-	ticker := time.NewTicker(cronCompensateInterval)
+	ticker := time.NewTicker(getCronCompensateInterval(conf.CronCompensateTimeMinute()))
 	//中断补偿的定时任务
-	interruptTicker := time.NewTicker(cronInterruptCompensateInterval)
+	interruptTicker := time.NewTicker(getCronInterruptCompensateInterval(conf.CronCompensateTimeMinute()))
 
 	//项目启动先执行一次中断补偿
 	s.traverseDoCompensate(s.doInterruptCompensate, true)
@@ -83,7 +89,7 @@ func (s *PipelineSvc) ContinueCompensate() {
 			s.traverseDoCompensate(s.doInterruptCompensate, true)
 		case <-ticker.C:
 			//因为未执行补偿(策略)，用来执行流水线的，内部是幂等的，也就是同一时间只有一个pipeline在执行
-			s.traverseDoCompensate(s.doStrategyCompensate, false)
+			s.traverseDoCompensate(s.doStrategyCompensate, true)
 		}
 	}
 }
@@ -340,7 +346,7 @@ func (s *PipelineSvc) doCronCompensate(compensator apistructs.CronCompensator, n
 	compensateLog.Infof("[doCronCompensate] run Compensate err, put cronId into etcd wait callback: cronId %d", pipelineCron.ID)
 	//创建etcd租约
 	lease := v3.NewLease(s.etcdctl.GetClient())
-	if grant, err := lease.Grant(context.Background(), int64(baseMultiple*60)); err == nil {
+	if grant, err := lease.Grant(context.Background(), conf.CronCompensateTimeMinute()*60); err == nil {
 		//将cronid设置到key下，等待
 		if _, err := s.js.PutWithOption(context.Background(),
 			fmt.Sprint(reconciler.EtcdNeedCompensatePrefix, pipelineCron.ID),
