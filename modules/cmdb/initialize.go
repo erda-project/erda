@@ -32,46 +32,12 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/endpoints"
-	"github.com/erda-project/erda/modules/cmdb/services/activity"
-	"github.com/erda-project/erda/modules/cmdb/services/appcertificate"
-	"github.com/erda-project/erda/modules/cmdb/services/application"
-	"github.com/erda-project/erda/modules/cmdb/services/approve"
-	"github.com/erda-project/erda/modules/cmdb/services/audit"
-	"github.com/erda-project/erda/modules/cmdb/services/branchrule"
-	"github.com/erda-project/erda/modules/cmdb/services/certificate"
 	"github.com/erda-project/erda/modules/cmdb/services/cloudaccount"
 	"github.com/erda-project/erda/modules/cmdb/services/cluster"
-	"github.com/erda-project/erda/modules/cmdb/services/comment"
 	"github.com/erda-project/erda/modules/cmdb/services/container"
-	"github.com/erda-project/erda/modules/cmdb/services/environment"
-	"github.com/erda-project/erda/modules/cmdb/services/errorbox"
-	"github.com/erda-project/erda/modules/cmdb/services/filesvc"
-	"github.com/erda-project/erda/modules/cmdb/services/filetree"
 	"github.com/erda-project/erda/modules/cmdb/services/host"
-	"github.com/erda-project/erda/modules/cmdb/services/issue"
-	"github.com/erda-project/erda/modules/cmdb/services/issuepanel"
-	"github.com/erda-project/erda/modules/cmdb/services/issueproperty"
-	"github.com/erda-project/erda/modules/cmdb/services/issuerelated"
-	"github.com/erda-project/erda/modules/cmdb/services/issuestate"
-	"github.com/erda-project/erda/modules/cmdb/services/issuestream"
-	"github.com/erda-project/erda/modules/cmdb/services/iteration"
-	"github.com/erda-project/erda/modules/cmdb/services/label"
-	"github.com/erda-project/erda/modules/cmdb/services/libreference"
-	"github.com/erda-project/erda/modules/cmdb/services/manual_review"
-	"github.com/erda-project/erda/modules/cmdb/services/mbox"
-	"github.com/erda-project/erda/modules/cmdb/services/member"
-	"github.com/erda-project/erda/modules/cmdb/services/monitor"
-	"github.com/erda-project/erda/modules/cmdb/services/namespace"
-	"github.com/erda-project/erda/modules/cmdb/services/nexussvc"
-	"github.com/erda-project/erda/modules/cmdb/services/notice"
-	"github.com/erda-project/erda/modules/cmdb/services/notify"
 	"github.com/erda-project/erda/modules/cmdb/services/org"
-	"github.com/erda-project/erda/modules/cmdb/services/permission"
-	"github.com/erda-project/erda/modules/cmdb/services/project"
-	"github.com/erda-project/erda/modules/cmdb/services/publisher"
-	"github.com/erda-project/erda/modules/cmdb/services/ticket"
 	"github.com/erda-project/erda/modules/cmdb/utils"
-	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -132,10 +98,6 @@ func Initialize() error {
 		bundle.WithCollector(),
 	)
 
-	//定时上报issue
-	go monitor.TimedTaskMetricsAddAndRepairBug(ep.DBClient(), bdl)
-	go monitor.TimedTaskMetricsIssue(ep.DBClient(), ep.UCClient(), bdl)
-
 	registerWebHook(bdl)
 
 	server := httpserver.New(conf.ListenAddr())
@@ -144,14 +106,8 @@ func Initialize() error {
 	// Add auth middleware
 	server.Router().Use(authenticate)
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
-	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 	logrus.Errorf("[alert] starting cmdb instance...")
-
-	resp, _ := ep.FillBranchRule(nil, nil, nil)
-	if resp.GetStatus() != http.StatusOK {
-		logrus.Errorf("[alert] failed to fill project branch rule: %+v", resp.GetContent())
-	}
 
 	return server.ListenAndServe()
 }
@@ -237,95 +193,17 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	}
 	bdl := bundle.New(bundleOpts...)
 
-	rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
-		PublicKey:          conf.Base64EncodedRsaPublicKey(),
-		PublicKeyDataType:  encryption.Base64,
-		PrivateKey:         conf.Base64EncodedRsaPrivateKey(),
-		PrivateKeyDataType: encryption.Base64,
-		PrivateKeyType:     encryption.PKCS1,
-	})
-
-	// init nexus service
-	nexusSvc := nexussvc.New(
-		nexussvc.WithDBClient(db),
-		nexussvc.WithBundle(bdl),
-		nexussvc.WithRsaCrypt(rsaCrypt),
-	)
-
-	// init publisher service
-	pub := publisher.New(
-		publisher.WithDBClient(db),
-		publisher.WithUCClient(uc),
-		publisher.WithBundle(bdl),
-		publisher.WithNexusSvc(nexusSvc),
-	)
-
 	// init org service
 	o := org.New(
 		org.WithDBClient(db),
 		org.WithUCClient(uc),
 		org.WithBundle(bdl),
-		org.WithPublisher(pub),
-		org.WithNexusSvc(nexusSvc),
 		org.WithRedisClient(redisCli),
 	)
 
 	// init account service
 	account := cloudaccount.New(
 		cloudaccount.WithDBClient(db),
-	)
-
-	ns := namespace.New(
-		namespace.WithDBClient(db),
-		namespace.WithBundle(bdl),
-	)
-
-	// init project service
-	p := project.New(
-		project.WithDBClient(db),
-		project.WithUCClient(uc),
-		project.WithBundle(bdl),
-	)
-
-	// init app service
-	app := application.New(
-		application.WithDBClient(db),
-		application.WithUCClient(uc),
-		application.WithBundle(bdl),
-		application.WithNamespace(ns),
-	)
-
-	// init member service
-	m := member.New(
-		member.WithDBClient(db),
-		member.WithUCClient(uc),
-		member.WithRedisClient(redisCli),
-	)
-	mr := manual_review.New(
-		manual_review.WithDBClient(db),
-	)
-	notifyService := notify.New(
-		notify.WithDBClient(db),
-	)
-
-	// init ticket service
-	t := ticket.New(ticket.WithDBClient(db),
-		ticket.WithBundle(bdl),
-	)
-
-	// init comment service
-	c := comment.New(
-		comment.WithDBClient(db),
-		comment.WithBundle(bdl),
-	)
-	// init activity service
-	a := activity.New(
-		activity.WithDBClient(db),
-		activity.WithBundle(bdl),
-	)
-
-	pm := permission.New(
-		permission.WithDBClient(db),
 	)
 
 	con := container.New(
@@ -337,135 +215,21 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		host.WithDBClient(db),
 		host.WithBundle(bdl),
 		host.WithContainer(con),
-		host.WithTicketService(t),
 	)
 
 	cl := cluster.New(
 		cluster.WithDBClient(db),
 		cluster.WithHostService(h),
 		cluster.WithBundle(bdl),
-		cluster.WithTicketService(t),
 		cluster.WithContainerService(con),
-	)
-
-	env := environment.New(
-		environment.WithDBClient(db),
-		environment.WithBundle(bdl),
-	)
-
-	mboxService := mbox.New(
-		mbox.WithDBClient(db),
-		mbox.WithBundle(bdl),
-	)
-
-	fileSvc := filesvc.New(
-		filesvc.WithDBClient(db),
-		filesvc.WithBundle(bdl),
-		filesvc.WithEtcdClient(etcdStore),
-	)
-
-	// init certificate service
-	cer := certificate.New(
-		certificate.WithDBClient(db),
-		certificate.WithFileClient(fileSvc),
-	)
-	approve := approve.New(
-		approve.WithDBClient(db),
-		approve.WithBundle(bdl),
-		approve.WithUCClient(uc),
-		approve.WithMember(m),
-	)
-
-	// init appcertificate service
-	appCer := appcertificate.New(
-		appcertificate.WithDBClient(db),
-		appcertificate.WithBundle(bdl),
-		appcertificate.WithApprove(approve),
-		appcertificate.WithApp(app),
-		appcertificate.WithCertificate(cer),
 	)
 
 	//通过ui显示错误,不影响启动
 	license, _ := license.ParseLicense(conf.LicenseKey())
 
-	// init label
-	l := label.New(
-		label.WithDBClient(db),
-	)
-
-	issueRelated := issuerelated.New(
-		issuerelated.WithDBClient(db),
-		issuerelated.WithBundle(bdl),
-	)
-
-	issueStream := issuestream.New(
-		issuestream.WithDBClient(db),
-		issuestream.WithBundle(bdl),
-	)
-
-	issueproperty := issueproperty.New(
-		issueproperty.WithDBClient(db),
-		issueproperty.WithBundle(bdl),
-	)
-
-	issue := issue.New(
-		issue.WithDBClient(db),
-		issue.WithBundle(bdl),
-		issue.WithIssueStream(issueStream),
-		issue.WithUCClient(uc),
-		issue.WithPermission(pm),
-		issue.WithFileSvc(fileSvc),
-	)
-
-	issueState := issuestate.New(
-		issuestate.WithDBClient(db),
-		issuestate.WithBundle(bdl),
-	)
-
-	issuePanel := issuepanel.New(
-		issuepanel.WithDBClient(db),
-		issuepanel.WithBundle(bdl),
-		issuepanel.WithIssue(issue),
-	)
-
-	itr := iteration.New(
-		iteration.WithDBClient(db),
-		iteration.WithIssue(issue),
-	)
-
-	notice := notice.New(
-		notice.WithDBClient(db),
-	)
-
-	branchRule := branchrule.New(
-		branchrule.WithDBClient(db),
-		branchrule.WithBundle(bdl),
-	)
-
-	libReference := libreference.New(
-		libreference.WithDBClient(db),
-		libreference.WithPermission(pm),
-		libreference.WithApproval(approve),
-	)
-
-	audit := audit.New(
-		audit.WithDBClient(db),
-		audit.WithUCClient(uc),
-	)
-
-	errorBox := errorbox.New(
-		errorbox.WithDBClient(db),
-		errorbox.WithBundle(bdl),
-	)
-
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
-
-	// 查询
-	fileTree := filetree.New(
-		filetree.WithBundle(bdl),
-	)
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -476,43 +240,12 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithUCClient(uc),
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrg(o),
-		endpoints.WithManualReview(mr),
 		endpoints.WithCloudAccount(account),
-		endpoints.WithProject(p),
-		endpoints.WithPublisher(pub),
-		endpoints.WithCertificate(cer),
-		endpoints.WithAppCertificate(appCer),
-		endpoints.WithApp(app),
-		endpoints.WithMember(m),
-		endpoints.WithTicket(t),
-		endpoints.WithComment(c),
-		endpoints.WithActivity(a),
-		endpoints.WithPermission(pm),
 		endpoints.WithHost(h),
 		endpoints.WithContainer(con),
 		endpoints.WithCluster(cl),
-		endpoints.WithNamespace(ns),
-		endpoints.WithEnvConfig(env),
-		endpoints.WithNotify(notifyService),
 		endpoints.WithLicense(license),
-		endpoints.WithLabel(l),
-		endpoints.WithMBox(mboxService),
-		endpoints.WithIteration(itr),
-		endpoints.WithIssue(issue),
-		endpoints.WithIssueRelated(issueRelated),
-		endpoints.WithIssueStream(issueStream),
-		endpoints.WithIssueProperty(issueproperty),
-		endpoints.WithIssueState(issueState),
-		endpoints.WithIssuePanel(issuePanel),
-		endpoints.WithNotice(notice),
-		endpoints.WithLibReference(libReference),
-		endpoints.WithFileSvc(fileSvc),
-		endpoints.WithApprove(approve),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithBranchRule(branchRule),
-		endpoints.WithAudit(audit),
-		endpoints.WithErrorBox(errorBox),
-		endpoints.WithGittarFileTree(fileTree),
 	)
 
 	return ep, nil
