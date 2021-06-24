@@ -20,8 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,13 +37,13 @@ func TestDisableLabelFilterChain(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	// runtime no tags
@@ -69,11 +68,11 @@ func TestDisableLabelFilterChain(t *testing.T) {
 		},
 	}
 
-	_, _, refinedConfigs_, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r1)
+	_, _, refinedConfigs_, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r1)
 	assert.Nil(t, err)
 	assert.Nil(t, refinedConfigs_)
 
-	_, _, refinedConfigs_, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r2)
+	_, _, refinedConfigs_, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r2)
 	assert.Nil(t, err)
 	assert.Nil(t, refinedConfigs_)
 }
@@ -93,13 +92,13 @@ func TestLabelFilterChain1(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -113,7 +112,7 @@ func TestLabelFilterChain1(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 0, len(si.Likes))
@@ -145,13 +144,13 @@ func TestLabelFilterChain2(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -165,7 +164,7 @@ func TestLabelFilterChain2(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -212,13 +211,13 @@ func TestLabelFilterChain3(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -232,7 +231,7 @@ func TestLabelFilterChain3(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -278,13 +277,13 @@ func TestLabelFilterChain4(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -298,7 +297,7 @@ func TestLabelFilterChain4(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -350,13 +349,13 @@ func TestLabelFilterChain5(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -370,7 +369,7 @@ func TestLabelFilterChain5(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -428,13 +427,13 @@ func TestLabelFilterChain6(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -448,7 +447,7 @@ func TestLabelFilterChain6(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -514,13 +513,13 @@ func TestLabelFilterChain7(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -534,7 +533,7 @@ func TestLabelFilterChain7(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -597,13 +596,13 @@ func TestLabelFilterChain8(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -619,7 +618,7 @@ func TestLabelFilterChain8(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -663,13 +662,13 @@ func TestLabelFilterChain9(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -684,7 +683,7 @@ func TestLabelFilterChain9(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -712,7 +711,7 @@ func TestLabelFilterChain9(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r2)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r2)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -743,7 +742,7 @@ func TestLabelFilterChain9(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r2a)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r2a)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -774,7 +773,7 @@ func TestLabelFilterChain9(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r3)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r3)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -802,7 +801,7 @@ func TestLabelFilterChain9(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r3a)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r3a)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -865,13 +864,13 @@ func TestMultiOrg(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	r := apistructs.ServiceGroup{
@@ -885,7 +884,7 @@ func TestMultiOrg(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, r)
+	s2, si, refinedConfigs_, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -922,7 +921,7 @@ func TestMultiOrg(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r2)
+	s2, si, refinedConfigs_, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r2)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -958,7 +957,7 @@ func TestMultiOrg(t *testing.T) {
 		},
 	}
 
-	s2, si, refinedConfigs_, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, r3)
+	s2, si, refinedConfigs_, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, r3)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -990,14 +989,14 @@ func TestLabelFilterChainForJob(t *testing.T) {
     }
 }`)
 
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1007,7 +1006,7 @@ func TestLabelFilterChainForJob(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, j)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j)
 	assert.Nil(t, err)
 
 	assert.NotEqual(t, apistructs.ScheduleInfo{
@@ -1033,7 +1032,7 @@ func TestLabelFilterChainForJob(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j2)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j2)
 	assert.Nil(t, err)
 
 	assert.NotEqual(t, apistructs.ScheduleInfo{
@@ -1060,14 +1059,14 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 }`)
 
 	// Job of the test environment
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1080,7 +1079,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, j)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1108,7 +1107,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j2)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j2)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1137,7 +1136,7 @@ func TestLabelFilterChainForJob2(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j3)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j3)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1172,14 +1171,14 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 }`)
 
 	// Job of the test environment
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1192,7 +1191,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, j)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1222,7 +1221,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j2)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j2)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1254,7 +1253,7 @@ func TestLabelFilterChainForJob3(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j3)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j3)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1293,14 +1292,14 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 }`)
 
 	// Job of the test environment
-	var config conf.ExecutorConfig
-	err := json.Unmarshal(jsonBlob, &config)
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
 	assert.Nil(t, err)
-	assert.Nil(t, config.OptionsPlus)
+	assert.Nil(t, eConfig.OptionsPlus)
 
-	labelConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	labelConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 
 	j := apistructs.Job{
@@ -1313,7 +1312,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err := LabelFilterChain(labelConfigs, config.Name, config.Kind, j)
+	s2, si, _, err := LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1342,7 +1341,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j2)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j2)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{
@@ -1372,7 +1371,7 @@ func TestLabelFilterChainForJob4(t *testing.T) {
 		},
 	}
 
-	s2, si, _, err = LabelFilterChain(labelConfigs, config.Name, config.Kind, j3)
+	s2, si, _, err = LabelFilterChain(labelConfigs, eConfig.Name, eConfig.Kind, j3)
 	assert.Nil(t, err)
 
 	assert.Equal(t, apistructs.ScheduleInfo{

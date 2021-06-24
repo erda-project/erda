@@ -15,17 +15,17 @@ package metronome
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/marathon"
+	constraints2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
+	marathon2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/marathon"
 )
 
 // Constraints  metronome constraints
-type Constraints = marathon.Constraints
+type Constraints = marathon2.Constraints
 
 type Builder struct {
-	marathon marathon.Builder
+	marathon marathon2.Builder
 }
 
-func (b *Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, _ []constraints.PodLabelsForAffinity, _ constraints.HostnameUtil) constraints.Constraints {
+func (b *Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, _ []constraints2.PodLabelsForAffinity, _ constraints2.HostnameUtil) constraints2.Constraints {
 	return b.Build(s, service, nil, nil)
 }
