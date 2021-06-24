@@ -452,6 +452,10 @@ func (impl GatewayRuntimeServiceServiceImpl) clearService(dao *orm.GatewayRuntim
 	if err != nil {
 		return err
 	}
+	err = impl.apiBiz.ClearRuntimeApi(dao)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

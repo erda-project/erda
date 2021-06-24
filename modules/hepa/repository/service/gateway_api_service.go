@@ -203,7 +203,28 @@ func (impl *GatewayApiServiceImpl) DeleteById(id string) error {
 		return errors.Wrap(err, ERR_SQL_FAIL)
 	}
 	return nil
+}
 
+func (impl *GatewayApiServiceImpl) RealDeleteById(id string) error {
+	if len(id) == 0 {
+		return errors.New(ERR_INVALID_ARG)
+	}
+	_, err := orm.RealDelete(impl.executor, &orm.GatewayApi{}, "id = ?", id)
+	if err != nil {
+		return errors.Wrap(err, ERR_SQL_FAIL)
+	}
+	return nil
+}
+
+func (impl *GatewayApiServiceImpl) RealDeleteByRuntimeServiceId(id string) error {
+	if len(id) == 0 {
+		return errors.New(ERR_INVALID_ARG)
+	}
+	_, err := orm.RealDelete(impl.executor, &orm.GatewayApi{}, "runtime_service_id = ?", id)
+	if err != nil {
+		return errors.Wrap(err, ERR_SQL_FAIL)
+	}
+	return nil
 }
 
 func (impl *GatewayApiServiceImpl) Update(api *orm.GatewayApi) error {

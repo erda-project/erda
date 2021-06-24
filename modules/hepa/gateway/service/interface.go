@@ -153,6 +153,7 @@ type GatewayApiService interface {
 	UpdateUpstreamBindApi(*orm.GatewayConsumer, string, string, *orm.GatewayUpstreamApi, string) error
 	DeleteUpstreamBindApi(*orm.GatewayUpstreamApi) error
 	TouchRuntimeApi(*orm.GatewayRuntimeService, *db.SessionHelper, bool) error
+	ClearRuntimeApi(*orm.GatewayRuntimeService) error
 }
 
 type GatewayCategoryService interface {
