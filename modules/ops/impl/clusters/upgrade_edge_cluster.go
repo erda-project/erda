@@ -189,7 +189,7 @@ func (c *Clusters) BatchUpgradeEdgeCluster(req apistructs.BatchUpgradeEdgeCluste
 }
 
 func (c *Clusters) GetOrgInfo(req *apistructs.OrgSearchRequest) (map[uint64]apistructs.OrgDTO, error) {
-	orgs, err := c.bdl.ListOrgs(req)
+	orgs, err := c.bdl.ListDopOrgs(req)
 	if err != nil {
 		return nil, err
 	}

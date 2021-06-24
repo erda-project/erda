@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
 	_ "github.com/erda-project/erda/modules/msp/instance/permission"
 	_ "github.com/erda-project/erda/modules/msp/menu"
+	_ "github.com/erda-project/erda/modules/msp/registercenter"
 	_ "github.com/erda-project/erda/pkg/common/permission"
 
 	_ "github.com/erda-project/erda-infra/providers/cassandra"

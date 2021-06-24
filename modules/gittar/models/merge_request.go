@@ -372,7 +372,7 @@ func (svc *Service) QueryMergeRequests(repo *gitmodule.Repository, queryConditio
 	if err != nil {
 		return nil, err
 	}
-	err = query.Order("updated_at desc").
+	err = query.Order("id desc").
 		Offset((queryCondition.Page - 1) * queryCondition.Size).
 		Limit(queryCondition.Size).
 		Find(&mergeRequests).Error
@@ -381,7 +381,7 @@ func (svc *Service) QueryMergeRequests(repo *gitmodule.Repository, queryConditio
 		return nil, err
 	}
 
-	results := []*apistructs.MergeRequestInfo{}
+	var results []*apistructs.MergeRequestInfo
 	for _, mergeRequest := range mergeRequests {
 		result := mergeRequest.ToInfo(repo)
 		results = append(results, result)

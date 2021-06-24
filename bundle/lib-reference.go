@@ -23,7 +23,7 @@ import (
 
 // PublisherItemRefered 根据发布内容 id 查看是否被库应用引用
 func (b *Bundle) PublisherItemRefered(libID uint64) (uint64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}

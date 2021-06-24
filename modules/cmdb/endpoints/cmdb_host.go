@@ -47,7 +47,7 @@ func (e *Endpoints) GetHost(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrGetHost.InvalidParameter(err).ToResp(), nil
 	}
-	org, err := e.org.Get(int64(orgID))
+	org, err := e.bdl.GetOrg(int64(orgID))
 	if err != nil {
 		return apierrors.ErrGetHost.InternalError(err).ToResp(), nil
 	}
@@ -60,7 +60,7 @@ func (e *Endpoints) GetHost(ctx context.Context, r *http.Request, vars map[strin
 		Resource: apistructs.HostResource,
 		Action:   apistructs.GetAction,
 	}
-	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrGetHost.AccessDenied().ToResp(), nil
 	}
 

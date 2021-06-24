@@ -490,26 +490,28 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		stateOperations := map[string]interface{}{}
 		stateAllDisable := true
-		for _, s := range data.IssueButton {
+		for i, s := range data.IssueButton {
 			if s.Permission {
 				stateAllDisable = false
 			}
 			if isGuest {
 				stateAllDisable = true
 			}
-			stateOperations["changeStateTo"+s.StateName] = map[string]interface{}{
-				"meta": map[string]string{
-					"state": strconv.FormatInt(s.StateID, 10),
-					"id":    strconv.FormatInt(data.ID, 10),
-				},
-				"prefixIcon": stateIcon[string(s.StateBelong)],
-				"text":       s.StateName,
-				"reload":     true,
-				"key":        "changeStateTo" + s.StateName,
-				"disabled":   !s.Permission,
-				"disabledTip": map[bool]string{
-					false: "无法转移",
-				}[s.Permission],
+			if s.Permission {
+				stateOperations["changeStateTo"+strconv.Itoa(i)+s.StateName] = map[string]interface{}{
+					"meta": map[string]string{
+						"state": strconv.FormatInt(s.StateID, 10),
+						"id":    strconv.FormatInt(data.ID, 10),
+					},
+					"prefixIcon": stateIcon[string(s.StateBelong)],
+					"text":       s.StateName,
+					"reload":     true,
+					"key":        "changeStateTo" + strconv.Itoa(i) + s.StateName,
+					"disabled":   !s.Permission,
+					"disabledTip": map[bool]string{
+						false: "无法转移",
+					}[s.Permission],
+				}
 			}
 		}
 		AssigneeMapOperations := map[string]interface{}{}

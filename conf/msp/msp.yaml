@@ -19,6 +19,7 @@ permission:
 msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
+erda.msp.registercenter:
 
 i18n:
     common:

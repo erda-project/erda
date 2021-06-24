@@ -39,7 +39,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab
-	github.com/erda-project/erda-proto-go v0.0.0-20210615101242-c6dd96f2c8b6
+	github.com/erda-project/erda-proto-go v0.0.0-20210616071654-aec4bc48c85a
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -166,7 +166,7 @@ replace (
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
-	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210518122121-2ff7d3d4deea
+	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
