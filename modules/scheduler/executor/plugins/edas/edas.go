@@ -2231,8 +2231,9 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 	var errString = make(chan string, 0)
 	go func() {
 		if originService != nil {
-			if destService.Scale != originService.Scale &&
-				reflect.DeepEqual(destService.Resources, originService.Resources) {
+
+			if reflect.DeepEqual(originService.Resources, destService.Resources) &&
+				originService.Scale != originService.Scale {
 				request := e.composeApplicationScale(destService.Scale)
 				request.AppId = appID
 				resp, err := e.client.ScaleK8sApplication(request)
@@ -2309,7 +2310,14 @@ func (e *EDAS) composeGetApplicationRequest(appID string) *api.GetK8sApplication
 }
 
 func (e *EDAS) composeServiceSpecFromApplication(application api.Applcation) (*ServiceSpec, error) {
-	envs, err := json.Marshal(application.App.EnvList.Env)
+	edasEnvs := make([]EdasEnv, 0, len(application.App.EnvList.Env))
+	for _, env := range application.App.EnvList.Env {
+		edasEnvs = append(edasEnvs, EdasEnv{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
+	envs, err := json.Marshal(edasEnvs)
 	if err != nil {
 		return nil, err
 	}
