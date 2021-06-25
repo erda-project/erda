@@ -18,28 +18,28 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func GetScheduleInfo2(cluster apistructs.ClusterInfo, executorName, executorKind string, jobFromUser apistructs.JobFromUser) (apistructs.ScheduleInfo2, error) {
+func GetScheduleInfo(cluster apistructs.ClusterInfo, executorName, executorKind string, jobFromUser apistructs.JobFromUser) (apistructs.ScheduleInfo2, apistructs.ScheduleInfo, error) {
 	job := apistructs.Job{
 		JobFromUser: jobFromUser,
 	}
 
 	enableTag := true
-	//if cluster.SchedConfig != nil {
-	//	enableTag = cluster.SchedConfig.EnableTag
-	//}
-	configs := executortypes.ExecutorWholeConfigs{
+	if cluster.SchedConfig != nil {
+		enableTag = cluster.SchedConfig.EnableTag
+	}
+	configs := executorconfig.ExecutorWholeConfigs{
 		BasicConfig: map[string]string{
 			"ENABLETAG": strconv.FormatBool(enableTag),
 		},
 	}
-	scheduleInfo2, _, _, err := schedulepolicy.LabelFilterChain(&configs, executorName, strutil.ToUpper(executorKind), job)
+	scheduleInfo2, scheduleInfo, _, err := schedulepolicy.LabelFilterChain(&configs, executorName, strutil.ToUpper(executorKind), job)
 	if err != nil {
-		return apistructs.ScheduleInfo2{}, fmt.Errorf("failed to get task scheduleInfo2, err: %v", err)
+		return apistructs.ScheduleInfo2{}, apistructs.ScheduleInfo{}, fmt.Errorf("failed to get task scheduleInfo2, err: %v", err)
 	}
-	return scheduleInfo2, nil
+	return scheduleInfo2, scheduleInfo, nil
 }

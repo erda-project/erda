@@ -14,6 +14,7 @@
 package metronome
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
@@ -26,7 +27,8 @@ type Metronome struct {
 	options     map[string]string
 	addr        string
 	client      *httpclient.HTTPClient
-	enabledTag  bool
+	enableTag   bool
+	cluster     apistructs.ClusterInfo
 }
 
 func (c *Metronome) Kind() types.Kind {

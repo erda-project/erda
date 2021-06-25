@@ -33,20 +33,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/k8sclient"
-	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
-	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-	"github.com/erda-project/erda/pkg/k8sclient"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -301,12 +290,12 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (data interface{}, err error) {
 	for _, task := range tasks {
 		if len(task.Extra.UUID) <= 0 {
-			continue
-		}
+		continue
+	}
 		_, err = k.Remove(ctx, task)
 		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
 	}
 	return nil, nil
 }
@@ -366,7 +355,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		imagePullPolicy = corev1.PullIfNotPresent
 	}
 
-	scheduleInfo2, err := logic.GetScheduleInfo2(k.cluster, string(k.Name()), string(Kind), job)
+	scheduleInfo2, _, err := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	if err != nil {
 		return nil, err
 	}

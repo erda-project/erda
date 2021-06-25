@@ -70,7 +70,7 @@ func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
 			k8sjobCreate, ok := m.factory[k8sjob.Kind]
 			if ok {
 				name := types.Name(fmt.Sprintf("%sfor%s", cfgs[i].Name, k8sjob.Kind))
-				k8sjobExecutor, err := k8sjobCreate(name, cfgs[i].Name, nil)
+				k8sjobExecutor, err := k8sjobCreate(name, cfgs[i].Name, cfgs[i])
 				if err != nil {
 					logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 					return err
