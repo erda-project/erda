@@ -23,14 +23,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
-
 	"github.com/erda-project/erda/apistructs"
-
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func init() {
@@ -94,7 +91,6 @@ func (f *Flink) Create(ctx context.Context, task *spec.PipelineTask) (interface{
 }
 
 func (f *Flink) Remove(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
-
 	if task.Extra.JobID == "" {
 		return nil, nil
 	}
