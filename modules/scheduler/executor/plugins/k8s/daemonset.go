@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -171,9 +171,9 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		daemonset.Spec.Template.Spec.InitContainers = initcontainers
 	}
 
-	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = sg.ID
+	daemonset.Spec.Template.Labels[LabelServiceGroupID] = sg.ID
+	daemonset.Labels[LabelServiceGroupID] = sg.ID
 	daemonset.Labels["app"] = service.Name
 	daemonset.Spec.Template.Labels["app"] = service.Name
 

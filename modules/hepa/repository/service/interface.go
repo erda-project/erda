@@ -178,10 +178,12 @@ type GatewayApiService interface {
 	GetByAny(*GatewayApi) (*GatewayApi, error)
 	GetRawByAny(*GatewayApi) (*GatewayApi, error)
 	SelectByGroupId(string) ([]GatewayApi, error)
+	RealDeleteById(string) error
 	DeleteById(string) error
 	Update(*GatewayApi) error
 	SelectByOptions(options []SelectOption) ([]GatewayApi, error)
 	SelectByAny(*GatewayApi) ([]GatewayApi, error)
+	RealDeleteByRuntimeServiceId(string) error
 }
 
 type GatewayMockService interface {

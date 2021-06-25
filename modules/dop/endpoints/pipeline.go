@@ -106,6 +106,26 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	return httpserver.OkResp(resp)
 }
 
+func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+
+	var req apistructs.CICDPipelineDetailRequest
+	err := e.queryStringDecoder.Decode(&req, r.URL.Query())
+	if err != nil {
+		return apierrors.ErrGetPipeline.InvalidParameter(err).ToResp(), nil
+	}
+
+	result, err := e.bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+		PipelineID:               req.PipelineID,
+		SimplePipelineBaseResult: req.SimplePipelineBaseResult,
+	})
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(result)
+}
+
 func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	var oriReq apistructs.CICDPipelineListRequest

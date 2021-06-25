@@ -154,3 +154,9 @@ type DeploymentCreateResponseDTO struct {
 type DeploymentCreateResponsePipelineDTO struct {
 	PipelineID uint64 `json:"pipelineId"`
 }
+
+// WorkspaceRuntimeInfo runtime info in a workspace
+type WorkspaceRuntimeInfo struct {
+	HavePermission bool
+	HaveRuntime    bool
+}

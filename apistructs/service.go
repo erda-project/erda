@@ -289,6 +289,9 @@ type Service struct {
 	//support Kubernetes workload DaemonSet(Per-Node), Statefulset and Deployment
 	WorkLoad string `json:"workLoad,omitempty"`
 
+	// ProjectServiceName means use service name with servicegroup id when create k8s service
+	ProjectServiceName string `json:"projectServiceName,omitempty"`
+
 	StatusDesc
 }
 
@@ -539,6 +542,19 @@ type ServiceGroupPrecheckNodeData struct {
 }
 
 type ServiceGroupConfigUpdateResponse struct {
+	Header
+}
+
+// UpdateServiceGroupScaleRequst request body for update servicegroup
+type UpdateServiceGroupScaleRequst struct {
+	Namespace   string    `json:"namespace"`
+	Name        string    `json:"name"`
+	ClusterName string    `json:"clusterName"`
+	Services    []Service `json:"services"`
+}
+
+// UpdateServiceGroupScaleResponse response for update servicegroup
+type UpdateServiceGroupScaleResponse struct {
 	Header
 }
 

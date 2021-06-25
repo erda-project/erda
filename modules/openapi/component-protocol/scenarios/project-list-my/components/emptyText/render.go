@@ -63,32 +63,11 @@ func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ a
 		},
 		Value: map[string]interface{}{
 			"text": []interface{}{
-				"您还未加入任何项目，可以选择",
-				map[string]interface{}{
-					"text":         "公开项目",
-					"operationKey": "toPublicProject",
-					"styleConfig":  map[string]interface{}{"bold": true},
-				},
-				"开启您的Erda项目之旅",
+				"您当前还未被邀请加入任何项目",
 			},
 		},
 	}
 
-	i.Operations = map[string]interface{}{
-		"toPublicProject": Operation{
-			Key:    "toPublicProject",
-			Reload: false,
-			Show:   false,
-			Command: Command{
-				Key:     "goto",
-				Target:  "workBenchPublicProjects",
-				JumpOut: false,
-				Visible: false,
-			},
-		},
-	}
-
-	c.Operations = i.Operations
 	c.Props = i.Props
 	return
 }

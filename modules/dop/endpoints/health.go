@@ -17,10 +17,41 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-// Health 健康检查
+//Health Component health check interface
 func (e *Endpoints) Health(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	return httpserver.OkResp("up")
+	res := &apistructs.HealthResponse{
+		Name:   "dop",
+		Status: apistructs.HealthStatusFail,
+		Tags: map[string]string{
+			"pod_name": "dop",
+			"version":  version.Version,
+		},
+	}
+	res.Modules = make([]apistructs.Module, 0)
+	err := e.db.DB.DB().Ping()
+	if err != nil {
+		sql := apistructs.Module{
+			Name:    "mysql-connection",
+			Status:  apistructs.HealthStatusFail,
+			Message: err.Error(),
+		}
+		res.Modules = append(res.Modules, sql)
+		return httpserver.OkResp(res)
+	}
+
+	res.Modules = append(res.Modules, apistructs.Module{
+		Name:    "mysql-connection",
+		Status:  apistructs.HealthStatusOk,
+		Message: "connected",
+	})
+	res.Status = apistructs.HealthStatusOk
+	return httpserver.HTTPResponse{
+		Status:  http.StatusOK,
+		Content: res,
+	}, nil
 }
