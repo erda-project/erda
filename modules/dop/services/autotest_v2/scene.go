@@ -1189,9 +1189,6 @@ func (svc *Service) GetAutotestScenesByIDs(sceneIDs []uint64) (map[uint64]apistr
 
 	mpRsp := map[uint64]apistructs.AutoTestScene{}
 	for k, v := range mp {
-		if len(v.Steps) == 0 {
-			continue
-		}
 		mpRsp[k] = v
 	}
 	return mpRsp, nil

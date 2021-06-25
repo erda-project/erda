@@ -180,7 +180,7 @@ func (this *OrgSwitch) RenderList() error {
 		IdentityInfo: identity,
 		PageSize:     DefaultPageSize,
 	}
-	pagingOrgDTO, err := this.ctxBdl.Bdl.ListOrgs(req)
+	pagingOrgDTO, err := this.ctxBdl.Bdl.ListDopOrgs(req)
 	if err != nil {
 		return err
 	}

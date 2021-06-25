@@ -91,7 +91,7 @@ func (t *TableGroup) GetProsByPage() (*apistructs.PagingProjectDTO, error) {
 		PageNo:   t.State.PageNo,
 		PageSize: t.State.PageSize,
 	}
-	pageProDTO, err := t.ctxBdl.Bdl.ListProject(t.ctxBdl.Identity.UserID, req)
+	pageProDTO, err := t.ctxBdl.Bdl.ListDopProject(t.ctxBdl.Identity.UserID, req)
 	if err != nil {
 		return nil, err
 	}

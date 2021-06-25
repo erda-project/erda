@@ -117,7 +117,7 @@ func AuthenticateByApp(c *webcontext.Context) {
 func AuthenticateV2(c *webcontext.Context) {
 	host := c.EchoContext.Request().Host
 	// 优先域名 第二优先读取ORG-ID头
-	dto, err := c.Bundle.GetOrgByDomain(host, "x")
+	dto, err := c.Bundle.GetDopOrgByDomain(host, "x")
 	var orgID int64
 	if err == nil {
 		orgID = int64(dto.ID)

@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8sjob"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

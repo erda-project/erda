@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
 	"github.com/erda-project/erda/modules/cmdb/services/container"
 	"github.com/erda-project/erda/modules/cmdb/services/host"
-	"github.com/erda-project/erda/modules/cmdb/services/ticket"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,7 +39,6 @@ type Cluster struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
 	h   *host.Host
-	t   *ticket.Ticket
 	con *container.Container
 }
 
@@ -74,13 +72,6 @@ func WithHostService(h *host.Host) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(c *Cluster) {
 		c.bdl = bdl
-	}
-}
-
-// WithTicketService 配置 ticket service
-func WithTicketService(t *ticket.Ticket) Option {
-	return func(c *Cluster) {
-		c.t = t
 	}
 }
 
@@ -212,29 +203,29 @@ func (c *Cluster) Create(req *apistructs.ClusterCreateRequest) (int64, error) {
 		return 0, err
 	}
 
-	if req.OrgID != 0 {
-		// 添加企业集群关联关系
-		relation, err := c.db.GetOrgClusterRelationByOrgAndCluster(req.OrgID, cluster.ID)
-		if err != nil {
-			return 0, err
-		}
-		if relation != nil { // 若企业集群关系已存在，则返回
-			return cluster.ID, nil
-		}
-		org, err := c.db.GetOrg(req.OrgID)
-		if err != nil {
-			return 0, err
-		}
-		relation = &model.OrgClusterRelation{
-			OrgID:       uint64(req.OrgID),
-			OrgName:     org.Name,
-			ClusterID:   uint64(cluster.ID),
-			ClusterName: req.Name,
-		}
-		if err := c.db.CreateOrgClusterRelation(relation); err != nil {
-			return 0, err
-		}
-	}
+	//if req.OrgID != 0 {
+	//	// 添加企业集群关联关系
+	//	relation, err := c.db.GetOrgClusterRelationByOrgAndCluster(req.OrgID, cluster.ID)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	if relation != nil { // 若企业集群关系已存在，则返回
+	//		return cluster.ID, nil
+	//	}
+	//	org, err := c.db.GetOrg(req.OrgID)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	relation = &model.OrgClusterRelation{
+	//		OrgID:       uint64(req.OrgID),
+	//		OrgName:     org.Name,
+	//		ClusterID:   uint64(cluster.ID),
+	//		ClusterName: req.Name,
+	//	}
+	//	if err := c.db.CreateOrgClusterRelation(relation); err != nil {
+	//		return 0, err
+	//	}
+	//}
 
 	return cluster.ID, nil
 }
@@ -435,15 +426,15 @@ func (c *Cluster) DeleteWithEvent(clusterName string) error {
 
 // DeleteByName 根据 clusterName 删除集群
 func (c *Cluster) DeleteByName(clusterName string) error {
-	// 删除企业集群关系
-	if err := c.db.DeleteOrgClusterRelationByCluster(clusterName); err != nil {
-		return err
-	}
-
-	// 删除集群元信息
-	if err := c.db.DeleteCluster(clusterName); err != nil {
-		return err
-	}
+	//// 删除企业集群关系
+	//if err := c.db.DeleteOrgClusterRelationByCluster(clusterName); err != nil {
+	//	return err
+	//}
+	//
+	//// 删除集群元信息
+	//if err := c.db.DeleteCluster(clusterName); err != nil {
+	//	return err
+	//}
 
 	return nil
 }
@@ -497,7 +488,7 @@ func (c *Cluster) ListCluster() (*[]apistructs.ClusterInfo, error) {
 
 // ListClusterByOrg 根据 orgID 获取集群列表
 func (c *Cluster) ListClusterByOrg(orgID int64) (*[]apistructs.ClusterInfo, error) {
-	relations, err := c.db.GetOrgClusterRelationsByOrg(orgID)
+	relations, err := c.bdl.GetOrgClusterRelationsByOrg(uint64(orgID))
 	if err != nil {
 		return nil, err
 	}
@@ -836,9 +827,9 @@ func (c *Cluster) DereferenceCluster(userID string, req *apistructs.DereferenceC
 	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
 		return errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
 	}
-	if err := c.db.DeleteOrgClusterRelationByClusterAndOrg(req.Cluster, req.OrgID); err != nil {
-		return err
-	}
+	//if err := c.db.DeleteOrgClusterRelationByClusterAndOrg(req.Cluster, req.OrgID); err != nil {
+	//	return err
+	//}
 
 	return nil
 }

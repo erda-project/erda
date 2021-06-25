@@ -192,6 +192,8 @@ type ApplicationDTO struct {
 
 	// 应用更新时间
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	Extra string `json:"-"`
 }
 
 // ApplicationWorkspace 应用工作空间
