@@ -228,7 +228,8 @@ func (b *Bundle) CreateOrg(userID string, req *apistructs.OrgCreateRequest) (*ap
 
 	var resp apistructs.OrgCreateResponse
 	r, err := hc.Post(host).Path("/api/orgs").
-		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, userID).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
 		JSONBody(req).Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
