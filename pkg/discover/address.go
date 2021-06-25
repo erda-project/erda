@@ -184,7 +184,7 @@ func getURL(envKey, srvName string) string {
 	}
 	url, err := GetEndpoint(srvName)
 	if err != nil {
-		logrus.Errorf("get endpoint failed, service name: %s, error: %+v",
+		logrus.Infof("get endpoint failed, service name: %s, error: %s",
 			srvName, err)
 	}
 	return url

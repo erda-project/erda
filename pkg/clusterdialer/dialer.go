@@ -25,10 +25,24 @@ import (
 )
 
 var session TunnelSession
+var initialized bool
 
 func init() {
-	clusterDialerEndpoint := fmt.Sprintf("ws://%s%s", discover.ClusterDialer(), "/clusterdialer")
+	clusterDialAddr := discover.ClusterDialer()
+	if clusterDialAddr == "" {
+		return
+	}
+	clusterDialerEndpoint := fmt.Sprintf("ws://%s%s", clusterDialAddr, "/clusterdialer")
 	go session.initialize(clusterDialerEndpoint)
+	initialized = true
+}
+
+func Init(clusterDialAddr string) {
+	if !initialized {
+		clusterDialerEndpoint := fmt.Sprintf("ws://%s%s", clusterDialAddr, "/clusterdialer")
+		go session.initialize(clusterDialerEndpoint)
+		initialized = true
+	}
 }
 
 type DialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
