@@ -174,6 +174,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 
 	// init bundle
 	bundleOpts := []bundle.Option{
+		bundle.WithCoreServices(),
 		bundle.WithAddOnPlatform(),
 		bundle.WithGittar(),
 		bundle.WithGittarAdaptor(),
