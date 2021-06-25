@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package core_services
 
 import (
 	"net/http"
@@ -23,7 +23,7 @@ import (
 var CMDB_ERRORLOG_CREATE = apis.ApiSpec{
 	Path:         "/api/task-error/actions/create",
 	BackendPath:  "/api/task-error/actions/create",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       http.MethodPost,
 	IsOpenAPI:    true,
