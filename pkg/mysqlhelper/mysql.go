@@ -34,7 +34,6 @@ type Request struct {
 	Url        string
 	User       string
 	Password   string
-	OssUrl     string
 	ClusterKey string
 	CreateDbs  []string
 }
@@ -76,6 +75,12 @@ func (r Request) Exec() error {
 		return err
 	}
 	defer db.Close()
+	for _, dbName := range r.CreateDbs {
+		_, err = db.Exec("CREATE DATABASE IF NOT EXISTS " + dbName)
+		if err != nil {
+			return err
+		}
+	}
 	for _, sql := range r.Sqls {
 		ctx, cf := context.WithTimeout(context.Background(), time.Minute)
 		defer cf()
