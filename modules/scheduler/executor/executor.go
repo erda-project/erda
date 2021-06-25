@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 )
 
 const defaultGoPool = "defaultpool"
@@ -52,7 +53,7 @@ type Manager struct {
 	evChanMap map[executortypes.Name]executortypes.GetEventChanFn
 	evCbMap   map[executortypes.Name]executortypes.EventCbFn
 
-	executorConfigs map[executortypes.Name]*executortypes.ExecutorWholeConfigs
+	executorConfigs map[executortypes.Name]*executorconfig.ExecutorWholeConfigs
 	executorStopCh  map[executortypes.Name]executortypes.StopEventsChans
 }
 
@@ -67,11 +68,11 @@ func (m *Manager) initialize() error {
 		m.factory = executortypes.Factory
 		m.evChanMap = executortypes.EvFuncMap
 		m.evCbMap = executortypes.EvCbMap
-		m.executorConfigs = make(map[executortypes.Name]*executortypes.ExecutorWholeConfigs)
+		m.executorConfigs = make(map[executortypes.Name]*executorconfig.ExecutorWholeConfigs)
 		m.executorStopCh = make(map[executortypes.Name]executortypes.StopEventsChans)
 
 		f := func(k string, v interface{}, t storetypes.ChangeType) {
-			config, ok := v.(*conf.ExecutorConfig)
+			config, ok := v.(*executorconfig.ExecutorConfig)
 			if !ok {
 				logrus.Errorf("not executorConfig type, key: %s, value: %+v", k, v)
 				return
@@ -94,7 +95,7 @@ func (m *Manager) initialize() error {
 				}
 			}
 		}
-		option := jsonstore.UseMemEtcdStore(context.Background(), conf.CLUSTERS_CONFIG_PATH, f, conf.ExecutorConfig{})
+		option := jsonstore.UseMemEtcdStore(context.Background(), conf.CLUSTERS_CONFIG_PATH, f, executorconfig.ExecutorConfig{})
 		if _, err := jsonstore.New(option); err != nil {
 			r = err
 		}
@@ -104,16 +105,16 @@ func (m *Manager) initialize() error {
 	return r
 }
 
-func createOneExecutor(m *Manager, config *conf.ExecutorConfig) error {
-	logrus.Infof("[createOneExecutor] config: %+v", config)
-	create, ok := m.factory[executortypes.Kind(config.Kind)]
+func createOneExecutor(m *Manager, eConfig *executorconfig.ExecutorConfig) error {
+	logrus.Infof("[createOneExecutor] config: %+v", eConfig)
+	create, ok := m.factory[executortypes.Kind(eConfig.Kind)]
 	if !ok {
-		return errors.Errorf("executor kind (%s) not found, factory: %v", config.Kind, m.factory)
+		return errors.Errorf("executor kind (%s) not found, factory: %v", eConfig.Kind, m.factory)
 	}
 
-	name := executortypes.Name(config.Name)
+	name := executortypes.Name(eConfig.Name)
 
-	executor, err := create(name, config.ClusterName, config.Options, config.OptionsPlus)
+	executor, err := create(name, eConfig.ClusterName, eConfig.Options, eConfig.OptionsPlus)
 	if err != nil {
 		return err
 	}
@@ -122,12 +123,12 @@ func createOneExecutor(m *Manager, config *conf.ExecutorConfig) error {
 	m.pools[name].Start()
 
 	// TODO: dont create manually
-	wholeConfigs := &executortypes.ExecutorWholeConfigs{
-		BasicConfig: config.Options,
-		PlusConfigs: config.OptionsPlus,
+	wholeConfigs := &executorconfig.ExecutorWholeConfigs{
+		BasicConfig: eConfig.Options,
+		PlusConfigs: eConfig.OptionsPlus,
 	}
 	m.executorConfigs[name] = wholeConfigs
-	conf.GetConfStore().ExecutorStore.Store(config.Name, config)
+	conf.GetConfStore().ExecutorStore.Store(eConfig.Name, eConfig)
 
 	logrus.Infof("created executor: %s", name)
 
@@ -149,7 +150,7 @@ func createOneExecutor(m *Manager, config *conf.ExecutorConfig) error {
 	return nil
 }
 
-func deleteOneExecutor(m *Manager, config *conf.ExecutorConfig) {
+func deleteOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) {
 	name := executortypes.Name(config.Name)
 	if chs, ok := m.executorStopCh[name]; ok {
 		close(chs.StopWatchEventCh)
@@ -177,7 +178,7 @@ func deleteOneExecutor(m *Manager, config *conf.ExecutorConfig) {
 	conf.GetConfStore().ExecutorStore.Delete(config.Name)
 }
 
-func updateOneExecutor(m *Manager, config *conf.ExecutorConfig) error {
+func updateOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) error {
 	deleteOneExecutor(m, config)
 	logrus.Infof("updating executor: %s", config.Name)
 	return createOneExecutor(m, config)
@@ -239,7 +240,7 @@ func GetJobExecutorKindByName(name string) string {
 	return string(e.Kind())
 }
 
-func (m *Manager) GetExecutorConfigs(name executortypes.Name) (*executortypes.ExecutorWholeConfigs, error) {
+func (m *Manager) GetExecutorConfigs(name executortypes.Name) (*executorconfig.ExecutorWholeConfigs, error) {
 	config, ok := m.executorConfigs[name]
 	if !ok {
 		return nil, errors.Errorf("[GetExecutorConfigs] not found executor: %s", name)

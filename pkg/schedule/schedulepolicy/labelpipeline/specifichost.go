@@ -11,25 +11,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package labelpipeline
 
 import (
-	"net/http"
+	"strings"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
-var CMDB_ERRORLOG_LIST = apis.ApiSpec{
-	Path:         "/api/task-error/actions/list",
-	BackendPath:  "/api/task-error/actions/list",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.ErrorLogListRequest{},
-	ResponseType: apistructs.ErrorLogListResponse{},
-	Doc:          "summary: List 错误日志",
+func SpecificHostLabelFilter(
+	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
+	v, ok := li.Label[labelconfig.SPECIFIC_HOSTS]
+	if !ok {
+		return
+	}
+	result := []string{}
+	hosts := strings.Split(v, ",")
+	for _, host := range hosts {
+		trimmedHost := strings.TrimSpace(host)
+		if trimmedHost != "" {
+			result = append(result, trimmedHost)
+		}
+	}
+	r.SpecificHost = result
+	r2.SpecificHost = result
 }

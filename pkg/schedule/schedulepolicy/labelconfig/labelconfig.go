@@ -16,9 +16,8 @@ package labelconfig
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 )
 
 const (
@@ -125,9 +124,9 @@ type LabelInfo struct {
 	// The executor kind corresponding to the job or runtime where the label is located
 	ExecutorKind string
 	// ExecutorConfig cluster configure
-	ExecutorConfig *executortypes.ExecutorWholeConfigs
+	ExecutorConfig *executorconfig.ExecutorWholeConfigs
 	// executor optionsPlus corresponding to the job or runtime where the label is located
-	OptionsPlus *conf.OptPlus
+	OptionsPlus *executorconfig.OptPlus
 	// label host (runtime or job) name
 	ObjName string
 	// Selectors map[servicename]diceyml.Selectors
