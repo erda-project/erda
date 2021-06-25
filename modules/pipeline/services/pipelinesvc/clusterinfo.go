@@ -60,6 +60,7 @@ func (s *PipelineSvc) retryQueryClusterInfo(clusterName string, pipelineID uint6
 	return result, queryErr
 }
 
+// ClusterHook listen and dispatch cluster event from eventbox
 func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
 	if !strutil.Equal(clusterEvent.Content.Type, apistructs.ClusterTypeK8S, true) &&
 		!strutil.Equal(clusterEvent.Content.Type, apistructs.ClusterTypeEdas, true) &&
@@ -67,7 +68,8 @@ func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
 		return errors.Errorf("invalid cluster event type: %s", clusterEvent.Content.Type)
 	}
 
-	if clusterEvent.Action != apistructs.ClusterActionCreate && clusterEvent.Action != apistructs.ClusterActionUpdate {
+	if clusterEvent.Action != apistructs.ClusterActionCreate && clusterEvent.Action != apistructs.ClusterActionUpdate &&
+		clusterEvent.Action != apistructs.ClusterActionDelete {
 		return errors.Errorf("invalid cluster event action: %s", clusterEvent.Action)
 	}
 	clusterinfo.DispatchClusterEvent(clusterEvent)

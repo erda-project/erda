@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ClusterEventListenerLimit = 100
+	ClusterEventListenerLimit = 10
 )
 
 var (

@@ -22,7 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sflink"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 )
@@ -52,37 +54,20 @@ func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
 	for i := range cfgs {
-		err := m.addExecutor(cfgs[i])
-		if err != nil {
-			return err
+		if cfgs[i].Type != apistructs.ClusterTypeK8S {
+			continue
+		}
+		if err := m.addExecutor(cfgs[i]); err != nil {
+			continue
 		}
 	}
+
 	eventChan, err := clusterinfo.RegisterClusterEvent()
 	if err != nil {
 		return err
 	}
 	go m.listenClusterEventSync(context.Background(), eventChan)
-	m.Lock()
-	defer m.Unlock()
-	for i := range cfgs {
-		switch cfgs[i].Type {
-		case CLUSTERTYPEK8S:
-			k8sjobCreate, ok := m.factory[k8sjob.Kind]
-			if ok {
-				name := types.Name(fmt.Sprintf("%sfor%s", cfgs[i].Name, k8sjob.Kind))
-				k8sjobExecutor, err := k8sjobCreate(name, cfgs[i].Name, cfgs[i])
-				if err != nil {
-					logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
-					return err
-				}
-				m.executors[name] = k8sjobExecutor
-				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
-			}
-		default:
 
-		}
-		// TODO sync load cluster info and change executor map
-	}
 	logrus.Info("pipengine task executor manager Initialize Done .")
 
 	return nil
@@ -115,12 +100,82 @@ func (m *Manager) addExecutor(cluster apistructs.ClusterInfo) error {
 			}
 			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
-				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
 			}
 			m.executors[name] = k8sjobExecutor
 			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
+
+		k8sflinkCreate, ok := m.factory[k8sflink.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
+			if _, exist := m.executors[name]; exist {
+				return errors.Errorf("task executor name: %s already existed", name)
+			}
+			k8sflinkExecutor, err := k8sflinkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8sflinkExecutor
+		}
+
+		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
+			if _, exist := m.executors[name]; exist {
+				return errors.Errorf("task executor name: %s already existed", name)
+			}
+			k8ssparkExecutor, err := k8ssparkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8ssparkExecutor
+		}
+	//case apistructs.ClusterTypeDcos:
+	//	flinkCreate, ok := m.factory[flink.Kind]
+	//	if ok {
+	//		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, flink.Kind))
+	//		if _, exist := m.executors[name]; exist {
+	//			return errors.Errorf("task executor name: %s already existed", name)
+	//		}
+	//		flinkExecutor, err := flinkCreate(name, cluster.Name, cluster)
+	//		if err != nil {
+	//			logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", flink.Kind, name, err)
+	//			return err
+	//		}
+	//		m.executors[name] = flinkExecutor
+	//	}
+	//
+	//	sparkCreate, ok := m.factory[spark.Kind]
+	//	if ok {
+	//		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, flink.Kind))
+	//		if _, exist := m.executors[name]; exist {
+	//			return errors.Errorf("task executor name: %s already existed", name)
+	//		}
+	//		sparkExecutor, err := sparkCreate(name, cluster.Name, cluster)
+	//		if err != nil {
+	//			logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", spark.Kind, name, err)
+	//			return err
+	//		}
+	//		m.executors[name] = sparkExecutor
+	//	}
+	//
+	//	metronomeCreate, ok := m.factory[flink.Kind]
+	//	if ok {
+	//		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, metronome.Kind))
+	//		if _, exist := m.executors[name]; exist {
+	//			return errors.Errorf("task executor name: %s already existed", name)
+	//		}
+	//		metronomeExecutor, err := metronomeCreate(name, cluster.Name, cluster)
+	//		if err != nil {
+	//			logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", metronome.Kind, name, err)
+	//			return err
+	//		}
+	//		m.executors[name] = metronomeExecutor
+	//	}
 	default:
 
 	}
@@ -134,6 +189,16 @@ func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
 	switch cluster.Type {
 	case CLUSTERTYPEK8S:
 		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
+		if _, exist := m.executors[name]; exist {
+			delete(m.executors, name)
+		}
+
+		name = types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
+		if _, exist := m.executors[name]; exist {
+			delete(m.executors, name)
+		}
+
+		name = types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
 		if _, exist := m.executors[name]; exist {
 			delete(m.executors, name)
 		}
@@ -156,11 +221,39 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 			}
 			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
-				logrus.Infof("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
 			}
 			m.executors[name] = k8sjobExecutor
 			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+		}
+
+		k8sflinkCreate, ok := m.factory[k8sflink.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
+			if _, exist := m.executors[name]; exist {
+				delete(m.executors, name)
+			}
+			k8sflinkExecutor, err := k8sflinkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8sflinkExecutor
+		}
+
+		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
+		if ok {
+			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
+			if _, exist := m.executors[name]; exist {
+				delete(m.executors, name)
+			}
+			k8ssparkExecutor, err := k8ssparkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
+				return err
+			}
+			m.executors[name] = k8ssparkExecutor
 		}
 	default:
 
@@ -186,6 +279,8 @@ func (m *Manager) listenClusterEventSync(ctx context.Context, eventChan <-chan a
 				if err != nil {
 					logrus.Errorf("failed to update task executor, err: %v", err)
 				}
+			case apistructs.ClusterActionDelete:
+				m.deleteExecutor(event.Content)
 			default:
 
 			}

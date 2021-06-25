@@ -40,8 +40,7 @@ import (
 var Kind = types.Kind(spec.PipelineTaskExecutorKindScheduler)
 
 const (
-	OPTION_ADDR          = "ADDR"
-	CLUSTER_MANAGER_ADDR = "CLUSTER_MANAGER_ADDR"
+	OPTION_ADDR = "ADDR"
 
 	notFoundError = "not found"
 )
@@ -91,7 +90,7 @@ func (s *Sched) Name() types.Name {
 	return s.name
 }
 
-func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (tasktypes.TaskExecutor, error) {
+func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *spec.PipelineTask) (tasktypes.TaskExecutor, error) {
 	var executorName string
 	// TODO judge executor type and cluster name
 	switch executorType {
@@ -101,6 +100,18 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string) (taskty
 		executorName = "spark"
 	default:
 		executorName = "k8sjob"
+	}
+	if value, ok := task.Extra.Action.Params["bigDataConf"]; ok {
+		spec := apistructs.BigdataSpec{}
+		if err := json.Unmarshal([]byte(value.(string)), &spec); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal task bigDataConf")
+		}
+		if spec.FlinkConf != nil {
+			executorName = "k8sflink"
+		}
+		if spec.SparkConf != nil {
+			executorName = "k8sspark"
+		}
 	}
 	name := fmt.Sprintf("%sfor%s", clusterName, executorName)
 	taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
@@ -177,7 +188,7 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		return nil, nil
 	}
@@ -243,7 +254,7 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		return taskExecutor.Create(ctx, action)
 	}
@@ -292,7 +303,7 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 
 	var result apistructs.StatusDesc
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		result, err = taskExecutor.Status(ctx, action)
 		if err != nil {
@@ -338,7 +349,7 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		return taskExecutor.Remove(ctx, action)
 	}
@@ -371,7 +382,7 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		return taskExecutor.Remove(ctx, action)
 	}
@@ -413,7 +424,7 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName)
+	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if taskExecutor != nil {
 		return taskExecutor.BatchDelete(ctx, actions)
 	}

@@ -14,13 +14,13 @@
 package k8sflink
 
 import (
+	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
-	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
 )
 
 const (

@@ -80,7 +80,6 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 	}
 
 	_, _, pvcs := logic.GenerateK8SVolumes(&job)
-	logrus.Infof("create spark application pvcs: %v, vol: %+v", pvcs, job.Volumes)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -128,10 +127,10 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 
 	sparkApp, err := k.getSparkApp(ctx, task)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to get the status of k8s spark job, name: %s, err: %v", task.Name, err)
+		errMsg := fmt.Sprintf("failed to get the status of k8s spark job, name: %s, err: %v", task.Extra.UUID, err)
 		logrus.Warningf(errMsg)
 
-		if k8serrors.IsAlreadyExists(err) {
+		if k8serrors.IsNotFound(err) {
 			statusDesc.Status = apistructs.StatusNotFoundInCluster
 			return statusDesc, nil
 		}
@@ -157,14 +156,14 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 		statusDesc.LastMessage = fmt.Sprintf("unknown status, sparkAppState: %v", sparkApp.Status.AppState.State)
 	}
 
-	logrus.Debugf("succedd to get spark application status, namespace: %s, name: %s, status: %+v",
-		task.Extra.Namespace, task.Name, statusDesc)
+	logrus.Debugf("succedd to get spark application status, namespace: %s, name: %s, status: %v",
+		task.Extra.Namespace, task.Extra.UUID, statusDesc)
 
 	return statusDesc, nil
 }
 
 func (k *K8sSpark) Remove(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
-	if task.Name == "" {
+	if task.Extra.UUID == "" {
 		return nil, k.removePipelineJobs(task.Extra.Namespace)
 	}
 
@@ -173,14 +172,14 @@ func (k *K8sSpark) Remove(ctx context.Context, task *spec.PipelineTask) (interfa
 		if k8serrors.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, errors.Errorf("failed to get k8s spark job, namespace: %s, name: %s", task.Extra.Namespace, task.Name)
+		return nil, errors.Errorf("failed to get k8s spark job, namespace: %s, name: %s", task.Extra.Namespace, task.Extra.UUID)
 	}
 
 	if err := k.client.CRClient.Delete(ctx, sparkApp); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, errors.Errorf("failed to remove spark application, namespace: %s, name: %s, err: %v", task.Extra.Namespace, task.Name, err)
+		return nil, errors.Errorf("failed to remove spark application, namespace: %s, name: %s, err: %v", task.Extra.Namespace, task.Extra.UUID, err)
 	}
 	return nil, nil
 }
@@ -200,7 +199,7 @@ func (k *K8sSpark) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) 
 
 func (k *K8sSpark) getSparkApp(ctx context.Context, task *spec.PipelineTask) (*sparkv1beta2.SparkApplication, error) {
 	var sparkApp sparkv1beta2.SparkApplication
-	if err := k.client.CRClient.Get(ctx, client.ObjectKey{Name: task.Name, Namespace: task.Extra.Namespace}, &sparkApp); err != nil {
+	if err := k.client.CRClient.Get(ctx, client.ObjectKey{Name: task.Extra.UUID, Namespace: task.Extra.Namespace}, &sparkApp); err != nil {
 		return nil, err
 	}
 	return &sparkApp, nil
@@ -366,6 +365,7 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 		},
 		Spec: sparkv1beta2.SparkApplicationSpec{
 			Type:             sparkv1beta2.SparkApplicationType(conf.Spec.SparkConf.Type),
+			Image:            &conf.Spec.Image,
 			SparkVersion:     sparkVersion,
 			Mode:             sparkv1beta2.DeployMode(conf.Spec.SparkConf.Kind),
 			ImagePullPolicy:  stringptr(imagePullPolicyAlways),
@@ -426,7 +426,6 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, "executor", volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
 
-	logrus.Debugf("generate k8s spark application struct %+v", sparkApp)
 	return sparkApp, nil
 }
 
@@ -436,7 +435,7 @@ func (k *K8sSpark) composePodSpec(conf *apistructs.BigdataConf, podType string, 
 	resource := apistructs.BigdataResource{}
 
 	switch podType {
-	case "dirver":
+	case "driver":
 		resource = conf.Spec.SparkConf.DriverResource
 	case "executor":
 		resource = conf.Spec.SparkConf.ExecutorResource
@@ -461,7 +460,8 @@ func (k *K8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	}
 
 	cpuString := strutil.Concat(strconv.Itoa(int(cpu)))
-	memory := strutil.Concat(resource.Memory, "m")
+	// memory valid example: 1024m
+	memory := strutil.Concat(resource.Memory, "")
 
 	podSpec.Cores = int32ptr(int32(cpu))
 	podSpec.CoreLimit = stringptr(cpuString)

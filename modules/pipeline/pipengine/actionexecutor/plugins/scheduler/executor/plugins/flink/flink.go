@@ -39,7 +39,7 @@ func init() {
 		client := httpclient.New()
 		addr := cluster.SchedConfig.MasterURL
 		if addr == "" {
-			return nil, errors.Errorf("missing connect address for metronome, addr: %s", addr)
+			return nil, errors.Errorf("missing connect address for %s, addr: %s", Kind, addr)
 		}
 
 		if cluster.SchedConfig.CACrt != "" {

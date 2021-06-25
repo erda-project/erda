@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	flinkoperatorv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -57,7 +57,7 @@ func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 		return statusDesc, err
 	}
 
-	logrus.Infof("get status from name %s in namespace %s", task.Name, task.Extra.Namespace)
+	logrus.Infof("get status from name %s in namespace %s", task.Extra.UUID, task.Extra.Namespace)
 	flinkCluster, err := k.GetFlinkClusterInfo(ctx, bigDataConf)
 	if err != nil {
 		logrus.Errorf("get status err %v", err)
@@ -163,10 +163,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		statusDesc.Status = apistructs.StatusError
 		statusDesc.Reason = err.Error()
 		statusDesc.LastMessage = err.Error()
-		return apistructs.Job{
-			JobFromUser: job,
-			StatusDesc:  statusDesc,
-		}, fmt.Errorf("create flink cluster %+v err: %s", flinkCluster, err.Error())
+		return nil, fmt.Errorf("create flink cluster %s err: %s", flinkCluster.ClusterName, err.Error())
 	}
 	return apistructs.Job{
 		JobFromUser: job,
@@ -185,7 +182,7 @@ func (k *K8sFlink) Remove(ctx context.Context, task *spec.PipelineTask) (interfa
 
 	err = k.client.CRClient.Delete(ctx, flinkCluster)
 	if err != nil {
-		return nil, fmt.Errorf("delete flink cluster %+v err: %s", bigDataConf, err.Error())
+		return nil, fmt.Errorf("delete flink cluster %s err: %s", bigDataConf.Name, err.Error())
 	}
 	return nil, nil
 }

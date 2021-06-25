@@ -39,6 +39,7 @@ const (
 const (
 	ClusterActionCreate = "create"
 	ClusterActionUpdate = "update"
+	ClusterActionDelete = "delete"
 )
 
 const (

@@ -200,14 +200,14 @@ func MakeVolume(task *spec.PipelineTask) []diceyml.Volume {
 func GetBigDataConf(task *spec.PipelineTask) (apistructs.BigdataConf, error) {
 	conf := apistructs.BigdataConf{
 		BigdataMetadata: apistructs.BigdataMetadata{
-			Name:      task.Name,
+			Name:      task.Extra.UUID,
 			Namespace: task.Extra.Namespace,
 		},
 		Spec: apistructs.BigdataSpec{},
 	}
 	value, ok := task.Extra.Action.Params["bigDataConf"]
 	if !ok {
-		return conf, fmt.Errorf("missing big data conf from task: %s", task.Name)
+		return conf, fmt.Errorf("missing big data conf from task: %s", task.Extra.UUID)
 	}
 
 	if err := json.Unmarshal([]byte(value.(string)), &conf.Spec); err != nil {
