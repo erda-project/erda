@@ -35,11 +35,11 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.POST("/api/metrics/:scope/export", p.exportMetrics)
 
 	// metric meta
-	routes.GET("/api/metric/names", p.listMetricNames)
-	routes.GET("/api/metric/meta", p.listMetricMeta)
+	// routes.GET("/api/metric/names", p.listMetricNames)
+	// routes.GET("/api/metric/meta", p.listMetricMeta)
 	// routes.POST("/api/metric/meta", nil) // Register metric metadata，TODO .
-	routes.GET("/api/metric/groups", p.listMetricGroups)
-	routes.GET("/api/metric/groups/:id", p.getMetricGroup)
+	// routes.GET("/api/metric/groups", p.listMetricGroups)
+	// routes.GET("/api/metric/groups/:id", p.getMetricGroup)
 	// routes.POST("/api/metric/groups", nil) // Register for indicator grouping information，TODO .
 	routes.GET("/api/metadata/groups", p.listMetricGroups)   // Reuse the previous interface path.
 	routes.GET("/api/metadata/groups/:id", p.getMetricGroup) // Reuse the previous interface path.

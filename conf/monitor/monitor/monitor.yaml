@@ -3,6 +3,10 @@ http-server:
 health:
   path: "/api/health"
 
+grpc-server:
+  addr: ":7080"
+service-register:
+
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
   security: ${ES_SECURITY_ENABLE:false}
@@ -62,6 +66,7 @@ metrics-query:
       - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
     metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 #metricq-example:
+erda.core.monitor.meta:
 
 logs-query:
   _enable: ${LOGS_QUERY_ENABLE:true}

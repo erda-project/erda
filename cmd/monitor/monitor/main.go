@@ -32,6 +32,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/index"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/meta"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
@@ -44,6 +45,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/settings"
 
 	// providers
+	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
 	_ "github.com/erda-project/erda-infra/providers/health"
