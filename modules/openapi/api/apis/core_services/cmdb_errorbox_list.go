@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package core_services
 
 import (
 	"net/http"
@@ -20,15 +20,16 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_ERRORLOG_CREATE = apis.ApiSpec{
-	Path:         "/api/task-error/actions/create",
-	BackendPath:  "/api/task-error/actions/create",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
+var CMDB_ERRORLOG_LIST = apis.ApiSpec{
+	Path:         "/api/task-error/actions/list",
+	BackendPath:  "/api/task-error/actions/list",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
-	Method:       http.MethodPost,
+	Method:       http.MethodGet,
 	IsOpenAPI:    true,
+	CheckLogin:   true,
 	CheckToken:   true,
-	RequestType:  apistructs.ErrorLogCreateRequest{},
-	ResponseType: apistructs.ErrorLogCreateResponse{},
-	Doc:          "summary: 上报错误日志",
+	RequestType:  apistructs.ErrorLogListRequest{},
+	ResponseType: apistructs.ErrorLogListResponse{},
+	Doc:          "summary: List 错误日志",
 }

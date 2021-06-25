@@ -18,10 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -77,7 +76,7 @@ var (
 // 1, Cluster configuration information, including basic configuration and fine configuration
 // 2, runtime or job specific label
 // The first parameter returned is the specific constraint, and the second parameter is the configuration obtained by the application in the cluster fine configuration (if any)
-func LabelFilterChain(configs *executortypes.ExecutorWholeConfigs, name, kind string, obj interface{}) (apistructs.ScheduleInfo2, apistructs.ScheduleInfo, interface{}, error) {
+func LabelFilterChain(configs *executorconfig.ExecutorWholeConfigs, name, kind string, obj interface{}) (apistructs.ScheduleInfo2, apistructs.ScheduleInfo, interface{}, error) {
 	defaultScheduleInfo2 := apistructs.ScheduleInfo2{IsUnLocked: true}
 	defaultScheduleInfo := apistructs.ScheduleInfo{IsUnLocked: true}
 	// Label scheduling has not been opened
@@ -137,7 +136,7 @@ func LabelFilterChain(configs *executortypes.ExecutorWholeConfigs, name, kind st
 		refinedConfigs, nil
 }
 
-func setRuntimeRefinedConfig(r *apistructs.ServiceGroup, svcSelectors map[string]diceyml.Selectors, plus *conf.OptPlus) {
+func setRuntimeRefinedConfig(r *apistructs.ServiceGroup, svcSelectors map[string]diceyml.Selectors, plus *executorconfig.OptPlus) {
 	if len(r.Labels) == 0 || plus == nil {
 		return
 	}

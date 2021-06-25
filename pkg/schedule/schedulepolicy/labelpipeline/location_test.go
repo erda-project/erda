@@ -14,24 +14,21 @@
 package labelpipeline
 
 import (
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
-// LocationLabelFilter LabelInfo.Selectors
-func LocationLabelFilter(
-	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	if r.Location == nil {
-		r.Location = make(map[string]interface{})
-	}
-	if r2.Location == nil {
-		r2.Location = make(map[string]interface{})
-	}
-	for service, selectors := range li.Selectors {
-		selector, ok := selectors["location"]
-		if !ok {
-			continue
-		}
-		r.Location[service] = selector
-		r2.Location[service] = selector
-	}
+func TestLocationLabelFilter(t *testing.T) {
+	r := labelconfig.RawLabelRuleResult{}
+	r2 := labelconfig.RawLabelRuleResult2{}
+	LocationLabelFilter(&r, &r2, &labelconfig.LabelInfo{
+		Selectors: map[string]diceyml.Selectors{
+			"servicename": {"location": diceyml.Selector{Values: []string{"xxx", "yyy"}}},
+		},
+	})
+	assert.Equal(t, map[string]interface{}{"servicename": diceyml.Selector{Values: []string{"xxx", "yyy"}}}, r.Location)
 }

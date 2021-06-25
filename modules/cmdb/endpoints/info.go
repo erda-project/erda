@@ -11,28 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package labelpipeline
+package endpoints
 
 import (
-	"strings"
+	"context"
+	"net/http"
 
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-func SpecificHostLabelFilter(
-	r *labelconfig.RawLabelRuleResult, r2 *labelconfig.RawLabelRuleResult2, li *labelconfig.LabelInfo) {
-	v, ok := li.Label[labelconfig.SPECIFIC_HOSTS]
-	if !ok {
-		return
-	}
-	result := []string{}
-	hosts := strings.Split(v, ",")
-	for _, host := range hosts {
-		trimmedHost := strings.TrimSpace(host)
-		if trimmedHost != "" {
-			result = append(result, trimmedHost)
-		}
-	}
-	r.SpecificHost = result
-	r2.SpecificHost = result
+// Info 用于健康检查
+func (e *Endpoints) Info(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	return httpserver.OkResp("ok")
 }
