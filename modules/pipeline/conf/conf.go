@@ -89,7 +89,11 @@ type Conf struct {
 	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
 
 	// cron compensate time
-	CronCompensateTimeMinute int64 `env:"CRON_COMPENSATE_TIME_MINUTE" default:"5"`
+	CronCompensateTimeMinute       int64 `env:"CRON_COMPENSATE_TIME_MINUTE" default:"5"`
+	CronCompensateConcurrentNumber int64 `env:"CRON_COMPENSATE_CONCURRENT_NUMBER" default:"10"`
+
+	// cron interrupt compensate identification failure time second
+	CronFailureCreateIntervalCompensateTimeSecond int64 `env:"CRON_FAILURE_CREATE_INTERVAL_COMPENSATE_TIME_SECOND" default:"300"`
 }
 
 var cfg Conf
@@ -282,4 +286,12 @@ func APITestNetportalAccessK8sNamespaceBlacklist() []string {
 
 func CronCompensateTimeMinute() int64 {
 	return cfg.CronCompensateTimeMinute
+}
+
+func CronCompensateConcurrentNumber() int64 {
+	return cfg.CronCompensateConcurrentNumber
+}
+
+func CronFailureCreateIntervalCompensateTimeSecond() int64 {
+	return cfg.CronFailureCreateIntervalCompensateTimeSecond
 }
