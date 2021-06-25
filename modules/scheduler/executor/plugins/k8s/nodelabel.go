@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

@@ -11,21 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package metronome
+package core_services
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/marathon"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-// Constraints  metronome constraints
-type Constraints = marathon.Constraints
-
-type Builder struct {
-	marathon marathon.Builder
-}
-
-func (b *Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, _ []constraints.PodLabelsForAffinity, _ constraints.HostnameUtil) constraints.Constraints {
-	return b.Build(s, service, nil, nil)
+var CMDB_ERRORLOG_CREATE = apis.ApiSpec{
+	Path:         "/api/task-error/actions/create",
+	BackendPath:  "/api/task-error/actions/create",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	IsOpenAPI:    true,
+	CheckToken:   true,
+	RequestType:  apistructs.ErrorLogCreateRequest{},
+	ResponseType: apistructs.ErrorLogCreateResponse{},
+	Doc:          "summary: 上报错误日志",
 }

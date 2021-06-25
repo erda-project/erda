@@ -130,6 +130,8 @@ type PipelineDetailDTO struct {
 	RunParams []PipelineParamDTO `json:"runParams"`
 
 	Events []*PipelineEvent `json:"events,omitempty"`
+
+	NeedApproval bool `json:"needApproval"`
 }
 
 type PipelineParamDTO struct {

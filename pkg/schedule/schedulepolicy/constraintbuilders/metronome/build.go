@@ -11,22 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package conf
+package metronome
 
 import (
-	"sync"
+	"github.com/erda-project/erda/apistructs"
+	constraints2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
+	marathon2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/marathon"
 )
 
-const (
-	CLUSTERS_CONFIG_PATH = "/dice/scheduler/configs/cluster/"
-)
+// Constraints  metronome constraints
+type Constraints = marathon2.Constraints
 
-var confStore ConfStore
-
-func GetConfStore() *ConfStore {
-	return &confStore
+type Builder struct {
+	marathon marathon2.Builder
 }
 
-type ConfStore struct {
-	ExecutorStore sync.Map
+func (b *Builder) Build(s *apistructs.ScheduleInfo2, service *apistructs.Service, _ []constraints2.PodLabelsForAffinity, _ constraints2.HostnameUtil) constraints2.Constraints {
+	return b.Build(s, service, nil, nil)
 }
