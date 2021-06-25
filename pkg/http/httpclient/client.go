@@ -24,10 +24,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
 const (
@@ -63,6 +66,7 @@ type Option struct {
 	loadingPrint    bool
 	loadingDesc     string
 	proxy           string
+	clusterDialKey  string
 	cookieJar       http.CookieJar
 	dnscache        *DNSCache
 	dialerKeepalive time.Duration
@@ -74,6 +78,16 @@ type Option struct {
 }
 
 type OpOption func(*Option)
+
+func WithClusterDialer(clusterKey string) OpOption {
+	return func(op *Option) {
+		// TODO: more elegant way to get current cluster key
+		currentClusterKey := os.Getenv("DICE_CLUSTER_NAME")
+		if clusterKey != currentClusterKey {
+			op.clusterDialKey = clusterKey
+		}
+	}
+}
 
 func WithHTTPS() OpOption {
 	return func(op *Option) {
@@ -178,6 +192,9 @@ func mkDialContext(option *Option) func(ctx context.Context, network, addr strin
 		KeepAlive: option.dialerKeepalive,
 	}).DialContext
 	dialcontext := raw
+	if option.clusterDialKey != "" {
+		return clusterdialer.DialContext(option.clusterDialKey)
+	}
 	if option.dnscache != nil {
 		dialcontext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 			var host string
