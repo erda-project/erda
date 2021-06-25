@@ -36,23 +36,23 @@ func Test_traceService_GetSpans(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.msp.apm.trace.TraceService",
-			`
-erda.msp.apm.trace:
-`,
-			args{
-				context.TODO(),
-				&pb.GetSpansRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.GetSpansResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetSpansRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetSpansResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -93,23 +93,23 @@ func Test_traceService_GetTraces(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.msp.apm.trace.TraceService",
-			`
-erda.msp.apm.trace:
-`,
-			args{
-				context.TODO(),
-				&pb.GetTracesRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.GetTracesResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTracesRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTracesResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
