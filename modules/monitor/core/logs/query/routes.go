@@ -288,5 +288,5 @@ func getFilename(r *RequestCtx, meta *LogMeta) string {
 			filenamePrefix = val
 		}
 	}
-	return strings.Join([]string{filenamePrefix, r.Stream, strconv.Itoa(int(time.Now().Unix()))}, sep)
+	return strings.Join([]string{filenamePrefix, r.Stream, strconv.Itoa(int(time.Now().Unix()))}, sep) + ".log"
 }
