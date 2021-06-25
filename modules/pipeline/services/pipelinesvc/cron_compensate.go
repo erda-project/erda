@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/dlock"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -89,7 +90,7 @@ func (s *PipelineSvc) ContinueCompensate() {
 			s.traverseDoCompensate(s.doInterruptCompensate, true)
 		case <-ticker.C:
 			//因为未执行补偿(策略)，用来执行流水线的，内部是幂等的，也就是同一时间只有一个pipeline在执行
-			s.traverseDoCompensate(s.doStrategyCompensate, true)
+			s.traverseDoCompensate(s.doStrategyCompensate, false)
 		}
 	}
 }
@@ -153,73 +154,82 @@ func (s *PipelineSvc) traverseDoCompensate(doCompensate func(cron spec.PipelineC
 		return
 	}
 
+	group := limit_sync_group.NewSemaphore(int(conf.CronCompensateConcurrentNumber()))
 	for i := range enabledCrons {
 		if sync {
 			doCompensate(enabledCrons[i])
 		} else {
+			group.Add(1)
 			go func(pc spec.PipelineCron) {
+				defer group.Done()
 				doCompensate(pc)
 			}(enabledCrons[i])
 		}
 	}
+	group.Wait()
 }
 
 // cronInterruptCompensate 定时 中断补偿
 func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
 
 	// 计算中断补偿开始时间
-	compensateFromTime := getCompensateFromTime(pc)
+	beforeCompensateFromTime := getCompensateFromTime(pc)
+
+	// current time minus a certain time，prevent conflicts with cron create pipeline
+	now := time.Unix(time.Now().Unix(), 0)
+	var thisCompensateFromTime = now.Add(time.Second * -time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond()))
 
 	// 用 cron expr 计算出从起始补偿点开始的所有需要触发时间
-	now := time.Unix(time.Now().Unix(), 0)
 	needTriggerTimes, err := pipelineyml.ListNextCronTime(pc.CronExpr,
-		pipelineyml.WithCronStartEndTime(&compensateFromTime, &now),
+		pipelineyml.WithCronStartEndTime(&beforeCompensateFromTime, &thisCompensateFromTime),
 		pipelineyml.WithListNextScheduleCount(100),
 	)
 	if err != nil {
 		return errors.Errorf("[alert] failed to list next crontimes, cronID: %d, err: %v", pc.ID, err)
 	}
 
-	// 根据 source + ymlName + timeCreated 搜索已经创建的流水线记录
-	existPipelines, _, _, _, err := s.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
-		Sources:          []apistructs.PipelineSource{pc.PipelineSource},
-		YmlNames:         []string{pc.PipelineYmlName},
-		TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
-		StartTimeCreated: compensateFromTime,
-		EndTimeCreated:   now.Add(time.Second * 30), // time_created 比实际 cronTriggerTime 可能稍有延迟
-		PageNum:          1,
-		PageSize:         100,
-		LargePageSize:    true,
-	})
-	if err != nil {
-		return errors.Errorf("[alert] failed to list existPipelines, cronID: %d, err: %v", pc.ID, err)
-	}
-
-	// 转换为 map 用于查询
-	existPipelinesMap := make(map[time.Time]spec.Pipeline, len(existPipelines))
-	for _, p := range existPipelines {
-		existPipelinesMap[getTriggeredTime(p)] = p
-	}
-
-	// 遍历 needTriggerTimes，若没创建，则需要中断补偿创建
-	for _, ntt := range needTriggerTimes {
-		p, ok := existPipelinesMap[ntt]
-		if ok {
-			compensateLog.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, p.ID)
-			continue
-		}
-		compensateLog.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
-		// create
-		created, err := s.createCronCompensatePipeline(pc, ntt)
+	if len(needTriggerTimes) > 0 {
+		// 根据 source + ymlName + timeCreated 搜索已经创建的流水线记录
+		existPipelines, _, _, _, err := s.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+			Sources:          []apistructs.PipelineSource{pc.PipelineSource},
+			YmlNames:         []string{pc.PipelineYmlName},
+			TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
+			StartTimeCreated: beforeCompensateFromTime,
+			EndTimeCreated:   thisCompensateFromTime,
+			PageNum:          1,
+			PageSize:         100,
+			LargePageSize:    true,
+		})
 		if err != nil {
-			compensateLog.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
-			continue
+			return errors.Errorf("[alert] failed to list existPipelines, cronID: %d, err: %v", pc.ID, err)
 		}
-		compensateLog.Infof("success to do interrupt-compensate, cronID: %d, triggerTime: %v, createdPipelineID: %d", pc.ID, ntt, created.ID)
+
+		// 转换为 map 用于查询
+		existPipelinesMap := make(map[time.Time]spec.Pipeline, len(existPipelines))
+		for _, p := range existPipelines {
+			existPipelinesMap[getTriggeredTime(p)] = p
+		}
+
+		// 遍历 needTriggerTimes，若没创建，则需要中断补偿创建
+		for _, ntt := range needTriggerTimes {
+			p, ok := existPipelinesMap[ntt]
+			if ok {
+				compensateLog.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, p.ID)
+				continue
+			}
+			compensateLog.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
+			// create
+			created, err := s.createCronCompensatePipeline(pc, ntt)
+			if err != nil {
+				compensateLog.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
+				continue
+			}
+			compensateLog.Infof("success to do interrupt-compensate, cronID: %d, triggerTime: %v, createdPipelineID: %d", pc.ID, ntt, created.ID)
+		}
 	}
 
-	// 中断补偿完毕，需要更新 cron 的 lastCompensateAt 字段
-	pc.Extra.LastCompensateAt = &now
+	// 中断补偿完毕，需要更新 cron 的 thisCompensateFromTime 字段
+	pc.Extra.LastCompensateAt = &thisCompensateFromTime
 	// 若 compensator 为空，说明是老的 cron，自动使用默认配置
 	if pc.Extra.Compensator == nil {
 		pc.Extra.Compensator = &apistructs.CronCompensator{
