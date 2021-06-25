@@ -34,9 +34,9 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/event"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

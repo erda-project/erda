@@ -16,12 +16,12 @@ package constraintbuilders
 import (
 	"testing"
 
+	constraints2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
+	k8s2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/k8s"
+	marathon2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/marathon"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/k8s"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/marathon"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -34,8 +34,8 @@ func TestBuildConstraints(t *testing.T) {
 		},
 	}
 	service := apistructs.Service{Name: "servicename1"}
-	marathoncons := marathon.Builder{}.Build(&scheduleinfo, &service, nil, nil).(*marathon.Constraints)
-	k8scons := k8s.Builder{}.Build(&scheduleinfo, &service, []constraints.PodLabelsForAffinity{
+	marathoncons := marathon2.Builder{}.Build(&scheduleinfo, &service, nil, nil).(*marathon2.Constraints)
+	k8scons := k8s2.Builder{}.Build(&scheduleinfo, &service, []constraints2.PodLabelsForAffinity{
 		{
 			PodLabels: map[string]string{"app": "app1"},
 			Required:  true,
@@ -47,7 +47,7 @@ func TestBuildConstraints(t *testing.T) {
 		{
 			PodLabels: map[string]string{"apppp": "apppp1"},
 		},
-	}, nil).(*k8s.Constraints)
+	}, nil).(*k8s2.Constraints)
 	// marathon:
 	// [
 	//     [dice_tags LIKE .*\b(platform\b.*)]
@@ -79,7 +79,7 @@ func TestBuildConstraints(t *testing.T) {
 	assert.False(t, 2 == len(k8scons.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution), "%+v", k8scons)
 }
 
-func TestBuildConstraints2(t *testing.T) {
+func TestBuildconstraints(t *testing.T) {
 	scheduleinfo := apistructs.ScheduleInfo2{
 		HasOrg:       true,
 		Org:          "111",
@@ -87,8 +87,8 @@ func TestBuildConstraints2(t *testing.T) {
 		WorkSpaces:   []string{"dev", "test"},
 		Job:          true,
 	}
-	marathoncons := marathon.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*marathon.Constraints)
-	k8scons := k8s.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*k8s.Constraints)
+	marathoncons := marathon2.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*marathon2.Constraints)
+	k8scons := k8s2.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*k8s2.Constraints)
 	// marathon
 	// [
 	//     [dice_tags UNLIKE .*\b(platform\b.*)]
@@ -119,8 +119,8 @@ func TestBuildConstraints3(t *testing.T) {
 		Stateless: true,
 	}
 
-	marathoncons := marathon.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*marathon.Constraints)
-	k8scons := k8s.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*k8s.Constraints)
+	marathoncons := marathon2.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*marathon2.Constraints)
+	k8scons := k8s2.Builder{}.Build(&scheduleinfo, nil, nil, nil).(*k8s2.Constraints)
 	// marathon:
 	// [
 	//     [dice_tags UNLIKE .*\b(platform\b.*)]
