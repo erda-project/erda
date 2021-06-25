@@ -314,7 +314,7 @@ func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClus
 	hc := b.hc
 
 	var resp apistructs.OrgClusterRelationDTOResponse
-	r, err := hc.Delete(host).Path(fmt.Sprintf("/api/orgs/clusters/relations/%d", orgID)).
+	r, err := hc.Get(host).Path(fmt.Sprintf("/api/orgs/clusters/relations/%d", orgID)).
 		Header(httputil.InternalHeader, "bundle").Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
