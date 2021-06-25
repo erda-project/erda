@@ -28,8 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/pkg/clusterdialer"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
 const (
