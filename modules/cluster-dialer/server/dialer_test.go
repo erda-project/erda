@@ -11,22 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package clusterdialer
+package server
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/erda-project/erda/modules/cluster-agent/client"
 	clientconfig "github.com/erda-project/erda/modules/cluster-agent/config"
 	serverconfig "github.com/erda-project/erda/modules/cluster-dialer/config"
-	"github.com/erda-project/erda/modules/cluster-dialer/server"
-	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
 const (
@@ -34,11 +32,13 @@ const (
 	helloListenAddr  = "127.0.0.1:18752"
 )
 
-var _ = os.Setenv(discover.EnvClusterDialer, dialerListenAddr)
+func init() {
+	clusterdialer.Init(dialerListenAddr)
+}
 
 func startServer() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	go server.Start(ctx, &serverconfig.Config{
+	go Start(ctx, &serverconfig.Config{
 		Listen:          dialerListenAddr,
 		NeedClusterInfo: false,
 	})
@@ -66,7 +66,7 @@ func Test_DialerContext(t *testing.T) {
 	}
 	hc := http.Client{
 		Transport: &http.Transport{
-			DialContext: DialContext("test"),
+			DialContext: clusterdialer.DialContext("test"),
 		},
 		Timeout: 10 * time.Second,
 	}
