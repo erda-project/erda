@@ -28,17 +28,17 @@ import (
 )
 
 const (
-	dialerListenAddr = "127.0.0.1:18753"
-	helloListenAddr  = "127.0.0.1:18754"
+	dialerListenAddr2 = "127.0.0.1:18753"
+	helloListenAddr2  = "127.0.0.1:18754"
 )
 
 func Test_netportal(t *testing.T) {
 	go Start(context.Background(), &serverconfig.Config{
-		Listen:          dialerListenAddr,
+		Listen:          dialerListenAddr2,
 		NeedClusterInfo: false,
 	})
 	go client.Start(context.Background(), &clientconfig.Config{
-		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr),
+		ClusterDialEndpoint: fmt.Sprintf("ws://%s/clusteragent/connect", dialerListenAddr2),
 		ClusterKey:          "test",
 		SecretKey:           "test",
 		CollectClusterInfo:  false,
@@ -46,19 +46,19 @@ func Test_netportal(t *testing.T) {
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!")
 	}
-	http.HandleFunc("/hello", helloHandler)
-	go http.ListenAndServe(helloListenAddr, nil)
+	http.HandleFunc("/hello2", helloHandler)
+	go http.ListenAndServe(helloListenAddr2, nil)
 	select {
 	case <-client.Connected():
 		time.Sleep(1 * time.Second)
 		fmt.Println("client connected")
 	}
 	hc := &http.Client{}
-	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr+"/hello", nil)
+	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)
 	req.Header = http.Header{
 		portalSchemeHeader:  {"http"},
 		portalHostHeader:    {"test"},
-		portalDestHeader:    {helloListenAddr},
+		portalDestHeader:    {helloListenAddr2},
 		portalTimeoutHeader: {"10"},
 	}
 	resp, err := hc.Do(req)

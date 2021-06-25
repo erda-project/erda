@@ -181,6 +181,9 @@ func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
+		{Path: "/info", Method: http.MethodGet, Handler: e.Info},
+		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
+
 		// hosts
 		{Path: "/api/hosts/{host}", Method: http.MethodGet, Handler: e.GetHost},
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: e.ListOrgRunningTasks},
