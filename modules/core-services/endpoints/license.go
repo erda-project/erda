@@ -34,6 +34,7 @@ func (e *Endpoints) GetLicense(ctx context.Context, r *http.Request, vars map[st
 		Valid:   true,
 	}
 	var hostCount uint64
+	// TODO 1 refactor
 	//hostCount, err := e.host.GetHostNumber()
 	//if err != nil {
 	//	return apierrors.ErrGetLicense.InternalError(err).ToResp(), nil
