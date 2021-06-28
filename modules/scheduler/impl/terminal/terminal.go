@@ -122,7 +122,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 			logrus.Errorf("failed to parse orgid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCMDB()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.OrgScope,
 			ScopeID:  orgid,
@@ -143,7 +143,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 			logrus.Errorf("failed to parse applicationid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCMDB()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.AppScope,
 			ScopeID:  appid,

@@ -90,7 +90,7 @@ func do() (*httpserver.Server, error) {
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
 		bundle.WithMonitor(),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
 	}
