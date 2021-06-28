@@ -132,10 +132,10 @@ func WithOrchestrator() Option {
 	}
 }
 
-// WithOps 根据环境变量配置创建 ops 客户端.
-func WithOps() Option {
+// WithCMP 根据环境变量配置创建 cmp 客户端.
+func WithCMP() Option {
 	return func(b *Bundle) {
-		k := discover.EnvOps
+		k := discover.EnvCMP
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
 	}
