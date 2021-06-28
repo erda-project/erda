@@ -77,7 +77,7 @@ func (p *provider) getAccountInfo() (map[string]*AccountInfo, error) {
 	pageNo, pageSize := 1, 30
 	orgs := make(map[uint64]string)
 	for {
-		resp, err := p.bdl.ListOrgs(&apistructs.OrgSearchRequest{
+		resp, err := p.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{
 			PageNo:   pageNo,
 			PageSize: pageSize,
 		})

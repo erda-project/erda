@@ -23,7 +23,7 @@ import (
 
 // ExecuteApiTest 执行接口测试
 func (b *Bundle) ExecuteApiTest(req apistructs.ApiTestsActionRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) ExecuteApiTest(req apistructs.ApiTestsActionRequest) (uint64, e
 
 // InternalRemoveTestPlanCaseRelIssueRelationsByIssueID 内部使用，根据 issueID 删除测试计划用例与 bug 的关联关系
 func (b *Bundle) InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID uint64) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,7 @@ import (
 var QA_REPORTSETS_LIST = apis.ApiSpec{
 	Path:        "/api/reportsets/<pipelineID>",
 	BackendPath: "/api/reportsets/<pipelineID>",
-	Host:        "qa.marathon.l4lb.thisdcos.directory:3033",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      http.MethodGet,
 	CheckLogin:  true,

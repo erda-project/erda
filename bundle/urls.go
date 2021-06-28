@@ -125,6 +125,22 @@ func (u urls) APIM() (string, error) {
 	return u.getURL(discover.EnvAPIM, discover.SvcAPIM)
 }
 
+func (u urls) DOP() (string, error) {
+	return u.getURL(discover.EnvDOP, discover.SvcDOP)
+}
+
+func (u urls) CoreServices() (string, error) {
+	return u.getURL(discover.EnvCoreServices, discover.SvcCoreServices)
+}
+
+func (u urls) ClusterManager() (string, error) {
+	return u.getURL(discover.EnvClusterManager, discover.SvcClusterManager)
+}
+
+func (u urls) ECP() (string, error) {
+	return u.getURL(discover.EnvECP, discover.SvcECP)
+}
+
 func (u urls) getURL(k, srvName string) (string, error) {
 	v, ok := u[k]
 	if ok {

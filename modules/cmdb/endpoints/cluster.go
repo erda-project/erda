@@ -82,7 +82,7 @@ func (e *Endpoints) UpdateCluster(ctx context.Context, r *http.Request, vars map
 		Resource: apistructs.ClusterResource,
 		Action:   apistructs.UpdateAction,
 	}
-	if access, err := e.permission.CheckPermission(&permissionReq); err != nil || !access {
+	if access, err := e.bdl.CheckPermission(&permissionReq); err != nil || !access.Access {
 		return apierrors.ErrUpdateCluster.AccessDenied().ToResp(), nil
 	}
 
@@ -218,7 +218,7 @@ func (e *Endpoints) ListCluster(ctx context.Context, r *http.Request, vars map[s
 				Resource: apistructs.ClusterResource,
 				Action:   apistructs.ListAction,
 			}
-			if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+			if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 				return apierrors.ErrListCluster.AccessDenied().ToResp(), nil
 			}
 		}
@@ -229,7 +229,7 @@ func (e *Endpoints) ListCluster(ctx context.Context, r *http.Request, vars map[s
 			req := apistructs.PermissionCheckRequest{
 				UserID: userID,
 			}
-			if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+			if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 				return apierrors.ErrListCluster.AccessDenied().ToResp(), nil
 			}
 		}
@@ -282,9 +282,10 @@ func (e *Endpoints) DereferenceCluster(ctx context.Context, r *http.Request, var
 		OrgID:   orgID,
 		Cluster: clusterName,
 	}
-	if err := e.member.CheckPermission(userID.String(), apistructs.OrgScope, req.OrgID); err != nil {
-		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
-	}
+	// TODO CheckPermission
+	//if err := e.member.CheckPermission(userID.String(), apistructs.OrgScope, req.OrgID); err != nil {
+	//	return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
+	//}
 	if err := e.cluster.DereferenceCluster(userID.String(), &req); err != nil {
 		return errorresp.ErrResp(err)
 	}

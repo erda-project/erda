@@ -21,52 +21,60 @@ import (
 
 // 定义各个服务地址的环境变量配置名字.
 const (
-	EnvEventBox      = "EVENTBOX_ADDR"
-	EnvCMDB          = "CMDB_ADDR"
-	EnvScheduler     = "SCHEDULER_ADDR"
-	EnvDiceHub       = "DICEHUB_ADDR"
-	EnvSoldier       = "SOLDIER_ADDR"
-	EnvOrchestrator  = "ORCHESTRATOR_ADDR"
-	EnvAddOnPlatform = "ADDON_PLATFORM_ADDR"
-	EnvGittar        = "GITTAR_ADDR"
-	EnvGittarAdaptor = "GITTAR_ADAPTOR_ADDR"
-	EnvCollector     = "COLLECTOR_ADDR"
-	EnvMonitor       = "MONITOR_ADDR"
-	EnvPipeline      = "PIPELINE_ADDR"
-	EnvHepa          = "HEPA_ADDR"
-	EnvOps           = "OPS_ADDR"
-	EnvOpenapi       = "OPENAPI_ADDR"
-	EnvKMS           = "KMS_ADDR"
-	EnvQA            = "QA_ADDR"
-	EnvAPIM          = "APIM_ADDR"
-	EnvTMC           = "TMC_ADDR"
-	EnvUC            = "UC_ADDR"
-	EnvClusterDialer = "CLUSTER_DIALER_ADDR"
+	EnvEventBox       = "EVENTBOX_ADDR"
+	EnvCMDB           = "CMDB_ADDR"
+	EnvScheduler      = "SCHEDULER_ADDR"
+	EnvDiceHub        = "DICEHUB_ADDR"
+	EnvSoldier        = "SOLDIER_ADDR"
+	EnvOrchestrator   = "ORCHESTRATOR_ADDR"
+	EnvAddOnPlatform  = "ADDON_PLATFORM_ADDR"
+	EnvGittar         = "GITTAR_ADDR"
+	EnvGittarAdaptor  = "GITTAR_ADAPTOR_ADDR"
+	EnvCollector      = "COLLECTOR_ADDR"
+	EnvMonitor        = "MONITOR_ADDR"
+	EnvPipeline       = "PIPELINE_ADDR"
+	EnvHepa           = "HEPA_ADDR"
+	EnvOps            = "OPS_ADDR"
+	EnvOpenapi        = "OPENAPI_ADDR"
+	EnvKMS            = "KMS_ADDR"
+	EnvQA             = "QA_ADDR"
+	EnvAPIM           = "APIM_ADDR"
+	EnvTMC            = "TMC_ADDR"
+	EnvUC             = "UC_ADDR"
+	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
+	EnvDOP            = "DOP_ADDR"
+	EnvECP            = "ECP_ADDR"
+	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
+	EnvCoreServices   = "CORE_SERVICES_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
 const (
-	SvcEventBox      = "eventbox"
-	SvcCMDB          = "cmdb"
-	SvcScheduler     = "scheduler"
-	SvcDiceHub       = "dicehub"
-	SvcSoldier       = "soldier"
-	SvcOrchestrator  = "orchestrator"
-	SvcAddOnPlatform = "addon-platform"
-	SvcGittar        = "gittar"
-	SvcGittarAdaptor = "gittar-adaptor"
-	SvcCollector     = "collector"
-	SvcMonitor       = "monitor"
-	SvcPipeline      = "pipeline"
-	SvcHepa          = "hepa"
-	SvcOps           = "ops"
-	SvcOpenapi       = "openapi"
-	SvcKMS           = "addon-kms"
-	SvcQA            = "qa"
-	SvcAPIM          = "apim"
-	SvcTMC           = "tmc"
-	SvcUC            = "uc"
-	SvcClusterDialer = "cluster-dialer"
+	SvcEventBox       = "eventbox"
+	SvcCMDB           = "cmdb"
+	SvcScheduler      = "scheduler"
+	SvcDiceHub        = "dicehub"
+	SvcSoldier        = "soldier"
+	SvcOrchestrator   = "orchestrator"
+	SvcAddOnPlatform  = "addon-platform"
+	SvcGittar         = "gittar"
+	SvcGittarAdaptor  = "gittar-adaptor"
+	SvcCollector      = "collector"
+	SvcMonitor        = "monitor"
+	SvcPipeline       = "pipeline"
+	SvcHepa           = "hepa"
+	SvcOps            = "ops"
+	SvcOpenapi        = "openapi"
+	SvcKMS            = "addon-kms"
+	SvcQA             = "qa"
+	SvcAPIM           = "apim"
+	SvcTMC            = "tmc"
+	SvcUC             = "uc"
+	SvcClusterDialer  = "cluster-dialer"
+	SvcDOP            = "dop"
+	SvcECP            = "ecp"
+	SvcClusterManager = "cluster-manager"
+	SvcCoreServices   = "core-services"
 )
 
 func EventBox() string {
@@ -151,6 +159,22 @@ func UC() string {
 
 func ClusterDialer() string {
 	return getURL(EnvClusterDialer, SvcClusterDialer)
+}
+
+func DOP() string {
+	return getURL(EnvDOP, SvcDOP)
+}
+
+func CoreServices() string {
+	return getURL(EnvCoreServices, SvcCoreServices)
+}
+
+func ECP() string {
+	return getURL(EnvECP, SvcECP)
+}
+
+func ClusterManager() string {
+	return getURL(EnvClusterManager, SvcClusterManager)
 }
 
 func getURL(envKey, srvName string) string {

@@ -357,3 +357,7 @@ func (f *Flink) createImageSecretIfNotExist(namespace string) error {
 	}
 	return nil
 }
+
+func (f *Flink) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for k8s flink")
+}

@@ -14,7 +14,10 @@
 package db
 
 import (
+	"reflect"
 	"time"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
 // tables name
@@ -27,7 +30,7 @@ const (
 // InstanceTenant .
 type InstanceTenant struct {
 	ID          string    `gorm:"column:id;primary_key"`
-	InstanceId  string    `gorm:"column:instance_id"`
+	InstanceID  string    `gorm:"column:instance_id"`
 	Config      string    `gorm:"column:config"`
 	Options     string    `gorm:"column:options"`
 	TenantGroup string    `gorm:"column:tenant_group"`
@@ -41,12 +44,14 @@ type InstanceTenant struct {
 // TableName .
 func (InstanceTenant) TableName() string { return TableInstanceTenant }
 
+var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+
 // Instance .
 type Instance struct {
 	ID         string    `gorm:"column:id;primary_key"`
 	Engine     string    `gorm:"column:engine"`
 	Version    string    `gorm:"column:version"`
-	ReleaseId  string    `gorm:"column:release_id"`
+	ReleaseID  string    `gorm:"column:release_id"`
 	Status     string    `gorm:"column:status"`
 	Az         string    `gorm:"column:az"`
 	Config     string    `gorm:"column:config"`
@@ -59,6 +64,8 @@ type Instance struct {
 
 // TableName .
 func (Instance) TableName() string { return TableInstance }
+
+var instanceFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
 
 // Tmc .
 type Tmc struct {
@@ -74,3 +81,5 @@ type Tmc struct {
 
 // TableName .
 func (Tmc) TableName() string { return TableTmc }
+
+var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))

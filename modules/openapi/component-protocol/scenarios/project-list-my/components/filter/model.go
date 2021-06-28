@@ -42,7 +42,8 @@ type Options struct {
 }
 
 type Props struct {
-	Delay uint64 `json:"delay"`
+	Delay   uint64 `json:"delay"`
+	Visible bool   `json:"visible"`
 }
 
 type StateConditions struct {
@@ -59,4 +60,5 @@ type State struct {
 	Values        map[string]interface{} `json:"values"`
 	Conditions    []StateConditions      `json:"conditions"`
 	IsFirstFilter bool                   `json:"isFirstFilter"`
+	IsEmpty       bool                   `json:"isEmpty"`
 }
