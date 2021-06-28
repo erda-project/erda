@@ -31,6 +31,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -39,7 +41,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
-	"github.com/olivere/elastic"
 )
 
 type Vo struct {
