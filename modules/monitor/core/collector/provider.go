@@ -31,7 +31,7 @@ type config struct {
 		Force    bool   `file:"force"`
 	}
 	SignAuth struct {
-		SKProvider string      `file:"sk_provider"`
+		SKProvider string      `file:"sk_provider" default:"service"`
 		Config     interface{} `file:"config"`
 	} `file:"sign_auth"`
 	Output         kafka.ProducerConfig `file:"output"`
