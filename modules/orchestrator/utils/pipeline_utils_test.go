@@ -69,7 +69,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 		func(_ *bundle.Bundle, req apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
 			resp := &apistructs.PipelinePageListData{
 				Pipelines: []apistructs.PagePipeline{
-					apistructs.PagePipeline{
+					{
 						ID:      12580,
 						YmlName: "dice-deploy-release-develop",
 						Extra: apistructs.PipelineExtra{
@@ -81,7 +81,7 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 						FilterLabels: map[string]string{"appID": "1", "branch": "develop"},
 						TimeBegin:    &now,
 					},
-					apistructs.PagePipeline{
+					{
 						ID:      12581,
 						YmlName: "dice-deploy-release-feature/test",
 						Extra: apistructs.PipelineExtra{
