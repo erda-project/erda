@@ -72,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(hc),
 		bundle.WithPipeline(),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	}
 
 	p.bdl = bundle.New(bundleOpts...)

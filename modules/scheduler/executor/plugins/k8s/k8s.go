@@ -120,7 +120,7 @@ func init() {
 		}
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
-		bdl := bundle.New(bundle.WithCMDB())
+		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
 		if options["IS_EDAS"] == "true" {
 			return k, nil

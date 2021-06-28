@@ -70,7 +70,7 @@ var (
 func initBundle() {
 	bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 	cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 }

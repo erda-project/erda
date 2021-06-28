@@ -34,7 +34,7 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

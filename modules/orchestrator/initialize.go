@@ -89,7 +89,7 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
 		bundle.WithEventBox(),
 		bundle.WithScheduler(),

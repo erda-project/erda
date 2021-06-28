@@ -52,7 +52,7 @@ var UC_USER_UPDATE_USERINFO = apis.ApiSpec{
 	Doc:          "summary: 更新用户信息",
 }
 
-var bdl = bundle.New(bundle.WithCMDB())
+var bdl = bundle.New(bundle.WithCoreServices())
 
 func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 	operatorID, err := user.GetUserID(r)

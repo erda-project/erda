@@ -33,7 +33,7 @@ func Initialize() error {
 		return err
 	}
 
-	bdl := bundle.New(bundle.WithCollector(), bundle.WithCMDB(), bundle.WithOpenapi())
+	bdl := bundle.New(bundle.WithCollector(), bundle.WithCoreServices(), bundle.WithOpenapi())
 	runnerTask := runnertask.New(runnertask.WithDBClient(db), runnertask.WithBundle(bdl))
 	ep := endpoints.New(
 		endpoints.WithRunnerTask(runnerTask),
