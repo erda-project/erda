@@ -35,7 +35,7 @@ func DeleteManifests(clusterName string, images []string) error {
 
 	var imageResp apistructs.RegistryManifestsRemoveResponse
 	path := fmt.Sprintf("/api/clusters/%s/registry/manifests/actions/remove", clusterName)
-	resp, err := httpclient.New().Post(discover.Ops()).
+	resp, err := httpclient.New().Post(discover.CMP()).
 		Path(path).
 		Header("Content-Type", "application/json").
 		JSONBody(imageReq).
