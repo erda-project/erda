@@ -15,6 +15,8 @@ package metric
 
 import "github.com/erda-project/erda-infra/providers/httpserver"
 
+const PATH_PREFIX = "/api/tmc"
+
 func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET(PATH_PREFIX+"/metrics-query", p.metricQueryByQL)
 	routes.POST(PATH_PREFIX+"/metrics-query", p.metricQueryByQL)

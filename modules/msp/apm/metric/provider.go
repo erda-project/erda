@@ -21,27 +21,10 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 )
 
-const PATH_PREFIX = "/api/tmc"
-
 type provider struct {
 	Log logs.Logger
 	db  *db.DB
 	Cfg *config
-}
-
-type define struct{}
-
-func (d *define) Services() []string { return []string{"erda.msp.apm.metric"} }
-func (d *define) Dependencies() []string {
-	return []string{"mysql", "i18n"}
-}
-func (d *define) Summary() string     { return "erda.msp.apm.metric api" }
-func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
 }
 
 type config struct {
@@ -57,5 +40,15 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 }
 
 func init() {
-	servicehub.RegisterProvider("erda.msp.apm.metric", &define{})
+	servicehub.Register("erda.msp.apm.metric", &servicehub.Spec{
+		Services: []string{"erda.msp.apm.metric"},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
+		Dependencies: []string{"mysql", "i18n"},
+		Summary:      "erda.msp.apm.metric api",
+	})
 }
