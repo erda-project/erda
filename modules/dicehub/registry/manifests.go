@@ -34,7 +34,7 @@ func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) er
 	if err != nil {
 		return err
 	}
-	registryUrl := clusterInfo.MustGet(apistructs.REGISTRY_ADDR)
+	registryUrl := clusterInfo.Get(apistructs.REGISTRY_ADDR)
 	if registryUrl == "" {
 		return errors.New("registryUrl is empty")
 	}
