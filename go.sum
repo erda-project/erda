@@ -361,6 +361,8 @@ github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab h1:915rAVhO21Hnjn1Yn7b6cStJCn7Byn1VFytMvtYdkY0=
 github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab/go.mod h1:JzDud6McvHHuTs6IO7CzxQMl4c5z50/uxiNaFeeeUkc=
+github.com/erda-project/erda-infra v0.0.0-20210628023238-25aa9d1879c3 h1:SSY3SiInQAA9E2aZX7rOd0wF4T9ZpfaZoGkQEwZ+1NU=
+github.com/erda-project/erda-infra v0.0.0-20210628023238-25aa9d1879c3/go.mod h1:JzDud6McvHHuTs6IO7CzxQMl4c5z50/uxiNaFeeeUkc=
 github.com/erda-project/erda-proto-go v0.0.0-20210616071654-aec4bc48c85a h1:vuw47lUk8/QWo70DaAHvmS7pfV96ieqmrleDs2c3vAw=
 github.com/erda-project/erda-proto-go v0.0.0-20210616071654-aec4bc48c85a/go.mod h1:cHj6tDcMJbFqOXJDY2q9Oj6TnEuaoY6+7/2mLvnWktg=
 github.com/erda-project/erda-proto-go v0.0.0-20210623061846-36a1224f2cc9 h1:xd8SjLaPz8a5tZudsXSPn3+9u65J+m8v0R24zMriQvY=
@@ -933,6 +935,8 @@ github.com/lucas-clemente/aes12 v0.0.0-20171027163421-cd47fb39b79f/go.mod h1:JpH
 github.com/lucas-clemente/quic-clients v0.1.0/go.mod h1:y5xVIEoObKqULIKivu+gD/LU90pL73bTdtQjPBvtCBk=
 github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H70QZ/CXoxqw9bzao=
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
+github.com/luoyuctl/erda-proto-go v0.0.0-20210628070727-47a2ed415dd5 h1:BsoGzsQQC7mBmkuWYeZ49QNCbU2M3QWIggPxNNTXLyM=
+github.com/luoyuctl/erda-proto-go v0.0.0-20210628070727-47a2ed415dd5/go.mod h1:cHj6tDcMJbFqOXJDY2q9Oj6TnEuaoY6+7/2mLvnWktg=
 github.com/magefile/mage v1.10.0 h1:3HiXzCUY12kh9bIuyXShaVe529fJfyqoVM42o/uom2g=
 github.com/magefile/mage v1.10.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/magiconair/properties v1.7.6/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=

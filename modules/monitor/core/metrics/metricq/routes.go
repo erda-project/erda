@@ -25,10 +25,10 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	p.initRoutesV1(routes)
 
 	// metric query apis
-	routes.GET("/query", p.queryMetrics)      // like influxdb query api
-	routes.POST("/query", p.queryMetrics)     // like influxdb query api
-	routes.GET("/api/query", p.queryMetrics)  // for tsql
-	routes.POST("/api/query", p.queryMetrics) // for tsql
+	// routes.GET("/query", p.queryMetrics)      // like influxdb query api
+	// routes.POST("/query", p.queryMetrics)     // like influxdb query api
+	// routes.GET("/api/query", p.queryMetrics)  // for tsql
+	// routes.POST("/api/query", p.queryMetrics) // for tsql
 
 	// Data export, temporary solution.
 	routes.GET("/api/metrics/:scope/export", p.exportMetrics)

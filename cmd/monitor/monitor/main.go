@@ -33,6 +33,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
 	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/meta"
+	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq/metric"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
