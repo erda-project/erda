@@ -25,7 +25,7 @@ import (
 )
 
 func (b *Bundle) CreateCloudAddon(orgID, userID, pathWithName string, body *map[string]interface{}) (*apistructs.CreateCloudResourceBaseResponseData, error) {
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (b *Bundle) CreateCloudAddon(orgID, userID, pathWithName string, body *map[
 }
 
 func (b *Bundle) CreateCloudAddonWithInstance(orgID, userID, pathWithName, resourceName string, body *map[string]interface{}) (*apistructs.CreateCloudResourceBaseResponseData, error) {
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (b *Bundle) CreateCloudAddonWithInstance(orgID, userID, pathWithName, resou
 }
 
 func (b *Bundle) DeleteCloudAddon(orgID, userID, pathWithName string, body *map[string]interface{}) error {
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (b *Bundle) DeleteCloudAddon(orgID, userID, pathWithName string, body *map[
 }
 
 func (b *Bundle) DeleteCloudAddonResource(orgID, userID, pathWithName, resourceName string, body *map[string]interface{}) error {
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return err
 	}
