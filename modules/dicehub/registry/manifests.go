@@ -31,6 +31,7 @@ func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) er
 		ClusterKey: clusterName,
 	}
 	clusterInfo, err := bdl.QueryClusterInfo(clusterName)
+
 	if err != nil {
 		return err
 	}

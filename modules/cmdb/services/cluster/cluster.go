@@ -488,55 +488,55 @@ func (c *Cluster) ListCluster() (*[]apistructs.ClusterInfo, error) {
 
 // ListClusterByOrg 根据 orgID 获取集群列表
 func (c *Cluster) ListClusterByOrg(orgID int64) (*[]apistructs.ClusterInfo, error) {
-	//relations, err := c.db.GetOrgClusterRelationsByOrg(orgID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//clusterIDs := make([]uint64, 0, len(relations))
-	//for _, v := range relations {
-	//	clusterIDs = append(clusterIDs, v.ClusterID)
-	//}
-	//clusters, err := c.db.ListClusterByIDs(clusterIDs)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//// 设置cluster是否与企业是关联关系，而不是原创关系
-	//clustersInOrgs, err := c.db.ListClusterByOrg(orgID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//clusterNameMap := make(map[string]string, len(*clustersInOrgs))
-	//if len(*clustersInOrgs) > 0 {
-	//	for _, v := range *clustersInOrgs {
-	//		clusterNameMap[v.Name] = ""
-	//	}
-	//}
-	//
-	//clusterInfos := make([]apistructs.ClusterInfo, 0, len(*clusters))
-	//for i := range *clusters {
-	//	item := c.convert(&(*clusters)[i])
-	//	// 敏感信息置空
-	//	if item.SchedConfig != nil {
-	//		item.SchedConfig.AuthPassword = ""
-	//		item.SchedConfig.ClientCrt = ""
-	//		item.SchedConfig.CACrt = ""
-	//		item.SchedConfig.ClientKey = ""
-	//		if item.SchedConfig.CPUSubscribeRatio == "" {
-	//			item.SchedConfig.CPUSubscribeRatio = "1"
-	//		}
-	//	}
-	//	delete(item.Settings, "nexusPassword")
-	//	delete(item.Config, "nexusPassword")
-	//	// 设置cluster是否与企业是关联关系，而不是原创关系
-	//	if _, ok := clusterNameMap[item.Name]; ok {
-	//		item.IsRelation = "N"
-	//	} else {
-	//		item.IsRelation = "Y"
-	//	}
-	//	clusterInfos = append(clusterInfos, *item)
-	//}
+	relations, err := c.bdl.GetOrgClusterRelationsByOrg(uint64(orgID))
+	if err != nil {
+		return nil, err
+	}
+	clusterIDs := make([]uint64, 0, len(relations))
+	for _, v := range relations {
+		clusterIDs = append(clusterIDs, v.ClusterID)
+	}
+	clusters, err := c.db.ListClusterByIDs(clusterIDs)
+	if err != nil {
+		return nil, err
+	}
+	// 设置cluster是否与企业是关联关系，而不是原创关系
+	clustersInOrgs, err := c.db.ListClusterByOrg(orgID)
+	if err != nil {
+		return nil, err
+	}
+	clusterNameMap := make(map[string]string, len(*clustersInOrgs))
+	if len(*clustersInOrgs) > 0 {
+		for _, v := range *clustersInOrgs {
+			clusterNameMap[v.Name] = ""
+		}
+	}
 
-	return nil, nil
+	clusterInfos := make([]apistructs.ClusterInfo, 0, len(*clusters))
+	for i := range *clusters {
+		item := c.convert(&(*clusters)[i])
+		// 敏感信息置空
+		if item.SchedConfig != nil {
+			item.SchedConfig.AuthPassword = ""
+			item.SchedConfig.ClientCrt = ""
+			item.SchedConfig.CACrt = ""
+			item.SchedConfig.ClientKey = ""
+			if item.SchedConfig.CPUSubscribeRatio == "" {
+				item.SchedConfig.CPUSubscribeRatio = "1"
+			}
+		}
+		delete(item.Settings, "nexusPassword")
+		delete(item.Config, "nexusPassword")
+		// 设置cluster是否与企业是关联关系，而不是原创关系
+		if _, ok := clusterNameMap[item.Name]; ok {
+			item.IsRelation = "N"
+		} else {
+			item.IsRelation = "Y"
+		}
+		clusterInfos = append(clusterInfos, *item)
+	}
+
+	return &clusterInfos, nil
 }
 
 func (c *Cluster) ListClusterByOrgAndType(orgID int64, clusterType string) (*[]apistructs.ClusterInfo, error) {
