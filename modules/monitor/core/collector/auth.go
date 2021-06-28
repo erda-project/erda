@@ -49,7 +49,7 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 			default:
 				aksk, err := bdl.GetAkSkByAk(ak)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusUnauthorized, "unable to get aksk")
+					return echo.NewHTTPError(http.StatusUnauthorized)
 				}
 				sk = aksk.Sk
 			}

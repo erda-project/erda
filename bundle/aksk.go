@@ -26,14 +26,18 @@ func (b *Bundle) GetAkSkByAk(ak string) (model.AkSk, error) {
 	}
 	hc := b.hc
 
-	var obj model.AkSk
+	var obj AkSkResponse
 	resp, err := hc.Get(host, httpclient.RetryErrResp).
 		Path("/api/aksks/"+ak).
 		Header("Content-Type", "application/json").
 		Do().JSON(&obj)
 	if err != nil || !resp.IsOK() {
-		return model.AkSk{}, apierrors.ErrInvoke.InternalError(err)
+		return model.AkSk{}, apierrors.ErrInvoke.NotFound()
 	}
 
-	return obj, nil
+	return obj.Data, nil
+}
+
+type AkSkResponse struct {
+	Data model.AkSk `json:"data"`
 }

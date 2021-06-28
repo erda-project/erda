@@ -12,7 +12,3 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package collector
-
-func (c *collector) collectLogV1() error {
-	return nil
-}

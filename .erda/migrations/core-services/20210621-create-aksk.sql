@@ -10,6 +10,5 @@ CREATE TABLE `erda_aksk` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ak` (`ak`),
-  UNIQUE KEY `uk_sk` (`sk`),
-  UNIQUE KEY `uk_subject_type_subject` (`subject_type`, `subject`(32))
+  UNIQUE KEY `uk_sk` (`sk`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COMMENT='store secret key pair';

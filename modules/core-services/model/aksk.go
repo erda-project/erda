@@ -23,8 +23,8 @@ type AkSk struct {
 	Ak          string    `json:"ak" gorm:"size:24;unique;comment:'Access Key ID'"`
 	Sk          string    `json:"sk" gorm:"size:32;unique;comment:'Secret Key'"`
 	IsSystem    bool      `json:"isSystem" gorm:"comment:'identify weather used for system component communication'"`
-	SubjectType string    `json:"subjectType" gorm:"unique_index:uk_subject_type_subject;comment:'authentication subject type. eg: organization, micro_service'"`
-	Subject     string    `json:"subject" gorm:"unique_index:uk_subject_type_subject;comment:'authentication subject identifier. eg: id, name or something'"`
+	SubjectType string    `json:"subjectType" gorm:"comment:'authentication subject type. eg: organization, micro_service'"`
+	Subject     string    `json:"subject" gorm:"comment:'authentication subject identifier. eg: id, name or something'"`
 	Description string    `json:"description" gorm:"comment:'description'"`
 	CreatedAt   time.Time `json:"createdAt" gorm:"comment:'created time'"`
 	UpdatedAt   time.Time `json:"updatedAt"`
