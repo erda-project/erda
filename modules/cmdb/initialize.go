@@ -174,6 +174,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 
 	// init bundle
 	bundleOpts := []bundle.Option{
+		bundle.WithCoreServices(),
 		bundle.WithAddOnPlatform(),
 		bundle.WithGittar(),
 		bundle.WithGittarAdaptor(),
@@ -333,7 +334,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	ev = apistructs.CreateHookRequest{
 		Name:   "cmdb_approve_status_changed",
 		Events: []string{bundle.ApprovalStatusChangedEvent},
-		URL:    strutil.Concat("http://", discover.CMDB(), "/api/approvals/actions/watch-status"),
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/approvals/actions/watch-status"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",
