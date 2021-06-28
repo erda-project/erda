@@ -33,13 +33,14 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 	if len(sg.Services) != 1 {
 		return apistructs.ServiceGroup{}, fmt.Errorf("services count more than 1")
 	}
-	newService := sg.Services[0]
-	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
-	if err != nil {
-		errMsg := fmt.Sprintf("scale service %v err: %v", sg.Services, err)
-		logrus.Error(errMsg)
-		return *sg, fmt.Errorf(errMsg)
+
+	// get sg info from etcd storage, and set the project namespace to the scale sg
+	// when the project namespace is not empty
+	if oldSg.ProjectNamespace != "" {
+		sg.ProjectNamespace = oldSg.ProjectNamespace
 	}
+
+	newService := sg.Services[0]
 	for index, svc := range oldSg.Services {
 		if svc.Name == newService.Name {
 			if svc.Scale != newService.Scale {
@@ -49,8 +50,15 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 				svc.Resources = newService.Resources
 			}
 			oldSg.Services[index] = svc
+			sg.Services[0] = oldSg.Services[index]
 			break
 		}
+	}
+	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
+	if err != nil {
+		errMsg := fmt.Sprintf("scale service %v err: %v", sg.Services, err)
+		logrus.Error(errMsg)
+		return *sg, fmt.Errorf(errMsg)
 	}
 	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err

@@ -45,6 +45,7 @@ const (
 	EnvDOP            = "DOP_ADDR"
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
+	EnvCoreServices   = "CORE_SERVICES_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
@@ -73,6 +74,7 @@ const (
 	SvcDOP            = "dop"
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
+	SvcCoreServices   = "core-services"
 )
 
 func EventBox() string {
@@ -163,6 +165,10 @@ func DOP() string {
 	return getURL(EnvDOP, SvcDOP)
 }
 
+func CoreServices() string {
+	return getURL(EnvCoreServices, SvcCoreServices)
+}
+
 func ECP() string {
 	return getURL(EnvECP, SvcECP)
 }
@@ -178,7 +184,7 @@ func getURL(envKey, srvName string) string {
 	}
 	url, err := GetEndpoint(srvName)
 	if err != nil {
-		logrus.Errorf("get endpoint failed, service name: %s, error: %+v",
+		logrus.Infof("get endpoint failed, service name: %s, error: %s",
 			srvName, err)
 	}
 	return url
