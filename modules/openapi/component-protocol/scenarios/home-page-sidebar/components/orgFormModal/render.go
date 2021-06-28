@@ -99,7 +99,7 @@ func (o *OrgFormModal) SetProps() {
 				"label":     i18nLocale.Get(i18n.I18nKeyOrgName),
 				"component": "input",
 				"required":  true,
-				"rule": []interface{}{
+				"rules": []interface{}{
 					map[string]interface{}{
 						"msg":     "由小写字母、数字，-组成",
 						"pattern": "/^[a-z0-9-]*$/",
