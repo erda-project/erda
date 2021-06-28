@@ -24,7 +24,7 @@ import (
 
 var (
 	rc  *reqCli
-	bdl = bundle.New(bundle.WithCMDB(), bundle.WithOps())
+	bdl = bundle.New(bundle.WithCoreServices(), bundle.WithOps())
 )
 
 func init() {

@@ -27,7 +27,7 @@ func init() {
 		bundle.WithOrchestrator(),
 		bundle.WithOps(),
 		bundle.WithScheduler(),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*30),
