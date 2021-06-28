@@ -19,11 +19,11 @@ mysql:
     database: "${MYSQL_DATABASE:dice}"
 
 etcd:
-    endpoints: "https://10.0.6.198:2379"
+    endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
     tls:
-        cert_file: "/certs/etcd-client.pem"
-        cert_key_file: "/certs/etcd-client-key.pem"
-        ca_file: "/certs/etcd-ca.pem"
+        cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+        cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+        ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 etcd-election:
     root_path: "/msp-election"
