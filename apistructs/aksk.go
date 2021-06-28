@@ -14,8 +14,8 @@
 package apistructs
 
 type AkSkCreateRequest struct {
-	Scope       string `json:"scope"`
-	Owner       string `json:"owner"`
-	Internal    bool   `json:"internal"`
+	SubjectType string `json:"subjectType"`
+	Subject     string `json:"subject"`
+	IsSystem    bool   `json:"isSystem"`
 	Description string `json:"description"`
 }

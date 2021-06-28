@@ -15,12 +15,12 @@ package bundle
 
 import (
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func (b *Bundle) GetAkSkByAk(ak string) (model.AkSk, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return model.AkSk{}, err
 	}

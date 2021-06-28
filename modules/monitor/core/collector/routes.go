@@ -51,9 +51,9 @@ func (c *collector) intRoutes(routes httpserver.Router) error {
 	routes.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
 	routes.POST("/collect/logs/:source", c.collectLogs, auth)
 
-	// standard API version one
+	// standard API version two
 	signAuth := c.authSignedRequest()
-	routes.POST("/api/v1/collect/logs", c.collectLogV1, signAuth)
+	routes.POST("/api/v2/collect/logs/:source", c.collectLogs, signAuth)
 	return nil
 }
 

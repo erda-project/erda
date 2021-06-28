@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
@@ -231,6 +232,11 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		notice.WithDBClient(db),
 	)
 
+	akskEndpoint, err := aksk.New(aksk.WithDBClient(db))
+	if err != nil {
+		return nil, err
+	}
+
 	audit := audit.New(
 		audit.WithDBClient(db),
 		audit.WithUCClient(uc),
@@ -269,6 +275,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
+		endpoints.WithAksk(akskEndpoint),
 	)
 
 	return ep, nil

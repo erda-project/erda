@@ -14,7 +14,7 @@
 package dao
 
 import (
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/modules/core-services/model"
 )
 
 func (client *DBClient) CreateAkSk(obj model.AkSk) (model.AkSk, error) {
@@ -25,9 +25,9 @@ func (client *DBClient) CreateAkSk(obj model.AkSk) (model.AkSk, error) {
 	return obj, nil
 }
 
-func (client *DBClient) ListAkSk(interval bool) ([]model.AkSk, error) {
+func (client *DBClient) ListAkSk(isSystem bool) ([]model.AkSk, error) {
 	var objs []model.AkSk
-	res := client.Where(&model.AkSk{IsSystem: interval}).Find(&objs)
+	res := client.Where(&model.AkSk{IsSystem: isSystem}).Find(&objs)
 	if res.Error != nil {
 		return nil, res.Error
 	}

@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/pkg/secret/validator"
 )
 
-var bdl = bundle.New(bundle.WithCMDB())
+var bdl = bundle.New(bundle.WithCoreServices())
 
 type staticSKProviderConfig struct {
 	SecretKey string `file:"secretKey"`

@@ -18,8 +18,8 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 )
 
@@ -42,7 +42,7 @@ func New(options ...Option) (*Service, error) {
 		op(s)
 	}
 
-	if err := s.loadAllInternalAkSk(); err != nil {
+	if err := s.loadAkSk(); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -55,7 +55,7 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-// this is small and enough for internal key.
+// this is small and enough for system key.
 // TODO for user's api key
 type simpleCache struct {
 	store map[AccessKeyID]model.AkSk
@@ -118,7 +118,7 @@ func (s *Service) DeleteAkSkByAk(ctx context.Context, ak string) error {
 	return nil
 }
 
-func (s *Service) loadAllInternalAkSk() error {
+func (s *Service) loadAkSk() error {
 	objs, err := s.db.ListAkSk(true)
 	if err != nil {
 		return err
@@ -130,13 +130,14 @@ func (s *Service) loadAllInternalAkSk() error {
 }
 
 func toModel(req apistructs.AkSkCreateRequest) model.AkSk {
+	// todo verify SubjectType
 	pair := secret.CreateAkSkPair()
 	return model.AkSk{
 		Ak:          pair.AccessKeyID,
 		Sk:          pair.SecretKey,
-		IsSystem:    req.Internal,
-		SubjectID:   req.Owner,
-		SubjectType: req.Scope,
+		IsSystem:    req.IsSystem,
+		SubjectType: req.SubjectType,
+		Subject:     req.Subject,
 		Description: req.Description,
 	}
 }

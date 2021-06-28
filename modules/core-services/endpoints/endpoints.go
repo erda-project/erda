@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/bundle"
@@ -68,6 +69,7 @@ type Endpoints struct {
 	queryStringDecoder *schema.Decoder
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
+	aksk               *aksk.Service
 }
 
 type Option func(*Endpoints)
@@ -209,6 +211,12 @@ func WithNotice(notice *notice.Notice) Option {
 	}
 }
 
+func WithAksk(aksk *aksk.Service) Option {
+	return func(e *Endpoints) {
+		e.aksk = aksk
+	}
+}
+
 func WithApprove(approve *approve.Approve) Option {
 	return func(e *Endpoints) {
 		e.approve = approve
@@ -258,7 +266,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{idOrName}", Method: http.MethodDelete, Handler: e.DeleteOrg},
 		{Path: "/api/orgs", Method: http.MethodGet, Handler: e.ListOrg},
 		{Path: "/api/orgs/actions/list-public", Method: http.MethodGet, Handler: e.ListPublicOrg},
-		//{Path: "/api/orgs/ingress/{orgID}/actions/update-ingress", Method: http.MethodGet, Handler: e.UpdateOrgIngress},
+		// {Path: "/api/orgs/ingress/{orgID}/actions/update-ingress", Method: http.MethodGet, Handler: e.UpdateOrgIngress},
 		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
 		{Path: "/api/orgs/actions/switch", Method: http.MethodPost, Handler: e.ChangeCurrentOrg},
 		{Path: "/api/orgs/actions/relate-cluster", Method: http.MethodPost, Handler: e.CreateOrgClusterRelation},
@@ -333,6 +341,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/permissions/actions/check", Method: http.MethodPost, Handler: e.CheckPermission},
 		{Path: "/api/permissions/actions/stateCheck", Method: http.MethodPost, Handler: e.StateCheckPermission},
 
+		// the interface of aksk
+		{Path: "/api/aksks/{ak}", Method: http.MethodGet, Handler: e.GetAkSkByAk},
+		{Path: "/api/aksks", Method: http.MethodPost, Handler: e.CreateAkSks},
+		{Path: "/api/aksks/{ak}", Method: http.MethodDelete, Handler: e.DeleteAkSkByAk},
+
 		// the interface of license
 		{Path: "/api/license", Method: http.MethodGet, Handler: e.GetLicense},
 
@@ -389,7 +402,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/notify-histories", Method: http.MethodPost, Handler: e.CreateNotifyHistory},
 		{Path: "/api/notifies/actions/search-by-source", Method: http.MethodGet, Handler: e.QueryNotifiesBySource},
 		{Path: "/api/notifies/actions/fuzzy-query-by-source", Method: http.MethodGet, Handler: e.FuzzyQueryNotifiesBySource},
-		{Path: "/api/notify-groups/actions/batch-get", Method: http.MethodGet, Handler: e.BatchGetNotifyGroup}, //内部接口
+		{Path: "/api/notify-groups/actions/batch-get", Method: http.MethodGet, Handler: e.BatchGetNotifyGroup}, // 内部接口
 
 		// the interface of audit
 		{Path: "/api/audits/actions/create", Method: http.MethodPost, Handler: e.CreateAudits},
