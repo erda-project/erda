@@ -11,8 +11,8 @@ ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
 
-# use for ops
-RUN tar -zcvf ./bin/scripts.tar.gz ./modules/ops/scripts/
+# use for cmp
+RUN tar -zcvf ./bin/scripts.tar.gz ./modules/cmp/scripts/
 
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}

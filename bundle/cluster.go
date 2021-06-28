@@ -76,7 +76,7 @@ func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs
 func (b *Bundle) DeleteImageManifests(clusterIDOrName string, images []string) (
 	*apistructs.RegistryManifestsRemoveResponseData, error) {
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return nil, err
 	}

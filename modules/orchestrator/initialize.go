@@ -96,7 +96,7 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithCollector(),
 		bundle.WithMonitor(),
 		bundle.WithHepa(),
-		bundle.WithOps(),
+		bundle.WithCMP(),
 		bundle.WithKMS(),
 		bundle.WithOpenapi(),
 		bundle.WithPipeline(),

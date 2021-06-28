@@ -94,7 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
 		bundle.WithCMDB(),
-		bundle.WithOps(),
+		bundle.WithCMP(),
 	)
 	filters, err := buildFilters(p.C.Projects)
 	if err != nil {

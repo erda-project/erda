@@ -105,8 +105,8 @@ func (u urls) TMC() (string, error) {
 	return u.getURL(discover.EnvTMC, discover.SvcTMC)
 }
 
-func (u urls) Ops() (string, error) {
-	return u.getURL(discover.EnvOps, discover.SvcOps)
+func (u urls) CMP() (string, error) {
+	return u.getURL(discover.EnvCMP, discover.SvcCMP)
 }
 
 func (u urls) Openapi() (string, error) {

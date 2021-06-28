@@ -48,7 +48,7 @@ func init() {
 	os.Setenv("AGENT_IMAGE_FILE_PATH", "/opt/action/agent")
 	bdl := bundle.New(
 		bundle.WithCMDB(),
-		bundle.WithOps(),
+		bundle.WithCMP(),
 	)
 	s = New(dbClient, bdl, js, etcdClient)
 }
