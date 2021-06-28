@@ -200,7 +200,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 
 	// init bundle
 	bdl.Init(
-		bundle.WithCMDB(),
 		bundle.WithHepa(),
 		bundle.WithOrchestrator(),
 		bundle.WithEventBox(),
