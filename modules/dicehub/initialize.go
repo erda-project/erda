@@ -96,6 +96,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		bundle.WithCMP(),
 		bundle.WithMonitor(),
 		bundle.WithPipeline(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 	rl := release.New(
