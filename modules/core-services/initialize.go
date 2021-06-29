@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
@@ -30,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
+	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
 	"github.com/erda-project/erda/modules/core-services/services/audit"
@@ -220,7 +220,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		approve.WithMember(m),
 	)
 
-	//通过ui显示错误,不影响启动
+	// 通过ui显示错误,不影响启动
 	license, _ := license.ParseLicense(conf.LicenseKey())
 
 	// init label
