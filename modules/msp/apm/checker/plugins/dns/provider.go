@@ -11,38 +11,39 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package permission
+package dns
 
 import (
-	"github.com/jinzhu/gorm"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
-	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
+	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	"github.com/erda-project/erda/modules/msp/apm/checker/plugins"
 )
+
+type config struct{}
 
 // +provider
 type provider struct {
-	Log              logs.Logger
-	DB               *gorm.DB `autowired:"mysql-client"`
-	instanceTenantDB *instancedb.InstanceTenantDB
-	tmcDB            *instancedb.TmcDB
-	monitorDB        *monitordb.MonitorDB
+	Cfg *config
+	Log logs.Logger
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.instanceTenantDB = &instancedb.InstanceTenantDB{DB: p.DB}
-	p.tmcDB = &instancedb.TmcDB{DB: p.DB}
-	p.monitorDB = &monitordb.MonitorDB{DB: p.DB}
+func (p *provider) Init(ctx servicehub.Context) error { return nil }
+
+func (p *provider) Validate(c *pb.Checker) error {
 	return nil
 }
 
+func (p *provider) New(c *pb.Checker) (plugins.Handler, error) {
+	return nil, fmt.Errorf("TODO ...")
+}
+
 func init() {
-	servicehub.Register("msp.permission", &servicehub.Spec{
-		Services: []string{"msp.permission"},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+	servicehub.Register("erda.msp.apm.checker.task.plugins.dns", &servicehub.Spec{
+		Services:   []string{"erda.msp.apm.checker.task.plugins.dns"},
+		ConfigFunc: func() interface{} { return &config{} },
+		Creator:    func() servicehub.Provider { return &provider{} },
 	})
 }
