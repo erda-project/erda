@@ -481,8 +481,8 @@ services:
     health_check:
       http: {}
       exec: {}
-  ops:
-    cmd: "/app/ops"
+  cmp:
+    cmd: "/app/cmp"
     ports:
       - port: 9027
         protocol: "TCP"
