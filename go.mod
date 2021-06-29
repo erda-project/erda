@@ -39,7 +39,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210628023238-25aa9d1879c3
-	github.com/erda-project/erda-proto-go v0.0.0-20210623061846-36a1224f2cc9
+	github.com/erda-project/erda-proto-go v0.0.0-20210628065747-b46fc4f14aac
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -164,7 +164,6 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
-	github.com/erda-project/erda-proto-go v0.0.0-20210623061846-36a1224f2cc9 => github.com/luoyuctl/erda-proto-go v0.0.0-20210628070727-47a2ed415dd5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
