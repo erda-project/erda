@@ -24,19 +24,26 @@ type InstanceTenantDB struct {
 	*gorm.DB
 }
 
-func (db *InstanceTenantDB) GetByID(id string) (*InstanceTenant, error) {
-	if len(id) <= 0 {
-		return nil, nil
+func (db *InstanceTenantDB) GetByFields(fields map[string]interface{}) (*InstanceTenant, error) {
+	query := db.Table(TableInstanceTenant)
+	query, err := gormutil.GetQueryFilterByFields(query, instanceTenantFieldColumns, fields)
+	if err != nil {
+		return nil, err
 	}
 	var list []*InstanceTenant
-	if err := db.Table(TableInstanceTenant).
-		Where("`id`=?", id).Limit(1).Find(&list).Error; err != nil {
+	if err := query.Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	if len(list) <= 0 {
 		return nil, nil
 	}
 	return list[0], nil
+}
+
+func (db *InstanceTenantDB) GetByID(id string) (*InstanceTenant, error) {
+	return db.GetByFields(map[string]interface{}{
+		"ID": id,
+	})
 }
 
 func (db *InstanceTenantDB) GetByTenantGroup(group string) ([]*InstanceTenant, error) {
@@ -64,20 +71,4 @@ func (db *InstanceTenantDB) GetClusterNameByTenantGroup(group string) (string, e
 		return "", nil
 	}
 	return list[0].Az, nil
-}
-
-func (db *InstanceTenantDB) GetByFields(fields map[string]interface{}) (*InstanceTenant, error) {
-	query := db.Table(TableInstanceTenant)
-	query, err := gormutil.GetQueryFilterByFields(query, instanceTenantFieldColumns, fields)
-	if err != nil {
-		return nil, err
-	}
-	var list []*InstanceTenant
-	if err := query.Limit(1).Find(&list).Error; err != nil {
-		return nil, err
-	}
-	if len(list) <= 0 {
-		return nil, nil
-	}
-	return list[0], nil
 }

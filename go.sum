@@ -359,7 +359,6 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab h1:915rAVhO21Hnjn1Yn7b6cStJCn7Byn1VFytMvtYdkY0=
 github.com/erda-project/erda-infra v0.0.0-20210611082924-94de82a456ab/go.mod h1:JzDud6McvHHuTs6IO7CzxQMl4c5z50/uxiNaFeeeUkc=
 github.com/erda-project/erda-infra v0.0.0-20210628023238-25aa9d1879c3 h1:SSY3SiInQAA9E2aZX7rOd0wF4T9ZpfaZoGkQEwZ+1NU=
 github.com/erda-project/erda-infra v0.0.0-20210628023238-25aa9d1879c3/go.mod h1:JzDud6McvHHuTs6IO7CzxQMl4c5z50/uxiNaFeeeUkc=
