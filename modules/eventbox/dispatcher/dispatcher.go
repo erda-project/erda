@@ -94,10 +94,10 @@ func New() (Dispatcher, error) {
 		return nil, err
 	}
 	httpS := httpsubscriber.New()
-	bundleS := bundle.New(bundle.WithCMDB())
+	bundleS := bundle.New(bundle.WithCoreServices())
 	dingdingS := dingdingsubscriber.New(conf.Proxy())
 	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy())
-	mboxS := mbox.New(bundle.New(bundle.WithCMDB()))
+	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()))
 	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
 		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS)
 	smsS := smssubscriber.New(
