@@ -5,14 +5,40 @@ health:
 grpc-server:
     addr: ":7080"
 
+http-server@admin:
+    addr: ":9080"
+pprof:
+
 service-register:
 
 mysql:
-# host: "${MYSQL_HOST:localhost}"
-# port: ${MYSQL_PORT:3306}
-# username: "${MYSQL_USERNAME:root}"
-# password: "${MYSQL_PASSWORD:123456}"
-# database: "${MYSQL_DATABASE:dice}"
+    host: "${MYSQL_HOST:localhost}"
+    port: ${MYSQL_PORT:3306}
+    username: "${MYSQL_USERNAME:root}"
+    password: "${MYSQL_PASSWORD:123456}"
+    database: "${MYSQL_DATABASE:dice}"
+
+etcd:
+    endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+    tls:
+        cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+        cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+        ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+etcd-election:
+    root_path: "/msp-election"
+
+redis:
+    addr: "${REDIS_ADDR}"
+    password: "${REDIS_PASSWORD}"
+    db: ${REDIS_DB:0}
+    master_name: "${REDIS_MASTER_NAME}"
+    sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
+i18n:
+  common:
+    - conf/common/i18n/common.yml
+    - conf/common/i18n/apis.yml
 
 permission:
 
@@ -21,72 +47,34 @@ erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 
-i18n:
-    common:
-        - conf/common/i18n/common.yml
-        - conf/common/i18n/apis.yml
-    files:
-        - ${CONFIG_PATH}/i18n/settings.yml
-        - ${CONFIG_PATH}/i18n/org-resource.yml
-        - ${CONFIG_PATH}/i18n/alert.yml
-        - ${CONFIG_PATH}/i18n/log-metrics.yml
-        - ${CONFIG_PATH}/i18n/charts.yml
-        - ${CONFIG_PATH}/i18n/topology.yml
-i18n@metric:
-    common:
-        - ${CONFIG_PATH}/metricmeta/i18n/_common.yml
-    files:
-        - ${CONFIG_PATH}/metricmeta/i18n
+erda.msp.apm.checker: # checkers apis
 
-elasticsearch:
-    urls: "${ES_URL:http://localhost:9200}"
-    security: ${ES_SECURITY_ENABLE:false}
-    username: "${ES_SECURITY_USERNAME}"
-    password: "${ES_SECURITY_PASSWORD}"
+erda.msp.apm.checker.storage.cache.sycn:
+    cache_key: "${CHECKER_CACHE_KEY:checkers}"
+    delay_on_start: "5s"
+    interval: "5m"
 
-elasticsearch@logs:
-    urls: "${ES_URL:http://localhost:9200}"
-    security: ${LOGS_ES_SECURITY_ENABLE:false}
-    username: "${LOGS_ES_SECURITY_USERNAME}"
-    password: "${LOGS_ES_SECURITY_PASSWORD}"
+# for debug
+# erda.msp.apm.checker.task.fetcher.fixed:
+#     checkers:
+#         - id: 1
+#           name: "test-http"
+#           type: "http"
+#           config:
+#             url: "http://baidu.com"
+#           tags:
+#             custom_tag: "custom"
 
-cassandra:
-# host: "${CASSANDRA_ADDR:localhost:9042}"
-# security: ${CASSANDRA_SECURITY_ENABLE:false}
-# username: ${CASSANDRA_SECURITY_USERNAME:}
-# password: ${CASSANDRA_SECURITY_PASSWORD:}
-# timeout: "${CASSANDRA_TIMEOUT:3s}"
+erda.msp.apm.checker.task.fetcher.scheduled:
+    cache_key: "${CHECKER_CACHE_KEY:checkers}"
+    load_checkers_interval: "10s" # load checkers for worker
+    max_schedule_interval: "3m" # schedule all checkers to ndoes
 
-metrics-index-manager:
-    request_timeout: "20s"
-    default_namespace: "full_cluster"
-    index_type: "spot"
-    index_prefix: "spot"
-    query_index_time_range: true
-    index_reload_interval: "2m"
+erda.msp.apm.checker.task.plugins.http:
+erda.msp.apm.checker.task:
+    default_periodic_worker_interval: "30s"
 
-metrics-query:
-    _enable: ${DASHBOARD_ENABLE:true}
-    chart_meta:
-        path: ${CONFIG_PATH}/charts
-        reload_interval: "30s"
-    metric_meta:
-        sources:
-            - "index"
-            - "file"
-            - "database"
-        group_files:
-            - "${CONFIG_PATH}/metricmeta/groups/org.yml"
-            - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
-        metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
-trace-query:
-    _enable: ${LOGS_QUERY_ENABLE:true}
-    cassandra:
-        keyspace:
-            name: "spot_prod"
-            auto: true # 自动创建 keyspace
-            replication:
-                class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-                factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-# apm
-erda.msp.apm.trace:
+metric-report-client:
+    addr: "${COLLECTOR_ADDR:localhost:7076}"
+    username: ${COLLECTOR_AUTH_USERNAME}
+    password: ${COLLECTOR_AUTH_PASSWORD}
