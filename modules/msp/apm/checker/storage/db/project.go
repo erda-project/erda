@@ -19,18 +19,21 @@ import (
 	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
-// InstanceDB .
-type InstanceDB struct {
+// ProjectDB .
+type ProjectDB struct {
 	*gorm.DB
 }
 
-func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, error) {
-	query := db.Table(TableInstance)
-	query, err := gormutil.GetQueryFilterByFields(query, instanceFieldColumns, fields)
+func (db *ProjectDB) query() *gorm.DB {
+	return db.Table(TableProject).Where("`is_deleted`=?", "N")
+}
+
+func (db *ProjectDB) GetByFields(fields map[string]interface{}) (*Project, error) {
+	query, err := gormutil.GetQueryFilterByFields(db.query(), projectFieldColumns, fields)
 	if err != nil {
 		return nil, err
 	}
-	var list []*Instance
+	var list []*Project
 	if err := query.Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
@@ -40,8 +43,14 @@ func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, err
 	return list[0], nil
 }
 
-func (db *InstanceDB) GetByID(id string) (*Instance, error) {
+func (db *ProjectDB) GetByID(id int64) (*Project, error) {
 	return db.GetByFields(map[string]interface{}{
 		"ID": id,
+	})
+}
+
+func (db *ProjectDB) GetByProjectID(projectID int64) (*Project, error) {
+	return db.GetByFields(map[string]interface{}{
+		"ProjectID": projectID,
 	})
 }

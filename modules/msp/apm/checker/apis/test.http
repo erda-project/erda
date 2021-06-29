@@ -1,0 +1,35 @@
+@url = http://localhost:8080/api
+@userid = 0
+
+### CreateCheckerV1
+POST {{url}}/tmc/status/projects/2/metrics
+Content-Type: application/json
+Accept: application/json
+User-ID: {{userid}}
+
+{
+    "name": "testnamex",
+    "mode": "http",
+    "url": "http://baidu.com",
+    "env": "DEV",
+    "other": "xxx"
+}
+
+### UpdateCheckerV1
+POST {{url}}/tmc/status/metrics/33
+Content-Type: application/json
+Accept: application/json
+User-ID: {{userid}}
+
+{
+    "name": "testnamexxxx",
+    "mode": "http",
+    "url": "http://baidu.com",
+    "env": "DEV",
+    "other": "xxx"
+}
+
+### DeleteCheckerV1
+DELETE  {{url}}/tmc/status/metrics/34
+Accept: application/json
+User-ID: {{userid}}
