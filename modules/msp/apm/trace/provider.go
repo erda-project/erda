@@ -17,6 +17,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/modules/monitor/trace/query"
@@ -32,14 +33,16 @@ type provider struct {
 	Log          logs.Logger
 	Register     transport.Register `autowired:"service-register" optional:"true"`
 	traceService *traceService
-	Metricq      metricq.Queryer    `autowired:"metrics-query"`
-	Spanq        query.SpanQueryAPI `autowired:"trace-query"`
+	Metricq      metricq.Queryer              `autowired:"metrics-query"`
+	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" optional:"true"`
+	Spanq        query.SpanQueryAPI           `autowired:"trace-query"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.traceService = &traceService{
 		p:       p,
 		metricq: p.Metricq,
+		metric:  p.Metric,
 		spanq:   p.Spanq,
 	}
 	if p.Register != nil {

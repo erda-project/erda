@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/modules/monitor/trace/query"
@@ -31,6 +32,7 @@ import (
 type traceService struct {
 	p       *provider
 	metricq metricq.Queryer
+	metric  metricpb.MetricServiceServer
 	spanq   query.SpanQueryAPI
 }
 
@@ -63,6 +65,7 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
 		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
 		"ORDER BY start_time::field LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
+	//s.metric.Query(metricq.InfluxQL, statement, queryParams, metricsParams)
 	response, err := s.metricq.Query(metricq.InfluxQL, statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
