@@ -96,21 +96,6 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 			// 没有异常，执行后续逻辑
 		}
 
-		// 非终态，继续推进
-		if !tr.Task.Status.IsEndStatus() {
-			continue
-		}
-
-		// 循环
-		if err := handleTaskLoop(tr); err != nil {
-			// 作为异常重试
-			if platformErrRetryTimes < abnormalErrMaxRetryTimes {
-				platformErrRetryTimes++
-				continue
-			}
-			return err
-		}
-
 		if tr.Task.Status.IsEndStatus() {
 			return nil
 		}

@@ -107,9 +107,14 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 			tr.Task.Result.Errors = append(tr.Task.Result.Errors, apistructs.ErrorResponse{Msg: strutil.Join(resultErrMsg, "\n", true)})
 		}
 
+		// loop
+		if err := tr.handleTaskLoop(); err != nil {
+			// append err loop
+			errs = append(errs, fmt.Sprintf("%v", err))
+		}
+
 		// if we invoke `tr.fetchLatestTask` method here before `update`,
 		// we will lost changes made by `WhenXXX` methods.
-
 		tr.Update()
 
 		if len(errs) > 0 {
