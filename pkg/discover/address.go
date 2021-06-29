@@ -34,7 +34,7 @@ const (
 	EnvMonitor        = "MONITOR_ADDR"
 	EnvPipeline       = "PIPELINE_ADDR"
 	EnvHepa           = "HEPA_ADDR"
-	EnvOps            = "OPS_ADDR"
+	EnvCMP            = "CMP_ADDR"
 	EnvOpenapi        = "OPENAPI_ADDR"
 	EnvKMS            = "KMS_ADDR"
 	EnvQA             = "QA_ADDR"
@@ -63,7 +63,7 @@ const (
 	SvcMonitor        = "monitor"
 	SvcPipeline       = "pipeline"
 	SvcHepa           = "hepa"
-	SvcOps            = "ops"
+	SvcCMP            = "cmp"
 	SvcOpenapi        = "openapi"
 	SvcKMS            = "addon-kms"
 	SvcQA             = "qa"
@@ -133,8 +133,8 @@ func TMC() string {
 	return getURL(EnvTMC, SvcTMC)
 }
 
-func Ops() string {
-	return getURL(EnvOps, SvcOps)
+func CMP() string {
+	return getURL(EnvCMP, SvcCMP)
 }
 
 func Openapi() string {
@@ -184,7 +184,7 @@ func getURL(envKey, srvName string) string {
 	}
 	url, err := GetEndpoint(srvName)
 	if err != nil {
-		logrus.Errorf("get endpoint failed, service name: %s, error: %+v",
+		logrus.Infof("get endpoint failed, service name: %s, error: %s",
 			srvName, err)
 	}
 	return url
