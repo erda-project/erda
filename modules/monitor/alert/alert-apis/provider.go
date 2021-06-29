@@ -121,7 +121,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
