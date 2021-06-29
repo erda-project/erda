@@ -122,7 +122,7 @@ func getConfigsetItem(id int64, configSetName string) apistructs.EdgeItemOperati
 							"configSetName": configSetName,
 						},
 					},
-					Target: "edgeSettingDetail",
+					Target: "ecpSettingDetail",
 				},
 			},
 			apistructs.EdgeOperationDelete: {

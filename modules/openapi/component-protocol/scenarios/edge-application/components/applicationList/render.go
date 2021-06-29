@@ -189,7 +189,7 @@ func renderAppName(name string, id int64) apistructs.EdgeItemOperations {
 				Reload: false,
 				Command: apistructs.EdgeJumpCommand{
 					Key:     "goto",
-					Target:  "edgeAppSiteManage",
+					Target:  "ecpAppSiteManage",
 					JumpOut: false,
 					State: apistructs.EdgeJumpCommandState{
 						Params: map[string]interface{}{

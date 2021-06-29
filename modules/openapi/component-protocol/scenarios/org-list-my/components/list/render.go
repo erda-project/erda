@@ -175,7 +175,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 				Reload: false,
 				Command: Command{
 					Key:    "goto",
-					Target: "https://" + org.Domain + "/workBench/projects",
+					Target: "https://" + org.Domain + "/dop/projects",
 				},
 			},
 		}
