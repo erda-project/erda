@@ -113,6 +113,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							influxqlRespone.Result = results
 							data = influxqlRespone
 						}
+						if r, ok := resp.Data.(*pb.TableResult); ok {
+							var tableResponse TableResponse
+							var tableRows []map[string]interface{}
+							tableResponse.Interval = r.Interval
+							tableResponse.Cols = r.Cols
+							for _, v := range r.Data {
+								tableRow := make(map[string]interface{})
+								for k, value := range v.Values {
+									var i interface{}
+									err := goany.Unmarshal(value, &i)
+									if err != nil {
+										return err
+									}
+									tableRow[k] = i
+								}
+								tableRows = append(tableRows, tableRow)
+							}
+							tableResponse.Data = tableRows
+							data = tableResponse
+						}
 					}
 					return encoding.EncodeResponse(rw, r, data)
 				})))

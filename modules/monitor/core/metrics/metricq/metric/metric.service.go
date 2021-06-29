@@ -36,30 +36,27 @@ func getLanguage(ctx context.Context) i18n.LanguageCodes {
 	return nil
 }
 
-type InfluxqlRespone struct {
-	Result []*Results `json:"results"`
-}
-
-type Results struct {
-	StatementId int       `json:"statement_id"`
-	Series      []*Series `json:"series"`
-}
-
-type Series struct {
-	Name    string          `json:"name"`
-	Columns []string        `json:"columns"`
-	Values  [][]interface{} `json:"values"`
-}
-
 // QueryWithInfluxFormat POST query
 func (m *metricService) QueryWithInfluxFormat(ctx context.Context, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
-
-	println("1")
-	return &pb.QueryWithInfluxFormatResponse{}, nil
+	return m.metricsInfluxQuery(ctx, req)
 }
 
 // SearchWithInfluxFormat GET query
 func (m *metricService) SearchWithInfluxFormat(ctx context.Context, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+	return m.metricsInfluxQuery(ctx, req)
+}
+
+// QueryWithTableFormat POST api/query
+func (m *metricService) QueryWithTableFormat(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
+	return m.metricsTableQuery(ctx, req)
+}
+
+// SearchWithTableFormat GET api/query
+func (m *metricService) SearchWithTableFormat(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
+	return m.metricsTableQuery(ctx, req)
+}
+
+func (m *metricService) metricsInfluxQuery(ctx context.Context, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
 	ql, q, format := "influxql", req.Statement, "influxdb"
 	if len(q) == 0 {
 		q = req.Options["body"]
@@ -115,19 +112,12 @@ func (m *metricService) SearchWithInfluxFormat(ctx context.Context, req *pb.Quer
 			result.Series = arrSeries
 			results = append(results, &result)
 		}
-		return &pb.QueryWithInfluxFormatResponse{Results: results}, nil
+		data = pb.QueryWithInfluxFormatResponse{Results: results}
 	}
 	return &data, nil
 }
 
-// QueryWithTableFormat POST api/query
-func (m *metricService) QueryWithTableFormat(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
-	println("1")
-	return &pb.QueryWithTableFormatResponse{}, nil
-}
-
-// SearchWithTableFormat GET api/query
-func (m *metricService) SearchWithTableFormat(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
+func (m *metricService) metricsTableQuery(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
 	ql, q, format := "influxql", req.Options["q"], req.Options["format"]
 	if len(q) == 0 {
 		q = req.Options["body"]
@@ -147,13 +137,33 @@ func (m *metricService) SearchWithTableFormat(ctx context.Context, req *pb.Query
 		return nil, err
 	}
 	var data pb.QueryWithTableFormatResponse
-	b, err := json.Marshal(result)
+	tableResponse := new(TableResponse)
+	b, err := json.Marshal(&result)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, &data.Data)
+	err = json.Unmarshal(b, &tableResponse)
 	if err != nil {
 		return nil, err
 	}
+	var tableResult pb.TableResult
+	tableResult.Interval = tableResponse.Interval
+	var tableRows []*pb.TableRow
+	for _, row := range tableResponse.Data {
+		var tableRow pb.TableRow
+		values := make(map[string]*anypb.Any)
+		for k, v := range row {
+			any, err := goany.Marshal(&v)
+			if err != nil {
+				return nil, err
+			}
+			values[k] = any
+		}
+		tableRow.Values = values
+		tableRows = append(tableRows, &tableRow)
+	}
+	tableResult.Data = tableRows
+	tableResult.Cols = tableResponse.Cols
+	data.Data = &tableResult
 	return &data, nil
 }

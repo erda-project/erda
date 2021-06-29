@@ -66,7 +66,8 @@ metrics-query:
       - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
     metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 #metricq-example:
-erda.core.monitor.meta:
+erda.core.monitor.metric:
+#erda.core.monitor.meta:
 
 logs-query:
   _enable: ${LOGS_QUERY_ENABLE:true}
