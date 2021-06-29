@@ -162,26 +162,38 @@ func (impl *GatewayKongInfoServiceImpl) GetTenantId(projectId, env, az string) (
 	return kongInfo.TenantId, nil
 }
 
+func (impl *GatewayKongInfoServiceImpl) acquireKongAddr(netportalUrl, selfAz string, info *orm.GatewayKongInfo) (string, error) {
+	if strings.HasPrefix(info.KongAddr, "inet://") {
+		pathSlice := strings.SplitN(strings.TrimPrefix(info.KongAddr, "inet://"), "/", 2)
+		if len(pathSlice) != 2 {
+			return "", errors.Errorf("invalid addr:%s", info.KongAddr)
+		}
+		if selfAz == info.Az {
+			return pathSlice[1], nil
+		}
+		return fmt.Sprintf("%s/%s", netportalUrl, pathSlice[1]), nil
+	}
+	if selfAz != info.Az {
+		kongAddr := info.KongAddr
+		kongAddr = strings.TrimPrefix(kongAddr, "http://")
+		kongAddr = strings.TrimPrefix(kongAddr, "https://")
+		return fmt.Sprintf("%s/%s", netportalUrl, kongAddr), nil
+	}
+	return info.KongAddr, nil
+}
+
 func (impl *GatewayKongInfoServiceImpl) adjustKongInfo(info *orm.GatewayKongInfo) error {
 	selfAz := os.Getenv("DICE_CLUSTER_NAME")
-	// 同集群不走netportal
-	if strings.HasPrefix(info.KongAddr, "inet://") {
-		if selfAz == info.Az {
-			pathSlice := strings.SplitN(strings.TrimPrefix(info.KongAddr, "inet://"), "/", 2)
-			if len(pathSlice) != 2 {
-				return errors.Errorf("invalid addr:%s", info.KongAddr)
-			}
-			info.KongAddr = "http://" + pathSlice[1]
-		}
-	} else if selfAz != info.Az {
-		info.KongAddr = strings.TrimPrefix(info.KongAddr, "http://")
-		info.KongAddr = strings.TrimPrefix(info.KongAddr, "https://")
-		clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		info.KongAddr = fmt.Sprintf("%s/%s", clusterInfo.Get(apistructs.NETPORTAL_URL), info.KongAddr)
+	clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
+	if err != nil {
+		return errors.WithStack(err)
 	}
+	netportalUrl := clusterInfo.Get(apistructs.NETPORTAL_URL)
+	kongAddr, err := impl.acquireKongAddr(netportalUrl, selfAz, info)
+	if err != nil {
+		return err
+	}
+	info.KongAddr = kongAddr
 	// TODO: Compatibility code, will be removed later
 	if config.ServerConf.UseAdminEndpoint && selfAz != info.Az {
 		info.KongAddr = "http://" + strings.Replace(info.Endpoint, "gateway", "gateway-admin", 1)
