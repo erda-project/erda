@@ -271,7 +271,7 @@ func (b *Bundle) UpdateOrg(userID string, orgID int64, req *apistructs.OrgUpdate
 	hc := b.hc
 
 	var resp apistructs.OrgUpdateResponse
-	r, err := hc.Post(host).Path(fmt.Sprintf("/api/orgs/%d", orgID)).
+	r, err := hc.Put(host).Path(fmt.Sprintf("/api/orgs/%d", orgID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(req).Do().JSON(&resp)
@@ -314,7 +314,7 @@ func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClus
 	hc := b.hc
 
 	var resp apistructs.OrgClusterRelationDTOResponse
-	r, err := hc.Delete(host).Path(fmt.Sprintf("/api/orgs/clusters/relations/%d", orgID)).
+	r, err := hc.Get(host).Path(fmt.Sprintf("/api/orgs/clusters/relations/%d", orgID)).
 		Header(httputil.InternalHeader, "bundle").Do().JSON(&resp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

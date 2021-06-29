@@ -61,7 +61,7 @@ func (report *provider) Init(ctx servicehub.Context) (err error) {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	report.bundle = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 
 	// http server

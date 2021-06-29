@@ -69,24 +69,29 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	// 不展示 secret
 	p.Snapshot.Secrets = nil
 
-	var needApproval bool
-
 	stages, err := s.dbClient.ListPipelineStageByPipelineID(p.ID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
 	}
+
+	tasks, err := s.dbClient.ListPipelineTasksByPipelineID(p.ID)
+	if err != nil {
+		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
+	}
+
+	var needApproval bool
 	var stageDetailDTO []apistructs.PipelineStageDetailDTO
+
 	for _, stage := range stages {
-		tasks, err := s.dbClient.ListPipelineTasksByStageID(stage.ID)
-		if err != nil {
-			return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
-		}
-		taskDTOs := make([]apistructs.PipelineTaskDTO, 0, len(tasks))
+		var taskDTOs []apistructs.PipelineTaskDTO
 		for _, task := range tasks {
+			if task.StageID != stage.ID {
+				continue
+			}
 			if task.Type == "manual-review" {
 				needApproval = true
 			}
-			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(task)
+			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,

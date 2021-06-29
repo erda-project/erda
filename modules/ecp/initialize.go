@@ -37,7 +37,8 @@ func (p *provider) initialize() error {
 
 	// init Bundle
 	bundleOpts := []bundle.Option{
-		bundle.WithCMDB(),
+		bundle.WithClusterManager(),
+		bundle.WithCoreServices(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

@@ -14,6 +14,7 @@
 package conf
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/c2h5oh/datasize"
@@ -97,6 +98,21 @@ var cfg Conf
 // Load loads envs
 func Load() {
 	envconf.MustLoad(&cfg)
+
+	// parse FileMaxUploadSize
+	var fileMaxUploadByte datasize.ByteSize
+	if err := fileMaxUploadByte.UnmarshalText([]byte(cfg.FileMaxUploadSizeStr)); err != nil {
+		panic(fmt.Sprintf("failed to parse FILE_MAX_UPLOAD_SIZE, err: %v", err))
+	}
+	fmt.Println(fileMaxUploadByte.String())
+	cfg.FileMaxUploadSize = fileMaxUploadByte
+
+	// parse FileMaxMemorySize
+	var fileMaxMemoryByte datasize.ByteSize
+	if err := fileMaxMemoryByte.UnmarshalText([]byte(cfg.FileMaxMemorySizeStr)); err != nil {
+		panic(fmt.Sprintf("failed to parse FILE_MAX_MEMORY_SIZE, err: %v", err))
+	}
+	cfg.FileMaxMemorySize = fileMaxMemoryByte
 }
 
 func Debug() bool {
