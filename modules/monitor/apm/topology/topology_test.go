@@ -23,6 +23,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSpliceIndexByTime(t *testing.T) {
@@ -103,6 +104,60 @@ func TestFloat64ToString(t *testing.T) {
 	f := 12.33
 	float := strconv.FormatFloat(f, 'f', 2, 64)
 	fmt.Println(float)
+}
+
+func Test_filterInstance(t *testing.T) {
+	type args struct {
+		instanceList          []*InstanceInfo
+		instanceListForStatus []*InstanceInfo
+	}
+	var instanceListCase []*InstanceInfo
+	var instanceListForStatusCase []*InstanceInfo
+	for i := 0; i < 100; i++ {
+		info := InstanceInfo{
+			Id:     fmt.Sprintf("instance-%d", i),
+			Ip:     "127.0.0.1",
+			Status: false,
+		}
+		instanceListCase = append(instanceListCase, &info)
+		infoForStatus := InstanceInfo{
+			Id:     fmt.Sprintf("instance-%d", i),
+			Ip:     "127.0.0.1",
+			Status: false,
+		}
+		if i%2 == 0 {
+			infoForStatus.Status = true
+		}
+		instanceListForStatusCase = append(instanceListForStatusCase, &infoForStatus)
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{name: "case1", args: args{instanceList: instanceListCase, instanceListForStatus: nil}},
+		{name: "case2", args: args{instanceList: nil, instanceListForStatus: instanceListForStatusCase}},
+		{name: "case3", args: args{instanceList: instanceListCase, instanceListForStatus: instanceListForStatusCase}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filterInstance(tt.args.instanceList, tt.args.instanceListForStatus)
+			count := 0
+			for _, info := range tt.args.instanceList {
+				if info.Status == true {
+					count++
+				}
+			}
+			if tt.name == "case1" {
+				assert.Equal(t, 0, count)
+			}
+			if tt.name == "case2" {
+				assert.Equal(t, 0, count)
+			}
+			if tt.name == "case3" {
+				assert.Equal(t, 50, count)
+			}
+		})
+	}
 }
 
 func Test_getDashboardId(t *testing.T) {

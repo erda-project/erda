@@ -147,7 +147,7 @@ func (p *provider) initBundle() {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 	p.cmdb = bundlecmdb.New(bundlecmdb.WithHTTPClient(hc))
 }
