@@ -181,7 +181,7 @@ func renderSiteName(clusterName, name string, id int64) apistructs.EdgeItemOpera
 				Reload: false,
 				Command: apistructs.EdgeJumpCommand{
 					Key:     "goto",
-					Target:  "edgeSiteMachine",
+					Target:  "ecpSiteMachine",
 					JumpOut: false,
 					State: apistructs.EdgeJumpCommandState{
 						Params: map[string]interface{}{

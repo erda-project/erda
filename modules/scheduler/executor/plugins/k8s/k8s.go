@@ -120,7 +120,7 @@ func init() {
 		}
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
-		bdl := bundle.New(bundle.WithCMDB())
+		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
 		if options["IS_EDAS"] == "true" {
 			return k, nil
@@ -734,9 +734,14 @@ func (k *Kubernetes) tryDelete(namespace, name string) error {
 	}()
 	wg.Wait()
 
-	if err1 != nil || err2 != nil {
-		return errors.Errorf("failed to delete deployment or  daemonset, namespace: %s, name: %s, (%v, %v)",
-			namespace, name, err1, err2)
+	if err1 != nil && !util.IsNotFound(err1) {
+		return errors.Errorf("failed to delete deployment, namespace: %s, name: %s, (%v)",
+			namespace, name, err2)
+	}
+
+	if err2 != nil && !util.IsNotFound(err2) {
+		return errors.Errorf("failed to delete daemonset, namespace: %s, name: %s, (%v)",
+			namespace, name, err2)
 	}
 
 	return nil
