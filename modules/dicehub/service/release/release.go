@@ -214,7 +214,7 @@ func (r *Release) Delete(orgID int64, releaseID string) error {
 		for _, v := range images {
 			imgs = append(imgs, v.Image)
 		}
-		if err := registry.DeleteManifests(release.ClusterName, imgs); err != nil {
+		if err := registry.DeleteManifests(r.bdl, release.ClusterName, imgs); err != nil {
 			logrus.Errorf(err.Error())
 		}
 	}
@@ -422,7 +422,7 @@ func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
 				continue
 			}
 			if count == 0 && release.ClusterName != "" && !strings.HasPrefix(image.Image, AliYunRegistry) {
-				if err := registry.DeleteManifests(release.ClusterName, []string{image.Image}); err != nil {
+				if err := registry.DeleteManifests(r.bdl, release.ClusterName, []string{image.Image}); err != nil {
 					deletable = false
 					logrus.Errorf(err.Error())
 					continue

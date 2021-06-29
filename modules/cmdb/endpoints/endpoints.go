@@ -22,7 +22,6 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmdb/dao"
-	"github.com/erda-project/erda/modules/cmdb/services/cloudaccount"
 	"github.com/erda-project/erda/modules/cmdb/services/cluster"
 	"github.com/erda-project/erda/modules/cmdb/services/container"
 	"github.com/erda-project/erda/modules/cmdb/services/host"
@@ -45,7 +44,6 @@ type Endpoints struct {
 	uc                 *ucauth.UCClient
 	bdl                *bundle.Bundle
 	org                *org.Org
-	cloudaccount       *cloudaccount.CloudAccount
 	host               *host.Host
 	container          *container.Container
 	cluster            *cluster.Cluster
@@ -116,13 +114,6 @@ func WithOrg(org *org.Org) Option {
 	}
 }
 
-// WithCloudAccount 配置 cloudaccount service
-func WithCloudAccount(account *cloudaccount.CloudAccount) Option {
-	return func(e *Endpoints) {
-		e.cloudaccount = account
-	}
-}
-
 // WithHost 配置 host service
 func WithHost(host *host.Host) Option {
 	return func(e *Endpoints) {
@@ -181,6 +172,9 @@ func (e *Endpoints) GetLocale(request *http.Request) *i18n.LocaleResource {
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
+		{Path: "/info", Method: http.MethodGet, Handler: e.Info},
+		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
+
 		// hosts
 		{Path: "/api/hosts/{host}", Method: http.MethodGet, Handler: e.GetHost},
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: e.ListOrgRunningTasks},
@@ -199,13 +193,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/clusters", Method: http.MethodGet, Handler: e.ListCluster},
 		{Path: "/api/clusters/{clusterName}", Method: http.MethodDelete, Handler: e.DeleteCluster},
 		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: e.DereferenceCluster},
-
-		// 云账号相关
-		{Path: "/api/cloud-accounts", Method: http.MethodPost, Handler: e.CreateCloudAccount},
-		{Path: "/api/cloud-accounts", Method: http.MethodGet, Handler: e.ListCloudAccount},
-		{Path: "/api/cloud-accounts/{accountID}", Method: http.MethodGet, Handler: e.GetCloudAccount},
-		{Path: "/api/cloud-accounts/{accountID}", Method: http.MethodPut, Handler: e.UpdateCloudAccount},
-		{Path: "/api/cloud-accounts/{accountID}", Method: http.MethodDelete, Handler: e.DeleteCloudAccount},
 
 		// 用户相关
 		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},

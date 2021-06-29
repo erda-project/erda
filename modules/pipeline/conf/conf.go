@@ -91,6 +91,13 @@ type Conf struct {
 	// initialize send running pipeline interval
 	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
 	InitializeSendRunningIntervalNum uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_NUM" default:"20"`
+
+	// cron compensate time
+	CronCompensateTimeMinute       int64 `env:"CRON_COMPENSATE_TIME_MINUTE" default:"5"`
+	CronCompensateConcurrentNumber int64 `env:"CRON_COMPENSATE_CONCURRENT_NUMBER" default:"10"`
+
+	// cron interrupt compensate identification failure time second
+	CronFailureCreateIntervalCompensateTimeSecond int64 `env:"CRON_FAILURE_CREATE_INTERVAL_COMPENSATE_TIME_SECOND" default:"300"`
 }
 
 var cfg Conf
@@ -289,4 +296,16 @@ func InitializeSendRunningIntervalSec() uint64 {
 // InitializeSendIntervalNum return initialize send running pipeline id interval num
 func InitializeSendRunningIntervalNum() uint64 {
 	return cfg.InitializeSendRunningIntervalNum
+}
+
+func CronCompensateTimeMinute() int64 {
+	return cfg.CronCompensateTimeMinute
+}
+
+func CronCompensateConcurrentNumber() int64 {
+	return cfg.CronCompensateConcurrentNumber
+}
+
+func CronFailureCreateIntervalCompensateTimeSecond() int64 {
+	return cfg.CronFailureCreateIntervalCompensateTimeSecond
 }

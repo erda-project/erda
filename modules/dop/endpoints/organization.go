@@ -263,6 +263,7 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 	if err != nil {
 		return apierrors.ErrListPublicOrg.InvalidParameter(err).ToResp(), nil
 	}
+
 	orgResp, err := e.bdl.ListPublicOrgs(req)
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
@@ -393,5 +394,8 @@ func getOrgListParam(r *http.Request) (*apistructs.OrgSearchRequest, error) {
 		Q:        q,
 		PageNo:   num,
 		PageSize: size,
+		IdentityInfo: apistructs.IdentityInfo{
+			UserID: r.Header.Get(httputil.UserHeader),
+		},
 	}, nil
 }

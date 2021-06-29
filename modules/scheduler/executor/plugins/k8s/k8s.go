@@ -56,12 +56,12 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -120,7 +120,7 @@ func init() {
 		}
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
-		bdl := bundle.New(bundle.WithCMDB())
+		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
 		if options["IS_EDAS"] == "true" {
 			return k, nil

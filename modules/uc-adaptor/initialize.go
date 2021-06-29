@@ -54,7 +54,7 @@ func Initialize() error {
 func initEndpoints() (*endpoints.Endpoints, error) {
 	// init bundle
 	bdl := bundle.New(
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 
 	// init uc client

@@ -824,7 +824,7 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 
 	gitRepo := strutil.Concat(conf.GittarOutterURL(), "/", application.GitRepoAbbrev)
 
-	gitRepoNew := strutil.Concat(orgName, "-org.", conf.RootDomain(), "/wb/", application.ProjectName, "/", application.Name)
+	gitRepoNew := strutil.Concat(conf.UIDomain(), "/", orgName, "/dop/", application.ProjectName, "/", application.Name)
 
 	var repoConfig apistructs.GitRepoConfig
 	if application.IsExternalRepo {
