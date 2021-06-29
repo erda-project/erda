@@ -105,4 +105,10 @@ func (tr *TaskRun) resetTaskForLoop() {
 	// reset volume
 	tr.Task.Context = spec.PipelineTaskContext{}
 	tr.Task.Extra.Volumes = nil
+	// reset tr flag
+	tr.FakeTimeout = false
+	tr.QuitQueueTimeout = false
+	tr.QuitWaitTimeout = false
+	tr.StopQueueLoop = false
+	tr.StopWaitLoop = false
 }
