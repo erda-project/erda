@@ -148,7 +148,7 @@ func renderSiteName(id int64, siteName, appName string) map[string]interface{} {
 				Reload: false,
 				Command: apistructs.EdgeJumpCommand{
 					Key:     "goto",
-					Target:  "edgeAppSiteIpManage",
+					Target:  "ecpAppSiteIpManage",
 					JumpOut: false,
 					State: apistructs.EdgeJumpCommandState{
 						Params: map[string]interface{}{
