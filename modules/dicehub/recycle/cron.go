@@ -64,6 +64,7 @@ func ImageGCCron(release *release.Release, client *v3.Client) {
 				// key删除失败，请手动从etcd清除，否则影响下次清理
 				logrus.Errorf("[alert] dicehub clean txn key: %s fail during gc, please remove it manual from etcd, err: %v", key, err)
 			}
+			logrus.Infof("images gc success")
 		}
 	}()
 }

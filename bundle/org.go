@@ -271,7 +271,7 @@ func (b *Bundle) UpdateOrg(userID string, orgID int64, req *apistructs.OrgUpdate
 	hc := b.hc
 
 	var resp apistructs.OrgUpdateResponse
-	r, err := hc.Post(host).Path(fmt.Sprintf("/api/orgs/%d", orgID)).
+	r, err := hc.Put(host).Path(fmt.Sprintf("/api/orgs/%d", orgID)).
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, userID).
 		JSONBody(req).Do().JSON(&resp)

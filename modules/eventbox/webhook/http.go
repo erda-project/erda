@@ -293,7 +293,7 @@ func invalidResponse(msg ...string) (stypes.Responser, error) {
 }
 
 func check(h func(context.Context, *http.Request, map[string]string) (stypes.Responser, error)) func(context.Context, *http.Request, map[string]string) (stypes.Responser, error) {
-	bdl := bundle.New(bundle.WithCMDB())
+	bdl := bundle.New(bundle.WithCoreServices())
 	f := func(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
 		userid := req.Header.Get("User-ID")
 		if userid != "" {
