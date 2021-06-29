@@ -19,14 +19,17 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/security"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Permission 权限操作封装
 type Permission struct {
-	db *dao.DBClient
+	db  *dao.DBClient
+	Bdl *bundle.Bundle
 }
 
 // Option 定义 Permission 对象配置选项
@@ -45,6 +48,12 @@ func New(options ...Option) *Permission {
 func WithDBClient(db *dao.DBClient) Option {
 	return func(p *Permission) {
 		p.db = db
+	}
+}
+
+func WithBundle(bdl *bundle.Bundle) Option {
+	return func(p *Permission) {
+		p.Bdl = bdl
 	}
 }
 
@@ -156,59 +165,22 @@ func (p *Permission) CheckPublicScope(userId string, scopeType apistructs.ScopeT
 	return true, nil
 }
 
-// CheckPermission 鉴权
+var checkAdaptor security.PermissionAdaptor
+
+// CheckPermission 鉴权Z
 func (p *Permission) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
 	logrus.Debugf("invoke permission, time: %s, req: %+v", time.Now().Format(time.RFC3339), req)
-	// 是否是内部服务账号
-	if isReservedInternalServiceAccount(req.UserID) {
-		return true, nil
-	}
-	// 用户是否为系统管理员
-	if admin, err := p.db.IsSysAdmin(req.UserID); err == nil && admin {
-		return true, nil
-	}
 
-	//// 管理员角色可继承
-	//if ok := p.roleInherit(req.UserID, req.Scope, int64(req.ScopeID)); ok {
-	//	return true, nil
-	//}
+	checkAdaptor.Once.Do(func() {
+		checkAdaptor.Db = p.db
+		checkAdaptor.Bdl = p.Bdl
+		checkAdaptor.RegisterHandler(security.InternalUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.AdminUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.SupportUserPermissionHandler{Adaptor: &checkAdaptor})
+		checkAdaptor.RegisterHandler(security.NormalUserPermissionHandler{Adaptor: &checkAdaptor})
+	})
 
-	// 若用户 ID 为 support，则直接赋予 Support 角色，不去获取用户对应的角色
-	// 若用户 ID 不是 support，获取用户是否有对应角色
-	var roles []string
-	if req.UserID != apistructs.SupportID {
-		members, err := p.db.GetMemberByScopeAndUserID(req.UserID, req.Scope, int64(req.ScopeID))
-		if err != nil {
-			return false, err
-		}
-
-		// if no records, try to assign guest
-		if len(members) == 0 {
-			if req.Scope == apistructs.SysScope {
-				return false, nil
-			}
-			isPublic, err := p.CheckPublicScope(req.UserID, req.Scope, int64(req.ScopeID))
-			if err != nil || !isPublic {
-				return false, err
-			}
-			roles = append(roles, types.RoleGuest)
-		} else {
-			for _, member := range members {
-				if member.ResourceKey == apistructs.RoleResourceKey {
-					roles = append(roles, member.ResourceValue)
-				}
-			}
-		}
-	} else {
-		roles = append(roles, types.RoleOrgSupport)
-	}
-
-	rp, err := p.db.GetRolePermission(roles, req)
-	if err != nil {
-		return false, err
-	}
-
-	return rp != nil, nil
+	return checkAdaptor.CheckPermission(*req)
 }
 
 // isReservedInternalServiceAccount 是否为内部服务账号

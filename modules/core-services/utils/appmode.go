@@ -23,7 +23,8 @@ func CheckAppMode(mode string) error {
 	switch mode {
 	case string(apistructs.ApplicationModeService), string(apistructs.ApplicationModeLibrary),
 		string(apistructs.ApplicationModeBigdata), string(apistructs.ApplicationModeAbility),
-		string(apistructs.ApplicationModeMobile), string(apistructs.ApplicationModeApi):
+		string(apistructs.ApplicationModeMobile), string(apistructs.ApplicationModeApi),
+		string(apistructs.ApplicationModeProjectService):
 	default:
 		return errors.New("invalid request, mode is invalid")
 	}

@@ -324,12 +324,13 @@ func (s DiceWorkspace) Deployable() bool {
 type ApplicationMode string
 
 const (
-	ApplicationModeService ApplicationMode = "SERVICE"
-	ApplicationModeBigdata ApplicationMode = "BIGDATA"
-	ApplicationModeLibrary ApplicationMode = "LIBRARY"
-	ApplicationModeAbility ApplicationMode = "ABILITY"
-	ApplicationModeMobile  ApplicationMode = "MOBILE"
-	ApplicationModeApi     ApplicationMode = "API"
+	ApplicationModeService        ApplicationMode = "SERVICE"
+	ApplicationModeProjectService ApplicationMode = "PROJECT_SERVICE"
+	ApplicationModeBigdata        ApplicationMode = "BIGDATA"
+	ApplicationModeLibrary        ApplicationMode = "LIBRARY"
+	ApplicationModeAbility        ApplicationMode = "ABILITY"
+	ApplicationModeMobile         ApplicationMode = "MOBILE"
+	ApplicationModeApi            ApplicationMode = "API"
 )
 
 func (w DiceWorkspace) String() string {
