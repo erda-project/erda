@@ -137,3 +137,8 @@ const (
 	CHANGE_TYPE_DEPLOY ChangeType = "Deploy"
 	CHANGE_TYPE_STOP   ChangeType = "Stop"
 )
+
+type EdasEnv struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
