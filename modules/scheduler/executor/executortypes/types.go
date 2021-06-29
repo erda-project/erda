@@ -19,7 +19,6 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 
@@ -102,13 +101,6 @@ type Executor interface {
 
 type TerminalExecutor interface {
 	Terminal(namespace, podname, containername string, conn *websocket.Conn)
-}
-
-type ExecutorWholeConfigs struct {
-	// Common cluster configuration
-	BasicConfig map[string]string
-	// Accurate cluster configuration
-	PlusConfigs *conf.OptPlus
 }
 
 type StopEventsChans struct {

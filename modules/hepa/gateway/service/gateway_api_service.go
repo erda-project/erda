@@ -769,7 +769,7 @@ func (impl GatewayApiServiceImpl) CreateRuntimeApi(dto *gw.ApiDto, session ...*d
 errorHappened:
 	var kerr error
 	if gatewayApi.Id != "" {
-		kerr = apiDb.DeleteById(gatewayApi.Id)
+		kerr = apiDb.RealDeleteById(gatewayApi.Id)
 	}
 	if serviceResp != nil {
 		kerr = kongAdapter.DeleteService(serviceResp.Id)
@@ -2157,6 +2157,21 @@ func (impl GatewayApiServiceImpl) UpdateApi(apiId string, req *gw.ApiReqDto) *co
 errorHappened:
 	log.Errorf("error happened:%+v", err)
 	return res.SetReturnCode(ret)
+}
+
+func (impl GatewayApiServiceImpl) ClearRuntimeApi(dao *orm.GatewayRuntimeService) error {
+	apis, err := impl.apiDb.SelectByAny(&orm.GatewayApi{
+		RuntimeServiceId: dao.Id,
+		RedirectType:     gw.RT_SERVICE,
+	})
+	if err != nil {
+		return err
+	}
+	for _, api := range apis {
+		impl.deleteApi(api.Id)
+	}
+	impl.apiDb.RealDeleteByRuntimeServiceId(dao.Id)
+	return nil
 }
 
 func (impl GatewayApiServiceImpl) TouchRuntimeApi(dao *orm.GatewayRuntimeService, session *db.SessionHelper, newCreated bool) error {

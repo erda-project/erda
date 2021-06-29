@@ -32,13 +32,13 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/cpupolicy"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
