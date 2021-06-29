@@ -93,8 +93,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
-		bundle.WithOps(),
+		bundle.WithCoreServices(),
+		bundle.WithCMP(),
 	)
 	filters, err := buildFilters(p.C.Projects)
 	if err != nil {
