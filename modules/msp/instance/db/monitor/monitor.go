@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package monitor
 
 import (
 	"github.com/jinzhu/gorm"
@@ -19,18 +19,18 @@ import (
 	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
-// InstanceDB .
-type InstanceDB struct {
+// MoniroeDB .
+type MonitorDB struct {
 	*gorm.DB
 }
 
-func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, error) {
-	query := db.Table(TableInstance)
-	query, err := gormutil.GetQueryFilterByFields(query, instanceFieldColumns, fields)
+func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error) {
+	query := db.Table(TableMonitor)
+	query, err := gormutil.GetQueryFilterByFields(query, monitorFieldColumns, fields)
 	if err != nil {
 		return nil, err
 	}
-	var list []*Instance
+	var list []*Monitor
 	if err := query.Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
@@ -40,8 +40,15 @@ func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, err
 	return list[0], nil
 }
 
-func (db *InstanceDB) GetByID(id string) (*Instance, error) {
-	return db.GetByFields(map[string]interface{}{
-		"ID": id,
-	})
+// GetByTerminusKey .
+func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
+	var monitor Monitor
+	result := db.Table(TableMonitor).
+		Where("`terminus_key`=?", terminusKey).
+		Limit(1).
+		Last(&monitor)
+	if result.RecordNotFound() {
+		return nil, nil
+	}
+	return &monitor, result.Error
 }
