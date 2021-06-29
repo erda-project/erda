@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-type define struct{}
 type ReportMode string
 
 type config struct {
@@ -51,28 +50,6 @@ type provider struct {
 	httpClient *ReportClient
 }
 
-func (d *define) Services() []string {
-	return []string{"metric-report-client"}
-}
-
-func (d *define) Summary() string {
-	return "metric-report-client"
-}
-
-func (d *define) Description() string {
-	return d.Summary()
-}
-
-func (d *define) Config() interface{} {
-	return &config{}
-}
-
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 func (p *provider) Init(ctx servicehub.Context) error {
 	client := &ReportClient{
 		CFG: &config{
@@ -89,5 +66,13 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.RegisterProvider("metric-report-client", &define{})
+	servicehub.Register("metric-report-client", &servicehub.Spec{
+		Services: []string{"metric-report-client"},
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

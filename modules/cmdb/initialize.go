@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/cmdb/conf"
 	"github.com/erda-project/erda/modules/cmdb/dao"
 	"github.com/erda-project/erda/modules/cmdb/endpoints"
-	"github.com/erda-project/erda/modules/cmdb/services/cloudaccount"
 	"github.com/erda-project/erda/modules/cmdb/services/cluster"
 	"github.com/erda-project/erda/modules/cmdb/services/container"
 	"github.com/erda-project/erda/modules/cmdb/services/host"
@@ -46,7 +45,6 @@ import (
 	"github.com/erda-project/erda/pkg/license"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 // 数据库表 cm_container gc 的周期
@@ -202,11 +200,6 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		org.WithRedisClient(redisCli),
 	)
 
-	// init account service
-	account := cloudaccount.New(
-		cloudaccount.WithDBClient(db),
-	)
-
 	con := container.New(
 		container.WithDBClient(db),
 		container.WithBundle(bdl),
@@ -241,7 +234,6 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithUCClient(uc),
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrg(o),
-		endpoints.WithCloudAccount(account),
 		endpoints.WithHost(h),
 		endpoints.WithContainer(con),
 		endpoints.WithCluster(cl),
@@ -334,7 +326,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	ev = apistructs.CreateHookRequest{
 		Name:   "cmdb_approve_status_changed",
 		Events: []string{bundle.ApprovalStatusChangedEvent},
-		URL:    strutil.Concat("http://", discover.CMDB(), "/api/approvals/actions/watch-status"),
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/approvals/actions/watch-status"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",

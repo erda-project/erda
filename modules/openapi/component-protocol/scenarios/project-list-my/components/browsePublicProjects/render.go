@@ -79,7 +79,7 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 			Show:   false,
 			Command: Command{
 				Key:     "goto",
-				Target:  "workBenchPublicProjects",
+				Target:  "dopPublicProjects",
 				JumpOut: false,
 				Visible: false,
 			},

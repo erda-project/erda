@@ -24,21 +24,6 @@ type InstanceDB struct {
 	*gorm.DB
 }
 
-func (db *InstanceDB) GetByID(id string) (*Instance, error) {
-	if len(id) < 0 {
-		return nil, nil
-	}
-	var list []*Instance
-	if err := db.Table(TableInstance).
-		Where("`id`=?", id).Limit(1).Find(&list).Error; err != nil {
-		return nil, err
-	}
-	if len(list) <= 0 {
-		return nil, nil
-	}
-	return list[0], nil
-}
-
 func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, error) {
 	query := db.Table(TableInstance)
 	query, err := gormutil.GetQueryFilterByFields(query, instanceFieldColumns, fields)
@@ -53,4 +38,10 @@ func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, err
 		return nil, nil
 	}
 	return list[0], nil
+}
+
+func (db *InstanceDB) GetByID(id string) (*Instance, error) {
+	return db.GetByFields(map[string]interface{}{
+		"ID": id,
+	})
 }
