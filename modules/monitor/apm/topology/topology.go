@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
 )
 
 type Vo struct {
@@ -917,26 +918,54 @@ func (topology *provider) GetProcessType(language string, params ServiceParams) 
 
 type InstanceInfo struct {
 	Id     string `json:"instanceId"`
+	Ip     string `json:"ip"`
 	Status bool   `json:"status"`
 }
 
 func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
+	// instance list
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
-	statement := "SELECT service_instance_id::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
-		"WHERE terminus_key=$terminus_key AND service_name=$service_name AND service_id=$service_id GROUP BY service_instance_id::tag"
+
+	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
+		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
-		"service_name": params.ServiceName,
 		"service_id":   params.ServiceId,
 	}
 	response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
 	if err != nil {
 		return nil, err
 	}
+	instanceList := topology.handleInstanceInfo(response)
+
+	// instance status
+	metricsParams.Set("end", strconv.FormatInt(time.Now().UnixNano()/1e6, 10))
+	response, err = topology.metricq.Query("influxql", statement, queryParams, metricsParams)
+	instanceListForStatus := topology.handleInstanceInfo(response)
+
+	filterInstance(instanceList, instanceListForStatus)
+
+	return instanceList, nil
+}
+
+func filterInstance(instanceList []*InstanceInfo, instanceListForStatus []*InstanceInfo) {
+	for _, instance := range instanceList {
+		for i, statusInstance := range instanceListForStatus {
+			if instance.Id == statusInstance.Id {
+				instance.Status = statusInstance.Status
+				instanceListForStatus = append(instanceListForStatus[:i], instanceListForStatus[i+1:]...)
+				i--
+				break
+			}
+		}
+	}
+}
+
+func (topology *provider) handleInstanceInfo(response *query.ResultSet) []*InstanceInfo {
 	rows := response.ResultSet.Rows
-	instanceIds := []InstanceInfo{}
+	instanceIds := []*InstanceInfo{}
 	for _, row := range rows {
 
 		status, err := strconv.ParseBool(conv.ToString(row[1]))
@@ -945,11 +974,12 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 		}
 		instance := InstanceInfo{
 			Id:     conv.ToString(row[0]),
+			Ip:     conv.ToString(row[1]),
 			Status: status,
 		}
-		instanceIds = append(instanceIds, instance)
+		instanceIds = append(instanceIds, &instance)
 	}
-	return instanceIds, nil
+	return instanceIds
 }
 
 func (topology *provider) GetServiceInstances(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
