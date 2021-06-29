@@ -19,13 +19,14 @@ import (
 	"io/ioutil"
 	"strconv"
 
+	"google.golang.org/protobuf/types/known/anypb"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func getLanguage(ctx context.Context) i18n.LanguageCodes {
