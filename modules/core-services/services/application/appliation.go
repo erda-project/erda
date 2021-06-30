@@ -152,7 +152,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 		OrgID:          org.ID,
 		ProjectID:      int64(createReq.ProjectID),
 		ProjectName:    project.Name,
-		Mode:           createReq.Mode,
+		Mode:           string(createReq.Mode),
 		UserID:         userID,
 		IsExternalRepo: createReq.IsExternalRepo,
 	}

@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
-	"github.com/erda-project/erda/modules/core-services/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -668,7 +667,7 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 	if applicationCreateReq.ProjectID == 0 {
 		return errors.Errorf("invalid request, projectId is empty")
 	}
-	err := utils.CheckAppMode(applicationCreateReq.Mode)
+	err := applicationCreateReq.Mode.CheckAppMode()
 	return err
 }
 
@@ -676,7 +675,7 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListRequest, error) {
 	mode := r.URL.Query().Get("mode")
 	if mode != "" {
-		err := utils.CheckAppMode(mode)
+		err := apistructs.ApplicationMode(mode).CheckAppMode()
 		if err != nil {
 			return nil, err
 		}

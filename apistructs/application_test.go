@@ -11,13 +11,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package apistructs
 
-import (
-	"testing"
-
-	"github.com/erda-project/erda/apistructs"
-)
+import "testing"
 
 func TestCheckAppMode(t *testing.T) {
 	type args struct {
@@ -36,37 +32,37 @@ func TestCheckAppMode(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: string(apistructs.ApplicationModeService),
+			name: string(ApplicationModeService),
 			args: args{
-				mode: string(apistructs.ApplicationModeService),
+				mode: string(ApplicationModeService),
 			},
 			wantErr: false,
 		},
 		{
-			name: string(apistructs.ApplicationModeLibrary),
+			name: string(ApplicationModeLibrary),
 			args: args{
-				mode: string(apistructs.ApplicationModeLibrary),
+				mode: string(ApplicationModeLibrary),
 			},
 			wantErr: false,
 		},
 		{
-			name: string(apistructs.ApplicationModeMobile),
+			name: string(ApplicationModeMobile),
 			args: args{
-				mode: string(apistructs.ApplicationModeMobile),
+				mode: string(ApplicationModeMobile),
 			},
 			wantErr: false,
 		},
 		{
-			name: string(apistructs.ApplicationModeProjectService),
+			name: string(ApplicationModeProjectService),
 			args: args{
-				mode: string(apistructs.ApplicationModeProjectService),
+				mode: string(ApplicationModeProjectService),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := CheckAppMode(tt.args.mode); (err != nil) != tt.wantErr {
+			if err := ApplicationMode(tt.args.mode).CheckAppMode(); (err != nil) != tt.wantErr {
 				t.Errorf("CheckAppMode() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
