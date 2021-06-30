@@ -25,12 +25,14 @@ var langKeys = []string{"lang", "accept-language"}
 // Language .
 func Language(ctx context.Context) i18n.LanguageCodes {
 	header := transport.ContextHeader(ctx)
-	for _, key := range langKeys {
-		vals := header.Get(key)
-		for _, v := range vals {
-			if len(v) > 0 {
-				langs, _ := i18n.ParseLanguageCode(v)
-				return langs
+	if header != nil {
+		for _, key := range langKeys {
+			vals := header.Get(key)
+			for _, v := range vals {
+				if len(v) > 0 {
+					langs, _ := i18n.ParseLanguageCode(v)
+					return langs
+				}
 			}
 		}
 	}
