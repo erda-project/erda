@@ -144,7 +144,12 @@ func do() (*httpserver.Server, error) {
 		return nil, err
 	}
 
-	registerSnippetClient(dbClient)
+	if err := registerSnippetClient(dbClient); err != nil {
+		return nil, err
+	}
+	if err := pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient); err != nil {
+		return nil, err
+	}
 
 	pvolumes.Initialize(dbClient)
 	pexpr_params.Initialize(dbClient)
@@ -179,9 +184,6 @@ func do() (*httpserver.Server, error) {
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
 
-	// cache lifecycle network hook client information
-	go pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient)
-
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
@@ -195,12 +197,11 @@ func do() (*httpserver.Server, error) {
 	return server, nil
 }
 
-func registerSnippetClient(dbclient *dbclient.Client) {
+func registerSnippetClient(dbclient *dbclient.Client) error {
 
 	list, err := dbclient.FindSnippetClientList()
 	if err != nil {
-		logrus.Errorf("not find snippet client list: error %v", err)
-		return
+		return fmt.Errorf("not find snippet client list: error %v", err)
 	}
 
 	clientMap := make(map[string]*apistructs.DicePipelineSnippetClient)
@@ -215,10 +216,7 @@ func registerSnippetClient(dbclient *dbclient.Client) {
 		}
 	}
 	pipeline_snippet_client.SetSnippetClientMap(clientMap)
-
-	time.AfterFunc(time.Hour*2, func() {
-		registerSnippetClient(dbclient)
-	})
+	return nil
 }
 
 func doCrondAbout(crondSvc *crondsvc.CrondSvc, pipelineSvc *pipelinesvc.PipelineSvc) error {
