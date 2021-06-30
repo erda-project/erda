@@ -83,7 +83,7 @@ func (p *provider) queryExample() {
 	// if rs.Details != nil {
 	// 	fmt.Println(rs.Details) // When debug=true，print debug session .
 	// }
-	fmt.Println(jsonx.MarshalAndIntend(rs)) // Print debug session .
+	fmt.Println(jsonx.MarshalAndIndent(rs)) // Print debug session .
 }
 
 func (p *provider) Close() error { return nil }
