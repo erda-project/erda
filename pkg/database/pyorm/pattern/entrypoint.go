@@ -33,13 +33,40 @@ if __name__ == "__main__":
 
 `
 
+const EntrypointWithRollback = `# encoding: utf8
+
+from django.db import connection
+from django.db.transaction import rollback, set_autocommit
+import {{.ModuleName}}
+
+# close autocommit
+set_autocommit(False)
+
+if __name__ == "__main__":
+    print("Running Erda migration in Python")
+    # rollback every while
+    try:    
+        for task in {{.ModuleName}}.entries:
+            print("run task: %s.%s" % ({{.ModuleName}}.__name__, task.__name__))
+            task()
+    except Exception as e:
+        print("failed to run task: %s.%s: %E" % ({{.ModuleName}}.__name__, task.__name__, e))
+    finally:
+        rollback()
+    [print(query) for query in connection.queries]
+
+`
+
 type Entrypoint struct {
 	ModuleName string
 }
 
 // GenEntrypoint generates python module entrypoint text and write it to  rw
-func GenEntrypoint(rw io.ReadWriter, entrypoint Entrypoint) error {
-	return generate(rw, "EntrypointPattern", EntrypointPattern, entrypoint)
+func GenEntrypoint(rw io.ReadWriter, entrypoint Entrypoint, commit bool) error {
+	if commit {
+		return generate(rw, "EntrypointPattern", EntrypointPattern, entrypoint)
+	}
+	return generate(rw, "EntrypointWithRollback", EntrypointWithRollback, entrypoint)
 }
 
 func generate(rw io.ReadWriter, name, pattern string, data interface{}) error {

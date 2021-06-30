@@ -14,18 +14,16 @@
 package pattern_test
 
 import (
-	"os"
 	"testing"
-
-	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
 )
 
-func TestGenEntrypoint(t *testing.T) {
-	var entrypoint  =pattern.Entrypoint{ModuleName: "myfeature"}
-	if err := pattern.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
-		t.Fatal(err)
-	}
-	if err := pattern.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
-		t.Fatal(err)
-	}
+func TestPackage_Make(t *testing.T) {
+
+}
+
+func TestPackage_Remove(t *testing.T) {
+}
+
+func TestPackage_Run(t *testing.T) {
+
 }

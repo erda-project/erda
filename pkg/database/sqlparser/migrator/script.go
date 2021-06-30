@@ -18,6 +18,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -171,6 +172,14 @@ func (s *Script) IsBaseline() bool {
 	return s.isBase
 }
 
+func (s*Script) GetName() string {
+	return s.Name
+}
+
+func (s *Script) GetData() []byte {
+	return s.Rawtext
+}
+
 // Install installs the script in database
 func (s *Script) Install(dsn string, begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
 	if s.Type == ScriptTypeSQL {
@@ -217,7 +226,6 @@ func (s *Script) installSQL(begin func() *gorm.DB, after func(tx *gorm.DB, err e
 }
 
 func (s *Script) installPy(dsn string) (err error) {
-	//"root:12345678@(localhost:3306)/"
 	dsnConfig, err := mysql.ParseDSN(dsn)
 	if err != nil {
 		return errors.Wrap(err, "failed to ParseDSN")
@@ -242,6 +250,8 @@ func (s *Script) installPy(dsn string) (err error) {
 	buf.Write(s.Rawtext)
 
 	// mkdir
+	err = os.Mkdir(".erda-py-migration", 0644)
+	os.r
 
 	// write buf to file
 
