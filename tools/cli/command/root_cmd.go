@@ -48,18 +48,18 @@ var (
 )
 
 // Cmds which not require login
-var loginWhiteListCmds = strings.Join([]string{"init", "parse", "version", "miglint", "help"}, ",")
+var loginWhiteListCmds = strings.Join([]string{"init", "parse", "version", "lint", "migrate", "mkpy", "help"}, ",")
 
 // rootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "dice",
 	Short: "Dice commandline client",
 	Long: `
-      _/_/_/   	_/_/_/ 	  _/_/_/  _/_/_/_/
-     _/	   _/  	 _/    _/      	 _/
-    _/ 	  _/   	_/    _/       	_/_/_/
-   _/  	 _/    _/    _/	       _/
-  _/_/_/    _/_/_/    _/_/_/  _/_/_/_/
+    _/_/_/_/       _/_/_/        _/_/_/          _/_/    
+   _/             _/    _/      _/    _/      _/    _/   
+  _/_/_/         _/_/_/        _/    _/      _/_/_/_/    
+ _/             _/    _/      _/    _/      _/    _/     
+_/_/_/_/       _/    _/      _/_/_/        _/    _/      
 `,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
