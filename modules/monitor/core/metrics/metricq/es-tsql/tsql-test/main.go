@@ -67,7 +67,7 @@ func doQuery(client *elastic.Client, query tsql.Query) error {
 	var resp *elastic.SearchResult
 	if searchSource != nil {
 		source, _ := searchSource.Source()
-		fmt.Println(jsonx.MarshalAndIntend(source))
+		fmt.Println(jsonx.MarshalAndIndent(source))
 		// return nil
 		context, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
