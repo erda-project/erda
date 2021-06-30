@@ -27,6 +27,19 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
+const defaultPageSize = 50
+
+type ChangePageNoOperationData struct {
+	FillMeta string `json:"fill_meta"`
+	Meta     struct {
+		PageData struct {
+			PageNo   uint64 `json:"pageNo"`
+			PageSize uint64 `json:"pageSize"`
+		} `json:"pageData"`
+		KanbanKey interface{} `json:"kanbanKey"`
+	} `json:"meta"`
+}
+
 func (i *ComponentIssueBoard) SetCtxBundle(b protocol.ContextBundle) error {
 	if b.Bdl == nil || b.I18nPrinter == nil {
 		err := fmt.Errorf("invalie context bundle")
@@ -90,7 +103,7 @@ func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 	} else {
 		req.BoardType = BoardTypeTime
 	}
-	req.PageSize = 50
+	req.PageSize = defaultPageSize
 	req.PageNo = 1
 	return &req, nil
 }
@@ -107,8 +120,6 @@ func (i ComponentIssueBoard) GetDefaultFilterReq(req *IssueFilterRequest) error 
 		logrus.Errorf("unmarshal move out request failed, content:%v, err:%v", cont, err)
 		return err
 	}
-
-	req.PageSize = 50
 	req.IterationID, err = strconv.ParseInt(inParams.FixedIssueIteration, 10, 64)
 	if inParams.FixedIssueType == "ALL" {
 		req.Type = []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug, apistructs.IssueTypeEpic}
@@ -425,6 +436,7 @@ func (i *ComponentIssueBoard) RenderProtocol(c *apistructs.Component, g *apistru
 		c.Data = d
 	}
 	(*c).Data["board"] = i.Data.Board
+	(*c).Data["refreshBoard"] = i.Data.RefreshBoard
 	(*g)[protocol.GlobalInnerKeyUserIDs.String()] = i.Data.UserIDs
 }
 
@@ -447,6 +459,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *apistructs.Componen
 		return
 	}
 	visable["visible"] = true
+	visable["isLoadMore"] = true
 	c.Props = visable
 
 	fReq, err := i.GetFilterReq()
@@ -593,6 +606,16 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *apistructs.Componen
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
 		}
+	case apistructs.ChangePageNoOperation:
+		if err := i.setChangeNoOperationReq(fReq, event); err != nil {
+			logrus.Errorf("render on setChangeNoOperationReq failed, request:%+v, err:%v", *fReq, err)
+			return err
+		}
+		err = i.RenderOnFilter(*fReq)
+		if err != nil {
+			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
+			return err
+		}
 	default:
 		logrus.Warnf("operation [%s] not support, use default operation instead", event.Operation)
 	}
@@ -606,4 +629,24 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *apistructs.Componen
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentIssueBoard{}
+}
+
+// setChangeNoOperationReq set the pageNo,pageSize and kanbanKey of req and return kanbanKey
+func (i *ComponentIssueBoard) setChangeNoOperationReq(req *IssueFilterRequest, event apistructs.ComponentEvent) error {
+	dataStr, err := json.Marshal(event.OperationData)
+	if err != nil {
+		return err
+	}
+	data := ChangePageNoOperationData{}
+	if err = json.Unmarshal(dataStr, &data); err != nil {
+		return err
+	}
+	if data.Meta.PageData.PageNo != 0 && data.Meta.PageData.PageSize != 0 {
+		req.PageNo = data.Meta.PageData.PageNo
+		req.PageSize = data.Meta.PageData.PageSize
+	}
+	if data.Meta.KanbanKey != "" {
+		req.KanbanKey = data.Meta.KanbanKey.(string)
+	}
+	return nil
 }

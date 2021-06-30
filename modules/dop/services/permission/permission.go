@@ -20,11 +20,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Permission struct {
-	bdl *bundle.Bundle
+	bdl        *bundle.Bundle
+	branchRule *branchrule.BranchRule
 }
 
 type Option func(*Permission)
@@ -42,6 +45,12 @@ func New(options ...Option) *Permission {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Permission) {
 		p.bdl = bdl
+	}
+}
+
+func WithBranchRule(branchRule *branchrule.BranchRule) Option {
+	return func(p *Permission) {
+		p.branchRule = branchRule
 	}
 }
 
@@ -94,10 +103,15 @@ func (p *Permission) CheckBranchAction(identityInfo apistructs.IdentityInfo, app
 	if err != nil {
 		return apierrors.ErrCheckPermission.InvalidParameter(err)
 	}
-	validBranch, err := p.bdl.GetBranchWorkspaceConfig(appID, branch)
+	app, err := p.bdl.GetApp(appID)
 	if err != nil {
 		return apierrors.ErrCheckPermission.InternalError(err)
 	}
+	rules, err := p.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
+	if err != nil {
+		return apierrors.ErrCheckPermission.InternalError(err)
+	}
+	validBranch := diceworkspace.GetValidBranchByGitReference(branch, rules)
 	if validBranch.Workspace == "" {
 		return apierrors.ErrCheckPermission.InternalError(errors.New("no branch rule match"))
 	}
@@ -111,10 +125,15 @@ func (p *Permission) CheckBranchAction(identityInfo apistructs.IdentityInfo, app
 }
 
 func (p *Permission) CheckRuntimeBranch(identityInfo apistructs.IdentityInfo, appID uint64, branch string, action string) error {
-	validBranch, err := p.bdl.GetBranchWorkspaceConfig(appID, branch)
+	app, err := p.bdl.GetApp(appID)
 	if err != nil {
 		return apierrors.ErrCheckPermission.InternalError(err)
 	}
+	rules, err := p.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
+	if err != nil {
+		return apierrors.ErrCheckPermission.InternalError(err)
+	}
+	validBranch := diceworkspace.GetValidBranchByGitReference(branch, rules)
 
 	perm, err := p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   identityInfo.UserID,

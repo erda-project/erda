@@ -371,7 +371,7 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 	// 更新 关联测试计划用例
 	if len(updateReq.TestPlanCaseRelIDs) > 0 && !updateReq.RemoveTestPlanCaseRelIDs {
 		// 批量查询测试计划用例
-		testPlanCaseRels, err := e.bdl.ListTestPlanCaseRel(updateReq.TestPlanCaseRelIDs)
+		testPlanCaseRels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: updateReq.TestPlanCaseRelIDs})
 		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
