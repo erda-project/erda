@@ -46,12 +46,14 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
+	"github.com/erda-project/erda/pkg/strutil"
 	// "terminus.io/dice/telemetry/promxp"
 )
 
@@ -190,6 +192,9 @@ func do() (*httpserver.Server, error) {
 		return nil, err
 	}
 
+	// register cluster hook
+	registerClusterHook(bdl)
+
 	return server, nil
 }
 
@@ -213,6 +218,23 @@ func registerSnippetClient(dbclient *dbclient.Client) error {
 	}
 	pipeline_snippet_client.SetSnippetClientMap(clientMap)
 	return nil
+}
+
+func registerClusterHook(bdl *bundle.Bundle) {
+	ev := apistructs.CreateHookRequest{
+		Name:   "pipeline_watch_cluster_changed",
+		Events: []string{bundle.ClusterEvent},
+		URL:    strutil.Concat("http://", discover.Pipeline(), "/clusterhook"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register watch cluster changed event, %v", err)
+	}
 }
 
 func doCrondAbout(crondSvc *crondsvc.CrondSvc, pipelineSvc *pipelinesvc.PipelineSvc) error {

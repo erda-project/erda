@@ -290,12 +290,12 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (data interface{}, err error) {
 	for _, task := range tasks {
 		if len(task.Extra.UUID) <= 0 {
-		continue
-	}
+			continue
+		}
 		_, err = k.Remove(ctx, task)
 		if err != nil {
-		return nil, err
-	}
+			return nil, err
+		}
 	}
 	return nil, nil
 }

@@ -29,10 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 )
 
-const (
-	CLUSTERTYPEK8S = "k8s"
-)
-
 // Manager for scheduler task executor
 type Manager struct {
 	sync.RWMutex
@@ -54,7 +50,7 @@ func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
 	for i := range cfgs {
-		if cfgs[i].Type != apistructs.ClusterTypeK8S {
+		if cfgs[i].Type != apistructs.K8S {
 			continue
 		}
 		if err := m.addExecutor(cfgs[i]); err != nil {
@@ -91,7 +87,7 @@ func (m *Manager) addExecutor(cluster apistructs.ClusterInfo) error {
 	defer m.Unlock()
 
 	switch cluster.Type {
-	case CLUSTERTYPEK8S:
+	case apistructs.K8S:
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
@@ -187,7 +183,7 @@ func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
 	defer m.Unlock()
 
 	switch cluster.Type {
-	case CLUSTERTYPEK8S:
+	case apistructs.K8S:
 		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
 		if _, exist := m.executors[name]; exist {
 			delete(m.executors, name)
@@ -212,7 +208,7 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 	defer m.Unlock()
 
 	switch cluster.Type {
-	case CLUSTERTYPEK8S:
+	case apistructs.K8S:
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))

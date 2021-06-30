@@ -42,12 +42,6 @@ const (
 	ClusterActionDelete = "delete"
 )
 
-const (
-	ClusterTypeDcos = "dcos"
-	ClusterTypeK8S  = "k8s"
-	ClusterTypeEdas = "edas"
-)
-
 // token / client-cert&client-key / proxy(dialer)
 const (
 	ManageToken = "token"
