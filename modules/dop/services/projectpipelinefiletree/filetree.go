@@ -20,12 +20,16 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/autotest"
+	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Pipeline pipeline 结构体
 type FileTree struct {
-	bdl *bundle.Bundle
+	bdl               *bundle.Bundle
+	gittarFileTreeSvc *filetree.GittarFileTree
+	autoTestSvc       *autotest.Service
 }
 
 // Option Pipeline 配置选项
@@ -47,9 +51,21 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func (svc *FileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) ([]apistructs.UnifiedFileTreeNode, error) {
+func WithFileTreeSvc(svc *filetree.GittarFileTree) Option {
+	return func(f *FileTree) {
+		f.gittarFileTreeSvc = svc
+	}
+}
 
-	var treeNodes []apistructs.UnifiedFileTreeNode
+func WithAutoTestSvc(svc *autotest.Service) Option {
+	return func(f *FileTree) {
+		f.autoTestSvc = svc
+	}
+}
+
+func (svc *FileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) ([]*apistructs.UnifiedFileTreeNode, error) {
+
+	var treeNodes []*apistructs.UnifiedFileTreeNode
 
 	if err := strutil.Validate(req.ScopeID, strutil.MinLenValidator(1)); err != nil {
 		return nil, fmt.Errorf("invalid scopeID: %v", err)
@@ -67,7 +83,26 @@ func (svc *FileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListReq
 		return nil, apierrors.ErrGetFileTreeNode.InvalidParameter(err)
 	}
 
-	return svc.bdl.ListFileTreeNodes(req, orgID)
+	return svc.listFileTreeNodes(req, orgID)
+}
+
+func (svc *FileTree) listFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) ([]*apistructs.UnifiedFileTreeNode, error) {
+	switch req.Scope {
+	case apistructs.FileTreeScopeProjectApp:
+		return svc.gittarFileTreeSvc.ListFileTreeNodes(req, orgID)
+	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
+		nodes, err := svc.autoTestSvc.ListFileTreeNodes(req)
+		if err != nil {
+			return nil, err
+		}
+		treeNodes := make([]*apistructs.UnifiedFileTreeNode, 0, len(nodes))
+		for _, v := range nodes {
+			treeNodes = append(treeNodes, &v)
+		}
+		return treeNodes, nil
+	}
+
+	return nil, fmt.Errorf("not find this scope %s", req.Scope)
 }
 
 func (svc *FileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
@@ -75,15 +110,13 @@ func (svc *FileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGetReques
 	if err := req.BasicValidate(); err != nil {
 		return nil, apierrors.ErrGetFileTreeNode.InvalidParameter(err)
 	}
-
-	result, err := svc.bdl.GetFileTreeNode(req, orgID)
+	result, err := svc.getFileTreeNode(req, orgID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 设置上snippet_source标识
 	if result != nil {
-
 		snippetConfigMapJson, err := json.Marshal(result.Meta[apistructs.AutoTestFileTreeNodeMetaKeySnippetAction])
 		if err != nil {
 			return result, nil
@@ -102,6 +135,17 @@ func (svc *FileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGetReques
 	return result, nil
 }
 
+func (svc *FileTree) getFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
+	switch req.Scope {
+	case apistructs.FileTreeScopeProjectApp:
+		return svc.gittarFileTreeSvc.GetFileTreeNode(req, orgID)
+	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
+		return svc.autoTestSvc.GetFileTreeNode(req)
+	}
+
+	return nil, fmt.Errorf("not find this scope %s", req.Scope)
+}
+
 func (svc *FileTree) FuzzySearchFileTreeNodes(req apistructs.UnifiedFileTreeNodeFuzzySearchRequest, orgID uint64) ([]apistructs.UnifiedFileTreeNode, error) {
 	// fuzzy
 	if req.PrefixFuzzy == "" && req.SuffixFuzzy == "" && req.Fuzzy == "" {
@@ -109,8 +153,28 @@ func (svc *FileTree) FuzzySearchFileTreeNodes(req apistructs.UnifiedFileTreeNode
 			return nil, fmt.Errorf("missing fuzzy condition")
 		}
 	}
+	return svc.fuzzySearchFileTreeNodes(req, orgID)
+}
 
-	return svc.bdl.FuzzySearchFileTreeNodes(req, orgID)
+func (svc *FileTree) fuzzySearchFileTreeNodes(query apistructs.UnifiedFileTreeNodeFuzzySearchRequest, orgID uint64) (result []apistructs.UnifiedFileTreeNode, err error) {
+	gittarList, err := svc.gittarFileTreeSvc.FuzzySearchFileTreeNodes(query, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if gittarList != nil && len(gittarList) >= 0 {
+		result = append(result, gittarList...)
+	}
+
+	qaList, err := svc.autoTestSvc.FuzzySearchFileTreeNodes(query)
+	if err != nil {
+		return nil, err
+	}
+
+	if qaList != nil && len(qaList) >= 0 {
+		result = append(result, qaList...)
+	}
+
+	return result, nil
 }
 
 func (svc *FileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
@@ -124,7 +188,18 @@ func (svc *FileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDelete
 		return nil, fmt.Errorf("invalid scope: %v", err)
 	}
 
-	return svc.bdl.DeleteFileTreeNodes(req, orgID)
+	return svc.deleteFileTreeNodes(req, orgID)
+}
+
+func (svc *FileTree) deleteFileTreeNodes(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
+	switch req.Scope {
+	case apistructs.FileTreeScopeProjectApp:
+		return svc.gittarFileTreeSvc.DeleteFileTreeNode(req, orgID)
+	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
+		return svc.autoTestSvc.DeleteFileTreeNode(req)
+	}
+
+	return nil, fmt.Errorf("not find this scope %s", req.Scope)
 }
 
 func (svc *FileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNodeCreateRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
@@ -139,7 +214,18 @@ func (svc *FileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNodeCreate
 		return nil, fmt.Errorf("invalid scope: %v", err)
 	}
 
-	return svc.bdl.CreateFileTreeNodes(req, orgID)
+	return svc.createFileTreeNodes(req, orgID)
+}
+
+func (svc *FileTree) createFileTreeNodes(req apistructs.UnifiedFileTreeNodeCreateRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
+	switch req.Scope {
+	case apistructs.FileTreeScopeProjectApp:
+		return svc.gittarFileTreeSvc.CreateFileTreeNode(req, orgID)
+	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
+		return svc.autoTestSvc.CreateFileTreeNode(req)
+	}
+
+	return nil, fmt.Errorf("not find this scope %s", req.Scope)
 }
 
 func (svc *FileTree) FindFileTreeNodeAncestors(req apistructs.UnifiedFileTreeNodeFindAncestorsRequest, orgID uint64) ([]apistructs.UnifiedFileTreeNode, error) {
@@ -147,12 +233,22 @@ func (svc *FileTree) FindFileTreeNodeAncestors(req apistructs.UnifiedFileTreeNod
 	if err := req.BasicValidate(); err != nil {
 		return nil, apierrors.ErrFindFileTreeNodeAncestors.InvalidParameter(err)
 	}
-
-	return svc.bdl.FindFileTreeNodeAncestors(req, orgID)
+	return svc.findFileTreeNodeAncestors(req, orgID)
 }
 
-func scopeConvertToUnifiedFileTreeNode(scope string, scopeID string) apistructs.UnifiedFileTreeNode {
-	return apistructs.UnifiedFileTreeNode{
+func (svc *FileTree) findFileTreeNodeAncestors(req apistructs.UnifiedFileTreeNodeFindAncestorsRequest, orgID uint64) (result []apistructs.UnifiedFileTreeNode, err error) {
+	switch req.Scope {
+	case apistructs.FileTreeScopeProjectApp:
+		return svc.gittarFileTreeSvc.FindFileTreeNodeAncestors(req)
+	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
+		return svc.autoTestSvc.FindFileTreeNodeAncestors(req)
+	}
+
+	return nil, fmt.Errorf("not find this scope %s", req.Scope)
+}
+
+func scopeConvertToUnifiedFileTreeNode(scope string, scopeID string) *apistructs.UnifiedFileTreeNode {
+	return &apistructs.UnifiedFileTreeNode{
 		Type:    apistructs.UnifiedFileTreeNodeTypeDir,
 		Name:    getScopeName(scope),
 		ScopeID: scopeID,

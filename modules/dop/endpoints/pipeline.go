@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
@@ -84,7 +85,11 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	branchrule, err := e.bdl.GetBranchWorkspaceConfigByProject(app.ProjectID, createReq.Branch)
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	branchrule := diceworkspace.GetValidBranchByGitReference(createReq.Branch, rules)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -307,7 +312,7 @@ func (e *Endpoints) branchWorkspaceMap(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	m, err := e.pipeline.AllValidBranchWorkspaces(appID)
+	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID))
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -614,10 +619,12 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 			AutoRun:            true,
 			UserID:             gitEvent.Content.MergeUserId,
 		}
-		validBranch, err := e.bdl.GetBranchWorkspaceConfig(uint64(appID), reqPipeline.Branch)
+
+		rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 		if err != nil {
 			return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 		}
+		validBranch := diceworkspace.GetValidBranchByGitReference(reqPipeline.Branch, rules)
 		workspace := validBranch.Workspace
 		v2, err := e.pipeline.ConvertPipelineToV2(reqPipeline)
 		if err != nil {

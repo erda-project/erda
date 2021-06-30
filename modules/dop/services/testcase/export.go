@@ -181,7 +181,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 			IsPublic:        true,
 			ExpiredAt:       nil,
 		}
-		file, err := svc.bdl.UploadFile(req)
+		file, err := svc.fileSvc.UploadFile(req)
 		if err != nil {
 			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
@@ -206,7 +206,7 @@ func (svc *Service) Upload(buff *bytes.Buffer, fileName string) (string, error) 
 		Encrypt:         false,
 		ExpiredAt:       nil,
 	}
-	res, err := svc.bdl.UploadFile(req)
+	res, err := svc.fileSvc.UploadFile(req)
 	if err != nil {
 		return "", err
 	}

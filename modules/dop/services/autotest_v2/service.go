@@ -16,14 +16,16 @@ package autotestv2
 import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 )
 
 // Service autotestv2 实例对象封装
 type Service struct {
-	db       *dao.DBClient
-	bdl      *bundle.Bundle
-	sceneset *sceneset.Service
+	db          *dao.DBClient
+	bdl         *bundle.Bundle
+	sceneset    *sceneset.Service
+	autotestSvc *autotest.Service
 }
 
 // New 新建 autotest service
@@ -50,8 +52,15 @@ func WithBundle(bdl *bundle.Bundle) Option {
 		svc.bdl = bdl
 	}
 }
+
 func WithSceneSet(svc *sceneset.Service) Option {
 	return func(e *Service) {
 		e.sceneset = svc
+	}
+}
+
+func WithAutotestSvc(svc *autotest.Service) Option {
+	return func(e *Service) {
+		e.autotestSvc = svc
 	}
 }

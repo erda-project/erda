@@ -50,13 +50,13 @@ func (svc *FileService) UploadFile(req apistructs.FileUploadRequest) (*apistruct
 	ext := filepath.Ext(req.FileNameWithExt)
 	fileUUID := uuid.UUID()
 	destFileName := strutil.Concat(fileUUID, ext)
-	handledPath, err := handleFilePath(destFileName)
+	handledPath, err := svc.handleFilePath(destFileName)
 	if err != nil {
 		return nil, apierrors.ErrUploadFile.InvalidParameter(err)
 	}
 
 	// storager
-	storager := getStorage()
+	storager := svc.GetStorage()
 	fileReader := req.FileReader
 	var DEKCiphertextBase64 string // 使用 CMK 加密后的 DEK 密文
 
@@ -118,7 +118,7 @@ func (svc *FileService) UploadFile(req apistructs.FileUploadRequest) (*apistruct
 	return convert(&file), nil
 }
 
-func getStorage(typ ...storage.Type) storage.Storager {
+func (svc *FileService) GetStorage(typ ...storage.Type) storage.Storager {
 	var storageType storage.Type
 	if len(typ) > 0 {
 		storageType = typ[0]
@@ -155,14 +155,14 @@ func checkPath(path string) error {
 	return nil
 }
 
-func handleFilePath(path string) (string, error) {
+func (svc *FileService) handleFilePath(path string) (string, error) {
 
 	if err := checkPath(path); err != nil {
 		return "", err
 	}
 
 	// 加上指定前缀，限制文件访问路径
-	switch getStorage().Type() {
+	switch svc.GetStorage().Type() {
 	case storage.TypeFileSystem:
 		path = filepath.Join(conf.StorageMountPointInContainer(), path)
 	case storage.TypeOSS:

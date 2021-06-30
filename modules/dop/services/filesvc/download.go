@@ -50,7 +50,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 
 	// storager
-	storager := getStorage(file.StorageType)
+	storager := svc.GetStorage(file.StorageType)
 	reader, err := storager.Read(file.FullRelativePath)
 	if err != nil {
 		if os.IsNotExist(err) {
