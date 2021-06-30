@@ -46,6 +46,14 @@ msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
+erda.msp.apm.exception:
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+      auto: true # 自动创建 keyspace
+      replication:
+        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 
 erda.msp.apm.checker: # checkers apis
 

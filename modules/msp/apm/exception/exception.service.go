@@ -2,6 +2,8 @@ package exception
 
 import (
 	context "context"
+	"encoding/json"
+	"google.golang.org/protobuf/types/known/structpb"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -31,15 +33,15 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 		exception := pb.Exception{}
 		tags := row["tags"].(map[string]string)
 		exception.Id = row["error_id"].(string)
-		exception.ScopeId = conv.ToString(row["terminus_key"])
+		exception.ScopeID = conv.ToString(row["terminus_key"])
 		exception.ClassName = conv.ToString(tags["class"])
 		exception.Method = conv.ToString(tags["method"])
 		exception.Type = conv.ToString(tags["type"])
 		exception.ExceptionMessage = conv.ToString(tags["exception_message"])
 		exception.File = conv.ToString(tags["file"])
 		exception.ServiceName = conv.ToString(tags["service_name"])
-		exception.ApplicationId = conv.ToString(tags["application_id"])
-		exception.RuntimeId = conv.ToString(tags["runtime_id"])
+		exception.ApplicationID = conv.ToString(tags["application_id"])
+		exception.RuntimeID = conv.ToString(tags["runtime_id"])
 		layout := "2006-01-02 15:04:05"
 
 		stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC LIMIT 1"
@@ -73,8 +75,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 }
 
 func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) (*pb.GetExceptionEventIdsResponse, error) {
-
-	iter := s.p.cassandraSession.Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.GetExceptionId(), 999).
+	iter := s.p.cassandraSession.Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).
 		Consistency(gocql.All).
 		RetryPolicy(nil).
 		Iter()
@@ -88,4 +89,41 @@ func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.Get
 		data = append(data, conv.ToString(row["event_id"]))
 	}
 	return &pb.GetExceptionEventIdsResponse{Data: data}, nil
+}
+
+func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.GetExceptionEventResponse, error) {
+	iter := s.p.cassandraSession.Query("SELECT * FROM error_events WHERE event_id = ?", req.ExceptionEventID).
+		Consistency(gocql.All).
+		RetryPolicy(nil).
+		Iter()
+	event := pb.ExceptionEvent{}
+	for {
+		row := make(map[string]interface{})
+		if !iter.MapScan(row) {
+			break
+		}
+		event.Tags = row["tags"].(map[string]string)
+		if conv.ToString(event.Tags["terminus_key"]) != req.ScopeID {
+			continue
+		}
+		event.Id = conv.ToString(row["event_id"])
+		event.ExceptionID = conv.ToString(row["error_id"])
+		event.RequestID = conv.ToString(row["request_id"])
+		event.RequestSampled = conv.ToBool(event.Tags["request_sampled"], false)
+		event.Metadata = row["meta_data"].(map[string]string)
+		event.RequestContext = row["request_context"].(map[string]string)
+		event.RequestHeaders = row["request_headers"].(map[string]string)
+		var stacks []*pb.Stacks
+		for _, info := range row["stacks"].([]string) {
+			var stack pb.Stacks
+			var stackMap map[string]*structpb.Value
+			if err := json.Unmarshal([]byte(info), &stackMap); err != nil {
+				continue
+			}
+			stack.Stack = stackMap
+			stacks = append(stacks, &stack)
+		}
+		event.Stacks = stacks
+	}
+	return &pb.GetExceptionEventResponse{Data: &event}, nil
 }

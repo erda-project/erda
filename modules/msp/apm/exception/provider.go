@@ -2,12 +2,15 @@ package exception
 
 import (
 	"fmt"
+
+	"github.com/gocql/gocql"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
-	"github.com/gocql/gocql"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -32,7 +35,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.cassandraSession = session
 	p.exceptionService = &exceptionService{p}
 	if p.Register != nil {
-		pb.RegisterExceptionServiceImp(p.Register, p.exceptionService)
+		pb.RegisterExceptionServiceImp(p.Register, p.exceptionService, apis.Options())
 	}
 	return nil
 }
