@@ -16,11 +16,13 @@ package apidocsvc
 import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dbclient"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 )
 
 type Service struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
+	db            *dbclient.DBClient
+	bdl           *bundle.Bundle
+	branchRuleSvc *branchrule.BranchRule
 }
 
 type Option func(service *Service)
@@ -42,5 +44,11 @@ func WithDBClient(db *dbclient.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(service *Service) {
 		service.bdl = bdl
+	}
+}
+
+func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
+	return func(service *Service) {
+		service.branchRuleSvc = svc
 	}
 }

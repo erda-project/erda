@@ -106,7 +106,12 @@ func (svc *Service) DeleteRecordApiFilesByTime(t time.Time) error {
 		if UUID.ApiFileUUID == "" {
 			continue
 		}
-		if err := svc.bdl.DeleteDiceFile(UUID.ApiFileUUID); err != nil {
+		file, err := svc.db.GetFileByUUID(UUID.ApiFileUUID)
+		if err != nil {
+			return err
+		}
+
+		if err := svc.fileSvc.DeleteFile(file); err != nil {
 			return err
 		}
 	}
