@@ -35,7 +35,6 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/c
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
 
 # use for ops
-COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/scripts.tar.gz" "/app/scripts.tar.gz"
 RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
     chmod 755 /usr/bin/orgalorg
 
