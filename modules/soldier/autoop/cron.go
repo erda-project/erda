@@ -47,35 +47,16 @@ func StartCron() {
 
 // Cron Download automatic operation and maintenance scripts and start cron tasks
 func Cron(reload bool) error {
-	//ci, err := readCluster()
-	//if err != nil {
-	//	logrus.Errorln(err)
-	//	return err
-	//}
-	if !reload {
-		if dl, err := download(); err != nil {
-			logrus.Errorln(err)
-			return err
-		} else if !dl {
-			logrus.Infoln("not download")
-			return nil
-		}
-	}
-	mutex.Lock()
-	md5 := lastMd5
-	mutex.Unlock()
 	m := make(map[string]*Action)
-	err := filepath.Walk(newScriptsPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(scriptsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if path == newScriptsPath {
+		if path == scriptsPath {
 			return nil
 		}
-		if info.IsDir() && filepath.Dir(path) == newScriptsPath {
+		if info.IsDir() && filepath.Dir(path) == scriptsPath {
 			a := NewAction(path)
-			a.Md5 = md5
-			//a.ClusterInfo = ci
 			if err := a.ReadEnv(); err != nil {
 				return fmt.Errorf("read %s env failed: %s", a.Name, err.Error())
 			}
@@ -89,14 +70,6 @@ func Cron(reload bool) error {
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
-	err = os.RemoveAll(scriptsPath)
-	if err != nil {
-		return fmt.Errorf("remove scripts failed: %s", err.Error())
-	}
-	err = os.Rename(newScriptsPath, scriptsPath)
-	if err != nil {
-		return fmt.Errorf("rename scripts failed: %s", err.Error())
-	}
 	for _, a := range actions {
 		if a.Cron != nil {
 			a.Cron.Stop()
