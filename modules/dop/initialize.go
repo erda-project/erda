@@ -200,7 +200,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 
 	// init bundle
 	bdl.Init(
-		bundle.WithCMDB(),
 		bundle.WithHepa(),
 		bundle.WithOrchestrator(),
 		bundle.WithEventBox(),
@@ -224,34 +223,31 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// init event
 	e := event.New(event.WithBundle(bdl.Bdl))
 
-	// init permission
-	perm := permission.New(permission.WithBundle(bdl.Bdl))
-
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
 	fileTree := filetree.New(filetree.WithBundle(bdl.Bdl))
 
-	// 查询
-	pFileTree := projectpipelinefiletree.New(
-		projectpipelinefiletree.WithBundle(bdl.Bdl),
+	fileSvc := filesvc.New(
+		filesvc.WithDBClient(db),
+		filesvc.WithBundle(bdl.Bdl),
+		filesvc.WithEtcdClient(etcdStore),
 	)
 
 	// init service
 	assetSvc := assetsvc.New()
-	filetreeSvc := apidocsvc.New()
 
 	testCaseSvc := testcase.New(
 		testcase.WithDBClient(db),
 		testcase.WithBundle(bdl.Bdl),
+		testcase.WithFileSvc(fileSvc),
 	)
 	testSetSvc := testset.New(
 		testset.WithDBClient(db),
 		testset.WithBundle(bdl.Bdl),
 		testset.WithTestCaseService(testCaseSvc),
 	)
-
 	testCaseSvc.CreateTestSetFn = testSetSvc.Create
 
 	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl))
@@ -261,7 +257,19 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		sceneset.WithBundle(bdl.Bdl),
 	)
 
-	autotestV2 := atv2.New(atv2.WithDBClient(db), atv2.WithBundle(bdl.Bdl), atv2.WithSceneSet(sceneset))
+	// 查询
+	pFileTree := projectpipelinefiletree.New(
+		projectpipelinefiletree.WithBundle(bdl.Bdl),
+		projectpipelinefiletree.WithFileTreeSvc(fileTree),
+		projectpipelinefiletree.WithAutoTestSvc(autotest),
+	)
+
+	autotestV2 := atv2.New(
+		atv2.WithDBClient(db),
+		atv2.WithBundle(bdl.Bdl),
+		atv2.WithSceneSet(sceneset),
+		atv2.WithAutotestSvc(autotest),
+	)
 
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
@@ -308,6 +316,11 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		branchrule.WithBundle(bdl.Bdl),
 	)
 
+	// init permission
+	perm := permission.New(permission.WithBundle(bdl.Bdl), permission.WithBranchRule(branchRule))
+
+	filetreeSvc := apidocsvc.New(apidocsvc.WithBranchRuleSvc(branchRule))
+
 	env := environment.New(
 		environment.WithDBClient(db),
 		environment.WithBundle(bdl.Bdl),
@@ -326,12 +339,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	issueproperty := issueproperty.New(
 		issueproperty.WithDBClient(db),
 		issueproperty.WithBundle(bdl.Bdl),
-	)
-
-	fileSvc := filesvc.New(
-		filesvc.WithDBClient(db),
-		filesvc.WithBundle(bdl.Bdl),
-		filesvc.WithEtcdClient(etcdStore),
 	)
 
 	issue := issue.New(

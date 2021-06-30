@@ -54,7 +54,7 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	e.TriggerGitNotify(req.OrgID, req.ApplicationID, apistructs.GitPushEvent, params)
 
 	appID, _ := strconv.ParseUint(req.ApplicationID, 10, 64)
-	rules, err := e.bdl.GetAppBranchRules(appID)
+	rules, err := e.branchRule.Query(apistructs.AppScope, int64(appID))
 	if err != nil {
 		logrus.Errorf("failed to get branch rules, req: %+v, (%+v)", req, err)
 		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil

@@ -25,7 +25,7 @@ func (svc *FileService) DeleteFile(file dao.File) error {
 	}
 
 	// delete file in storage
-	storager := getStorage(file.StorageType)
+	storager := svc.GetStorage(file.StorageType)
 	if err := storager.Delete(file.FullRelativePath); err != nil {
 		return apierrors.ErrDeleteFile.InternalError(err)
 	}

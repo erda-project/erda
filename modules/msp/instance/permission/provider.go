@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
+	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 )
 
 // +provider
@@ -27,11 +28,13 @@ type provider struct {
 	DB               *gorm.DB `autowired:"mysql-client"`
 	instanceTenantDB *instancedb.InstanceTenantDB
 	tmcDB            *instancedb.TmcDB
+	monitorDB        *monitordb.MonitorDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.instanceTenantDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.tmcDB = &instancedb.TmcDB{DB: p.DB}
+	p.monitorDB = &monitordb.MonitorDB{DB: p.DB}
 	return nil
 }
 

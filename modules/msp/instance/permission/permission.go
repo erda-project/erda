@@ -21,12 +21,14 @@ import (
 
 	"github.com/erda-project/erda/modules/msp/instance"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/common/permission"
 )
 
 // Interface .
 type Interface interface {
 	TenantToProjectID(tgroup, tenant string) permission.ValueGetter
+	TerminusKeyToProjectID(key string) permission.ValueGetter
 }
 
 // TenantToProjectID .
@@ -51,7 +53,7 @@ func (p *provider) TenantToProjectID(tgroup, tenant string) permission.ValueGett
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 	tenant, err := p.instanceTenantDB.GetByID(id)
 	if err != nil {
-		return "", err
+		return "", errors.NewDataBaseError(err)
 	}
 	if tenant == nil {
 		return "", fmt.Errorf("fail to find tenant by id %q", id)
@@ -63,7 +65,7 @@ func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	tenants, err := p.instanceTenantDB.GetByTenantGroup(group)
 	if err != nil {
-		return "", err
+		return "", errors.NewDataBaseError(err)
 	}
 	if len(tenants) <= 0 {
 		return "", fmt.Errorf("tenant group %q not found", group)
@@ -71,7 +73,7 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	for _, tenant := range tenants {
 		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
 		if err != nil {
-			return "", err
+			return "", errors.NewDataBaseError(err)
 		}
 		if tmc == nil {
 			continue
@@ -94,4 +96,19 @@ func (p *provider) getProjectIDByTenant(tenant *instancedb.InstanceTenant) (stri
 		return "", fmt.Errorf("fail to find project id by tenant %q", tenant.ID)
 	}
 	return fmt.Sprint(pid), nil
+}
+
+func (p *provider) TerminusKeyToProjectID(terminusKey string) permission.ValueGetter {
+	tkGetter := permission.FieldValue(terminusKey)
+	return func(ctx context.Context, req interface{}) (string, error) {
+		tk, err := tkGetter(ctx, req)
+		if err != nil {
+			return "", err
+		}
+		m, err := p.monitorDB.GetByTerminusKey(tk)
+		if err != nil {
+			return "", errors.NewDataBaseError(err)
+		}
+		return m.ProjectId, nil
+	}
 }
