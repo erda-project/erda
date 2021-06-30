@@ -201,7 +201,6 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 			}
 
 			var reverseSpec ast.AlterTableSpec
-			reverseSpec.IfNotExists = true
 			reverseSpec.Tp = ast.AlterTableAddConstraint
 
 			for _, constraint := range compares.Constraints {
@@ -357,7 +356,6 @@ func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.D
 	}
 
 	var spec ast.AlterTableSpec
-	spec.IfNotExists = true
 	spec.Tp = ast.AlterTableAddConstraint
 
 	for _, constraint := range compares.Constraints {
