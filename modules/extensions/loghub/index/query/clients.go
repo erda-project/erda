@@ -45,7 +45,7 @@ func (c *ESClient) printSearchSource(searchSource *elastic.SearchSource) (string
 	if err != nil {
 		return "", fmt.Errorf("invalid search source: %s", err)
 	}
-	body := jsonx.MarshalAndIntend(source)
+	body := jsonx.MarshalAndIndent(source)
 	body = c.URLs + "\n" + strings.Join(c.Indices, ",") + "\n" + body
 	fmt.Println(body)
 	return body, nil

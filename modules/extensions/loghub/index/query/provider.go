@@ -31,21 +31,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type define struct{}
-
-func (d *define) Service() []string { return []string{"logs-index-query"} }
-func (d *define) Dependencies() []string {
-	return []string{"elasticsearch", "elasticsearch@logs", "mysql", "i18n", "http-server"}
-}
-func (d *define) Summary() string     { return "logs query" }
-func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Timeout     time.Duration `file:"timeout" default:"60s"`
 	QueryBackES bool          `file:"query_back_es" default:"false"`
@@ -84,9 +69,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return p.intRoutes(routes)
 }
 
-// func (p *provider) Start() error { return nil }
-// func (p *provider) Close() error { return nil }
-
 func init() {
-	servicehub.RegisterProvider("logs-index-query", &define{})
+	servicehub.Register("logs-index-query", &servicehub.Spec{
+		Services:     []string{"logs-index-query"},
+		Dependencies: []string{"elasticsearch", "elasticsearch@logs", "mysql", "i18n", "http-server"},
+		Description:  "logs query",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

@@ -11,24 +11,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package query
+package apis
 
 import (
-	"fmt"
-	"strings"
+	"context"
 
-	"github.com/recallsong/go-utils/encoding/jsonx"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
-// ElasticSearchCURL .
-func ElasticSearchCURL(url string, indices []string, source interface{}) string {
-	body := jsonx.MarshalAndIndent(source)
-	body = strings.Replace(body, "'", "'\\''", -1)
-	return fmt.Sprintf(`
-curl -X GET \
-'%s/%s/_search' \
--H 'Content-Type: application/json' \
--H 'cache-control: no-cache' \
--d '%s'
-`, url, strings.Join(indices, ","), body)
+var langKeys = []string{"lang", "accept-language"}
+
+// Language .
+func Language(ctx context.Context) i18n.LanguageCodes {
+	header := transport.ContextHeader(ctx)
+	for _, key := range langKeys {
+		vals := header.Get(key)
+		for _, v := range vals {
+			if len(v) > 0 {
+				langs, _ := i18n.ParseLanguageCode(v)
+				return langs
+			}
+		}
+	}
+	return nil
 }

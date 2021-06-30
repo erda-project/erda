@@ -20,9 +20,8 @@ import (
 	"strings"
 	"time"
 
-	anypb "github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
@@ -207,8 +206,8 @@ func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64,
 	WHERE project_id=$projectID 
 	GROUP time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
-		map[string]*anypb.Any{
-			"projectID": goany.MustMarshal(strconv.FormatInt(projectID, 10)),
+		map[string]*structpb.Value{
+			"projectID": structpb.NewStringValue(strconv.FormatInt(projectID, 10)),
 		},
 		"hour", metrics,
 	)
@@ -221,14 +220,14 @@ func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit 
 	WHERE metric=$metric 
 	GROUP time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
-		map[string]*anypb.Any{
-			"metric": goany.MustMarshal(strconv.FormatInt(metricID, 10)),
+		map[string]*structpb.Value{
+			"metric": structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
 		},
 		timeUnit, metrics,
 	)
 }
 
-func (s *checkerV1Service) queryCheckerMetrics(statement string, params map[string]*anypb.Any, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) queryCheckerMetrics(statement string, params map[string]*structpb.Value, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end := s.getTimeRange(timeUnit, 1)
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
@@ -264,65 +263,32 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 	if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
 		summary := make(map[string]map[string]*summaryItem)
 		serie := resp.Results[0].Series[0]
+	loop:
 		for _, row := range serie.Rows {
 			if row == nil || len(row.Values) != 6 {
 				continue
 			}
+			for _, val := range row.Values {
+				if val == nil {
+					continue loop
+				}
+			}
 			idx := 1
-			var timestamp int64
-			err := goany.Unmarshal(row.Values[idx], &timestamp)
-			if err != nil {
-				continue
-			}
-
+			timestamp := int64(row.Values[idx].GetNumberValue())
 			idx++
-			var metric string
-			err = goany.Unmarshal(row.Values[idx], &metric)
-			if err != nil {
-				continue
-			}
-
+			metric := row.Values[idx].GetStringValue()
 			idx++
-			var statusName string
-			err = goany.Unmarshal(row.Values[idx], &statusName)
-			if err != nil {
-				continue
-			}
-
+			statusName := row.Values[idx].GetStringValue()
 			idx++
-			var avg float64
-			err = goany.Unmarshal(row.Values[idx], &avg)
-			if err != nil {
-				continue
-			}
-
+			avg := row.Values[idx].GetNumberValue()
 			idx++
-			var max float64
-			err = goany.Unmarshal(row.Values[idx], &max)
-			if err != nil {
-				continue
-			}
-
+			max := row.Values[idx].GetNumberValue()
 			idx++
-			var min float64
-			err = goany.Unmarshal(row.Values[idx], &min)
-			if err != nil {
-				continue
-			}
-
+			min := row.Values[idx].GetNumberValue()
 			idx++
-			var sum float64
-			err = goany.Unmarshal(row.Values[idx], &sum)
-			if err != nil {
-				continue
-			}
-
+			sum := row.Values[idx].GetNumberValue()
 			idx++
-			var count int64
-			err = goany.Unmarshal(row.Values[idx], &count)
-			if err != nil {
-				continue
-			}
+			count := int64(row.Values[idx].GetNumberValue())
 
 			status := summary[metric]
 			if status == nil {
@@ -501,8 +467,8 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		WHERE metric=$metric 
 		GROUP time(1m), status_name::tag 
 		LIMIT 200`,
-		Params: map[string]*anypb.Any{
-			"metric": goany.MustMarshal(strconv.FormatInt(req.Id, 10)),
+		Params: map[string]*structpb.Value{
+			"metric": structpb.NewStringValue(strconv.FormatInt(req.Id, 10)),
 		},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -520,28 +486,19 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 			count []int64
 		}
 		group := make(map[string]*groupItem)
+	loop:
 		for _, row := range serie.Rows {
+			for _, val := range row.Values {
+				if val == nil {
+					continue loop
+				}
+			}
 			idx := 1
-			var timestamp int64
-			err := goany.Unmarshal(row.Values[idx], &timestamp)
-			if err != nil {
-				continue
-			}
-
+			timestamp := int64(row.Values[idx].GetNumberValue())
 			idx++
-			var statusName string
-			err = goany.Unmarshal(row.Values[idx], &statusName)
-			if err != nil {
-				continue
-			}
-
+			statusName := row.Values[idx].GetStringValue()
 			idx++
-			var count int64
-			err = goany.Unmarshal(row.Values[idx], &count)
-			if err != nil {
-				continue
-			}
-
+			count := int64(row.Values[idx].GetNumberValue())
 			item := group[statusName]
 			if item == nil {
 				item = &groupItem{}
@@ -584,6 +541,6 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 
 func (s *checkerV1Service) GetCheckerIssuesV1(ctx context.Context, req *pb.GetCheckerIssuesV1Request) (*pb.GetCheckerIssuesV1Response, error) {
 	return &pb.GetCheckerIssuesV1Response{
-		Data: make([]*anypb.Any, 0), // depracated, so return empty list
+		Data: make([]*structpb.Value, 0), // depracated, so return empty list
 	}, nil
 }
