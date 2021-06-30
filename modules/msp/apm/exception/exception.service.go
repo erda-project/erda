@@ -2,10 +2,13 @@ package exception
 
 import (
 	context "context"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
-	"github.com/gocql/gocql"
-	"github.com/recallsong/go-utils/conv"
 	"time"
+
+	"github.com/gocql/gocql"
+
+	"github.com/recallsong/go-utils/conv"
+
+	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 )
 
 type exceptionService struct {
@@ -67,4 +70,22 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 	}
 
 	return &pb.GetExceptionsResponse{Data: exceptions}, nil
+}
+
+func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) (*pb.GetExceptionEventIdsResponse, error) {
+
+	iter := s.p.cassandraSession.Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.GetExceptionId(), 999).
+		Consistency(gocql.All).
+		RetryPolicy(nil).
+		Iter()
+
+	var data []string
+	for {
+		row := make(map[string]interface{})
+		if !iter.MapScan(row) {
+			break
+		}
+		data = append(data, conv.ToString(row["event_id"]))
+	}
+	return &pb.GetExceptionEventIdsResponse{Data: data}, nil
 }

@@ -22,23 +22,23 @@ func Test_exceptionService_GetExceptions(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.exception.ExceptionService",
-		//			`
-		//erda.msp.apm.exception:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.GetExceptionsRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.GetExceptionsResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
+		{
+			"case 1",
+			"erda.msp.apm.exception.ExceptionService",
+			`
+erda.msp.apm.exception:
+`,
+			args{
+				context.TODO(),
+				&pb.GetExceptionsRequest{
+					// TODO: setup fields
+				},
+			},
+			&pb.GetExceptionsResponse{
+				// TODO: setup fields.
+			},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,6 +60,63 @@ func Test_exceptionService_GetExceptions(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("exceptionService.GetExceptions() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_exceptionService_GetExceptionEventIds(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetExceptionEventIdsRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetExceptionEventIdsResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		{
+			"case 1",
+			"erda.msp.apm.exception.ExceptionService",
+			`
+erda.msp.apm.exception:
+`,
+			args{
+				context.TODO(),
+				&pb.GetExceptionEventIdsRequest{
+					// TODO: setup fields
+				},
+			},
+			&pb.GetExceptionEventIdsResponse{
+				// TODO: setup fields.
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.ExceptionServiceServer)
+			got, err := srv.GetExceptionEventIds(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("exceptionService.GetExceptionEventIds() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("exceptionService.GetExceptionEventIds() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
