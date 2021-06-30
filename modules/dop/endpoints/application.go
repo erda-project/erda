@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/types"
-	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -90,7 +89,7 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 	if applicationCreateReq.ProjectID == 0 {
 		return errors.Errorf("invalid request, projectId is empty")
 	}
-	err := utils.CheckAppMode(applicationCreateReq.Mode)
+	err := applicationCreateReq.Mode.CheckAppMode()
 	return err
 }
 
