@@ -16,8 +16,9 @@ package exception
 import (
 	context "context"
 	"encoding/json"
-	"google.golang.org/protobuf/types/known/structpb"
 	"time"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/gocql/gocql"
 

@@ -15,10 +15,11 @@ package exception
 
 import (
 	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	reflect "reflect"
 	testing "testing"
+
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 )
 
 func Test_exceptionService_GetExceptions(t *testing.T) {
