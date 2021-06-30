@@ -134,6 +134,7 @@ const (
 	DragToAssigneeOperation OperationKey = "DragToAssignee"
 	MoveToPriorityOperation OperationKey = "MoveToPriority"
 	DragToPriorityOperation OperationKey = "DragToPriority"
+	ChangePageNoOperation   OperationKey = "changePageNo"
 	// filetree
 	FileTreeSubmitOperationKey      OperationKey = "submit"
 	FileTreeDeleteOperationKey      OperationKey = "delete"
