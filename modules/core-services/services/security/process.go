@@ -246,25 +246,25 @@ func (d AppPermissionProcess) check(ctx context.Context) (bool, error) {
 }
 
 func (a AppPermissionProcess) GetAllRoles(ctx context.Context) ([]string, error) {
-	dto, err := a.Adaptor.Bdl.GetApp(uint64(a.Adaptor.GetScopeID(ctx)))
+	dto, err := a.Adaptor.Db.GetApplicationByID(a.Adaptor.GetScopeID(ctx))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get application")
 	}
 	// get all project-level application
-	resp, err := a.Adaptor.Bdl.GetAllMyApps(a.Adaptor.GetUserID(ctx), dto.OrgID, apistructs.ApplicationListRequest{
-		PageSize:  9999,
-		PageNo:    1,
-		Mode:      string(apistructs.ApplicationModeProjectService),
-		ProjectID: dto.ProjectID,
+	_, data, err := a.Adaptor.Db.GetApplicationsByIDs(&dto.OrgID, &dto.ProjectID, nil, &apistructs.ApplicationListRequest{
+		PageSize: 9999,
+		PageNo:   1,
+		Mode:     string(apistructs.ApplicationModeProjectService),
 	})
 	if err != nil {
 		return nil, err
 	}
-	var appIDList []uint64
-	for _, app := range resp.List {
+
+	var appIDList []int64
+	for _, app := range data {
 		appIDList = append(appIDList, app.ID)
 	}
-	appIDList = append(appIDList, uint64(a.Adaptor.GetScopeID(ctx)))
+	appIDList = append(appIDList, a.Adaptor.GetScopeID(ctx))
 
 	var group sync.WaitGroup
 	var roles []string
@@ -292,7 +292,7 @@ func (a AppPermissionProcess) GetAllRoles(ctx context.Context) ([]string, error)
 			roles = append(roles, result...)
 			lock.Unlock()
 
-		}(int64(app))
+		}(app)
 	}
 
 	group.Wait()
