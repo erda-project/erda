@@ -87,7 +87,7 @@ func (p *provider) Start() error {
 		SearchSource(searchSource).Do(context)
 	if err != nil || (resp != nil && resp.Error != nil) {
 		if resp != nil && resp.Error != nil {
-			return fmt.Errorf("fail to request elasticsearch: %s", jsonx.MarshalAndIntend(resp.Error))
+			return fmt.Errorf("fail to request elasticsearch: %s", jsonx.MarshalAndIndent(resp.Error))
 		}
 		return fmt.Errorf("fail to request elasticsearch: %s", err)
 	}
@@ -261,7 +261,7 @@ func (p *provider) createMetricMetaFile(m *metrics.Metric) {
 	}
 	file.WriteString("\n")
 	p.makeI18nFile(name, dic)
-	// fmt.Println(jsonx.MarshalAndIntend(m))
+	// fmt.Println(jsonx.MarshalAndIndent(m))
 }
 
 func (p *provider) skipName(metric, name string) bool {

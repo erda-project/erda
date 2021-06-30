@@ -474,7 +474,7 @@ func (m *IndexManager) reloadIndices() error {
 	}
 	m.cleanTimeRangeCache(indices)
 
-	// fmt.Println(jsonx.MarshalAndIntend(indices))
+	// fmt.Println(jsonx.MarshalAndIndent(indices))
 	m.indices.Store(indices)
 	m.log.Infof("load indices %d, metrics: %d", indexNum, len(indices))
 
@@ -541,7 +541,7 @@ func (m *IndexManager) setupTimeRange(index *IndexEntry) {
 				m.log.Errorf("fail to query index %q time range: %s", index.Index, err)
 				return
 			} else if resp != nil && resp.Error != nil {
-				m.log.Errorf("fail to query index %q time range: %s", index.Index, jsonx.MarshalAndIntend(resp.Error))
+				m.log.Errorf("fail to query index %q time range: %s", index.Index, jsonx.MarshalAndIndent(resp.Error))
 				return
 			}
 			min, ok := resp.Aggregations.Min("min_time")

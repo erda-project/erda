@@ -24,19 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub/exporter"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-exporter-elasticsearch"} }
-func (d *define) Dependencies() []string { return []string{"logs-exporter-base", "elasticsearch@logs"} }
-func (d *define) Summary() string        { return "logs export to elasticsearch" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	WriterConfig elasticsearch.WriterConfig `file:"writer_config"`
 	Index        struct {
@@ -92,5 +79,13 @@ func (o *esOutput) Write(key string, data []byte) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-exporter-elasticsearch", &define{})
+	servicehub.Register("logs-exporter-elasticsearch", &servicehub.Spec{
+		Services:     []string{"logs-exporter-elasticsearch"},
+		Dependencies: []string{"logs-exporter-base", "elasticsearch@logs"},
+		Description:  "logs export to elasticsearch",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

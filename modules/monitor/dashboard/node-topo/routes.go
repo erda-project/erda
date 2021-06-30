@@ -178,7 +178,7 @@ func (p *provider) esRequest(indices []string, searchSource *elastic.SearchSourc
 				return nil, nil
 			}
 			if resp.Error != nil {
-				return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIntend(resp.Error))
+				return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIndent(resp.Error))
 			}
 		}
 		return nil, fmt.Errorf("fail to request storage: %s", err)

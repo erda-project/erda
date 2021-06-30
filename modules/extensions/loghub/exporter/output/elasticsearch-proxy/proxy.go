@@ -30,19 +30,6 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-elasticsearch-proxy"} }
-func (d *define) Dependencies() []string { return []string{} }
-func (d *define) Summary() string        { return "elasticsearch proxy" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Addr    string `file:"addr"`
 	Targets string `file:"targets"`
@@ -116,5 +103,12 @@ func (p *provider) Handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-elasticsearch-proxy", &define{})
+	servicehub.Register("logs-elasticsearch-proxy", &servicehub.Spec{
+		Services:    []string{"logs-elasticsearch-proxy"},
+		Description: "elasticsearch proxy",
+		ConfigFunc:  func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

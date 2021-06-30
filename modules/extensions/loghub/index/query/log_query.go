@@ -179,7 +179,7 @@ func (c *ESClient) doRequest(searchSource *elastic.SearchSource, timeout time.Du
 		SearchSource(searchSource).Do(context)
 	if err != nil || (resp != nil && resp.Error != nil) {
 		if resp != nil && resp.Error != nil {
-			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIntend(resp.Error))
+			return nil, fmt.Errorf("fail to request es: %s", jsonx.MarshalAndIndent(resp.Error))
 		}
 		return nil, fmt.Errorf("fail to request es: %s", err)
 	}

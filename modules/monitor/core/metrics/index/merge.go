@@ -176,7 +176,7 @@ func (m *IndexManager) doIndicesMerge(merge *MergeGroup, delete bool) (*elastic.
 		m.log.Error(err)
 		return nil, err
 	}
-	m.log.Infof("reindex %v to %s : %s", merge.indices, merge.MergedIndex, jsonx.MarshalAndIntend(resp))
+	m.log.Infof("reindex %v to %s : %s", merge.indices, merge.MergedIndex, jsonx.MarshalAndIndent(resp))
 	if delete {
 		err = m.deleteIndices(merge.indices)
 		if err != nil {

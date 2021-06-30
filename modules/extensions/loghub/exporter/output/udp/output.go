@@ -22,23 +22,6 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub/exporter"
 )
 
-type define struct {
-	service string
-}
-
-func (d *define) Service() []string      { return []string{d.service} }
-func (d *define) Dependencies() []string { return []string{"logs-exporter-base"} }
-func (d *define) Summary() string        { return "logs export to udp" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{} {
-	return &config{Timeout: 30 * time.Second}
-}
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Addr    string        `file:"addr"`
 	Timeout time.Duration `file:"timeout"`
@@ -92,6 +75,26 @@ func (o *udpOutput) Write(logkey string, data []byte) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-exporter-udp", &define{"logs-exporter-udp"})
-	servicehub.RegisterProvider("logs-exporter-logstash-udp", &define{"logs-exporter-logstash-udp"})
+	servicehub.Register("logs-exporter-udp", &servicehub.Spec{
+		Services:     []string{"logs-exporter-udp"},
+		Dependencies: []string{"logs-exporter-base"},
+		Description:  "logs export to udp",
+		ConfigFunc: func() interface{} {
+			return &config{Timeout: 30 * time.Second}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
+	servicehub.Register("logs-exporter-logstash-udp", &servicehub.Spec{
+		Services:     []string{"logs-exporter-logstash-udp"},
+		Dependencies: []string{"logs-exporter-base"},
+		Description:  "logs export to udp",
+		ConfigFunc: func() interface{} {
+			return &config{Timeout: 30 * time.Second}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

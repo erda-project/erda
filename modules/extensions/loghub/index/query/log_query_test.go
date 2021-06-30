@@ -133,6 +133,6 @@ func Example_mergeLogSearch() {
 		},
 	}
 	result := mergeLogSearch(limit, results)
-	fmt.Println(jsonx.MarshalAndIntend(result), len(result.Data))
+	fmt.Println(jsonx.MarshalAndIndent(result), len(result.Data))
 
 }

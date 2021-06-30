@@ -106,7 +106,7 @@ func (p *provider) queryIndexTimeRange(client *elastic.Client, index *IndexEntry
 			p.L.Errorf("fail to query index %q time range: %s", index.Index, err)
 			return
 		} else if resp != nil && resp.Error != nil {
-			p.L.Errorf("fail to query index %q time range: %s", index.Index, jsonx.MarshalAndIntend(resp.Error))
+			p.L.Errorf("fail to query index %q time range: %s", index.Index, jsonx.MarshalAndIndent(resp.Error))
 			return
 		}
 		min, ok := resp.Aggregations.Min("min_time")

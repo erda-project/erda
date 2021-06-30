@@ -23,19 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/kafka"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-exporter-base"} }
-func (d *define) Dependencies() []string { return []string{"kafka"} }
-func (d *define) Summary() string        { return "logs exporter base" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Input        kafka.ConsumerConfig `file:"input"`
 	Output       string               `file:"output" env:"MONITOR_LOG_OUTPUT"`
@@ -74,5 +61,13 @@ func (p *provider) NewConsumer(fn OutputFactory) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-exporter-base", &define{})
+	servicehub.Register("logs-exporter-base", &servicehub.Spec{
+		Services:     []string{"logs-exporter-base"},
+		Dependencies: []string{"kafka"},
+		Description:  "logs exporter base",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
