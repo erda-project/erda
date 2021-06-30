@@ -35,10 +35,23 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+func shouldCheckPermission(isInternalClient, isInternalActionClient bool) bool {
+	if !isInternalClient {
+		return true
+	}
+
+	if isInternalActionClient {
+		return true
+	}
+
+	return false
+}
 
 func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
@@ -55,7 +68,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	}
 	createReq.UserID = identityInfo.UserID
 
-	if !identityInfo.IsInternalClient() {
+	if shouldCheckPermission(identityInfo.IsInternalClient(), r.Header.Get(httputil.InternalActionHeader) != "") {
 		if err := e.permission.CheckRuntimeBranch(identityInfo, createReq.AppID, createReq.Branch, apistructs.OperateAction); err != nil {
 			return errorresp.ErrResp(err)
 		}
