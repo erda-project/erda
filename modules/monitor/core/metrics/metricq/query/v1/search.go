@@ -271,7 +271,7 @@ func (q *queryer) doRequest(req *Request, format string, langCodes i18n.Language
 			return result, nil
 		}
 		if resp != nil && resp.Error != nil {
-			return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIntend(resp.Error))
+			return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIndent(resp.Error))
 		}
 		return nil, fmt.Errorf("fail to request storage: %s", err)
 	}
