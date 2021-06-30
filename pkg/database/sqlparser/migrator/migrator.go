@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -266,23 +267,28 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) {
 }
 
 func (mig *Migrator) migrateSandbox() (err error) {
+	// re-format sandbox dsn
+	dsnConfig, err := mysql.ParseDSN(mig.SandboxDSN())
+	if err != nil {
+		return errors.Wrapf(err, "failed to ParseDSN")
+	}
+	dsnConfig.DBName = mig.Database()
+	dsn := dsnConfig.FormatDSN()
+
+	// install every service
 	for _, serviceName := range mig.LocalScripts.ServicesNames {
 		scripts := mig.LocalScripts.Services[serviceName]
 		for _, script := range scripts {
 			if !script.Pending {
 				continue
 			}
-			for _, ddl := range script.DDLNodes() {
-				if err = SandBox().Exec(ddl.Text()).Error; err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox. The service name: %s, the script filename: %s, the schema SQL: %s",
-						serviceName, script.Name, ddl.Text())
-				}
-			}
-			for _, dml := range script.DMLNodes() {
-				if err = SandBox().Exec(dml.Text()).Error; err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox. The service name: %s, the script filename: %s, the data SQL: %s",
-						serviceName, script.Name, dml.Text())
-				}
+
+			if err := script.Install(dsn, func() *gorm.DB {
+				return SandBox().Begin()
+			}, func(tx *gorm.DB, err error) {
+				tx.Commit()
+			}); err != nil {
+				return errors.Wrapf(err, "failed t o migrate in sandbox. The service name: %s, the script filename: %s")
 			}
 		}
 	}
@@ -291,9 +297,17 @@ func (mig *Migrator) migrateSandbox() (err error) {
 
 // pre migrate data SQLs, all applied in this runtime will be rollback
 func (mig *Migrator) preMigrate() error {
+	// re-format dsn
+	dsnConfig, err := mysql.ParseDSN(mig.DSN())
+	if err != nil {
+		return errors.Wrapf(err, "failed to ParseDSN")
+	}
+	dsnConfig.DBName = mig.Database()
+	dsn := dsnConfig.FormatDSN()
+
+	// stop doing pre-migration if there is a destructive SQL in pending scripts
 	if mig.LocalScripts.HasDestructiveOperationInPending() {
-		logrus.Warnln("there are destructive SQL in pending scripts, stop doing pre-migration")
-		return nil
+		return errors.New("there are destructive SQL in pending scripts, stop doing pre-migration")
 	}
 
 	// finally roll all DDL back
@@ -304,13 +318,14 @@ func (mig *Migrator) preMigrate() error {
 
 	mig.reversing = nil
 
+	// install every service
 	for _, serviceName := range mig.LocalScripts.ServicesNames {
 		scripts := mig.LocalScripts.Services[serviceName]
 		for _, script := range scripts {
 			if !script.Pending {
 				continue
 			}
-			if err := script.Install(Begin, func(tx *gorm.DB, _ error) {
+			if err := script.Install(dsn, Begin, func(tx *gorm.DB, _ error) {
 				logrus.Infof("\tROLLBACK PRE-MIGRATIONS: %s", script.Name)
 				tx.Rollback()
 			}); err != nil {
@@ -325,6 +340,14 @@ func (mig *Migrator) preMigrate() error {
 }
 
 func (mig *Migrator) migrate() error {
+	// re-format dsn
+	dsnConfig, err := mysql.ParseDSN(mig.DSN())
+	if err != nil {
+		return errors.Wrapf(err, "failed to ParseDSN")
+	}
+	dsnConfig.DBName = mig.Database()
+	dsn := dsnConfig.FormatDSN()
+
 	now := time.Now()
 	for _, serviceName := range mig.LocalScripts.ServicesNames {
 		scripts := mig.LocalScripts.Services[serviceName]
@@ -333,7 +356,7 @@ func (mig *Migrator) migrate() error {
 				continue
 			}
 			logrus.Infoln("install", script.Name)
-			if err := script.Install(Begin, func(tx *gorm.DB, err error) {
+			if err := script.Install(dsn, Begin, func(tx *gorm.DB, err error) {
 				if err != nil {
 					tx.Rollback()
 					mig.reverse(script.Reversing, true) // script granularity rollback, not overall rollback.

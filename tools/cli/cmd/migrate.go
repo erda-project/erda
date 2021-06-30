@@ -14,27 +14,21 @@
 package cmd
 
 import (
-	"github.com/erda-project/erda/pkg/envconf"
+	"os"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
-var mysqlFlagsEnv_ *mysqlFlagsEnv
-
-type mysqlFlagsEnv struct {
-	Host string `env:"ERDA_MYSQL_HOST"`
-	Port int `env:"ERDA_MYSQL_PORT"`
-	Username string `env:"ERDA_MYSQL_USERNAME"`
-	Password string`env:"ERDA_MYSQL_PASSWORD"`
-	Database string`env:"ERDA_MYSQL_DATABASE"`
-}
-
-func getMySQLFlagsEnvs() *mysqlFlagsEnv {
-	if mysqlFlagsEnv_ != nil {
-		return mysqlFlagsEnv_
+func getPortFromEnv() int {
+	port := os.Getenv("ERDA_MYSQL_PORT")
+	i, err := strconv.ParseInt(port, 10, 32)
+	if err != nil {
+		return 3306
 	}
-	mysqlFlagsEnv_ = new(mysqlFlagsEnv)
-	_ = envconf.Load(mysqlFlags)
-	return mysqlFlagsEnv_
+	return int(i)
 }
 
 var mysqlFlags = []command.Flag{
@@ -42,31 +36,31 @@ var mysqlFlags = []command.Flag{
 		Short:        "h",
 		Name:         "host",
 		Doc:          "[MySQL] connect to host",
-		DefaultValue: getMySQLFlagsEnvs().Host,
+		DefaultValue: os.Getenv("ERDA_MYSQL_HOST"),
 	},
 	command.IntFlag{
 		Short:        "P",
 		Name:         "port",
 		Doc:          "[MySQL] port number to use for connection",
-		DefaultValue: getMySQLFlagsEnvs().Port,
+		DefaultValue: getPortFromEnv(),
 	},
 	command.StringFlag{
 		Short:        "u",
 		Name:         "username",
 		Doc:          "[MySQl] user for login",
-		DefaultValue: getMySQLFlagsEnvs().Username,
+		DefaultValue: os.Getenv("ERDA_MYSQL_USERNAME"),
 	},
 	command.StringFlag{
 		Short:        "p",
 		Name:         "password",
 		Doc:          "[MySQL] password to use then connecting to server",
-		DefaultValue: getMySQLFlagsEnvs().Password,
+		DefaultValue: os.Getenv("ERDA_MYSQL_PASSWORD"),
 	},
 	command.StringFlag{
 		Short:        "D",
 		Name:         "database",
 		Doc:          "[MySQL] database to use",
-		DefaultValue: getMySQLFlagsEnvs().Database,
+		DefaultValue: os.Getenv("ERDA_MYSQL_DATABASE"),
 	},
 }
 
@@ -99,11 +93,9 @@ var Migrate = command.Command{
 			DefaultValue: false,
 		},
 	),
-	Run: func() {
-		panic("not implement")
-	},
+	Run: nil,
 }
 
-func RunMigrate(ctx *command.Context, input, lintConfig string, skipLint )  {
-	
+func RunMigrate(ctx *command.Context) {
+	logrus.Infoln("Erda Migrator is working")
 }

@@ -21,14 +21,23 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
 	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
 )
+
+const (
+	ScriptTypeSQL    ScriptType = ".sql"
+	ScriptTypePython ScriptType = ".py"
+)
+
+type ScriptType string
 
 const (
 	baseScriptLabel  = "# MIGRATION_BASE"
@@ -46,6 +55,7 @@ type Script struct {
 	Pending   bool
 	Record    *HistoryModel
 	Workdir   string
+	Type      ScriptType
 	isBase    bool
 }
 
@@ -59,28 +69,39 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 		return r == ' ' || r == '\n' || r == '\t' || r == '\r'
 	})
 
-	nodes, warns, err := parser.New().Parse(string(data), "", "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to Parse file text data")
-	}
-	for _, warn := range warns {
-		logrus.Fatalln(warn)
+	var (
+		s = &Script{
+			Name:      pathFromRepoRoot,
+			Rawtext:   data,
+			Reversing: nil,
+			Nodes:     nil,
+			Pending:   true,
+			Record:    nil,
+			Workdir:   workdir,
+			Type:      "",
+			isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
+				bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
+				bytes.HasPrefix(data, []byte(baseScriptLabel3)),
+		}
+	warns []error
+	)
+	switch ext := filepath.Ext(s.Name); {
+	case strings.EqualFold(ext, string(ScriptTypeSQL)):
+		s.Type = ScriptTypeSQL
+		s.Nodes, warns, err = parser.New().Parse(string(data), "", "")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to Parse file text data")
+		}
+		for _, warn := range warns {
+			logrus.Fatalln(warn)
+		}
+	case strings.EqualFold(ext, string(ScriptTypePython)):
+		s.Type = ScriptTypePython
+	default:
+		return nil, errors.Errorf("invalid script type: only support .sql or .py file: %s", ext)
 	}
 
-	var s = &Script{
-		Name:      pathFromRepoRoot,
-		Rawtext:   data,
-		Reversing: nil,
-		Nodes:     nil,
-		Pending:   true,
-		Record:    nil,
-		Workdir:   workdir,
-		isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
-			bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
-			bytes.HasPrefix(data, []byte(baseScriptLabel3)),
-	}
-
-	for _, node := range nodes {
+	for _, node := range s.Nodes {
 		// ignore C-Style comments
 		text := strings.TrimLeftFunc(node.Text(), func(r rune) bool {
 			return r == ' ' || r == '\n' || r == '\t' || r == '\r'
@@ -151,7 +172,15 @@ func (s *Script) IsBaseline() bool {
 }
 
 // Install installs the script in database
-func (s *Script) Install(begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
+func (s *Script) Install(dsn string, begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
+	if s.Type == ScriptTypeSQL {
+		return s.installSQL(begin, after)
+	}
+
+	return s.installPy(dsn)
+}
+
+func (s *Script) installSQL(begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
 	tx := begin()
 	defer after(tx, err)
 
@@ -185,4 +214,42 @@ func (s *Script) Install(begin func() *gorm.DB, after func(tx *gorm.DB, err erro
 	}
 
 	return nil
+}
+
+func (s *Script) installPy(dsn string) (err error) {
+	//"root:12345678@(localhost:3306)/"
+	dsnConfig, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return errors.Wrap(err, "failed to ParseDSN")
+	}
+
+	settings := pattern.Settings{
+		Engine:        pattern.DjangoMySQLEngine,
+		User:          dsnConfig.User,
+		Password:      dsnConfig.Passwd,
+		Host:          dsnConfig.Addr,
+		Port:          0,
+		Name:          dsnConfig.DBName,
+		TimeZone:      dsnConfig.Loc.String(),
+		InstalledApps: strings.TrimSuffix(filepath.Base(s.Name), filepath.Ext(s.Name)),
+	}
+
+	var buf = bytes.NewBuffer(nil)
+	if err = pattern.GenSettings(buf, settings); err != nil {
+		return errors.Wrap(err, "failed to GenSettings")
+	}
+	buf.WriteString("\n")
+	buf.Write(s.Rawtext)
+
+	// mkdir
+
+	// write buf to file
+
+	// write entrypoint file
+
+	// run python
+
+	// rm dir
+
+	return errors.New("not implement")
 }

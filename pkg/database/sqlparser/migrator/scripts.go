@@ -78,7 +78,11 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 		}
 
 		for _, fileInfo := range serviceDirInfos {
-			if !fileInfo.IsDir() && strings.EqualFold(filepath.Ext(fileInfo.Name()), ".sql") {
+			if fileInfo.IsDir() {
+				continue
+			}
+			if ext := filepath.Ext(fileInfo.Name()); strings.EqualFold(ext, string(ScriptTypeSQL)) ||
+				strings.EqualFold(ext, string(ScriptTypePython)) {
 				script, err := NewScript(parameters.Workdir(), filepath.Join(parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to NewScript")

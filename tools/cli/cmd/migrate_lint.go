@@ -37,11 +37,11 @@ const (
 )
 
 var MigrationLint = command.Command{
-	ParentName:     "",
-	Name:           "miglint",
+	ParentName:     "Migrate",
+	Name:           "lint",
 	ShortHelp:      "Erda MySQL Migration lint",
 	LongHelp:       "Erda MySQL Migration lint",
-	Example:        "erda-cli miglint --input=. config=default.yaml --detail",
+	Example:        "erda-cli migrate lint --input=. config=default.yaml --detail",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
