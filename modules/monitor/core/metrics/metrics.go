@@ -41,13 +41,13 @@ func (m *Metric) Copy() *Metric {
 	for k, v := range m.Fields {
 		fields[k] = v
 	}
-	newMetric := &Metric{
+	copied := &Metric{
 		Name:      m.Name,
 		Timestamp: m.Timestamp,
 		Tags:      tags,
 		Fields:    fields,
 	}
-	return newMetric
+	return copied
 }
 
 // New .

@@ -419,11 +419,12 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			},
 		),
 		Metadata: map[string]string{
-			"pipelineID":            strconv.FormatUint(task.PipelineID, 10),
-			"taskID":                strconv.FormatUint(task.ID, 10),
-			httputil.UserHeader:     pre.P.GetRunUserID(),
-			httputil.InternalHeader: handleInternalClient(pre.P),
-			httputil.OrgHeader:      pre.P.Labels[apistructs.LabelOrgID],
+			"pipelineID":                  strconv.FormatUint(task.PipelineID, 10),
+			"taskID":                      strconv.FormatUint(task.ID, 10),
+			httputil.UserHeader:           pre.P.GetRunUserID(),
+			httputil.InternalHeader:       handleInternalClient(pre.P),
+			httputil.InternalActionHeader: handleInternalClient(pre.P),
+			httputil.OrgHeader:            pre.P.Labels[apistructs.LabelOrgID],
 		},
 	}
 

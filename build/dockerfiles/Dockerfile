@@ -11,9 +11,6 @@ ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
 
-# use for cmp
-RUN tar -zcvf ./bin/scripts.tar.gz ./modules/cmp/scripts/
-
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
@@ -38,7 +35,6 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/c
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
 
 # use for ops
-COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/scripts.tar.gz" "/app/scripts.tar.gz"
 RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
     chmod 755 /usr/bin/orgalorg
 

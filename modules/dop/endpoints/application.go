@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/types"
-	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -90,7 +89,7 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 	if applicationCreateReq.ProjectID == 0 {
 		return errors.Errorf("invalid request, projectId is empty")
 	}
-	err := utils.CheckAppMode(applicationCreateReq.Mode)
+	err := applicationCreateReq.Mode.CheckAppMode()
 	return err
 }
 
@@ -212,7 +211,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	}
 
 	// delete extra
-	e.deleteExtraInfo(appDto.Extra)
+	e.deleteExtraInfo(appDto.Extra, identity)
 
 	// delete issue
 	if err = e.db.DeleteIssueAppRelationsByApp(applicationID); err != nil {
@@ -228,7 +227,7 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 }
 
 // 从addon platform删除namespace
-func (e *Endpoints) deleteExtraInfo(extra string) {
+func (e *Endpoints) deleteExtraInfo(extra string, identityInfo apistructs.IdentityInfo) {
 	var extraMap map[string]string
 	if err := json.Unmarshal([]byte(extra), &extraMap); err != nil {
 		logrus.Warnf("failed to unmarshal extra, (%v)", err)
@@ -237,12 +236,12 @@ func (e *Endpoints) deleteExtraInfo(extra string) {
 	for _, v := range extraMap {
 		// 删除 namespace relation(删除namespace relation须在删除namespace前进行，后续须推动优化)
 		if strings.Contains(v, string(types.DefaultWorkspace)) {
-			if err := e.bdl.DeleteNamespaceRelation(v); err != nil {
+			if err := e.namespace.DeleteRelation(nil, nil, v, identityInfo.UserID); err != nil {
 				logrus.Warnf(err.Error())
 			}
 		}
 		// 删除 namespace
-		if err := e.bdl.DeleteNamespace(v); err != nil {
+		if err := e.namespace.DeleteNamespace(nil, v, identityInfo); err != nil {
 			logrus.Warnf(err.Error())
 		}
 	}

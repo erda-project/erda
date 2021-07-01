@@ -72,7 +72,7 @@ func (q *queryer) esScrollRequest(indices []string, searchSource *elastic.Search
 			return nil, nil
 		}
 		if resp != nil && resp.Error != nil {
-			return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIntend(resp.Error))
+			return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIndent(resp.Error))
 		}
 		return nil, fmt.Errorf("fail to request storage: %s", err)
 	}

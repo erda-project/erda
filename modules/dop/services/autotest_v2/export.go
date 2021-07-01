@@ -122,7 +122,7 @@ func (a *AutoTestSpaceDB) SetConfigs() error {
 	autoTestGlobalConfigListRequest.ScopeID = strconv.Itoa(int(a.Data.Space.ProjectID))
 	autoTestGlobalConfigListRequest.Scope = "project-autotest-testcase"
 	autoTestGlobalConfigListRequest.UserID = a.Data.UserID
-	configs, err := a.Data.svc.bdl.ListAutoTestGlobalConfig(autoTestGlobalConfigListRequest)
+	configs, err := a.Data.svc.autotestSvc.ListGlobalConfigs(autoTestGlobalConfigListRequest)
 	if err != nil {
 		return err
 	}

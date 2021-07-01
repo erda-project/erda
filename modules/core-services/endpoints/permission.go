@@ -23,10 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
-	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/services/security"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -251,102 +250,20 @@ func (e *Endpoints) getPermission(userID string, scopeType apistructs.ScopeType,
 	}, nil
 }
 
+var permissionAdaptor security.PermissionAdaptor
+
 // 获取权限
 func (e *Endpoints) getPermissionList(userID string, scopeType apistructs.ScopeType, scopeID int64) (apistructs.PermissionList, error) {
-	var permissionList = apistructs.PermissionList{
-		Access:           false,
-		PermissionList:   make([]apistructs.ScopeResource, 0),
-		ResourceRoleList: make([]apistructs.ScopeResource, 0),
-		Roles:            make([]string, 0),
-		Exist:            true,
-	}
 
-	// 若为系统管理员 & 查询系统范围权限，则返回true；若系统管理员查询企业/项目/应用等，应返回false
-	if e.member.IsAdmin(userID) && scopeType == apistructs.SysScope {
-		permissionList.Access = true
-		permissionList.Roles = []string{types.RoleSysManager}
-		return permissionList, nil
-	}
+	permissionAdaptor.Once.Do(func() {
+		permissionAdaptor.Db = e.db
+		permissionAdaptor.Bdl = e.bdl
+		permissionAdaptor.RegisterHandler(security.AdminUserPermissionHandler{Adaptor: &permissionAdaptor})
+		permissionAdaptor.RegisterHandler(security.SupportUserPermissionHandler{Adaptor: &permissionAdaptor})
+		permissionAdaptor.RegisterHandler(security.NormalUserPermissionHandler{Adaptor: &permissionAdaptor})
+	})
 
-	var roles []string
-	if userID != apistructs.SupportID {
-		members, err := e.member.GetByUserAndScope(userID, scopeType, scopeID)
-		if err != nil {
-			logrus.Infof("failed to get permission, (%v)", err)
-			return permissionList, errors.Errorf("failed to access permission")
-		}
-
-		if len(members) == 0 {
-			if scopeType == apistructs.SysScope {
-				return permissionList, nil
-			}
-			isPublic, err := e.permission.CheckPublicScope(userID, scopeType, scopeID)
-			if err != nil || !isPublic {
-				return permissionList, err
-			}
-			roles = append(roles, types.RoleGuest)
-		}
-
-		for _, member := range members {
-			if member.ResourceKey == apistructs.RoleResourceKey {
-				roles = append(roles, member.ResourceValue)
-			}
-		}
-		if len(roles) == 0 {
-			logrus.Warningf("nil role, scope: %s, scopeID: %d, memberInfo: %v", scopeType, scopeID, members)
-			return permissionList, nil
-		}
-	} else {
-		if scopeType == apistructs.SysScope {
-			return permissionList, nil
-		}
-		roles = []string{types.RoleOrgSupport}
-	}
-
-	var pml = make([]model.RolePermission, 0)
-	// get permissions from db
-	pmlDb, resourceRoleDb := e.db.GetPermissionList(roles)
-
-	// get permissions from permission.yml
-	pmlYml, resourceRoles := conf.RolePermissions(roles)
-	if len(pmlDb) > 0 {
-		for _, v := range pmlDb {
-			k := strutil.Concat(v.Scope, v.Resource, v.Action)
-			pmlYml[k] = v
-		}
-	}
-
-	// merge permission list
-	for _, v := range pmlYml {
-		pml = append(pml, v)
-	}
-
-	permissions := make([]apistructs.ScopeResource, 0)
-	for _, v := range pml {
-		permission := apistructs.ScopeResource{
-			Resource:     v.Resource,
-			Action:       v.Action,
-			ResourceRole: v.ResourceRole,
-		}
-		permissions = append(permissions, permission)
-	}
-
-	resourceRoles = append(resourceRoles, resourceRoleDb...)
-	resourceRoleList := make([]apistructs.ScopeResource, 0)
-	for _, v := range resourceRoles {
-		rr := apistructs.ScopeResource{
-			Resource:     v.Resource,
-			Action:       v.Action,
-			ResourceRole: v.ResourceRole,
-		}
-		resourceRoleList = append(resourceRoleList, rr)
-	}
-
-	permissionList.Access = true
-	permissionList.Roles = roles
-	permissionList.PermissionList = permissions
-	permissionList.ResourceRoleList = resourceRoleList
-	return permissionList, nil
+	return permissionAdaptor.PermissionList(userID, scopeType, scopeID)
 }
 
 func (e *Endpoints) scopeIsDeleted(scopeType apistructs.ScopeType, scopeID int64) (bool, error) {

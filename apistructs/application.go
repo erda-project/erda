@@ -14,6 +14,7 @@
 package apistructs
 
 import (
+	"errors"
 	"time"
 )
 
@@ -26,7 +27,7 @@ type ApplicationCreateRequest struct {
 	ProjectID   uint64 `json:"projectId"`
 
 	// 模式 LIBRARY, SERVICE, BIGDATA, ABILITY
-	Mode string `json:"mode"`
+	Mode ApplicationMode `json:"mode"`
 
 	// 配置信息，eg: 钉钉通知地址
 	Config map[string]interface{} `json:"config"`
@@ -324,13 +325,26 @@ func (s DiceWorkspace) Deployable() bool {
 type ApplicationMode string
 
 const (
-	ApplicationModeService ApplicationMode = "SERVICE"
-	ApplicationModeBigdata ApplicationMode = "BIGDATA"
-	ApplicationModeLibrary ApplicationMode = "LIBRARY"
-	ApplicationModeAbility ApplicationMode = "ABILITY"
-	ApplicationModeMobile  ApplicationMode = "MOBILE"
-	ApplicationModeApi     ApplicationMode = "API"
+	ApplicationModeService        ApplicationMode = "SERVICE"
+	ApplicationModeProjectService ApplicationMode = "PROJECT_SERVICE"
+	ApplicationModeBigdata        ApplicationMode = "BIGDATA"
+	ApplicationModeLibrary        ApplicationMode = "LIBRARY"
+	ApplicationModeAbility        ApplicationMode = "ABILITY"
+	ApplicationModeMobile         ApplicationMode = "MOBILE"
+	ApplicationModeApi            ApplicationMode = "API"
 )
+
+func (mode ApplicationMode) CheckAppMode() error {
+	switch string(mode) {
+	case string(ApplicationModeService), string(ApplicationModeLibrary),
+		string(ApplicationModeBigdata), string(ApplicationModeAbility),
+		string(ApplicationModeMobile), string(ApplicationModeApi),
+		string(ApplicationModeProjectService):
+	default:
+		return errors.New("invalid mode")
+	}
+	return nil
+}
 
 func (w DiceWorkspace) String() string {
 	return string(w)

@@ -324,22 +324,43 @@ func (svc *Service) GetAutoTestSceneStep(stepID uint64) (*dao.AutoTestSceneStep,
 
 // AutoTestGetStepOutPut 获取步骤接口出参
 func (svc *Service) AutoTestGetStepOutPut(steps []apistructs.AutoTestSceneStep) (map[string]string, error) {
+	var outputs = map[string]string{}
+	for _, step := range steps {
+		err := appendStepOutput(step, outputs)
+		if err != nil {
+			return nil, err
+		}
+		for _, childStep := range step.Children {
+			err := appendStepOutput(childStep, outputs)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return outputs, nil
+}
+
+func appendStepOutput(step apistructs.AutoTestSceneStep, outputs map[string]string) error {
+
+	if outputs == nil {
+		outputs = map[string]string{}
+	}
+
+	if step.Value == "" || step.Type != apistructs.StepTypeAPI {
+		return nil
+	}
+
 	type Value struct {
 		ApiInfo apistructs.APIInfoV2 `json:"apiSpec"`
 	}
 	var value Value
-	var outputs = map[string]string{}
-	for _, step := range steps {
-		if step.Value == "" || step.Type != apistructs.StepTypeAPI {
-			continue
-		}
-		err := json.Unmarshal([]byte(step.Value), &value)
-		if err != nil {
-			return nil, err
-		}
-		for _, v := range value.ApiInfo.OutParams {
-			outputs["#"+strconv.Itoa(int(step.ID))+" "+step.Name+":"+v.Key] = expression.LeftPlaceholder + " outputs." + strconv.Itoa(int(step.ID)) + "." + v.Key + " " + expression.RightPlaceholder
-		}
+	err := json.Unmarshal([]byte(step.Value), &value)
+	if err != nil {
+		return err
 	}
-	return outputs, nil
+	for _, v := range value.ApiInfo.OutParams {
+		outputs["#"+strconv.Itoa(int(step.ID))+" "+step.Name+":"+v.Key] = expression.LeftPlaceholder + " outputs." + strconv.Itoa(int(step.ID)) + "." + v.Key + " " + expression.RightPlaceholder
+	}
+
+	return nil
 }

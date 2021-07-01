@@ -391,8 +391,6 @@ func (b *Bundle) FindQaFileTreeNodeAncestors(req apistructs.UnifiedFileTreeNodeF
 	return result, nil
 }
 
-// project
-
 func (b *Bundle) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest, orgID uint64) (results []apistructs.UnifiedFileTreeNode, err error) {
 	switch req.Scope {
 	case apistructs.FileTreeScopeProjectApp:

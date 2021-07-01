@@ -97,7 +97,7 @@ func (p *provider) Start() error {
 		return err
 	}
 	toListMap(list, charts)
-	// fmt.Println(jsonx.MarshalAndIntend(charts))
+	// fmt.Println(jsonx.MarshalAndIndent(charts))
 
 	for name, c := range charts {
 		c.Type = strings.TrimSpace(c.Type)
