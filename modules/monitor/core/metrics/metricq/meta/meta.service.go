@@ -16,7 +16,6 @@ package meta
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -37,7 +36,7 @@ func getLanguage(ctx context.Context) i18n.LanguageCodes {
 	return nil
 }
 
-// GET /api/metric/names
+// ListMetricNames GET /api/metric/names
 func (m *metricMetaService) ListMetricNames(ctx context.Context, req *pb.ListMetricNamesRequest) (*pb.ListMetricNamesResponse, error) {
 	names, err := m.p.Metricq.MetricNames(getLanguage(ctx), req.Scope, req.ScopeID)
 	if err != nil {
@@ -50,13 +49,9 @@ func (m *metricMetaService) ListMetricNames(ctx context.Context, req *pb.ListMet
 	return &pb.ListMetricNamesResponse{Data: data}, nil
 }
 
-// GET /api/metric/meta
+// ListMetricMeta GET /api/metric/meta
 func (m *metricMetaService) ListMetricMeta(ctx context.Context, req *pb.ListMetricMetaRequest) (*pb.ListMetricMetaResponse, error) {
-	var names []string
-	if len(req.Metrics) > 0 {
-		names = strings.Split(req.Metrics, ",")
-	}
-	metrics, err := m.p.Metricq.MetricMeta(getLanguage(ctx), req.Scope, req.ScopeID, names...)
+	metrics, err := m.p.Metricq.MetricMeta(getLanguage(ctx), req.Scope, req.ScopeID, req.Metrics...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +60,15 @@ func (m *metricMetaService) ListMetricMeta(ctx context.Context, req *pb.ListMetr
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(b, &data)
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return nil, err
+	}
 
-	return &pb.ListMetricMetaResponse{Metas: data}, nil
+	return &pb.ListMetricMetaResponse{Data: data}, nil
 }
 
-// GET /api/metric/groups
+// ListMetricGroups GET /api/metric/groups
 func (m *metricMetaService) ListMetricGroups(ctx context.Context, req *pb.ListMetricGroupsRequest) (*pb.ListMetricGroupsResponse, error) {
 	groups, err := m.p.Metricq.MetricGroups(getLanguage(ctx), req.Scope, req.ScopeID, req.Mode)
 	if err != nil {
@@ -81,11 +79,14 @@ func (m *metricMetaService) ListMetricGroups(ctx context.Context, req *pb.ListMe
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(b, &data)
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.ListMetricGroupsResponse{Data: data}, nil
 }
 
-// GET /api/metric/groups/{id}
+// GetMetricGroup GET /api/metric/groups/{id}
 func (m *metricMetaService) GetMetricGroup(ctx context.Context, req *pb.GetMetricGroupRequest) (*pb.GetMetricGroupResponse, error) {
 	if len(req.Format) <= 0 {
 		if req.Version == "v2" {
@@ -105,7 +106,10 @@ func (m *metricMetaService) GetMetricGroup(ctx context.Context, req *pb.GetMetri
 	if err != nil {
 		return nil, err
 	}
-	json.Unmarshal(b, &data)
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return nil, err
+	}
 
 	return data, nil
 }

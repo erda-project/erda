@@ -19,10 +19,9 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -96,16 +95,15 @@ func (m *metricService) metricsInfluxQuery(ctx context.Context, req *pb.QueryWit
 				series.Columns = s.Columns
 				var arrValues []*pb.Row
 				for _, v := range s.Values {
-					var arrAny []*anypb.Any
+					var arrStruct []*structpb.Value
 					for _, k := range v {
-						any, err := goany.Marshal(k)
+						structValue, err := structpb.NewValue(k)
 						if err != nil {
 							return nil, err
 						}
-						arrAny = append(arrAny, any)
+						arrStruct = append(arrStruct, structValue)
 					}
-
-					arrValues = append(arrValues, &pb.Row{Values: arrAny})
+					arrValues = append(arrValues, &pb.Row{Values: arrStruct})
 				}
 				series.Rows = arrValues
 				arrSeries = append(arrSeries, &series)
@@ -152,13 +150,13 @@ func (m *metricService) metricsTableQuery(ctx context.Context, req *pb.QueryWith
 	var tableRows []*pb.TableRow
 	for _, row := range tableResponse.Data {
 		var tableRow pb.TableRow
-		values := make(map[string]*anypb.Any)
+		values := make(map[string]*structpb.Value)
 		for k, v := range row {
-			any, err := goany.Marshal(&v)
+			structValue, err := structpb.NewValue(v)
 			if err != nil {
 				return nil, err
 			}
-			values[k] = any
+			values[k] = structValue
 		}
 		tableRow.Values = values
 		tableRows = append(tableRows, &tableRow)

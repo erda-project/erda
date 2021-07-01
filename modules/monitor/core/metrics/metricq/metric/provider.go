@@ -18,8 +18,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -96,12 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 									for _, row := range s.Rows {
 										var interfaces []interface{}
 										for _, rw := range row.Values {
-											var singleInterface interface{}
-											err = goany.Unmarshal(rw, &singleInterface)
-											if err != nil {
-												return err
-											}
-											interfaces = append(interfaces, singleInterface)
+											interfaces = append(interfaces, rw.AsInterface())
 										}
 										serie.Values = append(serie.Values, interfaces)
 									}
@@ -121,12 +114,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							for _, v := range r.Data {
 								tableRow := make(map[string]interface{})
 								for k, value := range v.Values {
-									var i interface{}
-									err := goany.Unmarshal(value, &i)
-									if err != nil {
-										return err
-									}
-									tableRow[k] = i
+									tableRow[k] = value.AsInterface()
 								}
 								tableRows = append(tableRows, tableRow)
 							}
