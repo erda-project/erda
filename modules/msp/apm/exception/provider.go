@@ -35,13 +35,13 @@ type provider struct {
 	Cfg              *config
 	Log              logs.Logger
 	Register         transport.Register
+	Cassandra        cassandra.Interface `autowired:"cassandra"`
 	exceptionService *exceptionService
 	cassandraSession *gocql.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	c := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := c.Session(&p.Cfg.Cassandra)
+	session, err := p.Cassandra.Session(&p.Cfg.Cassandra)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}

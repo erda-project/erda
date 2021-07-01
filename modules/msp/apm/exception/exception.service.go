@@ -33,7 +33,7 @@ type exceptionService struct {
 
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
 
-	iter := s.p.cassandraSession.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.GetScopeId()).
+	iter := s.p.cassandraSession.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).
 		Consistency(gocql.All).
 		RetryPolicy(nil).
 		Iter()
