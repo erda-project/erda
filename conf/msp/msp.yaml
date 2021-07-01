@@ -1,39 +1,39 @@
 http-server:
-    addr: ":8080"
+  addr: ":8080"
 health:
 
 grpc-server:
-    addr: ":7080"
+  addr: ":7080"
 
 http-server@admin:
-    addr: ":9080"
+  addr: ":9080"
 pprof:
 
 service-register:
 
 mysql:
-    host: "${MYSQL_HOST:localhost}"
-    port: ${MYSQL_PORT:3306}
-    username: "${MYSQL_USERNAME:root}"
-    password: "${MYSQL_PASSWORD:123456}"
-    database: "${MYSQL_DATABASE:dice}"
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
 
 etcd:
-    endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
-    tls:
-        cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
-        cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
-        ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
 etcd-election:
-    root_path: "/msp-election"
+  root_path: "/msp-election"
 
 redis:
-    addr: "${REDIS_ADDR}"
-    password: "${REDIS_PASSWORD}"
-    db: ${REDIS_DB:0}
-    master_name: "${REDIS_MASTER_NAME}"
-    sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 i18n:
   common:
@@ -56,9 +56,9 @@ erda.msp.apm.exception:
 erda.msp.apm.checker: # checkers apis
 
 erda.msp.apm.checker.storage.cache.sycn:
-    cache_key: "${CHECKER_CACHE_KEY:checkers}"
-    delay_on_start: "5s"
-    interval: "5m"
+  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+  delay_on_start: "5s"
+  interval: "5m"
 
 # for debug
 # erda.msp.apm.checker.task.fetcher.fixed:
@@ -72,15 +72,15 @@ erda.msp.apm.checker.storage.cache.sycn:
 #             custom_tag: "custom"
 
 erda.msp.apm.checker.task.fetcher.scheduled:
-    cache_key: "${CHECKER_CACHE_KEY:checkers}"
-    load_checkers_interval: "10s" # load checkers for worker
-    max_schedule_interval: "3m" # schedule all checkers to ndoes
+  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+  load_checkers_interval: "10s" # load checkers for worker
+  max_schedule_interval: "3m" # schedule all checkers to ndoes
 
 erda.msp.apm.checker.task.plugins.http:
 erda.msp.apm.checker.task:
-    default_periodic_worker_interval: "30s"
+  default_periodic_worker_interval: "30s"
 
 metric-report-client:
-    addr: "${COLLECTOR_ADDR:localhost:7076}"
-    username: ${COLLECTOR_AUTH_USERNAME}
-    password: ${COLLECTOR_AUTH_PASSWORD}
+  addr: "${COLLECTOR_ADDR:localhost:7076}"
+  username: ${COLLECTOR_AUTH_USERNAME}
+  password: ${COLLECTOR_AUTH_PASSWORD}
