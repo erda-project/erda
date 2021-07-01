@@ -94,7 +94,7 @@ services:
     image: erdaproject/kms:20200608-f11445f776ba50e1f947096f57956a3f0333ab11
     container_name: erda-kms
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     ports:
@@ -107,7 +107,7 @@ services:
     command: /app/eventbox
     container_name: erda-eventbox
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     ports:
@@ -120,7 +120,7 @@ services:
     command: /app/pipeline
     container_name: erda-pipeline
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - scheduler
     env_file:
       - ./env
@@ -137,7 +137,7 @@ services:
     command: /app/ops
     container_name: erda-ops
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     restart: always
@@ -154,7 +154,7 @@ services:
     ports:
       - "3033:3033"
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - cmdb
     restart: always
     platform: linux/amd64
@@ -164,7 +164,7 @@ services:
     command: /app/scheduler
     container_name: erda-scheduler
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - etcd
     env_file:
       - ./env
@@ -182,7 +182,7 @@ services:
     command: /app/apim
     container_name: erda-apim
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     ports:
@@ -215,7 +215,7 @@ services:
     ports:
        - "9093:9093"
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - eventbox
     restart: always
     platform: linux/amd64
@@ -225,7 +225,7 @@ services:
     command: /app/gittar
     container_name: erda-gittar
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     volumes:
@@ -250,7 +250,7 @@ services:
     command: /app/gittar-adaptor
     container_name: erda-gittar-adaptor
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - gittar
       - pipeline
     env_file:
@@ -265,7 +265,7 @@ services:
     command: /app/dicehub
     container_name: erda-dicehub
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     ports:
@@ -284,7 +284,7 @@ services:
     depends_on:
       - redis-sentinel
       - redis
-      - dbmigration-4
+      - erda-migration
       - scheduler
       - pipeline
       - gittar
@@ -319,7 +319,7 @@ services:
     command: /app/hepa
     container_name: erda-hepa
     depends_on:
-      - dbmigration-4
+      - erda-migration
     env_file:
       - ./env
     restart: always
@@ -330,7 +330,7 @@ services:
     command: /app/orchestrator
     container_name: erda-orchestrator
     depends_on:
-      - dbmigration-4
+      - erda-migration
       - scheduler
     env_file:
       - ./env
@@ -371,9 +371,9 @@ services:
     restart: always
     platform: linux/amd64
 
-  dbmigration-4:
-    image: erdaproject/migrator-tool:20210423-110000
-    container_name: erda-db-migration
+  erda-migration:
+    image: erdaproject/erda-mysql-migration-action:20210701-f84c33b
+    container_name: erda-migration
     depends_on:
       - mysql
     environment:
@@ -385,9 +385,8 @@ services:
       - MIGRATION_MYSQL_DBNAME=erda
       - MIGRATION_DEBUGSQL=false
       - MIGRATION_ERDA_LINT=true
-      - MIGRATION_DIR=/opt/action/migrations
     volumes:
-      - ../.erda/migrations:/opt/action/migrations
+      - ../.erda/migrations:/migrations
     restart: on-failure
     platform: linux/amd64
 
