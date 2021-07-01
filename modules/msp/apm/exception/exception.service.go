@@ -18,11 +18,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/gocql/gocql"
-
 	"github.com/recallsong/go-utils/conv"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 )
