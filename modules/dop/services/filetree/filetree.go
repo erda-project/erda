@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -37,7 +38,8 @@ const gittarEntryBlobType = "blob"
 
 // Pipeline pipeline 结构体
 type GittarFileTree struct {
-	bdl *bundle.Bundle
+	bdl           *bundle.Bundle
+	branchRuleSve *branchrule.BranchRule
 }
 
 // Option Pipeline 配置选项
@@ -56,6 +58,12 @@ func New(options ...Option) *GittarFileTree {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(f *GittarFileTree) {
 		f.bdl = bdl
+	}
+}
+
+func WithBranchRule(svc *branchrule.BranchRule) Option {
+	return func(f *GittarFileTree) {
+		f.branchRuleSve = svc
 	}
 }
 
@@ -284,7 +292,8 @@ func (svc *GittarFileTree) GetWorkspaceByBranch(projectIDStr, branch string) (st
 	if err != nil {
 		return "", err
 	}
-	rules, err := svc.bdl.GetProjectBranchRules(uint64(projectID))
+
+	rules, err := svc.branchRuleSve.Query(apistructs.ProjectScope, int64(projectID))
 	if err != nil {
 		return "", err
 	}
