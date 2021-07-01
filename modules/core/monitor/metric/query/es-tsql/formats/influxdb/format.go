@@ -16,12 +16,13 @@ package influxdb
 import (
 	"strings"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql/formats"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Formater .

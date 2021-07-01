@@ -17,9 +17,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tsql "github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (f *Formater) formatTableChart(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
