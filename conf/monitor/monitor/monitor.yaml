@@ -68,6 +68,7 @@ erda.core.monitor.metric:
        - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
      metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
 metric-query-example:
+  _enable: ${METRIC_QUERY_EXAMPLE_ENABLE:false}
 metrics-query-compatibility:
   _enable: ${METRIC_QUERY_ENABLE:true}
   chart_meta:
