@@ -1699,7 +1699,7 @@ func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistruct
 	var err error
 	var status AppStatus
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 60; i++ {
 		done := map[string]struct{}{}
 
 		time.Sleep(10 * time.Second)
