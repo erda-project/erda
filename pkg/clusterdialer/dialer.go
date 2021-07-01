@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -26,29 +27,31 @@ import (
 
 var session TunnelSession
 var initialized bool
+var once sync.Once
 
-func init() {
-	clusterDialAddr := discover.ClusterDialer()
-	if clusterDialAddr == "" {
+func Init(addrOption ...string) {
+	if initialized {
 		return
+	}
+	var clusterDialAddr string
+	if len(addrOption) == 0 {
+		clusterDialAddr := discover.ClusterDialer()
+		if clusterDialAddr == "" {
+			return
+		}
+	} else {
+		clusterDialAddr = addrOption[0]
 	}
 	clusterDialerEndpoint := fmt.Sprintf("ws://%s%s", clusterDialAddr, "/clusterdialer")
 	go session.initialize(clusterDialerEndpoint)
 	initialized = true
 }
 
-func Init(clusterDialAddr string) {
-	if !initialized {
-		clusterDialerEndpoint := fmt.Sprintf("ws://%s%s", clusterDialAddr, "/clusterdialer")
-		go session.initialize(clusterDialerEndpoint)
-		initialized = true
-	}
-}
-
 type DialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
 type DialContextProtoFunc func(ctx context.Context, address string) (net.Conn, error)
 
 func DialContext(clusterKey string) DialContextFunc {
+	once.Do(func() { Init() })
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
 		f := session.getClusterDialer(ctx, clusterKey)
@@ -60,6 +63,7 @@ func DialContext(clusterKey string) DialContextFunc {
 }
 
 func DialContextProto(clusterKey, proto string) DialContextProtoFunc {
+	once.Do(func() { Init() })
 	return func(ctx context.Context, addr string) (net.Conn, error) {
 		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
 		f := session.getClusterDialer(ctx, clusterKey)
