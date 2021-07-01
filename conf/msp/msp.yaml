@@ -50,7 +50,7 @@ erda.msp.apm.exception:
   cassandra:
     keyspace:
       name: "spot_prod"
-      auto: true # 自动创建 keyspace
+      auto: false # 自动创建 keyspace
       replication:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
