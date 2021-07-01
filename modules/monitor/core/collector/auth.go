@@ -47,11 +47,11 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 					return echo.NewHTTPError(http.StatusUnauthorized, "no secret_key in config with static sk_provider")
 				}
 			default:
-				aksk, err := bdl.GetAkSkByAk(ak)
+				aksk, err := bdl.GetAccessKeyByAccessKeyID(ak)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusUnauthorized)
 				}
-				sk = aksk.Sk
+				sk = aksk.SecretKey
 			}
 			vd := validator.NewHMACValidator(secret.AkSkPair{AccessKeyID: ak, SecretKey: sk})
 			if res := vd.Verify(ctx.Request()); !res.Ok {

@@ -13,9 +13,19 @@
 
 package apistructs
 
-type AkSkCreateRequest struct {
+const (
+	AccessKeyStatusActive   = "ACTIVE"
+	AccessKeyStatusDisabled = "DISABLED"
+)
+
+type AccessKeyCreateRequest struct {
 	SubjectType string `json:"subjectType"`
 	Subject     string `json:"subject"`
 	IsSystem    bool   `json:"isSystem"`
+	Description string `json:"description"`
+}
+
+type AccessKeyUpdateRequest struct {
+	Status      string `json:"status" validate:"eq=ACTIVE|DISABLED"`
 	Description string `json:"description"`
 }

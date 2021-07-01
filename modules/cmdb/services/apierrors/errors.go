@@ -299,9 +299,10 @@ var (
 
 	ErrGetWorkBenchData = err("ErrGetWorkBenchData", "failed to query workbench data")
 
-	ErrCreateAkSk = err("ErrCreateSecretKey", "创建密钥对失败")
-	ErrGetAkSk    = err("ErrGetAkSk", "查询密钥对失败")
-	ErrDeleteAkSk = err("ErrDeleteAkSk", "删除密钥对失败")
+	ErrCreateAccessKey = err("ErrCreateSecretKey", "创建密钥对失败")
+	ErrUpdateAccessKey = err("ErrCreateSecretKey", "更新密钥对失败")
+	ErrGetAccessKey    = err("ErrGetAccessKey", "查询密钥对失败")
+	ErrDeleteAccessKey = err("ErrDeleteAccessKey", "删除密钥对失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

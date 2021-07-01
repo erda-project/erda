@@ -22,8 +22,8 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
-	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
 	"github.com/erda-project/erda/modules/core-services/services/audit"
@@ -69,7 +69,7 @@ type Endpoints struct {
 	queryStringDecoder *schema.Decoder
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
-	aksk               *aksk.Service
+	accesskey          *accesskey.Service
 }
 
 type Option func(*Endpoints)
@@ -211,9 +211,9 @@ func WithNotice(notice *notice.Notice) Option {
 	}
 }
 
-func WithAksk(aksk *aksk.Service) Option {
+func WithAksk(aksk *accesskey.Service) Option {
 	return func(e *Endpoints) {
-		e.aksk = aksk
+		e.accesskey = aksk
 	}
 }
 
@@ -341,10 +341,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/permissions/actions/check", Method: http.MethodPost, Handler: e.CheckPermission},
 		{Path: "/api/permissions/actions/stateCheck", Method: http.MethodPost, Handler: e.StateCheckPermission},
 
-		// the interface of aksk
-		{Path: "/api/aksks/{ak}", Method: http.MethodGet, Handler: e.GetAkSkByAk},
-		{Path: "/api/aksks", Method: http.MethodPost, Handler: e.CreateAkSks},
-		{Path: "/api/aksks/{ak}", Method: http.MethodDelete, Handler: e.DeleteAkSkByAk},
+		// the interface of accesskey
+		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodGet, Handler: e.GetByAccessKeyID},
+		{Path: "/api/credential/access-keys", Method: http.MethodPost, Handler: e.CreateAccessKey},
+		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodPut, Handler: e.UpdateAccessKey},
+		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodDelete, Handler: e.DeleteByAccessKeyID},
 
 		// the interface of license
 		{Path: "/api/license", Method: http.MethodGet, Handler: e.GetLicense},

@@ -18,11 +18,12 @@ import (
 )
 
 // store secret key pair
-type AkSk struct {
+type AccessKey struct {
 	ID          int64     `json:"id" gorm:"primary_key;comment:'Primary Key'"`
-	Ak          string    `json:"ak" gorm:"size:24;unique;comment:'Access Key ID'"`
-	Sk          string    `json:"sk" gorm:"size:32;unique;comment:'Secret Key'"`
+	AccessKeyID string    `json:"accessKeyId" gorm:"size:24;unique;comment:'Access Key ID'"`
+	SecretKey   string    `json:"secretKey" gorm:"size:32;unique;comment:'Secret Key'"`
 	IsSystem    bool      `json:"isSystem" gorm:"comment:'identify weather used for system component communication'"`
+	Status      string    `json:"status" gorm:"size:16;comment:'status of access key'"`
 	SubjectType string    `json:"subjectType" gorm:"comment:'authentication subject type. eg: organization, micro_service'"`
 	Subject     string    `json:"subject" gorm:"comment:'authentication subject identifier. eg: id, name or something'"`
 	Description string    `json:"description" gorm:"comment:'description'"`
@@ -30,6 +31,6 @@ type AkSk struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-func (ak AkSk) TableName() string {
-	return "erda_aksk"
+func (ak AccessKey) TableName() string {
+	return "erda_access_key"
 }

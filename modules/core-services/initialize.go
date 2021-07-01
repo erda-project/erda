@@ -28,8 +28,8 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
+	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
-	"github.com/erda-project/erda/modules/core-services/services/aksk"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
 	"github.com/erda-project/erda/modules/core-services/services/audit"
@@ -232,7 +232,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		notice.WithDBClient(db),
 	)
 
-	akskEndpoint, err := aksk.New(aksk.WithDBClient(db))
+	accessKey, err := accesskey.New(accesskey.WithDBClient(db))
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
-		endpoints.WithAksk(akskEndpoint),
+		endpoints.WithAksk(accessKey),
 	)
 
 	return ep, nil

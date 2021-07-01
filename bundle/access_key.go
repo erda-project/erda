@@ -19,25 +19,25 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func (b *Bundle) GetAkSkByAk(ak string) (model.AkSk, error) {
+func (b *Bundle) GetAccessKeyByAccessKeyID(ak string) (model.AccessKey, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return model.AkSk{}, err
+		return model.AccessKey{}, err
 	}
 	hc := b.hc
 
 	var obj AkSkResponse
 	resp, err := hc.Get(host, httpclient.RetryErrResp).
-		Path("/api/aksks/"+ak).
+		Path("/api/credential/access-keys/"+ak).
 		Header("Content-Type", "application/json").
 		Do().JSON(&obj)
 	if err != nil || !resp.IsOK() {
-		return model.AkSk{}, apierrors.ErrInvoke.NotFound()
+		return model.AccessKey{}, apierrors.ErrInvoke.NotFound()
 	}
 
 	return obj.Data, nil
 }
 
 type AkSkResponse struct {
-	Data model.AkSk `json:"data"`
+	Data model.AccessKey `json:"data"`
 }

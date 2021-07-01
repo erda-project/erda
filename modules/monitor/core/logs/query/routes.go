@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
+	"github.com/pkg/errors"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -179,6 +180,9 @@ func (p *provider) checkLogMeta(source, id, key, value string) (bool, error) {
 		"source": source,
 		"id":     id,
 	})
+	if errors.Is(err, ErrEmptyLogMeta) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
