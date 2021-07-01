@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index
+	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
 )
 
 type provider struct {
