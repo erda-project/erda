@@ -227,8 +227,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
-	fileTree := filetree.New(filetree.WithBundle(bdl.Bdl))
-
 	fileSvc := filesvc.New(
 		filesvc.WithDBClient(db),
 		filesvc.WithBundle(bdl.Bdl),
@@ -255,13 +253,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	sceneset := sceneset.New(
 		sceneset.WithDBClient(db),
 		sceneset.WithBundle(bdl.Bdl),
-	)
-
-	// 查询
-	pFileTree := projectpipelinefiletree.New(
-		projectpipelinefiletree.WithBundle(bdl.Bdl),
-		projectpipelinefiletree.WithFileTreeSvc(fileTree),
-		projectpipelinefiletree.WithAutoTestSvc(autotest),
 	)
 
 	autotestV2 := atv2.New(
@@ -314,6 +305,14 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	branchRule := branchrule.New(
 		branchrule.WithDBClient(db),
 		branchrule.WithBundle(bdl.Bdl),
+	)
+	gittarFileTreeSvc := filetree.New(filetree.WithBundle(bdl.Bdl), filetree.WithBranchRule(branchRule))
+
+	// 查询
+	pFileTree := projectpipelinefiletree.New(
+		projectpipelinefiletree.WithBundle(bdl.Bdl),
+		projectpipelinefiletree.WithFileTreeSvc(gittarFileTreeSvc),
+		projectpipelinefiletree.WithAutoTestSvc(autotest),
 	)
 
 	// init permission
@@ -423,7 +422,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithGittarFileTree(fileTree),
+		endpoints.WithGittarFileTree(gittarFileTreeSvc),
 		endpoints.WithProjectPipelineFileTree(pFileTree),
 
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
