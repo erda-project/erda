@@ -17,12 +17,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
+	"google.golang.org/protobuf/types/known/structpb"
 	"net/url"
 	"strconv"
 	"time"
-
-	anypb "github.com/golang/protobuf/ptypes/any"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -55,12 +53,12 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	metricsParams.Set("start", strconv.FormatInt(req.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(req.EndTime, 10))
 
-	queryParams := make(map[string]*anypb.Any)
-	queryParams["terminus_keys"] = goany.MustMarshal(req.ScopeId)
-	queryParams["limit"] = goany.MustMarshal(strconv.FormatInt(req.Limit, 10))
+	queryParams := make(map[string]*structpb.Value)
+	queryParams["terminus_keys"] = structpb.NewStringValue(req.ScopeId)
+	queryParams["limit"] = structpb.NewStringValue(strconv.FormatInt(req.Limit, 10))
 	var where bytes.Buffer
 	if req.ApplicationId > 0 {
-		queryParams["applications_ids"] = goany.MustMarshal(strconv.FormatInt(req.ApplicationId, 10))
+		queryParams["applications_ids"] = structpb.NewStringValue(strconv.FormatInt(req.ApplicationId, 10))
 		where.WriteString("applications_ids::field=$applications_ids AND ")
 	}
 	//-1 error, 0 both, 1 success
