@@ -20,7 +20,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 )
 
 var (
@@ -106,7 +106,7 @@ type rawStatus struct {
 
 func (mqs *queryService) queryStatusWithTSQL(statement string) ([]rawStatus, error) {
 	raws := []rawStatus{}
-	_, data, err := mqs.metricQ.QueryWithFormat(metricq.InfluxQL, statement, "dict", nil, nil, defaultDuration())
+	_, data, err := mqs.metricQ.QueryWithFormat(metricq.InfluxQL, statement, "dict", nil, nil, nil, defaultDuration())
 	if err != nil {
 		return nil, errors.Wrap(err, "query inlfuxql failed")
 	}

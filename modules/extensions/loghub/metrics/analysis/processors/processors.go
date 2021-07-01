@@ -16,13 +16,13 @@ package processors
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
 // Processor .
 type Processor interface {
 	Process(content string) (string, map[string]interface{}, error)
-	Keys() []*metrics.FieldDefine
+	Keys() []*pb.FieldDefine
 }
 
 type processor struct {
