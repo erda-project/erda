@@ -34,7 +34,7 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 		return
 	}
 	defer closePipelineExitChannel(ctx, p.Pipeline)
-	defer r.doCompensateIfHave(ctx, p.Pipeline.ID)
+	defer r.doCronCompensate(ctx, p.Pipeline.ID)
 	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)
 	defer r.teardownPipelines.Delete(p.Pipeline.ID)
 	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
