@@ -16,9 +16,10 @@ package query
 import (
 	"net/url"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func convertOptions(start, end string, options map[string]string) url.Values {

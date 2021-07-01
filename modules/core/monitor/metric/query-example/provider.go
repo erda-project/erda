@@ -17,12 +17,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/recallsong/go-utils/encoding/jsonx"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
-	"github.com/recallsong/go-utils/encoding/jsonx"
-	"google.golang.org/protobuf/types/known/structpb"
+	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index
 )
 
 type provider struct {
