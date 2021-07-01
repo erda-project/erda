@@ -22,7 +22,7 @@ import (
 
 // ElasticSearchCURL .
 func ElasticSearchCURL(url string, indices []string, source interface{}) string {
-	body := jsonx.MarshalAndIntend(source)
+	body := jsonx.MarshalAndIndent(source)
 	body = strings.Replace(body, "'", "'\\''", -1)
 	return fmt.Sprintf(`
 curl -X GET \

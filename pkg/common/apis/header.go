@@ -11,21 +11,30 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package apis
 
 import (
-	"errors"
+	"context"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
-func CheckAppMode(mode string) error {
-	switch mode {
-	case string(apistructs.ApplicationModeService), string(apistructs.ApplicationModeLibrary),
-		string(apistructs.ApplicationModeBigdata), string(apistructs.ApplicationModeAbility),
-		string(apistructs.ApplicationModeMobile), string(apistructs.ApplicationModeApi):
-	default:
-		return errors.New("invalid request, mode is invalid")
+var langKeys = []string{"lang", "accept-language"}
+
+// Language .
+func Language(ctx context.Context) i18n.LanguageCodes {
+	header := transport.ContextHeader(ctx)
+	if header != nil {
+		for _, key := range langKeys {
+			vals := header.Get(key)
+			for _, v := range vals {
+				if len(v) > 0 {
+					langs, _ := i18n.ParseLanguageCode(v)
+					return langs
+				}
+			}
+		}
 	}
 	return nil
 }

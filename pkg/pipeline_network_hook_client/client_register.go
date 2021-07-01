@@ -70,13 +70,12 @@ func PostLifecycleHookHttpClient(source string, req interface{}, resp interface{
 	return nil
 }
 
-// cache client information in the database every 2 hours
-func RegisterLifecycleHookClient(client *dbclient.Client) {
+// cache client information
+func RegisterLifecycleHookClient(client *dbclient.Client) error {
 
 	list, err := client.FindLifecycleHookClientList()
 	if err != nil {
-		logrus.Errorf("not find lifecycleHook hook client list: error %v", err)
-		return
+		return fmt.Errorf("not find lifecycleHook hook client list: error %v", err)
 	}
 
 	var clientMap = map[string]*apistructs.PipelineLifecycleHookClient{}
@@ -90,4 +89,5 @@ func RegisterLifecycleHookClient(client *dbclient.Client) {
 	}
 
 	hookClientMap = clientMap
+	return nil
 }
