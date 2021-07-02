@@ -212,9 +212,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithDOP(),
 	)
 
-	// init pipeline
-	p := pipeline.New(pipeline.WithBundle(bdl.Bdl))
-
 	c := cdp.New(cdp.WithBundle(bdl.Bdl))
 
 	// init event
@@ -223,9 +220,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
-
-	// init service
-	assetSvc := assetsvc.New()
 
 	testCaseSvc := testcase.New(
 		testcase.WithDBClient(db),
@@ -406,7 +400,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(p),
+		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule))),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),
@@ -415,7 +409,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithProjectPipelineFileTree(pFileTree),
 
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithAssetSvc(assetSvc),
+		endpoints.WithAssetSvc(assetsvc.New(assetsvc.WithBranchRuleSvc(branchRule))),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 
 		endpoints.WithDB(db),
@@ -423,7 +417,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithTestSet(testSetSvc),
 		endpoints.WithSonarMetricRule(sonarMetricRule),
 		endpoints.WithTestplan(testPlan),
-		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl))),
+		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule))),
 		endpoints.WithAutoTest(autotest),
 		endpoints.WithAutoTestV2(autotestV2),
 		endpoints.WithSceneSet(sceneset),

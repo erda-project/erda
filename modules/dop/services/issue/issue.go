@@ -737,7 +737,7 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 	}
 	// 删除测试计划用例关联
 	if issueModel.Type == apistructs.IssueTypeBug {
-		if err := svc.bdl.InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID); err != nil {
+		if err := svc.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
 	}
