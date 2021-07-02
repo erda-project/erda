@@ -1,44 +1,60 @@
 http-server:
-    addr: ":8080"
+  addr: ":8080"
 health:
 
 grpc-server:
-    addr: ":7080"
+  addr: ":7080"
 
 http-server@admin:
-    addr: ":9080"
+  addr: ":9080"
 pprof:
 
 service-register:
 
 mysql:
-    host: "${MYSQL_HOST:localhost}"
-    port: ${MYSQL_PORT:3306}
-    username: "${MYSQL_USERNAME:root}"
-    password: "${MYSQL_PASSWORD:123456}"
-    database: "${MYSQL_DATABASE:dice}"
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
 
-#etcd:
-#    endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
-#    tls:
-#        cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
-#        cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
-#        ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
-#
-#etcd-election:
-#    root_path: "/msp-election"
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+etcd-election:
+  root_path: "/msp-election"
 
 redis:
-    addr: "${REDIS_ADDR}"
-    password: "${REDIS_PASSWORD}"
-    db: ${REDIS_DB:0}
-    master_name: "${REDIS_MASTER_NAME}"
-    sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
+cassandra:
+  host: "${CASSANDRA_ADDR:localhost:9042}"
+  security: ${CASSANDRA_SECURITY_ENABLE:false}
+  username: ${CASSANDRA_SECURITY_USERNAME}
+  password: ${CASSANDRA_SECURITY_PASSWORD}
+  timeout: "${CASSANDRA_TIMEOUT:3s}"
 
 i18n:
   common:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
+
+metric-report-client:
+  addr: "${COLLECTOR_ADDR:localhost:7076}"
+  username: ${COLLECTOR_AUTH_USERNAME}
+  password: ${COLLECTOR_AUTH_PASSWORD}
+
+grpc-client@erda.core.monitor.metric:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.metric-client:
 
 permission:
 
@@ -46,35 +62,38 @@ msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
-erda.msp.apm.trace:
-#erda.msp.apm.checker: # checkers apis
-#
-#erda.msp.apm.checker.storage.cache.sycn:
-#    cache_key: "${CHECKER_CACHE_KEY:checkers}"
-#    delay_on_start: "5s"
-#    interval: "5m"
-#
-## for debug
-## erda.msp.apm.checker.task.fetcher.fixed:
-##     checkers:
-##         - id: 1
-##           name: "test-http"
-##           type: "http"
-##           config:
-##             url: "http://baidu.com"
-##           tags:
-##             custom_tag: "custom"
-#
-#erda.msp.apm.checker.task.fetcher.scheduled:
-#    cache_key: "${CHECKER_CACHE_KEY:checkers}"
-#    load_checkers_interval: "10s" # load checkers for worker
-#    max_schedule_interval: "3m" # schedule all checkers to ndoes
-#
-#erda.msp.apm.checker.task.plugins.http:
-#erda.msp.apm.checker.task:
-#    default_periodic_worker_interval: "30s"
-#
-#metric-report-client:
-#    addr: "${COLLECTOR_ADDR:localhost:7076}"
-#    username: ${COLLECTOR_AUTH_USERNAME}
-#    password: ${COLLECTOR_AUTH_PASSWORD}
+
+erda.msp.apm.checker: # checkers apis
+
+erda.msp.apm.checker.storage.cache.sycn:
+  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+  delay_on_start: "5s"
+  interval: "5m"
+
+# for debug
+# erda.msp.apm.checker.task.fetcher.fixed:
+#   checkers:
+#       - id: 1
+#         name: "test-http"
+#         type: "http"
+#         config:
+#           url: "http://baidu.com"
+#         tags:
+#           custom_tag: "custom"
+
+erda.msp.apm.checker.task.fetcher.scheduled:
+  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+  load_checkers_interval: "10s" # load checkers for worker
+  max_schedule_interval: "3m" # schedule all checkers to ndoes
+
+erda.msp.apm.checker.task.plugins.http:
+erda.msp.apm.checker.task:
+  default_periodic_worker_interval: "30s"
+
+erda.msp.apm.exception:
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+      auto: false # 自动创建 keyspace
+
+

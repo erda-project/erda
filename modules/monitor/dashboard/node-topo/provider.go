@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 )
 
 type define struct{}

@@ -17,9 +17,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 )
 
 func ExampleProcessors() {
@@ -34,7 +34,7 @@ func ExampleProcessors() {
 	)
 	cfg, _ := json.Marshal(map[string]interface{}{
 		"pattern": "(d+)",
-		"keys": []*metrics.FieldDefine{
+		"keys": []*pb.FieldDefine{
 			{
 				Key:  "ip",
 				Type: "string",
