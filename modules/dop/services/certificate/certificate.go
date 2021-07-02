@@ -27,15 +27,15 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/model"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 )
 
 // Certificate 资源对象操作封装
 type Certificate struct {
-	db   *dao.DBClient
-	file *filesvc.FileService
+	db  *dao.DBClient
+	bdl *bundle.Bundle
 }
 
 // Option 定义 Certificate 对象的配置选项
@@ -57,10 +57,10 @@ func WithDBClient(db *dao.DBClient) Option {
 	}
 }
 
-// WithFileClient 配置 file client
-func WithFileClient(file *filesvc.FileService) Option {
+// WithBundle 配置 bundle
+func WithBundle(bdl *bundle.Bundle) Option {
 	return func(p *Certificate) {
-		p.file = file
+		p.bdl = bdl
 	}
 }
 
@@ -132,7 +132,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 				FileReader:      ioutil.NopCloser(bytes.NewReader(fileByte)),
 			}
 
-			debugFileInfo, err := c.file.UploadFile(uploadFileReq)
+			debugFileInfo, err := c.bdl.UploadFile(uploadFileReq)
 			if err != nil {
 				return nil, errors.Errorf("failed to read upload debug.keystore file, (%+v)", err)
 			}
@@ -160,7 +160,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 			uploadFileReq.FileNameWithExt = "release.keystore"
 			uploadFileReq.ByteSize = int64(len(fileByte))
 			uploadFileReq.FileReader = ioutil.NopCloser(bytes.NewReader(fileByte))
-			releaseFileInfo, err := c.file.UploadFile(uploadFileReq)
+			releaseFileInfo, err := c.bdl.UploadFile(uploadFileReq)
 			if err != nil {
 				return nil, errors.Errorf("failed to read upload release.keystore file, (%+v)", err)
 			}

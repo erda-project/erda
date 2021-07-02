@@ -24,9 +24,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/conf"
-	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/conf"
+	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
