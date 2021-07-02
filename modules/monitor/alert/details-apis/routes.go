@@ -18,9 +18,9 @@ import (
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
