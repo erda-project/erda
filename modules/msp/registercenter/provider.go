@@ -41,7 +41,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler())
 	p.registerCenterService = &registerCenterService{
-		p: p,
+		p:   p,
 		bdl: p.bdl,
 	}
 	if p.Register != nil {
