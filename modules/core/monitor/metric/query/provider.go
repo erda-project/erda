@@ -107,6 +107,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						filters, options, statement = &req.Filters, &req.Options, &req.Statement
 					} else if req, ok := data.(*pb.QueryWithTableFormatRequest); ok {
 						filters, options, statement = &req.Filters, &req.Options, &req.Statement
+					} else if req, ok := data.(*pb.GeneralQueryRequest); ok {
+						values := r.URL.Query()
+						req.Format = values.Get("format")
+						req.Ql = values.Get("ql")
+						values.Del("format")
+						values.Del("ql")
+						req.Params, statement = parseValuesToParams(values), &req.Statement
+						return nil
 					}
 					if filters != nil {
 						_fs, _opts := query.ParseFilters(r.URL.Query())
@@ -121,6 +129,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						if len(opts) > 0 {
 							*options = opts
 						}
+					}
+					if statement != nil {
 						body, err := ioutil.ReadAll(r.Body)
 						if err != nil {
 							return errors.NewInvalidParameterError("statement", err.Error())

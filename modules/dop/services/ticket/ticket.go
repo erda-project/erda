@@ -122,7 +122,8 @@ func (t *Ticket) Create(userID user.ID, requestID string, req *apistructs.Ticket
 		TargetID:     req.TargetID,
 	}
 	if req.TriggeredAt > 0 { // 告警类工单有触发时间
-		ticket.TriggeredAt = time.Unix(0, req.TriggeredAt*1000000)
+		t := time.Unix(0, req.TriggeredAt*1000000)
+		ticket.TriggeredAt = &t
 	}
 	if err := t.db.Create(ticket).Error; err != nil {
 		return 0, err
@@ -182,12 +183,10 @@ func (t *Ticket) Close(permission *permission.Permission, locale *i18n.LocaleRes
 
 	ticket.Status = apistructs.TicketClosed
 	ticket.LastOperator = userID.String()
-	ticket.ClosedAt = time.Now()
-	if err := t.db.UpdateTicket(ticket); err != nil {
-		return err
-	}
+	now := time.Now()
+	ticket.ClosedAt = &now
 
-	return nil
+	return t.db.UpdateTicket(ticket)
 }
 
 func (t *Ticket) checkPermission(permission *permission.Permission, ticket *model.Ticket, userID user.ID) (bool, error) {
@@ -219,7 +218,8 @@ func (t *Ticket) CloseByKey(key string) error {
 	}
 
 	ticket.Status = apistructs.TicketClosed
-	ticket.ClosedAt = time.Now()
+	now := time.Now()
+	ticket.ClosedAt = &now
 	if err := t.db.UpdateTicket(ticket); err != nil {
 		return err
 	}
@@ -474,7 +474,7 @@ func (t *Ticket) convertToTicketDTO(ticket *model.Ticket, comment bool) *apistru
 		}
 	}
 
-	return &apistructs.Ticket{
+	ti := apistructs.Ticket{
 		TicketID:     int64(ticket.ID),
 		Title:        ticket.Title,
 		Content:      ticket.Content,
@@ -494,9 +494,15 @@ func (t *Ticket) convertToTicketDTO(ticket *model.Ticket, comment bool) *apistru
 		LastComment:  lastComment,
 		CreatedAt:    ticket.CreatedAt,
 		UpdatedAt:    ticket.UpdatedAt,
-		ClosedAt:     ticket.ClosedAt,
-		TriggeredAt:  ticket.TriggeredAt,
 	}
+	if ticket.TriggeredAt != nil {
+		ti.TriggeredAt = *ticket.TriggeredAt
+	}
+	if ticket.ClosedAt != nil {
+		ti.ClosedAt = *ticket.ClosedAt
+	}
+
+	return &ti
 }
 
 // TODO deprecated

@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/erda-project/erda-infra/providers/httpserver"
+	httpperm "github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/msp/instance"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -29,6 +31,7 @@ import (
 type Interface interface {
 	TenantToProjectID(tgroup, tenant string) permission.ValueGetter
 	TerminusKeyToProjectID(key string) permission.ValueGetter
+	TerminusKeyToProjectIDForHTTP(keys ...string) httpperm.ValueGetter
 }
 
 // TenantToProjectID .
@@ -110,5 +113,26 @@ func (p *provider) TerminusKeyToProjectID(terminusKey string) permission.ValueGe
 			return "", errors.NewDataBaseError(err)
 		}
 		return m.ProjectId, nil
+	}
+}
+
+func (p *provider) TerminusKeyToProjectIDForHTTP(keys ...string) httpperm.ValueGetter {
+	return func(ctx httpserver.Context) (string, error) {
+		req := ctx.Request()
+		for _, key := range keys {
+			key := req.URL.Query().Get(key)
+			if len(key) <= 0 {
+				continue
+			}
+			m, err := p.monitorDB.GetByTerminusKey(key)
+			if err != nil {
+				return "", fmt.Errorf("fail to get monitor: %s", err)
+			}
+			if m == nil || m.IsDelete > 0 {
+				return "", fmt.Errorf("monitor not found")
+			}
+			return m.ProjectId, nil
+		}
+		return "", fmt.Errorf("terminus key not found")
 	}
 }

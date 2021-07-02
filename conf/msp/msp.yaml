@@ -63,6 +63,7 @@ erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 
+# checker
 erda.msp.apm.checker: # checkers apis
 
 erda.msp.apm.checker.storage.cache.sycn:
@@ -96,4 +97,6 @@ erda.msp.apm.exception:
       name: "spot_prod"
       auto: false # 自动创建 keyspace
 
-
+# apm metric
+erda.msp.apm.metric:
+  monitor_url: "http://${MONITOR_ADDR:monitor:7096}"

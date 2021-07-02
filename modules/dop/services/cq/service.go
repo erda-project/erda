@@ -13,10 +13,14 @@
 
 package cq
 
-import "github.com/erda-project/erda/bundle"
+import (
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
+)
 
 type CQ struct {
-	bdl *bundle.Bundle
+	bdl           *bundle.Bundle
+	branchRuleSvc *branchrule.BranchRule
 }
 
 type Option func(*CQ)
@@ -32,5 +36,11 @@ func New(options ...Option) *CQ {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(cq *CQ) {
 		cq.bdl = bdl
+	}
+}
+
+func WithBranchRule(svc *branchrule.BranchRule) Option {
+	return func(cq *CQ) {
+		cq.branchRuleSvc = svc
 	}
 }

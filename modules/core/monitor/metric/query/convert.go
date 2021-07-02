@@ -14,6 +14,7 @@
 package query
 
 import (
+	"fmt"
 	"net/url"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -121,4 +122,43 @@ func convertInfluxDBResults(list []*pb.Result) map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{"results": results}
+}
+
+func parseValuesToParams(values url.Values) map[string]*structpb.Value {
+	params := make(map[string]*structpb.Value)
+	for k, vals := range values {
+		values := make([]interface{}, len(vals))
+		for _, val := range vals {
+			values = append(values, val)
+		}
+		list, err := structpb.NewList(values)
+		if err == nil {
+			params[k] = structpb.NewListValue(list)
+		}
+	}
+	return params
+}
+
+func convertParamsToValues(params map[string]*structpb.Value) url.Values {
+	values := url.Values{}
+	for k, val := range params {
+		if val == nil {
+			values.Add(k, "")
+		} else {
+			val := val.AsInterface()
+			switch v := val.(type) {
+			case []interface{}:
+				for _, v := range v {
+					if v == nil {
+						values.Add(k, "")
+					} else {
+						values.Add(k, fmt.Sprint(v))
+					}
+				}
+			case string:
+				values.Add(k, v)
+			}
+		}
+	}
+	return values
 }
