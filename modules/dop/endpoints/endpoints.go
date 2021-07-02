@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
@@ -544,14 +543,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// push certificate config
 		{Path: "/api/certificates/actions/push-configs", Method: http.MethodPost, Handler: e.PushCertificateConfig},
 
-		// 文件服务
-		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
-		{Path: "/api/files", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
-		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
-
 		// user-workbench
 		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
 		{Path: "/api/workbench/issues/actions/list", Method: http.MethodGet, Handler: e.GetIssuesForWorkbench},
@@ -647,7 +638,6 @@ type Endpoints struct {
 	publisher      *publisher.Publisher
 	certificate    *certificate.Certificate
 	appCertificate *appcertificate.AppCertificate
-	fileSvc        *filesvc.FileService
 	libReference   *libreference.LibReference
 	org            *org.Org
 
@@ -936,12 +926,6 @@ func WithCertificate(cer *certificate.Certificate) Option {
 func WithAppCertificate(cer *appcertificate.AppCertificate) Option {
 	return func(e *Endpoints) {
 		e.appCertificate = cer
-	}
-}
-
-func WithFileSvc(svc *filesvc.FileService) Option {
-	return func(e *Endpoints) {
-		e.fileSvc = svc
 	}
 }
 
