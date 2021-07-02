@@ -61,6 +61,7 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 
 	uploadReq := apistructs.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
+		ByteSize:        fileHeader.Size,
 		FileReader:      f,
 		From:            "testcase",
 		IsPublic:        true,
