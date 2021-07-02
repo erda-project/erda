@@ -52,3 +52,18 @@ func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 	}
 	return &monitor, result.Error
 }
+
+// CompatibleTerminusKey .
+type CompatibleTerminusKey struct {
+	TerminusKey        string `gorm:"column:terminus_key"`
+	TerminusKeyRuntime string `gorm:"column:terminus_key_runtime"`
+}
+
+func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {
+	var list []*CompatibleTerminusKey
+	if err := db.Raw("SELECT terminus_key,terminus_key_runtime FROM sp_monitor WHERE terminus_key_runtime is not null AND is_delete = 0").
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
