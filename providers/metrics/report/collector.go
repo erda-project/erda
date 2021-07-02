@@ -50,8 +50,8 @@ func (c *ReportClient) SetCFG(cfg *config) {
 func (c *ReportClient) CreateReportClient(addr, username, password string) *ReportClient {
 	return &ReportClient{
 		CFG: &config{
-			ReportConfig: &ReportConfig{
-				Collector: &CollectorConfig{
+			ReportConfig: ReportConfig{
+				Collector: CollectorConfig{
 					Addr:     addr,
 					UserName: username,
 					Password: password,
@@ -128,7 +128,9 @@ func (c *ReportClient) write(name string, requestBuffer io.Reader) error {
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Custom-Content-Encoding", "base64")
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.CFG.ReportConfig.Collector.UserName, c.CFG.ReportConfig.Collector.UserName)
+	if len(c.CFG.ReportConfig.Collector.UserName) > 0 {
+		req.SetBasicAuth(c.CFG.ReportConfig.Collector.UserName, c.CFG.ReportConfig.Collector.Password)
+	}
 	resp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return err

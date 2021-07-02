@@ -24,7 +24,7 @@ import (
 type ReportMode string
 
 type config struct {
-	ReportConfig *ReportConfig `file:"report_config"`
+	ReportConfig ReportConfig `file:"report_config"`
 }
 
 type CollectorConfig struct {
@@ -39,7 +39,7 @@ type ReportConfig struct {
 	UdpHost string `file:"udp_host" env:"HOST_IP" default:"localhost"`
 	UdpPort string `file:"upd_port" env:"HOST_PORT" default:"7082"`
 
-	Collector *CollectorConfig `file:"collector"`
+	Collector CollectorConfig `file:"collector"`
 
 	BufferSize int `file:"buffer_size" env:"REPORT_BUFFER_SIZE" default:"200"`
 }
