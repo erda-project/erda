@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/es-tsql/formats/influxdb"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type metricService struct {
