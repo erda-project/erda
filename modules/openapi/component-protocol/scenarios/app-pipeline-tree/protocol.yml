@@ -42,7 +42,7 @@ components:
           component: "input"
           required: true
           componentProps:
-            maxLength: 10
+            maxLength: 30
     operations:
       submit:
         key: "submit"
