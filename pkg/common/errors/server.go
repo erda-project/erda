@@ -14,7 +14,6 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
