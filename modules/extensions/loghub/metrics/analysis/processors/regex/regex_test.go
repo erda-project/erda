@@ -19,10 +19,9 @@ package regex
 // 	"fmt"
 // 	"reflect"
 //
-// 	"github.com/erda-project/erda/modules/monitor/core/metrics"
 // )
 //
-// func testAndPrint(keys []*metrics.FieldDefine, metric, pattern, content string) {
+// func testAndPrint(keys []*pb.FieldDefine, metric, pattern, content string) {
 // 	cfg, _ := json.Marshal(map[string]interface{}{
 // 		"pattern": pattern,
 // 		"keys":    keys,
@@ -46,44 +45,44 @@ package regex
 // }
 //
 // func ExampleProcessor() {
-// 	keys := []*metrics.FieldDefine{
-// 		&metrics.FieldDefine{
+// 	keys := []*pb.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "ip",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "time",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "method",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "url",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "request_time",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "request_length",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "status",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "length",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "ref_url",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "browser",
 // 			Type: "string",
 // 		},
@@ -110,56 +109,56 @@ package regex
 // }
 //
 // func ExampleProcessor_nginx() {
-// 	keys := []*metrics.FieldDefine{
-// 		&metrics.FieldDefine{
+// 	keys := []*pb.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "userIp",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "scheme",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "host",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "requestLine",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "status",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "latency",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "requestSize",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "responseSize",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "referer",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "ua",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "upstreamAddr",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "upstreamStatus",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "upstreamLatency",
 // 			Type: "number",
 // 		},
@@ -189,40 +188,40 @@ package regex
 // }
 //
 // func ExampleProcessor_tomcat() {
-// 	keys := []*metrics.FieldDefine{
-// 		&metrics.FieldDefine{
+// 	keys := []*pb.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "remoteIP",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "time",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "method",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "path",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "version",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "httpCode",
 // 			Type: "number",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "group1",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "group2",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "ua",
 // 			Type: "string",
 // 		},
@@ -249,24 +248,24 @@ package regex
 //
 // func ExampleProcessor_t() {
 // 	// tmall-fe
-// 	keys := []*metrics.FieldDefine{
-// 		&metrics.FieldDefine{
+// 	keys := []*pb.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "time",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "level",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "method",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "url",
 // 			Type: "string",
 // 		},
-// 		&metrics.FieldDefine{
+// 		&pb.FieldDefine{
 // 			Key:  "status",
 // 			Type: "number",
 // 		},

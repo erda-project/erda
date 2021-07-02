@@ -37,7 +37,7 @@ type provider struct {
 	Cfg      *config
 	Log      logs.Logger
 	Register transport.Register           `autowired:"service-register" optional:"true"`
-	Metric   metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" optional:"true"`
+	Metric   metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	Redis    *redis.Client                `autowired:"redis-client"`
 	DB       *gorm.DB                     `autowired:"mysql-client"`
 	Perm     perm.Interface               `autowired:"permission"`
@@ -70,7 +70,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				perm.Method(CheckerServiceV1.DescribeCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionList, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.GetCheckerStatusV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.GetCheckerIssuesV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
-			))
+			),
+		)
 	}
 	return nil
 }

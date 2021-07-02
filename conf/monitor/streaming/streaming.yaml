@@ -6,10 +6,10 @@ health:
 
 cassandra:
   host: "${CASSANDRA_ADDR:localhost:9042}"
-#  security: ${CASSANDRA_SECURITY_ENABLE:false}
-#  username: ${CASSANDRA_SECURITY_USERNAME:}
-#  password: ${CASSANDRA_SECURITY_PASSWORD:}
-#  timeout: "${CASSANDRA_TIMEOUT:3s}"
+  security: ${CASSANDRA_SECURITY_ENABLE:false}
+  username: ${CASSANDRA_SECURITY_USERNAME}
+  password: ${CASSANDRA_SECURITY_PASSWORD}
+  timeout: "${CASSANDRA_TIMEOUT:3s}"
 
 elasticsearch:
   urls: "${ES_URL:http://localhost:9200}"
@@ -18,7 +18,7 @@ elasticsearch:
   password: "${ES_SECURITY_PASSWORD}"
 
 kafka:
-  # servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
   comsumer:
     options:
       auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
@@ -28,11 +28,11 @@ kafka:
       go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 
 mysql:
-# host: "${MYSQL_HOST:localhost}"
-# port: ${MYSQL_PORT:3306}
-# username: "${MYSQL_USERNAME:root}"
-# password: "${MYSQL_PASSWORD:123456}"
-# database: "${MYSQL_DATABASE:dice}"
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
 
 etcd:
   endpoints: "${ETCD_ENDPOINTS:http://127.0.0.1:2379}"
@@ -118,7 +118,6 @@ metrics-storage:
         size: ${CREATING_INDEX_METRIC_OUTPUT_BATCH_SIZE:10}
         timeout: "10s"
 
-
 trace-storage:
   _enable: ${TRACE_ENABLE:true}
   input:
@@ -149,7 +148,7 @@ trace-storage:
         size:  ${KAFKA_BATCH_SIZE:50}
         timeout: "10s"
 
-metrics-index-manager:
+erda.core.monitor.metric:
   request_timeout: "20s"
   default_namespace: "full_cluster"
   # namespaces:

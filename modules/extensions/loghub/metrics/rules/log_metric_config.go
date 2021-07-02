@@ -18,10 +18,12 @@ import (
 
 	"github.com/recallsong/go-utils/encoding/md5x"
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
@@ -109,8 +111,8 @@ func (p *provider) UpdateLogMetricConfig(cfg *LogMetricConfig) (bool, error) {
 	return false, db.Commit().Error
 }
 
-func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*metrics.MetricMeta, error) {
-	m := metrics.NewMeta()
+func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*pb.MetricMeta, error) {
+	m := metric.NewMeta()
 	m.Name.Key = cfg.Metric
 	m.Name.Name = cfg.Name
 	for _, key := range []string{"dice_org_id", "dice_org_name",
@@ -118,26 +120,27 @@ func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*metrics.Metric
 		"dice_application_id", "dice_application_name",
 		"dice_runtime_id", "dice_runtime_name",
 		"dice_service_name", "level"} {
-		m.Tags[key] = &metrics.TagDefine{Key: key, Name: key}
+		m.Tags[key] = &pb.TagDefine{Key: key, Name: key}
 	}
-	m.Tags["dice_workspace"] = &metrics.TagDefine{
+
+	m.Tags["dice_workspace"] = &pb.TagDefine{
 		Key:  "dice_workspace",
 		Name: "Workspace",
-		Values: []*metrics.ValueDefine{
+		Values: []*pb.ValueDefine{
 			{
-				Value: "dev",
+				Value: structpb.NewStringValue("dev"),
 				Name:  "Develop",
 			},
 			{
-				Value: "test",
+				Value: structpb.NewStringValue("test"),
 				Name:  "Test",
 			},
 			{
-				Value: "staging",
+				Value: structpb.NewStringValue("staging"),
 				Name:  "Staging",
 			},
 			{
-				Value: "prod",
+				Value: structpb.NewStringValue("prod"),
 				Name:  "Production",
 			},
 		},
