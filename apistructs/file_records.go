@@ -49,8 +49,9 @@ type TestFileExtra struct {
 }
 
 type ManualTestFileExtraInfo struct {
-	ImportRequest *TestCaseImportRequest `json:"importRequest,omitempty"`
-	ExportRequest *TestCaseExportRequest `json:"exportRequest,omitempty"`
+	ImportRequest *TestCaseImportRequest   `json:"importRequest,omitempty"`
+	ExportRequest *TestCaseExportRequest   `json:"exportRequest,omitempty"`
+	CopyRequest   *TestSetCopyAsyncRequest `json:"copyRequest,omitempty"`
 }
 
 type AutoTestSpaceFileExtraInfo struct {

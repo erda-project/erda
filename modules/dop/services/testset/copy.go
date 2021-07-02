@@ -14,7 +14,12 @@
 package testset
 
 import (
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 )
 
@@ -49,12 +54,50 @@ func (svc *Service) Copy(req apistructs.TestSetCopyRequest) (uint64, error) {
 		}
 	}
 
-	// 遍历测试集做拷贝
-	copiedTsIDs, err := svc.recursiveCopy(srcTs, dstTs, req.IdentityInfo)
+	fileReq := apistructs.TestFileRecordRequest{
+		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", srcTs.ProjectID, req.TestSetID),
+		ProjectID:    srcTs.ProjectID,
+		TestSetID:    req.TestSetID,
+		Type:         apistructs.FileActionTypeCopy,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				CopyRequest: &apistructs.TestSetCopyAsyncRequest{
+					SourceTestSet: srcTs,
+					DestTestSet:   dstTs,
+					IdentityInfo:  req.IdentityInfo,
+				},
+			},
+		},
+	}
+
+	id, err := svc.tcSvc.CreateFileRecord(fileReq)
 	if err != nil {
 		return 0, err
 	}
-	return copiedTsIDs[0], nil
+
+	return id, nil
+}
+
+func (svc *Service) CopyTestSet(record *dao.TestFileRecord) {
+	req := record.Extra.ManualTestFileExtraInfo.CopyRequest
+	if err := svc.tcSvc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrCopyTestSet.InternalError(err))
+		return
+	}
+
+	if _, err := svc.recursiveCopy(req.SourceTestSet, req.DestTestSet, req.IdentityInfo); err != nil {
+		logrus.Error(apierrors.ErrCopyTestSet.InternalError(err))
+		if err := svc.tcSvc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrCopyTestSet.InternalError(err))
+		}
+		return
+	}
+
+	if err := svc.tcSvc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: record.ID, State: apistructs.FileRecordStateSuccess}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+	}
 }
 
 func (svc *Service) recursiveCopy(srcTs, dstTs *apistructs.TestSet, identityInfo apistructs.IdentityInfo) ([]uint64, error) {
