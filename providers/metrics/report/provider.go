@@ -28,7 +28,7 @@ type config struct {
 }
 
 type CollectorConfig struct {
-	Addr     string `file:"addr" env:"COLLECTOR_ADDR" default:"localhost:7076"`
+	Addr     string `file:"addr" env:"COLLECTOR_ADDR" default:"collector:7076"`
 	UserName string `file:"username" env:"COLLECTOR_AUTH_USERNAME"`
 	Password string `file:"password" env:"COLLECTOR_AUTH_PASSWORD"`
 	Retry    int    `file:"retry" env:"TELEMETRY_REPORT_STRICT_RETRY" default:"3"`
