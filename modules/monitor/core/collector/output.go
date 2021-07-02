@@ -11,36 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cq
+package collector
 
 import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"context"
 )
 
-type CQ struct {
-	bdl           *bundle.Bundle
-	branchRuleSvc *branchrule.BranchRule
-}
-
-type Option func(*CQ)
-
-func New(options ...Option) *CQ {
-	var cq CQ
-	for _, op := range options {
-		op(&cq)
-	}
-	return &cq
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(cq *CQ) {
-		cq.bdl = bdl
-	}
-}
-
-func WithBranchRule(svc *branchrule.BranchRule) Option {
-	return func(cq *CQ) {
-		cq.branchRuleSvc = svc
-	}
+type Output interface {
+	Send(ctx context.Context, data []byte) error
 }

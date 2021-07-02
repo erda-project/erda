@@ -11,36 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cq
+package apistructs
 
-import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/branchrule"
+const (
+	AccessKeyStatusActive   = "ACTIVE"
+	AccessKeyStatusDisabled = "DISABLED"
 )
 
-type CQ struct {
-	bdl           *bundle.Bundle
-	branchRuleSvc *branchrule.BranchRule
+type AccessKeyCreateRequest struct {
+	SubjectType string `json:"subjectType"`
+	Subject     string `json:"subject"`
+	IsSystem    bool   `json:"isSystem"`
+	Description string `json:"description"`
 }
 
-type Option func(*CQ)
-
-func New(options ...Option) *CQ {
-	var cq CQ
-	for _, op := range options {
-		op(&cq)
-	}
-	return &cq
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(cq *CQ) {
-		cq.bdl = bdl
-	}
-}
-
-func WithBranchRule(svc *branchrule.BranchRule) Option {
-	return func(cq *CQ) {
-		cq.branchRuleSvc = svc
-	}
+type AccessKeyUpdateRequest struct {
+	Status      string `json:"status" validate:"eq=ACTIVE|DISABLED"`
+	Description string `json:"description"`
 }

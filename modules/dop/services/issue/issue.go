@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,11 +37,10 @@ import (
 
 // Issue 事件操作封装
 type Issue struct {
-	db      *dao.DBClient
-	bdl     *bundle.Bundle
-	stream  *issuestream.IssueStream
-	uc      *ucauth.UCClient
-	fileSvc *filesvc.FileService
+	db     *dao.DBClient
+	bdl    *bundle.Bundle
+	stream *issuestream.IssueStream
+	uc     *ucauth.UCClient
 }
 
 // Option 定义 Issue 配置选项
@@ -82,13 +80,6 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(issue *Issue) {
 		issue.uc = uc
-	}
-}
-
-// WithPermission 配置 权限 选项
-func WithFileSvc(file *filesvc.FileService) Option {
-	return func(issue *Issue) {
-		issue.fileSvc = file
 	}
 }
 
@@ -746,7 +737,7 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 	}
 	// 删除测试计划用例关联
 	if issueModel.Type == apistructs.IssueTypeBug {
-		if err := svc.bdl.InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID); err != nil {
+		if err := svc.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
 	}

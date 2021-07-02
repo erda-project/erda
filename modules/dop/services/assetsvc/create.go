@@ -1228,7 +1228,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 // 如果 Spec 不为空, 则将其作为待发布的文档.
 func (svc *Service) readSpec(req *apistructs.APIAssetVersionCreateRequest) error {
 	if req.Inode != "" {
-		content, apiError := apidocsvc.FetchAPIDocContent(req.OrgID, req.UserID, req.Inode, oasconv.Protocol(req.SpecProtocol))
+		content, apiError := apidocsvc.FetchAPIDocContent(req.OrgID, req.UserID, req.Inode, oasconv.Protocol(req.SpecProtocol), svc.branchRuleSvc)
 		if apiError != nil {
 			return apiError
 		}
