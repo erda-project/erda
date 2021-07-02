@@ -176,7 +176,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 
 		fileInfo, err := f.Stat()
 		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+			logrus.Error(apierrors.ErrExportTestCases.InternalError(fmt.Errorf("Get export Xmind temp file info %w", err)))
 			return
 		}
 
