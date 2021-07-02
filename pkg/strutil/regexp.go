@@ -41,3 +41,12 @@ var reg = regexp.MustCompile(`^[a-z0-9]+(?:(?:(?:[-]*)[a-z0-9]+)+)?$`)
 func IsValidPrjOrAppName(repo string) bool {
 	return reg.MatchString(repo)
 }
+
+func InSlice(item string, dst []string) bool {
+	for _, v := range dst {
+		if item == v {
+			return true
+		}
+	}
+	return false
+}

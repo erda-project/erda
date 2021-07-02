@@ -11,4 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package collector
+package apistructs
+
+const (
+	AccessKeyStatusActive   = "ACTIVE"
+	AccessKeyStatusDisabled = "DISABLED"
+)
+
+type AccessKeyCreateRequest struct {
+	SubjectType string `json:"subjectType"`
+	Subject     string `json:"subject"`
+	IsSystem    bool   `json:"isSystem"`
+	Description string `json:"description"`
+}
+
+type AccessKeyUpdateRequest struct {
+	Status      string `json:"status" validate:"eq=ACTIVE|DISABLED"`
+	Description string `json:"description"`
+}

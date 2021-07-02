@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common"
@@ -179,6 +181,9 @@ func (p *provider) checkLogMeta(source, id, key, value string) (bool, error) {
 		"source": source,
 		"id":     id,
 	})
+	if errors.Is(err, ErrEmptyLogMeta) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}

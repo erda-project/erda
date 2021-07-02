@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
+	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
@@ -222,7 +223,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		approve.WithMember(m),
 	)
 
-	//通过ui显示错误,不影响启动
+	// 通过ui显示错误,不影响启动
 	license, _ := license.ParseLicense(conf.LicenseKey())
 
 	// init label
@@ -233,6 +234,11 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	notice := notice.New(
 		notice.WithDBClient(db),
 	)
+
+	accessKey, err := accesskey.New(accesskey.WithDBClient(db))
+	if err != nil {
+		return nil, err
+	}
 
 	audit := audit.New(
 		audit.WithDBClient(db),
@@ -278,6 +284,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
+		endpoints.WithAksk(accessKey),
 		endpoints.WithFileSvc(fileSvc),
 	)
 
