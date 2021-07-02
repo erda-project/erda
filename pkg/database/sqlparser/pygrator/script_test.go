@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern_test
+package pygrator_test
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 
-	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
 func TestGenMigration(t *testing.T) {
@@ -30,19 +30,19 @@ func TestGenMigration(t *testing.T) {
 		t.Fatalf("failed to ParseOneStmt, err: %v", err)
 	}
 	create := stmt.(*ast.CreateTableStmt)
-	model, err := pattern.CreateTableStmtToModel(create)
+	model, err := pygrator.CreateTableStmtToModel(create)
 	if err != nil {
 		t.Fatalf("failed to CreateTableStmtToModel: %v", err)
 	}
 	var buf = bytes.NewBuffer(nil)
-	if err = pattern.GenModel(buf, *model); err != nil {
+	if err = pygrator.GenModel(buf, *model); err != nil {
 		t.Fatalf("failed to GenModel: %v", err)
 	}
 
-	var migration = pattern.DeveloperScript{
+	var migration = pygrator.DeveloperScript{
 		Models: []string{buf.String(), buf.String()},
 	}
-	if err = pattern.GenDeveloperScript(os.Stdout, migration); err != nil {
+	if err = pygrator.GenDeveloperScript(os.Stdout, migration); err != nil {
 		t.Fatalf("failed to GenDeveloperScript: %v", err)
 	}
 }

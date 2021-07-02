@@ -25,12 +25,12 @@ type parameter struct {
 	migrationDir string
 }
 
-func (p parameter) DSN() string {
-	return ""
+func (p parameter) MySQLParameters() *migrator.DSNParameters {
+	return nil
 }
 
-func (p parameter) SandboxDSN() string {
-	return ""
+func (p parameter) SandboxParameters() *migrator.DSNParameters {
+	return nil
 }
 
 func (p parameter) Database() string {

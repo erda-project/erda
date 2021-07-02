@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern
+package pygrator
 
 import (
 	"io"
@@ -25,23 +25,30 @@ import (
 const (
 	packageName = ".erda_migration_in_py"
 )
-const EntryFilename = "entry.py"
+
+const (
+	EntryFilename = "entry.py"
+	FeatureFilename = "feature.py"
+)
 
 type TextFile interface {
+	// GetName returns the file's base name
 	GetName() string
 	GetData() []byte
 }
 
 type Package struct {
 	DeveloperScript TextFile
-	Requirements    TextFile
+	Requirements    []byte
 	Settings        Settings
-	Entrypoint      Entrypoint
+	entrypoint      Entrypoint
 	Commit          bool
 }
 
 func (p *Package) Make() (err error) {
-	if err = os.Mkdir(".erda_migration_in_py", 0644); err != nil {
+	_ = p.Remove()
+
+	if err = os.Mkdir(packageName, os.ModeSticky|os.ModePerm); err != nil {
 		return errors.Wrap(err, "failed to make temp python package for migration")
 	}
 	defer func() {
@@ -51,6 +58,8 @@ func (p *Package) Make() (err error) {
 	}()
 
 	msg := "failed to make python file for migration"
+
+	p.entrypoint= Entrypoint{DeveloperScriptFilename: p.DeveloperScript.GetName()}
 
 	if err = p.writeDeveloperScript(); err != nil {
 		return errors.Wrap(err, msg)
@@ -68,10 +77,8 @@ func (p *Package) Make() (err error) {
 }
 
 func (p *Package) writeDeveloperScript() error {
-	filename := "erda_" + filepath.Base(p.DeveloperScript.GetName())
-	filename = filepath.Join(packageName, filename)
-
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	filename := filepath.Join(packageName, FeatureFilename)
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 777)
 	if err != nil {
 		return err
 	}
@@ -87,23 +94,23 @@ func (p *Package) writeDeveloperScript() error {
 }
 
 func (p *Package) writeEntrypoint() error {
-	f, err := os.OpenFile(filepath.Join(packageName, EntryFilename), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	f, err := os.OpenFile(filepath.Join(packageName, EntryFilename), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 777)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	return GenEntrypoint(f, p.Entrypoint, p.Commit)
+	return GenEntrypoint(f, p.entrypoint, p.Commit)
 }
 
 func (p *Package) writeRequirements() error {
-	f, err := os.OpenFile(filepath.Join(packageName, RequirementsFilename), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	f, err := os.OpenFile(filepath.Join(packageName, RequirementsFilename), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 777)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	_, err = f.Write(p.Requirements.GetData())
+	_, err = f.Write(p.Requirements)
 	return err
 }
 
@@ -113,7 +120,6 @@ func (p *Package) Remove() error {
 
 func (p *Package) Run() error {
 	cmd := exec.Command("pip", "install", "-r", filepath.Join(packageName, RequirementsFilename), "-v")
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
 	if err := cmd.Start(); err != nil {
 		return err

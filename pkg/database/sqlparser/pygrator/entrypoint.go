@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern
+package pygrator
 
 import (
 	"io"
@@ -21,13 +21,13 @@ import (
 const EntrypointPattern = `# encoding: utf8
 
 from django.db import connection
-import {{.ModuleName}}
+import feature
 
 
 if __name__ == "__main__":
     print("Running Erda migration in Python")
-    for task in {{.ModuleName}}.entries:
-        print("run task: %s.%s" % ({{.ModuleName}}.__name__, task.__name__))
+    for task in feature.entries:
+        print("run task: {{.DeveloperScriptFilename}}.%s" % (task.__name__))
         task()
     [print(query) for query in connection.queries]
 
@@ -37,7 +37,7 @@ const EntrypointWithRollback = `# encoding: utf8
 
 from django.db import connection
 from django.db.transaction import rollback, set_autocommit
-import {{.ModuleName}}
+import feature
 
 # close autocommit
 set_autocommit(False)
@@ -46,11 +46,11 @@ if __name__ == "__main__":
     print("Running Erda migration in Python")
     # rollback every while
     try:    
-        for task in {{.ModuleName}}.entries:
-            print("run task: %s.%s" % ({{.ModuleName}}.__name__, task.__name__))
+        for task in feature.entries:
+            print("run task: {{.DeveloperScriptFilename}}.%s" % (task.__name__))
             task()
     except Exception as e:
-        print("failed to run task: %s.%s: %E" % ({{.ModuleName}}.__name__, task.__name__, e))
+        print("failed to run task: {{.DeveloperScriptFilename}}.%s: %E" % (task.__name__, e))
     finally:
         rollback()
     [print(query) for query in connection.queries]
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 `
 
 type Entrypoint struct {
-	ModuleName string
+	DeveloperScriptFilename string
 }
 
 // GenEntrypoint generates python module entrypoint text and write it to  rw

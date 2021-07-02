@@ -55,11 +55,11 @@ var RootCmd = &cobra.Command{
 	Use:   "dice",
 	Short: "Dice commandline client",
 	Long: `
-      _/_/_/   	_/_/_/ 	  _/_/_/  _/_/_/_/
-     _/	   _/  	 _/    _/      	 _/
-    _/ 	  _/   	_/    _/       	_/_/_/
-   _/  	 _/    _/    _/	       _/
-  _/_/_/    _/_/_/    _/_/_/  _/_/_/_/
+    _/_/_/_/       _/_/_/        _/_/_/          _/_/    
+   _/             _/    _/      _/    _/      _/    _/   
+  _/_/_/         _/_/_/        _/    _/      _/_/_/_/    
+ _/             _/    _/      _/    _/      _/    _/     
+_/_/_/_/       _/    _/      _/_/_/        _/    _/      
 `,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

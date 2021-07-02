@@ -11,10 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern
+package pygrator
 
 import (
 	"io"
+	"strconv"
+	"strings"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/pkg/errors"
 )
 
 const SettingsPattern = `# encoding: utf8
@@ -34,8 +39,9 @@ django_settings.configure(**{
             'NAME': "{{.Name}}",
         },
     },
+    "DEBUG": True,
     "TIME_ZONE": '{{.TimeZone}}',
-    "INSTALLED_APPS": ["{{.InstalledApps}}"],
+    "INSTALLED_APPS": ["feature"],
 })
 apps.populate(django_settings.INSTALLED_APPS)
 
@@ -54,9 +60,55 @@ type Settings struct {
 	Port          int
 	Name          string
 	TimeZone      string
-	InstalledApps string
 }
 
 func GenSettings(rw io.ReadWriter, settings Settings) error {
 	return generate(rw, "SettingsPattern", SettingsPattern, settings)
+}
+
+func ParseDSN(dsn string) (*Settings, error) {
+	cfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to ParseDSN")
+	}
+
+	var host, portS string
+	colon := strings.LastIndexByte(cfg.Addr, ':')
+	if colon != -1 && validOptionalPort(cfg.Addr[colon:]) {
+		host, portS = cfg.Addr[:colon], cfg.Addr[colon+1:]
+	}
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = host[1: len(host)-1]
+	}
+
+	port, err := strconv.ParseUint(portS, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse port")
+	}
+	return &Settings{
+		Engine:   DjangoMySQLEngine,
+		User:     cfg.User,
+		Password: cfg.Passwd,
+		Host:     host,
+		Port:     int(port),
+		Name:     cfg.DBName,
+		TimeZone: TimeZoneAsiaShanghai,
+	}, nil
+}
+
+// validOptionalPort reports whether port is either an empty string
+// or matches /^:\d*$/
+func validOptionalPort(port string) bool {
+	if port == "" {
+		return true
+	}
+	if port[0] != ':' {
+		return false
+	}
+	for _, b := range port[1:] {
+		if b < '0' || b > '9' {
+			return false
+		}
+	}
+	return true
 }

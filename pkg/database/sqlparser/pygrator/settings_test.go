@@ -11,21 +11,36 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern_test
+package pygrator_test
 
 import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
-func TestGenEntrypoint(t *testing.T) {
-	var entrypoint  =pattern.Entrypoint{ModuleName: "myfeature"}
-	if err := pattern.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
+var settings = pygrator.Settings{
+	Engine:   pygrator.DjangoMySQLEngine,
+	User:     "root",
+	Password: "12345678",
+	Host:     "localhost",
+	Port:     3306,
+	Name:     "erda",
+	TimeZone: pygrator.TimeZoneAsiaShanghai,
+}
+
+func TestGenSettings(t *testing.T) {
+	if err := pygrator.GenSettings(os.Stdout, settings); err != nil {
 		t.Fatal(err)
 	}
-	if err := pattern.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
+}
+
+func TestParseDSN(t *testing.T) {
+	var dsn =  "dspo:12345678@(localhost:3307)/dbname"
+	settings, err := pygrator.ParseDSN(dsn)
+	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("%+v", settings)
 }

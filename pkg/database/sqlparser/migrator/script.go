@@ -18,19 +18,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
-
-	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
 )
 
 const (
@@ -84,12 +78,13 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 				bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
 				bytes.HasPrefix(data, []byte(baseScriptLabel3)),
 		}
-	warns []error
+		warns []error
+		nodes []ast.StmtNode
 	)
-	switch ext := filepath.Ext(s.Name); {
+	switch ext := filepath.Ext(s.GetName()); {
 	case strings.EqualFold(ext, string(ScriptTypeSQL)):
 		s.Type = ScriptTypeSQL
-		s.Nodes, warns, err = parser.New().Parse(string(data), "", "")
+		nodes, warns, err = parser.New().Parse(string(data), "", "")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to Parse file text data")
 		}
@@ -102,7 +97,7 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 		return nil, errors.Errorf("invalid script type: only support .sql or .py file: %s", ext)
 	}
 
-	for _, node := range s.Nodes {
+	for _, node := range nodes {
 		// ignore C-Style comments
 		text := strings.TrimLeftFunc(node.Text(), func(r rune) bool {
 			return r == ' ' || r == '\n' || r == '\t' || r == '\r'
@@ -172,94 +167,10 @@ func (s *Script) IsBaseline() bool {
 	return s.isBase
 }
 
-func (s*Script) GetName() string {
-	return s.Name
+func (s *Script) GetName() string {
+	return filepath.Base(s.Name)
 }
 
 func (s *Script) GetData() []byte {
 	return s.Rawtext
-}
-
-// Install installs the script in database
-func (s *Script) Install(dsn string, begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
-	if s.Type == ScriptTypeSQL {
-		return s.installSQL(begin, after)
-	}
-
-	return s.installPy(dsn)
-}
-
-func (s *Script) installSQL(begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
-	tx := begin()
-	defer after(tx, err)
-
-	s.Reversing = nil
-
-	for _, node := range s.DDLNodes() {
-		var (
-			reverse string
-			ok      bool
-		)
-		reverse, ok, err = ddlreverser.ReverseDDLWithSnapshot(DB(), node)
-		if err != nil {
-			return errors.Wrapf(err, "failed to generate reversed DDL. "+
-				"Ther script name: %s, the SQL: %s", s.Name, node.Text())
-		}
-		if ok {
-			s.Reversing = append(s.Reversing, reverse)
-		}
-
-		if err = Exec(node.Text()).Error; err != nil {
-			return errors.Wrapf(err, "failed to pre-migrate schema SQL, all migrations will be rolled back. "+
-				"The script name: %s, the SQL: %s", s.Name, node.Text())
-		}
-	}
-
-	for _, node := range s.DMLNodes() {
-		if err = tx.Exec(node.Text()).Error; err != nil {
-			return errors.Wrapf(err, "failed to pre-migrate data SQL, all migration will be rolled back. "+
-				"The script filename: %s, the data SQL:\n%s", s.Name, node.Text())
-		}
-	}
-
-	return nil
-}
-
-func (s *Script) installPy(dsn string) (err error) {
-	dsnConfig, err := mysql.ParseDSN(dsn)
-	if err != nil {
-		return errors.Wrap(err, "failed to ParseDSN")
-	}
-
-	settings := pattern.Settings{
-		Engine:        pattern.DjangoMySQLEngine,
-		User:          dsnConfig.User,
-		Password:      dsnConfig.Passwd,
-		Host:          dsnConfig.Addr,
-		Port:          0,
-		Name:          dsnConfig.DBName,
-		TimeZone:      dsnConfig.Loc.String(),
-		InstalledApps: strings.TrimSuffix(filepath.Base(s.Name), filepath.Ext(s.Name)),
-	}
-
-	var buf = bytes.NewBuffer(nil)
-	if err = pattern.GenSettings(buf, settings); err != nil {
-		return errors.Wrap(err, "failed to GenSettings")
-	}
-	buf.WriteString("\n")
-	buf.Write(s.Rawtext)
-
-	// mkdir
-	err = os.Mkdir(".erda-py-migration", 0644)
-	os.r
-
-	// write buf to file
-
-	// write entrypoint file
-
-	// run python
-
-	// rm dir
-
-	return errors.New("not implement")
 }

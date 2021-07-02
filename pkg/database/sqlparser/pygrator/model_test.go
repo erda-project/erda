@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package pattern_test
+package pygrator_test
 
 import (
 	"os"
@@ -19,10 +19,9 @@ import (
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
- _ "github.com/pingcap/tidb/types/parser_driver"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 
-
-"github.com/erda-project/erda/pkg/database/pyorm/pattern"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
 var createStmt = `
@@ -60,11 +59,11 @@ func TestGenModel(t *testing.T) {
 		t.Fatalf("failed to ParseOneStmt, err: %v", err)
 	}
 	create := stmt.(*ast.CreateTableStmt)
-	model, err := pattern.CreateTableStmtToModel(create)
+	model, err := pygrator.CreateTableStmtToModel(create)
 	if err != nil {
 		t.Fatalf("failed to CreateTableStmtToModel: %v", err)
 	}
-	if err = pattern.GenModel(os.Stdout, *model); err != nil {
+	if err = pygrator.GenModel(os.Stdout, *model); err != nil {
 		t.Fatalf("failed to GenModel: %v", err)
 	}
 }

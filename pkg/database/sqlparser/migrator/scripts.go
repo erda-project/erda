@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	pygrator2 "github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
 // Scripts is the set of Module
@@ -34,18 +35,19 @@ type Scripts struct {
 	Workdir       string
 	Dirname       string
 	ServicesNames []string
-	Services      map[string]Module
+	Services      map[string]*Module
 
 	rulers      []rules.Ruler
 	markPending bool
 	destructive int
+	destructiveText string
 }
 
 // NewScripts range the directory
 func NewScripts(parameters Parameters) (*Scripts, error) {
 	var (
 		modulesNames []string
-		services     = make(map[string]Module, 0)
+		services     = make(map[string]*Module, 0)
 	)
 	dirname := filepath.Join(parameters.Workdir(), parameters.MigrationDir())
 	modulesInfos, err := ioutil.ReadDir(dirname)
@@ -54,10 +56,12 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 	}
 	var (
 		moduleList = parameters.Modules()
-		modules    = make(map[string]bool, len(moduleList))
+		modules    = make(map[string]bool)
 	)
-	for _, module := range moduleList {
-		modules[module] = true
+	for _, moduleName := range moduleList {
+		if moduleName != "" {
+			modules[moduleName] = true
+		}
 	}
 	for _, moduleInfo := range modulesInfos {
 		if !moduleInfo.IsDir() {
@@ -68,8 +72,9 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 			continue
 		}
 
+		var module Module
+		module.Name = moduleInfo.Name()
 		modulesNames = append(modulesNames, moduleInfo.Name())
-		scripts := make(Module, 0)
 
 		dirname := filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name())
 		serviceDirInfos, err := ioutil.ReadDir(dirname)
@@ -81,19 +86,30 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 			if fileInfo.IsDir() {
 				continue
 			}
-			if ext := filepath.Ext(fileInfo.Name()); strings.EqualFold(ext, string(ScriptTypeSQL)) ||
-				strings.EqualFold(ext, string(ScriptTypePython)) {
+
+			// read requirements.txt
+			if strings.EqualFold(fileInfo.Name(), pygrator2.RequirementsFilename) {
+				module.PythonRequirementsText, err = ioutil.ReadFile(filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// read script (.sql or .py)
+			if ext := filepath.Ext(fileInfo.Name());
+			strings.EqualFold(ext, string(ScriptTypeSQL)) ||			strings.EqualFold(ext, string(ScriptTypePython)) {
 				script, err := NewScript(parameters.Workdir(), filepath.Join(parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to NewScript")
 				}
-				scripts = append(scripts, script)
+				module.Scripts = append(module.Scripts, script)
 			}
 		}
 
-		scripts.Sort()
-		services[moduleInfo.Name()] = scripts
+		module.Sort()
+		services[moduleInfo.Name()] = &module
 	}
+
 	return &Scripts{
 		Workdir:       parameters.Workdir(),
 		Dirname:       parameters.MigrationDir(),
@@ -106,20 +122,20 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 }
 
 func (s *Scripts) Get(serviceName string) ([]*Script, bool) {
-	scripts, ok := s.Services[serviceName]
-	return scripts, ok
+	module, ok := s.Services[serviceName]
+	return module.Scripts, ok
 }
 
 func (s *Scripts) Lint() error {
 	if !s.markPending {
-		s.MarkPending(DB())
+		return errors.New("scripts did not mark if is pending, please mark it and then do Lint")
 	}
 
 	linter := sqllint.New(s.rulers...)
-	for serviceName, scripts := range s.Services {
-		for _, script_ := range scripts {
-			if !script_.isBase && script_.Pending {
-				if err := linter.Input(script_.Rawtext, filepath.Join(s.Dirname, serviceName, script_.Name)); err != nil {
+	for moduleName, module := range s.Services {
+		for _, script := range module.Scripts {
+			if !script.isBase && script.Pending && script.Type == ScriptTypeSQL {
+				if err := linter.Input(script.Rawtext, filepath.Join(s.Dirname, moduleName, script.GetName())); err != nil {
 					return err
 				}
 			}
@@ -142,10 +158,10 @@ func (s *Scripts) Lint() error {
 }
 
 func (s *Scripts) AlterPermissionLint() error {
-	for serviceName, service := range s.Services {
+	for moduleName, module := range s.Services {
 		tableNames := make(map[string]bool, 0)
-		for _, script_ := range service {
-			for _, ddl := range script_.DDLNodes() {
+		for _, script := range module.Scripts {
+			for _, ddl := range script.DDLNodes() {
 				switch ddl.(type) {
 				case *ast.CreateTableStmt:
 					tableName := ddl.(*ast.CreateTableStmt).Table.Name.String()
@@ -153,8 +169,8 @@ func (s *Scripts) AlterPermissionLint() error {
 				case *ast.AlterTableStmt:
 					tableName := ddl.(*ast.AlterTableStmt).Table.Name.String()
 					if _, ok := tableNames[tableName]; !ok {
-						return errors.Errorf("the table tried to alter not exists, may it not created in this service directory. filename: %s, text:\n%s",
-							filepath.Join(s.Dirname, serviceName, script_.Name), ddl.Text())
+						return errors.Errorf("the table tried to alter not exists, may it not created in this module directory. filename: %s, text:\n%s",
+							filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
 					}
 				default:
 					continue
@@ -166,18 +182,18 @@ func (s *Scripts) AlterPermissionLint() error {
 }
 
 func (s *Scripts) MarkPending(tx *gorm.DB) {
-	for serviceName, service := range s.Services {
-		for i := range service {
+	for moduleName, module := range s.Services {
+		for i := range module.Scripts {
 			var record HistoryModel
 			if tx := tx.Where(map[string]interface{}{
-				"service_name": serviceName,
-				"filename":     filepath.Base(service[i].Name),
+				"service_name": moduleName,
+				"filename":     module.Scripts[i].GetName(),
 			}).
 				First(&record); tx.Error != nil || tx.RowsAffected == 0 {
-				service[i].Pending = true
+				module.Scripts[i].Pending = true
 			} else {
-				service[i].Pending = false
-				service[i].Record = &record
+				module.Scripts[i].Pending = false
+				module.Scripts[i].Record = &record
 			}
 		}
 	}
@@ -187,30 +203,30 @@ func (s *Scripts) MarkPending(tx *gorm.DB) {
 
 func (s *Scripts) InstalledChangesLint() error {
 	if !s.markPending {
-		s.MarkPending(DB())
+		return errors.New("scripts did not mark if is pending, please mark it and then do InstalledChangesLint")
 	}
 
-	for serviceName, scripts_ := range s.Services {
+	for moduleName, module := range s.Services {
 		var (
 			pending     bool
 			pendingName string
 		)
-		for _, script_ := range scripts_ {
-			if pending {
-				if script_.Pending {
-					continue
-				}
-				return errors.Errorf("some uninstalled script is before a installed script. The service name: %s, pending filename: %s, the installed filename: %s",
-					serviceName, pendingName, script_.Name)
-			}
-			if script_.Pending {
+		for _, script := range module.Scripts {
+			switch {
+			case pending && script.Pending:
+				continue
+			case pending:
+				return errors.Errorf("some uninstalled script is ranked before a installed script. The service name: %s, pending filename: %s, the installed filename: %s",
+					moduleName, pendingName, script.GetName())
+			case script.Pending:
 				pending = true
-				pendingName = script_.Name
+				pendingName = script.GetName()
 				continue
 			}
-			if script_.Checksum() != script_.Record.Checksum {
+
+			if script.Checksum() != script.Record.Checksum {
 				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
-					serviceName, script_.Name)
+					moduleName, script.GetName())
 			}
 		}
 	}
@@ -219,31 +235,32 @@ func (s *Scripts) InstalledChangesLint() error {
 
 // SameNameLint lint whether there is same script name in different directories
 func (s *Scripts) SameNameLint() error {
+	// m's key is script file name, value is module name
 	var m = make(map[string]string)
-	for _, scripts_ := range s.Services {
-		for _, script_ := range scripts_ {
-			if existsName, ok := m[filepath.Base(script_.Name)]; ok {
-				return errors.Errorf("there is not allowed same script name in different directory: %s:%s",
-					existsName, script_.Name)
+	for curModuleName, module := range s.Services {
+		for _, script := range module.Scripts {
+			if moduleName, ok := m[script.GetName()]; ok {
+				return errors.Errorf("not allowed same script name in different directory, filename: %s, modules: %s, %s",
+					script.GetName(), curModuleName, moduleName)
 			} else {
-				m[filepath.Base(script_.Name)] = script_.Name
+				m[script.GetName()] = curModuleName
 			}
 		}
 	}
 	return nil
 }
 
-func (s *Scripts) HasDestructiveOperationInPending() bool {
+func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
 	if s.destructive == 1 {
-		return true
+		return s.destructiveText, true
 	}
 	if s.destructive == -1 {
-		return false
+		return "", false
 	}
 
 	s.destructive = -1
-	for _, scripts := range s.Services {
-		for _, script := range scripts {
+	for _, module := range s.Services {
+		for _, script := range module.Scripts {
 			if !script.Pending {
 				continue
 			}
@@ -251,11 +268,15 @@ func (s *Scripts) HasDestructiveOperationInPending() bool {
 				switch node.(type) {
 				case *ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.TruncateTableStmt:
 					s.destructive = 1
+					s.destructiveText = node.Text()
+					return s.destructiveText, true
 				case *ast.AlterTableStmt:
 					for _, spec := range node.(*ast.AlterTableStmt).Specs {
 						switch spec.Tp {
 						case ast.AlterTableDropColumn:
 							s.destructive = 1
+							s.destructiveText = node.Text()
+							return s.destructiveText, true
 						}
 					}
 				}
@@ -263,5 +284,5 @@ func (s *Scripts) HasDestructiveOperationInPending() bool {
 		}
 	}
 
-	return s.destructive == 1
+	return "", false
 }

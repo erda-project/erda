@@ -15,7 +15,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,8 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/pkg/database/pyorm/pattern"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
@@ -33,7 +32,7 @@ var MigratePy = command.Command{
 	Name:           "mkpy",
 	ShortHelp:      "make a python migration script pattern",
 	LongHelp:       "make a python migration scritp pattern.",
-	Example:        "erda-cli migrate py --module my_module --name my_script_name",
+	Example:        "erda-cli migrate mkpy --module my_module --name my_script_name",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
@@ -63,18 +62,19 @@ var MigratePy = command.Command{
 			DefaultValue: nil,
 		},
 	},
-	Run: RunMigratePy,
+	Run: RunMigrateMkPy,
 }
 
-func RunMigratePy(ctx *command.Context, workdir, module, name string, tables []string) error {
+func RunMigrateMkPy(ctx *command.Context, workdir, module, name string, tables []string) error {
 	moduleInfos, err := ioutil.ReadDir(workdir)
 	if err != nil {
 		return err
 	}
 
 	var (
-		validModule = false
-		scripts     = make(migrator.Module, 0)
+		m                  migrator.Module
+		validModule        = false
+		requirementsExists bool
 	)
 
 	for _, moduleInfo := range moduleInfos {
@@ -92,12 +92,18 @@ func RunMigratePy(ctx *command.Context, workdir, module, name string, tables []s
 			if fileInfo.IsDir() {
 				continue
 			}
+
+			// is there already exists requirements.txt
+			if moduleInfo.Name() == module && fileInfo.Name() == pygrator.RequirementsFilename {
+				requirementsExists = true
+			}
+
 			if ext := filepath.Ext(fileInfo.Name()); strings.EqualFold(ext, string(migrator.ScriptTypeSQL)) {
 				script, err := migrator.NewScript(workdir, filepath.Join(workdir, moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return errors.Wrapf(err, "failed to NewScript")
 				}
-				scripts = append(scripts, script)
+				m.Scripts = append(m.Scripts, script)
 			}
 		}
 	}
@@ -105,15 +111,19 @@ func RunMigratePy(ctx *command.Context, workdir, module, name string, tables []s
 		return errors.Errorf("invalid module name: %s", module)
 	}
 
-	if err = genRequirements(filepath.Join(workdir, module)); err != nil {
-		return errors.Wrap(err, "failed to generate requirements.txt")
+	if !requirementsExists {
+		if err = ioutil.WriteFile(filepath.Join(workdir, module, pygrator.RequirementsFilename),
+			[]byte(pygrator.BaseRequirements), 0644); err != nil {
+			return errors.Wrap(err, "failed to generate requirements.txt")
+		}
 	}
 
-	scripts.Sort()
+	m.Sort()
 
+	// transform table definitions to django models
 	var (
-		schema  = scripts.Schema()
-		script  pattern.DeveloperScript
+		schema  = m.Schema()
+		script  pygrator.DeveloperScript
 		tablesM = make(map[string]bool)
 	)
 	for _, tableName := range tables {
@@ -129,17 +139,18 @@ func RunMigratePy(ctx *command.Context, workdir, module, name string, tables []s
 		}
 
 		// make table definition to Django Model
-		model, err := pattern.CreateTableStmtToModel(definition.CreateStmt)
+		model, err := pygrator.CreateTableStmtToModel(definition.CreateStmt)
 		if err != nil {
 			return errors.Wrapf(err, "failed to CreateTableStmtToModel")
 		}
 		var buf = bytes.NewBuffer(nil)
-		if err = pattern.GenModel(buf, *model); err != nil {
+		if err = pygrator.GenModel(buf, *model); err != nil {
 			return errors.Wrapf(err, "failed to GenModel")
 		}
 		script.Models = append(script.Models, buf.String())
 	}
 
+	// write developer's python pattern script
 	name = strings.TrimSuffix(name, filepath.Ext(name)) + string(migrator.ScriptTypePython)
 	var filename = filepath.Join(workdir, module, name)
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
@@ -147,27 +158,9 @@ func RunMigratePy(ctx *command.Context, workdir, module, name string, tables []s
 		return errors.Wrapf(err, "failed to OpenFile: %s", filename)
 	}
 	defer f.Close()
-	if err = pattern.GenDeveloperScript(f, script); err != nil {
+	if err = pygrator.GenDeveloperScript(f, script); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func genRequirements(dir string) error {
-	filename := filepath.Join(dir, pattern.RequirementsFilename)
-	_, err := ioutil.ReadFile(filename)
-	if err == nil {
-		return nil
-	}
-	switch err.(type) {
-	case *os.PathError:
-		fmt.Printf("%T", err.(*os.PathError).Err)
-	}
-	if os.IsNotExist(err) {
-		if err := ioutil.WriteFile(filename, []byte(pattern.Requirements), 0644); err != nil {
-			return err
-		}
-	}
-	return err
 }

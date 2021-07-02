@@ -41,28 +41,28 @@ var MigrationLint = command.Command{
 	Name:           "lint",
 	ShortHelp:      "Erda MySQL Migration lint",
 	LongHelp:       "Erda MySQL Migration lint",
-	Example:        "erda-cli migrate lint --input=. config=default.yaml --detail",
+	Example:        "erda-cli migrate lint --input=. --config=default.yaml --detail",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
 	Flags: []command.Flag{
 		command.StringFlag{
-			Short:        "f",
-			Name:         "filename",
+			Short:        "",
+			Name:         "input",
 			Doc:          "[optional] the file or directory for linting",
 			DefaultValue: ".",
 		},
 		command.StringFlag{
-			Short:        "c",
-			Name:         "config",
+			Short:        "",
+			Name:         "lint-config",
 			Doc:          "[optional] the lint config file",
 			DefaultValue: "",
 		},
 		command.BoolFlag{
-			Short:        "d",
-			Name:         "detail",
-			Doc:          "[optional] print details of lint result",
-			DefaultValue: true,
+			Short:        "",
+			Name:         "no-detail",
+			Doc:          "[optional] do not print details of lint result",
+			DefaultValue: false,
 		},
 		command.StringFlag{
 			Short:        "o",
@@ -71,16 +71,16 @@ var MigrationLint = command.Command{
 			DefaultValue: "",
 		},
 		command.BoolFlag{
-			Short:        "i",
-			Name:         "ignoreBase",
-			Doc:          "ignore script which marked baseline",
-			DefaultValue: true,
+			Short:        "",
+			Name:         "lint-base",
+			Doc:          "do lint on the script which marked baseline",
+			DefaultValue: false,
 		},
 	},
-	Run: RunMigrationLint,
+	Run: RunMigrateLint,
 }
 
-func RunMigrationLint(ctx *command.Context, input, config string, detail bool, output string, ignoreBase bool) (err error) {
+func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, output string, lintBase bool) (err error) {
 	exitFunc := func(_ int) {
 		if err != nil {
 			os.Exit(1)
@@ -114,7 +114,7 @@ func RunMigrationLint(ctx *command.Context, input, config string, detail bool, o
 		if err != nil {
 			return errors.Wrapf(err, "failed to open file, filename: %s", filename)
 		}
-		if ignoreBase && isBaseScript(data) {
+		if !lintBase && isBaseScript(data) {
 			continue
 		}
 		if err = linter.Input(data, filename); err != nil {
@@ -144,7 +144,7 @@ func RunMigrationLint(ctx *command.Context, input, config string, detail bool, o
 		return errors.Wrapf(err, "failed to print lint report")
 	}
 
-	if detail {
+	if !noDetail {
 		for src, errs := range linter.Errors() {
 			if _, err = fmt.Fprintln(out, src); err != nil {
 				return errors.Wrapf(err, "failed to print lint error")

@@ -25,11 +25,19 @@ import (
 )
 
 // Module is the list of Script
-type Module []*Script
+type Module struct {
+	// Name is the name of the module
+	Name string
+	// Scripts contains all sql or python scripts in the module
+	Scripts []*Script
+	// PythonRequirementsText is the text of python requirements file in the module.
+	// it is used to install dependencies of python package by "pip install -r requirements.txt -v"
+	PythonRequirementsText []byte
+}
 
 // BaselineEqualCloud check baseline script schema is equal with cloud schema or not
-func (s Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
-	tableNames := s.BaselineTableNames()
+func (m *Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
+	tableNames := m.BaselineTableNames()
 	cloud := NewSchema()
 	for _, tableName := range tableNames {
 		raw := "SHOW CREATE TABLE " + tableName
@@ -57,12 +65,12 @@ func (s Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
 		node.Accept(cloud)
 	}
 
-	return s.BaselineSchema().Equal(cloud)
+	return m.BaselineSchema().Equal(cloud)
 }
 
-func (s Module) Schema() *Schema {
+func (m* Module) Schema() *Schema {
 	schema := NewSchema()
-	for _, script := range s {
+	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
 			ddl.Accept(schema)
 		}
@@ -70,9 +78,9 @@ func (s Module) Schema() *Schema {
 	return schema
 }
 
-func (s Module) BaselineSchema() *Schema {
+func (m* Module) BaselineSchema() *Schema {
 	schema := NewSchema()
-	for _, script := range s {
+	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
 			continue
 		}
@@ -83,9 +91,9 @@ func (s Module) BaselineSchema() *Schema {
 	return schema
 }
 
-func (s Module) TableNames() []string {
+func (m* Module) TableNames() []string {
 	var names []string
-	for _, script := range s {
+	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
 			if create, ok := ddl.(*ast.CreateTableStmt); ok {
 				if create.Table != nil {
@@ -97,9 +105,9 @@ func (s Module) TableNames() []string {
 	return names
 }
 
-func (s Module) BaselineTableNames() []string {
+func (m* Module) BaselineTableNames() []string {
 	var names []string
-	for _, script := range s {
+	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
 			continue
 		}
@@ -116,19 +124,20 @@ func (s Module) BaselineTableNames() []string {
 	return names
 }
 
-func (s Module) Sort() {
-	sort.Slice(s, func(i, j int) bool {
-		return strings.TrimSuffix(s[i].Name, filepath.Ext(s[i].Name)) < strings.TrimSuffix(s[j].Name, filepath.Ext(s[j].Name))
+func (m* Module) Sort() {
+	sort.Slice(m.Scripts, func(i, j int) bool {
+		return strings.TrimSuffix(m.Scripts[i].GetName(), filepath.Ext(m.Scripts[i].GetName())) <
+			strings.TrimSuffix(m.Scripts[j].GetName(), filepath.Ext(m.Scripts[j].GetName()))
 	})
-	sort.Slice(s, func(i, j int) bool {
-		return s[i].IsBaseline() && !s[j].IsBaseline()
+	sort.Slice(m.Scripts, func(i, j int) bool {
+		return m.Scripts[i].IsBaseline() && !m.Scripts[j].IsBaseline()
 	})
 }
 
-func (s Module) Filenames() []string {
+func (m* Module) Filenames() []string {
 	var names []string
-	for _, script := range s {
-		names = append(names, script.Name)
+	for _, script := range m.Scripts {
+		names = append(names, script.GetName())
 	}
 	return names
 }
