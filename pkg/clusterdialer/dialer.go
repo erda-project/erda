@@ -35,7 +35,7 @@ func Init(addrOption ...string) {
 	}
 	var clusterDialAddr string
 	if len(addrOption) == 0 {
-		clusterDialAddr := discover.ClusterDialer()
+		clusterDialAddr = discover.ClusterDialer()
 		if clusterDialAddr == "" {
 			return
 		}
