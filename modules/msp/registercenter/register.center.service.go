@@ -158,10 +158,10 @@ func (s *registerCenterService) GetServiceIpInfo(ctx context.Context, request *p
 	}
 	instanceInfo, err := s.bdl.GetInstanceInfo(req)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, errors.NewServiceInvokingError(err)
 	}
 	if !instanceInfo.Success {
-		return nil, errors.NewStringInternalServerError(instanceInfo.Error.Msg)
+		return nil, errors.NewServiceInvokingError(fmt.Errorf(instanceInfo.Error.Msg))
 	}
 	result := &pb.ServiceIpInfoResponse{}
 	if len(instanceInfo.Data) > 0 {

@@ -31,10 +31,6 @@ func NewInternalServerError(err error) *InternalServerError {
 	return &InternalServerError{Cause: err}
 }
 
-func NewStringInternalServerError(text string) *InternalServerError {
-	return &InternalServerError{Cause: errors.New(text)}
-}
-
 func (e *InternalServerError) Error() string {
 	return fmt.Sprintf("internal error: %s", e.Cause)
 }
