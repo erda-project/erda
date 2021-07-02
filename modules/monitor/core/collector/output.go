@@ -12,3 +12,11 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package collector
+
+import (
+	"context"
+)
+
+type Output interface {
+	Send(ctx context.Context, data []byte) error
+}
