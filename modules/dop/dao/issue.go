@@ -501,3 +501,14 @@ func (client *DBClient) GetIssueBugByRange(req apistructs.IssuesStageRequest) ([
 	}
 	return issue, total, nil
 }
+
+// GetReceiversByIssueID get receivers of issue event
+func (client *DBClient) GetReceiversByIssueID(issueID int64) []string {
+	var receivers []string
+	issue, _ := client.GetIssue(issueID)
+	subscribers, _ := client.GetIssueSubscribersSliceByIssueID(issueID)
+	receivers = append(receivers, issue.Assignee)
+	receivers = append(receivers, subscribers...)
+
+	return strutil.DedupSlice(receivers)
+}

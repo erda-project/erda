@@ -484,6 +484,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/issues/actions/update-issue-type", Method: http.MethodPut, Handler: e.UpdateIssueType},
 		{Path: "/api/issues/{id}/actions/subscribe", Method: http.MethodPost, Handler: e.SubscribeIssue},
 		{Path: "/api/issues/{id}/actions/unsubscribe", Method: http.MethodPost, Handler: e.UnsubscribeIssue},
+		{Path: "/api/issues/{id}/actions/batch-update-subscriber", Method: http.MethodPut, Handler: e.BatchUpdateIssueSubscriber},
 		// issue state
 		{Path: "/api/issues/actions/create-state", Method: http.MethodPost, Handler: e.CreateIssueState},
 		{Path: "/api/issues/actions/delete-state", Method: http.MethodDelete, Handler: e.DeleteIssueState},

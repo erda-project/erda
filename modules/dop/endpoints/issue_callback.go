@@ -16,12 +16,15 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -62,6 +65,12 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 	if err != nil {
 		return err
 	}
+
+	// send to specific recipient
+	if err := e.sendIssueEventToSpecificRecipient(req); err != nil {
+		return err
+	}
+
 	for _, notifyDetail := range notifyDetails {
 		if notifyDetail.NotifyGroup == nil {
 			continue
@@ -100,5 +109,37 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent) error {
+	emailTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.email", strings.ToLower(req.Action))
+	mboxTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.markdown", strings.ToLower(req.Action))
+
+	org, err := e.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return err
+	}
+
+	params := req.GenEventParams(org.Locale, conf.UIPublicURL())
+
+	var emailAddrs []string
+	users, err := e.bdl.ListUsers(apistructs.UserListRequest{Plaintext: true, UserIDs: req.Content.Receivers})
+	if err != nil {
+		return err
+	}
+	for _, v := range users.Users {
+		emailAddrs = append(emailAddrs, v.Email)
+	}
+
+	logrus.Infof("params of issue event is: %v", params)
+
+	if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
+		return err
+	}
+	if err := e.bdl.CreateMboxNotify(mboxTemplateName, params, org.Locale, org.ID, req.Content.Receivers); err != nil {
+		return err
+	}
+
 	return nil
 }
