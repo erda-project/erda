@@ -11,19 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dop
+package filesvc
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
+)
 
-// 仅图片存储于网盘时使用
-var CMDB_IMAGE_FETCH = apis.ApiSpec{
-	Path:        "/api/images/<imageName>",
-	BackendPath: "/api/images/<imageName>",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	Doc:         "summary: 图片获取",
+func (svc *FileService) DeleteFile(file dao.File) error {
+	// delete db record
+	if err := svc.db.DeleteFile(uint64(file.ID)); err != nil {
+		return apierrors.ErrDeleteFile.InternalError(err)
+	}
+
+	// delete file in storage
+	storager := svc.GetStorage(file.StorageType)
+	if err := storager.Delete(file.FullRelativePath); err != nil {
+		return apierrors.ErrDeleteFile.InternalError(err)
+	}
+
+	return nil
 }

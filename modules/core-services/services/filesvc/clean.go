@@ -18,7 +18,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 )
 
 func (svc *FileService) CleanExpiredFiles(_expiredAt ...time.Time) error {

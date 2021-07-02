@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 )

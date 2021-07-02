@@ -389,7 +389,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	// 文档是否只读: 如果用户是应用管理员, 则
 	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
-	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName())
+	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName(), svc.branchRuleSvc)
 	meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
 
 	var (
@@ -419,7 +419,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 }
 
 func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	data, apiError := FetchAPIDocContent(orgID, userID, inode, oasconv.OAS3JSON)
+	data, apiError := FetchAPIDocContent(orgID, userID, inode, oasconv.OAS3JSON, svc.branchRuleSvc)
 	if apiError != nil {
 		return nil, apiError
 	}

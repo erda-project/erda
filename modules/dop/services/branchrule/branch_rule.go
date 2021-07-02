@@ -64,7 +64,7 @@ func (branchRule *BranchRule) Query(scopeType apistructs.ScopeType, scopeID int6
 	if err != nil {
 		return nil, err
 	}
-	result := []*apistructs.BranchRule{}
+	var result []*apistructs.BranchRule
 	for _, rule := range rules {
 		result = append(result, rule.ToApiData())
 	}

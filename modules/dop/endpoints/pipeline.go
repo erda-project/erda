@@ -89,11 +89,8 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	branchrule := diceworkspace.GetValidBranchByGitReference(createReq.Branch, rules)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-	if branchrule.NeedApproval {
+	branchRule := diceworkspace.GetValidBranchByGitReference(createReq.Branch, rules)
+	if branchRule.NeedApproval {
 		pipelineymlStruct, err := pipelineyml.New([]byte(reqPipeline.PipelineYml))
 		if err != nil {
 			return errorresp.ErrResp(err)
@@ -505,18 +502,20 @@ func (e *Endpoints) pipelineGetBranchRule(ctx context.Context, r *http.Request, 
 		return apierrors.ErrGetPipelineBranchRule.InvalidParameter(
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
-	pipelineinfo, err := e.bdl.GetPipeline(pipelineID)
+	pipelineInfo, err := e.bdl.GetPipeline(pipelineID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	validbranch, err := e.bdl.GetBranchWorkspaceConfigByProject(pipelineinfo.ProjectID, pipelineinfo.Branch)
+
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(pipelineInfo.ProjectID))
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	if validbranch == nil || validbranch.Workspace == "" {
-		return errorresp.ErrResp(fmt.Errorf("not found branch rule for [%s]", pipelineinfo.Branch))
+	validBranch := diceworkspace.GetValidBranchByGitReference(pipelineInfo.Branch, rules)
+	if validBranch == nil || validBranch.Workspace == "" {
+		return errorresp.ErrResp(fmt.Errorf("not found branch rule for [%s]", pipelineInfo.Branch))
 	}
-	return httpserver.OkResp(validbranch)
+	return httpserver.OkResp(validBranch)
 }
 
 func (e *Endpoints) pipelineOperate(ctx context.Context, r *http.Request, vars map[string]string) (

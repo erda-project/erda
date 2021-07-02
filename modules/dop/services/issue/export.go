@@ -167,7 +167,7 @@ func (svc *Issue) ExportExcel2(data [][]string, sheetName string) (string, error
 	if err := file.Write(&buff); err != nil {
 		return "", errors.Errorf("failed to write content, sheetName: %s, err: %v", sheetName, err)
 	}
-	diceFile, err := svc.fileSvc.UploadFile(apistructs.FileUploadRequest{
+	diceFile, err := svc.bdl.UploadFile(apistructs.FileUploadRequest{
 		FileNameWithExt: sheetName + ".xlsx",
 		ByteSize:        int64(buff.Len()),
 		FileReader:      ioutil.NopCloser(&buff),

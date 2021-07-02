@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/swagger"
 	"github.com/erda-project/erda/pkg/swagger/oas3"
@@ -51,7 +52,7 @@ const oas3Text = `{
 }
 `
 
-func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv.Protocol) (*apistructs.FileTreeNodeRspData,
+func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv.Protocol, branchRuleSvc *branchrule.BranchRule) (*apistructs.FileTreeNodeRspData,
 	*errorresp.APIError) {
 	// 解析路径
 	ft, err := bundle.NewGittarFileTree(inode)
@@ -117,7 +118,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 	}
 
 	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
-	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName())
+	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName(), branchRuleSvc)
 
 	meta := apistructs.APIDocMeta{
 		Lock:     nil,
@@ -216,8 +217,8 @@ func defaultOAS3Content(title string) string {
 	return fmt.Sprintf(oas3Text, title)
 }
 
-func isBranchProtected(applicationID, branchName string) bool {
-	rules, err := getRules(applicationID)
+func isBranchProtected(applicationID, branchName string, branchRuleSvc *branchrule.BranchRule) bool {
+	rules, err := getRules(applicationID, branchRuleSvc)
 	if err != nil || len(rules) == 0 {
 		return false
 	}
@@ -237,13 +238,14 @@ func isBranchProtected(applicationID, branchName string) bool {
 	return false
 }
 
-func getRules(applicationID string) ([]*apistructs.BranchRule, error) {
+func getRules(applicationID string, branchRuleSvc *branchrule.BranchRule) ([]*apistructs.BranchRule, error) {
 	// 查询文档是否只读
 	appID, err := strconv.ParseUint(applicationID, 10, 64)
 	if err != nil {
 		return nil, errors.New("invalid inode: can not parse app id to uint")
 	}
-	rules, err := bdl.Bdl.GetAppBranchRules(appID)
+
+	rules, err := branchRuleSvc.Query(apistructs.AppScope, int64(appID))
 	if err != nil {
 		return nil, err
 	}
