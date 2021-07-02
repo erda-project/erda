@@ -48,7 +48,7 @@ i18n:
     - conf/common/i18n/apis.yml
 
 metric-report-client:
-  addr: "${COLLECTOR_ADDR:localhost:7076}"
+  addr: "${COLLECTOR_ADDR:collector:7076}"
   username: ${COLLECTOR_AUTH_USERNAME}
   password: ${COLLECTOR_AUTH_PASSWORD}
 
