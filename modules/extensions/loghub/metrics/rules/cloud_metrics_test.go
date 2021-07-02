@@ -19,12 +19,10 @@ package rules
 // 	"fmt"
 // 	"strings"
 // 	"unicode"
-
-// 	"terminus.io/dice/monitor/modules/monitor/metrics"
 // )
 
 // func printCloudMetricsDefine(text string) {
-// 	var m metrics.Metric
+// 	var m pb.Metric
 // 	err := json.Unmarshal([]byte(text), &m)
 // 	if err != nil {
 // 		fmt.Println(err)
@@ -42,28 +40,28 @@ package rules
 // 			uint:
 
 // 	out := &bytes.Buffer{}
-// 	out.WriteString("&metrics.MetricMeta{\n")
-// 	out.WriteString("	Name: metrics.NameDefine{\n")
+// 	out.WriteString("&pb.MetricMeta{\n")
+// 	out.WriteString("	Name: pb.NameDefine{\n")
 // 	out.WriteString(`		Key:  "` + m.Name + `",` + "\n")
 // 	out.WriteString(`		Name:  "` + getMetricName(m.Name) + `",` + "\n")
 // 	out.WriteString("	},\n")
-// 	out.WriteString("	Tags: map[string]*metrics.TagDefine{\n")
+// 	out.WriteString("	Tags: map[string]*pb.TagDefine{\n")
 // 	for t := range m.Tags {
 // 		if strings.HasPrefix(t, "_") {
 // 			continue
 // 		}
-// 		out.WriteString(`		"` + t + `": &metrics.TagDefine{` + "\n")
+// 		out.WriteString(`		"` + t + `": &pb.TagDefine{` + "\n")
 // 		out.WriteString(`			Key:  "` + t + `",` + "\n")
 // 		out.WriteString(`			Name:  "` + getFieldName(t) + `",` + "\n")
 // 		out.WriteString("		},\n")
 // 	}
 // 	out.WriteString("	},\n")
-// 	out.WriteString("	Fields: map[string]*metrics.FieldDefine{\n")
+// 	out.WriteString("	Fields: map[string]*pb.FieldDefine{\n")
 // 	for f, v := range m.Fields {
 // 		if strings.HasPrefix(f, "_") {
 // 			continue
 // 		}
-// 		out.WriteString(`		"` + f + `": &metrics.FieldDefine{` + "\n")
+// 		out.WriteString(`		"` + f + `": &pb.FieldDefine{` + "\n")
 // 		out.WriteString(`			Key:  "` + f + `",` + "\n")
 // 		out.WriteString(`			Type:  "` + getFieldType(v) + `",` + "\n")
 // 		out.WriteString(`			Name:  "` + getFieldName(f) + `",` + "\n")
@@ -76,7 +74,7 @@ package rules
 // }
 
 // func printCloudMetricsDefine(text string) {
-// 	var m metrics.Metric
+// 	var m pb.Metric
 // 	err := json.Unmarshal([]byte(text), &m)
 // 	if err != nil {
 // 		fmt.Println(err)
