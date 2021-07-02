@@ -11,36 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cq
+package core_services
 
-import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/branchrule"
-)
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-type CQ struct {
-	bdl           *bundle.Bundle
-	branchRuleSvc *branchrule.BranchRule
-}
-
-type Option func(*CQ)
-
-func New(options ...Option) *CQ {
-	var cq CQ
-	for _, op := range options {
-		op(&cq)
-	}
-	return &cq
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(cq *CQ) {
-		cq.bdl = bdl
-	}
-}
-
-func WithBranchRule(svc *branchrule.BranchRule) Option {
-	return func(cq *CQ) {
-		cq.branchRuleSvc = svc
-	}
+// 仅图片存储于网盘时使用
+var CMDB_IMAGE_FETCH = apis.ApiSpec{
+	Path:        "/api/images/<imageName>",
+	BackendPath: "/api/images/<imageName>",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	Doc:         "summary: 图片获取",
 }

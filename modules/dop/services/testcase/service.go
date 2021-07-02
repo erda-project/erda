@@ -17,16 +17,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // Service testCase 实例对象封装
 type Service struct {
-	db      *dao.DBClient
-	bdl     *bundle.Bundle
-	hc      *httpclient.HTTPClient
-	fileSvc *filesvc.FileService
+	db  *dao.DBClient
+	bdl *bundle.Bundle
+	hc  *httpclient.HTTPClient
 
 	CreateTestSetFn func(apistructs.TestSetCreateRequest) (*apistructs.TestSet, error)
 }
@@ -54,11 +52,5 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(svc *Service) {
 		svc.bdl = bdl
-	}
-}
-
-func WithFileSvc(fileSvc *filesvc.FileService) Option {
-	return func(svc *Service) {
-		svc.fileSvc = fileSvc
 	}
 }
