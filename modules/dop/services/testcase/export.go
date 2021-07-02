@@ -174,8 +174,15 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 			return
 		}
 
+		fileInfo, err := f.Stat()
+		if err != nil {
+			logrus.Error(apierrors.ErrExportTestCases.InternalError(fmt.Errorf("Get export Xmind temp file info %w", err)))
+			return
+		}
+
 		req := apistructs.FileUploadRequest{
 			FileNameWithExt: sheetName,
+			ByteSize:        fileInfo.Size(),
 			FileReader:      f,
 			From:            defaultResource,
 			IsPublic:        true,
