@@ -46,11 +46,15 @@ func (svc *Issue) GetIssueStage(req *apistructs.IssueStageRequest) ([]apistructs
 	}
 	var res []apistructs.IssueStage
 	for _, v := range stages {
-		res = append(res, apistructs.IssueStage{
+		stage := apistructs.IssueStage{
 			ID:    int64(v.ID),
 			Name:  v.Name,
 			Value: v.Value,
-		})
+		}
+		if stage.Value == "" {
+			stage.Value = v.Name
+		}
+		res = append(res, stage)
 	}
 	return res, nil
 }
