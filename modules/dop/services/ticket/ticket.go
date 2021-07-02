@@ -452,9 +452,11 @@ func (t *Ticket) CheckTicketTarget(ticketTarget apistructs.TicketTarget) error {
 
 func (t *Ticket) convertToTicketDTO(ticket *model.Ticket, comment bool) *apistructs.Ticket {
 	var label map[string]interface{}
-	if err := json.Unmarshal([]byte(ticket.Label), &label); err != nil {
-		logrus.Errorf("ticket label unmarshal error: %v", err)
-		label = make(map[string]interface{})
+	if ticket.Label != "" {
+		if err := json.Unmarshal([]byte(ticket.Label), &label); err != nil {
+			logrus.Errorf("ticket label unmarshal error: %v", err)
+			label = make(map[string]interface{})
+		}
 	}
 
 	var lastComment *apistructs.Comment
