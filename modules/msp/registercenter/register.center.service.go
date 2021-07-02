@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/msp/instance"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/registercenter/nacos"
@@ -33,6 +35,7 @@ type registerCenterService struct {
 	p                *provider
 	instanceTenantDB *instancedb.InstanceTenantDB
 	instanceDB       *instancedb.InstanceDB
+	bdl              *bundle.Bundle
 }
 
 func (s *registerCenterService) ListInterface(ctx context.Context, req *pb.ListInterfaceRequest) (*pb.ListInterfaceResponse, error) {
@@ -145,4 +148,26 @@ func (s *registerCenterService) getzkProxyHost(clusterName string) (string, erro
 		return "", fmt.Errorf("fail to get zkproxy config from tmc")
 	}
 	return host, nil
+}
+
+func (s *registerCenterService) GetServiceIpInfo(ctx context.Context, request *pb.ServiceIpRequest) (*pb.ServiceIpInfoResponse, error) {
+	req := apistructs.InstanceInfoRequest{
+		ProjectID:  request.GetProjectID(),
+		Workspace:  request.GetWorkspace(),
+		InstanceIP: strings.Split(request.GetIp(), ":")[0],
+	}
+	instanceInfo, err := s.bdl.GetInstanceInfo(req)
+	if err != nil {
+		return nil, errors.NewServiceInvokingError("scheduler", err)
+	}
+	if !instanceInfo.Success {
+		return nil, errors.NewServiceInvokingError("scheduler", fmt.Errorf(instanceInfo.Error.Msg))
+	}
+	result := &pb.ServiceIpInfoResponse{}
+	if len(instanceInfo.Data) > 0 {
+		result.ServiceName = instanceInfo.Data[0].ServiceName
+		result.RuntimeID = instanceInfo.Data[0].RuntimeID
+		result.AppID = instanceInfo.Data[0].ApplicationID
+	}
+	return result, nil
 }

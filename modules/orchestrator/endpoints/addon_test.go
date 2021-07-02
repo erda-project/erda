@@ -50,8 +50,7 @@ func TestConcurrentWriteAddonInfos(t *testing.T) {
 	wg.Add(count)
 	for i := 0; i != count; i++ {
 		go func() {
-			e := Endpoints{
-			}
+			e := Endpoints{}
 			_, err := e.SyncAddons()
 			if err != nil {
 				t.Fatal(err)
@@ -86,8 +85,7 @@ func TestConcurrentReadWriteAddonInfos(t *testing.T) {
 	wg.Add(count * 2)
 	for i := 0; i != count; i++ {
 		go func() {
-			e := Endpoints{
-			}
+			e := Endpoints{}
 			_, err := e.SyncAddons()
 			if err != nil {
 				t.Fatal(err)
@@ -135,8 +133,7 @@ func TestConcurrentWriteProjectInfos(t *testing.T) {
 	wg.Add(count)
 	for i := 0; i != count; i++ {
 		go func() {
-			e := Endpoints{
-			}
+			e := Endpoints{}
 			_, err := e.SyncProjects()
 			if err != nil {
 				t.Fatal(err)
@@ -177,8 +174,7 @@ func TestConcurrentReadWriteProjectInfos(t *testing.T) {
 	wg.Add(count * 2)
 	for i := 0; i != count; i++ {
 		go func() {
-			e := Endpoints{
-			}
+			e := Endpoints{}
 			_, err := e.SyncProjects()
 			if err != nil {
 				t.Fatal(err)

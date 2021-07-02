@@ -68,8 +68,7 @@ func TestConcurrentReadWriteAppInfos(t *testing.T) {
 	wg.Add(count)
 	for i := 0; i != count; i++ {
 		go func() {
-			a := Addon{
-			}
+			a := Addon{}
 			_, err := a.ListReferencesByInstanceID(orgID, userID, instanceID)
 			if err != nil {
 				t.Fatal(err)
