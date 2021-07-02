@@ -14,6 +14,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,6 +29,10 @@ type InternalServerError struct {
 // NewInternalServerError .
 func NewInternalServerError(err error) *InternalServerError {
 	return &InternalServerError{Cause: err}
+}
+
+func NewStringInternalServerError(text string) *InternalServerError {
+	return &InternalServerError{Cause: errors.New(text)}
 }
 
 func (e *InternalServerError) Error() string {
