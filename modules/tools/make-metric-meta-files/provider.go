@@ -30,7 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
 type define struct{}

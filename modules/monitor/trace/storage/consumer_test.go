@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/monitor/trace"
 )
 

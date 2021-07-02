@@ -20,20 +20,20 @@ import (
 
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/convert"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 )
 
 type config struct {
-	Pattern string                 `json:"pattern"`
-	Keys    []*metrics.FieldDefine `json:"keys"`
+	Pattern string            `json:"pattern"`
+	Keys    []*pb.FieldDefine `json:"keys"`
 }
 
 type processor struct {
 	metric   string
 	reg      *regexp.Regexp
-	keys     []*metrics.FieldDefine
+	keys     []*pb.FieldDefine
 	converts []func(text string) (interface{}, error)
 }
 
@@ -97,7 +97,7 @@ func (p *processor) Process(content string) (string, map[string]interface{}, err
 	return p.metric, fields, nil
 }
 
-func (p *processor) Keys() []*metrics.FieldDefine {
+func (p *processor) Keys() []*pb.FieldDefine {
 	return p.keys
 }
 

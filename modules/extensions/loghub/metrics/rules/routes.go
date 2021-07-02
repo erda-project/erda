@@ -22,9 +22,9 @@ import (
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {

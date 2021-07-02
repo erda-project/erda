@@ -22,9 +22,9 @@ import (
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
@@ -136,7 +136,7 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	metricMap := make(map[string]*metrics.MetricMeta)
+	metricMap := make(map[string]*pb.MetricMeta)
 	for _, metric := range metricMeta {
 		metricMap[metric.Name.Key] = metric
 	}
@@ -228,7 +228,7 @@ func (p *provider) updateOrgCustomizeAlert(r *http.Request, ctx httpserver.Conte
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	metricMap := make(map[string]*metrics.MetricMeta)
+	metricMap := make(map[string]*pb.MetricMeta)
 	for _, metric := range metricMeta {
 		metricMap[metric.Name.Key] = metric
 	}
@@ -258,7 +258,7 @@ func (p *provider) updateOrgCustomizeAlert(r *http.Request, ctx httpserver.Conte
 }
 
 func (p *provider) checkMetricMeta(
-	rule *adapt.CustomizeAlertRule, metric *metrics.MetricMeta) error {
+	rule *adapt.CustomizeAlertRule, metric *pb.MetricMeta) error {
 	if metric == nil {
 		return fmt.Errorf("rule metric is not match")
 	} else if len(rule.Functions) == 0 {

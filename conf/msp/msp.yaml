@@ -35,24 +35,34 @@ redis:
   master_name: "${REDIS_MASTER_NAME}"
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
+cassandra:
+  host: "${CASSANDRA_ADDR:localhost:9042}"
+  security: ${CASSANDRA_SECURITY_ENABLE:false}
+  username: ${CASSANDRA_SECURITY_USERNAME}
+  password: ${CASSANDRA_SECURITY_PASSWORD}
+  timeout: "${CASSANDRA_TIMEOUT:3s}"
+
 i18n:
   common:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
 
-permission:
+metric-report-client:
+  addr: "${COLLECTOR_ADDR:localhost:7076}"
+  username: ${COLLECTOR_AUTH_USERNAME}
+  password: ${COLLECTOR_AUTH_PASSWORD}
 
-cassandra:
+grpc-client@erda.core.monitor.metric:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.metric-client:
+
+permission:
 
 msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
-erda.msp.apm.exception:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: false # 自动创建 keyspace
+
 erda.msp.apm.checker: # checkers apis
 
 erda.msp.apm.checker.storage.cache.sycn:
@@ -62,14 +72,14 @@ erda.msp.apm.checker.storage.cache.sycn:
 
 # for debug
 # erda.msp.apm.checker.task.fetcher.fixed:
-#     checkers:
-#         - id: 1
-#           name: "test-http"
-#           type: "http"
-#           config:
-#             url: "http://baidu.com"
-#           tags:
-#             custom_tag: "custom"
+#   checkers:
+#       - id: 1
+#         name: "test-http"
+#         type: "http"
+#         config:
+#           url: "http://baidu.com"
+#         tags:
+#           custom_tag: "custom"
 
 erda.msp.apm.checker.task.fetcher.scheduled:
   cache_key: "${CHECKER_CACHE_KEY:checkers}"
@@ -80,7 +90,10 @@ erda.msp.apm.checker.task.plugins.http:
 erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
-metric-report-client:
-  addr: "${COLLECTOR_ADDR:localhost:7076}"
-  username: ${COLLECTOR_AUTH_USERNAME}
-  password: ${COLLECTOR_AUTH_PASSWORD}
+erda.msp.apm.exception:
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+      auto: false # 自动创建 keyspace
+
+

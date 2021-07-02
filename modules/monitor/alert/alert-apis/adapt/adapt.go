@@ -16,7 +16,7 @@ package adapt
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 
 	"github.com/erda-project/erda-infra/base/logs"

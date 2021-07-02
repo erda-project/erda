@@ -23,8 +23,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -43,7 +43,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("log-metrics")
 	p.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())

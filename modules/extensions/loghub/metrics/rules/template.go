@@ -15,7 +15,7 @@ package rules
 
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
 // ListConfigTemplate .
@@ -58,7 +58,7 @@ func (p *provider) GetConfigTemplate(scope, name string, lang i18n.LanguageCodes
 					Type: "regexp",
 					Config: map[string]interface{}{
 						"pattern": `^[^\t]*\t([^\t,]*)[^\t]*\t[^\t]*\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t[^\t]*\t[^\t]*\t[^\t]*\t([^\t]*)\t([^\t,]*)[^\t]*\t([^\t,]*)[^\t]*\t.*`,
-						"keys": []*metrics.FieldDefine{
+						"keys": []*pb.FieldDefine{
 							{Key: "userIp", Type: "string", Name: "userIp"},
 							{Key: "scheme", Type: "string", Name: "scheme"},
 							{Key: "host", Type: "string", Name: "host"},
@@ -100,7 +100,7 @@ func (p *provider) GetConfigTemplate(scope, name string, lang i18n.LanguageCodes
 					Type: "regexp",
 					Config: map[string]interface{}{
 						"pattern": `^(?P<remoteIP>\S+) \S+ \S+ \[(?P<time>[\w:\/]+\s[+\-]\d{4})\] "(?P<method>\S+)\s?(?P<path>\S+)?\s?(?P<version>\S+)?" (?P<httpCode>\d{3}|-) (\d+|-)\s?"?([^"]*)"?\s?"?(?P<client>[^"]*)?"?$`,
-						"keys": []*metrics.FieldDefine{
+						"keys": []*pb.FieldDefine{
 							{Key: "remoteIP", Type: "string", Name: "remoteIP"},
 							{Key: "time", Type: "string", Name: "time"},
 							{Key: "method", Type: "string", Name: "method"},

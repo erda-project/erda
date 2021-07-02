@@ -75,7 +75,7 @@ func (e *ServiceInvokingError) Error() string {
 }
 func (e *ServiceInvokingError) HTTPStatus() int { return http.StatusBadGateway }
 func (e *ServiceInvokingError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
-	return t.Sprintf(langs, "${service} % ${error}: %s", t.Text(langs, e.Service), e.Cause)
+	return t.Sprintf(langs, "${service} %s ${error}: %s", t.Text(langs, e.Service), e.Cause)
 }
 
 // UnimplementedError .

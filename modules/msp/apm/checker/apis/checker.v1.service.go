@@ -204,7 +204,7 @@ func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64,
 	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE project_id=$projectID 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
 		map[string]*structpb.Value{
 			"projectID": structpb.NewStringValue(strconv.FormatInt(projectID, 10)),
@@ -218,7 +218,7 @@ func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit 
 	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric=$metric 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
 		map[string]*structpb.Value{
 			"metric": structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
@@ -265,7 +265,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 		serie := resp.Results[0].Series[0]
 	loop:
 		for _, row := range serie.Rows {
-			if row == nil || len(row.Values) != 6 {
+			if row == nil || len(row.Values) != 9 {
 				continue
 			}
 			for _, val := range row.Values {
@@ -300,7 +300,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 				item = &summaryItem{}
 				status[statusName] = item
 			}
-			item.time = append(item.time, timestamp)
+			item.time = append(item.time, timestamp/int64(time.Millisecond))
 			item.avg = append(item.avg, avg)
 			item.max = append(item.max, max)
 			item.min = append(item.min, min)
@@ -465,7 +465,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		SELECT timestamp, status_name::tag, count(latency)
 		FROM status_page 
 		WHERE metric=$metric 
-		GROUP time(1m), status_name::tag 
+		GROUP BY time(1m), status_name::tag 
 		LIMIT 200`,
 		Params: map[string]*structpb.Value{
 			"metric": structpb.NewStringValue(strconv.FormatInt(req.Id, 10)),
@@ -504,7 +504,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 				item = &groupItem{}
 				group[statusName] = item
 			}
-			item.times = append(item.times, timestamp)
+			item.times = append(item.times, timestamp/int64(time.Millisecond))
 			item.count = append(item.count, count)
 		}
 		for stat, item := range group {
