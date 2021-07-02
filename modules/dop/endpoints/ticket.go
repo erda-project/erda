@@ -66,7 +66,7 @@ func (e *Endpoints) CreateTicket(ctx context.Context, r *http.Request, vars map[
 	// 添加ticket至DB
 	ticketID, err := e.ticket.Create(userID, requestID, &ticketCreateReq)
 	if err != nil {
-		return apierrors.ErrCreateTicket.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrCreateTicket.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(ticketID)
