@@ -310,8 +310,8 @@ services:
       GIT_INNER_USER_PASSWORD: "123456"
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
-      UC_CLIENT_ID: "gittar"
-      UC_CLIENT_SECRET: "AjxnTesSdhR"
+      UC_CLIENT_ID: "dice"
+      UC_CLIENT_SECRET: "secret"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
