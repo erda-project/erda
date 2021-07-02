@@ -33,8 +33,8 @@ Accept: application/json
 SELECT format_time(min(timestamp),'2006-01-02 15:04:05'), host_ip::tag FROM host_summary
 
 ### QueryWithTableFormat
-POST {{url}}/api/query
-    ?&start=before_1h
+POST {{url}}/api/monitor/metric/query
+    ?start=before_1h
     &end=now
     &filter_host_ip=10.0.6.205
     &ql=influxql:ast
@@ -59,3 +59,13 @@ Content-Type: application/json
         "time()"
     ]
 }
+
+### GeneralQuery
+GET {{url}}/api/monitor/metric/general-query
+    ?start=before_1h
+    &end=now
+    &q=SELECT format_time(min(timestamp),'2006-01-02 15:04:05'), host_ip::tag FROM host_summary
+    &ql=influxql
+    &format=chartv2
+    &type=_
+Accept: application/json
