@@ -32,6 +32,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/fixed"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/scheduled"
 	_ "github.com/erda-project/erda/modules/msp/apm/exception"
+	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
 	_ "github.com/erda-project/erda/modules/msp/instance/permission"
 	_ "github.com/erda-project/erda/modules/msp/menu"
