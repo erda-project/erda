@@ -133,7 +133,7 @@ func Test_disruptor_In(t *testing.T) {
 			}
 			go func() {
 				data := <-d.metrics
-				fmt.Printf("the data is %+v", data)
+				fmt.Printf("the data is %+v\n", data)
 			}()
 			if err := d.In(tt.args.metrics...); (err != nil) != tt.wantErr {
 				t.Errorf("In() error = %v, wantErr %v", err, tt.wantErr)

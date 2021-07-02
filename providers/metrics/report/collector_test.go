@@ -142,7 +142,7 @@ func Test_reportClient_group(t *testing.T) {
 			if got := c.group(tt.args.in); got != nil {
 				for _, v := range got {
 					g := v
-					fmt.Printf("%+v", *g)
+					fmt.Printf("%+v\n", *g)
 				}
 			}
 		})

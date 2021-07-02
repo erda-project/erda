@@ -68,11 +68,12 @@ func (p *Dispatcher) Run(ctx context.Context) error {
 					Data:   c,
 				})
 			}
+			p.checkers[c.Id] = c
 		}
 		for id, c := range p.checkers {
 			if _, ok := checkers[c.Id]; !ok {
 				p.notify(&fetcher.Event{
-					Action: fetcher.ActionAdd,
+					Action: fetcher.ActionDelete,
 					Data:   c,
 				})
 			}
@@ -104,10 +105,11 @@ func (p *Dispatcher) Run(ctx context.Context) error {
 					Data:   c,
 				})
 			}
+			p.checkers[c.Id] = c
 		case id := <-p.removeCh:
 			if c, ok := p.checkers[id]; ok {
 				p.notify(&fetcher.Event{
-					Action: fetcher.ActionAdd,
+					Action: fetcher.ActionDelete,
 					Data:   c,
 				})
 				delete(p.checkers, id)
