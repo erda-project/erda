@@ -95,8 +95,6 @@ type PipelineTaskExtra struct {
 	LoopOptions *apistructs.PipelineTaskLoopOptions `json:"loopOptions,omitempty"` // 开始执行后保证不为空
 
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
-
-	JobID string `json:"jobID,omitempty"` // flink, spark job id
 }
 
 type FlinkSparkConf struct {

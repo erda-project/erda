@@ -16,14 +16,18 @@ package clusterinfo
 import (
 	"sync"
 
-	"github.com/gogap/errors"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
 	ClusterEventListenerLimit = 10
+	ClusterHookApiPath        = "/api/pipeline-clusters/actions/hook"
 )
 
 var (
@@ -64,4 +68,25 @@ func RegisterClusterEvent() (<-chan apistructs.ClusterEvent, error) {
 	ch := make(chan apistructs.ClusterEvent, 0)
 	clusterEventChans = append(clusterEventChans, ch)
 	return ch, nil
+}
+
+// RegisterClusterHook register cluster hook in eventbox
+func RegisterClusterHook(bdl *bundle.Bundle) error {
+	ev := apistructs.CreateHookRequest{
+		Name:   "pipeline_watch_cluster_changed",
+		Events: []string{bundle.ClusterEvent},
+		URL:    strutil.Concat("http://", discover.Pipeline(), ClusterHookApiPath),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Errorf("failed to register watch cluster changed event, err: %v", err)
+		return err
+	}
+	return nil
 }

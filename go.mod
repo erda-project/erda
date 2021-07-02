@@ -8,6 +8,7 @@ require (
 	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
+	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
@@ -63,7 +64,6 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/uuid v1.2.0
-	github.com/googlecloudplatform/flink-operator v0.0.0-20200909223554-f302312417ee
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
@@ -167,9 +167,9 @@ require (
 )
 
 replace (
+	github.com/googlecloudplatform/flink-operator => github.com/googlecloudplatform/flink-on-k8s-operator v0.0.0-20200909223554-f302312417ee
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/googlecloudplatform/flink-operator => github.com/googlecloudplatform/flink-on-k8s-operator v0.0.0-20200909223554-f302312417ee
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb

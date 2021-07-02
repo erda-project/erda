@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gogap/errors"
+	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"

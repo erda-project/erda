@@ -28,14 +28,14 @@ import (
 func (e *Endpoints) clusterHook(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	req := apistructs.ClusterEvent{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errStr := fmt.Sprintf("decode clusterhook request fail: %v", err)
+		errStr := fmt.Sprintf("failed to decode clusterhook request, err: %v", err)
 		logrus.Error(errStr)
-		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errStr}, nil
+		return httpserver.ErrResp(http.StatusBadRequest, "", errStr)
 	}
 	if err := e.pipelineSvc.ClusterHook(req); err != nil {
-		errStr := fmt.Sprintf("failed to handle cluster event: %v", err)
+		errStr := fmt.Sprintf("failed to handle cluster event, err: %v", err)
 		logrus.Error(errStr)
-		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errStr}, nil
+		return httpserver.ErrResp(http.StatusBadRequest, "", errStr)
 	}
-	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
+	return httpserver.OkResp(nil)
 }

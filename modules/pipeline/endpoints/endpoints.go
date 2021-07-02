@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -239,6 +240,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
 
 		// cluster info
-		{Path: "/clusterhook", Method: http.MethodPost, Handler: e.clusterHook},
+		{Path: clusterinfo.ClusterHookApiPath, Method: http.MethodPost, Handler: e.clusterHook},
 	}
 }

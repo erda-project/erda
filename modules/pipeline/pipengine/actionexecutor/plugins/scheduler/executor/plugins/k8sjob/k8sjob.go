@@ -151,6 +151,10 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 		return nil, err
 	}
 
+	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
+		return nil, err
+	}
+
 	if len(job.Volumes) != 0 {
 		_, _, pvcs := logic.GenerateK8SVolumes(&job)
 		for _, pvc := range pvcs {
@@ -701,6 +705,48 @@ func parseFailedReason(message string) (string, error) {
 		// TODO: Analyze the reason for the failure
 		return "", errors.New("unexpected")
 	}
+}
+
+func (k *K8sJob) createImageSecretIfNotExist(namespace string) error {
+	var err error
+
+	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
+		return nil
+	}
+
+	if !k8serrors.IsNotFound(err) {
+		return err
+	}
+
+	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
+	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	mysecret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s.Name,
+			Namespace: namespace,
+		},
+		Data:       s.Data,
+		StringData: s.StringData,
+		Type:       s.Type,
+	}
+
+	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Create(context.Background(), mysecret, metav1.CreateOptions{}); err != nil {
+		if strutil.Contains(err.Error(), "already exists") {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func generatePipelineStatus(job *batchv1.Job, jobPods *corev1.PodList) (status apistructs.PipelineStatus) {

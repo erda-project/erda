@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogap/errors"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"

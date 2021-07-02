@@ -128,11 +128,6 @@ func (s *start) Processing() (interface{}, error) {
 			s.P.ID, s.Task.Name, err)
 		return nil, err
 	}
-	if err := injectJobID((*taskrun.TaskRun)(s), data); err != nil {
-		logrus.Errorf("reconciler: pipelineID: %d, task %q failed to injectJobID when start done, err: %v",
-			s.P.ID, s.Task.Name, err)
-		return nil, err
-	}
 	return data, nil
 }
 
@@ -162,19 +157,6 @@ func (s *start) TuneTriggers() taskrun.TaskOpTuneTriggers {
 		BeforeProcessing: aoptypes.TuneTriggerTaskBeforeStart,
 		AfterProcessing:  aoptypes.TuneTriggerTaskAfterStart,
 	}
-}
-
-// injectJobID save flink, spark job id after start
-func injectJobID(tr *taskrun.TaskRun, data interface{}) error {
-	if data == nil {
-		return nil
-	}
-	jobID, ok := data.(string)
-	if !ok {
-		return nil
-	}
-	tr.Task.Extra.JobID = jobID
-	return tr.DBClient.UpdatePipelineTaskExtra(tr.Task.ID, tr.Task.Extra)
 }
 
 func injectVolumeID(tr *taskrun.TaskRun, data interface{}) error {

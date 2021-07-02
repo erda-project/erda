@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	DiceRootDomainKEY  = "DICE_ROOT_DOMAIN"
-	DiceClusterInfoKey = "dice-cluster-info"
+	DiceRootDomain  = "DICE_ROOT_DOMAIN"
+	DiceClusterInfo = "dice-cluster-info"
 )
 
 var Kind = types.Kind("k8sflink")
@@ -139,13 +139,13 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 
 	logrus.Infof("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
 
-	clusterInfo, err := k.GetClusterInfo(DiceClusterInfoKey)
+	clusterInfo, err := k.GetClusterInfo(DiceClusterInfo)
 	if err != nil {
 		return apistructs.Job{
 			JobFromUser: job,
 		}, err
 	}
-	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterInfo[DiceRootDomainKEY])
+	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterInfo[DiceRootDomain])
 	hostURL := strings.Join(hosts, ".")
 	flinkCluster := ComposeFlinkCluster(bigDataConf, hostURL)
 	flinkCluster.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
