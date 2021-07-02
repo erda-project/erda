@@ -11,18 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dop
+package core_services
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"net/http"
 
-var CMDB_IMAGE_UPLOAD = apis.ApiSpec{
-	Path:        "/api/images/actions/upload",
-	BackendPath: "/api/images/actions/upload",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	Doc:         "summary: 图片上传",
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
+
+var CMDB_FILE_UPLOAD = apis.ApiSpec{
+	Path:         "/api/files",
+	BackendPath:  "/api/files",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	ChunkAPI:     true,
+	ResponseType: apistructs.FileUploadResponse{},
+	Doc:          "summary: 文件上传",
 }

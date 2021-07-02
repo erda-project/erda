@@ -11,36 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cq
+package core_services
 
 import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"net/http"
+
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type CQ struct {
-	bdl           *bundle.Bundle
-	branchRuleSvc *branchrule.BranchRule
-}
-
-type Option func(*CQ)
-
-func New(options ...Option) *CQ {
-	var cq CQ
-	for _, op := range options {
-		op(&cq)
-	}
-	return &cq
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(cq *CQ) {
-		cq.bdl = bdl
-	}
-}
-
-func WithBranchRule(svc *branchrule.BranchRule) Option {
-	return func(cq *CQ) {
-		cq.branchRuleSvc = svc
-	}
+var CMDB_FILE_HEAD = apis.ApiSpec{
+	Path:          "/api/files/<uuid>",
+	BackendPath:   "/api/files/<uuid>",
+	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:        "http",
+	Method:        http.MethodHead,
+	CheckLogin:    false,
+	TryCheckLogin: true,
+	CheckToken:    true,
+	IsOpenAPI:     true,
+	Doc:           "summary: HEAD 请求，文件下载，在 path 中指定具体文件",
 }

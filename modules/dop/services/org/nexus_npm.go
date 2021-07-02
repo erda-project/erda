@@ -17,7 +17,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/conf"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/nexus"
 )

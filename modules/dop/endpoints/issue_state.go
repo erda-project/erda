@@ -18,12 +18,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // CreateIssueState 创建事件状态

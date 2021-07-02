@@ -14,7 +14,11 @@
 // Package asset API 资产
 package assetsvc
 
-type Service struct{}
+import "github.com/erda-project/erda/modules/dop/services/branchrule"
+
+type Service struct {
+	branchRuleSvc *branchrule.BranchRule
+}
 
 type Option func(*Service)
 
@@ -24,4 +28,10 @@ func New(options ...Option) *Service {
 		op(r)
 	}
 	return r
+}
+
+func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
+	return func(service *Service) {
+		service.branchRuleSvc = svc
+	}
 }

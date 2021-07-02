@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/approve"
 	"github.com/erda-project/erda/modules/core-services/services/audit"
 	"github.com/erda-project/erda/modules/core-services/services/errorbox"
+	"github.com/erda-project/erda/modules/core-services/services/filesvc"
 	"github.com/erda-project/erda/modules/core-services/services/label"
 	"github.com/erda-project/erda/modules/core-services/services/manual_review"
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
@@ -68,6 +69,7 @@ type Endpoints struct {
 	queryStringDecoder *schema.Decoder
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
+	fileSvc            *filesvc.FileService
 }
 
 type Option func(*Endpoints)
@@ -232,6 +234,12 @@ func WithAudit(audit *audit.Audit) Option {
 func WithErrorBox(errorbox *errorbox.ErrorBox) Option {
 	return func(e *Endpoints) {
 		e.errorbox = errorbox
+	}
+}
+
+func WithFileSvc(svc *filesvc.FileService) Option {
+	return func(e *Endpoints) {
+		e.fileSvc = svc
 	}
 }
 
@@ -404,5 +412,13 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/approves/{approveId}", Method: http.MethodPut, Handler: e.UpdateApprove},
 		{Path: "/api/approves/{approveId}", Method: http.MethodGet, Handler: e.GetApprove},
 		{Path: "/api/approves/actions/list-approves", Method: http.MethodGet, Handler: e.ListApproves},
+
+		// the interface of file
+		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
+		{Path: "/api/files", Method: http.MethodGet, WriterHandler: e.DownloadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodGet, WriterHandler: e.DownloadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
+		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
+		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
 	}
 }
