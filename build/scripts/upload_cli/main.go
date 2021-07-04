@@ -25,24 +25,26 @@ func main() {
 	keySecret := os.Args[2]
 	objName := os.Args[3]
 	file := os.Args[4]
-	// 创建OSSClient实例。
+	// Create an OSSClient instance.
 	client, err := oss.New("oss-cn-hangzhou.aliyuncs.com", keyID, keySecret)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(-1)
 	}
 
-	// 获取存储空间。
-	bucket, err := client.Bucket("terminus-dice")
+	bucket, err := client.Bucket("erda-release")
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(-1)
 	}
 
-	// 上传本地文件。
-	err = bucket.PutObjectFromFile(objName, file)
+	// Set the ACL and upload the object.
+	objectAcl := oss.ObjectACL(oss.ACLPublicRead)
+	err = bucket.PutObjectFromFile(objName, file, objectAcl)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(-1)
 	}
+
+	fmt.Println("Upload success!")
 }
