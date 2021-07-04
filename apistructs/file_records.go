@@ -44,12 +44,18 @@ type TestFileRecordRequest struct {
 }
 
 type TestFileExtra struct {
-	ManualTestFileExtraInfo *ManualTestFileExtraInfo `json:"manualTestExtraFileInfo,omitempty"`
+	ManualTestFileExtraInfo    *ManualTestFileExtraInfo    `json:"manualTestExtraFileInfo,omitempty"`
+	AutotestSpaceFileExtraInfo *AutoTestSpaceFileExtraInfo `json:"autotestSpaceFileExtraInfo,omitempty"`
 }
 
 type ManualTestFileExtraInfo struct {
 	ImportRequest *TestCaseImportRequest `json:"importRequest,omitempty"`
 	ExportRequest *TestCaseExportRequest `json:"exportRequest,omitempty"`
+}
+
+type AutoTestSpaceFileExtraInfo struct {
+	ImportRequest *AutoTestSpaceImportRequest `json:"importRequest,omitempty"`
+	ExportRequest *AutoTestSpaceExportRequest `json:"exportRequest,omitempty"`
 }
 
 type FileRecordState string
@@ -64,6 +70,8 @@ const (
 	FileActionTypeCopy        FileActionType  = "copy"
 	FileActionTypeImport      FileActionType  = "import"
 	FileActionTypeExport      FileActionType  = "export"
+	FileSpaceActionTypeExport FileActionType  = "spaceExport"
+	FileSpaceActionTypeImport FileActionType  = "spaceImport"
 )
 
 type ListTestFileRecordsRequest struct {
