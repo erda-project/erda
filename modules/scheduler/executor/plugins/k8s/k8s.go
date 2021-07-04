@@ -428,7 +428,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		k.setProjectServiceName(runtime)
 	}
 
-	logrus.Debugf("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
+	logrus.Infof("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
@@ -670,7 +670,7 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 			return err
 		}
 	}
-	if service.ProjectServiceName != "" {
+	if service.ProjectServiceName != "" && len(service.Ports) > 0 {
 		err := k.createProjectService(service, sg.ID)
 		if err != nil {
 			return err
