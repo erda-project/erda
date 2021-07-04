@@ -30,7 +30,7 @@ func (e *Endpoints) querySnippetDetails(ctx context.Context, r *http.Request, va
 		return errorresp.ErrResp(err)
 	}
 
-	data, err := e.snippetSvc.QueryDetails(&req)
+	data, err := e.pipelineSvc.QueryDetails(&req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
