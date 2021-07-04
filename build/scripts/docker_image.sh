@@ -118,7 +118,7 @@ build_image()  {
             build/scripts/base_image.sh build
         fi
     fi
-    docker build -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker build --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \

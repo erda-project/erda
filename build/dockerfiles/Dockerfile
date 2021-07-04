@@ -1,3 +1,4 @@
+# syntax = docker/dockerfile:1.2
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE} as build
 
@@ -9,7 +10,9 @@ ARG CONFIG_PATH
 ARG MODULE_PATH
 ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
-RUN make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
+RUN --mount=type=cache,target=/root/.cache/go-build\
+    --mount=type=cache,target=/go/pkg/mod \
+    make ${MAKE_BUILD_CMD} MODULE_PATH=${MODULE_PATH} DOCKER_IMAGE=${DOCKER_IMAGE} GO_BUILD_OPTIONS="-tags musl"
 
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}

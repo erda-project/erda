@@ -40,17 +40,19 @@ GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
 .PHONY: build-version clean tidy
 build-all:
 	@set -o errexit; \
-	MODULES=$$(find "cmd" -maxdepth 10 -type d); \
+	MODULES=$$(find "./cmd" -maxdepth 10 -type d); \
 	for path in $${MODULES}; \
 	do \
 		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
-			echo "build module: $$MODULE_PATH"; \
-			make build MODULE_PATH=$${MODULE_PATH}; \
+			echo "gona to build module: $$MODULE_PATH"; \
+			MODULE_PATHS="$${MODULE_PATHS} $${path}"; \
 			echo ""; \
 		fi; \
 	done; \
+	mkdir -p "${PROJ_PATH}/bin" && \
+	${GO_BUILD_ENV} go build ${VERSION_OPS} ${GO_BUILD_OPTIONS} -o "${PROJ_PATH}/bin" $${MODULE_PATHS}; \
 	make cli; \
 	echo "build all modules successfully!"
 
