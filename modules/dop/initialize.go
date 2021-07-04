@@ -246,6 +246,10 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		atv2.WithAutotestSvc(autotest),
 	)
 
+	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	autotestV2.CreateFileRecord = testCaseSvc.CreateFileRecord
+	autotestV2.Upload = testCaseSvc.Upload
+
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
 
@@ -480,7 +484,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 }
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -488,12 +492,20 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	if !ok {
 		return
 	}
-	svc.ExportFile(record)
+	switch record.Type {
+	case apistructs.FileActionTypeExport:
+		svc.ExportFile(record)
+	case apistructs.FileSpaceActionTypeExport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ExportFile(record)
+	default:
+
+	}
 }
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -501,5 +513,13 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	if !ok {
 		return
 	}
-	svc.ImportFile(record)
+	switch record.Type {
+	case apistructs.FileActionTypeImport:
+		svc.ImportFile(record)
+	case apistructs.FileSpaceActionTypeImport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ImportFile(record)
+	default:
+
+	}
 }
