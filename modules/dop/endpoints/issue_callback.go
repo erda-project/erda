@@ -82,7 +82,7 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 			"atUserIDs":   req.Content.AtUserIDs,
 		}
 		marshal, _ := json.Marshal(params)
-		logrus.Infof("issue params :%s", string(marshal))
+		logrus.Debugf("issue params :%s", string(marshal))
 
 		// 不使用notifyItemID是为了支持第三方通知项,如监控
 		eventboxReqContent := apistructs.GroupNotifyContent{
@@ -132,7 +132,7 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 		emailAddrs = append(emailAddrs, v.Email)
 	}
 
-	logrus.Infof("params of issue event is: %v", params)
+	logrus.Debugf("params of issue event is: %v", params)
 
 	if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
 		return err

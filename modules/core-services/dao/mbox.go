@@ -16,9 +16,10 @@ package dao
 import (
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/jinzhu/gorm"
 )
 
 func (client *DBClient) CreateMBox(mbox *model.MBox) error {
