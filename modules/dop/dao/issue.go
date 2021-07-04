@@ -503,12 +503,18 @@ func (client *DBClient) GetIssueBugByRange(req apistructs.IssuesStageRequest) ([
 }
 
 // GetReceiversByIssueID get receivers of issue event
-func (client *DBClient) GetReceiversByIssueID(issueID int64) []string {
+func (client *DBClient) GetReceiversByIssueID(issueID int64) ([]string, error) {
 	var receivers []string
-	issue, _ := client.GetIssue(issueID)
-	subscribers, _ := client.GetIssueSubscribersSliceByIssueID(issueID)
+	issue, err := client.GetIssue(issueID)
+	if err != nil {
+		return nil, err
+	}
+	subscribers, err := client.GetIssueSubscribersSliceByIssueID(issueID)
+	if err != nil {
+		return nil, err
+	}
 	receivers = append(receivers, issue.Assignee)
 	receivers = append(receivers, subscribers...)
 
-	return strutil.DedupSlice(receivers)
+	return strutil.DedupSlice(receivers), nil
 }

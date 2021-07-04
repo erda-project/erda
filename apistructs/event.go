@@ -187,7 +187,6 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 	params["issueType"] = ie.Content.IssueType.String()
 	params["issueTitle"] = ie.Content.Title
 	content := ie.Content.Content
-	logrus.Infof("content is: %s", content)
 	if ie.Content.StreamType == ISTComment {
 		content = fmt.Sprintf("%s commented at %s\\n%s", ie.Content.StreamParams.UserName,
 			ie.Content.StreamParams.CommentTime, ie.Content.Content)
@@ -222,9 +221,8 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 	params["issueMboxContent"] = strings.Replace(content, "\\n", "\n", -1)
 	params["issueEmailContent"] = strings.Replace(strings.Replace(content, "\\n", "</br>", -1), "\n", "</br>", -1)
 
-	// todo 换行符还有问题
-	logrus.Infof("issueMboxContent is: %s", params["issueMboxContent"])
-	logrus.Infof("issueEmailContent is: %s", params["issueEmailContent"])
+	logrus.Debugf("issueMboxContent is: %s", params["issueMboxContent"])
+	logrus.Debugf("issueEmailContent is: %s", params["issueEmailContent"])
 
 	return params
 }

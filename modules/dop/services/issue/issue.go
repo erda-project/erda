@@ -959,7 +959,6 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			continue
 		}
 
-		logrus.Infof("is: why????")
 		// Send issue update event
 		// go func() {
 		// 	content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
@@ -1430,17 +1429,21 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 		}
 	}
 
-	if err := svc.db.BatchDeleteIssueSubscribers(req.IssueID, needDeletedSubscribers); err != nil {
-		return err
+	if len(needDeletedSubscribers) != 0 {
+		if err := svc.db.BatchDeleteIssueSubscribers(req.IssueID, needDeletedSubscribers); err != nil {
+			return err
+		}
 	}
 
-	var subscribes []dao.IssueSubscriber
+	var subscribers []dao.IssueSubscriber
 	issueID := int64(req.IssueID)
 	for k := range subscriberMap {
-		subscribes = append(subscribes, dao.IssueSubscriber{IssueID: issueID, UserID: k})
+		subscribers = append(subscribers, dao.IssueSubscriber{IssueID: issueID, UserID: k})
 	}
-	if err := svc.db.BatchCreateIssueSubscribers(subscribes); err != nil {
-		return err
+	if len(subscribers) != 0 {
+		if err := svc.db.BatchCreateIssueSubscribers(subscribers); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -1449,7 +1452,11 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 // CreateIssueEvent create issue event
 func (svc *Issue) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType, content, action string) error {
 	issue, _ := svc.db.GetIssue(issueID)
-	receivers := svc.db.GetReceiversByIssueID(issueID)
+	receivers, err := svc.db.GetReceiversByIssueID(issueID)
+	if err != nil {
+		logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
+		receivers = []string{}
+	}
 	projectModel, _ := svc.bdl.GetProject(issue.ProjectID)
 	orgModel, _ := svc.bdl.GetOrg(int64(projectModel.OrgID))
 	ev := &apistructs.EventCreateRequest{

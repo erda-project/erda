@@ -92,9 +92,13 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 	// if req.StreamType == apistructs.ISTComment {
 	go func() {
 		content, _ := GetDefaultContent(is.StreamType, is.StreamParams)
-		logrus.Infof("old content is: %s", content)
+		logrus.Debugf("old issue content is: %s", content)
 		issue, _ := s.db.GetIssue(req.IssueID)
-		receivers := s.db.GetReceiversByIssueID(req.IssueID)
+		receivers, err := s.db.GetReceiversByIssueID(req.IssueID)
+		if err != nil {
+			logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
+			receivers = []string{}
+		}
 		projectModel, _ := s.bdl.GetProject(issue.ProjectID)
 		orgModel, _ := s.bdl.GetOrg(int64(projectModel.OrgID))
 		ev := &apistructs.EventCreateRequest{
