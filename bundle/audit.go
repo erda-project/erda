@@ -17,7 +17,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strconv"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -79,16 +83,20 @@ func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID str
 	}
 	hc := b.hc
 
-	var buf bytes.Buffer
+	var listAudit apistructs.AuditsListResponse
 	resp, err := hc.
 		Get(host).
 		Path("/api/audits/actions/list").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
 		Header(httputil.UserHeader, userID).
-		JSONBody(audits).
+		Param("orgId", strconv.Itoa(int(audits.OrgID))).
+		Param("pageNo", strconv.Itoa(audits.PageNo)).
+		Param("pageSize", strconv.Itoa(audits.PageSize)).
+		Param("startAt", audits.StartAt).
+		Param("endAt", audits.EndAt).
 		Do().
-		Body(&buf)
+		JSON(&listAudit)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -96,44 +104,42 @@ func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID str
 		return nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to list Audit, status code: %d, body: %v",
 				resp.StatusCode(),
-				buf.String(),
+				resp.Body(),
 			))
-	}
-	var listAudit apistructs.AuditsListResponse
-	err = json.Unmarshal(buf.Bytes(), &listAudit)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
 	return &listAudit, nil
 }
 
-func (b *Bundle) ExportAuditExcel(audits *apistructs.AuditsListRequest, userID string) error {
+func (b *Bundle) ExportAuditExcel(audits *apistructs.AuditsListRequest, userID string) (io.ReadCloser, *httpclient.Response, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	hc := b.hc
 
-	var buf bytes.Buffer
-	resp, err := hc.
+	respBody, resp, err := hc.
 		Get(host).
 		Path("/api/audits/actions/export-excel").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
 		Header(httputil.UserHeader, userID).
-		JSONBody(audits).
-		Do().
-		Body(&buf)
+		Param("orgId", strconv.Itoa(int(audits.OrgID))).
+		Param("pageNo", strconv.Itoa(audits.PageNo)).
+		Param("pageSize", strconv.Itoa(audits.PageSize)).
+		Param("startAt", audits.StartAt).
+		Param("endAt", audits.EndAt).
+		Do().StreamBody()
 	if err != nil {
-		return apierrors.ErrInvoke.InternalError(err)
+		return nil, nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() {
-		return apierrors.ErrInvoke.InternalError(
-			fmt.Errorf("failed to export audit excel, status code: %d, body: %v",
-				resp.StatusCode(),
-				buf.String(),
-			))
+		bodyBytes, _ := ioutil.ReadAll(respBody)
+		var downloadResp apistructs.FileDownloadFailResponse
+		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
+			return nil, nil, toAPIError(resp.StatusCode(), downloadResp.Error)
+		}
+		return nil, nil, fmt.Errorf("failed to export audit excel, responseBody: %s", string(bodyBytes))
 	}
-	return nil
+	return respBody, resp, nil
 }

@@ -72,6 +72,30 @@ services:
       mem: 512
       network:
         mode: container
+  admin:
+    cmd: "/app/admin"
+    ports:
+      - port: 9728
+        protocol: TCP
+        l4_protocol: TCP
+    envs:
+    resources:
+      cpu: ${request_cpu:0.1}
+      max_cpu: 0.2
+      mem: ${request_mem:128}
+      max_mem: 256
+      network:
+        mode: "container"
+    deployments:
+      replicas: 1
+      labels:
+        GROUP: "dice"
+    health_check:
+      http:
+        port: 9728
+        path: "/healthy"
+        duration: 120
+      exec: {}
   cmdb:
     cmd: "/app/cmdb"
     ports:

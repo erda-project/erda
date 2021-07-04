@@ -2,9 +2,11 @@ package manager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+
+	"github.com/gorilla/schema"
 
 	"github.com/pkg/errors"
 
@@ -24,8 +26,10 @@ func (am *AdminManager) AppendAuditEndpoint() {
 func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars map[string]string) (httpserver.Responser, error) {
 
 	var listReq apistructs.AuditsListRequest
+	queryDecoder := schema.NewDecoder()
+	queryDecoder.IgnoreUnknownKeys(true)
 
-	if err := json.NewDecoder(req.Body).Decode(&listReq); err != nil {
+	if err := queryDecoder.Decode(&listReq, req.URL.Query()); err != nil {
 		return apierrors.ErrListAudit.MissingParameter("body").ToResp(), nil
 	}
 
@@ -39,7 +43,8 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 	if err != nil {
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
-	if int(listReq.OrgID) != 0 {
+
+	if listReq.OrgID == 0 {
 		listReq.OrgID = orgID
 	}
 
@@ -57,8 +62,16 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 }
 
 func (am *AdminManager) ExportExcelAudit(
-	ctx context.Context, writer http.ResponseWriter,
+	ctx context.Context, w http.ResponseWriter,
 	req *http.Request, resources map[string]string) error {
+
+	var listReq apistructs.AuditsListRequest
+	queryDecoder := schema.NewDecoder()
+	queryDecoder.IgnoreUnknownKeys(true)
+
+	if err := queryDecoder.Decode(&listReq, req.URL.Query()); err != nil {
+		return apierrors.ErrListAudit.MissingParameter("body")
+	}
 
 	orgID, err := GetOrgID(req)
 	if err != nil {
@@ -71,14 +84,9 @@ func (am *AdminManager) ExportExcelAudit(
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id"))
 	}
 
-	var listReq apistructs.AuditsListRequest
-	if err := json.NewDecoder(req.Body).Decode(&listReq); err != nil {
-		return apierrors.ErrListAudit.MissingParameter("body")
-	}
-
 	listReq.PageNo = 1
 	listReq.PageSize = 99999
-	if int(listReq.OrgID) != 0 {
+	if listReq.OrgID == 0 {
 		listReq.OrgID = orgID
 	}
 
@@ -87,9 +95,12 @@ func (am *AdminManager) ExportExcelAudit(
 		return apierrors.ErrListAudit.InvalidParameter(err)
 	}
 
-	err = am.bundle.ExportAuditExcel(&listReq, userID)
+	respBody, resp, err := am.bundle.ExportAuditExcel(&listReq, userID)
 	if err != nil {
-		return apierrors.ErrListAudit.InternalError(err)
+		return fmt.Errorf("failed to get spec from file: %v", err)
 	}
-	return nil
+	w.Header().Set("Content-Disposition", resp.Headers().Get("Content-Disposition"))
+	w.Header().Set("Content-Type", resp.Headers().Get("Content-Type"))
+	_, err = io.Copy(w, respBody)
+	return err
 }

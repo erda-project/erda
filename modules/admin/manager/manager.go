@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"context"
+	"net/http"
 	"time"
 
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -58,10 +60,23 @@ func (am *AdminManager) Routers() []httpserver.Endpoint {
 func NewBundle() *bundle.Bundle {
 	bundleOpts := []bundle.Option{
 		bundle.WithCoreServices(),
+		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*30),
 		)),
 	}
 	bdl := bundle.New(bundleOpts...)
 	return bdl
+}
+
+func (am *AdminManager) AppendAdminEndpoint() {
+	am.endpoints = append(am.endpoints, []httpserver.Endpoint{
+		{Path: "/api/healthy", Method: http.MethodGet, Handler: am.HealthyCheck},
+	}...)
+}
+
+func (am *AdminManager) HealthyCheck(
+	ctx context.Context, r *http.Request,
+	vars map[string]string) (httpserver.Responser, error) {
+	return httpserver.OkResp("ok")
 }
