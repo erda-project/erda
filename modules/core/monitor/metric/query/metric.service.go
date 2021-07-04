@@ -15,8 +15,11 @@ package query
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -84,6 +87,45 @@ func (s *metricService) QueryWithTableFormat(ctx context.Context, req *pb.QueryW
 	}
 	return &pb.QueryWithTableFormatResponse{Data: result}, nil
 }
+
 func (s *metricService) SearchWithTableFormat(ctx context.Context, req *pb.QueryWithTableFormatRequest) (*pb.QueryWithTableFormatResponse, error) {
 	return s.QueryWithTableFormat(ctx, req)
+}
+
+func (s *metricService) GeneralQuery(ctx context.Context, req *pb.GeneralQueryRequest) (*pb.GeneralQueryResponse, error) {
+	if len(req.Statement) <= 0 {
+		return &pb.GeneralQueryResponse{Data: nil}, nil
+	}
+	if len(req.Format) == 0 {
+		req.Format = "influxdb"
+	}
+	if len(req.Ql) == 0 {
+		req.Ql = "influxql"
+	}
+	rs, data, err := s.query.QueryWithFormat(req.Ql, req.Statement, req.Format, nil, nil, nil, convertParamsToValues(req.Params))
+	if err != nil {
+		return nil, errors.NewServiceInvokingError("metric.query", err)
+	}
+	if rs.Details != nil {
+		fmt.Println(rs.Details)
+		return &pb.GeneralQueryResponse{Data: nil}, nil
+	}
+	if data == nil {
+		return &pb.GeneralQueryResponse{Data: nil}, nil
+	}
+	byts, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	result := make(map[string]interface{})
+	json.Unmarshal(byts, &result)
+	val, err := structpb.NewValue(result)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.GeneralQueryResponse{Data: val}, nil
+}
+
+func (s *metricService) GeneralSearch(ctx context.Context, req *pb.GeneralQueryRequest) (*pb.GeneralQueryResponse, error) {
+	return s.GeneralQuery(ctx, req)
 }
