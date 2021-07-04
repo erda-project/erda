@@ -14,20 +14,161 @@
 package pipelinesvc
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/appscode/go/strings"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // handleQueryPipelineYamlBySnippetConfigs 统一查询 snippetConfigs
-func (s *PipelineSvc) handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error) {
+func (s *PipelineSvc) QueryDetails(req *apistructs.SnippetQueryDetailsRequest) (map[string]apistructs.SnippetQueryDetail, error) {
+
+	configs := req.SnippetConfigs
+	if configs == nil || len(configs) <= 0 {
+		return nil, fmt.Errorf("snippetConfigs is empty")
+	}
+
+	for _, config := range configs {
+		if config.Alias == "" {
+			return nil, fmt.Errorf("config lost param alias")
+		}
+		if config.Name == "" {
+			return nil, fmt.Errorf("%s config lost param name", config.Alias)
+		}
+		if config.Source == "" {
+			return nil, fmt.Errorf("%s config lost param source", config.Alias)
+		}
+	}
+
+	var snippetConfigs []apistructs.SnippetConfig
+	for _, config := range configs {
+		if config.Source == apistructs.ActionSourceType {
+			continue
+		}
+		snippetConfigs = append(snippetConfigs, config.SnippetConfig)
+	}
+
+	result, err := s.HandleQueryPipelineYamlBySnippetConfigs(snippetConfigs)
+	if err != nil {
+		return nil, err
+	}
+
+	snippetDetailMap := make(map[string]apistructs.SnippetQueryDetail)
+	for _, config := range configs {
+		// 假如是 action 类型就跳过
+		if config.Source == apistructs.ActionSourceType {
+			continue
+		}
+
+		pipelineYmlContext, find := result[config.SnippetConfig.ToString()]
+		if !find {
+			return nil, fmt.Errorf("not find snippet: %v", config)
+		}
+
+		graph, err := pipelineyml.ConvertToGraphPipelineYml([]byte(pipelineYmlContext))
+		if err != nil {
+			return nil, err
+		}
+
+		var detail apistructs.SnippetQueryDetail
+		// outputs
+		for _, output := range graph.Outputs {
+			detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output.Name))
+		}
+
+		// params
+		for _, param := range graph.Params {
+			detail.Params = append(detail.Params, param)
+		}
+
+		snippetDetailMap[config.Alias] = detail
+	}
+
+	// action source 运行
+	for _, config := range configs {
+		// 假如不是 action 类型就跳过
+		if config.Source != apistructs.ActionSourceType {
+			continue
+		}
+
+		detail, err := s.getActionDetail(config)
+		if err != nil {
+			return nil, err
+		}
+
+		if detail != nil {
+			snippetDetailMap[config.Alias] = *detail
+		}
+	}
+
+	return snippetDetailMap, nil
+}
+
+func (s *PipelineSvc) getActionDetail(config apistructs.SnippetDetailQuery) (*apistructs.SnippetQueryDetail, error) {
+
+	var detail = &apistructs.SnippetQueryDetail{}
+
+	req := apistructs.ExtensionVersionGetRequest{
+		Name:       config.Name,
+		Version:    config.Labels[apistructs.LabelActionVersion],
+		YamlFormat: true,
+	}
+	version, err := s.bdl.GetExtensionVersion(req)
+	if err != nil {
+		return nil, err
+	}
+
+	specYml, ok := version.Spec.(string)
+	if !ok {
+		return nil, fmt.Errorf("action %s spec not string", config.Alias)
+	}
+
+	actionSpec := apistructs.ActionSpec{}
+	err = yaml.Unmarshal([]byte(specYml), &actionSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, output := range actionSpec.Outputs {
+		detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output.Name))
+	}
+
+	actionJson := config.Labels[apistructs.LabelActionJson]
+	var action apistructs.PipelineYmlAction
+	err = json.Unmarshal([]byte(actionJson), &action)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to parse actionJson %s", config.Alias))
+	}
+
+	for _, matchOutputs := range actionSpec.OutputsFromParams {
+		switch matchOutputs.Type {
+		case apistructs.JqActionMatchOutputType:
+			outputs, err := handlerActionOutputsWithJq(&action, matchOutputs.Expression)
+			if err != nil {
+				return nil, err
+			}
+			for _, output := range outputs {
+				detail.Outputs = append(detail.Outputs, expression.GenOutputRef(config.Alias, output))
+			}
+		}
+	}
+
+	return detail, nil
+}
+
+// handleQueryPipelineYamlBySnippetConfigs 统一查询 snippetConfigs
+func (s *PipelineSvc) HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error) {
 
 	sourceSupportAsyncBatch := map[string]struct{}{
 		apistructs.PipelineSourceAutoTest.String(): {},

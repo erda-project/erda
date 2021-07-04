@@ -348,7 +348,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 		}
 		sourceSnippetConfigs = append(sourceSnippetConfigs, snippetConfig)
 	}
-	sourceSnippetConfigYamls, err := s.handleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
+	sourceSnippetConfigYamls, err := s.HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
 	if err != nil {
 		return apierrors.ErrQuerySnippetYaml.InternalError(err)
 	}

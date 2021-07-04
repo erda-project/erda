@@ -45,7 +45,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -134,8 +133,6 @@ func do() (*httpserver.Server, error) {
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
 	}
 
-	snippetSvc := snippetsvc.New(dbClient, bdl)
-
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init reconciler, err: %v", err)
@@ -168,7 +165,6 @@ func do() (*httpserver.Server, error) {
 		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineCronSvc(pipelineCronSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
-		endpoints.WithSnippetSvc(snippetSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
