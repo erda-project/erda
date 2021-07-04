@@ -19,7 +19,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/excel"
 )
@@ -352,33 +355,99 @@ func (a *AutoTestSpaceExcel) GetSpaceData() *AutoTestSpaceData {
 	return a.Data
 }
 
-func (svc *Service) Import(req apistructs.AutoTestSpaceImportRequest, r *http.Request) (*apistructs.AutoTestSpace, error) {
+// Import accept space import request and return uint64 file id,
+// then send file id to channel make import sync
+func (svc *Service) Import(req apistructs.AutoTestSpaceImportRequest, r *http.Request) (uint64, error) {
 	if !req.FileType.Valid() {
-		return nil, apierrors.ErrImportAutoTestSpace.InvalidParameter("fileType")
+		return 0, apierrors.ErrImportAutoTestSpace.InvalidParameter("fileType")
 	}
 	if req.ProjectID == 0 {
-		return nil, apierrors.ErrImportAutoTestSpace.MissingParameter("projectID")
+		return 0, apierrors.ErrImportAutoTestSpace.MissingParameter("projectID")
 	}
 
 	_, err := svc.bdl.GetProject(req.ProjectID)
 	if err != nil {
-		return nil, apierrors.ErrImportAutoTestSpace.InvalidParameter(fmt.Errorf("project not found, id: %d", req.ProjectID))
+		return 0, apierrors.ErrImportAutoTestSpace.InvalidParameter(fmt.Errorf("project not found, id: %d", req.ProjectID))
 	}
 
-	f, _, err := r.FormFile("file")
+	f, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer f.Close()
+
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileHeader.Filename,
+		FileReader:      f,
+		From:            "autotest-space",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
+	if err != nil {
+		return 0, err
+	}
+
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileHeader.Filename,
+		Description:  fmt.Sprintf("ProjectID: %d", req.ProjectID),
+		ProjectID:    req.ProjectID,
+		Type:         apistructs.FileSpaceActionTypeImport,
+		ApiFileUUID:  file.UUID,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			AutotestSpaceFileExtraInfo: &apistructs.AutoTestSpaceFileExtraInfo{
+				ImportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (svc *Service) ImportFile(record *dao.TestFileRecord) {
+	extra := record.Extra.AutotestSpaceFileExtraInfo
+	if extra == nil || extra.ImportRequest == nil {
+		logrus.Errorf("autotest space import func missing request data")
+		return
+	}
+
+	req := extra.ImportRequest
+	id := record.ID
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+		return
+	}
+
+	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
+	if err != nil {
+		logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+		}
+		return
+	}
 
 	switch req.FileType {
 	case apistructs.TestSpaceFileTypeExcel:
 		sheets, err := excel.Decode(f)
 		if err != nil {
-			return nil, err
+			logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			}
+			return
 		}
 		if len(sheets) != 8 {
-			return nil, apierrors.ErrImportAutoTestSpace.InvalidParameter("sheet")
+			logrus.Error(apierrors.ErrImportAutoTestSpace.InvalidParameter("sheet"))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			}
+			return
 		}
 		spaceExcelData := AutoTestSpaceExcel{
 			sheets: sheets,
@@ -392,15 +461,24 @@ func (svc *Service) Import(req apistructs.AutoTestSpaceImportRequest, r *http.Re
 		creator := AutoTestSpaceDirector{}
 		creator.New(&spaceExcelData)
 		if err := creator.Construct(); err != nil {
-			return nil, err
+			logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			}
+			return
 		}
 		data := creator.Creator.GetSpaceData()
-		space, err := data.Copy()
+		_, err = data.Copy()
 		if err != nil {
-			return nil, err
+			logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+				logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
+			}
+			return
 		}
-		return space, nil
 	default:
-		return nil, apierrors.ErrImportAutoTestSpace.InvalidParameter("fileType")
+	}
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess}); err != nil {
+		logrus.Error(apierrors.ErrImportAutoTestSpace.InternalError(err))
 	}
 }

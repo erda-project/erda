@@ -14,11 +14,15 @@
 package autotestv2
 
 import (
-	"io"
+	"bytes"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/i18n"
 )
 
 type AutoTestSpaceDB struct {
@@ -134,12 +138,55 @@ func (a *AutoTestSpaceDB) GetSpaceData() *AutoTestSpaceData {
 	return a.Data
 }
 
-func (svc *Service) Export(w io.Writer, req apistructs.AutoTestSpaceExportRequest) error {
+// Export accept space export request and return uint64 file id,
+// then send file id to channel make export sync
+func (svc *Service) Export(req apistructs.AutoTestSpaceExportRequest) (uint64, error) {
 	// check parameter
 	if !req.FileType.Valid() {
-		return apierrors.ErrExportAutoTestSpace.InvalidParameter("fileType")
+		return 0, apierrors.ErrExportAutoTestSpace.InvalidParameter("fileType")
 	}
 
+	l := svc.bdl.GetLocale(req.Locale)
+	fileName := l.Get(i18n.I18nKeySpaceSheetName)
+	if req.FileType == apistructs.TestSpaceFileTypeExcel {
+		fileName += ".xlsx"
+	}
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileName,
+		Description:  req.SpaceName,
+		Type:         apistructs.FileSpaceActionTypeExport,
+		State:        apistructs.FileRecordStatePending,
+		ProjectID:    req.ProjectID,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			AutotestSpaceFileExtraInfo: &apistructs.AutoTestSpaceFileExtraInfo{
+				ExportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func (svc *Service) ExportFile(record *dao.TestFileRecord) {
+	extra := record.Extra.AutotestSpaceFileExtraInfo
+	if extra == nil || extra.ExportRequest == nil {
+		logrus.Errorf("autotest space export func missing request data")
+		return
+	}
+
+	req := extra.ExportRequest
+	id := record.ID
+	fileName := record.FileName
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		return
+	}
+	w := bytes.Buffer{}
 	spaceDBData := AutoTestSpaceDB{Data: &AutoTestSpaceData{
 		svc:          svc,
 		IdentityInfo: req.IdentityInfo,
@@ -152,9 +199,34 @@ func (svc *Service) Export(w io.Writer, req apistructs.AutoTestSpaceExportReques
 	creator := AutoTestSpaceDirector{}
 	creator.New(&spaceDBData)
 	if err := creator.Construct(); err != nil {
-		return err
+		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		}
+		return
 	}
 	spaceData := creator.Creator.GetSpaceData()
 
-	return spaceData.ConvertToExcel(w)
+	if err := spaceData.ConvertToExcel(&w, fileName); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		}
+		return
+	}
+
+	uuid, err := svc.Upload(&w, fileName)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		}
+		return
+	}
+
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: uuid}); err != nil {
+		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
+		return
+	}
+
 }

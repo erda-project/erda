@@ -350,7 +350,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodGet, Handler: e.GetAutoTestSpace},
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodDelete, Handler: e.DeleteAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/copy", Method: http.MethodPost, Handler: e.CopyAutoTestSpaceV2},
-		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, WriterHandler: e.ExportAutoTestSpace},
+		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, Handler: e.ExportAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/import", Method: http.MethodPost, Handler: e.ImportAutotestSpace},
 
 		// 自动化测试 - 场景
@@ -973,4 +973,8 @@ func init() {
 
 func (e *Endpoints) TestCaseService() *testcase.Service {
 	return e.testcase
+}
+
+func (e *Endpoints) AutotestV2Service() *atv2.Service {
+	return e.autotestV2
 }

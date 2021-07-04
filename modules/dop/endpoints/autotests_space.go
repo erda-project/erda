@@ -218,25 +218,25 @@ func (e *Endpoints) CopyAutoTestSpaceV2(ctx context.Context, r *http.Request, va
 	return httpserver.OkResp(space)
 }
 
-func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrGetAutoTestSpace.NotLogin()
+		return apierrors.ErrGetAutoTestSpace.NotLogin().ToResp(), nil
 	}
 
 	// check body is valid
 	if r.ContentLength == 0 {
-		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter("missing request body")
+		return apierrors.ErrUpdateAutoTestSpace.InvalidParameter("missing request body").ToResp(), nil
 	}
 
 	var req apistructs.AutoTestSpaceExportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return apierrors.ErrExportAutoTestSpace.InvalidParameter(err)
+		return apierrors.ErrExportAutoTestSpace.InvalidParameter(err).ToResp(), nil
 	}
 
 	res, err := e.autotestV2.GetSpace(req.ID)
 	if err != nil {
-		return err
+		return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
 	}
 
 	// permission check
@@ -249,15 +249,27 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, w http.ResponseWrit
 			Action:   apistructs.DeleteAction,
 		})
 		if err != nil {
-			return err
+			return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
 		}
 		if !access.Access {
-			return apierrors.ErrCreateTestPlan.AccessDenied()
+			return apierrors.ErrCreateTestPlan.AccessDenied().ToResp(), nil
 		}
 	}
+	req.ProjectID = uint64(res.ProjectID)
 	req.IdentityInfo = identityInfo
+	req.SpaceName = res.Name
 
-	return e.autotestV2.Export(w, req)
+	fileID, err := e.autotestV2.Export(req)
+	if err != nil {
+		return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
+	}
+
+	e.ExportChannel <- fileID
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: fileID,
+	}, nil
 }
 
 func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -289,10 +301,15 @@ func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, va
 		}
 	}
 
-	importResult, err := e.autotestV2.Import(req, r)
+	recordID, err := e.autotestV2.Import(req, r)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(importResult)
+	e.ImportChannel <- recordID
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: recordID,
+	}, nil
 }

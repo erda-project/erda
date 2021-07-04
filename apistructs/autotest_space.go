@@ -98,10 +98,12 @@ type AutoTestSpaceList struct {
 
 // AutoTestSpaceExportRequest export autotest space
 type AutoTestSpaceExportRequest struct {
-	ID       uint64            `json:"id"`
-	Locale   string            `schema:"-"`
-	IsCopy   bool              `json:"-"`
-	FileType TestSpaceFileType `schema:"fileType"`
+	ID        uint64            `json:"id"`
+	Locale    string            `schema:"-"`
+	IsCopy    bool              `json:"-"`
+	FileType  TestSpaceFileType `schema:"fileType"`
+	ProjectID uint64            `json:"projectID"`
+	SpaceName string            `json:"spaceName"`
 
 	IdentityInfo
 }

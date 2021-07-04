@@ -340,8 +340,7 @@ func (a *AutoTestSpaceData) addConfigsToExcel(file *excel.XlsxFile) error {
 }
 
 // ConvertToExcel export space`s data to excel
-func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer) error {
-	l := a.svc.bdl.GetLocale(a.Locale)
+func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer, fileName string) error {
 	file := excel.NewXLSXFile()
 	if err := a.addSpaceToExcel(file); err != nil {
 		return err
@@ -358,7 +357,7 @@ func (a *AutoTestSpaceData) ConvertToExcel(w io.Writer) error {
 	if err := a.addConfigsToExcel(file); err != nil {
 		return err
 	}
-	excel.WriteFile(w, file, l.Get(i18n.I18nKeySpaceSheetName))
+	excel.WriteFile(w, file, fileName)
 	return nil
 }
 

@@ -16,6 +16,7 @@ package dao
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -103,10 +104,13 @@ func (client *DBClient) UpdateRecord(record *TestFileRecord) error {
 	return client.Save(record).Error
 }
 
-func (client *DBClient) FirstFileReady(actionType apistructs.FileActionType) (bool, *TestFileRecord, error) {
+func (client *DBClient) FirstFileReady(actionType ...apistructs.FileActionType) (bool, *TestFileRecord, error) {
+	if len(actionType) == 0 {
+		return false, nil, fmt.Errorf("failed to get first file ready, err: empty action type")
+	}
 	var process int64
 
-	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` = ?", apistructs.FileRecordStateProcessing, actionType).Count(&process).Error; err != nil {
+	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStateProcessing, actionType).Count(&process).Error; err != nil {
 		return false, nil, err
 	}
 	if process > 0 {
@@ -114,7 +118,7 @@ func (client *DBClient) FirstFileReady(actionType apistructs.FileActionType) (bo
 	}
 
 	var record TestFileRecord
-	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` = ?", apistructs.FileRecordStatePending, actionType).Order("created_at").First(&record).Error; err != nil {
+	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStatePending, actionType).Order("created_at").First(&record).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil, nil
 		}
