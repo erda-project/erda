@@ -14,10 +14,10 @@
 package resource
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/msp/resource/pb"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/msp/resource/pb"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/pkg/common/apis"
 )

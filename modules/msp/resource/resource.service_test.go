@@ -14,11 +14,11 @@
 package resource
 
 import (
-	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/resource/pb"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/msp/resource/pb"
+	"reflect"
+	"testing"
 )
 
 func Test_resourceService_CreateResource(t *testing.T) {
