@@ -28,6 +28,9 @@ type MBox struct {
 	Status  apistructs.MBoxStatus //read|unread
 	OrgID   int64
 	ReadAt  *time.Time
+	// The UnreadCount not empty only when DeduplicateID isn't empty
+	DeduplicateID string `gorm:"column:deduplicate_id"`
+	UnreadCount   int64  `gorm:"column:unread_count"`
 }
 
 func (MBox) TableName() string {
@@ -36,12 +39,14 @@ func (MBox) TableName() string {
 
 func (mbox MBox) ToApiData() *apistructs.MBox {
 	return &apistructs.MBox{
-		ID:        mbox.ID,
-		Title:     mbox.Title,
-		Content:   mbox.Content,
-		Label:     mbox.Label,
-		Status:    mbox.Status,
-		CreatedAt: mbox.CreatedAt,
-		ReadAt:    mbox.ReadAt,
+		ID:            mbox.ID,
+		Title:         mbox.Title,
+		Content:       mbox.Content,
+		Label:         mbox.Label,
+		Status:        mbox.Status,
+		CreatedAt:     mbox.CreatedAt,
+		ReadAt:        mbox.ReadAt,
+		DeduplicateID: mbox.DeduplicateID,
+		UnreadCount:   mbox.UnreadCount,
 	}
 }
