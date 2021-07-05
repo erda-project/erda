@@ -29,10 +29,11 @@ type MBoxSubscriber struct {
 }
 
 type MBoxData struct {
-	Template string            `json:"template"`
-	Params   map[string]string `json:"params"`
-	OrgID    int64             `json:"orgID"`
-	Label    string            `json:"label"`
+	Template      string            `json:"template"`
+	Params        map[string]string `json:"params"`
+	OrgID         int64             `json:"orgID"`
+	Label         string            `json:"label"`
+	DeduplicateID string            `json:"deduplicateId"`
 }
 
 type Option func(*MBoxSubscriber)
@@ -60,11 +61,12 @@ func (d *MBoxSubscriber) Publish(dest string, content string, time int64, msg *t
 		title = "站内信通知"
 	}
 	err = d.bundle.CreateMBox(&apistructs.CreateMBoxRequest{
-		Title:   template.Render(title, mboxData.Params),
-		Content: template.Render(mboxData.Template, mboxData.Params),
-		OrgID:   mboxData.OrgID,
-		UserIDs: userIDs,
-		Label:   mboxData.Label,
+		Title:         template.Render(title, mboxData.Params),
+		Content:       template.Render(mboxData.Template, mboxData.Params),
+		OrgID:         mboxData.OrgID,
+		UserIDs:       userIDs,
+		Label:         mboxData.Label,
+		DeduplicateID: mboxData.DeduplicateID,
 	})
 	if err != nil {
 		return []error{err}

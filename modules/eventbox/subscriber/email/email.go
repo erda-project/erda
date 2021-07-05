@@ -98,6 +98,7 @@ func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *t
 	}
 	err = d.sendToMail(mails, &mailData)
 	if err != nil {
+		logrus.Errorf("send email err: %v", err)
 		return []error{err}
 	}
 	return errs

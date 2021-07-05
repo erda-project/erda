@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package dop
 
 import (
 	"net/http"
@@ -19,14 +19,14 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_ISSUE_SUBSCRIBE = apis.ApiSpec{
-	Path:        "/api/issues/<id>/actions/subscribe",
-	BackendPath: "/api/issues/<id>/actions/subscribe",
-	Host:        "cmdb.marathon.l4lb.thisdcos.directory:9093",
+var CMDB_ISSUE_UNSUBSCRIBE = apis.ApiSpec{
+	Path:        "/api/issues/<id>/actions/unsubscribe",
+	BackendPath: "/api/issues/<id>/actions/unsubscribe",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
 	CheckToken:  true,
 	IsOpenAPI:   true,
-	Doc:         "summary: subscribe issue",
+	Doc:         "summary: unsubscribe issue",
 }

@@ -65,3 +65,28 @@ func (client *DBClient) GetIssueSubscribersByIssueID(issueID int64) ([]IssueSubs
 
 	return issueSubscribers, nil
 }
+
+// BatchCreateIssueSubscribers batch create issue subscriber
+func (client *DBClient) BatchCreateIssueSubscribers(is []IssueSubscriber) error {
+	return client.BulkInsert(is)
+}
+
+// BatchDeleteIssueSubscribers batch delete issue subscriber
+func (client *DBClient) BatchDeleteIssueSubscribers(issueID int64, userIDs []string) error {
+	return client.Where("issue_id = ? and user_id in (?)", issueID, userIDs).Delete(&IssueSubscriber{}).Error
+}
+
+// GetIssueSubscribersSliceByIssueID get a slice of issue subscribers by issueID
+func (client *DBClient) GetIssueSubscribersSliceByIssueID(issueID int64) ([]string, error) {
+	var issueSubscribers []IssueSubscriber
+	if err := client.Model(IssueSubscriber{}).Where("issue_id = ?", issueID).Find(&issueSubscribers).Error; err != nil {
+		return nil, err
+	}
+
+	var userIDs []string
+	for _, v := range issueSubscribers {
+		userIDs = append(userIDs, v.UserID)
+	}
+
+	return userIDs, nil
+}

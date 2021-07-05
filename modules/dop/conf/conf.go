@@ -44,6 +44,7 @@ type Conf struct {
 	SonarPublicURL    string `env:"SONAR_PUBLIC_URL" required:"true"`
 	SonarAdminToken   string `env:"SONAR_ADMIN_TOKEN" required:"true"` // dice.yml 里依赖了 sonar，由工具链注入 SONAR_ADMIN_TOKEN
 	GolangCILintImage string `env:"GOLANGCI_LINT_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/terminus/terminus-golangci-lint:1.27"`
+	UIPublicURL       string `env:"UI_PUBLIC_URL" required:"true"`
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
@@ -151,6 +152,10 @@ func GolangCILintImage() string {
 
 func CMDBAddr() string {
 	return cfg.CMDBAddr
+}
+
+func UIPublicURL() string {
+	return cfg.UIPublicURL
 }
 
 func OryEnabled() bool {

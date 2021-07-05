@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -53,6 +54,12 @@ func (e *Endpoints) CreateCommentIssueStream(ctx context.Context, r *http.Reques
 	var istParam apistructs.ISTParam
 	if createReq.Type == apistructs.ISTComment {
 		istParam.Comment = createReq.Content
+		istParam.CommentTime = time.Now().Format("2006-01-02 15:04:05")
+		user, err := e.bdl.GetCurrentUser(identityInfo.UserID)
+		if err != nil {
+			return apierrors.ErrCreateIssueStream.InvalidParameter(err).ToResp(), nil
+		}
+		istParam.UserName = user.Name
 	} else { // mr 类型评论
 		istParam.MRInfo = createReq.MRInfo
 	}

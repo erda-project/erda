@@ -14,9 +14,12 @@
 package mbox
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -51,7 +54,56 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 func (o *MBox) CreateMBox(createReq *apistructs.CreateMBoxRequest) error {
-	return o.db.CreateMBox(createReq)
+	for _, userID := range createReq.UserIDs {
+		if userID == "" {
+			continue
+		}
+		if createReq.DeduplicateID != "" {
+			mbox, err := o.db.GetMboxByDeduplicateID(createReq.OrgID, createReq.DeduplicateID, userID)
+			if err != nil {
+				return err
+			}
+			if mbox != nil {
+				// Accumulate the number of unread
+				setDuplicateMbox(mbox, createReq)
+				if err := o.db.UpdateMbox(mbox); err != nil {
+					return err
+				}
+				continue
+			}
+		}
+		// Create a new mbox
+		mbox := &model.MBox{
+			Title:   createReq.Title,
+			Content: createReq.Content,
+			Label:   createReq.Label,
+			OrgID:   createReq.OrgID,
+			UserID:  userID,
+			Status:  apistructs.MBoxUnReadStatus,
+		}
+		if createReq.DeduplicateID != "" {
+			mbox.UnreadCount = 1
+			mbox.DeduplicateID = createReq.DeduplicateID
+		}
+		if err := o.db.CreateMBox(mbox); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func setDuplicateMbox(mbox *model.MBox, createReq *apistructs.CreateMBoxRequest) {
+	switch mbox.Status {
+	case apistructs.MBoxUnReadStatus:
+		mbox.UnreadCount++
+	case apistructs.MBoxReadStatus:
+		mbox.UnreadCount = 1
+		mbox.Status = apistructs.MBoxUnReadStatus
+	}
+	mbox.Content = createReq.Content
+	mbox.Title = createReq.Title
+	mbox.CreatedAt = time.Now()
 }
 
 func (o *MBox) QueryMBox(queryReq *apistructs.QueryMBoxRequest) (*apistructs.QueryMBoxData, error) {

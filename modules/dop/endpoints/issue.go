@@ -769,3 +769,30 @@ func (e *Endpoints) UnsubscribeIssue(ctx context.Context, r *http.Request, vars 
 
 	return httpserver.OkResp(id)
 }
+
+// BatchUpdateIssueSubscriber batch update issue subscriber
+func (e *Endpoints) BatchUpdateIssueSubscriber(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var updateReq apistructs.IssueSubscriberBatchUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
+		return apierrors.ErrBatchUpdateIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.NotLogin().ToResp(), nil
+	}
+
+	updateReq.IssueID = id
+	updateReq.IdentityInfo = identityInfo
+
+	if err := e.issue.BatchUpdateIssuesSubscriber(updateReq); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(id)
+}

@@ -550,6 +550,8 @@ type IssueCreateRequest struct {
 	BugStage string `json:"bugStage"`
 	// +optionaln 负责人
 	Owner string `json:"owner"`
+	// +optional issue subscribers
+	Subscribers []string `json:"subscribers"`
 	// internal use, get from *http.Request
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
@@ -1064,4 +1066,11 @@ type IssueImportExcelResponse struct {
 	SuccessNumber int    `json:"successNumber"`
 	FalseNumber   int    `json:"falseNumber"`
 	UUID          string `json:"uuid"`
+}
+
+// IssueSubscriberBatchUpdateRequest batch update the requests of issue subscribers
+type IssueSubscriberBatchUpdateRequest struct {
+	Subscribers  []string `json:"subscribers"`
+	IssueID      int64    `json:"-"`
+	IdentityInfo `json:"-"`
 }
