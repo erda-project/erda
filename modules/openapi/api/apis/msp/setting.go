@@ -15,7 +15,7 @@ package msp
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MSP_SWTTING = apis.ApiSpec{
+var MSP_SETTING = apis.ApiSpec{
 	Path:        "/api/micro-service/setting/tenantGroup/<tenantGroup>",
 	BackendPath: "/api/msp/setting/<tenantGroup>",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
