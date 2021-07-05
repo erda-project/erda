@@ -8,6 +8,7 @@ require (
 	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
+	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
 	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
@@ -50,6 +51,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-logr/logr v0.4.0 // indirect
+	github.com/go-logr/zapr v0.4.0 // indirect
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-playground/validator v9.31.0+incompatible
@@ -128,7 +130,10 @@ require (
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
 	github.com/ziutek/mymysql v1.5.4 // indirect
+	go.uber.org/atomic v1.8.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
+	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
 	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
 	golang.org/x/text v0.3.6
@@ -162,6 +167,7 @@ require (
 )
 
 replace (
+	github.com/googlecloudplatform/flink-operator => github.com/googlecloudplatform/flink-on-k8s-operator v0.0.0-20200909223554-f302312417ee
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex

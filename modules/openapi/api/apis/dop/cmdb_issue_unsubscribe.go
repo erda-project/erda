@@ -11,23 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package dop
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	"net/http"
+
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_ORG_GET_BY_DOMAIN = apis.ApiSpec{
-	Path:          "/api/orgs/actions/get-by-domain",
-	BackendPath:   "/api/orgs/actions/get-by-domain",
-	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:        "http",
-	Method:        "GET",
-	TryCheckLogin: true,
-	CheckToken:    true,
-	IsOpenAPI:     true,
-	RequestType:   apistructs.OrgGetByDomainRequest{},
-	ResponseType:  apistructs.OrgGetByDomainResponse{},
-	Doc:           "summary: 通过域名获取组织",
+var CMDB_ISSUE_UNSUBSCRIBE = apis.ApiSpec{
+	Path:        "/api/issues/<id>/actions/unsubscribe",
+	BackendPath: "/api/issues/<id>/actions/unsubscribe",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	Doc:         "summary: unsubscribe issue",
 }

@@ -11,24 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package k8sspark
+package dop
 
-func stringptr(s string) *string {
-	return &s
-}
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-func int32ptr(n int32) *int32 {
-	return &n
-}
-
-func int64ptr(n int64) *int64 {
-	return &n
-}
-
-func float32ptr(n float32) *float32 {
-	return &n
-}
-
-func float64ptr(n float64) *float64 {
-	return &n
+var CMDB_ORG_GET_BY_DOMAIN = apis.ApiSpec{
+	Path:          "/api/orgs/actions/get-by-domain",
+	BackendPath:   "/api/orgs/actions/get-by-domain",
+	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:        "http",
+	Method:        "GET",
+	TryCheckLogin: true,
+	CheckToken:    true,
+	IsOpenAPI:     true,
+	RequestType:   apistructs.OrgGetByDomainRequest{},
+	ResponseType:  apistructs.OrgGetByDomainResponse{},
+	Doc:           "summary: 通过域名获取组织",
 }
