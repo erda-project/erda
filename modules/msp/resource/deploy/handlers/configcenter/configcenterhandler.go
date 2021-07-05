@@ -14,10 +14,11 @@
 package configcenter
 
 import (
+	"strings"
+
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
-	"strings"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {

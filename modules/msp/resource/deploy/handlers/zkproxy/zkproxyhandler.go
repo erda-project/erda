@@ -14,11 +14,12 @@
 package zkproxy
 
 import (
+	"strings"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
-	"strings"
 )
 
 func (h *provider) IsMatch(tmc *db.Tmc) bool {

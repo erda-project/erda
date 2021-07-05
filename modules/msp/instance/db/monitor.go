@@ -14,8 +14,9 @@
 package db
 
 import (
-	"github.com/jinzhu/gorm"
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 type MonitorDb struct {

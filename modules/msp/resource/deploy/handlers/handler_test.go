@@ -15,8 +15,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/modules/msp/resource/utils"
 	"testing"
+
+	"github.com/erda-project/erda/modules/msp/resource/utils"
 )
 
 type Obj struct {

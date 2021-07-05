@@ -14,12 +14,13 @@
 package loges
 
 import (
+	"strings"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"strings"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {

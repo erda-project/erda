@@ -16,12 +16,13 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
-	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"math/rand"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 )
 
 // GetRandomId 生成随机33位uuid，并且，（首字母开头 + 32位uuid）构成Id

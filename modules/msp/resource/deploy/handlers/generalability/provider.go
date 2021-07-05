@@ -14,10 +14,11 @@
 package generalability
 
 import (
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {

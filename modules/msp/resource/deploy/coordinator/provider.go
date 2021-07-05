@@ -15,11 +15,13 @@ package coordinator
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
-	"github.com/jinzhu/gorm"
-	"strings"
 )
 
 type config struct {

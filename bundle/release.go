@@ -16,8 +16,9 @@ package bundle
 import (
 	"bytes"
 	"fmt"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"strconv"
+
+	"github.com/erda-project/erda/pkg/http/httputil"
 
 	"github.com/pkg/errors"
 

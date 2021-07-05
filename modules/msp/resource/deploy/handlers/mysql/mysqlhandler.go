@@ -16,6 +16,9 @@ package mysql
 import (
 	"container/list"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
@@ -23,8 +26,6 @@ import (
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-	"strings"
-	"time"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {

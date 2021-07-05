@@ -15,8 +15,9 @@ package utils
 
 import (
 	"fmt"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"net/url"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func NewNacosClient(addr, user, password string) *NacosClient {
