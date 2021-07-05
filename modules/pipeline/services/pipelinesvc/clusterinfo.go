@@ -18,9 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -56,4 +58,20 @@ func (s *PipelineSvc) retryQueryClusterInfo(clusterName string, pipelineID uint6
 		})
 
 	return result, queryErr
+}
+
+// ClusterHook listen and dispatch cluster event from eventbox
+func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
+	if !strutil.Equal(clusterEvent.Content.Type, apistructs.K8S, true) &&
+		!strutil.Equal(clusterEvent.Content.Type, apistructs.EDAS, true) &&
+		!strutil.Equal(clusterEvent.Content.Type, apistructs.DCOS, true) {
+		return errors.Errorf("invalid cluster event type: %s", clusterEvent.Content.Type)
+	}
+
+	if clusterEvent.Action != apistructs.ClusterActionCreate && clusterEvent.Action != apistructs.ClusterActionUpdate &&
+		clusterEvent.Action != apistructs.ClusterActionDelete {
+		return errors.Errorf("invalid cluster event action: %s", clusterEvent.Action)
+	}
+	clusterinfo.DispatchClusterEvent(clusterEvent)
+	return nil
 }

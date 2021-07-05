@@ -34,3 +34,10 @@ type PipelineConfigType string
 var (
 	PipelineConfigTypeActionExecutor PipelineConfigType = "action_executor"
 )
+
+type TaskExecutorConfig struct {
+	Kind        string            `json:"kind,omitempty"`
+	Name        string            `json:"name,omitempty"`
+	ClusterName string            `json:"clusterName,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
+}
