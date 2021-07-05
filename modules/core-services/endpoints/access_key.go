@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -68,6 +69,43 @@ func (e *Endpoints) GetByAccessKeyID(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrGetAccessKey.NotFound().ToResp(), nil
 	}
 
+	return httpserver.OkResp(obj)
+}
+
+func getAccessKeyListParam(r *http.Request) (apistructs.AccessKeyListQueryRequest, error) {
+	q, res := r.URL.Query(), apistructs.AccessKeyListQueryRequest{}
+
+	if v := q.Get("isSystem"); v != "" {
+		val, err := strconv.ParseBool(v)
+		if err != nil {
+			return apistructs.AccessKeyListQueryRequest{}, err
+		}
+		res.IsSystem = &val
+	}
+
+	if v := q.Get("status"); v != "" {
+		res.Status = v
+	}
+
+	if v := q.Get("subjectType"); v != "" {
+		res.SubjectType = v
+	}
+
+	if v := q.Get("subject"); v != "" {
+		res.Subject = v
+	}
+	return res, nil
+}
+
+func (e *Endpoints) ListAccessKeys(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	req, err := getAccessKeyListParam(r)
+	if err != nil {
+		return apierrors.ErrGetAccessKey.InvalidParameter(err).ToResp(), nil
+	}
+	obj, err := e.accesskey.ListAccessKey(ctx, req)
+	if err != nil {
+		return apierrors.ErrGetAccessKey.InternalError(err).ToResp(), nil
+	}
 	return httpserver.OkResp(obj)
 }
 

@@ -14,6 +14,7 @@
 package bundle
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -40,4 +41,27 @@ func (b *Bundle) GetAccessKeyByAccessKeyID(ak string) (model.AccessKey, error) {
 
 type AkSkResponse struct {
 	Data model.AccessKey `json:"data"`
+}
+
+func (b *Bundle) ListAccessKeyByAccess(req apistructs.AccessKeyListQueryRequest) ([]model.AccessKey, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var obj AccessKeysListResponse
+	resp, err := hc.Get(host, httpclient.RetryErrResp).
+		Path("/api/credential/access-keys").
+		Header("Content-Type", "application/json").
+		Do().JSON(&obj)
+	if err != nil || !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.NotFound()
+	}
+
+	return obj.Data, nil
+}
+
+type AccessKeysListResponse struct {
+	Data []model.AccessKey `json:"data"`
 }

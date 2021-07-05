@@ -29,3 +29,10 @@ type AccessKeyUpdateRequest struct {
 	Status      string `json:"status" validate:"eq=ACTIVE|DISABLED"`
 	Description string `json:"description"`
 }
+
+type AccessKeyListQueryRequest struct {
+	IsSystem    *bool  `json:"isSystem"`
+	Status      string `json:"status"`
+	SubjectType string `json:"subjectType"`
+	Subject     string `json:"subject"`
+}
