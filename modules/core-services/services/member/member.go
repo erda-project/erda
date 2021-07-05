@@ -728,11 +728,11 @@ func (m *Member) IsAdmin(userID string) bool {
 		}
 	}
 	if member.ID == 0 {
-		logrus.Warnf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
+		logrus.Debugf("CAUTION: user(%s) currently not an admin, will become soon if no one admin exist", userID)
 		// TODO: some risk
 		// TODO: just a magic value, kratos' user_id is UUID, it is significantly larger than 11
 		if len(userID) > 11 && m.noOneAdminForKratos() { // len > 11 imply that is kratos user
-			logrus.Warnf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
+			logrus.Debugf("CAUTION: firstUserBecomeAdmin: %s, there may some risk", userID)
 			if err := m.firstUserBecomeAdmin(userID); err != nil {
 				return false
 			}
@@ -752,7 +752,7 @@ func (m *Member) noOneAdminForKratos() bool {
 		Count(&cnt).Error; err != nil {
 		return false
 	}
-	logrus.Warnf("CAUTION: there are %d admins", cnt)
+	logrus.Debugf("CAUTION: there are %d admins", cnt)
 	return cnt == 0
 }
 
