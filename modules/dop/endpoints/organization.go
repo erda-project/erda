@@ -246,9 +246,11 @@ func (e *Endpoints) ListOrg(ctx context.Context, r *http.Request, vars map[strin
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
-	for i := range orgResp.List {
-		orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
-	}
+	// this may cause database pressure and this interface currently does not need these data
+	// maybe add some cache when we need these data
+	// for i := range orgResp.List {
+	// 	orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
+	// }
 	return httpserver.OkResp(orgResp)
 }
 
@@ -268,9 +270,11 @@ func (e *Endpoints) ListPublicOrg(ctx context.Context, r *http.Request, vars map
 	if err != nil {
 		return apierrors.ErrListOrg.InternalError(err).ToResp(), nil
 	}
-	for i := range orgResp.List {
-		orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
-	}
+	// this may cause database pressure and this interface currently does not need these data
+	// maybe add some cache when we need these data
+	// for i := range orgResp.List {
+	// 	orgResp.List[i].PublisherID = e.org.GetPublisherID(int64(orgResp.List[i].ID))
+	// }
 
 	return httpserver.OkResp(orgResp)
 }
