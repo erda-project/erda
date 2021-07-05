@@ -14,10 +14,7 @@
 package conf
 
 import (
-	"fmt"
 	"strings"
-
-	"github.com/c2h5oh/datasize"
 
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -47,35 +44,12 @@ type Conf struct {
 	SonarPublicURL    string `env:"SONAR_PUBLIC_URL" required:"true"`
 	SonarAdminToken   string `env:"SONAR_ADMIN_TOKEN" required:"true"` // dice.yml 里依赖了 sonar，由工具链注入 SONAR_ADMIN_TOKEN
 	GolangCILintImage string `env:"GOLANGCI_LINT_IMAGE" default:"registry.cn-hangzhou.aliyuncs.com/terminus/terminus-golangci-lint:1.27"`
+	UIPublicURL       string `env:"UI_PUBLIC_URL" required:"true"`
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
 	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
 	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
-
-	// --- 文件管理 begin ---
-	FileMaxUploadSizeStr string `env:"FILE_MAX_UPLOAD_SIZE" default:"300MB"` // 文件上传限制大小，默认 300MB
-	FileMaxUploadSize    datasize.ByteSize
-	// the size of the file parts stored in memory, the default value 32M refer to https://github.com/golang/go/blob/5c489514bc5e61ad9b5b07bd7d8ec65d66a0512a/src/net/http/request.go
-	FileMaxMemorySizeStr string `env:"FILE_MAX_MEMORY_SIZE" default:"32MB"`
-	FileMaxMemorySize    datasize.ByteSize
-
-	// disable file download permission validate temporarily for multi-domain
-	DisableFileDownloadPermissionValidate bool `env:"DISABLE_FILE_DOWNLOAD_PERMISSION_VALIDATE" default:"false"`
-
-	// fs
-	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/cmdb/files:/files:rw' 容器内挂载点的值
-	StorageMountPointInContainer string `env:"STORAGE_MOUNT_POINT_IN_CONTAINER" default:"/files"`
-
-	// oss
-	OSSEndpoint     string `env:"OSS_ENDPOINT"`
-	OSSAccessID     string `env:"OSS_ACCESS_ID"`
-	OSSAccessSecret string `env:"OSS_ACCESS_SECRET"`
-	OSSBucket       string `env:"OSS_BUCKET"`
-	OSSPathPrefix   string `env:"OSS_PATH_PREFIX" default:"/dice/cmdb/files"`
-	// --- 文件管理 end ---
-
-	UIPublicURL string `env:"UI_PUBLIC_URL"`
 
 	CentralNexusPublicURL string `env:"NEXUS_PUBLIC_URL" required:"true"`
 	CentralNexusAddr      string `env:"NEXUS_ADDR" required:"true"`
@@ -98,21 +72,6 @@ var cfg Conf
 // Load loads envs
 func Load() {
 	envconf.MustLoad(&cfg)
-
-	// parse FileMaxUploadSize
-	var fileMaxUploadByte datasize.ByteSize
-	if err := fileMaxUploadByte.UnmarshalText([]byte(cfg.FileMaxUploadSizeStr)); err != nil {
-		panic(fmt.Sprintf("failed to parse FILE_MAX_UPLOAD_SIZE, err: %v", err))
-	}
-	fmt.Println(fileMaxUploadByte.String())
-	cfg.FileMaxUploadSize = fileMaxUploadByte
-
-	// parse FileMaxMemorySize
-	var fileMaxMemoryByte datasize.ByteSize
-	if err := fileMaxMemoryByte.UnmarshalText([]byte(cfg.FileMaxMemorySizeStr)); err != nil {
-		panic(fmt.Sprintf("failed to parse FILE_MAX_MEMORY_SIZE, err: %v", err))
-	}
-	cfg.FileMaxMemorySize = fileMaxMemoryByte
 }
 
 func Debug() bool {
@@ -195,6 +154,10 @@ func CMDBAddr() string {
 	return cfg.CMDBAddr
 }
 
+func UIPublicURL() string {
+	return cfg.UIPublicURL
+}
+
 func OryEnabled() bool {
 	return cfg.OryEnabled
 }
@@ -209,51 +172,6 @@ func OryCompatibleClientID() string {
 
 func OryCompatibleClientSecret() string {
 	return ""
-}
-
-// FileMaxUploadSize 返回 文件上传的大小限制.
-func FileMaxUploadSize() datasize.ByteSize {
-	return cfg.FileMaxUploadSize
-}
-
-// FileMaxMemorySize return the size of the file parts stored in memory
-func FileMaxMemorySize() datasize.ByteSize {
-	return cfg.FileMaxMemorySize
-}
-
-// OSSEndpoint 返回 oss endpoint.
-func OSSEndpoint() string {
-	return cfg.OSSEndpoint
-}
-
-// OSSAccessID 返回 oss access id.
-func OSSAccessID() string {
-	return cfg.OSSAccessID
-}
-
-// OSSAccessSecret 返回 oss access secret
-func OSSAccessSecret() string {
-	return cfg.OSSAccessSecret
-}
-
-// OSSBucket 返回 oss bucket.
-func OSSBucket() string {
-	return cfg.OSSBucket
-}
-
-// OSSPathPrefix 返回 文件在指定 bucket 下的路径前缀.
-func OSSPathPrefix() string {
-	return cfg.OSSPathPrefix
-}
-
-// StorageMountPointInContainer 返回 files 在容器内的挂载点.
-func StorageMountPointInContainer() string {
-	return cfg.StorageMountPointInContainer
-}
-
-// UIPublicURL 返回 UIPublicURL 选项
-func UIPublicURL() string {
-	return cfg.UIPublicURL
 }
 
 // CentralNexusPublicURL 返回 中心集群 nexus 公网地址
@@ -298,11 +216,6 @@ func MetricsIssueCron() string {
 // AvatarStorageURL 返回 OSSUsage 选项
 func AvatarStorageURL() string {
 	return cfg.AvatarStorageURL
-}
-
-// DisableFileDownloadPermissionValidate return switch for file download permission check.
-func DisableFileDownloadPermissionValidate() bool {
-	return cfg.DisableFileDownloadPermissionValidate
 }
 
 func TestFileIntervalSec() int {

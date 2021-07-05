@@ -38,7 +38,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
@@ -351,7 +350,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodGet, Handler: e.GetAutoTestSpace},
 		{Path: "/api/autotests/spaces/{id}", Method: http.MethodDelete, Handler: e.DeleteAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/copy", Method: http.MethodPost, Handler: e.CopyAutoTestSpaceV2},
-		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, WriterHandler: e.ExportAutoTestSpace},
+		{Path: "/api/autotests/spaces/actions/export", Method: http.MethodPost, Handler: e.ExportAutoTestSpace},
 		{Path: "/api/autotests/spaces/actions/import", Method: http.MethodPost, Handler: e.ImportAutotestSpace},
 
 		// 自动化测试 - 场景
@@ -485,6 +484,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/issues/actions/update-issue-type", Method: http.MethodPut, Handler: e.UpdateIssueType},
 		{Path: "/api/issues/{id}/actions/subscribe", Method: http.MethodPost, Handler: e.SubscribeIssue},
 		{Path: "/api/issues/{id}/actions/unsubscribe", Method: http.MethodPost, Handler: e.UnsubscribeIssue},
+		{Path: "/api/issues/{id}/actions/batch-update-subscriber", Method: http.MethodPut, Handler: e.BatchUpdateIssueSubscriber},
 		// issue state
 		{Path: "/api/issues/actions/create-state", Method: http.MethodPost, Handler: e.CreateIssueState},
 		{Path: "/api/issues/actions/delete-state", Method: http.MethodDelete, Handler: e.DeleteIssueState},
@@ -543,14 +543,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/certificates/actions/list-application-quotes", Method: http.MethodGet, Handler: e.ListQuoteCertificates},
 		// push certificate config
 		{Path: "/api/certificates/actions/push-configs", Method: http.MethodPost, Handler: e.PushCertificateConfig},
-
-		// 文件服务
-		{Path: "/api/files", Method: http.MethodPost, Handler: e.UploadFile},
-		{Path: "/api/files", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodGet, WriterHandler: e.DownloadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
-		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
-		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
 
 		// user-workbench
 		{Path: "/api/workbench/actions/list", Method: http.MethodGet, Handler: e.GetWorkbenchData},
@@ -647,7 +639,6 @@ type Endpoints struct {
 	publisher      *publisher.Publisher
 	certificate    *certificate.Certificate
 	appCertificate *appcertificate.AppCertificate
-	fileSvc        *filesvc.FileService
 	libReference   *libreference.LibReference
 	org            *org.Org
 
@@ -939,12 +930,6 @@ func WithAppCertificate(cer *appcertificate.AppCertificate) Option {
 	}
 }
 
-func WithFileSvc(svc *filesvc.FileService) Option {
-	return func(e *Endpoints) {
-		e.fileSvc = svc
-	}
-}
-
 // WithOSSClient 配置OSS Client
 func WithOSSClient(client *oss.Client) Option {
 	return func(e *Endpoints) {
@@ -989,4 +974,8 @@ func init() {
 
 func (e *Endpoints) TestCaseService() *testcase.Service {
 	return e.testcase
+}
+
+func (e *Endpoints) AutotestV2Service() *atv2.Service {
+	return e.autotestV2
 }

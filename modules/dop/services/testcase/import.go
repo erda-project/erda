@@ -15,7 +15,6 @@ package testcase
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/jinzhu/gorm"
@@ -61,12 +60,13 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 
 	uploadReq := apistructs.FileUploadRequest{
 		FileNameWithExt: fileHeader.Filename,
+		ByteSize:        fileHeader.Size,
 		FileReader:      f,
 		From:            "testcase",
 		IsPublic:        true,
 		ExpiredAt:       nil,
 	}
-	file, err := svc.fileSvc.UploadFile(uploadReq)
+	file, err := svc.bdl.UploadFile(uploadReq)
 	if err != nil {
 		return nil, err
 	}
@@ -119,14 +119,7 @@ func (svc *Service) ImportFile(record *dao.TestFileRecord) {
 		return
 	}
 
-	var f io.Reader
-	file, err := svc.db.GetFileByUUID(record.ApiFileUUID)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-	storager := svc.fileSvc.GetStorage(file.StorageType)
-	f, err = storager.Read(file.FullRelativePath)
+	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
 	if err != nil {
 		logrus.Error(err)
 		return

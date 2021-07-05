@@ -20,7 +20,7 @@ import (
 
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/msp/menu/client"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/plugins/certificate"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/plugins/dns"
@@ -31,11 +31,16 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/fixed"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/scheduled"
+	_ "github.com/erda-project/erda/modules/msp/apm/exception"
+	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
 	_ "github.com/erda-project/erda/modules/msp/instance/permission"
 	_ "github.com/erda-project/erda/modules/msp/menu"
 	_ "github.com/erda-project/erda/modules/msp/registercenter"
 	_ "github.com/erda-project/erda/pkg/common/permission"
+
+	// providers
+	_ "github.com/erda-project/erda-infra/providers/cassandra"
 )
 
 func main() {

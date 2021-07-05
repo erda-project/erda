@@ -23,7 +23,7 @@ import (
 	"github.com/gocql/gocql"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/erda-project/erda/modules/monitor/core/metrics"
+	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 	"github.com/erda-project/erda/modules/monitor/trace"
 )
 

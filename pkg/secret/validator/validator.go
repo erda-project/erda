@@ -14,6 +14,7 @@
 package validator
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -69,7 +70,7 @@ func (hv *HMACValidator) Verify(r *http.Request) Result {
 		if time.Now().Sub(*hv.reqTime) > hv.reqExpire {
 			return Result{
 				Ok:      false,
-				Message: "req received, but exceed max expire time",
+				Message: fmt.Sprintf("req received, but exceed max expire duration %s", hv.reqExpire),
 			}
 		}
 	}
@@ -136,7 +137,7 @@ func GetAccessKeyID(r *http.Request) (string, bool) {
 			if strings.HasPrefix(item, hmac.ErdaAccessKeyID) {
 				kv := strings.Split(item, "=")
 				if len(kv) == 2 {
-					return item, true
+					return kv[1], true
 				}
 			}
 		}

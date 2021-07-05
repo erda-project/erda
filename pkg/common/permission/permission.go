@@ -160,8 +160,8 @@ func Method(method interface{}, scope, resource interface{}, action Action, id V
 }
 
 // NoPermMethod 。
-func NoPermMethod(method string) *Permission {
-	return &Permission{method: method}
+func NoPermMethod(method interface{}) *Permission {
+	return &Permission{method: getMethodName(method)}
 }
 
 func getMethodFullName(method interface{}) string {
@@ -249,4 +249,24 @@ func FiexdValue(v string) ValueGetter {
 	return func(ctx context.Context, req interface{}) (string, error) {
 		return v, nil
 	}
+}
+
+// HeaderValue
+func HeaderValue(key string) ValueGetter {
+	return func(ctx context.Context, req interface{}) (string, error) {
+		header := transport.ContextHeader(ctx)
+		if header != nil {
+			for _, v := range header.Get(key) {
+				if len(v) > 0 {
+					return v, nil
+				}
+			}
+		}
+		return "", fmt.Errorf("not found id for permission")
+	}
+}
+
+// OrgIDValue
+func OrgIDValue() ValueGetter {
+	return HeaderValue("org-id")
 }
