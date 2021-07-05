@@ -11,17 +11,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package alert
+package utils
 
 import (
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	apm "github.com/erda-project/erda/modules/monitor/apm/common"
-	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"context"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"net/http"
 )
 
-func (p *provider) getPermissionByTenantGroup(action permission.Action) httpserver.Interceptor {
-	return permission.Intercepter(
-		permission.ScopeProject, permission.TenantGroupFromParams(p.authDb),
-		apm.MonitorProjectAlert, action,
-	)
+func GetHttpRequest(ctx context.Context) *http.Request {
+	return transhttp.ContextRequest(ctx)
 }
