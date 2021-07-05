@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -133,6 +134,11 @@ func do() (*httpserver.Server, error) {
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
 	}
 
+	// init cluster info before pipeline scheduler task executors init
+	if err := clusterinfo.Initialize(bdl); err != nil {
+		return nil, err
+	}
+
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init reconciler, err: %v", err)
@@ -187,6 +193,11 @@ func do() (*httpserver.Server, error) {
 	engine.Start()
 	// handle cron related after engine started
 	if err := doCrondAbout(crondSvc, pipelineSvc); err != nil {
+		return nil, err
+	}
+
+	// register cluster hook after pipeline service start
+	if err := clusterinfo.RegisterClusterHook(bdl); err != nil {
 		return nil, err
 	}
 
