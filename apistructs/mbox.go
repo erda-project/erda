@@ -24,11 +24,12 @@ const (
 
 // CreateMBoxRequest 创建通知项请求
 type CreateMBoxRequest struct {
-	Title   string   `json:"title"`
-	Content string   `json:"content"`
-	OrgID   int64    `json:"orgId"`
-	UserIDs []string `json:"userIds"`
-	Label   string   `json:"label"`
+	Title         string   `json:"title"`
+	Content       string   `json:"content"`
+	OrgID         int64    `json:"orgId"`
+	UserIDs       []string `json:"userIds"`
+	Label         string   `json:"label"`
+	DeduplicateID string   `json:"deduplicateId"`
 }
 
 // CreateMBoxResponse 创建通知项响应
@@ -38,13 +39,15 @@ type CreateMBoxResponse struct {
 
 // MBox 站内信结构
 type MBox struct {
-	ID        int64      `json:"id"`
-	Title     string     `json:"title"`
-	Content   string     `json:"content"`
-	Label     string     `json:"label"`
-	Status    MBoxStatus `json:"status"`
-	CreatedAt time.Time  `json:"createdAt"`
-	ReadAt    *time.Time `json:"readAt"`
+	ID            int64      `json:"id"`
+	Title         string     `json:"title"`
+	Content       string     `json:"content"`
+	Label         string     `json:"label"`
+	Status        MBoxStatus `json:"status"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	ReadAt        *time.Time `json:"readAt"`
+	DeduplicateID string     `json:"deduplicateId"`
+	UnreadCount   int64      `json:"unreadCount"`
 }
 
 // QueryMBoxRequest 查询通知发送记录请求
@@ -76,7 +79,7 @@ type QueryMBoxStatsResponse struct {
 }
 
 type QueryMBoxStatsData struct {
-	UnreadCount int `json:"unreadCount"`
+	UnreadCount int64 `json:"unreadCount"`
 }
 
 // SetMBoxReadStatusRequest 标记站内信已读请求
