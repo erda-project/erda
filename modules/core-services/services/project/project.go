@@ -131,7 +131,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		logrus.Infof("failed to marshal clusterConfig, (%v)", err)
 		return nil, errors.Errorf("failed to marshal clusterConfig")
 	}
-	if err := checkRollbackConfig(&createReq.RollbackConfig); err != nil {
+	if err := initRollbackConfig(&createReq.RollbackConfig); err != nil {
 		return nil, err
 	}
 	rollbackConfig, err := json.Marshal(createReq.RollbackConfig)
@@ -854,6 +854,20 @@ func checkRollbackConfig(rollbackConfig *map[string]int) error {
 	}
 	return nil
 }
+
+// initRollbackConfig init rollback config when create a project
+func initRollbackConfig(rollbackConfig *map[string]int) error {
+	if len(*rollbackConfig) != 4 {
+		*rollbackConfig = map[string]int{
+			string(types.DevWorkspace):     5,
+			string(types.TestWorkspace):    5,
+			string(types.StagingWorkspace): 5,
+			string(types.ProdWorkspace):    5,
+		}
+	}
+	return checkRollbackConfig(rollbackConfig)
+}
+
 func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apistructs.ProjectDTO {
 	var clusterConfig map[string]string
 	if err := json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig); err != nil {
