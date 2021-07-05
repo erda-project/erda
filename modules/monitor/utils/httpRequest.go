@@ -15,8 +15,9 @@ package utils
 
 import (
 	"context"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"net/http"
+
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
 func GetHttpRequest(ctx context.Context) *http.Request {
