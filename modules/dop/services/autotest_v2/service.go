@@ -14,6 +14,9 @@
 package autotestv2
 
 import (
+	"bytes"
+
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
@@ -26,6 +29,10 @@ type Service struct {
 	bdl         *bundle.Bundle
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
+
+	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
+	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
+	Upload           func(buff *bytes.Buffer, fileName string) (string, error)
 }
 
 // New 新建 autotest service

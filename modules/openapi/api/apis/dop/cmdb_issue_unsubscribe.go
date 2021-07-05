@@ -11,21 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package snippetsvc
+package dop
 
 import (
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"net/http"
+
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type SnippetSvc struct {
-	dbClient *dbclient.Client
-	bdl      *bundle.Bundle
-}
-
-func New(dbClient *dbclient.Client, bdl *bundle.Bundle) *SnippetSvc {
-	s := SnippetSvc{}
-	s.dbClient = dbClient
-	s.bdl = bdl
-	return &s
+var CMDB_ISSUE_UNSUBSCRIBE = apis.ApiSpec{
+	Path:        "/api/issues/<id>/actions/unsubscribe",
+	BackendPath: "/api/issues/<id>/actions/unsubscribe",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	Doc:         "summary: unsubscribe issue",
 }

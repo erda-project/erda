@@ -33,7 +33,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -49,7 +48,6 @@ type Endpoints struct {
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
-	snippetSvc       *snippetsvc.SnippetSvc
 	reportSvc        *reportsvc.ReportSvc
 	queueManage      *queuemanage.QueueManage
 
@@ -135,12 +133,6 @@ func WithPipelineCronSvc(svc *pipelinecronsvc.PipelineCronSvc) Option {
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
-	}
-}
-
-func WithSnippetSvc(svc *snippetsvc.SnippetSvc) Option {
-	return func(e *Endpoints) {
-		e.snippetSvc = svc
 	}
 }
 
