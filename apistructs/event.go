@@ -14,7 +14,11 @@
 package apistructs
 
 import (
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // ClusterEvent 创建和修改集群时触发的事件
@@ -167,9 +171,58 @@ type IssueEvent struct {
 
 // IssueEventData
 type IssueEventData struct {
-	Title        string          `json:"title"`
-	Content      string          `json:"content"`
-	AtUserIDs    string          `json:"atUserIds"`
-	StreamType   IssueStreamType `json:"streamType"`
-	StreamParams ISTParam        `json:"streamParams"`
+	Title        string            `json:"title"`
+	Content      string            `json:"content"`
+	AtUserIDs    string            `json:"atUserIds"`
+	Receivers    []string          `json:"receivers"`
+	IssueType    IssueType         `json:"issueType"`
+	StreamType   IssueStreamType   `json:"streamType"`
+	StreamParams ISTParam          `json:"streamParams"`
+	Params       map[string]string `json:"params"`
+}
+
+// GenEventParams generate params of issue event
+func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]string {
+	params := ie.Content.Params
+	params["issueType"] = ie.Content.IssueType.String()
+	params["issueTitle"] = ie.Content.Title
+	content := ie.Content.Content
+	if ie.Content.StreamType == ISTComment {
+		content = fmt.Sprintf("%s commented at %s\\n%s", ie.Content.StreamParams.UserName,
+			ie.Content.StreamParams.CommentTime, ie.Content.Content)
+	}
+
+	params["title"] = fmt.Sprintf("%s-%s (%s/%s project)", params["issueType"], params["issueTitle"],
+		params["orgName"], params["projectName"])
+
+	params["projectMboxLink"] = fmt.Sprintf("/%s/dop/projects/%s/issues/all",
+		params["orgName"], ie.EventHeader.ProjectID)
+
+	params["issueMboxLink"] = fmt.Sprintf("%s?id=%s&type=%s", params["projectMboxLink"],
+		params["issueID"], params["issueType"])
+
+	params["projectEmailLink"] = fmt.Sprintf("%s%s", uiPublicURL, params["projectMboxLink"])
+
+	params["issueEmailLink"] = fmt.Sprintf("%s?id=%s&type=%s", params["projectEmailLink"],
+		params["issueID"], params["issueType"])
+
+	params["mboxDeduplicateID"] = fmt.Sprintf("issue-%s", params["issueID"])
+
+	if locale == "zh-CN" {
+		params["issueType"] = ie.Content.IssueType.GetZhName()
+		params["title"] = fmt.Sprintf("%s-%s (%s/%s 项目)", params["issueType"], params["issueTitle"],
+			params["orgName"], params["projectName"])
+		if ie.Content.StreamType == ISTComment {
+			content = fmt.Sprintf("%s 备注于 %s\n%s", ie.Content.StreamParams.UserName,
+				ie.Content.StreamParams.CommentTime, ie.Content.Content)
+		}
+	}
+
+	params["issueMboxContent"] = strings.Replace(content, "\\n", "\n", -1)
+	params["issueEmailContent"] = strings.Replace(strings.Replace(content, "\\n", "</br>", -1), "\n", "</br>", -1)
+
+	logrus.Debugf("issueMboxContent is: %s", params["issueMboxContent"])
+	logrus.Debugf("issueEmailContent is: %s", params["issueEmailContent"])
+
+	return params
 }

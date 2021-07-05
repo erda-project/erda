@@ -11,24 +11,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package k8sspark
+package executor
 
-func stringptr(s string) *string {
-	return &s
-}
-
-func int32ptr(n int32) *int32 {
-	return &n
-}
-
-func int64ptr(n int64) *int64 {
-	return &n
-}
-
-func float32ptr(n float32) *float32 {
-	return &n
-}
-
-func float64ptr(n float64) *float64 {
-	return &n
-}
+import (
+	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sflink"
+	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
+	_ "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
+)
