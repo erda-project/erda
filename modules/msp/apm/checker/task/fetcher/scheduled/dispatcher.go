@@ -60,23 +60,25 @@ func (p *Dispatcher) Run(ctx context.Context) error {
 				}
 				p.notify(&fetcher.Event{
 					Action: fetcher.ActionUpdate,
-					Data:   c,
+					Data:   copyChecker(c),
 				})
+				p.log.Debugf("update checker %v to %v", c, exist)
 			} else {
 				p.notify(&fetcher.Event{
 					Action: fetcher.ActionAdd,
-					Data:   c,
+					Data:   copyChecker(c),
 				})
 			}
+			p.checkers[c.Id] = c
 		}
 		for id, c := range p.checkers {
 			if _, ok := checkers[c.Id]; !ok {
 				p.notify(&fetcher.Event{
-					Action: fetcher.ActionAdd,
-					Data:   c,
+					Action: fetcher.ActionDelete,
+					Data:   copyChecker(c),
 				})
+				delete(p.checkers, id)
 			}
-			delete(p.checkers, id)
 		}
 		return nil
 	}
@@ -96,19 +98,21 @@ func (p *Dispatcher) Run(ctx context.Context) error {
 				}
 				p.notify(&fetcher.Event{
 					Action: fetcher.ActionUpdate,
-					Data:   c,
+					Data:   copyChecker(c),
 				})
+				p.log.Debugf("update checker %v to %v", c, exist)
 			} else {
 				p.notify(&fetcher.Event{
 					Action: fetcher.ActionAdd,
-					Data:   c,
+					Data:   copyChecker(c),
 				})
 			}
+			p.checkers[c.Id] = c
 		case id := <-p.removeCh:
 			if c, ok := p.checkers[id]; ok {
 				p.notify(&fetcher.Event{
-					Action: fetcher.ActionAdd,
-					Data:   c,
+					Action: fetcher.ActionDelete,
+					Data:   copyChecker(c),
 				})
 				delete(p.checkers, id)
 			}
@@ -150,4 +154,25 @@ func compareChecker(a, b *pb.Checker) bool {
 		return false
 	}
 	return true
+}
+
+func copyChecker(c *pb.Checker) *pb.Checker {
+	ck := &pb.Checker{
+		Id:   c.Id,
+		Name: c.Name,
+		Type: c.Type,
+	}
+	if c.Config != nil {
+		ck.Config = make(map[string]string)
+		for k, v := range c.Config {
+			ck.Config[k] = v
+		}
+	}
+	if c.Tags != nil {
+		ck.Tags = make(map[string]string)
+		for k, v := range c.Tags {
+			ck.Tags[k] = v
+		}
+	}
+	return ck
 }
