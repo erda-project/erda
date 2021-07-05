@@ -26,6 +26,8 @@ import (
 	indexmanager "github.com/erda-project/erda/modules/core/monitor/metric/index"
 )
 
+const serviceIndexManager = "erda.core.monitor.metric.index"
+
 type config struct {
 	Inputs struct {
 		Metric              kafka.ConsumerConfig `file:"metric"`
@@ -61,7 +63,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	es := ctx.Service("elasticsearch").(elasticsearch.Interface)
 	p.output.es = es.NewBatchWriter(&p.C.Output.Elasticsearch.WriterConfig)
-	p.index = ctx.Service("metrics-index-manager").(indexmanager.Index)
+	p.index = ctx.Service(serviceIndexManager).(indexmanager.Index)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	if p.index.EnableRollover() {
@@ -104,7 +106,7 @@ func (p *provider) Close() error {
 func init() {
 	servicehub.Register("metrics-storage", &servicehub.Spec{
 		Services:     []string{"metrics-storage"},
-		Dependencies: []string{"kafka", "elasticsearch", "metrics-index-manager"},
+		Dependencies: []string{"kafka", "elasticsearch", serviceIndexManager},
 		Description:  "metrics store",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
