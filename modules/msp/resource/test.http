@@ -16,3 +16,9 @@ User-ID: 1100
     "orgId": "123"
   }
 }
+
+### Get runtime info
+GET http://localhost:8080/api/tmc/monitor/runtime/11?terminus_key=22&application_id=33&runtime_name=44
+Lang: en
+Accept: application/json
+User-ID: 1100

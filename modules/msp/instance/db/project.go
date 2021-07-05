@@ -15,11 +15,11 @@ package db
 
 import "github.com/jinzhu/gorm"
 
-type ProjectDb struct {
+type ProjectDB struct {
 	*gorm.DB
 }
 
-func (db *ProjectDb) GetByProjectId(projectId string) (*Project, error) {
+func (db *ProjectDB) GetByProjectId(projectId string) (*Project, error) {
 	var data Project
 	result := db.Table(TableProject).
 		Where("`project_id`=?", projectId).

@@ -16,6 +16,8 @@ package resource
 import (
 	"context"
 
+	"github.com/olivere/elastic"
+
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
@@ -24,6 +26,34 @@ import (
 type resourceService struct {
 	p           *provider
 	coordinator coordinator.Interface
+	es          *elastic.Client
+}
+
+func (s *resourceService) GetRuntime(ctx context.Context, req *pb.GetRuntimeRequest) (*pb.GetRuntimeResponse, error) {
+	result, err := s.QueryRuntime(RuntimeQuery{
+		RuntimeName:   req.RuntimeName,
+		RuntimeId:     "", // todo why here omit the runtimeId from request
+		ApplicationId: req.ApplicationId,
+		TerminusKey:   req.TerminusKey,
+	})
+
+	if result == nil || err != nil {
+		return nil, err
+	}
+
+	return &pb.GetRuntimeResponse{
+		Data: &pb.MonitorRuntime{
+			RuntimeId:       result.RuntimeId,
+			RuntimeName:     result.RuntimeName,
+			TerminusKey:     result.TerminusKey,
+			Workspace:       result.Workspace,
+			ProjectId:       result.ProjectId,
+			ProjectName:     result.ProjectName,
+			ApplicationId:   result.ApplicationId,
+			ApplicationName: result.ApplicationName,
+		},
+	}, nil
+
 }
 
 func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateResourceRequest) (*pb.CreateResourceResponse, error) {
@@ -55,8 +85,8 @@ func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateReso
 	}, nil
 }
 
-func (s *resourceService) DeleteResource(ctx context.Context, request *pb.DeleteResourceRequest) (*pb.DeleteResourceResponse, error) {
-	err := s.coordinator.UnDeploy(request.Id)
+func (s *resourceService) DeleteResource(ctx context.Context, req *pb.DeleteResourceRequest) (*pb.DeleteResourceResponse, error) {
+	err := s.coordinator.UnDeploy(req.Id)
 
 	if err != nil {
 		return nil, err

@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/msp/instance/db"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 )
 
@@ -33,14 +34,14 @@ type provider struct {
 	Cfg       *config
 	Log       logs.Logger
 	DB        *gorm.DB `autowired:"mysql-client"`
-	MonitorDb *db.MonitorDb
-	ProjectDb *db.ProjectDb
+	MonitorDb *monitor.MonitorDB
+	ProjectDb *db.ProjectDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB)
-	p.MonitorDb = &db.MonitorDb{DB: p.DB}
-	p.ProjectDb = &db.ProjectDb{DB: p.DB}
+	p.MonitorDb = &monitor.MonitorDB{DB: p.DB}
+	p.ProjectDb = &db.ProjectDB{DB: p.DB}
 	return nil
 }
 

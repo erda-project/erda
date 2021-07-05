@@ -16,6 +16,7 @@ package monitor
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
+	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
 )
@@ -85,7 +86,7 @@ func (p *provider) createMonitor(engine, requestId, requestGroup string, options
 
 	configStr, err := utils.JsonConvertObjToString(config)
 
-	data = &db.Monitor{
+	data = &monitordb.Monitor{
 		TerminusKey:   requestId,
 		MonitorId:     requestId,
 		CallbackUrl:   "",

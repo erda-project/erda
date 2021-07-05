@@ -17,6 +17,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -31,12 +32,12 @@ type provider struct {
 	Log               logs.Logger
 	Register          transport.Register `autowired:"service-register" optional:"true"`
 	resourceService   *resourceService
-	DeployCoordinator coordinator.Interface `autowired:"erda.msp.resource.deploy.coordinator"`
+	DeployCoordinator coordinator.Interface   `autowired:"erda.msp.resource.deploy.coordinator"`
+	ES                elasticsearch.Interface `autowired:"elasticsearch"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-
-	p.resourceService = &resourceService{p: p, coordinator: p.DeployCoordinator}
+	p.resourceService = &resourceService{p: p, coordinator: p.DeployCoordinator, es: p.ES.Client()}
 	if p.Register != nil {
 		pb.RegisterResourceServiceImp(p.Register, p.resourceService, apis.Options())
 	}
@@ -56,7 +57,7 @@ func init() {
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},
-		Dependencies:         []string{"erda.msp.resource.deploy.coordinator"},
+		Dependencies:         []string{"erda.msp.resource.deploy.coordinator", "elasticsearch"},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}

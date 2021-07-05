@@ -18,6 +18,12 @@ mysql:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
 
+elasticsearch:
+  urls: "${ES_URL:http://localhost:9200}"
+  security: ${ES_SECURITY_ENABLE:false}
+  username: "${ES_SECURITY_USERNAME}"
+  password: "${ES_SECURITY_PASSWORD}"
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:

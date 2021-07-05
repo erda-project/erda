@@ -28,7 +28,6 @@ const (
 	TableTmcVersion      = "tb_tmc_version"
 	TableRequestRelation = "tb_tmc_request_relation"
 	TableTmcIni          = "tb_tmc_ini"
-	TableMonitor         = "sp_monitor"
 	TableProject         = "sp_project"
 	TableLogDeployment   = "sp_log_deployment"
 	TableLogInstance     = "sp_log_instance"
@@ -131,35 +130,6 @@ type TmcIni struct {
 
 func (TmcIni) TableName() string {
 	return TableTmcIni
-}
-
-type Monitor struct {
-	Id                 int       `gorm:"column:id;primary_key"`
-	MonitorId          string    `gorm:"column:monitor_id"`
-	TerminusKey        string    `gorm:"column:terminus_key"`
-	TerminusKeyRuntime string    `gorm:"column:terminus_key_runtime"`
-	Workspace          string    `gorm:"column:workspace"`
-	RuntimeId          string    `gorm:"column:runtime_id"`
-	RuntimeName        string    `gorm:"column:runtime_name"`
-	ApplicationId      string    `gorm:"column:application_id"`
-	ApplicationName    string    `gorm:"column:application_name"`
-	ProjectId          string    `gorm:"column:project_id"`
-	ProjectName        string    `gorm:"column:project_name"`
-	OrgId              string    `gorm:"column:org_id"`
-	OrgName            string    `gorm:"column:org_name"`
-	ClusterId          string    `gorm:"column:cluster_id"`
-	ClusterName        string    `gorm:"column:cluster_name"`
-	Config             string    `gorm:"column:config;default:''"`
-	CallbackUrl        string    `gorm:"column:callback_url"`
-	Version            string    `gorm:"column:version"`
-	Plan               string    `gorm:"column:plan"`
-	IsDelete           int       `gorm:"column:is_delete"`
-	Created            time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
-	Updated            time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
-}
-
-func (Monitor) TableName() string {
-	return TableMonitor
 }
 
 type Project struct {
