@@ -32,7 +32,7 @@ VERSION_OPS := -ldflags "\
         -X '${VERSION_PKG}.GoVersion=${GO_VERSION}' \
 		-X '${VERSION_PKG}.DockerImage=${DOCKER_IMAGE}'"
 # build env
-# GOPROXY ?= https://goproxy.cn/
+GOPROXY ?= https://goproxy.cn/
 # GOPRIVATE ?= ""
 # GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPROXY=${GOPROXY} GOPRIVATE=${GOPRIVATE}
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
