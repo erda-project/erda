@@ -36,6 +36,12 @@ const (
 	ClusterStatusOffline string = "offline"
 )
 
+const (
+	ClusterActionCreate = "create"
+	ClusterActionUpdate = "update"
+	ClusterActionDelete = "delete"
+)
+
 // token / client-cert&client-key / proxy(dialer)
 const (
 	ManageToken = "token"

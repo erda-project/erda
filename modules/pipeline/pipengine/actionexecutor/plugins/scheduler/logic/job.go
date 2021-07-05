@@ -1,0 +1,240 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package logic
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"strings"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
+	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+// ParseJobHostBindTemplate Analyze the hostPath template and convert it to the cluster info value
+func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (string, error) {
+	var b bytes.Buffer
+
+	if hostPath == "" {
+		return "", errors.New("hostPath is empty")
+	}
+
+	t, err := template.New("jobBind").
+		Option("missingkey=error").
+		Parse(hostPath)
+	if err != nil {
+		return "", errors.Errorf("failed to parse bind, hostPath: %s, (%v)", hostPath, err)
+	}
+
+	err = t.Execute(&b, &clusterInfo)
+	if err != nil {
+		return "", errors.Errorf("failed to execute bind, hostPath: %s, (%v)", hostPath, err)
+	}
+
+	return b.String(), nil
+}
+
+// GenerateK8SVolumes According to job configuration, production volume related configuration
+func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
+	vols := []corev1.Volume{}
+	volMounts := []corev1.VolumeMount{}
+	pvcs := []*corev1.PersistentVolumeClaim{}
+	for i, v := range job.Volumes {
+		var pvcid string
+		if v.ID == nil { // if ID == nil, we need to create a new pvc
+			sc := whichStorageClass(v.Storage)
+			id := fmt.Sprintf("%s-%s-%d", job.Namespace, job.Name, i)
+			pvcs = append(pvcs, &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      id,
+					Namespace: job.Namespace,
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("10Gi"),
+						},
+					},
+					StorageClassName: &sc,
+				},
+			})
+			pvcid = id
+		} else {
+			pvcs = append(pvcs, nil) // append a placeholder
+			pvcid = *v.ID
+		}
+		volName := fmt.Sprintf("vol-%d", i)
+		vols = append(vols, corev1.Volume{
+			Name: volName,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvcid,
+				},
+			},
+		})
+		volMounts = append(volMounts, corev1.VolumeMount{
+			Name:      volName,
+			MountPath: v.Path,
+		})
+	}
+	return vols, volMounts, pvcs
+}
+
+func whichStorageClass(tp string) string {
+	switch tp {
+	case "local":
+		return "dice-local-volume"
+	case "nfs":
+		return "dice-nfs-volume"
+	default:
+		return "dice-local-volume"
+	}
+}
+
+func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Errorf("%v", r)
+		}
+	}()
+
+	return apistructs.JobFromUser{
+		Name: task_uuid.MakeJobID(task),
+		Kind: func() string {
+			switch task.Type {
+			case string(pipelineymlv1.RES_TYPE_FLINK):
+				return string(apistructs.Flink)
+			case string(pipelineymlv1.RES_TYPE_SPARK):
+				return string(apistructs.Spark)
+			default:
+				return ""
+			}
+		}(),
+		Namespace: task.Extra.Namespace,
+		ClusterName: func() string {
+			if len(task.Extra.ClusterName) == 0 {
+				panic(errors.New("missing cluster name in pipeline task"))
+			}
+			return task.Extra.ClusterName
+		}(),
+		Image:      task.Extra.Image,
+		Cmd:        strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
+		CPU:        task.Extra.RuntimeResource.CPU,
+		Memory:     task.Extra.RuntimeResource.Memory,
+		Binds:      task.Extra.Binds,
+		Volumes:    MakeVolume(task),
+		PreFetcher: task.Extra.PreFetcher,
+		Env:        task.Extra.PublicEnvs,
+		Labels:     task.Extra.Labels,
+		// flink/spark
+		Resource:  task.Extra.FlinkSparkConf.JarResource,
+		MainClass: task.Extra.FlinkSparkConf.MainClass,
+		MainArgs:  task.Extra.FlinkSparkConf.MainArgs,
+		// 重试不依赖 scheduler，由 pipeline engine 自己实现，保证所有 action executor 均适用
+		Params: task.Extra.Action.Params,
+	}, nil
+}
+
+func MakeVolume(task *spec.PipelineTask) []diceyml.Volume {
+	diceVolumes := make([]diceyml.Volume, 0)
+	for _, vo := range task.Extra.Volumes {
+		if vo.Type == string(spec.StoreTypeDiceVolumeFake) || vo.Type == string(spec.StoreTypeDiceCacheNFS) {
+			// fake volume,没有实际挂载行为,不传给scheduler
+			continue
+		}
+		diceVolume := diceyml.Volume{
+			Path: vo.Value,
+			Storage: func() string {
+				switch vo.Type {
+				case string(spec.StoreTypeDiceVolumeNFS):
+					return "nfs"
+				case string(spec.StoreTypeDiceVolumeLocal):
+					return "local"
+				default:
+					panic(errors.Errorf("%q has not supported volume type: %s", vo.Name, vo.Type))
+				}
+			}(),
+		}
+		if vo.Labels != nil {
+			if id, ok := vo.Labels["ID"]; ok {
+				diceVolume.ID = &id
+				goto AppendDiceVolume
+			}
+		}
+		// labels == nil or labels["ID"] not exist
+		// 如果 id 不存在，说明上一次没有生成 volume，并且是 optional 的，则不创建 diceVolume
+		if vo.Optional {
+			continue
+		}
+	AppendDiceVolume:
+		diceVolumes = append(diceVolumes, diceVolume)
+	}
+	return diceVolumes
+}
+
+func GetBigDataConf(task *spec.PipelineTask) (apistructs.BigdataConf, error) {
+	conf := apistructs.BigdataConf{
+		BigdataMetadata: apistructs.BigdataMetadata{
+			Name:      task.Extra.UUID,
+			Namespace: task.Extra.Namespace,
+		},
+		Spec: apistructs.BigdataSpec{},
+	}
+	value, ok := task.Extra.Action.Params["bigDataConf"]
+	if !ok {
+		return conf, fmt.Errorf("missing big data conf from task: %s", task.Extra.UUID)
+	}
+
+	if err := json.Unmarshal([]byte(value.(string)), &conf.Spec); err != nil {
+		return conf, fmt.Errorf("unmarshal bigdata config error: %s", err.Error())
+	}
+	return conf, nil
+}
+
+func GetCLusterInfo(clusterName string) (map[string]string, error) {
+	var clusterInfoRes struct {
+		Data map[string]string `json:"data"`
+	}
+
+	var body bytes.Buffer
+	resp, err := httpclient.New().Get(discover.Scheduler()).
+		Path(strutil.Concat("/api/clusterinfo/", clusterName)).
+		Do().Body(&body)
+	if err != nil {
+		return nil, errors.Errorf("get cluster info failed, err: %v", err)
+	}
+
+	statusCode := resp.StatusCode()
+	respBody := body.String()
+
+	if err := json.Unmarshal([]byte(respBody), &clusterInfoRes); err != nil {
+		return nil, errors.Errorf("get cluster info failed, statueCode: %d, err: %v", statusCode, err)
+	}
+
+	return clusterInfoRes.Data, nil
+}
