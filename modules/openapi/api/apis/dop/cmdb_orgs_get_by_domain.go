@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
@@ -21,7 +21,7 @@ import (
 var CMDB_ORG_GET_BY_DOMAIN = apis.ApiSpec{
 	Path:          "/api/orgs/actions/get-by-domain",
 	BackendPath:   "/api/orgs/actions/get-by-domain",
-	Host:          "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:        "http",
 	Method:        "GET",
 	TryCheckLogin: true,
