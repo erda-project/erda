@@ -37,8 +37,8 @@ func Test_reportClient_serialize(t *testing.T) {
 			name: "test_serialize",
 			fields: fields{
 				cfg: &config{
-					ReportConfig: &ReportConfig{
-						Collector: &CollectorConfig{
+					ReportConfig: ReportConfig{
+						Collector: CollectorConfig{
 							Addr:     "collector.default.svc.cluster.local:7076",
 							UserName: "admin",
 							Password: "Cqq",
@@ -103,8 +103,8 @@ func Test_reportClient_group(t *testing.T) {
 			name: "test_group",
 			fields: fields{
 				cfg: &config{
-					ReportConfig: &ReportConfig{
-						Collector: &CollectorConfig{
+					ReportConfig: ReportConfig{
+						Collector: CollectorConfig{
 							Addr:     "collector.default.svc.cluster.local:7076",
 							UserName: "admin",
 							Password: "Cqq",
@@ -142,7 +142,7 @@ func Test_reportClient_group(t *testing.T) {
 			if got := c.group(tt.args.in); got != nil {
 				for _, v := range got {
 					g := v
-					fmt.Printf("%+v", *g)
+					fmt.Printf("%+v\n", *g)
 				}
 			}
 		})

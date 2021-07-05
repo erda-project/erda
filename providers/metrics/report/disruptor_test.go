@@ -58,7 +58,7 @@ func Test_disruptor_push(t *testing.T) {
 				labels:   tt.fields.labels,
 				reporter: tt.fields.reporter,
 				cfg: &config{
-					ReportConfig: &ReportConfig{
+					ReportConfig: ReportConfig{
 						BufferSize: 100,
 					},
 				},
@@ -89,8 +89,8 @@ func Test_disruptor_In(t *testing.T) {
 			name: "test_disruptor_in",
 			fields: fields{
 				cfg: &config{
-					ReportConfig: &ReportConfig{
-						Collector: &CollectorConfig{
+					ReportConfig: ReportConfig{
+						Collector: CollectorConfig{
 							Addr:     "collector.default.svc.cluster.local:7076",
 							UserName: "admin",
 							Password: "Cqq",
@@ -133,7 +133,7 @@ func Test_disruptor_In(t *testing.T) {
 			}
 			go func() {
 				data := <-d.metrics
-				fmt.Printf("the data is %+v", data)
+				fmt.Printf("the data is %+v\n", data)
 			}()
 			if err := d.In(tt.args.metrics...); (err != nil) != tt.wantErr {
 				t.Errorf("In() error = %v, wantErr %v", err, tt.wantErr)

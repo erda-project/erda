@@ -50,8 +50,8 @@ func (c *ReportClient) SetCFG(cfg *config) {
 func (c *ReportClient) CreateReportClient(addr, username, password string) *ReportClient {
 	return &ReportClient{
 		CFG: &config{
-			ReportConfig: &ReportConfig{
-				Collector: &CollectorConfig{
+			ReportConfig: ReportConfig{
+				Collector: CollectorConfig{
 					Addr:     addr,
 					UserName: username,
 					Password: password,
@@ -75,7 +75,7 @@ func (c *ReportClient) Send(in []*Metric) error {
 			if err = c.write(group.Name, requestBuffer); err == nil {
 				break
 			}
-			fmt.Printf("%s E! Retry %d # report in to collector error %s /n", time.Now().Format("2006-01-02 15:04:05"), i, err.Error())
+			fmt.Printf("%s E! Retry %d # report in to collector error %s \n", time.Now().Format("2006-01-02 15:04:05"), i, err.Error())
 		}
 	}
 	return nil
@@ -128,14 +128,19 @@ func (c *ReportClient) write(name string, requestBuffer io.Reader) error {
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Custom-Content-Encoding", "base64")
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.CFG.ReportConfig.Collector.UserName, c.CFG.ReportConfig.Collector.UserName)
+	if len(c.CFG.ReportConfig.Collector.UserName) > 0 {
+		req.SetBasicAuth(c.CFG.ReportConfig.Collector.UserName, c.CFG.ReportConfig.Collector.Password)
+	}
 	resp, err := c.HttpClient.Do(req)
-	if err == nil && (resp.StatusCode < 200 || resp.StatusCode >= 300) {
-		err = errors.Errorf("when writing to [%s] received status code: %d/n", c.formatRoute(name), resp.StatusCode)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		err = errors.Errorf("when writing to [%s] received status code: %d\n", c.formatRoute(name), resp.StatusCode)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("%s error! close response body error %s", time.Now().Format("2006-01-02 15:04:05"), err)
+			fmt.Printf("%s error! close response body error %s\n", time.Now().Format("2006-01-02 15:04:05"), err)
 		}
 	}()
 	return err
