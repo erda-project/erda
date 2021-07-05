@@ -14,17 +14,16 @@
 package k8sflink
 
 import (
+	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
-	flinkv1beta1 "github.com/erda-project/erda/pkg/clientgo/apis/flinkoperator/v1beta1"
 )
 
 const (
-	AliyunPullSecret   = "aliyun-registry"
 	FlinkIngressPrefix = "flinkcluster"
 )
 
@@ -62,9 +61,9 @@ func composeEnvs(envs map[string]string) []corev1.EnvVar {
 	return envVars
 }
 
-func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1beta1.FlinkCluster {
+func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
 
-	flinkCluster := flinkv1beta1.FlinkCluster{
+	flinkCluster := flinkoperatorv1beta1.FlinkCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "FlinkCluster",
 			APIVersion: "flinkoperator.k8s.io/v1beta1",
@@ -75,18 +74,18 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1be
 			Labels:      nil,
 			Annotations: nil,
 		},
-		Spec: flinkv1beta1.FlinkClusterSpec{
-			Image: flinkv1beta1.ImageSpec{
+		Spec: flinkoperatorv1beta1.FlinkClusterSpec{
+			Image: flinkoperatorv1beta1.ImageSpec{
 				Name:       data.Spec.Image,
 				PullPolicy: corev1.PullAlways,
 				PullSecrets: []corev1.LocalObjectReference{
 					{
-						Name: AliyunPullSecret,
+						Name: apistructs.AliyunRegistry,
 					},
 				},
 			},
-			JobManager: flinkv1beta1.JobManagerSpec{
-				Ingress: &flinkv1beta1.JobManagerIngressSpec{
+			JobManager: flinkoperatorv1beta1.JobManagerSpec{
+				Ingress: &flinkoperatorv1beta1.JobManagerIngressSpec{
 					HostFormat: getStringPoints(hostURL),
 				},
 				Replicas:       getInt32Points(data.Spec.FlinkConf.JobManagerResource.Replica),
@@ -99,7 +98,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1be
 				Sidecars:       nil,
 				PodAnnotations: nil,
 			},
-			TaskManager: flinkv1beta1.TaskManagerSpec{
+			TaskManager: flinkoperatorv1beta1.TaskManagerSpec{
 				Replicas:       data.Spec.FlinkConf.TaskManagerResource.Replica,
 				Resources:      composeResources(data.Spec.FlinkConf.TaskManagerResource),
 				Volumes:        nil,
@@ -123,8 +122,8 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkv1be
 	return &flinkCluster
 }
 
-func composeFlinkJob(data apistructs.BigdataConf) *flinkv1beta1.JobSpec {
-	return &flinkv1beta1.JobSpec{
+func composeFlinkJob(data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec {
+	return &flinkoperatorv1beta1.JobSpec{
 		JarFile:           data.Spec.Resource,
 		ClassName:         &data.Spec.Class,
 		Args:              data.Spec.Args,
@@ -133,11 +132,11 @@ func composeFlinkJob(data apistructs.BigdataConf) *flinkv1beta1.JobSpec {
 		Volumes:           nil,
 		VolumeMounts:      nil,
 		InitContainers:    nil,
-		RestartPolicy:     getJobRestartPolicy(flinkv1beta1.JobRestartPolicyFromSavepointOnFailure),
-		CleanupPolicy: &flinkv1beta1.CleanupPolicy{
-			AfterJobSucceeds:  flinkv1beta1.CleanupActionDeleteCluster,
-			AfterJobFails:     flinkv1beta1.CleanupActionKeepCluster,
-			AfterJobCancelled: flinkv1beta1.CleanupActionDeleteTaskManager,
+		RestartPolicy:     getJobRestartPolicy(flinkoperatorv1beta1.JobRestartPolicyFromSavepointOnFailure),
+		CleanupPolicy: &flinkoperatorv1beta1.CleanupPolicy{
+			AfterJobSucceeds:  flinkoperatorv1beta1.CleanupActionDeleteCluster,
+			AfterJobFails:     flinkoperatorv1beta1.CleanupActionKeepCluster,
+			AfterJobCancelled: flinkoperatorv1beta1.CleanupActionDeleteTaskManager,
 		},
 		CancelRequested: nil,
 		PodAnnotations:  nil,
@@ -145,32 +144,32 @@ func composeFlinkJob(data apistructs.BigdataConf) *flinkv1beta1.JobSpec {
 	}
 }
 
-func getJobRestartPolicy(restartPolicy flinkv1beta1.JobRestartPolicy) *flinkv1beta1.JobRestartPolicy {
+func getJobRestartPolicy(restartPolicy flinkoperatorv1beta1.JobRestartPolicy) *flinkoperatorv1beta1.JobRestartPolicy {
 	return &restartPolicy
 }
 
-func composeStatusDesc(status flinkv1beta1.FlinkClusterStatus) apistructs.StatusDesc {
+func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistructs.StatusDesc {
 	statusDesc := apistructs.StatusDesc{}
 	switch status.State {
-	case flinkv1beta1.ClusterStateCreating,
-		flinkv1beta1.ClusterStateReconciling,
-		flinkv1beta1.ClusterStateUpdating,
-		flinkv1beta1.ClusterStateRunning:
+	case flinkoperatorv1beta1.ClusterStateCreating,
+		flinkoperatorv1beta1.ClusterStateReconciling,
+		flinkoperatorv1beta1.ClusterStateUpdating,
+		flinkoperatorv1beta1.ClusterStateRunning:
 		statusDesc.Status = apistructs.StatusRunning
-	case flinkv1beta1.ClusterStateStopping,
-		flinkv1beta1.ClusterStatePartiallyStopped,
-		flinkv1beta1.ClusterStateStopped:
+	case flinkoperatorv1beta1.ClusterStateStopping,
+		flinkoperatorv1beta1.ClusterStatePartiallyStopped,
+		flinkoperatorv1beta1.ClusterStateStopped:
 		statusDesc.Status = apistructs.StatusStopped
 	}
 	if status.Components.Job == nil {
 		return statusDesc
 	}
 	switch status.Components.Job.State {
-	case flinkv1beta1.JobStateSucceeded:
+	case flinkoperatorv1beta1.JobStateSucceeded:
 		statusDesc.Status = apistructs.StatusStoppedOnOK
-	case flinkv1beta1.JobStateFailed:
+	case flinkoperatorv1beta1.JobStateFailed:
 		statusDesc.Status = apistructs.StatusStoppedOnFailed
-	case flinkv1beta1.JobStateCancelled:
+	case flinkoperatorv1beta1.JobStateCancelled:
 		statusDesc.Status = apistructs.StatusStoppedByKilled
 	}
 	return statusDesc
