@@ -283,3 +283,12 @@ func WithAllAvailableClients() Option {
 		b.urls.PutAllAvailable()
 	}
 }
+
+// WithMSP create ecp client with msp
+func WithMSP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvMSP
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}

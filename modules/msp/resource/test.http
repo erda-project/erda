@@ -1,0 +1,15 @@
+### POST resource
+POST http://localhost:8080/monitor/dice/resources
+Lang: en
+Accept: application/json
+Content-Type: application/json
+User-ID: 1100
+
+{
+  "engine":"monitor",
+  "uuid":"1234",
+  "plan":"basic",
+  "az":"xx",
+  "callback":"http://orchestrator.default.svc.cluster.local:8081",
+  "options": {"tenantGroup": "123","orgId": "123"}
+}

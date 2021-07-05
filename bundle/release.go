@@ -16,6 +16,8 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -142,4 +144,27 @@ func (b *Bundle) IncreaseReference(releaseID string) error {
 // DecreaseReference 减小 release 引用
 func (b *Bundle) DecreaseReference(releaseID string) error {
 	return b.UpdateReference(releaseID, false)
+}
+
+func (b *Bundle) CreateRelease(req apistructs.ReleaseCreateRequest, orgID uint64, userID string) (string, error) {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return "", err
+	}
+	hc := b.hc
+
+	var respData apistructs.ReleaseCreateResponse
+	resp, err := hc.Post(host).Path("/api/releases").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return "", toAPIError(resp.StatusCode(), respData.Error)
+	}
+
+	return respData.Data.ReleaseID, nil
 }

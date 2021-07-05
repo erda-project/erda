@@ -102,3 +102,39 @@ erda.msp.apm.exception:
 # apm metric
 erda.msp.apm.metric:
   monitor_url: "http://${MONITOR_ADDR:monitor:7096}"
+
+#resource deploy related
+erda.msp.resource:
+erda.msp.resource.deploy.coordinator:
+erda.msp.resource.deploy.handlers.apigateway:
+  main_cluster_info:
+    name: "${DICE_CLUSTER_NAME}"
+    root_domain: "${DICE_ROOT_DOMAIN}"
+    protocol: "${DICE_PROTOCOL}"
+    http_port: "${DICE_HTTP_PORT}"
+    https_port: "${DICE_HTTPS_PORT}"
+erda.msp.resource.deploy.handlers.configcenter:
+erda.msp.resource.deploy.handlers.etcd:
+erda.msp.resource.deploy.handlers.generalability:
+erda.msp.resource.deploy.handlers.jvmprofiler:
+erda.msp.resource.deploy.handlers.loganalytics:
+erda.msp.resource.deploy.handlers.loges:
+erda.msp.resource.deploy.handlers.logexporter:
+erda.msp.resource.deploy.handlers.monitor:
+  ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
+  ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"
+erda.msp.resource.deploy.handlers.monitorcollector:
+erda.msp.resource.deploy.handlers.monitorkafka:
+erda.msp.resource.deploy.handlers.monitorzk:
+erda.msp.resource.deploy.handlers.mysql:
+erda.msp.resource.deploy.handlers.nacos:
+erda.msp.resource.deploy.handlers.postgresql:
+erda.msp.resource.deploy.handlers.registercenter:
+erda.msp.resource.deploy.handlers.servicemesh:
+erda.msp.resource.deploy.handlers.zkproxy:
+erda.msp.resource.deploy.handlers.zookeeper:
+
+
+
+
+

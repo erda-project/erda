@@ -83,3 +83,18 @@ type MonitorStatusMetricDetails struct {
 	ProjectID int64  `json:"projectId"`
 	Name      string `json:"name"`
 }
+
+// GatewayTenantRequest create gateway tenant for microservice addons
+type GatewayTenantRequest struct {
+	ID              string `json:"id"`
+	TenantGroup     string `json:"tenantGroup"`
+	Az              string `json:"az"`
+	Env             string `json:"env"`
+	ProjectId       string `json:"projectId"`
+	ProjectName     string `json:"projectName"`
+	AdminAddr       string `json:"adminAddr"`
+	GatewayEndpoint string `json:"gatewayEndpoint"`
+	InnerAddr       string `json:"innerAddr"`
+	ServiceName     string `json:"serviceName"`
+	InstanceId      string `json:"instanceId"`
+}

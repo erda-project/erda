@@ -40,6 +40,7 @@ const (
 	EnvQA             = "QA_ADDR"
 	EnvAPIM           = "APIM_ADDR"
 	EnvTMC            = "TMC_ADDR"
+	EnvMSP            = "MSP_ADDR"
 	EnvUC             = "UC_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvDOP            = "DOP_ADDR"
@@ -69,6 +70,7 @@ const (
 	SvcQA             = "qa"
 	SvcAPIM           = "apim"
 	SvcTMC            = "tmc"
+	SvcMSP            = "msp"
 	SvcUC             = "uc"
 	SvcClusterDialer  = "cluster-dialer"
 	SvcDOP            = "dop"
@@ -135,6 +137,10 @@ func TMC() string {
 
 func CMP() string {
 	return getURL(EnvCMP, SvcCMP)
+}
+
+func MSP() string {
+	return getURL(EnvMSP, SvcMSP)
 }
 
 func Openapi() string {
