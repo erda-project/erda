@@ -24,7 +24,7 @@ import (
 var ADMIN_NOTICE_UPDATE = apis.ApiSpec{
 	Path:         "/api/notices/<id>",
 	BackendPath:  "/api/notices/<id>",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:8080",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       http.MethodPut,
 	CheckLogin:   true,

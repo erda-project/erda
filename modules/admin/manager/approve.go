@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package manager
 
 import (
@@ -7,14 +20,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/erda-project/erda/modules/core-services/services/apierrors"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (am *AdminManager) AppendApproveEndpoint() {
@@ -66,7 +77,7 @@ func (am *AdminManager) GetApprove(contenxt context.Context, req *http.Request, 
 
 	resp, err := am.bundle.GetApprove(fmt.Sprintf("%d", orgID), userID, approveID)
 	if err != nil {
-		return apierrors.ErrGetApprove.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrGetApprove.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(resp.Data)
@@ -106,7 +117,7 @@ func (am *AdminManager) UpdateApprove(contenxt context.Context, req *http.Reques
 
 	resp, err := am.bundle.UpdateApprove(approveUpdateReq, userID, approveID)
 	if err != nil {
-		return apierrors.ErrUpdateApprove.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrUpdateApprove.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(resp.Data)

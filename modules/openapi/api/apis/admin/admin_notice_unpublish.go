@@ -24,7 +24,7 @@ import (
 var ADMIN_NOTICE_UNPUBLISH = apis.ApiSpec{
 	Path:        "/api/notices/<id>/actions/unpublish",
 	BackendPath: "/api/notices/<id>/actions/unpublish",
-	Host:        "admin.marathon.l4lb.thisdcos.directory:8080",
+	Host:        "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:      "http",
 	Method:      http.MethodPut,
 	CheckLogin:  true,

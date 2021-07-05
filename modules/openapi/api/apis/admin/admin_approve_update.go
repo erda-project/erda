@@ -21,7 +21,7 @@ import (
 var ADMIN_APPROVE_UPDATE = apis.ApiSpec{
 	Path:         "/api/approves/<approveId>",
 	BackendPath:  "/api/approves/<approveId>",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:8080",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,

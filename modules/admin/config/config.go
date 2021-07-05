@@ -14,5 +14,6 @@
 package config
 
 type Config struct {
-	Debug bool `default:"false" desc:"enable debug logging"`
+	Debug bool   `default:"false" env:"DEBUG" desc:"enable debug logging"`
+	Port  string `default:"9095" env:"ADMIN_PORT" desc:"specified admin component port"`
 }

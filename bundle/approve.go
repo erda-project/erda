@@ -15,6 +15,7 @@ package bundle
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -52,6 +53,10 @@ func (b *Bundle) ListApprove(req *apistructs.ApproveListRequest, userID string) 
 
 	hc := b.hc
 
+	params := url.Values{}
+	for _, v := range req.Status {
+		params.Add("status", v)
+	}
 	var approveList apistructs.ApproveListResponse
 	resp, err := hc.Get(host).Path("/api/approves/actions/list-approves").
 		Header(httputil.InternalHeader, "bundle").
@@ -59,6 +64,7 @@ func (b *Bundle) ListApprove(req *apistructs.ApproveListRequest, userID string) 
 		Header(httputil.UserHeader, userID).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Params(params).
 		Do().
 		JSON(&approveList)
 	if err != nil {

@@ -17,8 +17,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -26,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/admin/dao"
 	"github.com/erda-project/erda/modules/admin/manager"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 type provider struct {
@@ -77,24 +76,24 @@ func (p *provider) Run(ctx context.Context) error {
 		return err
 	}
 
-	return RunServer(dbClient, etcdStore)
+	return p.RunServer(dbClient, etcdStore)
 }
 
-func RunServer(dbClient *dao.DBClient, etcdStore *etcd.Store) error {
+func (p *provider) RunServer(dbClient *dao.DBClient, etcdStore *etcd.Store) error {
 	admin := manager.NewAdminManager(
 		manager.WithDB(dbClient),
 		manager.WithBundle(manager.NewBundle()),
 		manager.WithETCDStore(etcdStore),
 	)
-	server, err := NewServer(admin.Routers())
+	server, err := p.NewServer(admin.Routers())
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	return server.ListenAndServe()
 }
 
-func NewServer(endpoints []httpserver.Endpoint) (*httpserver.Server, error) {
-	server := httpserver.New(":8080")
+func (p *provider) NewServer(endpoints []httpserver.Endpoint) (*httpserver.Server, error) {
+	server := httpserver.New(":" + p.Cfg.Port)
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(endpoints)
 	return server, nil

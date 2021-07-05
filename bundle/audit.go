@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"strconv"
-
-	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -83,6 +83,12 @@ func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID str
 	}
 	hc := b.hc
 
+	params := url.Values{}
+
+	for _, v := range audits.UserID {
+		params.Add("userId", v)
+	}
+
 	var listAudit apistructs.AuditsListResponse
 	resp, err := hc.
 		Get(host).
@@ -95,6 +101,7 @@ func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID str
 		Param("pageSize", strconv.Itoa(audits.PageSize)).
 		Param("startAt", audits.StartAt).
 		Param("endAt", audits.EndAt).
+		Params(params).
 		Do().
 		JSON(&listAudit)
 	if err != nil {
