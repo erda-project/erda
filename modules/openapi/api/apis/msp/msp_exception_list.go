@@ -25,25 +25,3 @@ var MSP_EXCEPTION_LIST = apis.ApiSpec{
 	CheckToken:  true,
 	Doc:         "Query exception list",
 }
-
-var MSP_EXCEPTION_EVENT_ID_LIST = apis.ApiSpec{
-	Path:        "/api/apm/exception/eventIds",
-	BackendPath: "/api/apm/exception/eventIds",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "Query exception event ids",
-}
-
-var MSP_EXCEPTION_EVENT = apis.ApiSpec{
-	Path:        "/api/apm/exception/event",
-	BackendPath: "/api/apm/exception/event",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "Query exception event info",
-}
