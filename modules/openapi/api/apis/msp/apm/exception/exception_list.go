@@ -15,13 +15,13 @@ package exception
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MSP_EXCEPTION_EVENT = apis.ApiSpec{
-	Path:        "/api/apm/exception/event",
-	BackendPath: "/api/apm/exception/event",
+var EXCEPTION_LIST = apis.ApiSpec{
+	Path:        "/api/msp/apm/exceptions",
+	BackendPath: "/api/msp/apm/exceptions",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "Query exception event info",
+	Doc:         "Query exception list",
 }
