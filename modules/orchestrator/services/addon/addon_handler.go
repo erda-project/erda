@@ -1162,7 +1162,7 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 	// 若为 kubernetes 集群
 	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
 		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = discover.TMC()
+			providerDomain = discover.MSP()
 		}
 	}
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
@@ -1206,7 +1206,8 @@ func (a *Addon) DeleteAddonProvider(req *apistructs.AddonProviderRequest, uuid, 
 			providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
 		}
 		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
+			providerDomain = discover.MSP()
+			//providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
 		}
 	}
 	logrus.Infof("start delete addon provider, url: %v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath+"/"+uuid)
