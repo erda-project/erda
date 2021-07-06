@@ -575,10 +575,6 @@ services:
       GIT_INNER_USER_NAME: "18000000000"
       GIT_INNER_USER_PASSWORD: "123456"
       PIPELINE_STORAGE_URL: "file:///devops/storage"
-      POD_IP:
-        valueFrom:
-          fieldRef:
-            fieldPath: status.podIP
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
