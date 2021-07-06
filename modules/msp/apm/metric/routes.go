@@ -31,7 +31,7 @@ import (
 const permissionResource = "microservice_metric"
 
 func (p *provider) initRoutes(routes httpserver.Router) error {
-	const apiPathPrefix = "/api/tmc"
+	const apiPathPrefix = "/api/msp"
 
 	checkByTerminusKeys := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP(
