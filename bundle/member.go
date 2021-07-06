@@ -266,3 +266,24 @@ func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDReques
 
 	return &memberResp.Data, nil
 }
+
+func (b *Bundle) AddMember(req apistructs.MemberAddRequest, userID string) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var respData apistructs.MemberAddResponse
+	resp, err := hc.Post(host).Path("/api/members").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+
+	return nil
+}

@@ -13,7 +13,7 @@
 
 package conf
 
-import _ "embed"
+import "embed"
 
 var (
 	//go:embed openapi-ng/openapi-ng.yaml
@@ -45,4 +45,8 @@ var (
 	//go:embed msp/msp.yaml
 	MSPDefaultConfig  string
 	MSPConfigFilePath string = "conf/msp/msp.yaml"
+
+	//go:embed msp/init_sqls
+	MSPAddonInitSqls   embed.FS
+	MSPAddonFsRootPath = "msp/init_sqls"
 )

@@ -45,3 +45,37 @@ func (db *InstanceDB) GetByID(id string) (*Instance, error) {
 		"ID": id,
 	})
 }
+
+func (db *InstanceDB) GetByEngineAndVersionAndAz(engine string, version string, az string) (*Instance, error) {
+	var list []*Instance
+	if err := db.Table(TableInstance).
+		Where("`engine`=?", engine).
+		Where("`version`=?", version).
+		Where("`is_deleted`=?", "N").
+		Where("`az`=?", az).Limit(1).Find(&list).Error; err != nil {
+		return nil, err
+	}
+
+	if len(list) <= 0 {
+		return nil, nil
+	}
+
+	return list[0], nil
+}
+
+func (db *InstanceDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*Instance, error) {
+	var list []*Instance
+	if err := db.Table(TableInstance).
+		Where("`engine`=?", engine).
+		Where("`tenant_group`=?", tenantGroup).
+		Limit(1).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+
+	if len(list) <= 0 {
+		return nil, nil
+	}
+
+	return list[0], nil
+}

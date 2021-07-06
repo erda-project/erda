@@ -49,6 +49,29 @@ func (b *Bundle) GetProject(id uint64) (*apistructs.ProjectDTO, error) {
 	return &fetchResp.Data, nil
 }
 
+// GetProjectByOrgIdAndName get project by orgId and name from cmdb.
+func (b *Bundle) GetProjectByOrgIdAndName(orgId uint64, name string, userID string) (*apistructs.ProjectDTO, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp apistructs.ProjectListResponse
+	resp, err := hc.Get(host, httpclient.RetryOption{}).Path(fmt.Sprintf("/api/projects?name=%s&orgId=%d&joined=false&pageNo=1&pageSize=1", name, orgId)).
+		Header("User-ID", userID).Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+	if rsp.Data.Total == 0 {
+		return nil, nil
+	}
+	return &rsp.Data.List[0], nil
+}
+
 func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (*apistructs.PagingProjectDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {

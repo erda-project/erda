@@ -17,8 +17,8 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MONITOR_RUNTIME = apis.ApiSpec{
 	Path:        "/api/tmc/monitor/runtime/<runtimeId>",
-	BackendPath: "/api/tmc/monitor/runtime/<runtimeId>",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/monitor/runtime/<runtimeId>",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

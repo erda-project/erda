@@ -36,17 +36,17 @@ type (
 	}
 
 	Monitor struct {
-		Id          string `json:"id"`
-		MonitorId   string `json:"monitor_id"`
-		TerminusKey string `json:"terminus_key"`
-		Workspace   string `json:"workspace"`
-		ProjectId   string `json:"project_id"`
-		ProjectName string `json:"project_name"`
-		OrgId       string `json:"org_id"`
-		OrgName     string `json:"org_name"`
-		ClusterName string `json:"cluster_name"`
-		Created     string `json:"created"`
-		Updated     string `json:"updated"`
+		Id          string    `gorm:"column:id;primary_key"`
+		MonitorId   string    `gorm:"column:monitor_id"`
+		TerminusKey string    `gorm:"column:terminus_key"`
+		Workspace   string    `gorm:"column:workspace"`
+		ProjectId   string    `gorm:"column:project_id"`
+		ProjectName string    `gorm:"column:project_name"`
+		OrgId       string    `gorm:"column:org_id"`
+		OrgName     string    `gorm:"column:org_name"`
+		ClusterName string    `gorm:"column:cluster_name"`
+		Created     time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
+		Updated     time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
 	}
 )
 
