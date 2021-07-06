@@ -11,21 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package cmp
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_HOST_LIST = apis.ApiSpec{
-	Path:         "/api/hosts",
-	BackendPath:  "/api/hosts",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
+var CMP_RUNNING_TASKS_LIST = apis.ApiSpec{
+	Path:         "/api/org/actions/list-running-tasks",
+	BackendPath:  "/api/org/actions/list-running-tasks",
 	Method:       "GET",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	Scheme:       "http",
 	CheckLogin:   true,
-	RequestType:  apistructs.HostListRequest{},
-	ResponseType: apistructs.HostListResponse{},
-	IsOpenAPI:    true,
+	RequestType:  apistructs.OrgRunningTasksListRequest{},
+	ResponseType: apistructs.OrgRunningTasksListResponse{},
+	Doc:          "summary: 获取指定企业的任务 (job/deployment) 列表",
 }
