@@ -14,8 +14,15 @@
 package collector
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -27,8 +34,46 @@ import (
 
 var bdl = bundle.New(bundle.WithCoreServices())
 
-type staticSKProviderConfig struct {
-	SecretKey string `file:"secretKey"`
+type signAuthConfig struct {
+	SyncInterval    time.Duration `file:"sync_interval" default:"3m" desc:"sync access key info from remote"`
+	ExpiredDuration time.Duration `file:"expired_duration" default:"10m" desc:"the max duration of request spent in the network"`
+}
+
+type Authenticator struct {
+	store  map[string]*model.AccessKey
+	mu     sync.RWMutex
+	logger logs.Logger
+}
+
+func boolPointer(data bool) *bool {
+	return &data
+}
+
+func (a *Authenticator) syncAccessKey(ctx context.Context) error {
+	newStore := make(map[string]*model.AccessKey, len(a.store))
+
+	objs, err := bdl.ListAccessKeys(apistructs.AccessKeyListQueryRequest{
+		IsSystem: boolPointer(true),
+		Status:   "ACTIVE",
+	})
+	if err != nil {
+		return fmt.Errorf("syncAccessKey.ListAccessKeys failed. err: %w", err)
+	}
+	for _, obj := range objs {
+		newStore[obj.AccessKeyID] = &obj
+	}
+
+	a.mu.Lock()
+	a.store = newStore
+	a.mu.Unlock()
+	return nil
+}
+
+func (a *Authenticator) getAccessKey(ak string) (*model.AccessKey, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	v, ok := a.store[ak]
+	return v, ok
 }
 
 func (c *collector) authSignedRequest() httpserver.Interceptor {
@@ -36,24 +81,18 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 		return func(ctx httpserver.Context) error {
 			ak, ok := validator.GetAccessKeyID(ctx.Request())
 			if !ok {
-				return handler(ctx)
+				return echo.NewHTTPError(http.StatusUnauthorized, "must specify accessKeyID")
 			}
 
-			var sk string
-			switch c.Cfg.SignAuth.SKProvider {
-			case "static":
-				// todo BindConfig
-				if !ok {
-					return echo.NewHTTPError(http.StatusUnauthorized, "no secret_key in config with static sk_provider")
-				}
-			default:
-				aksk, err := bdl.GetAccessKeyByAccessKeyID(ak)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusUnauthorized)
-				}
-				sk = aksk.SecretKey
+			accessKey, ok := c.auth.getAccessKey(ak)
+			if !ok {
+				return echo.NewHTTPError(http.StatusUnauthorized, "can't find accessKeyID: "+ak)
 			}
-			vd := validator.NewHMACValidator(secret.AkSkPair{AccessKeyID: ak, SecretKey: sk})
+
+			vd := validator.NewHMACValidator(
+				secret.AkSkPair{AccessKeyID: ak, SecretKey: accessKey.SecretKey},
+				validator.WithMaxExpireInterval(c.Cfg.SignAuth.ExpiredDuration),
+			)
 			if res := vd.Verify(ctx.Request()); !res.Ok {
 				return echo.NewHTTPError(http.StatusUnauthorized, res.Message)
 			}

@@ -14,6 +14,8 @@
 package bundle
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -43,7 +45,7 @@ type AkSkResponse struct {
 	Data model.AccessKey `json:"data"`
 }
 
-func (b *Bundle) ListAccessKeyByAccess(req apistructs.AccessKeyListQueryRequest) ([]model.AccessKey, error) {
+func (b *Bundle) ListAccessKeys(req apistructs.AccessKeyListQueryRequest) ([]model.AccessKey, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -51,10 +53,21 @@ func (b *Bundle) ListAccessKeyByAccess(req apistructs.AccessKeyListQueryRequest)
 	hc := b.hc
 
 	var obj AccessKeysListResponse
-	resp, err := hc.Get(host, httpclient.RetryErrResp).
-		Path("/api/credential/access-keys").
-		Header("Content-Type", "application/json").
-		Do().JSON(&obj)
+	r := hc.Get(host, httpclient.RetryErrResp).Path("/api/credential/access-keys").Header("Content-Type", "application/json")
+	if req.Subject != "" {
+		r = r.Param("subject", req.Subject)
+	}
+	if req.SubjectType != "" {
+		r = r.Param("subjectType", req.SubjectType)
+	}
+	if req.Status != "" {
+		r = r.Param("status", req.Status)
+	}
+	if req.IsSystem != nil {
+		r = r.Param("isSystem", strconv.FormatBool(*req.IsSystem))
+	}
+
+	resp, err := r.Do().JSON(&obj)
 	if err != nil || !resp.IsOK() {
 		return nil, apierrors.ErrInvoke.NotFound()
 	}
