@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
+
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
 // or later ("AGPL"), as published by the Free Software Foundation.
@@ -15,6 +16,7 @@ package hepa
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 
@@ -61,8 +63,23 @@ func (p *provider) Run(ctx context.Context) error {
 	}
 	openapiCtl.Register()
 	logrus.Info(ver.String())
-
-	return server.Start(p.Cfg.Server.ListenAddr)
+	srv := &http.Server{
+		Addr: p.Cfg.Server.ListenAddr,
+	}
+	errChan := make(chan error, 0)
+	go func() {
+		err = server.Start(srv)
+		errChan <- err
+	}()
+	select {
+	case <-ctx.Done():
+		if err := srv.Shutdown(context.Background()); err != nil {
+			logrus.Fatal("Server Shutdown:", err)
+		}
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }
 
 func init() {

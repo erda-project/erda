@@ -167,12 +167,12 @@ func GetSingleton() *gin.Engine {
 	return router
 }
 
-func Start(listernAddr ...string) error {
+func Start(server *http.Server) error {
 	if router == nil {
 		return errors.New("router not init")
 	}
-	err := router.Run(listernAddr...)
-	if err != nil {
+	server.Handler = router
+	if err := server.ListenAndServe(); err != nil {
 		return err
 	}
 	return nil
