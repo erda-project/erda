@@ -43,8 +43,6 @@ kafka:
     options:
       go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
 permission:
-msp.permission:
-
 
 erda.core.monitor.metric.index:
   request_timeout: "20s"

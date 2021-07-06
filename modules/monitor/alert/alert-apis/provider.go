@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
-	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -66,7 +65,6 @@ type provider struct {
 
 	Register       transport.Register `autowired:"service-register" optional:"true"`
 	Perm           perm.Interface     `autowired:"permission"`
-	MPerm          mperm.Interface    `autowired:"msp.permission"`
 	monitorService *monitorService
 }
 
@@ -124,8 +122,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	if p.Register != nil {
-		type MonitorService = pb.MonitorServiceServer
-		pb.RegisterMonitorServiceImp(p.Register, p.monitorService, apis.Options(), p.Perm.Check(
+		type MonitorService = pb.AlertServiceServer
+		pb.RegisterAlertServiceImp(p.Register, p.monitorService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(MonitorService.QueryCustomizeMetric),
 			perm.NoPermMethod(MonitorService.QueryCustomizeNotifyTarget),
 			perm.NoPermMethod(MonitorService.QueryCustomizeAlert),
@@ -180,7 +178,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.monitor.alert" || ctx.Type() == pb.MonitorServiceServerType() || ctx.Type() == pb.MonitorServiceHandlerType():
+	case ctx.Service() == "erda.core.monitor.alert" || ctx.Type() == pb.AlertServiceServerType() || ctx.Type() == pb.AlertServiceHandlerType():
 		return p.monitorService
 	}
 	return p
