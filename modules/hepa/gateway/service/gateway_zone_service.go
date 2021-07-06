@@ -415,13 +415,13 @@ func (impl GatewayZoneServiceImpl) CreateZone(config ZoneConfig, session ...*db.
 	if az == nil {
 		return nil, errors.New("find cluster failed")
 	}
-	if az.Type != orm.AT_K8S && !strings.HasPrefix(az.MasterAddr, "inet://") {
+	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
 		return zone, nil
 	}
 	if config.ZoneRoute == nil {
 		return zone, nil
 	}
-	adapter, err := k8s.NewAdapter(az.MasterAddr)
+	adapter, err := k8s.NewAdapter(config.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -468,10 +468,10 @@ func (impl GatewayZoneServiceImpl) UpdateZoneRoute(zoneId string, route ZoneRout
 	if err != nil {
 		return false, err
 	}
-	if az.Type != orm.AT_K8S && !strings.HasPrefix(az.MasterAddr, "inet://") {
+	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
 		return false, errors.Errorf("clusterType:%s, not support api route config", az.Type)
 	}
-	adapter, err := k8s.NewAdapter(az.MasterAddr)
+	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return false, err
 	}

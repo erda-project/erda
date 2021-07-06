@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"net/http"
@@ -21,20 +21,20 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
-var CMDB_NOTICE_PUBLISH = apis.ApiSpec{
-	Path:         "/api/notices/<id>/actions/publish",
-	BackendPath:  "/api/notices/<id>/actions/publish",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+var ADMIN_NOTICE_DELETE = apis.ApiSpec{
+	Path:         "/api/notices/<id>",
+	BackendPath:  "/api/notices/<id>",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
-	Method:       http.MethodPut,
+	Method:       http.MethodDelete,
 	CheckLogin:   true,
 	CheckToken:   true,
 	IsOpenAPI:    true,
-	Doc:          "summary: 发布平台公告",
-	ResponseType: apistructs.NoticePublishResponse{},
+	ResponseType: apistructs.NoticeDeleteResponse{},
+	Doc:          "summary: 删除平台公告",
 	Audit: func(ctx *spec.AuditContext) error {
 
-		var resp apistructs.NoticePublishResponse
+		var resp apistructs.NoticeDeleteResponse
 		err := ctx.BindResponseData(&resp)
 		if err != nil {
 			return err
@@ -43,7 +43,7 @@ var CMDB_NOTICE_PUBLISH = apis.ApiSpec{
 			return ctx.CreateAudit(&apistructs.Audit{
 				ScopeType:    apistructs.OrgScope,
 				ScopeID:      uint64(ctx.OrgID),
-				TemplateName: apistructs.PublishNoticesTemplate,
+				TemplateName: apistructs.DeleteNoticesTemplate,
 				Context:      map[string]interface{}{"notices": resp.Data.Content},
 			})
 		} else {
