@@ -40,12 +40,12 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
 	}
-	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
+	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
 	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
+		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
 	}
 	now := time.Now()
 	m := &db.Metric{
@@ -60,7 +60,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-	checker := s.metricDB.ConvertToChecker(m, req.ProjectID)
+	checker := s.metricDB.ConvertToChecker(m, req.Data.ProjectID)
 	if checker != nil {
 		s.cache.Put(checker)
 	}
@@ -95,20 +95,58 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
+	if metric == nil {
+		return &pb.DeleteCheckerV1Response{}, nil
+	}
+
+	var projectID int64
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj != nil {
+		projectID = proj.ProjectID
+	}
+
 	err = s.metricDB.Delete(req.Id)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-
 	s.cache.Remove(req.Id)
 
-	c := &pb.CheckerV1{}
-	if metric != nil {
-		c.Name = metric.Name
-		c.Mode = metric.Mode
-		c.Url = metric.URL
+	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
+		Name:      metric.Name,
+		Mode:      metric.Mode,
+		Url:       metric.URL,
+		ProjectID: projectID,
+		Env:       metric.Env,
+	}}, nil
+}
+
+func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV1Request) (*pb.GetCheckerV1Response, error) {
+	metric, err := s.metricDB.GetByID(req.Id)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
 	}
-	return &pb.DeleteCheckerV1Response{Data: c}, nil
+	if metric == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	return &pb.GetCheckerV1Response{
+		Data: &pb.CheckerV1{
+			Name:      metric.Name,
+			Mode:      metric.Mode,
+			Url:       metric.URL,
+			ProjectID: proj.ProjectID,
+			Env:       metric.Env,
+		},
+	}, nil
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
@@ -204,7 +242,7 @@ func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64,
 	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE project_id=$projectID 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
 		map[string]*structpb.Value{
 			"projectID": structpb.NewStringValue(strconv.FormatInt(projectID, 10)),
@@ -218,7 +256,7 @@ func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit 
 	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric=$metric 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time(1m), metric::tag, status_name::tag 
 	LIMIT 200`,
 		map[string]*structpb.Value{
 			"metric": structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
@@ -265,7 +303,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 		serie := resp.Results[0].Series[0]
 	loop:
 		for _, row := range serie.Rows {
-			if row == nil || len(row.Values) != 6 {
+			if row == nil || len(row.Values) != 9 {
 				continue
 			}
 			for _, val := range row.Values {
@@ -300,7 +338,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 				item = &summaryItem{}
 				status[statusName] = item
 			}
-			item.time = append(item.time, timestamp)
+			item.time = append(item.time, timestamp/int64(time.Millisecond))
 			item.avg = append(item.avg, avg)
 			item.max = append(item.max, max)
 			item.min = append(item.min, min)
@@ -465,7 +503,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 		SELECT timestamp, status_name::tag, count(latency)
 		FROM status_page 
 		WHERE metric=$metric 
-		GROUP time(1m), status_name::tag 
+		GROUP BY time(1m), status_name::tag 
 		LIMIT 200`,
 		Params: map[string]*structpb.Value{
 			"metric": structpb.NewStringValue(strconv.FormatInt(req.Id, 10)),
@@ -504,7 +542,7 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 				item = &groupItem{}
 				group[statusName] = item
 			}
-			item.times = append(item.times, timestamp)
+			item.times = append(item.times, timestamp/int64(time.Millisecond))
 			item.count = append(item.count, count)
 		}
 		for stat, item := range group {

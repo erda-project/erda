@@ -96,6 +96,9 @@ func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string,
 		"params":   params,
 		"orgID":    int64(orgid),
 	}
+	if _, ok := params["mboxDeduplicateID"]; ok {
+		request["deduplicateId"] = params["mboxDeduplicateID"]
+	}
 	eventBoxRequest := &apistructs.EventBoxRequest{
 		Sender: "bundle",
 		Labels: map[string]interface{}{

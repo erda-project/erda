@@ -19,9 +19,9 @@ import (
 	"github.com/erda-project/erda/conf"
 
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
 	_ "github.com/erda-project/erda/modules/monitor/apm/browser"
 	_ "github.com/erda-project/erda/modules/monitor/core/logs/storage"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/storage"
 	_ "github.com/erda-project/erda/modules/monitor/trace/storage"
 
 	// providers
@@ -32,7 +32,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysql"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 
-	//storage record
+	// storage record
 	_ "github.com/erda-project/erda/modules/monitor/alert/storage/alert-record"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
 )

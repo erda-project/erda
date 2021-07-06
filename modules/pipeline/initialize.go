@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -45,7 +46,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -134,7 +134,10 @@ func do() (*httpserver.Server, error) {
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
 	}
 
-	snippetSvc := snippetsvc.New(dbClient, bdl)
+	// init cluster info before pipeline scheduler task executors init
+	if err := clusterinfo.Initialize(bdl); err != nil {
+		return nil, err
+	}
 
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
@@ -168,7 +171,6 @@ func do() (*httpserver.Server, error) {
 		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineCronSvc(pipelineCronSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
-		endpoints.WithSnippetSvc(snippetSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
@@ -191,6 +193,11 @@ func do() (*httpserver.Server, error) {
 	engine.Start()
 	// handle cron related after engine started
 	if err := doCrondAbout(crondSvc, pipelineSvc); err != nil {
+		return nil, err
+	}
+
+	// register cluster hook after pipeline service start
+	if err := clusterinfo.RegisterClusterHook(bdl); err != nil {
 		return nil, err
 	}
 

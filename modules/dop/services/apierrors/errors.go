@@ -466,6 +466,12 @@ var (
 	ErrCreateFileRecord = err("ErrCreateAutoTestSceneSet", "创建文件记录失败")
 	ErrUpdateFileRecord = err("ErrUpdateAutoTestSceneSet", "更新文件记录失败")
 	ErrListFileRecord   = err("ErrListAutoTestSceneSet", "获取文件记录列表失败")
+
+	ErrCreatePublisher = err("ErrCreatePublisher", "创建Publisher失败")
+	ErrUpdatePublisher = err("ErrUpdatePublisher", "更新Publisher失败")
+	ErrDeletePublisher = err("ErrDeletePublisher", "删除Publisher失败")
+	ErrGetPublisher    = err("ErrGetPublisher", "获取Publisher失败")
+	ErrListPublisher   = err("ErrListPublisher", "获取Publisher列表失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

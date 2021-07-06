@@ -40,8 +40,8 @@ type Ticket struct {
 	Label        string                  `json:"label" gorm:"type:text"`
 	TargetType   apistructs.TicketTarget `gorm:"type:varchar(40);index:idx_target_type"`
 	TargetID     string
-	TriggeredAt  time.Time `gorm:"triggered_at;default:null"`
-	ClosedAt     time.Time `gorm:"closed_at;default:null"`
+	TriggeredAt  *time.Time
+	ClosedAt     *time.Time
 }
 
 // TableName 设置模型对应数据库表名称

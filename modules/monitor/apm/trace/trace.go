@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/modcom/api"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 )
 
 func (p *provider) traceDebugRecords(r *http.Request, params struct {

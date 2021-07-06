@@ -133,7 +133,11 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	addEnv := func(svc *apistructs.Service, envs *[]apiv1.EnvVar, useClusterIP bool) error {
 		var err error
 		// use SHORT dns, service's name is equal to SHORT dns
-		host := strings.Join([]string{svc.Name, svc.Namespace, DefaultServiceDNSSuffix}, ".")
+		svcName := svc.Name
+		if svc.ProjectServiceName != "" {
+			svcName = svc.ProjectServiceName
+		}
+		host := strings.Join([]string{svcName, svc.Namespace, DefaultServiceDNSSuffix}, ".")
 		if useClusterIP {
 			host, err = k.getClusterIP(svc.Namespace, svc.Name)
 			if err != nil {
