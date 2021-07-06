@@ -22,8 +22,8 @@ type EdasFactory struct {
 	k8sAdapter k8s.K8SAdapter
 }
 
-func NewEdasFactory(masterAddr string) (endpoint.EndpointFactory, error) {
-	adapter, err := k8s.NewAdapter(masterAddr)
+func NewEdasFactory(clusterKey string) (endpoint.EndpointFactory, error) {
+	adapter, err := k8s.NewAdapter(clusterKey)
 	if err != nil {
 		return nil, err
 	}

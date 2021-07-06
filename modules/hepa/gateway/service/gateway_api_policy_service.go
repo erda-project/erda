@@ -192,7 +192,7 @@ func (impl GatewayApiPolicyServiceImpl) RefreshZoneIngress(zone orm.GatewayZone,
 	if err != nil {
 		return err
 	}
-	k8sAdapter, err := k8s.NewAdapter(az.MasterAddr)
+	k8sAdapter, err := k8s.NewAdapter(az.Az)
 	if err != nil {
 		return err
 	}
@@ -506,17 +506,10 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		policyService = impl.ingressPolicyDb
 		kongService = impl.kongDb
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
-	if err != nil {
-		return nil, "", err
-	}
-	if az == nil {
-		return nil, "", errors.Errorf("get az failed, zone:%v", zone)
-	}
 
 	// 部署ingress需要加锁
 	if needDeployIngress {
-		mutex := getAzMutex(az.Az)
+		mutex := getAzMutex(zone.DiceClusterName)
 		mutex.Lock()
 		defer mutex.Unlock()
 	}
@@ -529,7 +522,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 	if err != nil {
 		return nil, msg, err
 	}
-	k8sAdapter, err := k8s.NewAdapter(az.MasterAddr)
+	k8sAdapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -610,7 +603,7 @@ func (impl GatewayApiPolicyServiceImpl) SetZoneDefaultPolicyConfig(packageId str
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	k8sAdapter, err := k8s.NewAdapter(az.MasterAddr)
+	k8sAdapter, err := k8s.NewAdapter(az.Az)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -759,7 +752,7 @@ func (impl GatewayApiPolicyServiceImpl) SetPackageDefaultPolicyConfig(category, 
 		}
 		zoneChanges = append(zoneChanges, *zoneChange)
 	}
-	k8sAdapter, err := k8s.NewAdapter(az.MasterAddr)
+	k8sAdapter, err := k8s.NewAdapter(az.Az)
 	if err != nil {
 		return "", err
 	}
