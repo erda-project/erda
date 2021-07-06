@@ -17,34 +17,55 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/structpb"
+	"math"
 	"net/url"
 	"strconv"
 	"time"
 
+	"github.com/gocql/gocql"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type traceService struct {
 	p *provider
-	//metricq metricq.Queryer
-	metricq metricpb.MetricServiceServer
-	//spanq  query.SpanQueryAPI
 }
 
 func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
+	if req.TraceID == "" || req.ScopeID == "" {
+		return nil, errors.NewMissingParameterError("traceId or scopeId")
+	}
 	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
 	}
-	//spans := s.spanq.SelectSpans(req.TraceId, req.Limit)
-	//return &pb.GetSpansResponse{Data: spans}, nil
-	return nil, nil
+	iter := s.p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Consistency(gocql.All).Iter()
+	var spans []*pb.Span
+	for {
+		row := make(map[string]interface{})
+		if !iter.MapScan(row) {
+			break
+		}
+		var span pb.Span
+		span.Id = row["span_id"].(string)
+		span.TraceId = row["trace_id"].(string)
+		span.OperationName = row["operation_name"].(string)
+		span.ParentSpanId = row["parent_span_id"].(string)
+		span.StartTime = row["start_time"].(int64)
+		span.EndTime = row["end_time"].(int64)
+		span.Tags = row["tags"].(map[string]string)
+		spans = append(spans, &span)
+	}
+	return &pb.GetSpansResponse{Data: spans}, nil
 }
+
 func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
-	if req.EndTime <= 0 {
+	if req.ScopeID == "" {
+		return nil, errors.NewMissingParameterError("scopeId")
+	}
+	if req.EndTime <= 0 || req.StartTime <= 0 {
 		req.EndTime = time.Now().UnixNano() / 1e6
 		h, _ := time.ParseDuration("-1h")
 		req.StartTime = time.Now().Add(h).UnixNano() / 1e6
@@ -54,11 +75,11 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	metricsParams.Set("end", strconv.FormatInt(req.EndTime, 10))
 
 	queryParams := make(map[string]*structpb.Value)
-	queryParams["terminus_keys"] = structpb.NewStringValue(req.ScopeId)
+	queryParams["terminus_keys"] = structpb.NewStringValue(req.ScopeID)
 	queryParams["limit"] = structpb.NewStringValue(strconv.FormatInt(req.Limit, 10))
 	var where bytes.Buffer
-	if req.ApplicationId > 0 {
-		queryParams["applications_ids"] = structpb.NewStringValue(strconv.FormatInt(req.ApplicationId, 10))
+	if req.ApplicationID > 0 {
+		queryParams["applications_ids"] = structpb.NewStringValue(strconv.FormatInt(req.ApplicationID, 10))
 		where.WriteString("applications_ids::field=$applications_ids AND ")
 	}
 	//-1 error, 0 both, 1 success
@@ -76,35 +97,29 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		Params:    queryParams,
 	}
 
-	response, err := s.metricq.QueryWithInfluxFormat(ctx, request)
-
-	//response, err := s.metricq.Query(metricq.InfluxQL, statement, queryParams, metricsParams)
+	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewInternalServerError(err)
 	}
 
-	traces := make([]*pb.Trace, 0, len(response.Results))
-	for _, row := range response.Results {
-		_ = row
-		//status := row[4].(string)
-		//if status == "error" && req.Status == 1 {
-		//	continue
-		//} else if status == "success" && req.Status == -1 {
-		//	continue
-		//}
-		//
-		//var trace pb.Trace
-		//trace.Elapsed = math.Abs(row[1].(float64) - row[0].(float64))
-		//trace.StartTime = int64(row[0].(float64) / 1e6)
-		//var services []string
-		//for _, s := range row[2].([]interface{}) {
-		//	services = append(services, s.(string))
-		//}
-		//trace.Services = services
-		//trace.Id = row[3].(string)
-		// trace
-
-		// traces = append(traces, &trace)
+	rows := response.Results[0].Series[0].Rows
+	traces := make([]*pb.Trace, 0, len(rows))
+	for _, row := range rows {
+		var trace pb.Trace
+		values := row.Values
+		trace.StartTime = int64(values[0].GetNumberValue() / 1e6)
+		trace.Elapsed = math.Abs((values[1].GetNumberValue() - values[0].GetNumberValue()) / 1e6)
+		for _, serviceName := range values[2].GetListValue().Values {
+			trace.Services = append(trace.Services, serviceName.GetStringValue())
+		}
+		trace.Id = values[3].GetStringValue()
+		status := values[4].GetStringValue()
+		if status == "error" && req.Status == 1 {
+			continue
+		} else if status == "success" && req.Status == -1 {
+			continue
+		}
+		traces = append(traces, &trace)
 	}
 
 	return &pb.GetTracesResponse{Data: traces}, nil

@@ -14,35 +14,41 @@
 package trace
 
 import (
+	"fmt"
+
+	"github.com/gocql/gocql"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/cassandra"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
+	Cassandra cassandra.SessionConfig `file:"cassandra"`
 }
 
 // +provider
 type provider struct {
-	Cfg          *config
-	Log          logs.Logger
-	Register     transport.Register `autowired:"service-register" optional:"true"`
-	traceService *traceService
-	//Metricq      metricq.Queryer              `autowired:"metrics-query"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" optional:"true"`
-	//Spanq  query.SpanQueryAPI           `autowired:"trace-query"`
+	Cfg              *config
+	Log              logs.Logger
+	Register         transport.Register `autowired:"service-register" optional:"true"`
+	traceService     *traceService
+	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" optional:"true"`
+	Cassandra        cassandra.Interface          `autowired:"cassandra"`
+	cassandraSession *gocql.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.traceService = &traceService{
-		p: p,
-		//metricq: p.Metricq,
-		metricq: p.Metric,
-		//spanq:   p.Spanq,
+	session, err := p.Cassandra.Session(&p.Cfg.Cassandra)
+	if err != nil {
+		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
+	p.cassandraSession = session
+	p.traceService = &traceService{p: p}
 	if p.Register != nil {
 		pb.RegisterTraceServiceImp(p.Register, p.traceService, apis.Options())
 	}
