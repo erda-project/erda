@@ -44,9 +44,11 @@ func getClient() *elastic.Client {
 // Query .
 func Query(text string, params map[string]interface{}) error {
 	fmt.Println(text)
-	end := time.Now().Add(-5 * time.Minute)
-	start := end.Add(-1 * time.Hour)
-	parser := tsql.New(start.UnixNano(), end.UnixNano(), "influxql", text).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
+	// end := time.Now().Add(-5 * time.Minute)
+	// start := end.Add(-1 * time.Hour)
+	var start int64 = 1617753600000 * 1000000
+	var end int64 = 1625616000000 * 1000000
+	parser := tsql.New(start, end, "influxql", text).SetParams(params) //.SetTimeKey("@timestamp").SetOriginalTimeUnit(tsql.Millisecond).SetTargetTimeUnit(tsql.Nanosecond)
 	querys, err := parser.ParseQuery()
 	if err != nil {
 		return err
@@ -136,11 +138,13 @@ func main() {
 }
 
 func test24() error {
-	return Query(`
-				SELECT time(),round_float(elapsed_count::field, 2) 
-				from application_http 
-				GROUP BY time(5m)
-				`, map[string]interface{}{})
+	return Query(`SELECT timestamp(), status_name::tag, count(latency)
+	FROM status_page 
+	WHERE metric=$metric 
+	GROUP BY time(24h), status_name::tag 
+	LIMIT 200`, map[string]interface{}{
+		"metric": "35",
+	})
 }
 
 func test23() error {

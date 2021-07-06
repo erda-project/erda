@@ -22,45 +22,45 @@ fields:
     HeapMemoryUsage_committed:
         type: "number"
         name: "Heap Memory Usage Committed"
-        uint: 
+        unit: 
     HeapMemoryUsage_init:
         type: "number"
         name: "Heap Memory Usage Init"
-        uint: 
+        unit: 
     HeapMemoryUsage_max:
         type: "number"
         name: "Heap Memory Usage Maximum"
-        uint: 
+        unit: 
     HeapMemoryUsage_used:
         type: "number"
         name: "Heap Memory Usage Used"
-        uint: 
+        unit: 
     NonHeapMemoryUsage_committed:
         type: "number"
         name: "Non Heap Memory Usage Committed"
-        uint: 
+        unit: 
     NonHeapMemoryUsage_init:
         type: "number"
         name: "Non Heap Memory Usage Init"
-        uint: 
+        unit: 
     NonHeapMemoryUsage_max:
         type: "number"
         name: "Non Heap Memory Usage Maximum"
-        uint: 
+        unit: 
     NonHeapMemoryUsage_used:
         type: "number"
         name: "Non Heap Memory Usage Used"
-        uint: 
+        unit: 
     ObjectName_objectName:
         type: "string"
         name: "Object Name Object Name"
-        uint: 
+        unit: 
     ObjectPendingFinalizationCount:
         type: "number"
         name: "Object Pending Finalization Count"
-        uint: 
+        unit: 
     Verbose:
         type: "bool"
         name: "Verbose"
-        uint: 
+        unit: 
 

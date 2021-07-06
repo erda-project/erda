@@ -22,17 +22,17 @@ fields:
     data_free:
         type: "number"
         name: "Data Free"
-        uint: 
+        unit: 
     data_length:
         type: "number"
         name: "Data Length"
-        uint: 
+        unit: 
     index_length:
         type: "number"
         name: "Index Length"
-        uint: 
+        unit: 
     max_data_length:
         type: "number"
         name: "Maximum Data Length"
-        uint: 
+        unit: 
 
