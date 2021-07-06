@@ -14,6 +14,8 @@
 package monitor
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/pkg/database/gormutil"
@@ -66,4 +68,13 @@ func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+func (db *MonitorDB) UpdateStatusByMonitorId(monitorId string, delete int) error {
+	return db.Table(TableMonitor).
+		Where("`monitor_id`=?", monitorId).
+		Update(map[string]interface{}{
+			"is_delete": delete,
+			"updated":   time.Now(),
+		}).Error
 }
