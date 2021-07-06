@@ -538,7 +538,6 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 			"metric":   structpb.NewStringValue(strconv.FormatInt(req.Id, 10)),
 			"interval": interval,
 		},
-		Options: map[string]string{"debug": "true"},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
