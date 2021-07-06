@@ -11,20 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_APPROVE_GET = apis.ApiSpec{
+var ADMIN_APPROVE_UPDATE = apis.ApiSpec{
 	Path:         "/api/approves/<approveId>",
 	BackendPath:  "/api/approves/<approveId>",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
-	Method:       "GET",
+	Method:       "PUT",
 	CheckLogin:   true,
-	ResponseType: apistructs.ApproveDetailResponse{},
-	Doc:          "summary: 获取审批详情",
+	RequestType:  apistructs.ApproveUpdateRequest{},
+	ResponseType: apistructs.ApproveUpdateResponse{},
+	Doc:          "summary: 更新审批",
 }
