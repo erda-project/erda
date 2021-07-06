@@ -20,12 +20,12 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
-	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
@@ -181,20 +181,21 @@ func (p *provider) initDb(dbNames []string, mysqldto mysqlDto, clusterConfig map
 		return nil
 	}
 
-	mysqlExec := &apistructs.MysqlExec{
-		URL:      "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
-		User:     mysqldto.user,
-		Password: mysqldto.password,
+	mysqlExec := &mysqlhelper.Request{
+		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
+		Url:        "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
+		User:       mysqldto.user,
+		Password:   mysqldto.password,
+		CreateDbs:  dbNames,
 	}
 
-	mysqlExec.CreateDbs = dbNames
-	mysqlExec.OssURL = initSql
-	clusterInfo := apistructs.ClusterInfoData{}
-	utils.JsonConvertObjToType(clusterConfig, &clusterInfo)
-	err = p.Bdl.MySQLExecFile(mysqlExec, formatSoldierUrl(&clusterInfo))
+	sql, err := p.tryReadFile(initSql)
 	if err != nil {
 		return err
 	}
+	mysqlExec.Sqls = []string{sql}
+
+	err = mysqlExec.Exec()
 	return nil
 }
 
@@ -233,10 +234,11 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 
 	linkList := list.New()
 	for name, service := range mysqlMap {
-		execDto := &apistructs.MysqlExec{
-			URL:      "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
-			User:     service.user,
-			Password: service.password,
+		execDto := &mysqlhelper.Request{
+			ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
+			Url:        "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
+			User:       service.user,
+			Password:   service.password,
 		}
 
 		if name == "mysql" {
@@ -255,40 +257,44 @@ func (p *provider) initMysql(mysqlMap map[string]*mysqlDto, clusterConfig map[st
 			linkList.PushBack(execDto)
 		}
 	}
-	var mysqlExecList []apistructs.MysqlExec
+
 	for p := linkList.Front(); p != nil; p = p.Next() {
-		mysqlExecList = append(mysqlExecList, *p.Value.(*apistructs.MysqlExec))
+		err := p.Value.(*mysqlhelper.Request).Exec()
+		if err != nil {
+			return err
+		}
 	}
 
-	clusterInfo := apistructs.ClusterInfoData{}
-	utils.JsonConvertObjToType(clusterConfig, &clusterInfo)
-	err := p.Bdl.MySQLInit(&mysqlExecList, formatSoldierUrl(&clusterInfo))
-
-	return err
+	return nil
 }
 
 func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig map[string]string, err error) error {
 	service := mysqlMap["mysql-slave"]
-	mysqlExec := &apistructs.MysqlExec{
-		URL:      "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
-		User:     service.user,
-		Password: service.password,
+	mysqlExec := &mysqlhelper.Request{
+		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
+		Url:        "jdbc:mysql://" + service.mysqlHost + ":" + service.mysqlPort,
+		User:       service.user,
+		Password:   service.password,
 	}
 
-	clusterInfo := apistructs.ClusterInfoData{}
-	utils.JsonConvertObjToType(clusterConfig, &clusterInfo)
-	err = p.Bdl.MySQLCheck(mysqlExec, formatSoldierUrl(&clusterInfo))
+	status, err := mysqlExec.GetSlaveState()
 	if err != nil {
 		return err
+	}
+
+	if status.IORunning != "connecting" && status.IORunning != "yes" ||
+		status.SQLRunning != "connecting" && status.SQLRunning != "yes" {
+		return fmt.Errorf("slave in error status")
 	}
 	return nil
 }
 
 func (p *provider) createDb(mysqldto mysqlDto, clusterConfig map[string]string, tenantConfig map[string]string) ([]string, error) {
-	mysqlExec := &apistructs.MysqlExec{
-		URL:      "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
-		User:     mysqldto.user,
-		Password: mysqldto.password,
+	mysqlExec := &mysqlhelper.Request{
+		ClusterKey: clusterConfig["DICE_CLUSTER_NAME"],
+		Url:        "jdbc:mysql://" + mysqldto.mysqlHost + ":" + mysqldto.mysqlPort,
+		User:       mysqldto.user,
+		Password:   mysqldto.password,
 	}
 
 	var createdDbNames []string
@@ -306,25 +312,27 @@ func (p *provider) createDb(mysqldto mysqlDto, clusterConfig map[string]string, 
 		return createdDbNames, nil
 	}
 	mysqlExec.Sqls = sqls
-	clusterInfo := apistructs.ClusterInfoData{}
-	utils.JsonConvertObjToType(clusterConfig, &clusterInfo)
-	err := p.Bdl.MySQLExec(mysqlExec, formatSoldierUrl(&clusterInfo))
+
+	err := mysqlExec.Exec()
 	return createdDbNames, err
 }
 
-// formatSoldierUrl 拼接soldier地址
-func formatSoldierUrl(clusterInfo *apistructs.ClusterInfoData) string {
-	if (*clusterInfo)[apistructs.DICE_IS_EDGE] == "false" {
-		return "http://" + discover.Soldier()
-	}
-	port := "80"
-	protocol := "https"
-	if strutil.Contains((*clusterInfo)[apistructs.DICE_PROTOCOL], "https") {
-		port = (*clusterInfo)[apistructs.DICE_HTTPS_PORT]
-	} else {
-		protocol = "http"
-		port = (*clusterInfo)[apistructs.DICE_HTTP_PORT]
-	}
-	return protocol + "://soldier." + (*clusterInfo)[apistructs.DICE_ROOT_DOMAIN] + ":" + port
+func (p *provider) tryReadFile(file string) (string, error) {
 
+	if !strings.HasPrefix(file, "file://") {
+		return "", fmt.Errorf("not supported file storage type")
+	}
+
+	formattedPath := strings.TrimPrefix(file, "file://")
+	formattedPath = strings.ReplaceAll(formattedPath, ".tar.gz", ".sql")
+	formattedPath = conf.MSPAddonFsRootPath + "/" + formattedPath
+
+	fs := conf.MSPAddonInitSqls
+
+	data, err := fs.ReadFile(formattedPath)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
