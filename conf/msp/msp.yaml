@@ -93,11 +93,17 @@ erda.msp.apm.checker.task.plugins.http:
 erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
+erda.msp.apm.trace:
+  cassandra:
+    keyspace:
+      name: "spot_prod"
+      auto: false # auto generate keyspace
+
 erda.msp.apm.exception:
   cassandra:
     keyspace:
       name: "spot_prod"
-      auto: false # 自动创建 keyspace
+      auto: false # auto generate keyspace
 
 # apm metric
 erda.msp.apm.metric:
