@@ -108,8 +108,8 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		job     *batchv1.Job
 		jobPods *corev1.PodList
 	)
-	jobName := strutil.Concat(action.Extra.Namespace, ".", action.Extra.UUID)
-	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, task_uuid.MakeJobID(action), metav1.GetOptions{})
+	jobName := strutil.Concat(action.Extra.Namespace, ".", task_uuid.MakeJobID(action))
+	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			desc.Status = apistructs.StatusNotFoundInCluster
