@@ -14,7 +14,6 @@
 package testcase
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -110,6 +109,20 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		return
 	}
 
+	f, err := ioutil.TempFile("", "export.*")
+	if err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		return
+	}
+
+	defer func() {
+		if err := os.Remove(f.Name()); err != nil {
+			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		}
+	}()
+
+	defer f.Close()
+
 	if req.FileType == apistructs.TestCaseFileTypeExcel {
 		excelLines, err := svc.convert2Excel(testCases, req.Locale)
 		if err != nil {
@@ -120,26 +133,12 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 			return
 		}
 
-		buff, err := excel.WriteExcelBuffer(excelLines, sheetName)
-		if err != nil {
+		if err := excel.Export(f, excelLines, sheetName); err != nil {
 			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
 				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 			}
 			return
-		}
-
-		uuid, err := svc.Upload(buff, sheetName)
-		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
-		}
-
-		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: uuid}); err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		}
 	} else {
 		xmindContent, err := svc.convert2XMind(testCases, req.Locale)
@@ -151,71 +150,35 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 			return
 		}
 
-		f, err := ioutil.TempFile("", "export.*.xmind")
-		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			return
-		}
-
-		defer func() {
-			if err := os.Remove(f.Name()); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-		}()
-
-		defer f.Close()
-
-		err = xmind.Export(f, xmindContent, sheetName)
-		if err != nil {
+		if err := xmind.Export(f, xmindContent, sheetName); err != nil {
 			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
 				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 			}
 			return
-		}
-
-		fileInfo, err := f.Stat()
-		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(fmt.Errorf("Get export Xmind temp file info %w", err)))
-			return
-		}
-
-		req := apistructs.FileUploadRequest{
-			FileNameWithExt: sheetName,
-			ByteSize:        fileInfo.Size(),
-			FileReader:      f,
-			From:            defaultResource,
-			IsPublic:        true,
-			ExpiredAt:       nil,
-		}
-		file, err := svc.bdl.UploadFile(req)
-		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
-		}
-
-		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		}
 	}
-}
 
-func (svc *Service) Upload(buff *bytes.Buffer, fileName string) (string, error) {
-	req := apistructs.FileUploadRequest{
-		FileNameWithExt: fileName,
-		ByteSize:        int64(buff.Len()),
-		FileReader:      ioutil.NopCloser(buff),
+	//Set offset for next read
+	f.Seek(0, 0)
+
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: sheetName,
+		FileReader:      f,
 		From:            defaultResource,
 		IsPublic:        true,
-		Encrypt:         false,
 		ExpiredAt:       nil,
 	}
-	res, err := svc.bdl.UploadFile(req)
+	file, err := svc.bdl.UploadFile(uploadReq)
 	if err != nil {
-		return "", err
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		}
+		return
 	}
-	return res.UUID, nil
+
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+	}
 }
