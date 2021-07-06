@@ -33,27 +33,24 @@ import (
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js
-func (c *collector) intRoutes(routes httpserver.Router) error {
+func (c *collector) intRoute(r httpserver.Router) error {
 	assets, err := fs.NewWithNamespace("monitor/metrics-collector")
 	if err != nil {
 		return fmt.Errorf("fail to init file system: %s", err)
 	}
 	fileSystem := http.FileSystem(assets)
-	routes.File("/ta.js", "/ta.js", httpserver.WithFileSystem(fileSystem))
+	r.File("/ta.js", "/ta.js", httpserver.WithFileSystem(fileSystem))
 
 	// browser and mobile metrics
-	routes.POST("/collect", c.collectAnalytics) // compatible for legacy
-	routes.POST("/collect/analytics", c.collectAnalytics)
+	r.POST("/collect", c.collectAnalytics) // compatible for legacy
+	r.POST("/collect/analytics", c.collectAnalytics)
 
 	// logs and metrics
 	auth := c.basicAuth()
-	routes.POST("/collect/:metric", c.collectMetric, auth)
-	routes.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
-	routes.POST("/collect/logs/:source", c.collectLogs, auth)
+	r.POST("/collect/:metric", c.collectMetric, auth)
+	r.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
+	r.POST("/collect/logs/:source", c.collectLogs, auth)
 
-	// standard API version two
-	signAuth := c.authSignedRequest()
-	routes.POST("/api/v2/collect/logs/:source", c.collectLogs, signAuth)
 	return nil
 }
 
