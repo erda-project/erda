@@ -26,21 +26,21 @@ fields:
     LogEndOffset:
         type: "number"
         name: "Log End Offset"
-        uint: 
+        unit: 
     LogStartOffset:
         type: "number"
         name: "Log Start Offset"
-        uint: 
+        unit: 
     NumLogSegments:
         type: "number"
         name: "Num Log Segments"
-        uint: 
+        unit: 
     Size:
         type: "number"
         name: "Size"
-        uint: 
+        unit: 
     UnderReplicatedPartitions:
         type: "number"
         name: "Under Replicated Partitions"
-        uint: 
+        unit: 
 

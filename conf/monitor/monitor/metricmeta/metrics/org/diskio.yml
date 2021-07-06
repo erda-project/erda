@@ -14,45 +14,45 @@ fields:
     io_time:
         type: "number"
         name: "IO Time"
-        uint: 
+        unit: 
     iops_in_progress:
         type: "number"
         name: "IOPS In Progress"
-        uint: 
+        unit: 
     read_bytes:
         type: "number"
         name: "Read Bytes"
-        uint: 
+        unit: 
     read_rate:
         type: "number"
         name: "Read Rate"
-        uint: 
+        unit: 
     read_time:
         type: "number"
         name: "Read Time"
-        uint: 
+        unit: 
     reads:
         type: "number"
         name: "Reads"
-        uint: 
+        unit: 
     weighted_io_time:
         type: "number"
         name: "Weighted IO Time"
-        uint: 
+        unit: 
     write_bytes:
         type: "number"
         name: "Write Bytes"
-        uint: 
+        unit: 
     write_rate:
         type: "number"
         name: "Write Rate"
-        uint: 
+        unit: 
     write_time:
         type: "number"
         name: "Write Time"
-        uint: 
+        unit: 
     writes:
         type: "number"
         name: "Writes"
-        uint: 
+        unit: 
 
