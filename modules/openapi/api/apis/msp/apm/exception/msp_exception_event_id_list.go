@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package msp
+package exception
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MSP_EXCEPTION_LIST = apis.ApiSpec{
-	Path:        "/api/apm/exceptions",
-	BackendPath: "/api/apm/exceptions",
+var MSP_EXCEPTION_EVENT_ID_LIST = apis.ApiSpec{
+	Path:        "/api/apm/exception/eventIds",
+	BackendPath: "/api/apm/exception/eventIds",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "Query exception list",
+	Doc:         "Query exception event ids",
 }
