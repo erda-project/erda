@@ -64,3 +64,23 @@ func TestClaas_patchProject(t *testing.T) {
 	assert.NotEqual(t, oldPrj.ClusterConfig, "{}")
 	assert.NotEqual(t, oldPrj.RollbackConfig, "{}")
 }
+
+func TestCheckRollbackConfig(t *testing.T) {
+	rollbackConfig := make(map[string]int, 0)
+	assert.NoError(t, checkRollbackConfig(&rollbackConfig))
+	rollbackConfig["DEV"] = 1
+	rollbackConfig["TEST"] = 1
+	rollbackConfig["STAGING"] = 1
+	rollbackConfig["PROD"] = 1
+	assert.NoError(t, checkRollbackConfig(&rollbackConfig))
+}
+
+func TestInitRollbackConfig(t *testing.T) {
+	rollbackConfig := make(map[string]int, 0)
+	err := initRollbackConfig(&rollbackConfig)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, rollbackConfig["DEV"])
+	assert.Equal(t, 5, rollbackConfig["TEST"])
+	assert.Equal(t, 5, rollbackConfig["STAGING"])
+	assert.Equal(t, 5, rollbackConfig["PROD"])
+}

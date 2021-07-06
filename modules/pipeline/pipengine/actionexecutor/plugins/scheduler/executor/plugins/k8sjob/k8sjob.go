@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -108,7 +109,7 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		jobPods *corev1.PodList
 	)
 	jobName := strutil.Concat(action.Extra.Namespace, ".", action.Extra.UUID)
-	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, task_uuid.MakeJobID(action), metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			desc.Status = apistructs.StatusNotFoundInCluster
@@ -302,6 +303,55 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 		}
 	}
 	return nil, nil
+}
+
+func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
+	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	if namespace == "" {
+		namespace = jobVolume.Namespace
+	}
+	if err := k.createNamespace(ctx, namespace); err != nil {
+		return "", err
+	}
+
+	sc := logic.WhichStorageClass(jobVolume.Type)
+	id := fmt.Sprintf("%s-%s", jobVolume.Namespace, jobVolume.Name)
+	pvc := corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      id,
+			Namespace: namespace,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("10Gi"),
+				},
+			},
+			StorageClassName: &sc,
+		},
+	}
+	if err := k.CreatePVCIfNotExists(ctx, &pvc); err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+func (k *K8sJob) CreatePVCIfNotExists(ctx context.Context, pvc *corev1.PersistentVolumeClaim) error {
+	_, err := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(ctx, pvc.Name, metav1.GetOptions{})
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return errors.Errorf("faile to get pvc, name: %s, err: %v", pvc.Name, err)
+		}
+		_, createErr := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
+		if createErr != nil {
+			if !k8serrors.IsAlreadyExists(err) {
+				return errors.Errorf("failed to create pvc, name: %s, err: %v", pvc.Name, createErr)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
