@@ -63,7 +63,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		type CheckerServiceV1 pb.CheckerV1ServiceServer
 		pb.RegisterCheckerV1ServiceImp(p.Register, p.checkerV1Service, apis.Options(),
 			p.Perm.Check(
-				perm.Method(CheckerServiceV1.CreateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionCreate, perm.FieldValue("ProjectID")),
+				perm.Method(CheckerServiceV1.CreateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionCreate, perm.FieldValue("Data.ProjectID")),
 				perm.Method(CheckerServiceV1.UpdateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionUpdate, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.DeleteCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionDelete, p.checkerV1Service.getProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.DescribeCheckersV1, perm.ScopeProject, "monitor_status", perm.ActionList, perm.FieldValue("ProjectID")),

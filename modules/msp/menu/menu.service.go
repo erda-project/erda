@@ -259,6 +259,9 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 			overview.Params = monitor.Params
 		}
 		if loghub != nil {
+			if loghub.Params == nil {
+				loghub.Params = make(map[string]string)
+			}
 			loghub.Params["terminusKey"] = monitor.Params["terminusKey"]
 		}
 	}

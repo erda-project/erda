@@ -39,7 +39,7 @@ const (
 	EnvKMS            = "KMS_ADDR"
 	EnvQA             = "QA_ADDR"
 	EnvAPIM           = "APIM_ADDR"
-	EnvTMC            = "TMC_ADDR"
+	EnvTMC            = "TMC_ADDR" // TODO REMOVE
 	EnvMSP            = "MSP_ADDR"
 	EnvUC             = "UC_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
@@ -135,12 +135,12 @@ func TMC() string {
 	return getURL(EnvTMC, SvcTMC)
 }
 
-func CMP() string {
-	return getURL(EnvCMP, SvcCMP)
-}
-
 func MSP() string {
 	return getURL(EnvMSP, SvcMSP)
+}
+
+func CMP() string {
+	return getURL(EnvCMP, SvcCMP)
 }
 
 func Openapi() string {

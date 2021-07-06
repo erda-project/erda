@@ -38,8 +38,8 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210701123259-88aec4fcbe75
-	github.com/erda-project/erda-proto-go v0.0.0-20210705120018-ae5b6df014f7
+	github.com/erda-project/erda-infra v0.0.0-20210705164905-688d5712f7f8
+	github.com/erda-project/erda-proto-go v0.0.0-20210706023447-099d7cbf14e1
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
