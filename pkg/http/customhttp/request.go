@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -38,11 +37,10 @@ func (e Error) Error() string {
 	return e.msg
 }
 
-var inetAddr string
+var dialerAddr string
 
-// 用于获取netportal地址的环境变量名
 const (
-	netportalAddrEnvVarName = "NETPORTAL_ADDR"
+	clusterDialerAddr       = "CLUSTER_DIALER_ADDR"
 	portalPassthroughHeader = "X-Portal-Passthrough"
 	portalDirectHeader      = "X-Portal-Direct"
 	portalSSLHeader         = "X-Portal-SSL"
@@ -54,14 +52,11 @@ const (
 
 // 用于覆盖根据环境变量取的值
 func SetInetAddr(addr string) {
-	inetAddr = addr
+	dialerAddr = addr
 }
 
 func init() {
-	inetAddr = os.Getenv(netportalAddrEnvVarName)
-	if inetAddr == "" {
-		inetAddr, _ = discover.GetEndpoint("netportal.default")
-	}
+	dialerAddr = discover.ClusterDialer()
 }
 
 func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
@@ -99,26 +94,21 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)
 	}
-	if inetAddr == "" {
+	if dialerAddr == "" {
 		return nil, errors.WithStack(ErrAddrMiss)
 	}
-	inetAddr = strings.TrimPrefix(inetAddr, "http://")
+	dialerAddr = strings.TrimPrefix(dialerAddr, "http://")
 	portalHost, portalDest, portalUrl, portalArgs, err := parseInetUrl(url)
 	if err != nil {
 		return nil, err
 	}
-	url = fmt.Sprintf("http://%s/%s", inetAddr, portalUrl)
+	url = fmt.Sprintf("http://%s/%s", dialerAddr, portalUrl)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	request.Header.Set(portalHostHeader, portalHost)
 	request.Header.Set(portalDestHeader, portalDest)
-	if portalArgs["direct"] == "on" {
-		request.Header.Set(portalDirectHeader, "on")
-		// 使用portalHost作为Host
-		request.Host = portalHost
-	}
 	if portalArgs["ssl"] == "on" {
 		request.Header.Set(portalSSLHeader, "on")
 	}
@@ -130,5 +120,7 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if portalArgs["passthrough"] == "on" {
 		request.Header.Set(portalPassthroughHeader, "on")
 	}
+	// Support for cluster-dialer
+	request.Host = portalDest
 	return request, nil
 }

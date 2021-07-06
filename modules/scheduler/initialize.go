@@ -16,7 +16,6 @@ package scheduler
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/i18n"
 	"github.com/erda-project/erda/modules/scheduler/server"
@@ -25,7 +24,6 @@ import (
 
 // Initialize Application-related initialization operations
 func Initialize() error {
-	logrus.Infof(version.String())
 	conf.Load()
 	// control log's level.
 	if conf.Debug() {
@@ -38,7 +36,7 @@ func Initialize() error {
 	// open the function of dump stack
 	dumpstack.Open()
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
-	logrus.Errorf("[alert] starting scheduler instance")
+	logrus.Infof("[alert] starting scheduler instance")
 	i18n.InitI18N()
 
 	return server.NewServer(conf.ListenAddr()).ListenAndServe()
