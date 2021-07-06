@@ -14,11 +14,16 @@
 package adapt
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
@@ -138,7 +143,7 @@ const (
 )
 
 // QueryAlertRule .
-func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (*AlertTypeRuleResp, error) {
+func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (*pb.AlertTypeRuleResp, error) {
 	rules, err := a.db.AlertRule.QueryEnabledByScope(scope)
 	if err != nil {
 		return nil, err
@@ -147,19 +152,22 @@ func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (
 	if err != nil {
 		return nil, err
 	}
-	rulesMap := make(map[string][]*AlertRule)
+	rulesMap := make(map[string][]*pb.AlertRule)
 	for _, item := range customizeRules {
-		rule := (&AlertRule{}).FromCustomizeAlertRule(lang, a.t, item)
+		rule, err := FromCustomizeAlertRule(lang, a.t, item)
+		if err != nil {
+			return nil, err
+		}
 		rulesMap[item.AlertType] = append(rulesMap[item.AlertType], rule)
 	}
 	for _, item := range rules {
-		rule := (&AlertRule{}).FromModel(lang, a.t, item)
+		rule := FromPBAlertRuleModel(lang, a.t, item)
 		rulesMap[item.AlertType] = append(rulesMap[item.AlertType], rule)
 	}
-	var alertTypeRules []*AlertTypeRule
+	var alertTypeRules []*pb.AlertTypeRule
 	for alertType, rules := range rulesMap {
-		alertTypeRules = append(alertTypeRules, &AlertTypeRule{
-			AlertType: &DisplayKey{
+		alertTypeRules = append(alertTypeRules, &pb.AlertTypeRule{
+			AlertType: &pb.DisplayKey{
 				Key:     alertType,
 				Display: a.t.Text(lang, alertType),
 			},
@@ -167,13 +175,13 @@ func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (
 		})
 	}
 	// only show single value operation
-	var operators []*Operator
+	var operators []*pb.Operator
 	for _, op := range a.FunctionOperatorKeys(lang) {
 		if op.Type == OperatorTypeOne {
 			operators = append(operators, op)
 		}
 	}
-	return &AlertTypeRuleResp{
+	return &pb.AlertTypeRuleResp{
 		AlertTypeRules: alertTypeRules,
 		Windows:        windowKeys,
 		Operators:      operators,
@@ -183,12 +191,12 @@ func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (
 }
 
 // QueryOrgAlertRule .
-func (a *Adapt) QueryOrgAlertRule(lang i18n.LanguageCodes, orgID uint64) (*AlertTypeRuleResp, error) {
+func (a *Adapt) QueryOrgAlertRule(lang i18n.LanguageCodes, orgID uint64) (*pb.AlertTypeRuleResp, error) {
 	return a.QueryAlertRule(lang, "org", strconv.FormatUint(orgID, 10))
 }
 
 // QueryAlert .
-func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64) ([]*Alert, error) {
+func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64) ([]*pb.Alert, error) {
 	alerts, err := a.db.Alert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
 	if err != nil {
 		return nil, err
@@ -201,17 +209,17 @@ func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageN
 	if err != nil {
 		return nil, err
 	}
-	var list []*Alert
+	var list []*pb.Alert
 	for _, item := range alerts {
-		alert := (&Alert{}).FromModel(item)
-		alert.Notifies = notifyMap[alert.ID]
+		alert := FromDBAlertModel(item)
+		alert.Notifies = notifyMap[alert.Id]
 		list = append(list, alert)
 	}
 	return list, nil
 }
 
 // according to alertID get alert
-func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*AlertNotify, error) {
+func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*pb.AlertNotify, error) {
 	if len(alertIDs) == 0 {
 		return nil, nil
 	}
@@ -227,9 +235,9 @@ func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*Aler
 	}
 	notifyGroupMap := a.getNotifyGroupRelByIDs(notifyGroupIDs)
 
-	notifysMap := make(map[uint64][]*AlertNotify)
+	notifysMap := make(map[uint64][]*pb.AlertNotify)
 	for _, notify := range notifies {
-		notifyTarget := (&AlertNotify{}).FromModel(notify, notifyGroupMap)
+		notifyTarget := ToPBAlertNotify(notify, notifyGroupMap)
 		if notifyTarget == nil {
 			continue
 		}
@@ -239,7 +247,7 @@ func (a *Adapt) getAlertNotifysByAlertIDs(alertIDs []uint64) (map[uint64][]*Aler
 }
 
 // get notify groups
-func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*apistructs.NotifyGroup {
+func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*pb.NotifyGroup {
 	if len(groupIDs) == 0 {
 		return nil
 	}
@@ -248,28 +256,40 @@ func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*apistructs.
 		a.l.Errorf("fail to query notify group from cmdb error: %s", err)
 		return nil
 	}
-	notifyGroupMap := make(map[int64]*apistructs.NotifyGroup)
+	notifyGroupMap := make(map[int64]*pb.NotifyGroup)
 	for _, notifyGroup := range notifyGroupsData {
-		notifyGroupMap[notifyGroup.ID] = notifyGroup
+		data, err := json.Marshal(notifyGroup)
+		if err != nil {
+			a.l.Errorf("json marshal is fail err is %s", err)
+			return nil
+		}
+		notifyGroupPB := &pb.NotifyGroup{}
+		err = json.Unmarshal(data, notifyGroupPB)
+		if err != nil {
+			a.l.Errorf("json unMarshal is fail is %s", err)
+			return nil
+		}
+		notifyGroupMap[notifyGroup.ID] = notifyGroupPB
 	}
 	return notifyGroupMap
 }
 
 // QueryOrgAlert .
-func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64) ([]*Alert, error) {
+func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64) ([]*pb.Alert, error) {
 	scopeID := strconv.FormatUint(orgID, 10)
 	alerts, err := a.QueryAlert(lang, "org", scopeID, pageNo, pageSize)
 	if err != nil {
 		return nil, err
 	}
 	for _, alert := range alerts {
-		if clusterNames, ok := utils.GetMapValueArr(alert.Attributes, "cluster_name"); ok {
+		output := a.ValueMapToInterfaceMap(alert.Attributes)
+		if clusterNames, ok := utils.GetMapValueArr(output, "cluster_name"); ok {
 			for _, v := range clusterNames {
 				if clusterName, ok := v.(string); ok {
 					alert.ClusterNames = append(alert.ClusterNames, clusterName)
 				}
 			}
-		} else if clusterName, ok := utils.GetMapValueString(alert.Attributes, "cluster_name"); ok {
+		} else if clusterName, ok := utils.GetMapValueString(output, "cluster_name"); ok {
 			alert.ClusterNames = append(alert.ClusterNames, clusterName)
 		}
 		alert.Attributes = nil
@@ -292,18 +312,18 @@ func (a *Adapt) CountOrgAlert(orgID uint64) (int, error) {
 }
 
 // GetAlert .
-func (a *Adapt) GetAlert(lang i18n.LanguageCodes, id uint64) (*Alert, error) {
+func (a *Adapt) GetAlert(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
 	alert, err := a.db.Alert.GetByID(id)
 	if err != nil {
 		return nil, err
 	} else if alert == nil {
 		return nil, nil
 	}
-	return (&Alert{}).FromModel(alert), nil
+	return FromDBAlertModel(alert), nil
 }
 
 // GetAlertDetail .
-func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, error) {
+func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
 	alert, err := a.db.Alert.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -324,7 +344,7 @@ func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, erro
 	if err != nil {
 		return nil, err
 	}
-	var rules []*AlertExpression
+	var rules []*pb.AlertExpression
 	for _, expression := range expressions {
 		if _, ok := rulesMap[expression.AlertIndex]; ok {
 			rules = append(rules, expression)
@@ -335,20 +355,20 @@ func (a *Adapt) GetAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, erro
 	if err != nil {
 		return nil, err
 	}
-	data := (&Alert{}).FromModel(alert)
+	data := FromDBAlertModel(alert)
 	data.Rules = rules
 	data.Notifies = notifys
 	return data, nil
 }
 
-func (a *Adapt) getAlertExpressionsByAlertID(alertID uint64) ([]*AlertExpression, error) {
+func (a *Adapt) getAlertExpressionsByAlertID(alertID uint64) ([]*pb.AlertExpression, error) {
 	expressions, err := a.db.AlertExpression.QueryByAlertIDs([]uint64{alertID})
 	if err != nil {
 		return nil, err
 	}
-	var list []*AlertExpression
+	var list []*pb.AlertExpression
 	for _, item := range expressions {
-		expression := (&AlertExpression{}).FromModel(item)
+		expression := ToPBAlertExpressionModel(item)
 		if expression == nil {
 			continue
 		}
@@ -357,7 +377,7 @@ func (a *Adapt) getAlertExpressionsByAlertID(alertID uint64) ([]*AlertExpression
 	return list, nil
 }
 
-func (a *Adapt) getAlertNotifysByAlertID(alertID uint64) ([]*AlertNotify, error) {
+func (a *Adapt) getAlertNotifysByAlertID(alertID uint64) ([]*pb.AlertNotify, error) {
 	if alertID == 0 {
 		return nil, nil
 	}
@@ -369,7 +389,7 @@ func (a *Adapt) getAlertNotifysByAlertID(alertID uint64) ([]*AlertNotify, error)
 }
 
 // obtain open alarm rules based on scope and index
-func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, scope, scopeID string, indices []string) (map[string]*AlertRule, error) {
+func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, scope, scopeID string, indices []string) (map[string]*pb.AlertRule, error) {
 	if len(indices) == 0 {
 		return nil, nil
 	}
@@ -381,18 +401,18 @@ func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, s
 	if err != nil {
 		return nil, err
 	}
-	rulesMap := make(map[string]*AlertRule)
+	rulesMap := make(map[string]*pb.AlertRule)
 	for _, item := range rules {
-		rulesMap[item.AlertIndex] = (&AlertRule{}).FromModel(lang, a.t, item)
+		rulesMap[item.AlertIndex] = FromPBAlertRuleModel(lang, a.t, item)
 	}
 	for _, item := range customizeRules {
-		rulesMap[item.AlertIndex] = (&AlertRule{}).FromCustomizeAlertRule(lang, a.t, item)
+		rulesMap[item.AlertIndex], err = FromCustomizeAlertRule(lang, a.t, item)
 	}
 	return rulesMap, nil
 }
 
 // GetOrgAlertDetail .
-func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, error) {
+func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
 	alert, err := a.GetAlertDetail(lang, id)
 	if err != nil {
 		return nil, err
@@ -400,14 +420,14 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, e
 	if alert == nil {
 		return nil, nil
 	}
-
-	if clusterNames, ok := utils.GetMapValueArr(alert.Attributes, "cluster_name"); ok {
+	output := a.ValueMapToInterfaceMap(alert.Attributes)
+	if clusterNames, ok := utils.GetMapValueArr(output, "cluster_name"); ok {
 		for _, v := range clusterNames {
 			if clusterName, ok := v.(string); ok {
 				alert.ClusterNames = append(alert.ClusterNames, clusterName)
 			}
 		}
-	} else if clusterName, ok := utils.GetMapValueString(alert.Attributes, "cluster_name"); ok {
+	} else if clusterName, ok := utils.GetMapValueString(output, "cluster_name"); ok {
 		alert.ClusterNames = append(alert.ClusterNames, clusterName)
 	}
 	alert.Attributes = nil
@@ -415,7 +435,7 @@ func (a *Adapt) GetOrgAlertDetail(lang i18n.LanguageCodes, id uint64) (*Alert, e
 }
 
 // CreateAlert .
-func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
+func (a *Adapt) CreateAlert(alert *pb.Alert) (alertID uint64, err error) {
 	tx := a.db.Begin()
 	defer func() {
 		if err != nil {
@@ -427,9 +447,9 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 			tx.Commit()
 		}
 	}()
-	orgName := alert.Attributes["org_name"].(string)
+	orgName := alert.Attributes["org_name"].AsInterface().(string)
 	delete(alert.Attributes, "org_name")
-	dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeID, alert.Name)
+	dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeId, alert.Name)
 	if err != nil {
 		return 0, err
 	}
@@ -437,13 +457,13 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 		return 0, ErrorAlreadyExists
 	}
 	alert.Enable = true
-	data := alert.ToModel()
+	data := ToDBAlertModel(alert)
 	data.ID = 0
 	err = tx.Alert.Insert(data)
 	if err != nil {
 		return 0, nil
 	}
-	alert.ID = data.ID
+	alert.Id = data.ID
 
 	// 创建告警表达式
 	var (
@@ -453,7 +473,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 	for _, expression := range alert.Rules {
 		indexes = append(indexes, expression.AlertIndex)
 	}
-	ruleMap, err := a.getEnabledAlertRulesByScopeAndIndices(i18n.LanguageCodes{}, alert.AlertScope, alert.AlertScopeID, indexes)
+	ruleMap, err := a.getEnabledAlertRulesByScopeAndIndices(i18n.LanguageCodes{}, alert.AlertScope, alert.AlertScopeId, indexes)
 	if err != nil {
 		return 0, err
 	}
@@ -462,7 +482,7 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 		if !ok || rule.AlertScope != alert.AlertScope {
 			return 0, invalidParameter("rule %s is not scope: %s", rule.AlertIndex.Key, alert.AlertScope)
 		}
-		exp, err := expression.ToModel(orgName, alert, rule)
+		exp, err := ToDBAlertExpressionModel(expression, orgName, alert, rule)
 		if err != nil {
 			return 0, err
 		}
@@ -479,12 +499,12 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 
 	// create alert notify
 	var (
-		silence   *AlertNotifySilence
+		silence   *pb.AlertNotifySilence
 		notifyLen int
 	)
 	for _, item := range alert.Notifies {
 		silence = item.Silence
-		notify := item.ToModel(alert, a.silencePolicies)
+		notify := FromDBAlertToModel(item, alert, a.silencePolicies)
 		if notify == nil {
 			continue
 		}
@@ -498,15 +518,15 @@ func (a *Adapt) CreateAlert(alert *Alert) (alertID uint64, err error) {
 		return 0, errors.New("notify is not valid")
 	}
 	// create ticket alert notify
-	notify := a.newTicketAlertNotify(alert.ID, silence)
+	notify := a.newTicketAlertNotify(alert.Id, silence)
 	if err := tx.AlertNotify.Insert(notify); err != nil {
 		return 0, err
 	}
-	return alert.ID, nil
+	return alert.Id, nil
 }
 
 // crate ticket alert notify
-func (a *Adapt) newTicketAlertNotify(alertID uint64, silence *AlertNotifySilence) *db.AlertNotify {
+func (a *Adapt) newTicketAlertNotify(alertID uint64, silence *pb.AlertNotifySilence) *db.AlertNotify {
 	if silence == nil {
 		return nil
 	}
@@ -530,20 +550,66 @@ func (a *Adapt) newTicketAlertNotify(alertID uint64, silence *AlertNotifySilence
 }
 
 // CreateOrgAlert .
-func (a *Adapt) CreateOrgAlert(alert *Alert, orgID string) (alertID uint64, err error) {
+func (a *Adapt) CreateOrgAlert(alert *pb.Alert, orgID string) (alertID uint64, err error) {
 	alert.AlertScope = "org"
-	alert.AlertScopeID = orgID
-	//alert.Attributes = make(map[string]interface{})
-	alert.Attributes["alert_domain"] = alert.Domain
-	alert.Attributes["alert_dashboard_path"] = dashboardPath
-	alert.Attributes["alert_record_path"] = recordPath
-	alert.Attributes["dice_org_id"] = orgID
-	alert.Attributes["cluster_name"] = alert.ClusterNames
+	alert.AlertScopeId = orgID
+	alert.Attributes["alert_domain"] = structpb.NewStringValue(alert.Domain)
+	alertDashboardPath := structpb.NewStringValue(dashboardPath)
+	alert.Attributes["alert_dashboard_path"] = alertDashboardPath
+	alertRecordPath := structpb.NewStringValue(recordPath)
+	alert.Attributes["alert_record_path"] = alertRecordPath
+	diceOrgId := structpb.NewStringValue(orgID)
+	alert.Attributes["dice_org_id"] = diceOrgId
+	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
+	if err != nil {
+		return 0, nil
+	}
+	alert.Attributes["cluster_name"] = clusterName
 	return a.CreateAlert(alert)
 }
 
+func (a *Adapt) StringSliceToValue(input []string) (*structpb.Value, error) {
+	arr := make([]interface{}, len(input))
+	for i, v := range input {
+		arr[i] = v
+	}
+	respList, err := structpb.NewList(arr)
+	if err != nil {
+		return nil, err
+	}
+	return structpb.NewListValue(respList), nil
+}
+
+func (a *Adapt) ValueMapToInterfaceMap(input map[string]*structpb.Value) map[string]interface{} {
+	output := make(map[string]interface{})
+	for k, v := range input {
+		output[k] = v.AsInterface()
+	}
+	return output
+}
+
+func (a *Adapt) InterfaceMapToValueMap(input map[string]interface{}) (map[string]*structpb.Value, error) {
+	output := make(map[string]*structpb.Value)
+	for k, v := range input {
+		data, err := structpb.NewValue(v)
+		if err != nil {
+			logrus.Errorf("InterfaceMapToValueMap NewValue is err:%v", err)
+			vd, err := json.Marshal(data)
+			if err != nil {
+				return nil, err
+			}
+			data, err = structpb.NewValue(vd)
+			if err != nil {
+				return nil, err
+			}
+		}
+		output[k] = data
+	}
+	return output, nil
+}
+
 // UpdateOrgAlert .
-func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error {
+func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *pb.Alert, orgID string) error {
 	// data authorization
 	origin, err := a.db.Alert.GetByID(alertID)
 	if err != nil {
@@ -558,24 +624,32 @@ func (a *Adapt) UpdateOrgAlert(alertID uint64, alert *Alert, orgID string) error
 
 	// supplement data
 	alert.AlertScope = origin.AlertScope
-	alert.AlertScopeID = origin.AlertScopeID
+	alert.AlertScopeId = origin.AlertScopeID
 	alert.Enable = origin.Enable
-	//alert.Attributes = make(map[string]interface{})
 	for k, v := range origin.Attributes {
-		alert.Attributes[k] = v
+		alert.Attributes[k], err = structpb.NewValue(v)
+		if err != nil {
+			return err
+		}
 	}
 	if alert.Domain != "" {
-		alert.Attributes["alert_domain"] = alert.Domain
+		alert.Attributes["alert_domain"] = structpb.NewStringValue(alert.Domain)
 	}
-	alert.Attributes["alert_dashboard_path"] = dashboardPath
-	alert.Attributes["alert_record_path"] = recordPath
-	alert.Attributes["cluster_name"] = alert.ClusterNames
+	alertDashboardPath := structpb.NewStringValue(dashboardPath)
+	alert.Attributes["alert_dashboard_path"] = alertDashboardPath
+	alertRecordPath := structpb.NewStringValue(recordPath)
+	alert.Attributes["alert_record_path"] = alertRecordPath
+	clusterName, err := a.StringSliceToValue(alert.ClusterNames)
+	if err != nil {
+		return err
+	}
+	alert.Attributes["cluster_name"] = clusterName
 
 	return a.UpdateAlert(alertID, alert)
 }
 
 // UpdateAlert .
-func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
+func (a *Adapt) UpdateAlert(alertID uint64, alert *pb.Alert) (err error) {
 	tx := a.db.Begin()
 	defer func() {
 		if err != nil {
@@ -587,10 +661,10 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 			tx.Commit()
 		}
 	}()
-	orgName := alert.Attributes["org_name"].(string)
+	orgName := alert.Attributes["org_name"].AsInterface().(string)
 	delete(alert.Attributes, "org_name")
 	if alert.Name != "" {
-		dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeID, alert.Name)
+		dbAlert, err := tx.Alert.GetByScopeAndScopeIDAndName(alert.AlertScope, alert.AlertScopeId, alert.Name)
 		if err != nil {
 			return err
 		}
@@ -611,11 +685,17 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		attributes[k] = v
 	}
 	for k, v := range alert.Attributes {
-		attributes[k] = v
+		attributes[k] = v.AsInterface()
 	}
-	alert.ID = alertID
-	alert.Attributes = attributes
-	dbAlert = alert.ToModel()
+	alert.Id = alertID
+	for k, v := range attributes {
+		value, err := structpb.NewValue(v)
+		if err != nil {
+			return err
+		}
+		alert.Attributes[k] = value
+	}
+	dbAlert = ToDBAlertModel(alert)
 	if err := tx.Alert.Update(dbAlert); err != nil {
 		return err
 	}
@@ -628,7 +708,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	for _, expression := range alert.Rules {
 		indexes = append(indexes, expression.AlertIndex)
 	}
-	ruleMap, err := a.getEnabledAlertRulesByScopeAndIndices(i18n.LanguageCodes{}, alert.AlertScope, alert.AlertScopeID, indexes)
+	ruleMap, err := a.getEnabledAlertRulesByScopeAndIndices(i18n.LanguageCodes{}, alert.AlertScope, alert.AlertScopeId, indexes)
 	if err != nil {
 		return err
 	}
@@ -642,7 +722,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 		if !ok || rule.AlertScope != alert.AlertScope {
 			return invalidParameter("rule %s is not scope: %s", rule.AlertIndex.Key, alert.AlertScope)
 		}
-		expression, err := item.ToModel(orgName, alert, rule)
+		expression, err := ToDBAlertExpressionModel(item, orgName, alert, rule)
 		if err != nil {
 			return err
 		}
@@ -651,7 +731,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 			if err := tx.AlertExpression.Update(expression); err != nil {
 				return err
 			}
-			saveExpressionIDs[item.ID] = true
+			saveExpressionIDs[item.Id] = true
 		} else {
 			expression.ID = 0
 			if err := tx.AlertExpression.Insert(expression); err != nil {
@@ -676,7 +756,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 
 	// modify alert notify
 	var (
-		silence   *AlertNotifySilence
+		silence   *pb.AlertNotifySilence
 		notifyLen int
 	)
 	notifyMap, err := a.getAlertNotifysMapByAlertID(alertID)
@@ -686,7 +766,7 @@ func (a *Adapt) UpdateAlert(alertID uint64, alert *Alert) (err error) {
 	saveNotifyIDs := make(map[uint64]bool)
 	for _, item := range alert.Notifies {
 		silence = item.Silence
-		alertNotify := item.ToModel(alert, a.silencePolicies)
+		alertNotify := FromDBAlertToModel(item, alert, a.silencePolicies)
 		if alertNotify == nil {
 			continue
 		}

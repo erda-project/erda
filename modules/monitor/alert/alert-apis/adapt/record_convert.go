@@ -16,6 +16,7 @@ package adapt
 import (
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
@@ -38,6 +39,30 @@ func (a *AlertRecord) FromModel(m *db.AlertRecord) *AlertRecord {
 	a.IssueID = m.IssueID
 	a.HandleState = m.HandleState
 	a.HandlerID = m.HandlerID
+	a.AlertTime = utils.ConvertTimeToMS(m.AlertTime)
+	a.HandleTime = utils.ConvertTimeToMS(m.HandleTime)
+	a.CreateTime = utils.ConvertTimeToMS(m.CreateTime)
+	a.UpdateTime = utils.ConvertTimeToMS(m.UpdateTime)
+	return a
+}
+
+func ToPBAlertRecord(m *db.AlertRecord) *pb.AlertRecord {
+	a := &pb.AlertRecord{}
+	a.GroupId = m.GroupID
+	a.Scope = m.Scope
+	a.ScopeKey = m.ScopeKey
+	a.AlertGroup = m.AlertGroup
+	a.Title = m.Title
+	a.AlertState = m.AlertState
+	a.AlertType = m.AlertType
+	a.AlertIndex = m.AlertIndex
+	a.ExpressionKey = m.ExpressionKey
+	a.AlertId = m.AlertID
+	a.AlertName = m.AlertName
+	a.RuleId = m.RuleID
+	a.IssueId = m.IssueID
+	a.HandleState = m.HandleState
+	a.HandlerId = m.HandlerID
 	a.AlertTime = utils.ConvertTimeToMS(m.AlertTime)
 	a.HandleTime = utils.ConvertTimeToMS(m.HandleTime)
 	a.CreateTime = utils.ConvertTimeToMS(m.CreateTime)
@@ -72,5 +97,16 @@ func (a *AlertHistory) FromModel(m *cql.AlertHistory) *AlertHistory {
 	a.Title = m.Title
 	a.Content = m.Content
 	a.DisplayURL = m.DisplayURL
+	return a
+}
+
+func ToDBAlertHistory(m *cql.AlertHistory) *pb.AlertHistory {
+	a := &pb.AlertHistory{}
+	a.GroupId = m.GroupID
+	a.Timestamp = m.Timestamp
+	a.AlertState = m.AlertState
+	a.Title = m.Title
+	a.Content = m.Content
+	a.DisplayUrl = m.DisplayURL
 	return a
 }
