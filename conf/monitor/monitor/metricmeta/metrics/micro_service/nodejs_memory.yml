@@ -49,21 +49,21 @@ fields:
     external:
         type: "number"
         name: "External"
-        uint: 
+        unit: 
     heap_total:
         type: "number"
         name: "Heap Total"
-        uint: 
+        unit: 
     heap_used:
         type: "number"
         name: "Heap Used"
-        uint: 
+        unit: 
     max:
         type: "number"
         name: "Maximum"
-        uint: 
+        unit: 
     rss:
         type: "number"
         name: "Rss"
-        uint: 
+        unit: 
 

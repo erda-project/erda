@@ -24,11 +24,11 @@ import (
 
 // GroupMetricMap .
 type GroupMetricMap struct {
-	Name            string       `json:"name"`
-	Filters         []*pb.Filter `json:"filters"`
-	Fields          []string     `json:"fields"`
-	Tags            []string     `json:"tags"`
-	AddTagsToFields bool         `json:"add_tags_to_fields"`
+	Name            string          `json:"name"`
+	Filters         []*pb.TagFilter `json:"filters"`
+	Fields          []string        `json:"fields"`
+	Tags            []string        `json:"tags"`
+	AddTagsToFields bool            `json:"add_tags_to_fields"`
 }
 
 // GroupProvider .

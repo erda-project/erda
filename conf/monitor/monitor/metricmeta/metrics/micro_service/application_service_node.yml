@@ -46,21 +46,21 @@ fields:
     start_time_count:
         type: "number"
         name: "Start Time Count"
-        uint: 
+        unit: 
     start_time_max:
         type: "number"
         name: "Start Time Maximum"
-        uint: 
+        unit: 
     start_time_mean:
         type: "number"
         name: "Start Time Mean"
-        uint: 
+        unit: 
     start_time_min:
         type: "number"
         name: "Start Time Minimum"
-        uint: 
+        unit: 
     start_time_sum:
         type: "number"
         name: "Start Time Sum"
-        uint: 
+        unit: 
 

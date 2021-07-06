@@ -26,45 +26,45 @@ fields:
     Count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     DurationUnit:
         type: "string"
         name: "Duration Unit"
-        uint: 
+        unit: 
     FifteenMinuteRate:
         type: "number"
         name: "Fifteen Minute Rate"
-        uint: 
+        unit: 
     FiveMinuteRate:
         type: "number"
         name: "Five Minute Rate"
-        uint: 
+        unit: 
     Max:
         type: "number"
         name: "Maximum"
-        uint: 
+        unit: 
     Mean:
         type: "number"
         name: "Mean"
-        uint: 
+        unit: 
     MeanRate:
         type: "number"
         name: "Mean Rate"
-        uint: 
+        unit: 
     Min:
         type: "number"
         name: "Minimum"
-        uint: 
+        unit: 
     OneMinuteRate:
         type: "number"
         name: "One Minute Rate"
-        uint: 
+        unit: 
     RateUnit:
         type: "string"
         name: "Rate Unit"
-        uint: 
+        unit: 
     StdDev:
         type: "number"
         name: "Std Dev"
-        uint: 
+        unit: 
 

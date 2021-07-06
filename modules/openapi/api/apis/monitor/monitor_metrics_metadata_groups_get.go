@@ -17,7 +17,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var MONITOR_METRIC_METADATA_GROUP_LIST = apis.ApiSpec{
 	Path:        "/api/metadata/groups",
-	BackendPath: "/api/metric/groups",
+	BackendPath: "/api/metric-groups",
 	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
 	Scheme:      "http",
 	Method:      "GET",

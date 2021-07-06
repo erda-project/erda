@@ -30,97 +30,97 @@ fields:
     cpu_disp_percent:
         type: "number"
         name: "CPU Disp Percent"
-        uint: 
+        unit: 
     cpu_limit:
         type: "number"
         name: "CPU Limit"
-        uint: 
+        unit: 
     cpu_origin:
         type: "number"
         name: "CPU Origin"
-        uint: 
+        unit: 
     cpu_request:
         type: "number"
         name: "CPU Request"
-        uint: 
+        unit: 
     cpu_total:
         type: "number"
         name: "CPU Total"
-        uint: 
+        unit: 
     cpu_usage:
         type: "number"
         name: "CPU Usage"
-        uint: 
+        unit: 
     cpu_usage_active:
         type: "number"
         name: "CPU Usage Active"
-        uint: 
+        unit: 
     cpu_usage_percent:
         type: "number"
         name: "CPU Usage Percent"
-        uint: 
+        unit: 
     disk_total:
         type: "number"
         name: "Disk Total"
-        uint: 
+        unit: 
     disk_usage:
         type: "number"
         name: "Disk Usage"
-        uint: 
+        unit: 
     disk_usage_percent:
         type: "number"
         name: "Disk Usage Percent"
-        uint: 
+        unit: 
     labels:
         type: "string"
         name: "Labels"
-        uint: 
+        unit: 
     load15:
         type: "number"
         name: "Load15"
-        uint: 
+        unit: 
     load1:
         type: "number"
         name: "Load1"
-        uint: 
+        unit: 
     load5:
         type: "number"
         name: "Load5"
-        uint: 
+        unit: 
     load_percent:
         type: "number"
         name: "Load Percent"
-        uint: 
+        unit: 
     mem_disp_percent:
         type: "number"
         name: "Memory Disp Percent"
-        uint: 
+        unit: 
     mem_limit:
         type: "number"
         name: "Memory Limit"
-        uint: 
+        unit: 
     mem_origin:
         type: "number"
         name: "Memory Origin"
-        uint: 
+        unit: 
     mem_request:
         type: "number"
         name: "Memory Request"
-        uint: 
+        unit: 
     mem_total:
         type: "number"
         name: "Memory Total"
-        uint: 
+        unit: 
     mem_usage:
         type: "number"
         name: "Memory Usage"
-        uint: 
+        unit: 
     mem_usage_percent:
         type: "number"
         name: "Memory Usage Percent"
-        uint: 
+        unit: 
     tasks:
         type: "number"
         name: "Tasks"
-        uint: 
+        unit: 
 

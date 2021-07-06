@@ -90,37 +90,37 @@ fields:
     elapsed_count:
         type: "number"
         name: "Request Count"
-        uint: 
+        unit: 
     elapsed_max:
         type: "number"
         name: "Elapsed Maximum"
-        uint: 
+        unit: 
     elapsed_mean:
         type: "number"
         name: "Elapsed Mean"
-        uint: 
+        unit: 
     elapsed_min:
         type: "number"
         name: "Elapsed Minimum"
-        uint: 
+        unit: 
     elapsed_sum:
         type: "number"
         name: "Elapsed"
-        uint: 
+        unit: 
     http_status_code_max:
         type: "number"
         name: "HTTP Status Code Maximum"
-        uint: 
+        unit: 
     http_status_code_mean:
         type: "number"
         name: "HTTP Status Code Mean"
-        uint: 
+        unit: 
     http_status_code_min:
         type: "number"
         name: "HTTP Status Code Minimum"
-        uint: 
+        unit: 
     http_status_code_sum:
         type: "number"
         name: "HTTP Status Code Sum"
-        uint: 
+        unit: 
 

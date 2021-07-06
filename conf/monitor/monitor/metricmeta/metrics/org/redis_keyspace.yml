@@ -22,13 +22,13 @@ fields:
     avg_ttl:
         type: "number"
         name: "Avg Ttl"
-        uint: 
+        unit: 
     expires:
         type: "number"
         name: "Expires"
-        uint: 
+        unit: 
     keys:
         type: "number"
         name: "Keys"
-        uint: 
+        unit: 
 

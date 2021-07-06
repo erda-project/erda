@@ -26,9 +26,9 @@ fields:
     current_open:
         type: "number"
         name: "Current Open"
-        uint: 
+        unit: 
     total_opened:
         type: "number"
         name: "Total Opened"
-        uint: 
+        unit: 
 

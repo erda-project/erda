@@ -49,21 +49,21 @@ fields:
     committed:
         type: "number"
         name: "Committed"
-        uint: 
+        unit: 
     init:
         type: "number"
         name: "Init"
-        uint: 
+        unit: 
     max:
         type: "number"
         name: "Maximum"
-        uint: 
+        unit: 
     usage_percent:
         type: "number"
         name: "Usage Percent"
-        uint: 
+        unit: 
     used:
         type: "number"
         name: "Used"
-        uint: 
+        unit: 
 

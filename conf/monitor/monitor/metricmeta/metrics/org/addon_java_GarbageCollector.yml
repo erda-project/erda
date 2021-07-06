@@ -24,17 +24,17 @@ fields:
     CollectionCount:
         type: "number"
         name: "Collection Count"
-        uint: 
+        unit: 
     CollectionTime:
         type: "number"
         name: "Collection Time"
-        uint: 
+        unit: 
     Name:
         type: "string"
         name: "Name"
-        uint: 
+        unit: 
     Valid:
         type: "bool"
         name: "Valid"
-        uint: 
+        unit: 
 

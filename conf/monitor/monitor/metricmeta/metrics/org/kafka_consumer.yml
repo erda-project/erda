@@ -22,25 +22,25 @@ fields:
     consume_rate_per_sec:
         type: "number"
         name: "Consume Rate Per Sec"
-        uint: 
+        unit: 
     lag:
         type: "number"
         name: "Lag"
-        uint: 
+        unit: 
     log_size:
         type: "number"
         name: "Log Size"
-        uint: 
+        unit: 
     offset:
         type: "number"
         name: "Offset"
-        uint: 
+        unit: 
     partitions:
         type: "number"
         name: "Partitions"
-        uint: 
+        unit: 
     produce_rate_per_sec:
         type: "number"
         name: "Produce Rate Per Sec"
-        uint: 
+        unit: 
 

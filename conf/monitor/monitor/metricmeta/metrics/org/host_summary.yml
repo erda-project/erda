@@ -22,137 +22,137 @@ fields:
     containers:
         type: "number"
         name: "Containers"
-        uint: 
+        unit: 
     cpu_cores_usage:
         type: "number"
         name: "CPU Cores Usage"
-        uint: 
+        unit: 
     cpu_limit_total:
         type: "number"
         name: "CPU Limit Total"
-        uint: 
+        unit: 
     cpu_origin_total:
         type: "number"
         name: "CPU Origin Total"
-        uint: 
+        unit: 
     cpu_request_percent:
         type: "number"
         name: "CPU Request Percent"
-        uint: 
+        unit: 
     cpu_request_total:
         type: "number"
         name: "CPU Request Total"
-        uint: 
+        unit: 
     cpu_usage_active:
         type: "number"
         name: "CPU Usage Active"
-        uint: 
+        unit: 
     disk_free:
         type: "number"
         name: "Disk Free"
-        uint: 
+        unit: 
     disk_fstype:
         type: "string"
         name: "Disk Fstype"
-        uint: 
+        unit: 
     disk_total:
         type: "number"
         name: "Disk Total"
-        uint: 
+        unit: 
     disk_used:
         type: "number"
         name: "Disk Used"
-        uint: 
+        unit: 
     disk_used_percent:
         type: "number"
         name: "Disk Used Percent"
-        uint: 
+        unit: 
     labels:
         type: "string"
         name: "Labels"
-        uint: 
+        unit: 
     load15:
         type: "number"
         name: "Load15"
-        uint: 
+        unit: 
     load1:
         type: "number"
         name: "Load1"
-        uint: 
+        unit: 
     load5:
         type: "number"
         name: "Load5"
-        uint: 
+        unit: 
     mem_available:
         type: "number"
         name: "Memory Available"
-        uint: 
+        unit: 
     mem_available_percent:
         type: "number"
         name: "Memory Available Percent"
-        uint: 
+        unit: 
     mem_free:
         type: "number"
         name: "Memory Free"
-        uint: 
+        unit: 
     mem_limit_total:
         type: "number"
         name: "Memory Limit Total"
-        uint: 
+        unit: 
     mem_origin_total:
         type: "number"
         name: "Memory Origin Total"
-        uint: 
+        unit: 
     mem_request_percent:
         type: "number"
         name: "Memory Request Percent"
-        uint: 
+        unit: 
     mem_request_total:
         type: "number"
         name: "Memory Request Total"
-        uint: 
+        unit: 
     mem_total:
         type: "number"
         name: "Memory Total"
-        uint: 
+        unit: 
     mem_used:
         type: "number"
         name: "Memory Used"
-        uint: 
+        unit: 
     mem_used_percent:
         type: "number"
         name: "Memory Used Percent"
-        uint: 
+        unit: 
     n_cpus:
         type: "number"
         name: "N CPUs"
-        uint: 
+        unit: 
     n_users:
         type: "number"
         name: "N Users"
-        uint: 
+        unit: 
     swap_free:
         type: "number"
         name: "Swap Free"
-        uint: 
+        unit: 
     swap_total:
         type: "number"
         name: "Swap Total"
-        uint: 
+        unit: 
     swap_used:
         type: "number"
         name: "Swap Used"
-        uint: 
+        unit: 
     swap_used_percent:
         type: "number"
         name: "Swap Used Percent"
-        uint: 
+        unit: 
     task_containers:
         type: "number"
         name: "Task Containers"
-        uint: 
+        unit: 
     uptime:
         type: "number"
         name: "Uptime"
-        uint: 
+        unit: 
 

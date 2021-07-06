@@ -23,8 +23,13 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
+type config struct {
+	Skip bool `file:"skip"`
+}
+
 // +provider
 type provider struct {
+	Cfg *config
 	Log logs.Logger
 	bdl *bundle.Bundle
 }
@@ -44,6 +49,7 @@ func init() {
 		Types: []reflect.Type{
 			reflect.TypeOf((*Interface)(nil)).Elem(),
 		},
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

@@ -30,21 +30,21 @@ fields:
     code:
         type: "number"
         name: "Code"
-        uint: 
+        unit: 
     latency:
         type: "number"
         name: "Latency"
-        uint: 
+        unit: 
     message:
         type: "string"
         name: "Message"
-        uint: 
+        unit: 
     request_id:
         type: "string"
         name: "Request ID"
-        uint: 
+        unit: 
     retry:
         type: "number"
         name: "Retry"
-        uint: 
+        unit: 
 

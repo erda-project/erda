@@ -47,9 +47,9 @@ fields:
     loaded:
         type: "number"
         name: "Loaded"
-        uint: 
+        unit: 
     unloaded:
         type: "number"
         name: "Unloaded"
-        uint: 
+        unit: 
 

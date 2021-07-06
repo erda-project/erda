@@ -46,6 +46,33 @@ func (f *Formater) formatTableChart(q tsql.Query, rs *tsql.ResultSet, params map
 }
 
 func (f *Formater) formatTableChartV2(q tsql.Query, rs *tsql.ResultSet, params map[string]interface{}) (interface{}, error) {
+	if _, ok := params["protobuf"]; !ok {
+		headers := make([]map[string]interface{}, len(rs.Columns), len(rs.Columns))
+		for i, c := range rs.Columns {
+			col := map[string]interface{}{
+				"key":  c.Name,
+				"flag": c.Flag.String(),
+			}
+			if c.Key != c.Name {
+				col["_key"] = c.Key
+			}
+			headers[i] = col
+		}
+		list := make([]map[string]interface{}, 0)
+		for _, row := range rs.Rows {
+			data := make(map[string]interface{}, len(row))
+			for i, v := range row {
+				col := rs.Columns[i]
+				data[col.Name] = v
+			}
+			list = append(list, data)
+		}
+		return map[string]interface{}{
+			"data":     list,
+			"cols":     headers,
+			"interval": rs.Interval,
+		}, nil
+	}
 	headers := make([]*pb.TableColumn, len(rs.Columns), len(rs.Columns))
 	for i, c := range rs.Columns {
 		col := &pb.TableColumn{

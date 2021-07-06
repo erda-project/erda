@@ -61,14 +61,8 @@ func (q *queryer) buildTSQLParser(ql, statement string, params map[string]interf
 	if err != nil {
 		return nil, 0, 0, nil, err
 	}
-	now := time.Now()
-	nowms := now.UnixNano() / int64(time.Millisecond)
-	if end > nowms {
-		offset := end - nowms
-		end = nowms
-		start -= offset
-	} else if end < hourms {
-		end = nowms
+	if end < hourms {
+		end = hourms
 	}
 	if start < 0 || start >= end {
 		start = end - hourms

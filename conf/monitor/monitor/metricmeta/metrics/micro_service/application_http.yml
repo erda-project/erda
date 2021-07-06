@@ -114,197 +114,197 @@ fields:
     active_conns_count:
         type: "number"
         name: "Active Conns Count"
-        uint: 
+        unit: 
     active_conns_max:
         type: "number"
         name: "Active Conns Maximum"
-        uint: 
+        unit: 
     active_conns_mean:
         type: "number"
         name: "Active Conns Mean"
-        uint: 
+        unit: 
     active_conns_min:
         type: "number"
         name: "Active Conns Minimum"
-        uint: 
+        unit: 
     active_conns_sum:
         type: "number"
         name: "Active Conns Sum"
-        uint: 
+        unit: 
     cnt_count:
         type: "number"
         name: "Cnt Count"
-        uint: 
+        unit: 
     cnt_max:
         type: "number"
         name: "Cnt Maximum"
-        uint: 
+        unit: 
     cnt_mean:
         type: "number"
         name: "Cnt Mean"
-        uint: 
+        unit: 
     cnt_min:
         type: "number"
         name: "Cnt Minimum"
-        uint: 
+        unit: 
     cnt_sum:
         type: "number"
         name: "Cnt Sum"
-        uint: 
+        unit: 
     elapsed_count:
         type: "number"
         name: "Request Count"
-        uint: 
+        unit: 
     elapsed_max:
         type: "number"
         name: "Elapsed Maximum"
-        uint: 
+        unit: 
     elapsed_mean:
         type: "number"
         name: "Elapsed Mean"
-        uint: 
+        unit: 
     elapsed_min:
         type: "number"
         name: "Elapsed Minimum"
-        uint: 
+        unit: 
     elapsed_sum:
         type: "number"
         name: "Elapsed"
-        uint: 
+        unit: 
     http_status_code_max:
         type: "number"
         name: "HTTP Status Code Maximum"
-        uint: 
+        unit: 
     http_status_code_mean:
         type: "number"
         name: "HTTP Status Code Mean"
-        uint: 
+        unit: 
     http_status_code_min:
         type: "number"
         name: "HTTP Status Code Minimum"
-        uint: 
+        unit: 
     http_status_code_sum:
         type: "number"
         name: "HTTP Status Code Sum"
-        uint: 
+        unit: 
     idle_conns_count:
         type: "number"
         name: "Idle Conns Count"
-        uint: 
+        unit: 
     idle_conns_max:
         type: "number"
         name: "Idle Conns Maximum"
-        uint: 
+        unit: 
     idle_conns_mean:
         type: "number"
         name: "Idle Conns Mean"
-        uint: 
+        unit: 
     idle_conns_min:
         type: "number"
         name: "Idle Conns Minimum"
-        uint: 
+        unit: 
     idle_conns_sum:
         type: "number"
         name: "Idle Conns Sum"
-        uint: 
+        unit: 
     in_bytes_count:
         type: "number"
         name: "In Bytes Count"
-        uint: 
+        unit: 
     in_bytes_max:
         type: "number"
         name: "In Bytes Maximum"
-        uint: 
+        unit: 
     in_bytes_mean:
         type: "number"
         name: "In Bytes Mean"
-        uint: 
+        unit: 
     in_bytes_min:
         type: "number"
         name: "In Bytes Minimum"
-        uint: 
+        unit: 
     in_bytes_sum:
         type: "number"
         name: "In Bytes Sum"
-        uint: 
+        unit: 
     latency_count:
         type: "number"
         name: "Latency Count"
-        uint: 
+        unit: 
     latency_max:
         type: "number"
         name: "Latency Maximum"
-        uint: 
+        unit: 
     latency_mean:
         type: "number"
         name: "Latency Mean"
-        uint: 
+        unit: 
     latency_min:
         type: "number"
         name: "Latency Minimum"
-        uint: 
+        unit: 
     latency_sum:
         type: "number"
         name: "Latency Sum"
-        uint: 
+        unit: 
     out_bytes_count:
         type: "number"
         name: "Out Bytes Count"
-        uint: 
+        unit: 
     out_bytes_max:
         type: "number"
         name: "Out Bytes Maximum"
-        uint: 
+        unit: 
     out_bytes_mean:
         type: "number"
         name: "Out Bytes Mean"
-        uint: 
+        unit: 
     out_bytes_min:
         type: "number"
         name: "Out Bytes Minimum"
-        uint: 
+        unit: 
     out_bytes_sum:
         type: "number"
         name: "Out Bytes Sum"
-        uint: 
+        unit: 
     total_conns_count:
         type: "number"
         name: "Total Conns Count"
-        uint: 
+        unit: 
     total_conns_max:
         type: "number"
         name: "Total Conns Maximum"
-        uint: 
+        unit: 
     total_conns_mean:
         type: "number"
         name: "Total Conns Mean"
-        uint: 
+        unit: 
     total_conns_min:
         type: "number"
         name: "Total Conns Minimum"
-        uint: 
+        unit: 
     total_conns_sum:
         type: "number"
         name: "Total Conns Sum"
-        uint: 
+        unit: 
     upstream_latency_count:
         type: "number"
         name: "Upstream Latency Count"
-        uint: 
+        unit: 
     upstream_latency_max:
         type: "number"
         name: "Upstream Latency Maximum"
-        uint: 
+        unit: 
     upstream_latency_mean:
         type: "number"
         name: "Upstream Latency Mean"
-        uint: 
+        unit: 
     upstream_latency_min:
         type: "number"
         name: "Upstream Latency Minimum"
-        uint: 
+        unit: 
     upstream_latency_sum:
         type: "number"
         name: "Upstream Latency Sum"
-        uint: 
+        unit: 
 
