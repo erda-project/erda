@@ -67,7 +67,47 @@ func TestAccessKeyAuthenticate(t *testing.T) {
 	}
 	ass.NoError(h(handler)(c))
 
-	// Invalid
+	// Expired Duration
+	keyPair = secret.AkSkPair{
+		AccessKeyID: AccessKeyID,
+		SecretKey:   SecretKey,
+	}
+	sign = hmac.New(keyPair, hmac.WithTimestamp(time.Now().Add(-time.Minute*20)))
+	sign.SignCanonicalRequest(req)
+	c = &mockContext{
+		ctx: e.NewContext(req, res),
+	}
+	ass.Error(h(handler)(c))
+
+	// Invalid Secret Key
+	keyPair = secret.AkSkPair{
+		AccessKeyID: AccessKeyID,
+		SecretKey:   "vJIC21Ze7U4Ofh65bz0K5475Y6O24xxx",
+	}
+	sign = hmac.New(keyPair, hmac.WithTimestamp(time.Now()))
+	sign.SignCanonicalRequest(req)
+	c = &mockContext{
+		ctx: e.NewContext(req, res),
+	}
+	ass.Error(h(handler)(c))
+
+	// Can't find accessKey
+	keyPair = secret.AkSkPair{
+		AccessKeyID: "xxxxxxxxx",
+		SecretKey:   SecretKey,
+	}
+	sign = hmac.New(keyPair, hmac.WithTimestamp(time.Now()))
+	sign.SignCanonicalRequest(req)
+	c = &mockContext{
+		ctx: e.NewContext(req, res),
+	}
+	ass.Error(h(handler)(c))
+
+	// Not Sign
+	c = &mockContext{
+		ctx: e.NewContext(req, res),
+	}
+	ass.Error(h(handler)(c))
 }
 
 type mockContext struct {
