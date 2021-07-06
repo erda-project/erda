@@ -1,0 +1,2 @@
+admin:
+  debug: ${DEBUG:false}
