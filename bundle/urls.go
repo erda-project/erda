@@ -105,6 +105,10 @@ func (u urls) TMC() (string, error) {
 	return u.getURL(discover.EnvTMC, discover.SvcTMC)
 }
 
+func (u urls) MSP() (string, error) {
+	return u.getURL(discover.EnvMSP, discover.SvcMSP)
+}
+
 func (u urls) CMP() (string, error) {
 	return u.getURL(discover.EnvCMP, discover.SvcCMP)
 }
