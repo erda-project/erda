@@ -110,7 +110,7 @@ func Test_useNetportal(t *testing.T) {
 }
 
 func Test_handleCustomNetportalRequest(t *testing.T) {
-	inetAddr := "netportal.default.svc.cluster.local:80"
+	inetAddr := "web.n1.svc.cluster.local:8080"
 	netportalURL := "inet://xxx.yyy"
 	customhttp.SetInetAddr(inetAddr)
 	type args struct {

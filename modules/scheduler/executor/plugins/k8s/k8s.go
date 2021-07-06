@@ -351,13 +351,13 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	//Get the value of the super-scoring ratio for different environments
 	var memSubscribeRatio,
-		cpuSubscribeRatio,
-		devMemSubscribeRatio,
-		devCpuSubscribeRatio,
-		testMemSubscribeRatio,
-		testCpuSubscribeRatio,
-		stagingMemSubscribeRatio,
-		stagingCpuSubscribeRatio float64
+	cpuSubscribeRatio,
+	devMemSubscribeRatio,
+	devCpuSubscribeRatio,
+	testMemSubscribeRatio,
+	testCpuSubscribeRatio,
+	stagingMemSubscribeRatio,
+	stagingCpuSubscribeRatio float64
 
 	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
 	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
@@ -401,21 +401,24 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
+	var istioEngine istioctl.IstioEngine
+
 	rawData, err := clusterInfo.Get()
 	if err != nil {
-		return nil, errors.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
+		logrus.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
 			name, clusterName, err)
+	} else {
+		clusterInfoData := apistructs.ClusterInfoData{}
+		for key, value := range rawData {
+			clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
+		}
+		istioEngine, err = getIstioEngine(clusterInfoData)
+		if err != nil {
+			return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
+				name, clusterName, err)
+		}
 	}
 
-	clusterInfoData := apistructs.ClusterInfoData{}
-	for key, value := range rawData {
-		clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
-	}
-	istioEngine, err := getIstioEngine(clusterInfoData)
-	if err != nil {
-		return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
-			name, clusterName, err)
-	}
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
 	k := &Kubernetes{
@@ -450,7 +453,10 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
 		cpuNumQuota:              cpuNumQuota,
 		dbclient:                 dbclient,
-		istioEngine:              istioEngine,
+	}
+
+	if istioEngine != nil {
+		k.istioEngine = istioEngine
 	}
 
 	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, k, k8ssecret, k, client)
