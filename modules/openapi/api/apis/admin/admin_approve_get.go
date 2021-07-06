@@ -11,21 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package admin
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_RUNNING_TASKS_LIST = apis.ApiSpec{
-	Path:         "/api/org/actions/list-running-tasks",
-	BackendPath:  "/api/org/actions/list-running-tasks",
-	Method:       "GET",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
+var ADMIN_APPROVE_GET = apis.ApiSpec{
+	Path:         "/api/approves/<approveId>",
+	BackendPath:  "/api/approves/<approveId>",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
+	Method:       "GET",
 	CheckLogin:   true,
-	RequestType:  apistructs.OrgRunningTasksListRequest{},
-	ResponseType: apistructs.OrgRunningTasksListResponse{},
-	Doc:          "summary: 获取指定企业的任务 (job/deployment) 列表",
+	ResponseType: apistructs.ApproveDetailResponse{},
+	Doc:          "summary: 获取审批详情",
 }

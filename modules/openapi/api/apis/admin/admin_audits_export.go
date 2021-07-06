@@ -11,21 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package admin
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_CLUSTER_LIST = apis.ApiSpec{
-	Path:         "/api/clusters",
-	BackendPath:  "/api/clusters",
-	Method:       "GET",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
-	CheckLogin:   true,
-	RequestType:  apistructs.ClusterListRequest{},
-	ResponseType: apistructs.ClusterListResponse{},
-	Doc:          "summary: 集群列表",
+var ADMIN_AUDITS_EXPORT = apis.ApiSpec{
+	Path:        "/api/audits/actions/export-excel",
+	BackendPath: "/api/audits/actions/export-excel",
+	Host:        "admin.marathon.l4lb.thisdcos.directory:9095",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	IsOpenAPI:   true,
+	CheckLogin:  true,
+	CheckToken:  true,
+	RequestType: apistructs.AuditsListRequest{},
+	Doc:         "summary: 导出审计事件",
 }
