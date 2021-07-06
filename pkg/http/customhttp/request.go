@@ -20,8 +20,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var (
