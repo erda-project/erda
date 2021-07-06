@@ -221,26 +221,32 @@ func toValueGetter(v interface{}) ValueGetter {
 
 // FieldValue .
 func FieldValue(field string) ValueGetter {
+	fields := strings.Split(field, ".")
+	last := len(fields) - 1
 	return func(ctx context.Context, req interface{}) (string, error) {
-		if req == nil {
-			return "", fmt.Errorf("not found id for permission")
+		if value := req; value != nil {
+			for i, field := range fields {
+				val := reflect.ValueOf(value)
+				for val.Kind() == reflect.Ptr {
+					val = val.Elem()
+				}
+				if val.Kind() != reflect.Struct {
+					return "", fmt.Errorf("invalid request type")
+				}
+				val = val.FieldByName(field)
+				if !val.IsValid() {
+					break
+				}
+				value = val.Interface()
+				if value == nil {
+					break
+				}
+				if i == last {
+					return fmt.Sprint(value), nil
+				}
+			}
 		}
-		val := reflect.ValueOf(req)
-		for val.Kind() == reflect.Ptr {
-			val = val.Elem()
-		}
-		if val.Kind() != reflect.Struct {
-			return "", fmt.Errorf("invalid request type")
-		}
-		val = val.FieldByName(field)
-		if !val.IsValid() {
-			return "", fmt.Errorf("not found id for permission")
-		}
-		v := val.Interface()
-		if v == nil {
-			return "", fmt.Errorf("not found id for permission")
-		}
-		return fmt.Sprint(v), nil
+		return "", fmt.Errorf("not found id for permission")
 	}
 }
 

@@ -40,12 +40,12 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
 	}
-	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
+	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
 	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
+		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
 	}
 	now := time.Now()
 	m := &db.Metric{
@@ -60,7 +60,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-	checker := s.metricDB.ConvertToChecker(m, req.ProjectID)
+	checker := s.metricDB.ConvertToChecker(m, req.Data.ProjectID)
 	if checker != nil {
 		s.cache.Put(checker)
 	}
@@ -95,20 +95,58 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
+	if metric == nil {
+		return &pb.DeleteCheckerV1Response{}, nil
+	}
+
+	var projectID int64
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj != nil {
+		projectID = proj.ProjectID
+	}
+
 	err = s.metricDB.Delete(req.Id)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-
 	s.cache.Remove(req.Id)
 
-	c := &pb.CheckerV1{}
-	if metric != nil {
-		c.Name = metric.Name
-		c.Mode = metric.Mode
-		c.Url = metric.URL
+	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
+		Name:      metric.Name,
+		Mode:      metric.Mode,
+		Url:       metric.URL,
+		ProjectID: projectID,
+		Env:       metric.Env,
+	}}, nil
+}
+
+func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV1Request) (*pb.GetCheckerV1Response, error) {
+	metric, err := s.metricDB.GetByID(req.Id)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
 	}
-	return &pb.DeleteCheckerV1Response{Data: c}, nil
+	if metric == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	return &pb.GetCheckerV1Response{
+		Data: &pb.CheckerV1{
+			Name:      metric.Name,
+			Mode:      metric.Mode,
+			Url:       metric.URL,
+			ProjectID: proj.ProjectID,
+			Env:       metric.Env,
+		},
+	}, nil
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {

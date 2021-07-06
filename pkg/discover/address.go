@@ -39,7 +39,8 @@ const (
 	EnvKMS            = "KMS_ADDR"
 	EnvQA             = "QA_ADDR"
 	EnvAPIM           = "APIM_ADDR"
-	EnvTMC            = "TMC_ADDR"
+	EnvTMC            = "TMC_ADDR" // TODO REMOVE
+	EnvMSP            = "MSP_ADDR"
 	EnvUC             = "UC_ADDR"
 	EnvClusterDialer  = "CLUSTER_DIALER_ADDR"
 	EnvDOP            = "DOP_ADDR"
@@ -69,6 +70,7 @@ const (
 	SvcQA             = "qa"
 	SvcAPIM           = "apim"
 	SvcTMC            = "tmc"
+	SvcMSP            = "msp"
 	SvcUC             = "uc"
 	SvcClusterDialer  = "cluster-dialer"
 	SvcDOP            = "dop"
@@ -131,6 +133,10 @@ func Hepa() string {
 
 func TMC() string {
 	return getURL(EnvTMC, SvcTMC)
+}
+
+func MSP() string {
+	return getURL(EnvMSP, SvcMSP)
 }
 
 func CMP() string {
