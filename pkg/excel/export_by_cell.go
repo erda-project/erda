@@ -14,7 +14,6 @@
 package excel
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"time"
@@ -68,18 +67,17 @@ func generateCell(sheet *xlsx.Sheet, data [][]Cell) {
 	}, xlsx.SkipEmptyRows)
 }
 
-func WriteExcelBuffer(data [][]Cell, sheetName string) (*bytes.Buffer, error) {
+func Export(w io.Writer, data [][]Cell, sheetName string) error {
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet(sheetName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
+		return fmt.Errorf("failed to add sheet, sheetName: %s, err: %v", sheetName, err)
 	}
 	generateCell(sheet, data)
-	var buff bytes.Buffer
-	if err := file.Write(&buff); err != nil {
-		return nil, errors.Errorf("failed to write content, sheetName: %s, err: %v", sheetName, err)
+	if err := file.Write(w); err != nil {
+		return errors.Errorf("failed to write content, sheetName: %s, err: %v", sheetName, err)
 	}
-	return &buff, nil
+	return nil
 }
 
 type XlsxFile struct {

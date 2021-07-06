@@ -15,6 +15,7 @@ package autotestv2
 
 import (
 	"bytes"
+	"io/ioutil"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -215,7 +216,15 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		return
 	}
 
-	uuid, err := svc.Upload(&w, fileName)
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileName,
+		ByteSize:        int64(w.Len()),
+		FileReader:      ioutil.NopCloser(&w),
+		From:            "Autotest space",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
 		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
@@ -224,9 +233,8 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		return
 	}
 
-	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: uuid}); err != nil {
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
 		logrus.Error(apierrors.ErrExportAutoTestSpace.InternalError(err))
 		return
 	}
-
 }
