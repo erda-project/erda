@@ -623,6 +623,7 @@ loop:
 		} else {
 			groups = append(groups, &groupedRows{rows: []*metricpb.Row{row}})
 		}
+		lastTime = timestamp
 	}
 	for _, group := range groups {
 	rowsloop:
