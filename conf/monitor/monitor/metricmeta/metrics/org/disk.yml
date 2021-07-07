@@ -24,29 +24,29 @@ fields:
     free:
         type: "number"
         name: "Free"
-        uint: 
+        unit: 
     inodes_free:
         type: "number"
         name: "Inodes Free"
-        uint: 
+        unit: 
     inodes_total:
         type: "number"
         name: "Inodes Total"
-        uint: 
+        unit: 
     inodes_used:
         type: "number"
         name: "Inodes Used"
-        uint: 
+        unit: 
     total:
         type: "number"
         name: "Total"
-        uint: 
+        unit: 
     used:
         type: "number"
         name: "Used"
-        uint: 
+        unit: 
     used_percent:
         type: "number"
         name: "Used Percent"
-        uint: 
+        unit: 
 
