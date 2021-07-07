@@ -39,12 +39,13 @@ type Scope string
 
 // Scope values
 const (
-	ScopeSys          = "sys"
-	ScopeOrg          = "org"
-	ScopeProject      = "project"
-	ScopeApp          = "app"
-	ScopePublisher    = "publisher"
-	ScopeMicroService = "micro_service"
+	ScopeSys                   = "sys"
+	ScopeOrg                   = "org"
+	ScopeProject               = "project"
+	ScopeApp                   = "app"
+	ScopePublisher             = "publisher"
+	ScopeMicroService          = "micro_service"
+	MonitorProjectAlert string = "monitor_project_alert"
 )
 
 // Action .

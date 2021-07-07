@@ -15,7 +15,6 @@ package nacos
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
@@ -118,14 +117,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 		return nil, fmt.Errorf("namespace is nil")
 	}
 
-	netportalUrl := clusterConfig["NETPORTAL_URL"]
-	if len(netportalUrl) > 0 {
-		addr = netportalUrl + "/" + strings.TrimPrefix(addr, "http://")
-	} else if !strings.HasPrefix(addr, "http://") {
-		addr = "http://" + addr
-	}
-
-	namespaceId, err := getOrCreateNacosNamespace(addr, user, pwd, namespace)
+	namespaceId, err := getOrCreateNacosNamespace(clusterConfig["DICE_CLUSTER_NAME"], addr, user, pwd, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +129,8 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	return config, nil
 }
 
-func getOrCreateNacosNamespace(addr string, user string, pwd string, namespace string) (string, error) {
-	nacosClient := utils.NewNacosClient(addr, user, pwd)
+func getOrCreateNacosNamespace(clusterName string, addr string, user string, pwd string, namespace string) (string, error) {
+	nacosClient := utils.NewNacosClient(clusterName, addr, user, pwd)
 	namespaceId, _ := nacosClient.GetNamespaceId(namespace)
 	if len(namespaceId) > 0 {
 		return namespaceId, nil

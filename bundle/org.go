@@ -325,3 +325,28 @@ func (b *Bundle) GetOrgClusterRelationsByOrg(orgID uint64) ([]apistructs.OrgClus
 
 	return resp.Data, nil
 }
+
+// DereferenceCluster delete the relation of org and cluster
+func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string) (string, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return "", err
+	}
+	hc := b.hc
+
+	var resp apistructs.DeleteOrgClusterRelationResponse
+	r, err := hc.Put(host).Path("/api/clusters/actions/dereference").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Param("orgID", strconv.FormatUint(orgID, 10)).
+		Param("clusterName", clusterName).
+		Do().
+		JSON(&resp)
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return "", toAPIError(r.StatusCode(), resp.Error)
+	}
+	return resp.Data, nil
+}

@@ -28,7 +28,7 @@ func (b *Bundle) CreateJob(job apistructs.JobFromUser) (jsonResp apistructs.JobC
 	}
 
 	resp, err := b.hc.Put(host).
-		Path("v1/job/create").
+		Path("/v1/job/create").
 		Header(httputil.InternalHeader, "bundle").
 		JSONBody(apistructs.JobCreateRequest(job)).Do().JSON(&jsonResp)
 	if err != nil {

@@ -14,6 +14,7 @@
 package apigateway
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -33,15 +35,11 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 	instanceOptions := map[string]string{}
 	utils.JsonConvertObjToType(tmcInstance.Options, &instanceOptions)
 
-	jobReq := apistructs.JobFromUser{
-		Name:        tmcInstance.ID,
-		Image:       resourceInfo.Dice.Services["api-gateway-0"].Image,
-		CPU:         0.1,
-		Memory:      512,
-		Namespace:   "gateway",
-		Cmd:         "kong migrations bootstrap",
-		ClusterName: tmcInstance.Az,
-		Env: map[string]string{
+	az := tmcInstance.Az
+
+	pipelineYml := apistructs.PipelineYml{
+		Version: "1.1",
+		Envs: map[string]string{
 			"KONG_DATABASE":                 "postgres",
 			"KONG_PG_HOST":                  instanceOptions["POSTGRESQL_HOST"],
 			"KONG_CASSANDRA_CONTACT_POINTS": instanceOptions["POSTGRESQL_HOST"],
@@ -50,46 +48,65 @@ func (p *provider) DoPreDeployJob(resourceInfo *handlers.ResourceInfo, tmcInstan
 			"KONG_PG_PASSWORD":              instanceOptions["POSTGRESQL_PASSWORD"],
 			"KONG_PG_DATABASE":              instanceOptions["POSTGRESQL_DATABASE"],
 		},
-		Labels: map[string]string{},
+		Stages: [][]*apistructs.PipelineYmlAction{{{
+			Type:      "custom-script",
+			Version:   "1.0",
+			Image:     resourceInfo.Dice.Services["api-gateway-0"].Image,
+			Commands:  []string{"kong migrations bootstrap"},
+			Resources: apistructs.Resources{Cpu: 0.1, Mem: 512},
+		}}},
 	}
 
-	_, err := p.Bdl.CreateJob(jobReq)
-	if err != nil {
-		return err
+	yml, _ := json.Marshal(pipelineYml)
+
+	pipelineReq := &apistructs.PipelineCreateRequestV2{
+		PipelineYml:     string(yml),
+		PipelineSource:  "dice",
+		PipelineYmlName: uuid.UUID() + ".yml",
+		ClusterName:     az,
+		AutoRunAtOnce:   true,
 	}
 
-	_, err = p.Bdl.StartJob(jobReq.Namespace, jobReq.Name)
+	pipelineResp, err := p.Bdl.CreatePipeline(pipelineReq)
 	if err != nil {
 		return err
 	}
 
 	startTime := time.Now().Unix()
-	status := apistructs.StatusUnknown
+	status := apistructs.PipelineStatusUnknown
 	for time.Now().Unix()-startTime < handlers.RuntimeMaxUpTimeoutSeconds {
 		time.Sleep(10 * time.Second)
 
-		status, err = p.Bdl.GetJobStatus(jobReq.Namespace, jobReq.Name)
+		detail, err := p.Bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+			SimplePipelineBaseResult: true,
+			PipelineID:               pipelineResp.ID,
+		})
 		if err != nil {
 			continue
 		}
 
-		if status == apistructs.StatusStoppedOnOK ||
-			status == apistructs.StatusStoppedOnFailed ||
-			status == apistructs.StatusStoppedByKilled {
+		status = detail.Status
+		if status == apistructs.PipelineStatusSuccess ||
+			status == apistructs.PipelineStatusFailed ||
+			status == apistructs.PipelineStatusTimeout ||
+			status == apistructs.PipelineStatusStopByUser ||
+			status == apistructs.PipelineStatusDBError ||
+			status == apistructs.PipelineStatusError ||
+			status == apistructs.PipelineStatusStartError ||
+			status == apistructs.PipelineStatusCreateError ||
+			status == apistructs.PipelineStatusLostConn ||
+			status == apistructs.PipelineStatusCancelByRemote {
 			break
 		}
 	}
 
-	p.Bdl.StopJob(jobReq.Namespace, jobReq.Name)
-	p.Bdl.DeleteJob(jobReq.Namespace, jobReq.Name)
+	p.Bdl.DeletePipeline(pipelineResp.ID)
 
 	switch status {
-	case apistructs.StatusStoppedOnOK:
+	case apistructs.PipelineStatusSuccess:
 		return nil
-	case apistructs.StatusStoppedOnFailed, apistructs.StatusStoppedByKilled:
-		return fmt.Errorf("init job run failed")
 	default:
-		return fmt.Errorf("init job run timeout")
+		return fmt.Errorf("init job run failed: %s", status)
 	}
 }
 
