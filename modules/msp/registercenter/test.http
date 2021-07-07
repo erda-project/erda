@@ -9,7 +9,7 @@ User-ID: {{userid}}
 
 
 ### GetHTTPServices
-GET {{url}}/msp/register/http-interfaces/{projectID}/{env}/180/PROD?az=terminus-dev&appid=82&nacosId=53c79b331a18a650b0b5fc284ad627db
+GET {{url}}/msp/register/http-interfaces/180/PROD?az=terminus-dev&appid=82&nacosId=53c79b331a18a650b0b5fc284ad627db&tenantGroup=53c79b331a18a650b0b5fc284ad627db
 Content-Type: application/json
 Accept: application/json
 User-ID: {{userid}}
