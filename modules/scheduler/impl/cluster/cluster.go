@@ -56,6 +56,8 @@ const (
 	clusterActionCreate = "create"
 	// clusterActionUpdate Identifies the update action in a colony event
 	clusterActionUpdate = "update"
+	// clusterActionDelete Identifies the delete action in a colony event
+	clusterActionDelete = "delete"
 	// marathonAddrSuffix Is the marathon address suffix
 	marathonAddrSuffix = "/service/marathon"
 	// metronomeAddrSuffix Is the metronome address suffix
