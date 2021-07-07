@@ -146,41 +146,41 @@ fields:
     cpu_limit:
         type: "number"
         name: "CPU Limit"
-        uint: 
+        unit: 
     cpu_origin:
         type: "number"
         name: "CPU Origin"
-        uint: 
+        unit: 
     cpu_request:
         type: "number"
         name: "CPU Request"
-        uint: 
+        unit: 
     cpu_usage:
         type: "number"
         name: "CPU Usage"
-        uint: 
+        unit: 
     image:
         type: "string"
         name: "Image"
-        uint: 
+        unit: 
     mem_limit:
         type: "number"
         name: "Memory Limit"
-        uint: 
+        unit: 
     mem_origin:
         type: "number"
         name: "Memory Origin"
-        uint: 
+        unit: 
     mem_request:
         type: "number"
         name: "Memory Request"
-        uint: 
+        unit: 
     mem_total:
         type: "number"
         name: "Memory Total"
-        uint: 
+        unit: 
     mem_usage:
         type: "number"
         name: "Memory Usage"
-        uint: 
+        unit: 
 

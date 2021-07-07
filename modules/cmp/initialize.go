@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/autoscanner"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -31,10 +32,12 @@ import (
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func initialize() error {
@@ -93,6 +96,7 @@ func do() (*httpserver.Server, error) {
 		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
+		bundle.WithEventBox(),
 	}
 	bdl := bundle.New(bundleOpts...)
 
@@ -130,6 +134,18 @@ func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl 
 		endpoints.WithBundle(bdl),
 	)
 
+	// Sync org resource task status
+	go func() {
+		ep.SyncTaskStatus(conf.TaskSyncDuration())
+	}()
+
+	// Clean job/deployment sync
+	go func() {
+		ep.TaskClean(conf.TaskCleanDuration())
+	}()
+
+	registerWebHook(bdl)
+
 	return ep, nil
 }
 
@@ -141,4 +157,22 @@ func initServices(ep *endpoints.Endpoints) {
 
 func newKubernetesEndpoints(bdl *bundle.Bundle) *kubernetes.Endpoints {
 	return kubernetes.New(bdl)
+}
+
+func registerWebHook(bdl *bundle.Bundle) {
+	// register pipeline tasks by webhook
+	ev := apistructs.CreateHookRequest{
+		Name:   "cmdb_pipeline_tasks",
+		Events: []string{"pipeline_task", "pipeline_task_runtime"},
+		URL:    strutil.Concat("http://", discover.CMP(), "/api/tasks"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
+	}
 }

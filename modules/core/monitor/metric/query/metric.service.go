@@ -71,6 +71,7 @@ func (s *metricService) QueryWithTableFormat(ctx context.Context, req *pb.QueryW
 	}
 	opts := convertOptions(req.Start, req.End, req.Options)
 	opts.Set("type", "_")
+	opts.Set("protobuf", "true")
 	rs, data, err := s.query.QueryWithFormat("influxql", req.Statement, "chartv2", nil, convertParams(req.Params), convertFilters(req.Filters), opts)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("metric.query", err)

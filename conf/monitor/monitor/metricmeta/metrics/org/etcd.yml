@@ -54,317 +54,317 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_db_compaction_keys_total:
         type: "number"
         name: "Etcd Debugging Mvcc Db Compaction Keys Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_db_total_size_in_bytes:
         type: "number"
         name: "Etcd Debugging Mvcc Db Total Size In Bytes"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_delete_total:
         type: "number"
         name: "Etcd Debugging Mvcc Delete Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_events_total:
         type: "number"
         name: "Etcd Debugging Mvcc Events Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_keys_total:
         type: "number"
         name: "Etcd Debugging Mvcc Keys Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_pending_events_total:
         type: "number"
         name: "Etcd Debugging Mvcc Pending Events Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_put_total:
         type: "number"
         name: "Etcd Debugging Mvcc Put Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_range_total:
         type: "number"
         name: "Etcd Debugging Mvcc Range Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_txn_total:
         type: "number"
         name: "Etcd Debugging Mvcc Txn Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_watch_stream_total:
         type: "number"
         name: "Etcd Debugging Mvcc Watch Stream Total"
-        uint: 
+        unit: 
     etcd_debugging_mvcc_watcher_total:
         type: "number"
         name: "Etcd Debugging Mvcc Watcher Total"
-        uint: 
+        unit: 
     etcd_debugging_server_lease_expired_total:
         type: "number"
         name: "Etcd Debugging Server Lease Expired Total"
-        uint: 
+        unit: 
     etcd_debugging_store_reads_total:
         type: "number"
         name: "Etcd Debugging Store Reads Total"
-        uint: 
+        unit: 
     etcd_debugging_store_writes_total:
         type: "number"
         name: "Etcd Debugging Store Writes Total"
-        uint: 
+        unit: 
     etcd_http_failed_total:
         type: "number"
         name: "Etcd HTTP Failed Total"
-        uint: 
+        unit: 
     etcd_http_received_total:
         type: "number"
         name: "Etcd HTTP Received Total"
-        uint: 
+        unit: 
     etcd_mvcc_db_total_size_in_bytes:
         type: "number"
         name: "Etcd Mvcc Db Total Size In Bytes"
-        uint: 
+        unit: 
     etcd_mvcc_db_total_size_in_use_in_bytes:
         type: "number"
         name: "Etcd Mvcc Db Total Size In Use In Bytes"
-        uint: 
+        unit: 
     etcd_network_client_grpc_received_bytes_total:
         type: "number"
         name: "Etcd Network Client Grpc Received Bytes Total"
-        uint: 
+        unit: 
     etcd_network_client_grpc_sent_bytes_total:
         type: "number"
         name: "Etcd Network Client Grpc Sent Bytes Total"
-        uint: 
+        unit: 
     etcd_network_peer_received_bytes_total:
         type: "number"
         name: "Etcd Network Peer Received Bytes Total"
-        uint: 
+        unit: 
     etcd_network_peer_sent_bytes_total:
         type: "number"
         name: "Etcd Network Peer Sent Bytes Total"
-        uint: 
+        unit: 
     etcd_network_peer_sent_failures_total:
         type: "number"
         name: "Etcd Network Peer Sent Failures Total"
-        uint: 
+        unit: 
     etcd_network_snapshot_send_success:
         type: "number"
         name: "Etcd Network Snapshot Send Success"
-        uint: 
+        unit: 
     etcd_server_go_version:
         type: "number"
         name: "Etcd Server Go Version"
-        uint: 
+        unit: 
     etcd_server_has_leader:
         type: "number"
         name: "Etcd Server Has Leader"
-        uint: 
+        unit: 
     etcd_server_health_failures:
         type: "number"
         name: "Etcd Server Health Failures"
-        uint: 
+        unit: 
     etcd_server_health_success:
         type: "number"
         name: "Etcd Server Health Success"
-        uint: 
+        unit: 
     etcd_server_heartbeat_send_failures_total:
         type: "number"
         name: "Etcd Server Heartbeat Send Failures Total"
-        uint: 
+        unit: 
     etcd_server_id:
         type: "number"
         name: "Etcd Server ID"
-        uint: 
+        unit: 
     etcd_server_is_leader:
         type: "number"
         name: "Etcd Server Is Leader"
-        uint: 
+        unit: 
     etcd_server_leader_changes_seen_total:
         type: "number"
         name: "Etcd Server Leader Changes Seen Total"
-        uint: 
+        unit: 
     etcd_server_proposals_applied_total:
         type: "number"
         name: "Etcd Server Proposals Applied Total"
-        uint: 
+        unit: 
     etcd_server_proposals_committed_total:
         type: "number"
         name: "Etcd Server Proposals Committed Total"
-        uint: 
+        unit: 
     etcd_server_proposals_failed_total:
         type: "number"
         name: "Etcd Server Proposals Failed Total"
-        uint: 
+        unit: 
     etcd_server_proposals_pending:
         type: "number"
         name: "Etcd Server Proposals Pending"
-        uint: 
+        unit: 
     etcd_server_quota_backend_bytes:
         type: "number"
         name: "Etcd Server Quota Backend Bytes"
-        uint: 
+        unit: 
     etcd_server_read_indexes_failed_total:
         type: "number"
         name: "Etcd Server Read Indexes Failed Total"
-        uint: 
+        unit: 
     etcd_server_slow_apply_total:
         type: "number"
         name: "Etcd Server Slow Apply Total"
-        uint: 
+        unit: 
     etcd_server_slow_read_indexes_total:
         type: "number"
         name: "Etcd Server Slow Read Indexes Total"
-        uint: 
+        unit: 
     etcd_server_version:
         type: "number"
         name: "Etcd Server Version"
-        uint: 
+        unit: 
     go_goroutines:
         type: "number"
         name: "Go Goroutines"
-        uint: 
+        unit: 
     go_info:
         type: "number"
         name: "Go Info"
-        uint: 
+        unit: 
     go_memstats_alloc_bytes:
         type: "number"
         name: "Go Memstats Alloc Bytes"
-        uint: 
+        unit: 
     go_memstats_alloc_bytes_total:
         type: "number"
         name: "Go Memstats Alloc Bytes Total"
-        uint: 
+        unit: 
     go_memstats_buck_hash_sys_bytes:
         type: "number"
         name: "Go Memstats Buck Hash Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_frees_total:
         type: "number"
         name: "Go Memstats Frees Total"
-        uint: 
+        unit: 
     go_memstats_gc_cpu_fraction:
         type: "number"
         name: "Go Memstats Gc CPU Fraction"
-        uint: 
+        unit: 
     go_memstats_gc_sys_bytes:
         type: "number"
         name: "Go Memstats Gc Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_heap_alloc_bytes:
         type: "number"
         name: "Go Memstats Heap Alloc Bytes"
-        uint: 
+        unit: 
     go_memstats_heap_idle_bytes:
         type: "number"
         name: "Go Memstats Heap Idle Bytes"
-        uint: 
+        unit: 
     go_memstats_heap_inuse_bytes:
         type: "number"
         name: "Go Memstats Heap Inuse Bytes"
-        uint: 
+        unit: 
     go_memstats_heap_objects:
         type: "number"
         name: "Go Memstats Heap Objects"
-        uint: 
+        unit: 
     go_memstats_heap_released_bytes:
         type: "number"
         name: "Go Memstats Heap Released Bytes"
-        uint: 
+        unit: 
     go_memstats_heap_sys_bytes:
         type: "number"
         name: "Go Memstats Heap Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_last_gc_time_seconds:
         type: "number"
         name: "Go Memstats Last Gc Time Seconds"
-        uint: 
+        unit: 
     go_memstats_mallocs_total:
         type: "number"
         name: "Go Memstats Mallocs Total"
-        uint: 
+        unit: 
     go_memstats_mcache_inuse_bytes:
         type: "number"
         name: "Go Memstats Mcache Inuse Bytes"
-        uint: 
+        unit: 
     go_memstats_mcache_sys_bytes:
         type: "number"
         name: "Go Memstats Mcache Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_mspan_inuse_bytes:
         type: "number"
         name: "Go Memstats Mspan Inuse Bytes"
-        uint: 
+        unit: 
     go_memstats_mspan_sys_bytes:
         type: "number"
         name: "Go Memstats Mspan Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_next_gc_bytes:
         type: "number"
         name: "Go Memstats Next Gc Bytes"
-        uint: 
+        unit: 
     go_memstats_other_sys_bytes:
         type: "number"
         name: "Go Memstats Other Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_stack_inuse_bytes:
         type: "number"
         name: "Go Memstats Stack Inuse Bytes"
-        uint: 
+        unit: 
     go_memstats_stack_sys_bytes:
         type: "number"
         name: "Go Memstats Stack Sys Bytes"
-        uint: 
+        unit: 
     go_memstats_sys_bytes:
         type: "number"
         name: "Go Memstats Sys Bytes"
-        uint: 
+        unit: 
     go_threads:
         type: "number"
         name: "Go Threads"
-        uint: 
+        unit: 
     grpc_server_handled_total:
         type: "number"
         name: "Grpc Server Handled Total"
-        uint: 
+        unit: 
     grpc_server_msg_received_total:
         type: "number"
         name: "Grpc Server Msg Received Total"
-        uint: 
+        unit: 
     grpc_server_msg_sent_total:
         type: "number"
         name: "Grpc Server Msg Sent Total"
-        uint: 
+        unit: 
     grpc_server_started_total:
         type: "number"
         name: "Grpc Server Started Total"
-        uint: 
+        unit: 
     process_cpu_seconds_total:
         type: "number"
         name: "Process CPU Seconds Total"
-        uint: 
+        unit: 
     process_max_fds:
         type: "number"
         name: "Process Maximum Fds"
-        uint: 
+        unit: 
     process_open_fds:
         type: "number"
         name: "Process Open Fds"
-        uint: 
+        unit: 
     process_resident_memory_bytes:
         type: "number"
         name: "Process Resident Memory Bytes"
-        uint: 
+        unit: 
     process_start_time_seconds:
         type: "number"
         name: "Process Start Time Seconds"
-        uint: 
+        unit: 
     process_virtual_memory_bytes:
         type: "number"
         name: "Process Virtual Memory Bytes"
-        uint: 
+        unit: 
     sum:
         type: "number"
         name: "Sum"
-        uint: 
+        unit: 
 

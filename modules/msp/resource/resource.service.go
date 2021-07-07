@@ -53,7 +53,6 @@ func (s *resourceService) GetRuntime(ctx context.Context, req *pb.GetRuntimeRequ
 			ApplicationName: result.ApplicationName,
 		},
 	}, nil
-
 }
 
 func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateResourceRequest) (*pb.CreateResourceResponse, error) {

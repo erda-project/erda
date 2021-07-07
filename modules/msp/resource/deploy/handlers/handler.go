@@ -242,6 +242,9 @@ func NewDefaultHandler(dbClient *gorm.DB) *DefaultDeployHandler {
 			bundle.WithHepa(),
 			bundle.WithCMDB(),
 			bundle.WithCoreServices(),
+			bundle.WithPipeline(),
+			bundle.WithMonitor(),
+			bundle.WithCollector(),
 		),
 	}
 }
@@ -513,9 +516,11 @@ func (h *DefaultDeployHandler) BuildServiceGroupRequest(resourceInfo *ResourceIn
 	}
 	labels["ADDON_GROUPS"] = "1"
 
+	az := tmcInstance.Az
+
 	// build scheduler request
 	req := apistructs.ServiceGroupCreateV2Request{
-		ClusterName: tmcInstance.Az,
+		ClusterName: az,
 		ID:          tmcInstance.ID,
 		Type:        "addon-" + tmcInstance.Engine,
 		DiceYml:     *resourceInfo.Dice, // todo should deep copy here?
