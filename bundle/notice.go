@@ -16,6 +16,7 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -51,7 +52,7 @@ func (b *Bundle) CreateNoticeRequest(req *apistructs.NoticeCreateRequest,
 	return &ncresp, nil
 }
 
-func (b *Bundle) UpdateNotice(req *apistructs.NoticeUpdateRequest, noticeID, orgID uint64, userID string) (
+func (b *Bundle) UpdateNotice(noticeID, orgID uint64, userID string, body interface{}) (
 	*apistructs.NoticeUpdateResponse, error) {
 	cmdbURL, err := b.urls.CoreServices()
 	if err != nil {
@@ -64,7 +65,7 @@ func (b *Bundle) UpdateNotice(req *apistructs.NoticeUpdateRequest, noticeID, org
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
-		JSONBody(&req).
+		JSONBody(body).
 		Do().
 		JSON(&ncresp)
 	if err != nil {
@@ -139,7 +140,7 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID,
 	return nil
 }
 
-func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string) (*apistructs.NoticeListResponse, error) {
+func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string, params url.Values) (*apistructs.NoticeListResponse, error) {
 	cmdbURL, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -150,6 +151,7 @@ func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string) (*apistructs.Not
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
+		Params(params).
 		Do().
 		JSON(&noteList)
 	if err != nil {

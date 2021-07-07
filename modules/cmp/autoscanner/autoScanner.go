@@ -64,7 +64,7 @@ func (as *AutoScanner) CheckNoticeExist() {
 
 	for _, org := range orgInfo.List {
 		// get notice list
-		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "")
+		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "", nil)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -94,7 +94,7 @@ func (as *AutoScanner) CheckNoticeExpired() {
 	}
 	for _, org := range orgInfo.List {
 		// get notice list
-		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "")
+		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "", nil)
 		if err != nil {
 			logrus.Error(err)
 			return
