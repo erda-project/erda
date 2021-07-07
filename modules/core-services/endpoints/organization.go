@@ -839,7 +839,7 @@ func (e *Endpoints) GetOrgClusterRelationsByOrg(ctx context.Context, r *http.Req
 
 // DereferenceCluster 解除关联集群关系
 func (e *Endpoints) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	userID, err := user.GetUserID(r)
+	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrDereferenceCluster.NotLogin().ToResp(), nil
 	}
@@ -859,10 +859,10 @@ func (e *Endpoints) DereferenceCluster(ctx context.Context, r *http.Request, var
 		OrgID:   orgID,
 		Cluster: clusterName,
 	}
-	if err := e.member.CheckPermission(userID.String(), apistructs.OrgScope, req.OrgID); err != nil {
+	if err := e.member.CheckPermission(identity.UserID, apistructs.OrgScope, req.OrgID); err != nil {
 		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
 	}
-	if err := e.org.DereferenceCluster(userID.String(), &req); err != nil {
+	if err := e.org.DereferenceCluster(identity.UserID, &req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
