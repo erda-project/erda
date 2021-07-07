@@ -206,23 +206,10 @@ func (s *Scripts) InstalledChangesLint() error {
 	}
 
 	for moduleName, module := range s.Services {
-		var (
-			pending     bool
-			pendingName string
-		)
 		for _, script := range module.Scripts {
-			switch {
-			case pending && script.Pending:
-				continue
-			case pending:
-				return errors.Errorf("some uninstalled script is ranked before a installed script. The service name: %s, pending filename: %s, the installed filename: %s",
-					moduleName, pendingName, script.GetName())
-			case script.Pending:
-				pending = true
-				pendingName = script.GetName()
+			if script.Pending {
 				continue
 			}
-
 			if script.Checksum() != script.Record.Checksum {
 				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
 					moduleName, script.GetName())
