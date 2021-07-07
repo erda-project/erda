@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -70,7 +71,7 @@ func (p *provider) CheckIfHasCustomConfig(clusterConfig map[string]string) (map[
 func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo, tmcInstance *db.Instance, clusterConfig map[string]string) interface{} {
 	req := p.DefaultDeployHandler.BuildServiceGroupRequest(resourceInfo, tmcInstance, clusterConfig).(*apistructs.ServiceGroupCreateV2Request)
 
-	rootPassword := utils.GetRandomId()
+	rootPassword := uuid.UUID()
 
 	for _, service := range req.DiceYml.Services {
 		// append envs
@@ -98,6 +99,25 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 	req.GroupLabels["ADDON_GROUPS"] = "2" // what's this aim for
 
 	return req
+}
+
+func (h *provider) DoDeploy(serviceGroupDeployRequest interface{}, resourceInfo *handlers.ResourceInfo, tmcInstance *db.Instance, clusterConfig map[string]string) (
+	interface{}, error) {
+
+	// persistent the root password
+	serviceGroup := serviceGroupDeployRequest.(*apistructs.ServiceGroupCreateV2Request)
+	masterService := serviceGroup.DiceYml.Services["mysql"]
+	password := masterService.Envs["MYSQL_ROOT_PASSWORD"]
+
+	options := map[string]string{}
+	utils.JsonConvertObjToType(tmcInstance.Options, options)
+	options["MYSQL_ROOT_PASSWORD"] = password
+	optionsStr, _ := utils.JsonConvertObjToString(options)
+	if err := h.InstanceDb.Model(tmcInstance).Update("options", optionsStr).Error; err != nil {
+		return nil, err
+	}
+
+	return h.DefaultDeployHandler.DoDeploy(serviceGroupDeployRequest, resourceInfo, tmcInstance, clusterConfig)
 }
 
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
@@ -196,7 +216,7 @@ func (p *provider) initDb(dbNames []string, mysqldto mysqlDto, clusterConfig map
 	mysqlExec.Sqls = []string{sql}
 
 	err = mysqlExec.Exec()
-	return nil
+	return err
 }
 
 type mysqlDto struct {
@@ -282,8 +302,10 @@ func (p *provider) checkSalveStatus(mysqlMap map[string]*mysqlDto, clusterConfig
 		return err
 	}
 
-	if status.IORunning != "connecting" && status.IORunning != "yes" ||
-		status.SQLRunning != "connecting" && status.SQLRunning != "yes" {
+	if !strings.EqualFold(status.IORunning, "connecting") &&
+		!strings.EqualFold(status.IORunning, "yes") ||
+		!strings.EqualFold(status.SQLRunning, "connecting") &&
+			!strings.EqualFold(status.SQLRunning, "yes") {
 		return fmt.Errorf("slave in error status")
 	}
 	return nil

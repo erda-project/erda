@@ -20,15 +20,17 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-func NewNacosClient(addr, user, password string) *NacosClient {
+func NewNacosClient(clusterName, addr, user, password string) *NacosClient {
 	return &NacosClient{
-		addr:     addr,
-		user:     user,
-		password: password,
+		addr:        addr,
+		user:        user,
+		password:    password,
+		clusterName: clusterName,
 	}
 }
 
 type NacosClient struct {
+	clusterName string
 	addr        string
 	user        string
 	password    string
@@ -38,7 +40,8 @@ type NacosClient struct {
 func (c *NacosClient) Login() (string, error) {
 	loginUrl := "/nacos/v1/auth/login?username=" + c.user + "&password=" + c.password
 	var result map[string]interface{}
-	resp, err := httpclient.New().Post(c.addr).Path(loginUrl).Do().JSON(&result)
+	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
+		Post(c.addr).Path(loginUrl).Do().JSON(&result)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +71,8 @@ func (c *NacosClient) GetNamespaceId(namespaceName string) (string, error) {
 			Namespace         string
 		}
 	}
-	resp, err := httpclient.New().TokenAuth(c.accessToken).Get(c.addr).Path(path).Do().JSON(&result)
+	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
+		TokenAuth(c.accessToken).Get(c.addr).Path(path).Do().JSON(&result)
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +96,8 @@ func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
 	}
 
 	path := "/nacos/v1/console/namespaces" + "?namespaceName=" + namespaceName + "&namespaceDesc=" + namespaceName + "&customNamespaceId=" + namespaceName
-	resp, err := httpclient.New().TokenAuth(c.accessToken).Post(c.addr).Path(path).Do().DiscardBody()
+	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
+		TokenAuth(c.accessToken).Post(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +114,8 @@ func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId str
 	}
 
 	path := "/nacos/v1/cs/configs?dataId=" + dataId + "&group=" + groupName + "&content=" + url.QueryEscape(content) + "&tenant=" + tenantName
-	resp, err := httpclient.New().TokenAuth(c.accessToken).Post(c.addr).Path(path).Do().DiscardBody()
+	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).TokenAuth(c.accessToken).
+		Post(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return err
 	}
@@ -125,7 +131,8 @@ func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
 	}
 
 	path := "/nacos/v1/cs/configs?dataId=application.yml&group=" + groupName + "&tenant=" + tenantName
-	resp, err := httpclient.New().TokenAuth(c.accessToken).Delete(c.addr).Path(path).Do().DiscardBody()
+	resp, err := httpclient.New(httpclient.WithClusterDialer(c.clusterName)).
+		TokenAuth(c.accessToken).Delete(c.addr).Path(path).Do().DiscardBody()
 	if err != nil {
 		return err
 	}

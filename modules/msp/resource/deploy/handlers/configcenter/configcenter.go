@@ -14,8 +14,6 @@
 package configcenter
 
 import (
-	"strings"
-
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
@@ -51,14 +49,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	namespaceId := tenantOptions["NACOS_TENANT_ID"]
 	groupName := tenantOptions["applicationName"]
 
-	netportalUrl := clusterConfig["NETPORTAL_URL"]
-	if len(netportalUrl) > 0 {
-		addr = netportalUrl + "/" + strings.TrimPrefix(addr, "http://")
-	} else if !strings.HasPrefix(addr, "http://") {
-		addr = "http://" + addr
-	}
-
-	p.saveDefaultConfigToNacos(addr, user, pwd, namespaceId, groupName)
+	p.saveDefaultConfigToNacos(clusterConfig["DICE_CLUSTER_NAME"], addr, user, pwd, namespaceId, groupName)
 
 	key, _ := p.TmcIniDb.GetMicroServiceEngineJumpKey(tmcInstance.Engine)
 	console := map[string]string{
@@ -94,24 +85,17 @@ func (p *provider) DeleteTenant(tenant *db.InstanceTenant, tmcInstance *db.Insta
 	namespaceId := tenantConfig["CONFIGCENTER_TENANT_NAME"]
 	groupName := tenantConfig["CONFIGCENTER_GROUP_NAME"]
 
-	netportalUrl := clusterConfig["NETPORTAL_URL"]
-	if len(netportalUrl) > 0 {
-		addr = netportalUrl + "/" + strings.TrimPrefix(addr, "http://")
-	} else if !strings.HasPrefix(addr, "http://") {
-		addr = "http://" + addr
-	}
-
-	p.deleteDefaultConfigFromNacos(addr, user, password, namespaceId, groupName)
+	p.deleteDefaultConfigFromNacos(clusterConfig["DICE_CLUSTER_NAME"], addr, user, password, namespaceId, groupName)
 
 	return p.DefaultDeployHandler.DeleteTenant(tenant, tmcInstance, clusterConfig)
 }
 
-func (p *provider) saveDefaultConfigToNacos(addr string, user string, pwd string, namespaceId string, groupName string) {
-	nacosClient := utils.NewNacosClient(addr, user, pwd)
+func (p *provider) saveDefaultConfigToNacos(clusterName string, addr string, user string, pwd string, namespaceId string, groupName string) {
+	nacosClient := utils.NewNacosClient(clusterName, addr, user, pwd)
 	nacosClient.SaveConfig(namespaceId, groupName, "application.yml", "##")
 }
 
-func (p *provider) deleteDefaultConfigFromNacos(addr, user, pwd, namespaceId, groupName string) {
-	nacosClient := utils.NewNacosClient(addr, user, pwd)
+func (p *provider) deleteDefaultConfigFromNacos(clusterName, addr, user, pwd, namespaceId, groupName string) {
+	nacosClient := utils.NewNacosClient(clusterName, addr, user, pwd)
 	nacosClient.DeleteConfig(namespaceId, groupName)
 }
