@@ -166,16 +166,28 @@ func GetDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam
 // CreateIssueEvent create issue event
 func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
 	streamParams apistructs.ISTParam) error {
-	content, _ := GetDefaultContent(streamType, streamParams)
+	content, err := GetDefaultContent(streamType, streamParams)
+	if err != nil {
+		logrus.Errorf("get issue %d content error: %v, content will be empty", issueID, err)
+	}
 	logrus.Debugf("old issue content is: %s", content)
-	issue, _ := s.db.GetIssue(issueID)
+	issue, err := s.db.GetIssue(issueID)
+	if err != nil {
+		return err
+	}
 	receivers, err := s.db.GetReceiversByIssueID(issueID)
 	if err != nil {
-		logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
+		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", issueID, err)
 		receivers = []string{}
 	}
-	projectModel, _ := s.bdl.GetProject(issue.ProjectID)
-	orgModel, _ := s.bdl.GetOrg(int64(projectModel.OrgID))
+	projectModel, err := s.bdl.GetProject(issue.ProjectID)
+	if err != nil {
+		return err
+	}
+	orgModel, err := s.bdl.GetOrg(int64(projectModel.OrgID))
+	if err != nil {
+		return err
+	}
 	ev := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.IssueEvent,

@@ -182,15 +182,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
-	// Send issue create event
-	// go func() {
-	// 	content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-	// 	if err := svc.CreateIssueEvent(int64(create.ID), streamReq.StreamType, content,
-	// 		bundle.CreateAction); err != nil {
-	// 		logrus.Warnf("failed to send issue create event, (%v)", err)
-	// 	}
-	// }()
-
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
@@ -567,8 +558,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 	}
 	// }
 
-	// create stream and send issue create event
-	_ = svc.CreateStream(req, issueStreamFields)
+	// create stream and send issue update event
+	if err := svc.CreateStream(req, issueStreamFields); err != nil {
+		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
+	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
@@ -952,20 +945,10 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			continue
 		}
 
-		// create stream and send issue create event
+		// create stream and send issue event
 		if _, err := svc.stream.Create(&streamReq); err != nil {
 			logrus.Errorf("[alert] failed to create issueStream when update issue, req: %+v, err: %v", streamReq, err)
-			continue
 		}
-
-		// Send issue update event
-		// go func() {
-		// 	content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-		// 	if err := svc.CreateIssueEvent(int64(updateReq.ID), streamReq.StreamType, content,
-		// 		bundle.UpdateAction); err != nil {
-		// 		logrus.Warnf("failed to send issue update event, (%v)", err)
-		// 	}
-		// }()
 	}
 
 	return nil
