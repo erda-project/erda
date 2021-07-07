@@ -76,31 +76,20 @@ func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateReques
 	return nil
 }
 
-func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID string) (*apistructs.AuditsListResponse, error) {
+func (b *Bundle) ListAuditEvent(orgID uint64, userID string, params url.Values) (*apistructs.AuditsListResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	params := url.Values{}
-
-	for _, v := range audits.UserID {
-		params.Add("userId", v)
-	}
-
 	var listAudit apistructs.AuditsListResponse
 	resp, err := hc.
 		Get(host).
 		Path("/api/audits/actions/list").
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
+		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
 		Header(httputil.UserHeader, userID).
-		Param("orgId", strconv.Itoa(int(audits.OrgID))).
-		Param("pageNo", strconv.Itoa(audits.PageNo)).
-		Param("pageSize", strconv.Itoa(audits.PageSize)).
-		Param("startAt", audits.StartAt).
-		Param("endAt", audits.EndAt).
 		Params(params).
 		Do().
 		JSON(&listAudit)
@@ -118,7 +107,7 @@ func (b *Bundle) ListAuditEvent(audits *apistructs.AuditsListRequest, userID str
 	return &listAudit, nil
 }
 
-func (b *Bundle) ExportAuditExcel(audits *apistructs.AuditsListRequest, userID string) (io.ReadCloser, *httpclient.Response, error) {
+func (b *Bundle) ExportAuditExcel(orgID uint64, userID string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, nil, err
@@ -129,13 +118,9 @@ func (b *Bundle) ExportAuditExcel(audits *apistructs.AuditsListRequest, userID s
 		Get(host).
 		Path("/api/audits/actions/export-excel").
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, strconv.Itoa(int(audits.OrgID))).
+		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
 		Header(httputil.UserHeader, userID).
-		Param("orgId", strconv.Itoa(int(audits.OrgID))).
-		Param("pageNo", strconv.Itoa(audits.PageNo)).
-		Param("pageSize", strconv.Itoa(audits.PageSize)).
-		Param("startAt", audits.StartAt).
-		Param("endAt", audits.EndAt).
+		Params(params).
 		Do().StreamBody()
 	if err != nil {
 		return nil, nil, apierrors.ErrInvoke.InternalError(err)

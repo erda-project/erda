@@ -18,6 +18,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erda-project/erda/modules/pkg/user"
+
+	"github.com/erda-project/erda/apistructs"
+
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -25,6 +29,7 @@ import (
 func (am *AdminManager) AppendClusterEndpoint() {
 	am.endpoints = append(am.endpoints, []httpserver.Endpoint{
 		{Path: "/api/clusters", Method: http.MethodGet, Handler: am.ListCluster},
+		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: am.DereferenceCluster},
 	}...)
 }
 
@@ -48,9 +53,45 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 
 	clusterType := req.URL.Query().Get("clusterType")
 
-	resp, err := am.bundle.ListClusters(clusterType, orgID)
+	clusterRelation, err := am.bundle.GetOrgClusterRelationsByOrg(orgID)
 	if err != nil {
 		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp(resp)
+
+	clusters, err := am.bundle.ListClusters(clusterType, orgID)
+	if err != nil {
+		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
+	}
+
+	newClusters := []apistructs.ClusterInfo{}
+	for _, cluster := range clusters {
+		for _, relate := range clusterRelation {
+			if relate.ClusterID == uint64(cluster.ID) {
+				newClusters = append(newClusters, cluster)
+			}
+		}
+	}
+
+	return httpserver.OkResp(newClusters)
+}
+
+func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		return apierrors.ErrDereferenceCluster.NotLogin().ToResp(), nil
+	}
+
+	orgID, err := GetOrgID(r)
+	if err != nil {
+		return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
+	}
+
+	clusterName := r.URL.Query().Get("clusterName")
+	if clusterName == "" {
+		return apierrors.ErrDereferenceCluster.MissingParameter("clusterName").ToResp(), nil
+	}
+
+	fmt.Printf("%s %d\n", userID, orgID)
+
+	return httpserver.OkResp("delete successfully")
 }

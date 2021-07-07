@@ -84,12 +84,7 @@ func (am *AdminManager) UpdateNotice(contenxt context.Context, req *http.Request
 		return apierrors.ErrUpdateNotice.InvalidParameter(err).ToResp(), nil
 	}
 
-	var updateReq apistructs.NoticeUpdateRequest
-	if err := json.NewDecoder(req.Body).Decode(&updateReq); err != nil {
-		return apierrors.ErrUpdateNotice.InvalidParameter(err).ToResp(), nil
-	}
-	updateReq.ID = id
-	resp, err := am.bundle.UpdateNotice(&updateReq, id, orgID, userID)
+	resp, err := am.bundle.UpdateNotice(id, orgID, userID, req.Body)
 	if err != nil {
 		return apierrors.ErrUpdateNotice.InternalError(err).ToResp(), nil
 	}
@@ -169,6 +164,7 @@ func (am *AdminManager) DeleteNotice(contenxt context.Context, req *http.Request
 }
 
 func (am *AdminManager) ListNotice(contenxt context.Context, req *http.Request, resources map[string]string) (httpserver.Responser, error) {
+
 	userID := req.Header.Get("USER-ID")
 	uid := USERID(userID)
 	if uid.Invalid() {
@@ -180,7 +176,7 @@ func (am *AdminManager) ListNotice(contenxt context.Context, req *http.Request, 
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
 
-	resp, err := am.bundle.ListNoticeByOrgID(orgID, userID)
+	resp, err := am.bundle.ListNoticeByOrgID(orgID, userID, req.URL.Query())
 	if err != nil {
 		return apierrors.ErrListNotice.InternalError(err).ToResp(), nil
 	}

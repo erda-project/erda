@@ -19,10 +19,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -35,15 +33,6 @@ func (am *AdminManager) AppendAuditEndpoint() {
 }
 
 func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars map[string]string) (httpserver.Responser, error) {
-
-	var listReq apistructs.AuditsListRequest
-	queryDecoder := schema.NewDecoder()
-	queryDecoder.IgnoreUnknownKeys(true)
-
-	if err := queryDecoder.Decode(&listReq, req.URL.Query()); err != nil {
-		return apierrors.ErrListAudit.MissingParameter("body").ToResp(), nil
-	}
-
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
@@ -55,16 +44,7 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
 
-	if listReq.OrgID == 0 {
-		listReq.OrgID = orgID
-	}
-
-	// check params validate
-	if err := listReq.Check(); err != nil {
-		return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
-	}
-
-	resp, err := am.bundle.ListAuditEvent(&listReq, userID)
+	resp, err := am.bundle.ListAuditEvent(orgID, userID, req.URL.Query())
 	if err != nil {
 		return apierrors.ErrListAudit.InternalError(err).ToResp(), nil
 	}
@@ -75,14 +55,6 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 func (am *AdminManager) ExportExcelAudit(
 	ctx context.Context, w http.ResponseWriter,
 	req *http.Request, resources map[string]string) error {
-
-	var listReq apistructs.AuditsListRequest
-	queryDecoder := schema.NewDecoder()
-	queryDecoder.IgnoreUnknownKeys(true)
-
-	if err := queryDecoder.Decode(&listReq, req.URL.Query()); err != nil {
-		return apierrors.ErrListAudit.MissingParameter("body")
-	}
 
 	orgID, err := GetOrgID(req)
 	if err != nil {
@@ -95,18 +67,7 @@ func (am *AdminManager) ExportExcelAudit(
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id"))
 	}
 
-	listReq.PageNo = 1
-	listReq.PageSize = 99999
-	if listReq.OrgID == 0 {
-		listReq.OrgID = orgID
-	}
-
-	// check params validate
-	if err := listReq.Check(); err != nil {
-		return apierrors.ErrListAudit.InvalidParameter(err)
-	}
-
-	respBody, resp, err := am.bundle.ExportAuditExcel(&listReq, userID)
+	respBody, resp, err := am.bundle.ExportAuditExcel(orgID, userID, req.URL.Query())
 	if err != nil {
 		return fmt.Errorf("failed to get spec from file: %v", err)
 	}
