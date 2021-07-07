@@ -147,105 +147,105 @@ fields:
     blk_read_bytes:
         type: "number"
         name: "Blk Read Bytes"
-        uint: 
+        unit: 
     blk_reads:
         type: "number"
         name: "Blk Reads"
-        uint: 
+        unit: 
     blk_sync_bytes:
         type: "number"
         name: "Blk Sync Bytes"
-        uint: 
+        unit: 
     blk_syncs:
         type: "number"
         name: "Blk Syncs"
-        uint: 
+        unit: 
     blk_write_bytes:
         type: "number"
         name: "Blk Write Bytes"
-        uint: 
+        unit: 
     blk_writes:
         type: "number"
         name: "Blk Writes"
-        uint: 
+        unit: 
     cpu_allocation:
         type: "number"
         name: "CPU Allocation"
-        uint: 
+        unit: 
     cpu_limit:
         type: "number"
         name: "CPU Limit"
-        uint: 
+        unit: 
     cpu_origin:
         type: "number"
         name: "CPU Origin"
-        uint: 
+        unit: 
     cpu_usage_percent:
         type: "number"
         name: "CPU Usage Percent"
-        uint: 
+        unit: 
     exitcode:
         type: "number"
         name: "Exitcode"
-        uint: 
+        unit: 
     finished_at:
         type: "number"
         name: "Finished At"
-        uint: 
+        unit: 
     mem_allocation:
         type: "number"
         name: "Mem Allocation"
-        uint: 
+        unit: 
     mem_limit:
         type: "number"
         name: "Mem Limit"
-        uint: 
+        unit: 
     mem_max_usage:
         type: "number"
         name: "Mem Maximum Usage"
-        uint: 
+        unit: 
     mem_origin:
         type: "number"
         name: "Mem Origin"
-        uint: 
+        unit: 
     mem_usage:
         type: "number"
         name: "Mem Usage"
-        uint: 
+        unit: 
     mem_usage_percent:
         type: "number"
         name: "Mem Usage Percent"
-        uint: 
+        unit: 
     oomkilled:
         type: "bool"
         name: "Oomkilled"
-        uint: 
+        unit: 
     pid:
         type: "number"
         name: "Pid"
-        uint: 
+        unit: 
     rx_bytes:
         type: "number"
         name: "Rx Bytes"
-        uint: 
+        unit: 
     rx_errors:
         type: "number"
         name: "Rx Errors"
-        uint: 
+        unit: 
     started_at:
         type: "number"
         name: "Started At"
-        uint: 
+        unit: 
     status:
         type: "string"
         name: "Status"
-        uint: 
+        unit: 
     tx_bytes:
         type: "number"
         name: "Tx Bytes"
-        uint: 
+        unit: 
     tx_errors:
         type: "number"
         name: "Tx Errors"
-        uint: 
+        unit: 
 
