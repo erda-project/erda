@@ -37,11 +37,11 @@ import (
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
-type monitorService struct {
+type alertService struct {
 	p *provider
 }
 
-func (m *monitorService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
+func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	if request.AlertType == "" {
@@ -75,7 +75,7 @@ func (m *monitorService) QueryOrgDashboardByAlert(ctx context.Context, request *
 	return result, nil
 }
 
-func (m *monitorService) CreateAlert(ctx context.Context, request *pb.CreateAlertRequest) (*pb.CreateAlertResponse, error) {
+func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertRequest) (*pb.CreateAlertResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -105,7 +105,7 @@ func (m *monitorService) CreateAlert(ctx context.Context, request *pb.CreateAler
 	return result, nil
 }
 
-func (m *monitorService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrgAlertRequest) (*pb.CreateOrgAlertResponse, error) {
+func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrgAlertRequest) (*pb.CreateOrgAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	org, err := m.p.bdl.GetOrg(orgID)
@@ -152,7 +152,7 @@ func getHttpRequest(ctx context.Context) *http.Request {
 	return transhttp.ContextRequest(ctx)
 }
 
-func (m *monitorService) QueryCustomizeMetric(ctx context.Context, request *pb.QueryCustomizeMetricRequest) (*pb.QueryCustomizeMetricResponse, error) {
+func (m *alertService) QueryCustomizeMetric(ctx context.Context, request *pb.QueryCustomizeMetricRequest) (*pb.QueryCustomizeMetricResponse, error) {
 	result := &pb.QueryCustomizeMetricResponse{}
 	lang := apis.Language(ctx)
 	data, err := m.p.a.CustomizeMetrics(lang, request.Scope, request.ScopeId, request.Name)
@@ -163,7 +163,7 @@ func (m *monitorService) QueryCustomizeMetric(ctx context.Context, request *pb.Q
 	return result, nil
 }
 
-func (m *monitorService) QueryCustomizeNotifyTarget(ctx context.Context, request *pb.QueryCustomizeNotifyTargetRequest) (*pb.QueryCustomizeNotifyTargetResponse, error) {
+func (m *alertService) QueryCustomizeNotifyTarget(ctx context.Context, request *pb.QueryCustomizeNotifyTargetRequest) (*pb.QueryCustomizeNotifyTargetResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	result := &pb.QueryCustomizeNotifyTargetResponse{
 		Data: &pb.QueryCustomizeNotifyTargetData{},
@@ -174,7 +174,7 @@ func (m *monitorService) QueryCustomizeNotifyTarget(ctx context.Context, request
 	return result, nil
 }
 
-func (m *monitorService) QueryOrgCustomizeNotifyTarget(ctx context.Context, request *pb.QueryOrgCustomizeNotifyTargetRequest) (*pb.QueryOrgCustomizeNotifyTargetResponse, error) {
+func (m *alertService) QueryOrgCustomizeNotifyTarget(ctx context.Context, request *pb.QueryOrgCustomizeNotifyTargetRequest) (*pb.QueryOrgCustomizeNotifyTargetResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	result := &pb.QueryOrgCustomizeNotifyTargetResponse{
 		Data: &pb.QueryCustomizeNotifyTargetData{},
@@ -185,7 +185,7 @@ func (m *monitorService) QueryOrgCustomizeNotifyTarget(ctx context.Context, requ
 	return result, nil
 }
 
-func (m *monitorService) QueryCustomizeAlert(ctx context.Context, request *pb.QueryCustomizeAlertRequest) (*pb.QueryCustomizeAlertResponse, error) {
+func (m *alertService) QueryCustomizeAlert(ctx context.Context, request *pb.QueryCustomizeAlertRequest) (*pb.QueryCustomizeAlertResponse, error) {
 	result := &pb.QueryCustomizeAlertResponse{
 		Data: &pb.QueryCustomizeAlertData{
 			List: make([]*pb.CustomizeAlertOverview, 0),
@@ -201,7 +201,7 @@ func (m *monitorService) QueryCustomizeAlert(ctx context.Context, request *pb.Qu
 	return result, nil
 }
 
-func (m *monitorService) GetCustomizeAlert(ctx context.Context, request *pb.GetCustomizeAlertRequest) (*pb.GetCustomizeAlertResponse, error) {
+func (m *alertService) GetCustomizeAlert(ctx context.Context, request *pb.GetCustomizeAlertRequest) (*pb.GetCustomizeAlertResponse, error) {
 	alert, err := m.p.a.CustomizeAlert(request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -213,7 +213,7 @@ func (m *monitorService) GetCustomizeAlert(ctx context.Context, request *pb.GetC
 	return result, nil
 }
 
-func (m monitorService) GetCustomizeAlertDetail(ctx context.Context, request *pb.GetCustomizeAlertDetailRequest) (*pb.GetCustomizeAlertDetailResponse, error) {
+func (m alertService) GetCustomizeAlertDetail(ctx context.Context, request *pb.GetCustomizeAlertDetailRequest) (*pb.GetCustomizeAlertDetailResponse, error) {
 	alert, err := m.p.a.CustomizeAlertDetail(request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -224,7 +224,7 @@ func (m monitorService) GetCustomizeAlertDetail(ctx context.Context, request *pb
 	return result, nil
 }
 
-func (m *monitorService) CreateCustomizeAlert(ctx context.Context, request *pb.CreateCustomizeAlertRequest) (*pb.CreateCustomizeAlertResponse, error) {
+func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.CreateCustomizeAlertRequest) (*pb.CreateCustomizeAlertResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -248,7 +248,7 @@ func (m *monitorService) CreateCustomizeAlert(ctx context.Context, request *pb.C
 	return reslut, nil
 }
 
-func (m *monitorService) checkCustomizeAlert(alert *pb.CustomizeAlertDetail) error {
+func (m *alertService) checkCustomizeAlert(alert *pb.CustomizeAlertDetail) error {
 	if alert.Name == "" {
 		return fmt.Errorf("alert name must not be empty")
 	}
@@ -280,7 +280,7 @@ func (m *monitorService) checkCustomizeAlert(alert *pb.CustomizeAlertDetail) err
 	return nil
 }
 
-func (m *monitorService) UpdateCustomizeAlert(ctx context.Context, request *pb.UpdateCustomizeAlertRequest) (*pb.UpdateCustomizeAlertResponse, error) {
+func (m *alertService) UpdateCustomizeAlert(ctx context.Context, request *pb.UpdateCustomizeAlertRequest) (*pb.UpdateCustomizeAlertResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -301,7 +301,7 @@ func (m *monitorService) UpdateCustomizeAlert(ctx context.Context, request *pb.U
 	return nil, nil
 }
 
-func (m *monitorService) UpdateCustomizeAlertEnable(ctx context.Context, request *pb.UpdateCustomizeAlertEnableRequest) (*pb.UpdateCustomizeAlertEnableResponse, error) {
+func (m *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *pb.UpdateCustomizeAlertEnableRequest) (*pb.UpdateCustomizeAlertEnableResponse, error) {
 	err := m.p.a.UpdateCustomizeAlertEnable(request.Id, request.Enable)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -309,7 +309,7 @@ func (m *monitorService) UpdateCustomizeAlertEnable(ctx context.Context, request
 	return nil, nil
 }
 
-func (m *monitorService) DeleteCustomizeAlert(ctx context.Context, request *pb.DeleteCustomizeAlertRequest) (*pb.DeleteCustomizeAlertResponse, error) {
+func (m *alertService) DeleteCustomizeAlert(ctx context.Context, request *pb.DeleteCustomizeAlertRequest) (*pb.DeleteCustomizeAlertResponse, error) {
 	data, _ := m.p.a.CustomizeAlert(request.Id)
 	result := &pb.DeleteCustomizeAlertResponse{}
 	err := m.p.a.DeleteCustomizeAlert(request.Id)
@@ -323,7 +323,7 @@ func (m *monitorService) DeleteCustomizeAlert(ctx context.Context, request *pb.D
 	return result, nil
 }
 
-func (m *monitorService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.QueryOrgCustomizeMetricRequest) (*pb.QueryOrgCustomizeMetricResponse, error) {
+func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.QueryOrgCustomizeMetricRequest) (*pb.QueryOrgCustomizeMetricResponse, error) {
 	r := getHttpRequest(ctx)
 	orgID := api.OrgID(r)
 	org, err := m.p.bdl.GetOrg(orgID)
@@ -375,7 +375,7 @@ func (m *monitorService) QueryOrgCustomizeMetric(ctx context.Context, request *p
 	return result, nil
 }
 
-func (m *monitorService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
+func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	alert, total, err := m.p.a.CustomizeAlerts(api.Language(httpRequest), "org", orgID, int(request.PageNo), int(request.PageSize))
@@ -392,7 +392,7 @@ func (m *monitorService) QueryOrgCustomizeAlerts(ctx context.Context, request *p
 	return data, nil
 }
 
-func (m *monitorService) GetOrgCustomizeAlertDetail(ctx context.Context, request *pb.GetOrgCustomizeAlertDetailRequest) (*pb.GetOrgCustomizeAlertDetailResponse, error) {
+func (m *alertService) GetOrgCustomizeAlertDetail(ctx context.Context, request *pb.GetOrgCustomizeAlertDetailRequest) (*pb.GetOrgCustomizeAlertDetailResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	alert, err := m.p.a.CustomizeAlertDetail(request.Id)
@@ -409,7 +409,7 @@ func (m *monitorService) GetOrgCustomizeAlertDetail(ctx context.Context, request
 	return result, nil
 }
 
-func (m *monitorService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.CreateOrgCustomizeAlertRequest) (*pb.CreateOrgCustomizeAlertResponse, error) {
+func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.CreateOrgCustomizeAlertRequest) (*pb.CreateOrgCustomizeAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgId := api.OrgID(httpRequest)
 	if request.AlertType == "" {
@@ -491,7 +491,7 @@ func (m *monitorService) CreateOrgCustomizeAlert(ctx context.Context, request *p
 	return result, nil
 }
 
-func (m *monitorService) checkMetricMeta(
+func (m *alertService) checkMetricMeta(
 	rule *pb.CustomizeAlertRule, metric *metricpb.MetricMeta) error {
 	if metric == nil {
 		return fmt.Errorf("rule metric is not match")
@@ -587,7 +587,7 @@ func (m *monitorService) checkMetricMeta(
 	return nil
 }
 
-func (m *monitorService) formatOperatorValue(
+func (m *alertService) formatOperatorValue(
 	opType string, dataType string, value interface{}) (interface{}, error) {
 	if opType == "" || dataType == "" {
 		return nil, fmt.Errorf(fmt.Sprintf("%s not support %s data type", opType, dataType))
@@ -643,7 +643,7 @@ func (m *monitorService) formatOperatorValue(
 	return nil, fmt.Errorf(fmt.Sprintf("%s not support", opType))
 }
 
-func (m *monitorService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.UpdateOrgCustomizeAlertRequest) (*pb.UpdateOrgCustomizeAlertResponse, error) {
+func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.UpdateOrgCustomizeAlertRequest) (*pb.UpdateOrgCustomizeAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	if request.AlertType == "" {
@@ -715,7 +715,7 @@ func (m *monitorService) UpdateOrgCustomizeAlert(ctx context.Context, request *p
 	return nil, nil
 }
 
-func (m *monitorService) UpdateOrgCustomizeAlertEnable(ctx context.Context, request *pb.UpdateOrgCustomizeAlertEnableRequest) (*pb.UpdateOrgCustomizeAlertEnableResponse, error) {
+func (m *alertService) UpdateOrgCustomizeAlertEnable(ctx context.Context, request *pb.UpdateOrgCustomizeAlertEnableRequest) (*pb.UpdateOrgCustomizeAlertEnableResponse, error) {
 	err := m.p.a.UpdateCustomizeAlertEnable(uint64(request.Id), request.Enable)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -723,7 +723,7 @@ func (m *monitorService) UpdateOrgCustomizeAlertEnable(ctx context.Context, requ
 	return &pb.UpdateOrgCustomizeAlertEnableResponse{}, nil
 }
 
-func (m *monitorService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.DeleteOrgCustomizeAlertRequest) (*pb.DeleteOrgCustomizeAlertResponse, error) {
+func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.DeleteOrgCustomizeAlertRequest) (*pb.DeleteOrgCustomizeAlertResponse, error) {
 	data, _ := m.p.a.CustomizeAlert(request.Id)
 	err := m.p.a.DeleteCustomizeAlert(request.Id)
 	if err != nil {
@@ -744,7 +744,7 @@ func (m *monitorService) DeleteOrgCustomizeAlert(ctx context.Context, request *p
 	return result, nil
 }
 
-func (m *monitorService) QueryDashboardByAlert(ctx context.Context, request *pb.QueryDashboardByAlertRequest) (*pb.QueryDashboardByAlertResponse, error) {
+func (m *alertService) QueryDashboardByAlert(ctx context.Context, request *pb.QueryDashboardByAlertRequest) (*pb.QueryDashboardByAlertResponse, error) {
 	if request.AlertScope == "" {
 		return nil, errors.NewInvalidParameterError("alertScope", "alertScope must not be empty")
 	}
@@ -771,7 +771,7 @@ func (m *monitorService) QueryDashboardByAlert(ctx context.Context, request *pb.
 	return result, nil
 }
 
-func (m *monitorService) QueryAlertRule(ctx context.Context, request *pb.QueryAlertRuleRequest) (*pb.QueryAlertRuleResponse, error) {
+func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAlertRuleRequest) (*pb.QueryAlertRuleResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.QueryAlertRule(lang, request.Scope, request.ScopeId)
 	if err != nil {
@@ -783,7 +783,7 @@ func (m *monitorService) QueryAlertRule(ctx context.Context, request *pb.QueryAl
 	return result, nil
 }
 
-func (m *monitorService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
+func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	data, err := m.p.a.QueryAlert(api.Language(httpRequest), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
@@ -805,7 +805,7 @@ func (m *monitorService) QueryAlert(ctx context.Context, request *pb.QueryAlertR
 	return result, nil
 }
 
-func (m *monitorService) GetAlert(ctx context.Context, request *pb.GetAlertRequest) (*pb.GetAlertResponse, error) {
+func (m *alertService) GetAlert(ctx context.Context, request *pb.GetAlertRequest) (*pb.GetAlertResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetAlert(lang, uint64(request.Id))
 	if err != nil {
@@ -817,7 +817,7 @@ func (m *monitorService) GetAlert(ctx context.Context, request *pb.GetAlertReque
 	return result, nil
 }
 
-func (m *monitorService) GetAlertDetail(ctx context.Context, request *pb.GetAlertDetailRequest) (*pb.GetAlertDetailResponse, error) {
+func (m *alertService) GetAlertDetail(ctx context.Context, request *pb.GetAlertDetailRequest) (*pb.GetAlertDetailResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetAlertDetail(lang, uint64(request.Id))
 	if err != nil {
@@ -828,7 +828,7 @@ func (m *monitorService) GetAlertDetail(ctx context.Context, request *pb.GetAler
 	return result, nil
 }
 
-func (m *monitorService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertRequest) (*pb.UpdateAlertResponse, error) {
+func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertRequest) (*pb.UpdateAlertResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -856,7 +856,7 @@ func (m *monitorService) UpdateAlert(ctx context.Context, request *pb.UpdateAler
 	return &pb.UpdateAlertResponse{}, nil
 }
 
-func (m monitorService) UpdateAlertEnable(ctx context.Context, request *pb.UpdateAlertEnableRequest) (*pb.UpdateAlertEnableResponse, error) {
+func (m alertService) UpdateAlertEnable(ctx context.Context, request *pb.UpdateAlertEnableRequest) (*pb.UpdateAlertEnableResponse, error) {
 	err := m.p.a.UpdateAlertEnable(uint64(request.Id), request.Enable)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -864,7 +864,7 @@ func (m monitorService) UpdateAlertEnable(ctx context.Context, request *pb.Updat
 	return &pb.UpdateAlertEnableResponse{}, nil
 }
 
-func (m *monitorService) DeleteAlert(ctx context.Context, request *pb.DeleteAlertRequest) (*pb.DeleteAlertResponse, error) {
+func (m *alertService) DeleteAlert(ctx context.Context, request *pb.DeleteAlertRequest) (*pb.DeleteAlertResponse, error) {
 	lang := apis.Language(ctx)
 	data, _ := m.p.a.GetAlert(lang, uint64(request.Id))
 	err := m.p.a.DeleteAlert(uint64(request.Id))
@@ -881,7 +881,7 @@ func (m *monitorService) DeleteAlert(ctx context.Context, request *pb.DeleteAler
 	return &pb.DeleteAlertResponse{}, nil
 }
 
-func (m *monitorService) QueryOrgAlertRule(ctx context.Context, request *pb.QueryOrgAlertRuleRequest) (*pb.QueryOrgAlertRuleResponse, error) {
+func (m *alertService) QueryOrgAlertRule(ctx context.Context, request *pb.QueryOrgAlertRuleRequest) (*pb.QueryOrgAlertRuleResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	id, err := strconv.ParseUint(orgID, 10, 64)
@@ -896,7 +896,7 @@ func (m *monitorService) QueryOrgAlertRule(ctx context.Context, request *pb.Quer
 	return &pb.QueryOrgAlertRuleResponse{Data: data}, nil
 }
 
-func (m *monitorService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAlertRequest) (*pb.QueryOrgAlertResponse, error) {
+func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAlertRequest) (*pb.QueryOrgAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	id, err := strconv.ParseUint(orgID, 10, 64)
@@ -920,7 +920,7 @@ func (m *monitorService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrg
 	}, nil
 }
 
-func (m *monitorService) GetOrgAlertDetail(ctx context.Context, request *pb.GetOrgAlertDetailRequest) (*pb.GetOrgAlertDetailResponse, error) {
+func (m *alertService) GetOrgAlertDetail(ctx context.Context, request *pb.GetOrgAlertDetailRequest) (*pb.GetOrgAlertDetailResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	lang := apis.Language(ctx)
@@ -936,7 +936,7 @@ func (m *monitorService) GetOrgAlertDetail(ctx context.Context, request *pb.GetO
 	}, nil
 }
 
-func (m *monitorService) checkOrgClusterNames(orgID uint64, clusters []string) bool {
+func (m *alertService) checkOrgClusterNames(orgID uint64, clusters []string) bool {
 	rels, err := m.p.cmdb.QueryAllOrgClusterRelation()
 	if err != nil {
 		m.p.L.Errorf("fail to QueryAllOrgClusterRelation(): %s", err)
@@ -956,7 +956,7 @@ func (m *monitorService) checkOrgClusterNames(orgID uint64, clusters []string) b
 	return true
 }
 
-func (m *monitorService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrgAlertRequest) (*pb.UpdateOrgAlertResponse, error) {
+func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrgAlertRequest) (*pb.UpdateOrgAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	org, err := m.p.bdl.GetOrg(orgID)
@@ -985,7 +985,7 @@ func (m *monitorService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateO
 	return &pb.UpdateOrgAlertResponse{}, nil
 }
 
-func (m *monitorService) UpdateOrgAlertEnable(ctx context.Context, request *pb.UpdateOrgAlertEnableRequest) (*pb.UpdateOrgAlertEnableResponse, error) {
+func (m *alertService) UpdateOrgAlertEnable(ctx context.Context, request *pb.UpdateOrgAlertEnableRequest) (*pb.UpdateOrgAlertEnableResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	if len(orgID) <= 0 {
@@ -998,7 +998,7 @@ func (m *monitorService) UpdateOrgAlertEnable(ctx context.Context, request *pb.U
 	return &pb.UpdateOrgAlertEnableResponse{}, nil
 }
 
-func (m *monitorService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrgAlertRequest) (*pb.DeleteOrgAlertResponse, error) {
+func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrgAlertRequest) (*pb.DeleteOrgAlertResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	orgID := api.OrgID(httpRequest)
 	if len(orgID) <= 0 {
@@ -1020,7 +1020,7 @@ func (m *monitorService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteO
 	return &pb.DeleteOrgAlertResponse{}, nil
 }
 
-func (m *monitorService) GetAlertRecordAttr(ctx context.Context, request *pb.GetAlertRecordAttrRequest) (*pb.GetAlertRecordAttrResponse, error) {
+func (m *alertService) GetAlertRecordAttr(ctx context.Context, request *pb.GetAlertRecordAttrRequest) (*pb.GetAlertRecordAttrResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetAlertRecordAttr(lang, request.Scope)
 	if err != nil {
@@ -1031,7 +1031,7 @@ func (m *monitorService) GetAlertRecordAttr(ctx context.Context, request *pb.Get
 	}, nil
 }
 
-func (m *monitorService) QueryAlertRecord(ctx context.Context, request *pb.QueryAlertRecordRequest) (*pb.QueryAlertRecordResponse, error) {
+func (m *alertService) QueryAlertRecord(ctx context.Context, request *pb.QueryAlertRecordRequest) (*pb.QueryAlertRecordResponse, error) {
 	if request.PageNo == 0 {
 		request.PageNo = 1
 	}
@@ -1058,7 +1058,7 @@ func (m *monitorService) QueryAlertRecord(ctx context.Context, request *pb.Query
 	}, nil
 }
 
-func (m *monitorService) GetAlertRecord(ctx context.Context, request *pb.GetAlertRecordRequest) (*pb.GetAlertRecordResponse, error) {
+func (m *alertService) GetAlertRecord(ctx context.Context, request *pb.GetAlertRecordRequest) (*pb.GetAlertRecordResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetAlertRecord(lang, request.GroupId)
 	if err != nil {
@@ -1069,7 +1069,7 @@ func (m *monitorService) GetAlertRecord(ctx context.Context, request *pb.GetAler
 	}, nil
 }
 
-func (m *monitorService) QueryAlertHistory(ctx context.Context, request *pb.QueryAlertHistoryRequest) (*pb.QueryAlertHistoryResponse, error) {
+func (m *alertService) QueryAlertHistory(ctx context.Context, request *pb.QueryAlertHistoryRequest) (*pb.QueryAlertHistoryResponse, error) {
 	if request.End < request.Start {
 		return &pb.QueryAlertHistoryResponse{}, nil
 	}
@@ -1092,7 +1092,7 @@ func (m *monitorService) QueryAlertHistory(ctx context.Context, request *pb.Quer
 	}, nil
 }
 
-func (m *monitorService) CreateAlertIssue(ctx context.Context, request *pb.CreateAlertIssueRequest) (*pb.CreateAlertIssueResponse, error) {
+func (m *alertService) CreateAlertIssue(ctx context.Context, request *pb.CreateAlertIssueRequest) (*pb.CreateAlertIssueResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -1108,7 +1108,7 @@ func (m *monitorService) CreateAlertIssue(ctx context.Context, request *pb.Creat
 	return &pb.CreateAlertIssueResponse{}, err
 }
 
-func (m *monitorService) UpdateAlertIssue(ctx context.Context, request *pb.UpdateAlertIssueRequest) (*pb.UpdateAlertIssueResponse, error) {
+func (m *alertService) UpdateAlertIssue(ctx context.Context, request *pb.UpdateAlertIssueRequest) (*pb.UpdateAlertIssueResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -1124,7 +1124,7 @@ func (m *monitorService) UpdateAlertIssue(ctx context.Context, request *pb.Updat
 	return &pb.UpdateAlertIssueResponse{}, nil
 }
 
-func (m *monitorService) GetOrgAlertRecordAttr(ctx context.Context, request *pb.GetOrgAlertRecordAttrRequest) (*pb.GetOrgAlertRecordAttrResponse, error) {
+func (m *alertService) GetOrgAlertRecordAttr(ctx context.Context, request *pb.GetOrgAlertRecordAttrRequest) (*pb.GetOrgAlertRecordAttrResponse, error) {
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetOrgAlertRecordAttr(lang)
 	if err != nil {
@@ -1135,7 +1135,7 @@ func (m *monitorService) GetOrgAlertRecordAttr(ctx context.Context, request *pb.
 	}, nil
 }
 
-func (m *monitorService) QueryOrgAlertRecord(ctx context.Context, request *pb.QueryOrgAlertRecordRequest) (*pb.QueryOrgAlertRecordResponse, error) {
+func (m *alertService) QueryOrgAlertRecord(ctx context.Context, request *pb.QueryOrgAlertRecordRequest) (*pb.QueryOrgAlertRecordResponse, error) {
 	if request.PageNo == 0 {
 		request.PageNo = 1
 	}
@@ -1175,7 +1175,7 @@ func (m *monitorService) QueryOrgAlertRecord(ctx context.Context, request *pb.Qu
 	}, nil
 }
 
-func (m *monitorService) QueryOrgHostsAlertRecord(ctx context.Context, request *pb.QueryOrgHostsAlertRecordRequest) (*pb.QueryOrgAlertRecordResponse, error) {
+func (m *alertService) QueryOrgHostsAlertRecord(ctx context.Context, request *pb.QueryOrgHostsAlertRecordRequest) (*pb.QueryOrgAlertRecordResponse, error) {
 	request.AlertGroup = make([]string, 0)
 	for _, cluster := range request.Clusters {
 		for _, hostIP := range cluster.HostIPs {
@@ -1201,7 +1201,7 @@ func (m *monitorService) QueryOrgHostsAlertRecord(ctx context.Context, request *
 	}, nil
 }
 
-func (m *monitorService) GetOrgAlertRecord(ctx context.Context, request *pb.GetOrgAlertRecordRequest) (*pb.GetOrgAlertRecordResponse, error) {
+func (m *alertService) GetOrgAlertRecord(ctx context.Context, request *pb.GetOrgAlertRecordRequest) (*pb.GetOrgAlertRecordResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	lang := apis.Language(ctx)
 	data, err := m.p.a.GetOrgAlertRecord(lang, api.OrgID(httpRequest), request.GroupId)
@@ -1223,7 +1223,7 @@ func (m *monitorService) GetOrgAlertRecord(ctx context.Context, request *pb.GetO
 	}, nil
 }
 
-func (m *monitorService) QueryOrgAlertHistory(ctx context.Context, request *pb.QueryOrgAlertHistoryRequest) (*pb.QueryOrgAlertHistoryResponse, error) {
+func (m *alertService) QueryOrgAlertHistory(ctx context.Context, request *pb.QueryOrgAlertHistoryRequest) (*pb.QueryOrgAlertHistoryResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	if request.End == 0 {
 		request.End = utils.ConvertTimeToMS(time.Now())
@@ -1247,7 +1247,7 @@ func (m *monitorService) QueryOrgAlertHistory(ctx context.Context, request *pb.Q
 	}, nil
 }
 
-func (m *monitorService) CreateOrgAlertIssue(ctx context.Context, request *pb.CreateOrgAlertIssueRequest) (*pb.CreateOrgAlertIssueResponse, error) {
+func (m *alertService) CreateOrgAlertIssue(ctx context.Context, request *pb.CreateOrgAlertIssueRequest) (*pb.CreateOrgAlertIssueResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -1267,7 +1267,7 @@ func (m *monitorService) CreateOrgAlertIssue(ctx context.Context, request *pb.Cr
 	}, nil
 }
 
-func (m *monitorService) UpdateOrgAlertIssue(ctx context.Context, request *pb.UpdateOrgAlertIssueRequest) (*pb.UpdateOrgAlertIssueResponse, error) {
+func (m *alertService) UpdateOrgAlertIssue(ctx context.Context, request *pb.UpdateOrgAlertIssueRequest) (*pb.UpdateOrgAlertIssueResponse, error) {
 	httpRequest := getHttpRequest(ctx)
 	data, err := json.Marshal(request)
 	if err != nil {

@@ -63,9 +63,9 @@ type provider struct {
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
 
-	Register       transport.Register `autowired:"service-register" optional:"true"`
-	Perm           perm.Interface     `autowired:"permission"`
-	monitorService *monitorService
+	Register     transport.Register `autowired:"service-register" optional:"true"`
+	Perm         perm.Interface     `autowired:"permission"`
+	alertService *alertService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -117,13 +117,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
 	p.a = adapt.New(p.L, p.metricq, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
 
-	p.monitorService = &monitorService{
+	p.alertService = &alertService{
 		p: p,
 	}
 
 	if p.Register != nil {
 		type MonitorService = pb.AlertServiceServer
-		pb.RegisterAlertServiceImp(p.Register, p.monitorService, apis.Options(), p.Perm.Check(
+		pb.RegisterAlertServiceImp(p.Register, p.alertService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(MonitorService.QueryCustomizeMetric),
 			perm.NoPermMethod(MonitorService.QueryCustomizeNotifyTarget),
 			perm.NoPermMethod(MonitorService.QueryCustomizeAlert),
@@ -179,7 +179,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
 	case ctx.Service() == "erda.core.monitor.alert" || ctx.Type() == pb.AlertServiceServerType() || ctx.Type() == pb.AlertServiceHandlerType():
-		return p.monitorService
+		return p.alertService
 	}
 	return p
 }
