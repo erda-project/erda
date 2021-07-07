@@ -39,12 +39,13 @@ type Scope string
 
 // Scope values
 const (
-	ScopeSys          = "sys"
-	ScopeOrg          = "org"
-	ScopeProject      = "project"
-	ScopeApp          = "app"
-	ScopePublisher    = "publisher"
-	ScopeMicroService = "micro_service"
+	ScopeSys                   = "sys"
+	ScopeOrg                   = "org"
+	ScopeProject               = "project"
+	ScopeApp                   = "app"
+	ScopePublisher             = "publisher"
+	ScopeMicroService          = "micro_service"
+	MonitorProjectAlert string = "monitor_project_alert"
 )
 
 // Action .
@@ -95,6 +96,9 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 		}
 	}
 	return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+		if p.Cfg.Skip {
+			return h
+		}
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			info := transport.ContextServiceInfo(ctx)
 			perm := methods[info.Method()]

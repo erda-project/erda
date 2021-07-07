@@ -28,7 +28,6 @@ import (
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
-	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"

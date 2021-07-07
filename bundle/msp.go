@@ -109,3 +109,25 @@ func (b *Bundle) GetMonitorStatusMetricDetails(metricID string) (*apistructs.Mon
 	}
 	return &resp.Data, nil
 }
+
+func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error {
+	host, err := b.urls.Hepa()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var resp apistructs.Header
+	r, err := hc.Post(host).
+		Path("/api/gateway/tenants").
+		JSONBody(req).
+		Do().
+		JSON(&resp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return toAPIError(r.StatusCode(), resp.Error)
+	}
+	return nil
+}

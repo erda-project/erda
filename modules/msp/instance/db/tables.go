@@ -22,9 +22,15 @@ import (
 
 // tables name
 const (
-	TableInstance       = "tb_tmc_instance"
-	TableInstanceTenant = "tb_tmc_instance_tenant"
-	TableTmc            = "tb_tmc"
+	TableInstance        = "tb_tmc_instance"
+	TableInstanceTenant  = "tb_tmc_instance_tenant"
+	TableTmc             = "tb_tmc"
+	TableTmcVersion      = "tb_tmc_version"
+	TableRequestRelation = "tb_tmc_request_relation"
+	TableTmcIni          = "tb_tmc_ini"
+	TableProject         = "sp_project"
+	TableLogDeployment   = "sp_log_deployment"
+	TableLogInstance     = "sp_log_instance"
 )
 
 // InstanceTenant .
@@ -44,7 +50,7 @@ type InstanceTenant struct {
 // TableName .
 func (InstanceTenant) TableName() string { return TableInstanceTenant }
 
-var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(InstanceTenant{}))
 
 // Instance .
 type Instance struct {
@@ -56,10 +62,10 @@ type Instance struct {
 	Az         string    `gorm:"column:az"`
 	Config     string    `gorm:"column:config"`
 	Options    string    `gorm:"column:options"`
-	IsCustom   string    `gorm:"column:is_custom"`
-	IsDeleted  string    `gorm:"column:is_deleted"`
-	CreateTime time.Time `gorm:"column:create_time"`
-	UpdateTime time.Time `gorm:"column:update_time"`
+	IsCustom   string    `gorm:"column:is_custom;default:'N'"`
+	IsDeleted  string    `gorm:"column:is_deleted;default:'N'"`
+	CreateTime time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP"`
+	UpdateTime time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP"`
 }
 
 // TableName .
@@ -82,4 +88,107 @@ type Tmc struct {
 // TableName .
 func (Tmc) TableName() string { return TableTmc }
 
-var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Tmc{}))
+
+// TmcVersion .
+type TmcVersion struct {
+	ID         int       `gorm:"column:id;primary_key"`
+	Engine     string    `gorm:"column:engine"`
+	Version    string    `gorm:"column:version"`
+	ReleaseId  string    `gorm:"column:release_id"`
+	CreateTime time.Time `gorm:"column:create_time"`
+	UpdateTime time.Time `gorm:"column:update_time"`
+	IsDeleted  string    `gorm:"column:is_deleted"`
+}
+
+func (TmcVersion) TableName() string {
+	return TableTmcVersion
+}
+
+type TmcRequestRelation struct {
+	ID              int       `gorm:"column:id;primary_key;"`
+	ParentRequestId string    `gorm:"column:parent_request_id"`
+	ChildRequestId  string    `gorm:"column:child_request_id"`
+	CreateTime      time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP"`
+	UpdateTime      time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP"`
+	IsDeleted       string    `gorm:"column:is_deleted;default:'N'"`
+}
+
+func (TmcRequestRelation) TableName() string {
+	return TableRequestRelation
+}
+
+type TmcIni struct {
+	ID         int       `gorm:"column:id,primary_key"`
+	IniName    string    `gorm:"column:ini_name"`
+	IniDesc    string    `gorm:"column:ini_desc"`
+	IniValue   string    `gorm:"column:ini_value"`
+	CreateTime time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP"`
+	UpdateTime time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP"`
+	IsDeleted  string    `gorm:"column:is_deleted;default:'N'"`
+}
+
+func (TmcIni) TableName() string {
+	return TableTmcIni
+}
+
+type Project struct {
+	ID          int       `gorm:"column:id;primary_key"`
+	Identity    string    `gorm:"column:identity"`
+	Name        string    `gorm:"column:name"`
+	Description string    `gorm:"column:description"`
+	Ats         string    `gorm:"column:ats"`
+	Callback    string    `gorm:"column:callback"`
+	ProjectId   string    `gorm:"column:project_id"`
+	CreateTime  time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP"`
+	UpdateTime  time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP"`
+	IsDeleted   string    `gorm:"column:is_deleted;default:'N'"`
+}
+
+func (Project) TableName() string {
+	return TableProject
+}
+
+type LogDeployment struct {
+	ID           int       `gorm:"column:id;primary_key"`
+	OrgId        string    `gorm:"column:org_id"`
+	ClusterName  string    `gorm:"column:cluster_name"`
+	ClusterType  int       `gorm:"column:cluster_type"`
+	EsUrl        string    `gorm:"column:es_url"`
+	EsConfig     string    `gorm:"column:es_config"`
+	KafkaServers string    `gorm:"column:kafka_servers"`
+	KafkaConfig  string    `gorm:"column:kafka_config"`
+	CollectorUrl string    `gorm:"column:collector_url"`
+	Domain       string    `gorm:"column:domain"`
+	Created      time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
+	Updated      time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
+}
+
+func (LogDeployment) TableName() string {
+	return TableLogDeployment
+}
+
+type LogInstance struct {
+	ID              int       `gorm:"column:id;primary_key"`
+	LogKey          string    `gorm:"column:log_key"`
+	OrgId           string    `gorm:"column:org_id"`
+	OrgName         string    `gorm:"column:org_name"`
+	ClusterName     string    `gorm:"column:cluster_name"`
+	ProjectId       string    `gorm:"column:project_id"`
+	ProjectName     string    `gorm:"column:project_name"`
+	Workspace       string    `gorm:"column:workspace"`
+	ApplicationId   string    `gorm:"column:application_id"`
+	ApplicationName string    `gorm:"column:application_name"`
+	RuntimeId       string    `gorm:"column:runtime_id"`
+	RuntimeName     string    `gorm:"column:runtime_name"`
+	Config          string    `gorm:"column:config"`
+	Version         string    `gorm:"column:version"`
+	Plan            string    `gorm:"column:plan"`
+	IsDelete        int       `gorm:"column:is_delete"`
+	Created         time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
+	Updated         time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
+}
+
+func (LogInstance) TableName() string {
+	return TableLogInstance
+}

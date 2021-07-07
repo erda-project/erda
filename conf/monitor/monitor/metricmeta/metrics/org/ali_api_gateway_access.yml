@@ -86,6 +86,7 @@ tags:
         name: "Domain"
     sls_log_store:
         name: "SLS Log Store"
+fields:
     serviceLatency:
         name: "Service Latency"
         type: "number"

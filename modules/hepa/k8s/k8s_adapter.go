@@ -28,11 +28,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
-	"github.com/erda-project/erda/pkg/clientgo"
-	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 const (
@@ -627,14 +627,14 @@ func (impl *K8SAdapterImpl) UpdateIngressConroller(options map[string]*string, m
 	return nil
 }
 
-func NewAdapter(addr string) (K8SAdapter, error) {
-	cs, err := clientgo.New(addr)
+func NewAdapter(clusterKey string) (K8SAdapter, error) {
+	client, err := k8sclient.New(clusterKey)
 	if err != nil {
 		return nil, err
 	}
 	pool := util.NewGPool(1000)
 	return &K8SAdapterImpl{
-		client: cs.K8sClient,
+		client: client.ClientSet,
 		pool:   pool,
 	}, nil
 }

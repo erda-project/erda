@@ -22,33 +22,33 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     quantile_0:
         type: "number"
         name: "Quantile 0"
-        uint: 
+        unit: 
     quantile_0_25:
         type: "number"
         name: "Quantile 0 25"
-        uint: 
+        unit: 
     quantile_0_5:
         type: "number"
         name: "Quantile 0 5"
-        uint: 
+        unit: 
     quantile_0_75:
         type: "number"
         name: "Quantile 0 75"
-        uint: 
+        unit: 
     quantile_1:
         type: "number"
         name: "Quantile 1"
-        uint: 
+        unit: 
     sum:
         type: "number"
         name: "Sum"
-        uint: 
+        unit: 
     value:
         type: "number"
         name: "Value"
-        uint: 
+        unit: 
 
