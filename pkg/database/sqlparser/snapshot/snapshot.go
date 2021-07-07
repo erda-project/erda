@@ -142,7 +142,7 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 		// install
 		var (
 			options []*ast.TableOption
-			buf = bytes.NewBuffer(nil)
+			buf     = bytes.NewBuffer(nil)
 		)
 		for _, opt := range create.Options {
 			switch opt.Tp {

@@ -67,5 +67,3 @@ func TestGenModel(t *testing.T) {
 		t.Fatalf("failed to GenModel: %v", err)
 	}
 }
-
-

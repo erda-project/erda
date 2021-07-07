@@ -37,7 +37,7 @@ func TestGenSettings(t *testing.T) {
 }
 
 func TestParseDSN(t *testing.T) {
-	var dsn =  "dspo:12345678@(localhost:3307)/dbname"
+	var dsn = "dspo:12345678@(localhost:3307)/dbname"
 	settings, err := pygrator.ParseDSN(dsn)
 	if err != nil {
 		t.Fatal(err)

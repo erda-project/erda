@@ -48,18 +48,18 @@ apps.populate(django_settings.INSTALLED_APPS)
 `
 
 const (
-	DjangoMySQLEngine = "django.db.backends.mysql"
+	DjangoMySQLEngine    = "django.db.backends.mysql"
 	TimeZoneAsiaShanghai = "Asia/Shanghai"
 )
 
 type Settings struct {
-	Engine        string
-	User          string
-	Password      string
-	Host          string
-	Port          int
-	Name          string
-	TimeZone      string
+	Engine   string
+	User     string
+	Password string
+	Host     string
+	Port     int
+	Name     string
+	TimeZone string
 }
 
 func GenSettings(rw io.ReadWriter, settings Settings) error {
@@ -78,7 +78,7 @@ func ParseDSN(dsn string) (*Settings, error) {
 		host, portS = cfg.Addr[:colon], cfg.Addr[colon+1:]
 	}
 	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
-		host = host[1: len(host)-1]
+		host = host[1 : len(host)-1]
 	}
 
 	port, err := strconv.ParseUint(portS, 10, 64)

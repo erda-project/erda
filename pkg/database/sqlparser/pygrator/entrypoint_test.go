@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	entrypoint  = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename}
+	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename}
 )
 
 func TestGenEntrypoint(t *testing.T) {
