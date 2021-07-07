@@ -438,5 +438,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/files/{uuid}", Method: http.MethodHead, WriterHandler: e.HeadFile},
 		{Path: "/api/files/{uuid}", Method: http.MethodDelete, Handler: e.DeleteFile},
 		{Path: "/api/images/actions/upload", Method: http.MethodPost, Handler: e.UploadImage},
+
+		// the interface of user
+		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
+		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
+		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 	}
 }
