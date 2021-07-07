@@ -18,12 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/utils"
-
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // FromModel .
@@ -122,25 +123,25 @@ func (r *CustomizeAlertRule) FromModel(m *db.CustomizeAlertRule) (*CustomizeAler
 }
 
 // ToModel .
-func (r *CustomizeAlertRule) ToModel(alert *CustomizeAlertDetail, index string) *db.CustomizeAlertRule {
-	attributes := r.Attributes
-	if attributes == nil {
-		attributes = make(map[string]interface{})
+func (a *Adapt) ToModel(r *pb.CustomizeAlertRule, alert *pb.CustomizeAlertDetail, index string) *db.CustomizeAlertRule {
+	attributeData := make(map[string]interface{})
+	for k, v := range r.Attributes {
+		attributeData[k] = v.AsInterface()
 	}
-	attributes["level"] = "WARNING"
-	attributes["recover"] = strconv.FormatBool(false)
-	attributes["alert_dashboard_id"] = alert.Attributes["alert_dashboard_id"]
+	attributeData["level"] = "WARNING"
+	attributeData["recover"] = strconv.FormatBool(false)
+	attributeData["alert_dashboard_id"] = alert.Attributes["alert_dashboard_id"]
 
 	var groups []string
 	for _, group := range r.Group {
 		groups = append(groups, "{{"+group+"}}")
 	}
 	groupKey := strings.Join(groups, "-")
-	attributes["tickets_metric_key"] = groupKey
+	attributeData["tickets_metric_key"] = groupKey
 	var alertGroup string
-	if attributes["alert_group"] == nil {
+	if attributeData["alert_group"] == nil {
 		alertGroup = ""
-	} else if v, ok := attributes["alert_group"].(string); ok {
+	} else if v, ok := attributeData["alert_group"].(string); ok {
 		alertGroup = v
 	} else {
 		alertGroup = ""
@@ -149,9 +150,9 @@ func (r *CustomizeAlertRule) ToModel(alert *CustomizeAlertDetail, index string) 
 		alertGroup += "-"
 	}
 	alertGroup += groupKey
-	attributes["alert_group"] = alertGroup
+	attributeData["alert_group"] = alertGroup
 
-	attributes["active_metric_groups"] = r.ActivedMetricGroups
+	attributeData["active_metric_groups"] = r.ActivedMetricGroups
 
 	var (
 		functions []*CustomizeAlertRuleFunction
@@ -183,15 +184,15 @@ func (r *CustomizeAlertRule) ToModel(alert *CustomizeAlertDetail, index string) 
 		Select:    r.Select,
 	}
 	return &db.CustomizeAlertRule{
-		ID:               r.ID,
+		ID:               r.Id,
 		Name:             r.Name,
-		CustomizeAlertID: alert.ID,
+		CustomizeAlertID: alert.Id,
 		AlertType:        alert.AlertType,
 		AlertIndex:       index,
 		AlertScope:       alert.AlertScope,
-		AlertScopeID:     alert.AlertScopeID,
+		AlertScopeID:     alert.AlertScopeId,
 		Template:         utils.ConvertStructToMap(template),
-		Attributes:       attributes,
+		Attributes:       attributeData,
 		Enable:           alert.Enable,
 	}
 }
@@ -209,14 +210,14 @@ func (t *CustomizeAlertNotifyTemplate) FromModel(m *db.CustomizeAlertNotifyTempl
 }
 
 // ToModel .
-func (t *CustomizeAlertNotifyTemplate) ToModel(alert *CustomizeAlertDetail, index string) (*db.CustomizeAlertNotifyTemplate, error) {
+func (t *CustomizeAlertNotifyTemplate) ToModel(alert *pb.CustomizeAlertDetail, index string) (*db.CustomizeAlertNotifyTemplate, error) {
 	if ok := notifyTargetSet[t.Target]; !ok {
 		return nil, invalidParameter("not support notify target %s", t.Target)
 	}
 	return &db.CustomizeAlertNotifyTemplate{
 		ID:               t.ID,
 		Name:             t.Name,
-		CustomizeAlertID: alert.ID,
+		CustomizeAlertID: alert.Id,
 		AlertType:        alert.AlertType,
 		AlertIndex:       index,
 		Target:           t.Target,
@@ -231,8 +232,8 @@ func (t *CustomizeAlertNotifyTemplate) ToModel(alert *CustomizeAlertDetail, inde
 func (a *Adapt) newCustomizeAlertOverview(
 	code i18n.LanguageCodes,
 	alert *db.CustomizeAlert,
-	rules []*CustomizeAlertRule,
-	notifies []*CustomizeAlertNotifyTemplate) *CustomizeAlertOverview {
+	rules []*pb.CustomizeAlertRule,
+	notifies []*CustomizeAlertNotifyTemplate) *pb.CustomizeAlertOverview {
 	if len(rules) == 0 || len(notifies) == 0 {
 		return nil
 	}
@@ -253,16 +254,16 @@ func (a *Adapt) newCustomizeAlertOverview(
 	metricName := rules[0].Metric
 	if rules[0].Attributes != nil {
 		if v, ok := rules[0].Attributes["metric_name"]; ok {
-			metricName = v.(string)
+			metricName = v.String()
 		}
 	}
-	return &CustomizeAlertOverview{
-		ID:            alert.ID,
+	return &pb.CustomizeAlertOverview{
+		Id:            alert.ID,
 		Name:          alert.Name,
 		Metric:        a.t.Text(code, metricName),
 		Window:        rules[0].Window,
 		NotifyTargets: targets,
-		DashboardID:   dashboardID,
+		DashboardId:   dashboardID,
 		Enable:        alert.Enable,
 		CreateTime:    alert.CreateTime.UnixNano() / int64(time.Millisecond),
 		UpdateTime:    alert.UpdateTime.UnixNano() / int64(time.Millisecond),

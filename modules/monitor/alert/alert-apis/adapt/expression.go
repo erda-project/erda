@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 )
 
 // OperatorType .
@@ -138,7 +139,7 @@ func getListAndSet(list ...string) ([]string, map[string]bool) {
 }
 
 // FilterOperatorKeys .
-func (a *Adapt) FilterOperatorKeys(lang i18n.LanguageCodes) []*Operator {
+func (a *Adapt) FilterOperatorKeys(lang i18n.LanguageCodes) []*pb.Operator {
 	return a.getOperatorKeys(lang, filterOperatorRel)
 }
 
@@ -148,7 +149,7 @@ func (a *Adapt) FilterOperatorKeysMap() map[string]string {
 }
 
 // FunctionOperatorKeys .
-func (a *Adapt) FunctionOperatorKeys(lang i18n.LanguageCodes) []*Operator {
+func (a *Adapt) FunctionOperatorKeys(lang i18n.LanguageCodes) []*pb.Operator {
 	return a.getOperatorKeys(lang, functionOperatorRel)
 }
 
@@ -157,22 +158,23 @@ func (a *Adapt) FunctionOperatorKeysMap() map[string]string {
 	return functionOperatorRel
 }
 
-func (a *Adapt) getOperatorKeys(lang i18n.LanguageCodes, m map[string]string) []*Operator {
-	var list []*Operator
+func (a *Adapt) getOperatorKeys(lang i18n.LanguageCodes, m map[string]string) []*pb.Operator {
+	var list []*pb.Operator
 	for k, v := range m {
-		list = append(list, &Operator{
-			DisplayKey: DisplayKey{Key: k, Display: a.t.Text(lang, k)},
-			Type:       v,
+		list = append(list, &pb.Operator{
+			Key:     k,
+			Display: a.t.Text(lang, k),
+			Type:    v,
 		})
 	}
 	return list
 }
 
 // AggregatorKeys .
-func (a *Adapt) AggregatorKeys(lang i18n.LanguageCodes) []*DisplayKey {
-	var keys []*DisplayKey
+func (a *Adapt) AggregatorKeys(lang i18n.LanguageCodes) []*pb.DisplayKey {
+	var keys []*pb.DisplayKey
 	for _, item := range aggregators {
-		keys = append(keys, &DisplayKey{Key: item, Display: a.t.Text(lang, item)})
+		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(lang, item)})
 	}
 	return keys
 }
@@ -183,8 +185,8 @@ func (a *Adapt) AggregatorKeysSet() map[string]bool {
 }
 
 // NotifyTargetsKeys .
-func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, orgId string) []*DisplayKey {
-	var keys []*DisplayKey
+func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, orgId string) []*pb.DisplayKey {
+	var keys []*pb.DisplayKey
 	for _, item := range notifyTargets {
 
 		if item == "vms" || item == "sms" {
@@ -196,18 +198,18 @@ func (a *Adapt) NotifyTargetsKeys(code i18n.LanguageCodes, orgId string) []*Disp
 				continue
 			}
 		}
-		keys = append(keys, &DisplayKey{Key: item, Display: a.t.Text(code, item)})
+		keys = append(keys, &pb.DisplayKey{Key: item, Display: a.t.Text(code, item)})
 	}
 	return keys
 }
 
 // NotifySilences .
-func (a *Adapt) NotifySilences(lang i18n.LanguageCodes) []*NotifySilence {
-	var silenceKeys []*NotifySilence
+func (a *Adapt) NotifySilences(lang i18n.LanguageCodes) []*pb.NotifySilence {
+	var silenceKeys []*pb.NotifySilence
 	for _, item := range notifySilences {
-		silenceKeys = append(silenceKeys, &NotifySilence{
+		silenceKeys = append(silenceKeys, &pb.NotifySilence{
 			Value: item.Value,
-			Unit:  &DisplayKey{Key: item.Unit, Display: a.t.Text(lang, item.Unit)},
+			Unit:  &pb.DisplayKey{Key: item.Unit, Display: a.t.Text(lang, item.Unit)},
 		})
 	}
 	return silenceKeys
