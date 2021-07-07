@@ -48,7 +48,19 @@ var (
 )
 
 // Cmds which not require login
-var loginWhiteListCmds = strings.Join([]string{"init", "parse", "version", "lint", "migrate", "mkpy", "help"}, ",")
+var (
+	loginWhiteList = []string{
+		"init",
+		"parse",
+		"version",
+		"migrate",
+		"lint",
+		"mkpy",
+		"record",
+		"help",
+	}
+	loginWhiteListCmds = strings.Join(loginWhiteList, ",")
+)
 
 // rootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
