@@ -133,6 +133,7 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	}
 
 	logrus.Debugf("params of issue event is: %v", params)
+	logrus.Debugf("email addr is: %v", emailAddrs)
 
 	if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
 		return err

@@ -11,24 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package apistructs
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var CMDB_USER_SEARCH = apis.ApiSpec{
-	Path:         "/api/users/actions/search",
-	BackendPath:  "/api/users/actions/search",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.UserListRequest{},
-	ResponseType: apistructs.UserListResponse{},
-	Doc:          "summary:search user by page",
-	Group:        "users",
+func TestGetEventAction(t *testing.T) {
+	assert.Equal(t, ISTCreate.GetEventAction(), "create")
+	assert.Equal(t, ISTComment.GetEventAction(), "update")
+	assert.Equal(t, ISTChangeContent.GetEventAction(), "update")
 }

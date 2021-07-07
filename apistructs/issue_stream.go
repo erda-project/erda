@@ -53,6 +53,16 @@ const (
 	ISTChangeLabel          IssueStreamType = "ChangeLabel"          // 更新标签
 )
 
+// GetEventAction get event action by issue stream type
+func (ist IssueStreamType) GetEventAction() string {
+	switch ist {
+	case ISTCreate:
+		return "create"
+	default:
+		return "update"
+	}
+}
+
 // IssueStreamCreateRequest 事件流创建请求
 type IssueStreamCreateRequest struct {
 	IssueID      int64           `json:"issueID"`
