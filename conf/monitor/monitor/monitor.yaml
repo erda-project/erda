@@ -34,6 +34,8 @@ mysql:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
 
+permission:
+
 erda.core.monitor.metric.index:
   request_timeout: "20s"
   default_namespace: "full_cluster"
