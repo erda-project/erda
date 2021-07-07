@@ -26,21 +26,21 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     rate_15:
         type: "number"
         name: "Rate 15"
-        uint: 
+        unit: 
     rate_1:
         type: "number"
         name: "Rate 1"
-        uint: 
+        unit: 
     rate_5:
         type: "number"
         name: "Rate 5"
-        uint: 
+        unit: 
     rate_mean:
         type: "number"
         name: "Rate Mean"
-        uint: 
+        unit: 
 

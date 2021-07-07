@@ -159,7 +159,7 @@ func (a *Adapter) EnableHTTPService(namespace string, service *pb.EnableHTTPServ
 	params.Set("ip", service.Ip)
 	params.Set("port", service.Port)
 	params.Set("ephemeral", "true")
-	params.Set("weight", strconv.FormatInt(h.Weight, 10))
+	params.Set("weight", strconv.FormatFloat(h.Weight, 'f', -1, 64))
 	params.Set("enabled", strconv.FormatBool(service.Online))
 	params.Set("namespaceId", namespace)
 	byts, _ := json.Marshal(h.MetaData)

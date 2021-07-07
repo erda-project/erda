@@ -161,24 +161,15 @@ func (impl GatewayDomainServiceImpl) acquireComponenetEndpointFactory(clusterNam
 		return nil, err
 	}
 	clusterType := clusterInfo.Get("DICE_CLUSTER_TYPE")
-	masterAddr := clusterInfo.Get("MASTER_VIP_ADDR")
-	netportalUrl := clusterInfo.Get("NETPORTAL_URL")
-	if masterAddr == "" {
-		return nil, errors.New("masterAddr is empty")
-	}
-	if netportalUrl != "" {
-		masterAddr = netportalUrl + "/" + masterAddr
-	}
-
 	switch clusterType {
 	case "kubernetes":
-		factory, err := factories.NewK8SFactory(masterAddr)
+		factory, err := factories.NewK8SFactory(clusterName)
 		if err != nil {
 			return nil, err
 		}
 		return factory, nil
 	case "edas":
-		factory, err := factories.NewEdasFactory(masterAddr)
+		factory, err := factories.NewEdasFactory(clusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -196,18 +187,15 @@ func (impl GatewayDomainServiceImpl) acquireEndpointFactory(runtimeService *orm.
 	if err != nil {
 		return true, nil, err
 	}
-	if azInfo.MasterAddr == "" {
-		return false, nil, errors.New("master addr is empty")
-	}
 	switch azInfo.Type {
 	case orm.AT_K8S:
-		factory, err := factories.NewK8SFactory(azInfo.MasterAddr)
+		factory, err := factories.NewK8SFactory(runtimeService.ClusterName)
 		if err != nil {
 			return true, nil, err
 		}
 		return true, factory, nil
 	case orm.AT_EDAS:
-		factory, err := factories.NewEdasFactory(azInfo.MasterAddr)
+		factory, err := factories.NewEdasFactory(runtimeService.ClusterName)
 		if err != nil {
 			return true, nil, err
 		}
@@ -532,7 +520,7 @@ func (impl GatewayDomainServiceImpl) TouchRuntimeDomain(runtimeService *orm.Gate
 		return "", err
 	}
 	needRelatePackage := true
-	if az.Type != orm.AT_K8S && !strings.HasPrefix(az.MasterAddr, "inet://") {
+	if az.Type != orm.AT_K8S && az.Type != orm.AT_EDAS {
 		needRelatePackage = false
 	}
 	// add relation package domain
