@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -127,11 +128,11 @@ func (mig *Migrator) Run() (err error) {
 
 func (mig *Migrator) newInstallation() (err error) {
 	new(HistoryModel).CreateTable(mig.DB())
+	mig.LocalScripts.MarkPending(mig.DB())
 
 	// Erda mysql lint
 	if mig.NeedErdaMySQLLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT...")
-		mig.LocalScripts.MarkPending(mig.DB())
 		if err = mig.LocalScripts.Lint(); err != nil {
 			return err
 		}
@@ -170,9 +171,9 @@ func (mig *Migrator) newInstallation() (err error) {
 
 func (mig *Migrator) normalUpdate() (err error) {
 	// Erda mysql lint
+	mig.LocalScripts.MarkPending(mig.DB())
 	if mig.NeedErdaMySQLLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT....")
-		mig.LocalScripts.MarkPending(mig.DB())
 		if err = mig.LocalScripts.Lint(); err != nil {
 			return err
 		}
@@ -290,8 +291,8 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 }
 
 func (mig *Migrator) migrateSandbox() (err error) {
-	if txt, ok := mig.LocalScripts.HasDestructiveOperationInPending(); ok {
-		return errors.Errorf("there are desctructive SQL in scripts, stop doing migration. desctructive SQL: %s", txt)
+	if err = mig.destructiveLint(); err != nil {
+		return err
 	}
 
 	// install every module
@@ -322,9 +323,9 @@ func (mig *Migrator) migrateSandbox() (err error) {
 }
 
 // pre migrate data SQLs, all applied in this runtime will be rollback
-func (mig *Migrator) preMigrate() error {
-	if txt, ok := mig.LocalScripts.HasDestructiveOperationInPending(); ok {
-		return errors.Errorf("there are destructive SQL in pending scripts, stop doing pre-migration. desctructive SQL: %s", txt)
+func (mig *Migrator) preMigrate() (err error) {
+	if err = mig.destructiveLint(); err != nil {
+		return err
 	}
 
 	// finally roll all DDL back
@@ -481,4 +482,28 @@ func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Set
 	defer p.Remove()
 
 	return p.Run()
+}
+
+func (mig *Migrator) destructiveLint() error {
+	sql, ok := mig.LocalScripts.HasDestructiveOperationInPending()
+	if !ok {
+		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", sql)
+	}
+
+	for _, module := range mig.LocalScripts.Services {
+		for _, script := range module.Scripts {
+			if !script.Pending || script.IsBaseline() {
+				continue
+			}
+			for _, n := range script.Nodes {
+				if node, ok := n.(ast.DDLNode); ok {
+					if _, _, err := ddlreverser.ReverseDDLWithSnapshot(mig.DB(), node); err != nil {
+						return errors.Errorf("there is desctructive SQL in pending scripts, it can not be reversed: %v, SQL: %s", err, node.Text())
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
