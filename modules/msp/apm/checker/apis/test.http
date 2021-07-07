@@ -46,7 +46,7 @@ Accept: application/json
 User-ID: {{userid}}
 
 ### DescribeCheckerV1
-GET {{url}}/v1/msp/checkers/metrics/35/dashboard
+GET {{url}}/v1/msp/checkers/metrics/37/dashboard
 Accept: application/json
 User-ID: {{userid}}
 
