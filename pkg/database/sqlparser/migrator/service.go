@@ -68,7 +68,7 @@ func (m *Module) BaselineEqualCloud(tx *gorm.DB) *Equal {
 	return m.BaselineSchema().Equal(cloud)
 }
 
-func (m* Module) Schema() *Schema {
+func (m *Module) Schema() *Schema {
 	schema := NewSchema()
 	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
@@ -78,7 +78,7 @@ func (m* Module) Schema() *Schema {
 	return schema
 }
 
-func (m* Module) BaselineSchema() *Schema {
+func (m *Module) BaselineSchema() *Schema {
 	schema := NewSchema()
 	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
@@ -91,7 +91,7 @@ func (m* Module) BaselineSchema() *Schema {
 	return schema
 }
 
-func (m* Module) TableNames() []string {
+func (m *Module) TableNames() []string {
 	var names []string
 	for _, script := range m.Scripts {
 		for _, ddl := range script.DDLNodes() {
@@ -105,7 +105,7 @@ func (m* Module) TableNames() []string {
 	return names
 }
 
-func (m* Module) BaselineTableNames() []string {
+func (m *Module) BaselineTableNames() []string {
 	var names []string
 	for _, script := range m.Scripts {
 		if !script.IsBaseline() {
@@ -124,7 +124,7 @@ func (m* Module) BaselineTableNames() []string {
 	return names
 }
 
-func (m* Module) Sort() {
+func (m *Module) Sort() {
 	sort.Slice(m.Scripts, func(i, j int) bool {
 		return strings.TrimSuffix(m.Scripts[i].GetName(), filepath.Ext(m.Scripts[i].GetName())) <
 			strings.TrimSuffix(m.Scripts[j].GetName(), filepath.Ext(m.Scripts[j].GetName()))
@@ -134,7 +134,7 @@ func (m* Module) Sort() {
 	})
 }
 
-func (m* Module) Filenames() []string {
+func (m *Module) Filenames() []string {
 	var names []string
 	for _, script := range m.Scripts {
 		names = append(names, script.GetName())

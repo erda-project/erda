@@ -37,9 +37,9 @@ type Scripts struct {
 	ServicesNames []string
 	Services      map[string]*Module
 
-	rulers      []rules.Ruler
-	markPending bool
-	destructive int
+	rulers          []rules.Ruler
+	markPending     bool
+	destructive     int
 	destructiveText string
 }
 
@@ -96,8 +96,7 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 			}
 
 			// read script (.sql or .py)
-			if ext := filepath.Ext(fileInfo.Name());
-			strings.EqualFold(ext, string(ScriptTypeSQL)) ||			strings.EqualFold(ext, string(ScriptTypePython)) {
+			if ext := filepath.Ext(fileInfo.Name()); strings.EqualFold(ext, string(ScriptTypeSQL)) || strings.EqualFold(ext, string(ScriptTypePython)) {
 				script, err := NewScript(parameters.Workdir(), filepath.Join(parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to NewScript")
@@ -261,7 +260,7 @@ func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
 	s.destructive = -1
 	for _, module := range s.Services {
 		for _, script := range module.Scripts {
-			if !script.Pending {
+			if !script.Pending || script.IsBaseline() {
 				continue
 			}
 			for _, node := range script.Nodes {

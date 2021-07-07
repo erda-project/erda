@@ -111,38 +111,36 @@ var Migrate = command.Command{
 	Run: RunMigrate,
 }
 
-
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
 	lintConfig string, skipLint bool, modules []string, debugSQL bool) error {
 	logrus.Infoln("Erda Migrator is working")
 
-	var
-		p =             parameters{
-			mySQLParams:       &migrator.DSNParameters{
-				Username:  username,
-				Password:  password,
-				Host:      host,
-				Port:      port,
-				Database:  database,
-				ParseTime: true,
-				Timeout:   time.Second * 150,
-			},
-			sandboxParams:     &migrator.DSNParameters{
-				Username:  "root",
-				Password:  "12345678",
-				Host:      "0.0.0.0",
-				Port:      sandboxPort,
-				Database:  database,
-				ParseTime: true,
-				Timeout:   time.Second * 150,
-			},
-			migrationDir:      ".",
-			modules:           nil,
-			workdir:           "",
-			debugSQL:          debugSQL,
-			needErdaMySQLLint: !skipLint,
-			rules:             configuration.DefaultRulers(),
-		}
+	var p = parameters{
+		mySQLParams: &migrator.DSNParameters{
+			Username:  username,
+			Password:  password,
+			Host:      host,
+			Port:      port,
+			Database:  database,
+			ParseTime: true,
+			Timeout:   time.Second * 150,
+		},
+		sandboxParams: &migrator.DSNParameters{
+			Username:  "root",
+			Password:  "12345678",
+			Host:      "0.0.0.0",
+			Port:      sandboxPort,
+			Database:  database,
+			ParseTime: true,
+			Timeout:   time.Second * 150,
+		},
+		migrationDir:      ".",
+		modules:           nil,
+		workdir:           "",
+		debugSQL:          debugSQL,
+		needErdaMySQLLint: !skipLint,
+		rules:             configuration.DefaultRulers(),
+	}
 
 	for _, module := range modules {
 		if module != "" {
@@ -224,8 +222,8 @@ func RmSandbox(name string) error {
 }
 
 type parameters struct {
-	mySQLParams *migrator.DSNParameters
-	sandboxParams *migrator.DSNParameters
+	mySQLParams       *migrator.DSNParameters
+	sandboxParams     *migrator.DSNParameters
 	migrationDir      string
 	modules           []string
 	workdir           string

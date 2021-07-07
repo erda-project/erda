@@ -41,8 +41,8 @@ type Model struct {
 }
 
 type Fields struct {
-	Name string
-	Type string
+	Name   string
+	Type   string
 	Option string
 }
 

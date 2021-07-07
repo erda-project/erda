@@ -30,9 +30,9 @@ import (
 
 // installing type
 const (
-	firstTimeInstall installType= "first_time_install"
-	normalUpdate     installType= "normal_update"
-	firstTimeUpdate  installType= "first_time_update"
+	firstTimeInstall installType = "first_time_install"
+	normalUpdate     installType = "normal_update"
+	firstTimeUpdate  installType = "first_time_update"
 )
 
 type installType string
@@ -46,10 +46,10 @@ type Migrator struct {
 
 	installingType installType
 
-	dbSettings *pygrator.Settings     // database settings
-	sandboxSettings*pygrator.Settings // sandbox settings
-	db *gorm.DB
-	sandbox*gorm.DB
+	dbSettings      *pygrator.Settings // database settings
+	sandboxSettings *pygrator.Settings // sandbox settings
+	db              *gorm.DB
+	sandbox         *gorm.DB
 }
 
 func New(parameters Parameters) (mig *Migrator, err error) {
@@ -65,7 +65,7 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 
 	// init parameters
 	mig = new(Migrator)
-	mig.Parameters=parameters
+	mig.Parameters = parameters
 	mig.dbSettings = &pygrator.Settings{
 		Engine:   pygrator.DjangoMySQLEngine,
 		User:     mig.MySQLParameters().Username,
@@ -437,9 +437,9 @@ func (mig *Migrator) installSQL(s *Script, exec func() *gorm.DB, begin func(opts
 	for _, node := range s.DDLNodes() {
 		var (
 			reverse string
-			ok bool
+			ok      bool
 		)
-		reverse, ok , err = ddlreverser.ReverseDDLWithSnapshot(exec(), node)
+		reverse, ok, err = ddlreverser.ReverseDDLWithSnapshot(exec(), node)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate reversed DDL: %+v",
 				map[string]string{"scritpName": s.GetName(), "SQL": node.Text()})

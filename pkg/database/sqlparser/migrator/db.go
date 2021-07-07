@@ -99,7 +99,7 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 	var (
 		timeout = time.Second * 150
-		dsn = mig.SandboxParameters().Format(false)
+		dsn     = mig.SandboxParameters().Format(false)
 	)
 
 	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
@@ -149,5 +149,3 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 	return mig.sandbox
 }
-
-

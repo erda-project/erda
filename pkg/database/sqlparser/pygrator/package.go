@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	EntryFilename = "entry.py"
+	EntryFilename   = "entry.py"
 	FeatureFilename = "feature.py"
 )
 
@@ -59,7 +59,7 @@ func (p *Package) Make() (err error) {
 
 	msg := "failed to make python file for migration"
 
-	p.entrypoint= Entrypoint{DeveloperScriptFilename: p.DeveloperScript.GetName()}
+	p.entrypoint = Entrypoint{DeveloperScriptFilename: p.DeveloperScript.GetName()}
 
 	if err = p.writeDeveloperScript(); err != nil {
 		return errors.Wrap(err, msg)
