@@ -84,6 +84,8 @@ func (b *Bundle) ListProject(userID string, req apistructs.ProjectListRequest) (
 		Param("orgId", strconv.FormatUint(req.OrgID, 10)).
 		Param("q", req.Query).
 		Param("name", req.Name).
+		Param("orderBy", req.OrderBy).
+		Param("asc", strconv.FormatBool(req.Asc)).
 		Param("joined", strconv.FormatBool(req.Joined)).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).
@@ -114,6 +116,8 @@ func (b *Bundle) ListDopProject(userID string, req apistructs.ProjectListRequest
 		Param("orgId", strconv.FormatUint(req.OrgID, 10)).
 		Param("q", req.Query).
 		Param("name", req.Name).
+		Param("orderBy", req.OrderBy).
+		Param("asc", strconv.FormatBool(req.Asc)).
 		Param("joined", strconv.FormatBool(req.Joined)).
 		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Param("pageSize", strconv.Itoa(req.PageSize)).

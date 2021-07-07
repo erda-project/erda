@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"math"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -31,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/types"
-	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/numeral"
@@ -40,10 +38,9 @@ import (
 
 // Project 资源对象操作封装
 type Project struct {
-	db                *dao.DBClient
-	uc                *ucauth.UCClient
-	bdl               *bundle.Bundle
-	ProjectStatsCache *sync.Map
+	db  *dao.DBClient
+	uc  *ucauth.UCClient
+	bdl *bundle.Bundle
 }
 
 // Option 定义 Project 对象的配置选项
@@ -51,14 +48,10 @@ type Option func(*Project)
 
 // New 新建 Project 实例，通过 Project 实例操作企业资源
 func New(options ...Option) *Project {
-	p := &Project{
-		ProjectStatsCache: &sync.Map{},
-	}
+	p := &Project{}
 	for _, op := range options {
 		op(p)
 	}
-
-	p.setProjectStatsCache()
 	return p
 }
 
@@ -908,32 +901,6 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 	}
 
 	return projectDto
-}
-
-// setProjectStatsCache 设置项目状态缓存
-func (p *Project) setProjectStatsCache() {
-	c := cron.New()
-	if err := c.AddFunc(conf.ProjectStatsCacheCron(), func() {
-		// 清空缓存
-		logrus.Info("start set project stats")
-		p.ProjectStatsCache = new(sync.Map)
-		// prjs, err := p.db.GetAllProjects()
-		// if err != nil {
-		// 	logrus.Errorf("get project stats err: get all project err: %v", err)
-		// }
-		//
-		// for _, prj := range prjs {
-		// 	stats, err := p.GetProjectStats(prj.ID)
-		// 	if err != nil {
-		// 		logrus.Errorf("get project %v stats err: %v", prj.ID, err)
-		// 	}
-		// 	p.ProjectStatsCache.Store(prj.ID, stats)
-		// }
-	}); err != nil {
-		logrus.Errorf("cron set setProjectStatsCache failed: %v", err)
-	}
-
-	c.Start()
 }
 
 // GetProjectStats 获取项目状态

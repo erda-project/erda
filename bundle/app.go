@@ -331,3 +331,26 @@ func (b *Bundle) DeleteApp(appID uint64, userID string) (*apistructs.Application
 
 	return &fetchResp.Data, nil
 }
+
+// CountAppByProID count app by proID
+func (b *Bundle) CountAppByProID(proID uint64) (int64, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return 0, err
+	}
+	hc := b.hc
+
+	var fetchResp apistructs.CountAppResponse
+	resp, err := hc.Get(host).Path("/api/applications/actions/count").
+		Header(httputil.InternalHeader, "bundle").
+		Param("projectID", strconv.FormatUint(proID, 10)).
+		Do().JSON(&fetchResp)
+	if err != nil {
+		return 0, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return 0, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	return fetchResp.Data, nil
+}
