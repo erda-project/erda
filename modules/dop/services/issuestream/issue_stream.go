@@ -86,51 +86,12 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 		}
 	}
 
-	// only send issue update event when creat comment, other event like
-	// change assignee will send event in updateIssue
-	// TODO: delete send event in updateIssue
-	// if req.StreamType == apistructs.ISTComment {
+	// send issue create or update event when creat issue stream
 	go func() {
-		content, _ := GetDefaultContent(is.StreamType, is.StreamParams)
-		logrus.Debugf("old issue content is: %s", content)
-		issue, _ := s.db.GetIssue(req.IssueID)
-		receivers, err := s.db.GetReceiversByIssueID(req.IssueID)
-		if err != nil {
-			logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
-			receivers = []string{}
-		}
-		projectModel, _ := s.bdl.GetProject(issue.ProjectID)
-		orgModel, _ := s.bdl.GetOrg(int64(projectModel.OrgID))
-		ev := &apistructs.EventCreateRequest{
-			EventHeader: apistructs.EventHeader{
-				Event:         bundle.IssueEvent,
-				Action:        bundle.UpdateAction,
-				OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
-				ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
-				ApplicationID: "-1",
-				TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-			},
-			Sender: bundle.SenderDOP,
-			Content: apistructs.IssueEventData{
-				Title:        issue.Title,
-				Content:      content,
-				AtUserIDs:    issue.Assignee,
-				IssueType:    issue.Type,
-				StreamType:   is.StreamType,
-				StreamParams: is.StreamParams,
-				Receivers:    receivers,
-				Params: map[string]string{
-					"orgName":     orgModel.Name,
-					"projectName": projectModel.Name,
-					"issueID":     strconv.FormatInt(req.IssueID, 10),
-				},
-			},
-		}
-		if err := s.bdl.CreateEvent(ev); err != nil {
-			logrus.Warnf("failed to send issue mr relate event, (%v)", err)
+		if err := s.CreateIssueEvent(req.IssueID, req.StreamType, req.StreamParams); err != nil {
+			logrus.Errorf("create issue %d event err: %v", req.IssueID, err)
 		}
 	}()
-	// }
 
 	return int64(is.ID), nil
 }
@@ -200,4 +161,46 @@ func GetDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam
 	}
 
 	return content.String(), nil
+}
+
+// CreateIssueEvent create issue event
+func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
+	streamParams apistructs.ISTParam) error {
+	content, _ := GetDefaultContent(streamType, streamParams)
+	logrus.Debugf("old issue content is: %s", content)
+	issue, _ := s.db.GetIssue(issueID)
+	receivers, err := s.db.GetReceiversByIssueID(issueID)
+	if err != nil {
+		logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
+		receivers = []string{}
+	}
+	projectModel, _ := s.bdl.GetProject(issue.ProjectID)
+	orgModel, _ := s.bdl.GetOrg(int64(projectModel.OrgID))
+	ev := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         bundle.IssueEvent,
+			Action:        streamType.GetEventAction(),
+			OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
+			ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
+			ApplicationID: "-1",
+			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
+		},
+		Sender: bundle.SenderDOP,
+		Content: apistructs.IssueEventData{
+			Title:        issue.Title,
+			Content:      content,
+			AtUserIDs:    issue.Assignee,
+			IssueType:    issue.Type,
+			StreamType:   streamType,
+			StreamParams: streamParams,
+			Receivers:    receivers,
+			Params: map[string]string{
+				"orgName":     orgModel.Name,
+				"projectName": projectModel.Name,
+				"issueID":     strconv.FormatInt(issueID, 10),
+			},
+		},
+	}
+
+	return s.bdl.CreateEvent(ev)
 }
