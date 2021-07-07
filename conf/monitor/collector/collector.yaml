@@ -9,6 +9,7 @@ kafka:
         options:
             go.produce.channel.size: ${COLLECTOR_KAFKA_PRODUCE_CHANNEL_SIZE:100}
             queue.buffering.max.kbytes: ${COLLECTOR_KAFKA_QUEUE_SIZE_KB:524288} # 500MB
+
 monitor-collector:
     _enable: ${COLLECTOR_ENABLE:true}
     ta_sampling_rate: ${COLLECTOR_BROWSER_SAMPLING_RATE:100}
@@ -21,7 +22,22 @@ monitor-collector:
         username: "${COLLECTOR_AUTH_USERNAME:collector}"
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
+
+monitor-collector-v2:
+    _enable: ${COLLECTORV2_ENABLE:true}
+    output:
+        name: ${COLLECTOR_OUTPUT_NAME:kafka}
+        # kafka config
+        parallelism: ${KAFKA_PARALLELISM:3}
+        batch:
+            size: ${KAFKA_BATCH_SIZE:50}
+            timeout: "30s"
     sign_auth:
+        sync_interval: 3m
+        expired_duration: 10m
+    limiter:
+        # `4x` or `4xB`, where x is one of the multiple from K, M, G, T or P.
+        request_body_size: 2M
 
 pprof:
 http-server@admin:
