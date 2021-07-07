@@ -243,8 +243,10 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 		return err
 	}
 
-	if status.SQLRunning != "yes" && status.SQLRunning != "connecting" ||
-		status.IORunning != "yes" && status.IORunning != "connecting" {
+	if !strings.EqualFold(status.IORunning, "connecting") &&
+		!strings.EqualFold(status.IORunning, "yes") ||
+		!strings.EqualFold(status.SQLRunning, "connecting") &&
+			!strings.EqualFold(status.SQLRunning, "yes") {
 		return fmt.Errorf("slave status error")
 	}
 
