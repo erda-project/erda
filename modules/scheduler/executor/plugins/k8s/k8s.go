@@ -350,14 +350,16 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 
 	//Get the value of the super-scoring ratio for different environments
-	var memSubscribeRatio,
-	cpuSubscribeRatio,
-	devMemSubscribeRatio,
-	devCpuSubscribeRatio,
-	testMemSubscribeRatio,
-	testCpuSubscribeRatio,
-	stagingMemSubscribeRatio,
-	stagingCpuSubscribeRatio float64
+	var (
+		memSubscribeRatio,
+		cpuSubscribeRatio,
+		devMemSubscribeRatio,
+		devCpuSubscribeRatio,
+		testMemSubscribeRatio,
+		testCpuSubscribeRatio,
+		stagingMemSubscribeRatio,
+		stagingCpuSubscribeRatio float64
+	)
 
 	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
 	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
