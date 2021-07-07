@@ -48,7 +48,7 @@ type Adapter struct {
 func NewAdapter(clusterName, addr, user, password string) *Adapter {
 	return &Adapter{
 		ClusterName: clusterName,
-		Addr:        addr,
+		Addr:        fmt.Sprintf("http://%s", addr),
 		User:        user,
 		Password:    password,
 	}

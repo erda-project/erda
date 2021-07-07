@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,7 +38,7 @@ type Adapter struct {
 func NewAdapter(clusterName, addr string) *Adapter {
 	return &Adapter{
 		ClusterName: clusterName,
-		Addr:        addr,
+		Addr:        fmt.Sprintf("http://%s", addr),
 	}
 }
 
@@ -60,11 +61,13 @@ func (a *Adapter) GetDubboInterfaceList(namespace string) ([]*pb.Interface, erro
 		}
 		iname := item.getInterfaceName()
 		if exist, ok := values[iname]; ok {
-			mergeInterface(exist, item.ToInterface())
+			values[iname] = mergeInterface(exist, item.ToInterface())
 		} else {
+			keys = append(keys, iname)
 			values[iname] = item.ToInterface()
 		}
 	}
+	sort.Strings(keys)
 	list := make([]*pb.Interface, 0, len(result))
 	for _, key := range keys {
 		list = append(list, values[key])
@@ -86,6 +89,9 @@ func mergeInterface(a *pb.Interface, b *pb.Interface) *pb.Interface {
 				a.Providerlist = append(a.Providerlist, p)
 			}
 		}
+		if len(b.Providermap) > 0 && a.Providermap == nil {
+			a.Providermap = make(map[string]*pb.InterfaceOwner)
+		}
 		for k, v := range b.Providermap {
 			if _, ok := a.Providermap[k]; !ok {
 				a.Providermap[k] = v
@@ -99,6 +105,9 @@ func mergeInterface(a *pb.Interface, b *pb.Interface) *pb.Interface {
 			if _, ok := providers[p]; !ok {
 				a.Providerlist = append(a.Providerlist, p)
 			}
+		}
+		if len(b.Consumermap) > 0 && a.Consumermap == nil {
+			a.Consumermap = make(map[string]*pb.InterfaceOwner)
 		}
 		for k, v := range b.Consumermap {
 			if _, ok := a.Consumermap[k]; !ok {
@@ -225,7 +234,7 @@ func (a *Adapter) getInterfaceDetail(namespace, keyword string, pageNo, pageSize
 	}
 	filtered := make([]*ServiceSearchResult, 0, len(list))
 	for _, item := range list {
-		if len(item.ClusterMap) <= 0 || item.ClusterMap["DEFAULT"] == nil || len(item.ClusterMap["DEFAULT"].Hosts) <= 0 {
+		if item == nil || len(item.ClusterMap) <= 0 || item.ClusterMap["DEFAULT"] == nil || len(item.ClusterMap["DEFAULT"].Hosts) <= 0 {
 			continue
 		}
 		filtered = append(filtered, item)
