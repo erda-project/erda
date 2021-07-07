@@ -323,18 +323,6 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		asc = true
 	}
 	orderBy := r.URL.Query().Get("orderBy")
-	switch orderBy {
-	case "cpuQuota":
-		orderBy = "cpu_quota"
-	case "memQuota":
-		orderBy = "mem_quota"
-	case "activeTime":
-		orderBy = "active_time"
-	case "name":
-		orderBy = "name"
-	default:
-		orderBy = ""
-	}
 
 	return &apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),

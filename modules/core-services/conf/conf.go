@@ -104,11 +104,11 @@ var (
 )
 
 func initPermissions() {
-	permissions = getAllFiles("erda-configs/permission", permissions)
+	permissions = getAllFiles("pkg/erda-configs/permission", permissions)
 }
 
 func initAuditTemplate() {
-	auditsTemplate = genTempFromFiles("erda-configs/audit/template.json")
+	auditsTemplate = genTempFromFiles("pkg/erda-configs/audit/template.json")
 }
 
 func genTempFromFiles(fileName string) apistructs.AuditTemplateMap {
