@@ -96,6 +96,9 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 		}
 	}
 	return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+		if p.Cfg.Skip {
+			return h
+		}
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			info := transport.ContextServiceInfo(ctx)
 			perm := methods[info.Method()]

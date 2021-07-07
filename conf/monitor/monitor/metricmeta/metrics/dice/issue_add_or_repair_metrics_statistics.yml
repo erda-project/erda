@@ -9,8 +9,8 @@ fields:
     bug_add_counts:
         type: "number"
         name: "add num"
-        uint:
+        unit:
     bug_repair_counts:
         type: "number"
         name: "repair num"
-        uint:    
+        unit:    

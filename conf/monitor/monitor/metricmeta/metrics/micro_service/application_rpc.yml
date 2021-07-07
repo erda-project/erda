@@ -91,21 +91,21 @@ fields:
     elapsed_count:
         type: "number"
         name: "Request Count"
-        uint: 
+        unit: 
     elapsed_max:
         type: "number"
         name: "Elapsed Maximum"
-        uint: 
+        unit: 
     elapsed_mean:
         type: "number"
         name: "Elapsed Mean"
-        uint: 
+        unit: 
     elapsed_min:
         type: "number"
         name: "Elapsed Minimum"
-        uint: 
+        unit: 
     elapsed_sum:
         type: "number"
         name: "Elapsed"
-        uint: 
+        unit: 
 

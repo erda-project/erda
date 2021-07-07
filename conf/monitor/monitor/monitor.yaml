@@ -5,6 +5,7 @@ health:
 
 grpc-server:
   addr: ":7080"
+
 service-register:
 
 elasticsearch:
@@ -32,18 +33,6 @@ mysql:
   username: "${MYSQL_USERNAME:root}"
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
-
-kafka:
-  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
-  comsumer:
-    options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
-      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
-  producer:
-    options:
-      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
-permission:
-
 
 erda.core.monitor.metric.index:
   request_timeout: "20s"
