@@ -60,10 +60,10 @@ func (a *Adapter) GetDubboInterfaceList(namespace string) ([]*pb.Interface, erro
 			continue
 		}
 		iname := item.getInterfaceName()
-		keys = append(keys, iname)
 		if exist, ok := values[iname]; ok {
 			values[iname] = mergeInterface(exist, item.ToInterface())
 		} else {
+			keys = append(keys, iname)
 			values[iname] = item.ToInterface()
 		}
 	}
