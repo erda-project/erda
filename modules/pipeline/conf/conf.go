@@ -44,13 +44,14 @@ type Conf struct {
 	BuildCacheExpireIn     time.Duration `env:"BUILD_CACHE_EXPIRE_IN" default:"168h"`
 
 	// bundle
-	GittarAddr    string `env:"GITTAR_ADDR" required:"false"`
-	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"false"`
-	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"false"`
-	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"false"`
-	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"false"`
-	HepaAddr      string `env:"HEPA_ADDR" required:"false"`
-	CollectorAddr string `env:"COLLECTOR_ADDR" required:"false"`
+	GittarAddr         string `env:"GITTAR_ADDR" required:"false"`
+	OpenAPIAddr        string `env:"OPENAPI_ADDR" required:"false"`
+	EventboxAddr       string `env:"EVENTBOX_ADDR" required:"false"`
+	DiceHubAddr        string `env:"DICEHUB_ADDR" required:"false"`
+	SchedulerAddr      string `env:"SCHEDULER_ADDR" required:"false"`
+	HepaAddr           string `env:"HEPA_ADDR" required:"false"`
+	CollectorAddr      string `env:"COLLECTOR_ADDR" required:"false"`
+	ClusterManagerAddr string `env:"CLUSTER_MANAGER_ADDR" required:"false"`
 
 	// public url
 	GittarPublicURL    string `env:"GITTAR_PUBLIC_URL" required:"true"`
@@ -211,6 +212,11 @@ func SchedulerAddr() string {
 // CollectorAddr 返回 collector 的集群内部地址.
 func CollectorAddr() string {
 	return cfg.CollectorAddr
+}
+
+// ClusterManagerAddr return cluster-manager address
+func ClusterManagerAddr() string {
+	return cfg.ClusterManagerAddr
 }
 
 // GittarPublicURL 返回 gittar 的公网地址.

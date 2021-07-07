@@ -27,76 +27,76 @@ fields:
     issue_response_time:
         type: "number"
         name: "response time"
-        uint: 
+        unit: 
     issue_remaining_time:
         type: "number"
         name: "remaining time"
-        uint: 
+        unit: 
     issue_elapsed_time:
         type: "number"
         name: "elapsed time"
-        uint: 
+        unit: 
     issue_this_elapsed_time:
         type: "number"
         name: "this elapsed time"
-        uint: 
+        unit: 
     issue_estimate_time:
         type: "number"
         name: "estimate time"
-        uint: 
+        unit: 
     issue_type_REQUIREMENT:
         type: "number"
         name: "REQUIREMENT"
-        uint: 
+        unit: 
     issue_type_TASK:
         type: "number"
         name: "TASK"
-        uint: 
+        unit: 
     issue_type_BUG:
         type: "number"
         name: "BUG"
-        uint:
+        unit:
     issue_type_TICKET:
         type: "number"
         name: "TICKET"
-        uint:
+        unit:
     re_open_time:
         type: "number"
         name: "reopen time"
-        uint:
+        unit:
     is_re_open:
         type: "number"
         name: "reopen"
-        uint:
+        unit:
     not_close:
         type: "number"
         name: "not close"
-        uint:
+        unit:
     counts:
         type: "number"
         name: "num"
-        uint:
+        unit:
     is_re_open_FATAL:
         type: "number"
         name: "fatal reopen"
-        uint:
+        unit:
     is_re_open_SERIOUS:
         type: "number"
         name: "serious reopen"
-        uint:
+        unit:
     is_re_open_NORMAL:
         type: "number"
         name: "normal reopen"
-        uint:
+        unit:
     is_re_open_SLIGHT:
         type: "number"
         name: "slight reopen"
-        uint:
+        unit:
     is_re_open_SUGGEST:
         type: "number"
         name: "suggest reopen"
-        uint:    
+        unit:    
     bug_add_or_repair_counts:
         type: "number"
         name: "add or repair num"
-        uint:
+        unit:

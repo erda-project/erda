@@ -1,22 +1,23 @@
 @url = http://localhost:8080/api
-@userid = 0
+@userid = 1100
 
 ### CreateCheckerV1
-POST {{url}}/tmc/status/projects/2/metrics
+POST {{url}}/v1/msp/checkers/projects/2/metrics
 Content-Type: application/json
 Accept: application/json
 User-ID: {{userid}}
 
 {
-    "name": "testnamex",
-    "mode": "http",
-    "url": "http://baidu.com",
-    "env": "DEV",
-    "other": "xxx"
+    "env":"PROD",
+    "mode":"http",
+    "name":"test",
+    "url":"http://baidu.com",
+    "accountId":null,
+    "expects":[]
 }
 
 ### UpdateCheckerV1
-POST {{url}}/tmc/status/metrics/33
+POST {{url}}/v1/msp/checkers/metrics/35
 Content-Type: application/json
 Accept: application/json
 User-ID: {{userid}}
@@ -30,26 +31,31 @@ User-ID: {{userid}}
 }
 
 ### DeleteCheckerV1
-DELETE  {{url}}/tmc/status/metrics/34
+DELETE {{url}}/v1/msp/checkers/metrics/35
+Accept: application/json
+User-ID: {{userid}}
+
+### GetCheckerV1
+GET {{url}}/v1/msp/checkers/metrics/35
 Accept: application/json
 User-ID: {{userid}}
 
 ### DescribeCheckersV1
-GET {{url}}/tmc/status/projects/2/dashboard?env=PROD
+GET {{url}}/v1/msp/checkers/projects/180/dashboard?env=PROD
 Accept: application/json
 User-ID: {{userid}}
 
 ### DescribeCheckerV1
-GET {{url}}/tmc/status/metrics/1/dashboard
+GET {{url}}/v1/msp/checkers/metrics/35/dashboard
 Accept: application/json
 User-ID: {{userid}}
 
 ### GetCheckerStatusV1
-GET {{url}}/tmc/status/metrics/1/status
+GET {{url}}/v1/msp/checkers/metrics/35/status
 Accept: application/json
 User-ID: {{userid}}
 
 ### GetCheckerIssuesV1
-GET {{url}}/tmc/status/metrics/1/issues
+GET {{url}}/v1/msp/checkers/metrics/35/issues
 Accept: application/json
 User-ID: {{userid}}

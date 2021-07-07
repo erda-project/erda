@@ -22,105 +22,105 @@ fields:
     FailedIsrUpdatesPerSec_Count:
         type: "number"
         name: "Failed Isr Updates Per Sec Count"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_EventType:
         type: "string"
         name: "Failed Isr Updates Per Sec Event Type"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_FifteenMinuteRate:
         type: "number"
         name: "Failed Isr Updates Per Sec Fifteen Minute Rate"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_FiveMinuteRate:
         type: "number"
         name: "Failed Isr Updates Per Sec Five Minute Rate"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_MeanRate:
         type: "number"
         name: "Failed Isr Updates Per Sec Mean Rate"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_OneMinuteRate:
         type: "number"
         name: "Failed Isr Updates Per Sec One Minute Rate"
-        uint: 
+        unit: 
     FailedIsrUpdatesPerSec_RateUnit:
         type: "string"
         name: "Failed Isr Updates Per Sec Rate Unit"
-        uint: 
+        unit: 
     IsrExpandsPerSec_Count:
         type: "number"
         name: "Isr Expands Per Sec Count"
-        uint: 
+        unit: 
     IsrExpandsPerSec_EventType:
         type: "string"
         name: "Isr Expands Per Sec Event Type"
-        uint: 
+        unit: 
     IsrExpandsPerSec_FifteenMinuteRate:
         type: "number"
         name: "Isr Expands Per Sec Fifteen Minute Rate"
-        uint: 
+        unit: 
     IsrExpandsPerSec_FiveMinuteRate:
         type: "number"
         name: "Isr Expands Per Sec Five Minute Rate"
-        uint: 
+        unit: 
     IsrExpandsPerSec_MeanRate:
         type: "number"
         name: "Isr Expands Per Sec Mean Rate"
-        uint: 
+        unit: 
     IsrExpandsPerSec_OneMinuteRate:
         type: "number"
         name: "Isr Expands Per Sec One Minute Rate"
-        uint: 
+        unit: 
     IsrExpandsPerSec_RateUnit:
         type: "string"
         name: "Isr Expands Per Sec Rate Unit"
-        uint: 
+        unit: 
     IsrShrinksPerSec_Count:
         type: "number"
         name: "Isr Shrinks Per Sec Count"
-        uint: 
+        unit: 
     IsrShrinksPerSec_EventType:
         type: "string"
         name: "Isr Shrinks Per Sec Event Type"
-        uint: 
+        unit: 
     IsrShrinksPerSec_FifteenMinuteRate:
         type: "number"
         name: "Isr Shrinks Per Sec Fifteen Minute Rate"
-        uint: 
+        unit: 
     IsrShrinksPerSec_FiveMinuteRate:
         type: "number"
         name: "Isr Shrinks Per Sec Five Minute Rate"
-        uint: 
+        unit: 
     IsrShrinksPerSec_MeanRate:
         type: "number"
         name: "Isr Shrinks Per Sec Mean Rate"
-        uint: 
+        unit: 
     IsrShrinksPerSec_OneMinuteRate:
         type: "number"
         name: "Isr Shrinks Per Sec One Minute Rate"
-        uint: 
+        unit: 
     IsrShrinksPerSec_RateUnit:
         type: "string"
         name: "Isr Shrinks Per Sec Rate Unit"
-        uint: 
+        unit: 
     LeaderCount_Value:
         type: "number"
         name: "Leader Count Value"
-        uint: 
+        unit: 
     OfflineReplicaCount_Value:
         type: "number"
         name: "Offline Replica Count Value"
-        uint: 
+        unit: 
     PartitionCount_Value:
         type: "number"
         name: "Partition Count Value"
-        uint: 
+        unit: 
     UnderMinIsrPartitionCount_Value:
         type: "number"
         name: "Under Minimum Isr Partition Count Value"
-        uint: 
+        unit: 
     UnderReplicatedPartitions_Value:
         type: "number"
         name: "Under Replicated Partitions Value"
-        uint: 
+        unit: 
 

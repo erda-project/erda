@@ -14,389 +14,389 @@ fields:
     bytes_recv:
         type: "number"
         name: "Bytes Recv"
-        uint: 
+        unit: 
     bytes_sent:
         type: "number"
         name: "Bytes Sent"
-        uint: 
+        unit: 
     drop_in:
         type: "number"
         name: "Drop In"
-        uint: 
+        unit: 
     drop_out:
         type: "number"
         name: "Drop Out"
-        uint: 
+        unit: 
     err_in:
         type: "number"
         name: "Err In"
-        uint: 
+        unit: 
     err_out:
         type: "number"
         name: "Err Out"
-        uint: 
+        unit: 
     icmp_inaddrmaskreps:
         type: "number"
         name: "Icmp Inaddrmaskreps"
-        uint: 
+        unit: 
     icmp_inaddrmasks:
         type: "number"
         name: "Icmp Inaddrmasks"
-        uint: 
+        unit: 
     icmp_incsumerrors:
         type: "number"
         name: "Icmp Incsumerrors"
-        uint: 
+        unit: 
     icmp_indestunreachs:
         type: "number"
         name: "Icmp Indestunreachs"
-        uint: 
+        unit: 
     icmp_inechoreps:
         type: "number"
         name: "Icmp Inechoreps"
-        uint: 
+        unit: 
     icmp_inechos:
         type: "number"
         name: "Icmp Inechos"
-        uint: 
+        unit: 
     icmp_inerrors:
         type: "number"
         name: "Icmp Inerrors"
-        uint: 
+        unit: 
     icmp_inmsgs:
         type: "number"
         name: "Icmp Inmsgs"
-        uint: 
+        unit: 
     icmp_inparmprobs:
         type: "number"
         name: "Icmp Inparmprobs"
-        uint: 
+        unit: 
     icmp_inredirects:
         type: "number"
         name: "Icmp Inredirects"
-        uint: 
+        unit: 
     icmp_insrcquenchs:
         type: "number"
         name: "Icmp Insrcquenchs"
-        uint: 
+        unit: 
     icmp_intimeexcds:
         type: "number"
         name: "Icmp Intimeexcds"
-        uint: 
+        unit: 
     icmp_intimestampreps:
         type: "number"
         name: "Icmp Intimestampreps"
-        uint: 
+        unit: 
     icmp_intimestamps:
         type: "number"
         name: "Icmp Intimestamps"
-        uint: 
+        unit: 
     icmp_outaddrmaskreps:
         type: "number"
         name: "Icmp Outaddrmaskreps"
-        uint: 
+        unit: 
     icmp_outaddrmasks:
         type: "number"
         name: "Icmp Outaddrmasks"
-        uint: 
+        unit: 
     icmp_outdestunreachs:
         type: "number"
         name: "Icmp Outdestunreachs"
-        uint: 
+        unit: 
     icmp_outechoreps:
         type: "number"
         name: "Icmp Outechoreps"
-        uint: 
+        unit: 
     icmp_outechos:
         type: "number"
         name: "Icmp Outechos"
-        uint: 
+        unit: 
     icmp_outerrors:
         type: "number"
         name: "Icmp Outerrors"
-        uint: 
+        unit: 
     icmp_outmsgs:
         type: "number"
         name: "Icmp Outmsgs"
-        uint: 
+        unit: 
     icmp_outparmprobs:
         type: "number"
         name: "Icmp Outparmprobs"
-        uint: 
+        unit: 
     icmp_outredirects:
         type: "number"
         name: "Icmp Outredirects"
-        uint: 
+        unit: 
     icmp_outsrcquenchs:
         type: "number"
         name: "Icmp Outsrcquenchs"
-        uint: 
+        unit: 
     icmp_outtimeexcds:
         type: "number"
         name: "Icmp Outtimeexcds"
-        uint: 
+        unit: 
     icmp_outtimestampreps:
         type: "number"
         name: "Icmp Outtimestampreps"
-        uint: 
+        unit: 
     icmp_outtimestamps:
         type: "number"
         name: "Icmp Outtimestamps"
-        uint: 
+        unit: 
     icmpmsg_intype0:
         type: "number"
         name: "Icmpmsg Intype0"
-        uint: 
+        unit: 
     icmpmsg_intype3:
         type: "number"
         name: "Icmpmsg Intype3"
-        uint: 
+        unit: 
     icmpmsg_intype8:
         type: "number"
         name: "Icmpmsg Intype8"
-        uint: 
+        unit: 
     icmpmsg_outtype0:
         type: "number"
         name: "Icmpmsg Outtype0"
-        uint: 
+        unit: 
     icmpmsg_outtype11:
         type: "number"
         name: "Icmpmsg Outtype11"
-        uint: 
+        unit: 
     icmpmsg_outtype3:
         type: "number"
         name: "Icmpmsg Outtype3"
-        uint: 
+        unit: 
     icmpmsg_outtype5:
         type: "number"
         name: "Icmpmsg Outtype5"
-        uint: 
+        unit: 
     icmpmsg_outtype8:
         type: "number"
         name: "Icmpmsg Outtype8"
-        uint: 
+        unit: 
     ip_defaultttl:
         type: "number"
         name: "IP Defaultttl"
-        uint: 
+        unit: 
     ip_forwarding:
         type: "number"
         name: "IP Forwarding"
-        uint: 
+        unit: 
     ip_forwdatagrams:
         type: "number"
         name: "IP Forwdatagrams"
-        uint: 
+        unit: 
     ip_fragcreates:
         type: "number"
         name: "IP Fragcreates"
-        uint: 
+        unit: 
     ip_fragfails:
         type: "number"
         name: "IP Fragfails"
-        uint: 
+        unit: 
     ip_fragoks:
         type: "number"
         name: "IP Fragoks"
-        uint: 
+        unit: 
     ip_inaddrerrors:
         type: "number"
         name: "IP Inaddrerrors"
-        uint: 
+        unit: 
     ip_indelivers:
         type: "number"
         name: "IP Indelivers"
-        uint: 
+        unit: 
     ip_indiscards:
         type: "number"
         name: "IP Indiscards"
-        uint: 
+        unit: 
     ip_inhdrerrors:
         type: "number"
         name: "IP Inhdrerrors"
-        uint: 
+        unit: 
     ip_inreceives:
         type: "number"
         name: "IP Inreceives"
-        uint: 
+        unit: 
     ip_inunknownprotos:
         type: "number"
         name: "IP Inunknownprotos"
-        uint: 
+        unit: 
     ip_outdiscards:
         type: "number"
         name: "IP Outdiscards"
-        uint: 
+        unit: 
     ip_outnoroutes:
         type: "number"
         name: "IP Outnoroutes"
-        uint: 
+        unit: 
     ip_outrequests:
         type: "number"
         name: "IP Outrequests"
-        uint: 
+        unit: 
     ip_reasmfails:
         type: "number"
         name: "IP Reasmfails"
-        uint: 
+        unit: 
     ip_reasmoks:
         type: "number"
         name: "IP Reasmoks"
-        uint: 
+        unit: 
     ip_reasmreqds:
         type: "number"
         name: "IP Reasmreqds"
-        uint: 
+        unit: 
     ip_reasmtimeout:
         type: "number"
         name: "IP Reasmtimeout"
-        uint: 
+        unit: 
     packets_recv:
         type: "number"
         name: "Packets Recv"
-        uint: 
+        unit: 
     packets_sent:
         type: "number"
         name: "Packets Sent"
-        uint: 
+        unit: 
     pkg_recv_rate:
         type: "number"
         name: "Pkg Recv Rate"
-        uint: 
+        unit: 
     pkg_send_rate:
         type: "number"
         name: "Pkg Send Rate"
-        uint: 
+        unit: 
     recv_rate:
         type: "number"
         name: "Recv Rate"
-        uint: 
+        unit: 
     send_rate:
         type: "number"
         name: "Send Rate"
-        uint: 
+        unit: 
     tcp_activeopens:
         type: "number"
         name: "Tcp Activeopens"
-        uint: 
+        unit: 
     tcp_attemptfails:
         type: "number"
         name: "Tcp Attemptfails"
-        uint: 
+        unit: 
     tcp_currestab:
         type: "number"
         name: "Tcp Currestab"
-        uint: 
+        unit: 
     tcp_estabresets:
         type: "number"
         name: "Tcp Estabresets"
-        uint: 
+        unit: 
     tcp_incsumerrors:
         type: "number"
         name: "Tcp Incsumerrors"
-        uint: 
+        unit: 
     tcp_inerrs:
         type: "number"
         name: "Tcp Inerrs"
-        uint: 
+        unit: 
     tcp_insegs:
         type: "number"
         name: "Tcp Insegs"
-        uint: 
+        unit: 
     tcp_maxconn:
         type: "number"
         name: "Tcp Maxconn"
-        uint: 
+        unit: 
     tcp_outrsts:
         type: "number"
         name: "Tcp Outrsts"
-        uint: 
+        unit: 
     tcp_outsegs:
         type: "number"
         name: "Tcp Outsegs"
-        uint: 
+        unit: 
     tcp_passiveopens:
         type: "number"
         name: "Tcp Passiveopens"
-        uint: 
+        unit: 
     tcp_retranssegs:
         type: "number"
         name: "Tcp Retranssegs"
-        uint: 
+        unit: 
     tcp_rtoalgorithm:
         type: "number"
         name: "Tcp Rtoalgorithm"
-        uint: 
+        unit: 
     tcp_rtomax:
         type: "number"
         name: "Tcp Rtomax"
-        uint: 
+        unit: 
     tcp_rtomin:
         type: "number"
         name: "Tcp Rtomin"
-        uint: 
+        unit: 
     udp_ignoredmulti:
         type: "number"
         name: "Udp Ignoredmulti"
-        uint: 
+        unit: 
     udp_incsumerrors:
         type: "number"
         name: "Udp Incsumerrors"
-        uint: 
+        unit: 
     udp_indatagrams:
         type: "number"
         name: "Udp Indatagrams"
-        uint: 
+        unit: 
     udp_inerrors:
         type: "number"
         name: "Udp Inerrors"
-        uint: 
+        unit: 
     udp_noports:
         type: "number"
         name: "Udp Noports"
-        uint: 
+        unit: 
     udp_outdatagrams:
         type: "number"
         name: "Udp Outdatagrams"
-        uint: 
+        unit: 
     udp_rcvbuferrors:
         type: "number"
         name: "Udp Rcvbuferrors"
-        uint: 
+        unit: 
     udp_sndbuferrors:
         type: "number"
         name: "Udp Sndbuferrors"
-        uint: 
+        unit: 
     udplite_ignoredmulti:
         type: "number"
         name: "Udplite Ignoredmulti"
-        uint: 
+        unit: 
     udplite_incsumerrors:
         type: "number"
         name: "Udplite Incsumerrors"
-        uint: 
+        unit: 
     udplite_indatagrams:
         type: "number"
         name: "Udplite Indatagrams"
-        uint: 
+        unit: 
     udplite_inerrors:
         type: "number"
         name: "Udplite Inerrors"
-        uint: 
+        unit: 
     udplite_noports:
         type: "number"
         name: "Udplite Noports"
-        uint: 
+        unit: 
     udplite_outdatagrams:
         type: "number"
         name: "Udplite Outdatagrams"
-        uint: 
+        unit: 
     udplite_rcvbuferrors:
         type: "number"
         name: "Udplite Rcvbuferrors"
-        uint: 
+        unit: 
     udplite_sndbuferrors:
         type: "number"
         name: "Udplite Sndbuferrors"
-        uint: 
+        unit: 
 
