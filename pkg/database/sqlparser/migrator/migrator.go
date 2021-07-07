@@ -486,7 +486,7 @@ func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Set
 
 func (mig *Migrator) destructiveLint() error {
 	sql, ok := mig.LocalScripts.HasDestructiveOperationInPending()
-	if !ok {
+	if ok {
 		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", sql)
 	}
 
