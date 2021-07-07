@@ -159,7 +159,7 @@ type ServiceHost struct {
 	Valid    bool              `json:"valid"`
 	Port     int64             `json:"port"`
 	IP       string            `json:"ip"`
-	Weight   int64             `json:"weight"`
+	Weight   float64           `json:"weight"`
 	Enabled  bool              `json:"enabled"`
 	MetaData map[string]string `json:"metadata"`
 }

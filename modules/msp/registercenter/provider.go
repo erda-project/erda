@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
 	"github.com/erda-project/erda/bundle"
+	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
@@ -41,15 +42,17 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler())
 	p.registerCenterService = &registerCenterService{
-		p:   p,
-		bdl: p.bdl,
+		p:                p,
+		bdl:              p.bdl,
+		instanceTenantDB: &instancedb.InstanceTenantDB{DB: p.DB},
+		instanceDB:       &instancedb.InstanceDB{DB: p.DB},
 	}
 	if p.Register != nil {
 		type RegisterCenterService pb.RegisterCenterServiceServer
 		pb.RegisterRegisterCenterServiceImp(p.Register, p.registerCenterService, apis.Options(), p.Perm.Check(
-			perm.Method(RegisterCenterService.ListInterface, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("projectID")),
-			perm.Method(RegisterCenterService.GetHTTPServices, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("projectID")),
-			perm.Method(RegisterCenterService.EnableHTTPService, perm.ScopeProject, "registercenter", perm.ActionUpdate, perm.FieldValue("projectID")),
+			perm.Method(RegisterCenterService.ListInterface, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("ProjectID")),
+			perm.Method(RegisterCenterService.GetHTTPServices, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("ProjectID")),
+			perm.Method(RegisterCenterService.EnableHTTPService, perm.ScopeProject, "registercenter", perm.ActionUpdate, perm.FieldValue("ProjectID")),
 		))
 	}
 	return nil

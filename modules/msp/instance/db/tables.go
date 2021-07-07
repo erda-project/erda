@@ -50,7 +50,7 @@ type InstanceTenant struct {
 // TableName .
 func (InstanceTenant) TableName() string { return TableInstanceTenant }
 
-var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+var instanceTenantFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(InstanceTenant{}))
 
 // Instance .
 type Instance struct {
@@ -88,7 +88,7 @@ type Tmc struct {
 // TableName .
 func (Tmc) TableName() string { return TableTmc }
 
-var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Instance{}))
+var tmcFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(Tmc{}))
 
 // TmcVersion .
 type TmcVersion struct {
