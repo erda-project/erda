@@ -12,72 +12,79 @@ pprof:
 service-register:
 
 mysql:
-  host: "${MYSQL_HOST:localhost}"
-  port: ${MYSQL_PORT:3306}
-  username: "${MYSQL_USERNAME:root}"
-  password: "${MYSQL_PASSWORD:123456}"
-  database: "${MYSQL_DATABASE:dice}"
+  host: rm-bp1knz0ilikbrz403.mysql.rds.aliyuncs.com
+  port: 3306
+  username: dice_dev
+  password: 6Ns56M484pZ9Y7tQ3mSKkUX9wX7Ov0Bc
+  database: dev_dice
 
-elasticsearch:
-  urls: "${ES_URL:http://localhost:9200}"
-  security: ${ES_SECURITY_ENABLE:false}
-  username: "${ES_SECURITY_USERNAME}"
-  password: "${ES_SECURITY_PASSWORD}"
+#elasticsearch:
+#  urls: "${ES_URL:http://localhost:9200}"
+#  security: ${ES_SECURITY_ENABLE:false}
+#  username: "${ES_SECURITY_USERNAME}"
+#  password: "${ES_SECURITY_PASSWORD}"
 
-etcd:
-  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
-  tls:
-    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
-    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
-    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+#etcd:
+#  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+#  tls:
+#    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+#    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+#    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
-etcd-election:
-  root_path: "/msp-election"
+#etcd-election:
+#  root_path: "/msp-election"
 
-redis:
-  addr: "${REDIS_ADDR}"
-  password: "${REDIS_PASSWORD}"
-  db: ${REDIS_DB:0}
-  master_name: "${REDIS_MASTER_NAME}"
-  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+#redis:
+#  addr: "${REDIS_ADDR}"
+#  password: "${REDIS_PASSWORD}"
+#  db: ${REDIS_DB:0}
+#  master_name: "${REDIS_MASTER_NAME}"
+#  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
-cassandra:
-  host: "${CASSANDRA_ADDR:localhost:9042}"
-  security: ${CASSANDRA_SECURITY_ENABLE:false}
-  username: ${CASSANDRA_SECURITY_USERNAME}
-  password: ${CASSANDRA_SECURITY_PASSWORD}
-  timeout: "${CASSANDRA_TIMEOUT:3s}"
+#cassandra:
+#  host: "${CASSANDRA_ADDR:localhost:9042}"
+#  security: ${CASSANDRA_SECURITY_ENABLE:false}
+#  username: ${CASSANDRA_SECURITY_USERNAME}
+#  password: ${CASSANDRA_SECURITY_PASSWORD}
+#  timeout: "${CASSANDRA_TIMEOUT:3s}"
 
-i18n:
-  common:
-    - conf/common/i18n/common.yml
-    - conf/common/i18n/apis.yml
+#i18n:
+#  common:
+#    - conf/common/i18n/common.yml
+#    - conf/common/i18n/apis.yml
 
-metric-report-client:
-  report_config:
-    collector:
-      addr: "${COLLECTOR_ADDR:collector:7076}"
-      username: ${COLLECTOR_AUTH_USERNAME}
-      password: ${COLLECTOR_AUTH_PASSWORD}
+#metric-report-client:
+#  report_config:
+#    collector:
+#      addr: "${COLLECTOR_ADDR:collector:7076}"
+#      username: ${COLLECTOR_AUTH_USERNAME}
+#      password: ${COLLECTOR_AUTH_PASSWORD}
 
-grpc-client@erda.core.monitor.metric:
+#grpc-client@erda.core.monitor.metric:
+#  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+#erda.core.monitor.metric-client:
+
+grpc-client@erda.core.monitor.alert:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
-erda.core.monitor.metric-client:
+erda.core.monitor.alert-client:
+
+
+erda.msp.apm.alert:
+  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
 
 permission:
-
 msp.permission:
-erda.msp.menu:
-erda.msp.configcenter:
-erda.msp.registercenter:
+#erda.msp.menu:
+#erda.msp.configcenter:
+#erda.msp.registercenter:
 
 # checker
-erda.msp.apm.checker: # checkers apis
+#erda.msp.apm.checker: # checkers apis
 
-erda.msp.apm.checker.storage.cache.sycn:
-  cache_key: "${CHECKER_CACHE_KEY:checkers}"
-  delay_on_start: "5s"
-  interval: "5m"
+#erda.msp.apm.checker.storage.cache.sycn:
+#  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+#  delay_on_start: "5s"
+#  interval: "5m"
 
 # for debug
 # erda.msp.apm.checker.task.fetcher.fixed:
@@ -90,61 +97,61 @@ erda.msp.apm.checker.storage.cache.sycn:
 #         tags:
 #           custom_tag: "custom"
 
-erda.msp.apm.checker.task.fetcher.scheduled:
-  cache_key: "${CHECKER_CACHE_KEY:checkers}"
-  load_checkers_interval: "10s" # load checkers for worker
-  max_schedule_interval: "3m" # schedule all checkers to ndoes
+#erda.msp.apm.checker.task.fetcher.scheduled:
+#  cache_key: "${CHECKER_CACHE_KEY:checkers}"
+#  load_checkers_interval: "10s" # load checkers for worker
+#  max_schedule_interval: "3m" # schedule all checkers to ndoes
 
-erda.msp.apm.checker.task.plugins.http:
-erda.msp.apm.checker.task:
-  default_periodic_worker_interval: "30s"
+#erda.msp.apm.checker.task.plugins.http:
+#erda.msp.apm.checker.task:
+#  default_periodic_worker_interval: "30s"
 
-erda.msp.apm.trace:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: false # auto generate keyspace
+#erda.msp.apm.trace:
+#  cassandra:
+#    keyspace:
+#      name: "spot_prod"
+#      auto: false # auto generate keyspace
 
-erda.msp.apm.exception:
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: false # auto generate keyspace
+#erda.msp.apm.exception:
+#  cassandra:
+#    keyspace:
+#      name: "spot_prod"
+#      auto: false # auto generate keyspace
 
 # apm metric
-erda.msp.apm.metric:
-  monitor_url: "http://${MONITOR_ADDR:monitor:7096}"
+#erda.msp.apm.metric:
+#  monitor_url: "http://${MONITOR_ADDR:monitor:7096}"
 
 #resource deploy related
-erda.msp.resource:
-erda.msp.resource.deploy.coordinator:
-erda.msp.resource.deploy.handlers.apigateway:
-  main_cluster_info:
-    name: "${DICE_CLUSTER_NAME}"
-    root_domain: "${DICE_ROOT_DOMAIN}"
-    protocol: "${DICE_PROTOCOL}"
-    http_port: "${DICE_HTTP_PORT}"
-    https_port: "${DICE_HTTPS_PORT}"
-erda.msp.resource.deploy.handlers.configcenter:
-erda.msp.resource.deploy.handlers.etcd:
-erda.msp.resource.deploy.handlers.generalability:
-erda.msp.resource.deploy.handlers.jvmprofiler:
-erda.msp.resource.deploy.handlers.loganalytics:
-erda.msp.resource.deploy.handlers.loges:
-erda.msp.resource.deploy.handlers.logexporter:
-erda.msp.resource.deploy.handlers.monitor:
-  ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
-  ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"
-erda.msp.resource.deploy.handlers.monitorcollector:
-erda.msp.resource.deploy.handlers.monitorkafka:
-erda.msp.resource.deploy.handlers.monitorzk:
-erda.msp.resource.deploy.handlers.mysql:
-erda.msp.resource.deploy.handlers.nacos:
-erda.msp.resource.deploy.handlers.postgresql:
-erda.msp.resource.deploy.handlers.registercenter:
-erda.msp.resource.deploy.handlers.servicemesh:
-erda.msp.resource.deploy.handlers.zkproxy:
-erda.msp.resource.deploy.handlers.zookeeper:
+#erda.msp.resource:
+#erda.msp.resource.deploy.coordinator:
+#erda.msp.resource.deploy.handlers.apigateway:
+#  main_cluster_info:
+#    name: "${DICE_CLUSTER_NAME}"
+#    root_domain: "${DICE_ROOT_DOMAIN}"
+#    protocol: "${DICE_PROTOCOL}"
+#    http_port: "${DICE_HTTP_PORT}"
+#    https_port: "${DICE_HTTPS_PORT}"
+#erda.msp.resource.deploy.handlers.configcenter:
+#erda.msp.resource.deploy.handlers.etcd:
+#erda.msp.resource.deploy.handlers.generalability:
+#erda.msp.resource.deploy.handlers.jvmprofiler:
+#erda.msp.resource.deploy.handlers.loganalytics:
+#erda.msp.resource.deploy.handlers.loges:
+#erda.msp.resource.deploy.handlers.logexporter:
+#erda.msp.resource.deploy.handlers.monitor:
+#  ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
+#  ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"
+#erda.msp.resource.deploy.handlers.monitorcollector:
+#erda.msp.resource.deploy.handlers.monitorkafka:
+#erda.msp.resource.deploy.handlers.monitorzk:
+#erda.msp.resource.deploy.handlers.mysql:
+#erda.msp.resource.deploy.handlers.nacos:
+#erda.msp.resource.deploy.handlers.postgresql:
+#erda.msp.resource.deploy.handlers.registercenter:
+#erda.msp.resource.deploy.handlers.servicemesh:
+#erda.msp.resource.deploy.handlers.zkproxy:
+#erda.msp.resource.deploy.handlers.zookeeper:
 
 
 
