@@ -15,6 +15,7 @@ package apis
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -37,4 +38,37 @@ func Language(ctx context.Context) i18n.LanguageCodes {
 		}
 	}
 	return nil
+}
+
+// GetOrgID .
+func GetOrgID(ctx context.Context) string {
+	return GetHeader(ctx, "org-id")
+}
+
+// GetIntOrgID .
+func GetIntOrgID(ctx context.Context) (int64, error) {
+	return strconv.ParseInt(GetOrgID(ctx), 10, 64)
+}
+
+// GetUserID .
+func GetUserID(ctx context.Context) string {
+	return GetHeader(ctx, "user-id")
+}
+
+// GetIntUserID .
+func GetIntUserID(ctx context.Context) (int64, error) {
+	return strconv.ParseInt(GetUserID(ctx), 10, 64)
+}
+
+// GetHeader
+func GetHeader(ctx context.Context, key string) string {
+	header := transport.ContextHeader(ctx)
+	if header != nil {
+		for _, v := range header.Get(key) {
+			if len(v) > 0 {
+				return v
+			}
+		}
+	}
+	return ""
 }
