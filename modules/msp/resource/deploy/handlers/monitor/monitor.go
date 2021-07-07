@@ -14,6 +14,8 @@
 package monitor
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
@@ -103,6 +105,8 @@ func (p *provider) createMonitor(engine, requestId, requestGroup string, options
 		ApplicationId: options["applicationId"],
 		RuntimeId:     options["runtimeId"],
 		RuntimeName:   options["runtimeName"],
+		Created:       time.Now(),
+		Updated:       time.Now(),
 	}
 
 	err = p.MonitorDb.Save(&data).Error
