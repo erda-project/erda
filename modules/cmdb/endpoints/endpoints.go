@@ -192,10 +192,5 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/clusters/{idOrName}", Method: http.MethodGet, Handler: e.GetCluster},
 		{Path: "/api/clusters", Method: http.MethodGet, Handler: e.ListCluster},
 		{Path: "/api/clusters/{clusterName}", Method: http.MethodDelete, Handler: e.DeleteCluster},
-
-		// 用户相关
-		{Path: "/api/users", Method: http.MethodGet, Handler: e.ListUser},
-		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
-		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 	}
 }

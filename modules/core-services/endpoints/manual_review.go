@@ -76,7 +76,12 @@ func (e *Endpoints) CreateReviewUser(ctx context.Context, r *http.Request, vars 
 	if err, insertID = e.ManualReview.CreateReviewUser(&reviewCreateReq); err != nil {
 		return apierrors.ErrCreateReviewUser.InternalError(err).ToResp(), nil
 	}
-	userInfo, _ := e.bdl.GetCurrentUser(reviewCreateReq.Operator)
+
+	ucUser, err := e.uc.GetUser(reviewCreateReq.Operator)
+	if err != nil {
+		return apierrors.ErrCreateReviewUser.InternalError(err).ToResp(), nil
+	}
+	userInfo := convertToUserInfo(ucUser, false)
 	resp.OperatorUserInfo = userInfo
 	resp.ID = insertID
 
