@@ -36,15 +36,19 @@ func (am *AdminManager) ListAudits(ctx context.Context, req *http.Request, vars 
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
-		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
+		return apierrors.ErrListAudit.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
 	}
 
-	orgID, err := GetOrgID(req)
-	if err != nil {
-		return nil, errors.Errorf("invalid param, orgId is invalid")
+	var orgIDStr = ""
+	if req.URL.Query().Get("sys") == "" {
+		id, err := GetOrgID(req)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err).ToResp(), nil
+		}
+		orgIDStr = fmt.Sprintf("%d", id)
 	}
 
-	resp, err := am.bundle.ListAuditEvent(orgID, userID, req.URL.Query())
+	resp, err := am.bundle.ListAuditEvent(orgIDStr, userID, req.URL.Query())
 	if err != nil {
 		return apierrors.ErrListAudit.InternalError(err).ToResp(), nil
 	}

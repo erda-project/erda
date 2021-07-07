@@ -76,7 +76,7 @@ func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateReques
 	return nil
 }
 
-func (b *Bundle) ListAuditEvent(orgID uint64, userID string, params url.Values) (*apistructs.AuditsListResponse, error) {
+func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) (*apistructs.AuditsListResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (b *Bundle) ListAuditEvent(orgID uint64, userID string, params url.Values) 
 		Get(host).
 		Path("/api/audits/actions/list").
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
+		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
 		Params(params).
 		Do().

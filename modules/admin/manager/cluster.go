@@ -18,11 +18,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/pkg/user"
-
 	"github.com/erda-project/erda/apistructs"
-
 	"github.com/erda-project/erda/modules/admin/apierrors"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -67,6 +65,7 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	for _, cluster := range clusters {
 		for _, relate := range clusterRelation {
 			if relate.ClusterID == uint64(cluster.ID) {
+				cluster.IsRelation = "Y"
 				newClusters = append(newClusters, cluster)
 			}
 		}
@@ -91,7 +90,10 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 		return apierrors.ErrDereferenceCluster.MissingParameter("clusterName").ToResp(), nil
 	}
 
-	fmt.Printf("%s %d\n", userID, orgID)
+	resp, err := am.bundle.DereferenceCluster(orgID, clusterName, userID.String())
+	if err != nil {
+		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
+	}
 
-	return httpserver.OkResp("delete successfully")
+	return httpserver.OkResp(resp)
 }
