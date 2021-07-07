@@ -11,16 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package v2
+package collector
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/base64"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 )
 
+func isJSONArray(b []byte) bool {
+	x := bytes.TrimLeft(b, " \t\r\n")
+	return len(x) > 0 && x[0] == '['
+}
+
+// ReadRequestBody .
 func ReadRequestBody(req *http.Request) ([]byte, error) {
 	defer func() {
 		req.Body.Close()
@@ -36,7 +44,18 @@ func ReadRequestBody(req *http.Request) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return io.ReadAll(reader)
+	res, err := ioutil.ReadAll(reader)
+	return res, err
+}
+
+// ReadRequestBodyReader .
+func ReadRequestBodyReader(req *http.Request) (io.Reader, error) {
+	reader, err := getBodyReader(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getCustomEncodingReader(req, reader)
 }
 
 func getCustomEncodingReader(req *http.Request, reader io.Reader) (io.Reader, error) {

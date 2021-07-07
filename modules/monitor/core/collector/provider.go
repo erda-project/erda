@@ -14,9 +14,7 @@
 package collector
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -24,7 +22,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/core-services/model"
 )
 
 type config struct {
@@ -33,7 +30,6 @@ type config struct {
 		Password string `file:"password"`
 		Force    bool   `file:"force"`
 	}
-	SignAuth       signAuthConfig       `file:"sign_auth"`
 	Output         kafka.ProducerConfig `file:"output"`
 	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
 }
@@ -55,8 +51,6 @@ type collector struct {
 	Logger logs.Logger
 	writer writer.Writer
 	Kafka  kafka.Interface
-
-	auth *Authenticator
 }
 
 func (c *collector) Init(ctx servicehub.Context) error {
@@ -66,10 +60,6 @@ func (c *collector) Init(ctx servicehub.Context) error {
 	}
 	c.writer = w
 
-	if err := c.initAuthenticator(context.TODO()); err != nil {
-		return err
-	}
-
 	r := ctx.Service("http-server",
 		// telemetry.HttpMetric(),
 		interceptors.CORS(),
@@ -78,33 +68,6 @@ func (c *collector) Init(ctx servicehub.Context) error {
 	if err := c.intRoute(r); err != nil {
 		return fmt.Errorf("fail to init route: %s", err)
 	}
-	if err := c.intRouteV2(r); err != nil {
-		return fmt.Errorf("initRouteV2 faile: %w", err)
-	}
-	return nil
-}
-
-func (c *collector) initAuthenticator(ctx context.Context) error {
-	c.auth = &Authenticator{
-		store:  make(map[string]*model.AccessKey),
-		logger: c.Logger.Sub("Authenticator"),
-	}
-	if err := c.auth.syncAccessKey(ctx); err != nil {
-		return err
-	}
-	go func() {
-		c.Logger.Info("start syncAccessKey...")
-		tick := time.NewTicker(c.Cfg.SignAuth.SyncInterval)
-		defer tick.Stop()
-		for {
-			select {
-			case <-tick.C:
-			}
-			if err := c.auth.syncAccessKey(ctx); err != nil {
-				c.Logger.Errorf("auth.syncAccessKey failed. err: %s", err)
-			}
-		}
-	}()
 	return nil
 }
 
