@@ -836,3 +836,35 @@ func (e *Endpoints) GetOrgClusterRelationsByOrg(ctx context.Context, r *http.Req
 	}
 	return httpserver.OkResp(orgDtoList)
 }
+
+// DereferenceCluster 解除关联集群关系
+func (e *Endpoints) DereferenceCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identity, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrDereferenceCluster.NotLogin().ToResp(), nil
+	}
+	orgIDStr := r.URL.Query().Get("orgID")
+	if orgIDStr == "" {
+		return apierrors.ErrDereferenceCluster.MissingParameter("orgID").ToResp(), nil
+	}
+	var orgID int64
+	if orgID, err = strutil.Atoi64(orgIDStr); err != nil {
+		return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
+	}
+	clusterName := r.URL.Query().Get("clusterName")
+	if clusterName == "" {
+		return apierrors.ErrDereferenceCluster.MissingParameter("clusterName").ToResp(), nil
+	}
+	req := apistructs.DereferenceClusterRequest{
+		OrgID:   orgID,
+		Cluster: clusterName,
+	}
+	if err := e.member.CheckPermission(identity.UserID, apistructs.OrgScope, req.OrgID); err != nil {
+		return apierrors.ErrDereferenceCluster.InternalError(err).ToResp(), nil
+	}
+	if err := e.org.DereferenceCluster(identity.UserID, &req); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp("delete succ")
+}

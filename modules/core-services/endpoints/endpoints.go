@@ -284,6 +284,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/actions/set-notify-config", Method: http.MethodPost, Handler: e.SetNotifyConfig},
 		{Path: "/api/orgs/{orgID}/actions/get-notify-config", Method: http.MethodGet, Handler: e.GetNotifyConfig},
 		{Path: "/api/orgs/clusters/relations/{orgID}", Method: http.MethodGet, Handler: e.GetOrgClusterRelationsByOrg},
+		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: e.DereferenceCluster},
+
 		// 获取企业可用资源
 		{Path: "/api/orgs/actions/fetch-resources", Method: http.MethodGet, Handler: e.FetchOrgResources},
 
