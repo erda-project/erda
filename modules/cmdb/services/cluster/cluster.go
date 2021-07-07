@@ -807,29 +807,3 @@ func (c *Cluster) StatisticsClusterResource(cluster, orgName string, hostsNum ui
 func (c *Cluster) ListClusterServices(cluster string) ([]apistructs.ServiceUsageData, error) {
 	return c.con.ListClusterServices(cluster)
 }
-
-// DereferenceCluster 解除关联集群关系
-func (c *Cluster) DereferenceCluster(userID string, req *apistructs.DereferenceClusterRequest) error {
-	clusterInfo, err := c.db.GetClusterByName(req.Cluster)
-	if err != nil {
-		return err
-	}
-	if clusterInfo == nil {
-		return errors.Errorf("不存在的集群%s", req.Cluster)
-	}
-	if clusterInfo.OrgID == req.OrgID {
-		return errors.Errorf("非关联集群，不可解除关系")
-	}
-	referenceResp, err := c.bdl.FindClusterResource(req.Cluster, strconv.FormatInt(req.OrgID, 10))
-	if err != nil {
-		return err
-	}
-	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
-		return errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
-	}
-	//if err := c.db.DeleteOrgClusterRelationByClusterAndOrg(req.Cluster, req.OrgID); err != nil {
-	//	return err
-	//}
-
-	return nil
-}

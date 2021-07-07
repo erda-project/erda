@@ -425,3 +425,8 @@ func DecodeUserID(code string) (string, error) {
 
 	return "", errors.New("code is illegal")
 }
+
+type DeleteOrgClusterRelationResponse struct {
+	Header
+	Data string `json:"data"`
+}

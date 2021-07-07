@@ -163,6 +163,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithKMS(),
 		bundle.WithHepa(),
 		bundle.WithCollector(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmdb
+package core_services
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 var CMDB_CLUSTER_DEREFERENCE = apis.ApiSpec{
 	Path:         "/api/clusters/actions/dereference",
 	BackendPath:  "/api/clusters/actions/dereference",
-	Host:         "cmdb.marathon.l4lb.thisdcos.directory:9093",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
 	Scheme:       "http",
 	Method:       "PUT",
 	CheckLogin:   true,
