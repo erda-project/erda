@@ -322,6 +322,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications/{applicationID}/actions/pin", Method: http.MethodPut, Handler: e.PinApplication},
 		{Path: "/api/applications/{applicationID}/actions/unpin", Method: http.MethodPut, Handler: e.UnPinApplication},
 		{Path: "/api/applications/actions/list-templates", Method: http.MethodGet, Handler: e.ListAppTemplates},
+		{Path: "/api/applications/actions/count", Method: http.MethodGet, Handler: e.CountAppByProID},
 
 		// the interface of notice
 		{Path: "/api/notices", Method: http.MethodPost, Handler: e.CreateNotice},
@@ -344,6 +345,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/members/actions/create-by-invitecode", Method: http.MethodPost, Handler: e.CreateMemberByInviteCode},
 		{Path: "/api/members/actions/list-labels", Method: http.MethodGet, Handler: e.ListMeberLabels}, // 成员标签
 		{Path: "/api/members/actions/list-by-scopeID", Method: http.MethodGet, Handler: e.ListScopeManagersByScopeID},
+		{Path: "/api/members/actions/count-by-only-scopeID", Method: http.MethodGet, Handler: e.CountMembersWithoutExtraByScope},
 
 		// the interface of permission
 		{Path: "/api/permissions", Method: http.MethodGet, Handler: e.ListScopeRole},

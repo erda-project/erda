@@ -19,17 +19,25 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+var (
+	ProjectStatsCache *sync.Map
+	Once              sync.Once
 )
 
 // CreateProject 创建项目
@@ -180,10 +188,22 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 
 	// rich statistical data
 	if params.PageSize <= 15 {
+		Once.Do(func() {
+			ProjectStatsCache = &sync.Map{}
+		})
 		for i := range pagingProjects.List {
-			if err := e.getProjectStats(pagingProjects.List[i].ID, &pagingProjects.List[i].Stats); err != nil {
-				continue
+			prjID := int64(pagingProjects.List[i].ID)
+			stats, ok := ProjectStatsCache.Load(prjID)
+			if !ok {
+				logrus.Infof("get a new project %v add in cache", prjID)
+				stats, err = e.getProjectStats(uint64(prjID))
+				if err != nil {
+					logrus.Errorf("fail to getProjectStats,%v", err)
+					continue
+				}
+				ProjectStatsCache.Store(prjID, stats)
 			}
+			pagingProjects.List[i].Stats = *stats.(*apistructs.ProjectStats)
 		}
 	}
 
@@ -195,10 +215,19 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 	return httpserver.OkResp(*pagingProjects, userIDs)
 }
 
-func (e *Endpoints) getProjectStats(projectID uint64, stat *apistructs.ProjectStats) error {
+func (e *Endpoints) getProjectStats(projectID uint64) (*apistructs.ProjectStats, error) {
+	totalApp, err := e.bdl.CountAppByProID(projectID)
+	if err != nil {
+		return nil, errors.Errorf("get project states err: get app err: %v", err)
+	}
+	totalMembers, err := e.bdl.CountMembersWithoutExtraByScope(string(apistructs.ProjectScope), projectID)
+	if err != nil {
+		return nil, errors.Errorf("get project states err: get member err: %v", err)
+	}
+
 	iterations, err := e.db.FindIterations(projectID)
 	if err != nil {
-		return errors.Errorf("get project states err: get iterations err: %v", err)
+		return nil, errors.Errorf("get project states err: get iterations err: %v", err)
 	}
 	totalIterations := len(iterations)
 
@@ -217,7 +246,7 @@ func (e *Endpoints) getProjectStats(projectID uint64, stat *apistructs.ProjectSt
 	var totalManHour, usedManHour, planningManHour, totalBug, doneBug int64
 	totalIssues, _, err := e.db.PagingIssues(apistructs.IssuePagingRequest{
 		IssueListRequest: apistructs.IssueListRequest{
-			ProjectID: uint64(projectID),
+			ProjectID: projectID,
 			Type:      []apistructs.IssueType{apistructs.IssueTypeBug, apistructs.IssueTypeTask},
 			External:  true,
 		},
@@ -225,14 +254,14 @@ func (e *Endpoints) getProjectStats(projectID uint64, stat *apistructs.ProjectSt
 		PageSize: 99999,
 	}, false)
 	if err != nil {
-		return errors.Errorf("get project states err: get issues err: %v", err)
+		return nil, errors.Errorf("get project states err: get issues err: %v", err)
 	}
 
 	// 事件状态map
 	closedBugStatsMap := make(map[int64]struct{}, 0)
 	bugState, err := e.db.GetClosedBugState(int64(projectID))
 	if err != nil {
-		return errors.Errorf("get project states err: get issues stats err: %v", err)
+		return nil, errors.Errorf("get project states err: get issues stats err: %v", err)
 	}
 	for _, v := range bugState {
 		closedBugStatsMap[int64(v.ID)] = struct{}{}
@@ -263,16 +292,21 @@ func (e *Endpoints) getProjectStats(projectID uint64, stat *apistructs.ProjectSt
 	if totalBug != 0 {
 		dBugPer, _ = strconv.ParseFloat(fmt.Sprintf("%.0f", float64(doneBug)*100/float64(totalBug)), 64)
 	}
-	stat.TotalIterationsCount = totalIterations
-	stat.RunningIterationsCount = len(runningIterations)
-	stat.PlanningIterationsCount = len(planningIterations)
-	stat.TotalManHourCount = tManHour
-	stat.UsedManHourCount = uManHour
-	stat.PlanningManHourCount = pManHour
-	stat.DoneBugCount = doneBug
-	stat.TotalBugCount = totalBug
-	stat.DoneBugPercent = dBugPer
-	return nil
+	return &apistructs.ProjectStats{
+		CountApplications:       int(totalApp),
+		CountMembers:            totalMembers,
+		TotalApplicationsCount:  int(totalApp),
+		TotalMembersCount:       totalMembers,
+		TotalIterationsCount:    totalIterations,
+		RunningIterationsCount:  len(runningIterations),
+		PlanningIterationsCount: len(planningIterations),
+		TotalManHourCount:       tManHour,
+		UsedManHourCount:        uManHour,
+		PlanningManHourCount:    pManHour,
+		DoneBugCount:            doneBug,
+		TotalBugCount:           totalBug,
+		DoneBugPercent:          dBugPer,
+	}, nil
 }
 
 // getListProjectsParam get list project param
@@ -334,4 +368,18 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		Asc:      asc,
 		IsPublic: isPublic,
 	}, nil
+}
+
+// SetProjectStatsCache 设置项目状态缓存
+func SetProjectStatsCache() {
+	c := cron.New()
+	if err := c.AddFunc(conf.ProjectStatsCacheCron(), func() {
+		// 清空缓存
+		logrus.Info("start set project stats")
+		ProjectStatsCache = new(sync.Map)
+	}); err != nil {
+		logrus.Errorf("cron set setProjectStatsCache failed: %v", err)
+	}
+
+	c.Start()
 }
