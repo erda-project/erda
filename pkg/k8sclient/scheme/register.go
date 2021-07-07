@@ -24,10 +24,13 @@ import (
 	istiosecv1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sschema "k8s.io/client-go/kubernetes/scheme"
+
+	openyurtv1alpha1 "github.com/erda-project/erda/pkg/clientgo/apis/openyurt/v1alpha1"
 )
 
 // LocalSchemeBuilder register crd scheme
 var LocalSchemeBuilder = runtime.SchemeBuilder{
+	openyurtv1alpha1.AddToScheme,
 	k8sschema.AddToScheme,
 	elasticsearchv1.AddToScheme,
 	sparkoperatorv1beta2.AddToScheme,

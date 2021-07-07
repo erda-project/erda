@@ -32,9 +32,9 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     sum:
         type: "number"
         name: "Sum"
-        uint: 
+        unit: 
 

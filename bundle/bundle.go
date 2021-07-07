@@ -226,6 +226,15 @@ func WithTMC() Option {
 	}
 }
 
+// WithMSP 根据环境变量创建 msp 客户端
+func WithMSP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvMSP
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
 func WithPipeline() Option {
 	return func(b *Bundle) {
 		k := discover.EnvPipeline

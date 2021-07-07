@@ -24,33 +24,33 @@ fields:
     created:
         type: "number"
         name: "Created"
-        uint: 
+        unit: 
     generation:
         type: "number"
         name: "Generation"
-        uint: 
+        unit: 
     observed_generation:
         type: "number"
         name: "Observed Generation"
-        uint: 
+        unit: 
     replicas:
         type: "number"
         name: "Replicas"
-        uint: 
+        unit: 
     replicas_current:
         type: "number"
         name: "Replicas Current"
-        uint: 
+        unit: 
     replicas_ready:
         type: "number"
         name: "Replicas Ready"
-        uint: 
+        unit: 
     replicas_updated:
         type: "number"
         name: "Replicas Updated"
-        uint: 
+        unit: 
     spec_replicas:
         type: "number"
         name: "Spec Replicas"
-        uint: 
+        unit: 
 

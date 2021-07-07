@@ -49,9 +49,9 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     state:
         type: "number"
         name: "State"
-        uint: 
+        unit: 
 

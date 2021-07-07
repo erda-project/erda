@@ -24,37 +24,37 @@ fields:
     created:
         type: "number"
         name: "Created"
-        uint: 
+        unit: 
     current_number_scheduled:
         type: "number"
         name: "Current Number Scheduled"
-        uint: 
+        unit: 
     desired_number_scheduled:
         type: "number"
         name: "Desired Number Scheduled"
-        uint: 
+        unit: 
     generation:
         type: "number"
         name: "Generation"
-        uint: 
+        unit: 
     number_available:
         type: "number"
         name: "Number Available"
-        uint: 
+        unit: 
     number_misscheduled:
         type: "number"
         name: "Number Misscheduled"
-        uint: 
+        unit: 
     number_ready:
         type: "number"
         name: "Number Ready"
-        uint: 
+        unit: 
     number_unavailable:
         type: "number"
         name: "Number Unavailable"
-        uint: 
+        unit: 
     updated_number_scheduled:
         type: "number"
         name: "Updated Number Scheduled"
-        uint: 
+        unit: 
 

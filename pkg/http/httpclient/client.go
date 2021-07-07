@@ -70,6 +70,7 @@ type Option struct {
 	cookieJar       http.CookieJar
 	dnscache        *DNSCache
 	dialerKeepalive time.Duration
+	acceptEncoding  string
 
 	dialTimeout   time.Duration
 	clientTimeout time.Duration
@@ -95,20 +96,33 @@ func WithHTTPS() OpOption {
 	}
 }
 
+func WithAcceptEncoding(ae string) OpOption {
+	return func(op *Option) {
+		op.acceptEncoding = ae
+	}
+}
+
 func WithProxy(proxy string) OpOption {
 	return func(op *Option) {
 		op.proxy = proxy
 	}
 }
 
-func WithHttpsCertFromJSON(certFile, keyFile, cacrt []byte) OpOption {
+func WithHttpsCertFromJSON(certFile, keyFile, caCrt []byte) OpOption {
 	pair, err := tls.X509KeyPair(certFile, keyFile)
 	if err != nil {
 		logrus.Fatalf("LoadX509KeyPair: %v", err)
 	}
 
+	if caCrt == nil {
+		return func(op *Option) {
+			op.isHTTPS = true
+			op.keyPair = pair
+		}
+	}
+
 	pool := x509.NewCertPool()
-	pool.AppendCertsFromPEM(cacrt)
+	pool.AppendCertsFromPEM(caCrt)
 
 	return func(op *Option) {
 		op.isHTTPS = true
@@ -116,6 +130,7 @@ func WithHttpsCertFromJSON(certFile, keyFile, cacrt []byte) OpOption {
 		op.keyPair = pair
 	}
 }
+
 func WithDebug(w io.Writer) OpOption {
 	return func(op *Option) {
 		op.debugWriter = w
@@ -252,6 +267,7 @@ func New(ops ...OpOption) *HTTPClient {
 	if option.dialerKeepalive != 0 {
 		tr.IdleConnTimeout = option.dialerKeepalive
 	}
+	tr.ExpectContinueTimeout = 1 * time.Second
 	proto := "http"
 	if option.isHTTPS {
 		proto = "https"
@@ -261,7 +277,10 @@ func New(ops ...OpOption) *HTTPClient {
 				Certificates: []tls.Certificate{option.keyPair},
 			}
 		} else {
-			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			tr.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+				Certificates:       []tls.Certificate{option.keyPair},
+			}
 		}
 	}
 
@@ -370,7 +389,15 @@ func (c *HTTPClient) newRequest(retry []RetryOption) *Request {
 	}
 
 	if len(c.bearerTokenAuth) > 0 {
-		header["Authorization"] = "Bearer " + c.tokenAuth
+		header["Authorization"] = "Bearer " + c.bearerTokenAuth
+	}
+
+	if c.option.isHTTPS {
+		header["X-Portal-Scheme"] = "https"
+	}
+
+	if len(c.option.acceptEncoding) > 0 {
+		header["Accept-Encoding"] = c.option.acceptEncoding
 	}
 
 	request := &Request{

@@ -22,57 +22,57 @@ fields:
     DeleteRecords_NumDelayedOperations:
         type: "number"
         name: "Delete Records Num Delayed Operations"
-        uint: 
+        unit: 
     DeleteRecords_PurgatorySize:
         type: "number"
         name: "Delete Records Purgatory Size"
-        uint: 
+        unit: 
     Fetch_NumDelayedOperations:
         type: "number"
         name: "Fetch Num Delayed Operations"
-        uint: 
+        unit: 
     Fetch_PurgatorySize:
         type: "number"
         name: "Fetch Purgatory Size"
-        uint: 
+        unit: 
     Heartbeat_NumDelayedOperations:
         type: "number"
         name: "Heartbeat Num Delayed Operations"
-        uint: 
+        unit: 
     Heartbeat_PurgatorySize:
         type: "number"
         name: "Heartbeat Purgatory Size"
-        uint: 
+        unit: 
     Produce_NumDelayedOperations:
         type: "number"
         name: "Produce Num Delayed Operations"
-        uint: 
+        unit: 
     Produce_PurgatorySize:
         type: "number"
         name: "Produce Purgatory Size"
-        uint: 
+        unit: 
     Rebalance_NumDelayedOperations:
         type: "number"
         name: "Rebalance Num Delayed Operations"
-        uint: 
+        unit: 
     Rebalance_PurgatorySize:
         type: "number"
         name: "Rebalance Purgatory Size"
-        uint: 
+        unit: 
     topic_NumDelayedOperations:
         type: "number"
         name: "Topic Num Delayed Operations"
-        uint: 
+        unit: 
     topic_PurgatorySize:
         type: "number"
         name: "Topic Purgatory Size"
-        uint: 
+        unit: 
     txn-marker-purgatory_NumDelayedOperations:
         type: "number"
         name: "Txn-Marker-Purgatory Num Delayed Operations"
-        uint: 
+        unit: 
     txn-marker-purgatory_PurgatorySize:
         type: "number"
         name: "Txn-Marker-Purgatory Purgatory Size"
-        uint: 
+        unit: 
 

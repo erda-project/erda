@@ -101,6 +101,7 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithOpenapi(),
 		bundle.WithPipeline(),
 		bundle.WithGittar(),
+		bundle.WithMSP(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

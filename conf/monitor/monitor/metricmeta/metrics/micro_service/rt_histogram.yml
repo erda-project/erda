@@ -32,69 +32,69 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
     le_+Inf:
         type: "number"
         name: "Le + Inf"
-        uint: 
+        unit: 
     le_0_005:
         type: "number"
         name: "Le 0 005"
-        uint: 
+        unit: 
     le_0_01:
         type: "number"
         name: "Le 0 01"
-        uint: 
+        unit: 
     le_0_025:
         type: "number"
         name: "Le 0 025"
-        uint: 
+        unit: 
     le_0_05:
         type: "number"
         name: "Le 0 05"
-        uint: 
+        unit: 
     le_0_075:
         type: "number"
         name: "Le 0 075"
-        uint: 
+        unit: 
     le_0_1:
         type: "number"
         name: "Le 0 1"
-        uint: 
+        unit: 
     le_0_25:
         type: "number"
         name: "Le 0 25"
-        uint: 
+        unit: 
     le_0_5:
         type: "number"
         name: "Le 0 5"
-        uint: 
+        unit: 
     le_0_75:
         type: "number"
         name: "Le 0 75"
-        uint: 
+        unit: 
     le_10_0:
         type: "number"
         name: "Le 10 0"
-        uint: 
+        unit: 
     le_1_0:
         type: "number"
         name: "Le 1 0"
-        uint: 
+        unit: 
     le_2_5:
         type: "number"
         name: "Le 2 5"
-        uint: 
+        unit: 
     le_5_0:
         type: "number"
         name: "Le 5 0"
-        uint: 
+        unit: 
     le_7_5:
         type: "number"
         name: "Le 7 5"
-        uint: 
+        unit: 
     sum:
         type: "number"
         name: "Sum"
-        uint: 
+        unit: 
 

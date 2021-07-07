@@ -162,3 +162,61 @@ type AddonManagement struct {
 func (AddonManagement) TableName() string {
 	return "tb_addon_management"
 }
+
+// Deployments deployment service
+type Deployments struct {
+	ID              int64     `json:"id" gorm:"primary_key"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	OrgID           uint64    `gorm:"index:org_id"`
+	ProjectID       uint64
+	ApplicationID   uint64
+	PipelineID      uint64
+	TaskID          uint64
+	QueueTimeSec    int64 // queue time
+	CostTimeSec     int64 // job const time
+	ProjectName     string
+	ApplicationName string
+	TaskName        string
+	Status          string
+	Env             string
+	ClusterName     string
+	UserID          string
+	RuntimeID       string
+	ReleaseID       string
+	Extra           ExtraDeployment `json:"extra"`
+}
+
+type ExtraDeployment struct{}
+
+func (Deployments) TableName() string {
+	return "cm_deployments"
+}
+
+type Jobs struct {
+	ID              int64     `json:"id" gorm:"primary_key"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	OrgID           uint64    `gorm:"index:org_id"`
+	ProjectID       uint64
+	ApplicationID   uint64
+	PipelineID      uint64
+	TaskID          uint64
+	QueueTimeSec    int64
+	CostTimeSec     int64
+	ProjectName     string
+	ApplicationName string
+	TaskName        string
+	Status          string
+	Env             string
+	ClusterName     string
+	TaskType        string
+	UserID          string
+	Extra           ExtraJob `json:"extra"`
+}
+
+type ExtraJob struct{}
+
+func (Jobs) TableName() string {
+	return "cm_jobs"
+}

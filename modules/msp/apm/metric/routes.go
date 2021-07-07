@@ -31,7 +31,7 @@ import (
 const permissionResource = "microservice_metric"
 
 func (p *provider) initRoutes(routes httpserver.Router) error {
-	const apiPathPrefix = "/api/tmc"
+	const apiPathPrefix = "/api/msp"
 
 	checkByTerminusKeys := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP(
@@ -54,8 +54,8 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET(apiPathPrefix+"/metric/groups", p.listGroups, checkByScopeID)
 	routes.GET(apiPathPrefix+"/metric/groups/:id", p.getGroup, checkByScopeID)
 	// TODO: move to block provider
-	routes.GET(apiPathPrefix+"/dashboard/blocks", p.listGroups, checkByScopeID)
-	routes.GET(apiPathPrefix+"/dashboard/blocks/:id", p.getGroup, checkByScopeID)
+	routes.Any(apiPathPrefix+"/dashboard/blocks", p.proxyBlocks, checkByScopeID)
+	routes.Any(apiPathPrefix+"/dashboard/blocks/:id", p.proxyBlock, checkByScopeID)
 	return nil
 }
 
@@ -221,5 +221,5 @@ func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params st
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
-	return p.proxyMonitor("/api/dashboard/blocks"+url.PathEscape(params.ID), param, rw, r)
+	return p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
 }

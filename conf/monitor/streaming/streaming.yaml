@@ -118,37 +118,7 @@ metrics-storage:
         size: ${CREATING_INDEX_METRIC_OUTPUT_BATCH_SIZE:10}
         timeout: "10s"
 
-trace-storage:
-  _enable: ${TRACE_ENABLE:true}
-  input:
-    topics: "${TRACE_TOPICS:spot-trace}"
-    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
-    parallelism: ${TRACE_CONSUMERS:3}
-  output:
-    cassandra:
-      writer_config:
-        parallelism: ${CASSANDRA_PARALLELISM:3}
-        batch:
-          size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "3s"
-        retry: 2
-      session_config:
-        keyspace:
-          name: "spot_prod"
-          auto: true # 自动创建 keyspace
-          replication:
-            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-      gc_grace_seconds: 86400
-      ttl: ${TRACE_TTL:168h}
-    kafka:
-      topic: "${METRIC_TOPICS:spot-metrics}"
-      parallelism: ${KAFKA_PARALLELISM:3}
-      batch:
-        size:  ${KAFKA_BATCH_SIZE:50}
-        timeout: "10s"
-
-erda.core.monitor.metric:
+erda.core.monitor.metric.index:
   request_timeout: "20s"
   default_namespace: "full_cluster"
   # namespaces:
@@ -180,6 +150,36 @@ erda.core.monitor.metric:
     min_indices_store: "10GB" # 磁盘使用率高时，保证 索引最少可以占用的容量
     min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
     rollover_body_file: "${CONFIG_PATH}/index.rollover.min.json" # 当没有索引可以删时，先滚动索引，再删除。滚动的条件。
+
+trace-storage:
+  _enable: ${TRACE_ENABLE:true}
+  input:
+    topics: "${TRACE_TOPICS:spot-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
+  output:
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: "3s"
+        retry: 2
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: true # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+      gc_grace_seconds: 86400
+      ttl: ${TRACE_TTL:168h}
+    kafka:
+      topic: "${METRIC_TOPICS:spot-metrics}"
+      parallelism: ${KAFKA_PARALLELISM:3}
+      batch:
+        size:  ${KAFKA_BATCH_SIZE:50}
+        timeout: "10s"
 
 i18n@metric:
 

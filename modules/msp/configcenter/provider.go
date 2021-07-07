@@ -86,11 +86,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register("erda.msp.configcenter", &servicehub.Spec{
-		Services: pb.ServiceNames(),
-		Types:    pb.Types(),
-		ConfigFunc: func() interface{} {
-			return &config{}
-		},
+		Services:   pb.ServiceNames(),
+		Types:      pb.Types(),
+		ConfigFunc: func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

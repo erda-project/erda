@@ -149,3 +149,31 @@ func (b *Bundle) GetMonitorReportTasksByID(id int64) (*apistructs.ReportTask, er
 
 	return fetchResp.Data, nil
 }
+
+func (b *Bundle) RegisterConfig(desc string, configList []apistructs.MonitorConfig) error {
+	host, err := b.urls.Monitor()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var response struct {
+		apistructs.Header
+	}
+
+	resp, err := hc.Put(host).
+		Path(fmt.Sprintf("/api/config/register?desc=%s", desc)).
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(configList).
+		Do().
+		JSON(&response)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() || !response.Success {
+		return toAPIError(resp.StatusCode(), response.Error)
+	}
+
+	return nil
+}

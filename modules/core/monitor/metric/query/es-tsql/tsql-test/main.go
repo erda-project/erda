@@ -41,7 +41,6 @@ func getClient() *elastic.Client {
 	return client
 }
 
-// Query .
 func Query(text string, params map[string]interface{}) error {
 	fmt.Println(text)
 	end := time.Now().Add(-5 * time.Minute)
@@ -71,7 +70,6 @@ func doQuery(client *elastic.Client, query tsql.Query) error {
 		// return nil
 		context, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-
 		r, err := client.Search(getSources(query)...).
 			IgnoreUnavailable(true).AllowNoIndices(true).
 			SearchSource(searchSource).Do(context)

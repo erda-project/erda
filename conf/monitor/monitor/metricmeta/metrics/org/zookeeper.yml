@@ -24,69 +24,69 @@ fields:
     approximate_data_size:
         type: "number"
         name: "Approximate Data Size"
-        uint: 
+        unit: 
     avg_latency:
         type: "number"
         name: "Avg Latency"
-        uint: 
+        unit: 
     ephemerals_count:
         type: "number"
         name: "Ephemerals Count"
-        uint: 
+        unit: 
     followers:
         type: "number"
         name: "Followers"
-        uint: 
+        unit: 
     max_file_descriptor_count:
         type: "number"
         name: "Maximum File Descriptor Count"
-        uint: 
+        unit: 
     max_latency:
         type: "number"
         name: "Maximum Latency"
-        uint: 
+        unit: 
     min_latency:
         type: "number"
         name: "Minimum Latency"
-        uint: 
+        unit: 
     num_alive_connections:
         type: "number"
         name: "Num Alive Connections"
-        uint: 
+        unit: 
     open_file_descriptor_count:
         type: "number"
         name: "Open File Descriptor Count"
-        uint: 
+        unit: 
     outstanding_requests:
         type: "number"
         name: "Outstanding Requests"
-        uint: 
+        unit: 
     packets_received:
         type: "number"
         name: "Packets Received"
-        uint: 
+        unit: 
     packets_sent:
         type: "number"
         name: "Packets Sent"
-        uint: 
+        unit: 
     pending_syncs:
         type: "number"
         name: "Pending Syncs"
-        uint: 
+        unit: 
     synced_followers:
         type: "number"
         name: "Synced Followers"
-        uint: 
+        unit: 
     version:
         type: "string"
         name: "Version"
-        uint: 
+        unit: 
     watch_count:
         type: "number"
         name: "Watch Count"
-        uint: 
+        unit: 
     znode_count:
         type: "number"
         name: "Znode Count"
-        uint: 
+        unit: 
 

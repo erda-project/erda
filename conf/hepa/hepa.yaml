@@ -6,4 +6,5 @@ hepa:
     hasRouteInfo: ${SERVER_HAS_ROUTE_INFO}
     useAdminEndpoint: ${SERVER_USE_ADMIN_ENDPOINT}
     aoneAppName: ${SERVER_AONE_APP_NAME}
+    clusterUIType: ${SERVER_CLUSTER_UI_TYPE}
   

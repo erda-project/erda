@@ -41,5 +41,5 @@ fields:
     count:
         type: "number"
         name: "Count"
-        uint: 
+        unit: 
 

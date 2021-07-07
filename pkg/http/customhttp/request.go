@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -26,7 +26,6 @@ import (
 )
 
 var (
-	ErrAddrMiss    = Error{"customhttp: inetaddr miss"}
 	ErrInvalidAddr = Error{"customhttp: invalid inetaddr"}
 )
 
@@ -39,29 +38,17 @@ func (e Error) Error() string {
 }
 
 var inetAddr string
+var mtx sync.Mutex
 
-// 用于获取netportal地址的环境变量名
 const (
-	netportalAddrEnvVarName = "NETPORTAL_ADDR"
-	portalPassthroughHeader = "X-Portal-Passthrough"
-	portalDirectHeader      = "X-Portal-Direct"
-	portalSSLHeader         = "X-Portal-SSL"
-	portalSSEHeader         = "X-Portal-SSE"
-	portalWSHeader          = "X-Portal-Websocket"
-	portalHostHeader        = "X-Portal-Host"
-	portalDestHeader        = "X-Portal-Dest"
+	portalHostHeader = "X-Portal-Host"
+	portalDestHeader = "X-Portal-Dest"
 )
 
-// 用于覆盖根据环境变量取的值
 func SetInetAddr(addr string) {
+	mtx.Lock()
+	defer mtx.Unlock()
 	inetAddr = addr
-}
-
-func init() {
-	inetAddr = os.Getenv(netportalAddrEnvVarName)
-	if inetAddr == "" {
-		inetAddr, _ = discover.GetEndpoint("netportal.default")
-	}
 }
 
 func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl string, portalArgs map[string]string, err error) {
@@ -99,11 +86,13 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)
 	}
+	mtx.Lock()
 	if inetAddr == "" {
-		return nil, errors.WithStack(ErrAddrMiss)
+		inetAddr = discover.ClusterDialer()
 	}
+	mtx.Unlock()
 	inetAddr = strings.TrimPrefix(inetAddr, "http://")
-	portalHost, portalDest, portalUrl, portalArgs, err := parseInetUrl(url)
+	portalHost, portalDest, portalUrl, _, err := parseInetUrl(url)
 	if err != nil {
 		return nil, err
 	}
@@ -114,21 +103,5 @@ func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	}
 	request.Header.Set(portalHostHeader, portalHost)
 	request.Header.Set(portalDestHeader, portalDest)
-	if portalArgs["direct"] == "on" {
-		request.Header.Set(portalDirectHeader, "on")
-		// 使用portalHost作为Host
-		request.Host = portalHost
-	}
-	if portalArgs["ssl"] == "on" {
-		request.Header.Set(portalSSLHeader, "on")
-	}
-	if portalArgs["sse"] == "on" {
-		request.Header.Set(portalSSEHeader, "on")
-	} else if portalArgs["ws"] == "on" {
-		request.Header.Set(portalWSHeader, "on")
-	}
-	if portalArgs["passthrough"] == "on" {
-		request.Header.Set(portalPassthroughHeader, "on")
-	}
 	return request, nil
 }

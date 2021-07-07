@@ -82,6 +82,7 @@ tags:
         name: "Upstream Response Time"
     https:
         name: "Https"
+fields:
     remote_port:
         name: "Remote Port"
         type: "number"

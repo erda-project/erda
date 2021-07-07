@@ -15,7 +15,6 @@ package bundle
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -30,12 +29,15 @@ func (b *Bundle) CreateNoticeRequest(req *apistructs.NoticeCreateRequest,
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	var buf bytes.Buffer
+	var ncresp apistructs.NoticeCreateResponse
 	httpClient := b.hc
 	resp, err := httpClient.Post(cmdbURL).Path("/api/notices").
+		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
-		Header(httputil.UserHeader, "1").
-		JSONBody(&req).Do().Body(&buf)
+		Header(httputil.UserHeader, req.UserID).
+		JSONBody(&req).
+		Do().
+		JSON(&ncresp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -43,19 +45,73 @@ func (b *Bundle) CreateNoticeRequest(req *apistructs.NoticeCreateRequest,
 		return nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to create notice, status code: %d, body: %v",
 				resp.StatusCode(),
-				buf.String(),
+				string(resp.Body()),
 			))
-	}
-	// TODO: delete the Notice when unmarshal error
-	var ncresp apistructs.NoticeCreateResponse
-	err = json.Unmarshal(buf.Bytes(), &ncresp)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	return &ncresp, nil
 }
 
-func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, publishType string) error {
+func (b *Bundle) UpdateNotice(req *apistructs.NoticeUpdateRequest, noticeID, orgID uint64, userID string) (
+	*apistructs.NoticeUpdateResponse, error) {
+	cmdbURL, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	httpClient := b.hc
+
+	var ncresp apistructs.NoticeUpdateResponse
+	resp, err := httpClient.Put(cmdbURL).Path(fmt.Sprintf("/api/notices/%d", noticeID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
+		Header(httputil.UserHeader, userID).
+		JSONBody(&req).
+		Do().
+		JSON(&ncresp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to update notice, status code: %d, body: %v",
+				resp.StatusCode(),
+				string(resp.Body()),
+			))
+	}
+
+	return &ncresp, nil
+}
+
+func (b *Bundle) DeleteNotice(noticeID, orgID uint64, userID string) (*apistructs.NoticeDeleteResponse, error) {
+	cmdbURL, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	httpClient := b.hc
+
+	var ncresp apistructs.NoticeDeleteResponse
+	resp, err := httpClient.Delete(cmdbURL).Path(fmt.Sprintf("/api/notices/%d", noticeID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
+		Header(httputil.UserHeader, userID).
+		Do().
+		JSON(&ncresp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to update notice, status code: %d, body: %v",
+				resp.StatusCode(),
+				string(resp.Body()),
+			))
+	}
+
+	return &ncresp, nil
+}
+
+func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, userID, publishType string) error {
 	cmdbURL, err := b.urls.CoreServices()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
@@ -63,8 +119,9 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, publish
 
 	var buf bytes.Buffer
 	resp, err := b.hc.Put(cmdbURL).Path(fmt.Sprintf("/api/notices/%d/actions/%s", noticeID, publishType)).
+		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
-		Header(httputil.UserHeader, "1").
+		Header(httputil.UserHeader, userID).
 		Do().
 		Body(&buf)
 	if err != nil {
@@ -82,18 +139,19 @@ func (b *Bundle) PublishORUnPublishNotice(orgID uint64, noticeID uint64, publish
 	return nil
 }
 
-func (b *Bundle) ListNoticeByOrgID(orgID uint64) (*apistructs.NoticeListResponse, error) {
+func (b *Bundle) ListNoticeByOrgID(orgID uint64, userID string) (*apistructs.NoticeListResponse, error) {
 	cmdbURL, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	var buf bytes.Buffer
+	var noteList apistructs.NoticeListResponse
 	resp, err := b.hc.Get(cmdbURL).Path("/api/notices").
+		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
-		Header(httputil.UserHeader, "1").
+		Header(httputil.UserHeader, userID).
 		Do().
-		Body(&buf)
+		JSON(&noteList)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -102,14 +160,9 @@ func (b *Bundle) ListNoticeByOrgID(orgID uint64) (*apistructs.NoticeListResponse
 		return nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to list notice, status code: %d, body: %v",
 				resp.StatusCode(),
-				buf.String(),
+				string(resp.Body()),
 			))
 	}
 
-	var notelist apistructs.NoticeListResponse
-	err = json.Unmarshal(buf.Bytes(), &notelist)
-	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
-	}
-	return &notelist, nil
+	return &noteList, nil
 }

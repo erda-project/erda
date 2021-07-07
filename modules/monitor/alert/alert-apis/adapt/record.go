@@ -18,6 +18,7 @@ import (
 	"net/url"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -76,31 +77,31 @@ var (
 )
 
 // GetOrgAlertRecordAttr Get the attributes of enterprise alarm records
-func (a *Adapt) GetOrgAlertRecordAttr(code i18n.LanguageCodes) (*AlertRecordAttr, error) {
+func (a *Adapt) GetOrgAlertRecordAttr(code i18n.LanguageCodes) (*pb.AlertRecordAttr, error) {
 	result, err := a.GetAlertRecordAttr(code, orgScope)
 	if err != nil {
 		return nil, err
 	}
-	result.AlertType = append(result.AlertType, &DisplayKey{orgCustomizeType, a.t.Text(code, orgCustomizeType)})
+	result.AlertType = append(result.AlertType, &pb.DisplayKey{Key: orgCustomizeType, Display: a.t.Text(code, orgCustomizeType)})
 	return result, nil
 }
 
 // GetAlertRecordAttr Get the attributes of the alarm record
-func (a *Adapt) GetAlertRecordAttr(code i18n.LanguageCodes, scope string) (*AlertRecordAttr, error) {
+func (a *Adapt) GetAlertRecordAttr(code i18n.LanguageCodes, scope string) (*pb.AlertRecordAttr, error) {
 	// Query alarm type
 	alertTypes, err := a.db.AlertRule.DistinctAlertTypeByScope(scope)
 	if err != nil {
 		return nil, err
 	}
-	attr := new(AlertRecordAttr)
+	attr := new(pb.AlertRecordAttr)
 	for _, state := range alertStates {
-		attr.AlertState = append(attr.AlertState, &DisplayKey{string(state), a.t.Text(code, string(state))})
+		attr.AlertState = append(attr.AlertState, &pb.DisplayKey{Key: string(state), Display: a.t.Text(code, string(state))})
 	}
 	for _, state := range apistructs.IssueBugStates {
-		attr.HandleState = append(attr.HandleState, &DisplayKey{string(state), a.t.Text(code, string(state))})
+		attr.HandleState = append(attr.HandleState, &pb.DisplayKey{Key: string(state), Display: a.t.Text(code, string(state))})
 	}
 	for _, typ := range alertTypes {
-		attr.AlertType = append(attr.AlertType, &DisplayKey{typ, a.t.Text(code, typ)})
+		attr.AlertType = append(attr.AlertType, &pb.DisplayKey{Key: typ, Display: a.t.Text(code, typ)})
 	}
 	return attr, nil
 }
@@ -108,7 +109,7 @@ func (a *Adapt) GetAlertRecordAttr(code i18n.LanguageCodes, scope string) (*Aler
 // QueryOrgAlertRecord
 func (a *Adapt) QueryOrgAlertRecord(lang i18n.LanguageCodes, orgID string,
 	alertGroups, alertStates, alertTypes, handleStates, handlerIDs []string, pageNo, pageSize uint) (
-	[]*AlertRecord, error) {
+	[]*pb.AlertRecord, error) {
 	return a.QueryAlertRecord(
 		lang, orgScope, orgID, alertGroups, alertStates, alertTypes, handleStates, handlerIDs, pageNo, pageSize)
 }
@@ -116,7 +117,7 @@ func (a *Adapt) QueryOrgAlertRecord(lang i18n.LanguageCodes, orgID string,
 // QueryAlertRecord
 func (a *Adapt) QueryAlertRecord(lang i18n.LanguageCodes, scope, scopeKey string,
 	alertGroups, alertStates, alertTypes, handleStates, handlerIDs []string, pageNo, pageSize uint) (
-	[]*AlertRecord, error) {
+	[]*pb.AlertRecord, error) {
 	// get list
 	records, err := a.db.AlertRecord.QueryByCondition(
 		scope, scopeKey, alertGroups, alertStates, alertTypes, handleStates, handlerIDs, pageNo, pageSize)
@@ -124,10 +125,10 @@ func (a *Adapt) QueryAlertRecord(lang i18n.LanguageCodes, scope, scopeKey string
 		return nil, err
 	}
 
-	result := make([]*AlertRecord, 0)
+	result := make([]*pb.AlertRecord, 0)
 	for _, record := range records {
-		item := (&AlertRecord{}).FromModel(record)
-		item.GroupID = url.QueryEscape(item.GroupID)
+		item := ToPBAlertRecord(record)
+		item.GroupId = url.QueryEscape(item.GroupId)
 		item.AlertType = a.t.Text(lang, record.AlertType)
 		result = append(result, item)
 	}
@@ -148,7 +149,7 @@ func (a *Adapt) CountAlertRecord(
 }
 
 // GetOrgAlertRecord
-func (a *Adapt) GetOrgAlertRecord(lang i18n.LanguageCodes, orgID, groupID string) (*AlertRecord, error) {
+func (a *Adapt) GetOrgAlertRecord(lang i18n.LanguageCodes, orgID, groupID string) (*pb.AlertRecord, error) {
 	record, err := a.GetAlertRecord(lang, groupID)
 	if err != nil {
 		return nil, err
@@ -162,7 +163,7 @@ func (a *Adapt) GetOrgAlertRecord(lang i18n.LanguageCodes, orgID, groupID string
 }
 
 // GetAlertRecord
-func (a *Adapt) GetAlertRecord(lang i18n.LanguageCodes, groupID string) (*AlertRecord, error) {
+func (a *Adapt) GetAlertRecord(lang i18n.LanguageCodes, groupID string) (*pb.AlertRecord, error) {
 	groupID, err := url.QueryUnescape(groupID)
 	if err != nil {
 		return nil, err
@@ -174,15 +175,15 @@ func (a *Adapt) GetAlertRecord(lang i18n.LanguageCodes, groupID string) (*AlertR
 	} else if record == nil {
 		return nil, nil
 	}
-	result := (&AlertRecord{}).FromModel(record)
-	result.GroupID = url.QueryEscape(result.GroupID)
+	result := ToPBAlertRecord(record)
+	result.GroupId = url.QueryEscape(result.GroupId)
 	result.AlertType = a.t.Text(lang, record.AlertType)
 	return result, nil
 }
 
 // QueryOrgAlertHistory
 func (a *Adapt) QueryOrgAlertHistory(
-	lang i18n.LanguageCodes, orgID, groupID string, start, end int64, limit uint) ([]*AlertHistory, error) {
+	lang i18n.LanguageCodes, orgID, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 	record, err := a.GetOrgAlertRecord(lang, orgID, groupID)
 	if err != nil {
 		return nil, err
@@ -193,7 +194,7 @@ func (a *Adapt) QueryOrgAlertHistory(
 }
 
 // QueryAlertHistory
-func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start, end int64, limit uint) ([]*AlertHistory, error) {
+func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start, end int64, limit uint) ([]*pb.AlertHistory, error) {
 	groupID, err := url.QueryUnescape(groupID)
 	if err != nil {
 		return nil, err
@@ -203,9 +204,9 @@ func (a *Adapt) QueryAlertHistory(lang i18n.LanguageCodes, groupID string, start
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*AlertHistory, 0)
+	result := make([]*pb.AlertHistory, 0)
 	for _, history := range histories {
-		item := (&AlertHistory{}).FromModel(history)
+		item := ToDBAlertHistory(history)
 		result = append(result, item)
 	}
 	return result, nil
@@ -216,7 +217,7 @@ func (a *Adapt) CreateOrgAlertIssue(orgID, userID, groupID string, issue apistru
 	record, err := a.GetOrgAlertRecord(i18n.LanguageCodes{}, orgID, groupID)
 	if err != nil {
 		return 0, err
-	} else if record == nil || record.IssueID != 0 {
+	} else if record == nil || record.IssueId != 0 {
 		return 0, nil
 	}
 	issue.Creator = userID
@@ -250,7 +251,7 @@ func (a *Adapt) UpdateOrgAlertIssue(orgID, groupID string, issue apistructs.Issu
 	} else if record == nil {
 		return nil
 	}
-	return a.UpdateAlertIssue(groupID, record.IssueID, issue)
+	return a.UpdateAlertIssue(groupID, record.IssueId, issue)
 }
 
 // UpdateAlertIssue

@@ -90,6 +90,10 @@ func (r RolePermissionProcess) permissionList(ctx context.Context) (*apistructs.
 		return nil, err
 	}
 
+	if len(r.roles) <= 0 {
+		return permissionList, nil
+	}
+
 	var pml = make([]model.RolePermission, 0)
 	// get permissions from db
 	pmlDb, resourceRoleDb := r.Adaptor.Db.GetPermissionList(r.roles)
@@ -137,7 +141,12 @@ func (r RolePermissionProcess) permissionList(ctx context.Context) (*apistructs.
 }
 
 func (d RolePermissionProcess) check(ctx context.Context) (bool, error) {
+	if len(d.roles) <= 0 {
+		return false, nil
+	}
+
 	req := d.Adaptor.GetCheckRequest(ctx)
+
 	rp, err := d.Adaptor.Db.GetRolePermission(d.roles, &req)
 	if err != nil {
 		return false, err

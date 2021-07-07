@@ -66,7 +66,7 @@ func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.
 	for i, v := range job.Volumes {
 		var pvcid string
 		if v.ID == nil { // if ID == nil, we need to create a new pvc
-			sc := whichStorageClass(v.Storage)
+			sc := WhichStorageClass(v.Storage)
 			id := fmt.Sprintf("%s-%s-%d", job.Namespace, job.Name, i)
 			pvcs = append(pvcs, &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
@@ -105,7 +105,7 @@ func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.
 	return vols, volMounts, pvcs
 }
 
-func whichStorageClass(tp string) string {
+func WhichStorageClass(tp string) string {
 	switch tp {
 	case "local":
 		return "dice-local-volume"

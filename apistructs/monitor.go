@@ -48,3 +48,14 @@ type ReportTask struct {
 	CreatedAt   int64  `json:"createdAt"`
 	UpdatedAt   int64  `json:"updatedAt"`
 }
+
+// MonitorConfig .
+type MonitorConfig struct {
+	Scope     string `json:"scope"`
+	ScopeId   string `json:"scope_id"`
+	Namespace string `json:"namespace"`
+	Type      string `json:"type"`
+	Names     string `json:"names"`
+	Filters   string `json:"filters"`
+	Enable    bool   `json:"enable"`
+}

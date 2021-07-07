@@ -16,8 +16,14 @@ package adapt
 import (
 	"fmt"
 	"sort"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
@@ -32,7 +38,7 @@ func (fm *FieldMeta) String() string {
 }
 
 // FieldMetaSlice .
-type FieldMetaSlice []*FieldMeta
+type FieldMetaSlice []*pb.FieldMeta
 
 func (s FieldMetaSlice) Len() int {
 	return len(s)
@@ -67,7 +73,7 @@ func (tm *TagMeta) String() string {
 }
 
 // TagMetaSlice .
-type TagMetaSlice []*TagMeta
+type TagMetaSlice []*pb.TagMeta
 
 func (s TagMetaSlice) Len() int {
 	return len(s)
@@ -99,7 +105,7 @@ type MetricMeta struct {
 }
 
 // MetricMetaSlice .
-type MetricMetaSlice []*MetricMeta
+type MetricMetaSlice []*pb.MetricMeta
 
 func (s MetricMetaSlice) Len() int {
 	return len(s)
@@ -131,26 +137,26 @@ type CustomizeMetrics struct {
 }
 
 // CustomizeMetrics .
-func (a *Adapt) CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID string, names []string) (*CustomizeMetrics, error) {
+func (a *Adapt) CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID string, names []string) (*pb.CustomizeMetrics, error) {
 	meta, err := a.metricq.MetricMeta(lang, scope, scopeID, names...)
 	if err != nil {
 		return nil, err
 	}
-	var metrics []*MetricMeta
+	var metrics []*pb.MetricMeta
 	for _, m := range meta {
-		metric := &MetricMeta{
-			Name: &DisplayKey{Key: m.Name.Key, Display: m.Name.Name},
+		metric := &pb.MetricMeta{
+			Name: &pb.DisplayKey{Key: m.Name.Key, Display: m.Name.Name},
 		}
 		for _, field := range m.Fields {
-			metric.Fields = append(metric.Fields, &FieldMeta{
-				Field:    &DisplayKey{Key: field.Key, Display: field.Name},
+			metric.Fields = append(metric.Fields, &pb.FieldMeta{
+				Field:    &pb.DisplayKey{Key: field.Key, Display: field.Name},
 				DataType: field.Type,
 			})
 		}
 		sort.Sort(FieldMetaSlice(metric.Fields))
 		for _, tag := range m.Tags {
-			metric.Tags = append(metric.Tags, &TagMeta{
-				Tag:      &DisplayKey{Key: tag.Key, Display: tag.Name},
+			metric.Tags = append(metric.Tags, &pb.TagMeta{
+				Tag:      &pb.DisplayKey{Key: tag.Key, Display: tag.Name},
 				DataType: "string",
 			})
 		}
@@ -159,7 +165,7 @@ func (a *Adapt) CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID string,
 	}
 	sort.Sort(MetricMetaSlice(metrics))
 
-	return &CustomizeMetrics{
+	return &pb.CustomizeMetrics{
 		Metrics:           metrics,
 		FunctionOperators: a.FunctionOperatorKeys(lang),
 		FilterOperators:   a.FilterOperatorKeys(lang),
@@ -274,7 +280,7 @@ const (
 )
 
 // CustomizeAlerts .
-func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*CustomizeAlertOverview, int, error) {
+func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, int, error) {
 	alerts, err := a.db.CustomizeAlert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
 	if err != nil {
 		return nil, 0, err
@@ -293,7 +299,7 @@ func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, 
 	if err != nil {
 		return nil, 0, err
 	}
-	var list []*CustomizeAlertOverview
+	var list []*pb.CustomizeAlertOverview
 	for _, item := range alerts {
 		alert := a.newCustomizeAlertOverview(lang, item, rulesMap[item.ID], notifyTemplatesMap[item.ID])
 		if alert == nil {
@@ -309,14 +315,14 @@ func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, 
 }
 
 // return alertID to rules Map
-func (a *Adapt) getCustomizeAlertRulesByAlertIDs(id []uint64) (map[uint64][]*CustomizeAlertRule, error) {
+func (a *Adapt) getCustomizeAlertRulesByAlertIDs(id []uint64) (map[uint64][]*pb.CustomizeAlertRule, error) {
 	rules, err := a.db.CustomizeAlertRule.QueryByAlertIDs(id)
 	if err != nil {
 		return nil, err
 	}
-	alertRules := make(map[uint64][]*CustomizeAlertRule)
+	alertRules := make(map[uint64][]*pb.CustomizeAlertRule)
 	for _, item := range rules {
-		rule, err := (&CustomizeAlertRule{}).FromModel(item)
+		rule, err := CustomizeAlertRuleFromModel(item)
 		if err != nil {
 			a.l.Errorf("fail to wrap customize rule: %s", err)
 			continue
@@ -346,16 +352,123 @@ func (a *Adapt) getCustomizeAlertNotifyTemplatesByAlertIDs(id []uint64) (map[uin
 }
 
 // CustomizeAlert .
-func (a *Adapt) CustomizeAlert(id uint64) (*CustomizeAlertDetail, error) {
+func (a *Adapt) CustomizeAlert(id uint64) (*pb.CustomizeAlertDetail, error) {
 	alert, err := a.db.CustomizeAlert.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
-	return (&CustomizeAlertDetail{}).FromModel(alert), nil
+	return a.FromModel(alert), nil
+}
+
+func (a *Adapt) FromModel(m *db.CustomizeAlert) *pb.CustomizeAlertDetail {
+	if m == nil {
+		return nil
+	}
+	customizeAlertDetail := &pb.CustomizeAlertDetail{
+		Attributes: make(map[string]*structpb.Value),
+	}
+	customizeAlertDetail.Id = m.ID
+	customizeAlertDetail.Name = m.Name
+	customizeAlertDetail.AlertType = m.AlertType
+	customizeAlertDetail.AlertScope = m.AlertScope
+	customizeAlertDetail.AlertScopeId = m.AlertScopeID
+	customizeAlertDetail.Enable = m.Enable
+	for k, v := range m.Attributes {
+		anyData, err := structpb.NewValue(v)
+		if err != nil {
+			logrus.Errorf("fail transform interface to any type")
+			return nil
+		}
+		customizeAlertDetail.Attributes[k] = anyData
+	}
+	return customizeAlertDetail
+}
+
+func CustomizeAlertRuleFromModel(m *db.CustomizeAlertRule) (*pb.CustomizeAlertRule, error) {
+	r := &pb.CustomizeAlertRule{
+		Id:         m.ID,
+		Name:       m.Name,
+		CreateTime: m.CreateTime.UnixNano() / int64(time.Millisecond),
+		UpdateTime: m.UpdateTime.UnixNano() / int64(time.Millisecond),
+		Attributes: make(map[string]*structpb.Value),
+	}
+
+	for _, function := range r.Functions {
+		function.DataType = TypeOf(function.Value)
+	}
+	for _, filter := range r.Filters {
+		filter.DataType = TypeOf(filter.Value)
+	}
+	for k, v := range m.Attributes {
+		att, err := structpb.NewValue(v)
+		if err != nil {
+			return nil, err
+		}
+		r.Attributes[k] = att
+	}
+
+	if len(m.Attributes) != 0 {
+		if v, ok := m.Attributes["active_metric_groups"]; ok {
+			if slice, ok := utils.ConvertStringArr(v); !ok {
+				logrus.Error("fail to convert active_metric_groups to string slice")
+			} else {
+				r.ActivedMetricGroups = slice
+			}
+		}
+	}
+	return r, nil
+}
+
+func (a *Adapt) CustomizeAlertToModel(customizeAlertDetail *pb.CustomizeAlertDetail) *db.CustomizeAlert {
+	data := &db.CustomizeAlert{
+		ID:           customizeAlertDetail.Id,
+		Name:         customizeAlertDetail.Name,
+		AlertType:    customizeAlertDetail.AlertType,
+		AlertScope:   customizeAlertDetail.AlertScope,
+		AlertScopeID: customizeAlertDetail.AlertScopeId,
+		Enable:       customizeAlertDetail.Enable,
+	}
+	for k, v := range customizeAlertDetail.Attributes {
+		customizeAlertDetail.Attributes[k] = v
+	}
+	return data
+}
+
+func (a *Adapt) FromModelWithDetail(m *db.CustomizeAlert, rules []*pb.CustomizeAlertRule, notifies []*CustomizeAlertNotifyTemplate) *pb.CustomizeAlertDetail {
+	if len(rules) == 0 || len(notifies) == 0 {
+		return nil
+	}
+	var templates *pb.CustomizeAlertNotifyTemplates
+	for _, notify := range notifies {
+		if templates == nil {
+			templates = &pb.CustomizeAlertNotifyTemplates{
+				Id:         notify.ID,
+				Name:       notify.Name,
+				Title:      notify.Title,
+				Content:    notify.Content,
+				CreateTime: notify.CreateTime,
+				UpdateTime: notify.UpdateTime,
+			}
+		}
+		templates.Targets = append(templates.Targets, notify.Target)
+	}
+	customizeAlertDetail := &pb.CustomizeAlertDetail{
+		Id:           m.ID,
+		Name:         m.Name,
+		AlertType:    m.AlertType,
+		AlertScope:   m.AlertScope,
+		AlertScopeId: m.AlertScopeID,
+		Enable:       m.Enable,
+		Rules:        rules,
+		Notifies:     []*pb.CustomizeAlertNotifyTemplates{templates},
+		CreateTime:   utils.ConvertTimeToMS(m.CreateTime),
+		UpdateTime:   utils.ConvertTimeToMS(m.UpdateTime),
+	}
+	return customizeAlertDetail
 }
 
 // CustomizeAlertDetail .
-func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
+func (a *Adapt) CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error) {
 	alert, err := a.db.CustomizeAlert.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -371,15 +484,15 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 		return nil, err
 	}
 	notifyTemplates := notifyTemplatesMap[id]
-	alertDetail := (&CustomizeAlertDetail{}).FromModelWithDetail(alert, rules, notifyTemplates)
+	alertDetail := a.FromModelWithDetail(alert, rules, notifyTemplates)
 	if alertDetail == nil {
 		return nil, nil
 	}
 	for _, rule := range alertDetail.Rules {
 		// filter
-		filters := make([]*CustomizeAlertRuleFilter, 0)
+		filters := make([]*pb.CustomizeAlertRuleFilter, 0)
 		for _, filter := range rule.Filters {
-			if filter.Tag == applicationIdTag && filter.Value == applicationIdValue {
+			if filter.Tag == applicationIdTag && filter.Value.String() == applicationIdValue {
 				continue
 			}
 
@@ -409,7 +522,7 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 }
 
 // CreateCustomizeAlert .
-func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID uint64, err error) {
+func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (alertID uint64, err error) {
 	tx := a.db.Begin()
 	defer func() {
 		if err != nil {
@@ -422,7 +535,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 		}
 	}()
 
-	if alert, err := tx.CustomizeAlert.GetByScopeAndScopeIDAndName(alertDetail.AlertScope, alertDetail.AlertScopeID, alertDetail.Name); err != nil {
+	if alert, err := tx.CustomizeAlert.GetByScopeAndScopeIDAndName(alertDetail.AlertScope, alertDetail.AlertScopeId, alertDetail.Name); err != nil {
 		return 0, err
 	} else if alert != nil {
 		return 0, ErrorAlreadyExists
@@ -439,25 +552,27 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 		return 0, err
 	}
 
-	alertDetail.ID = 0
+	alertDetail.Id = 0
 	alertDetail.Enable = true
 	if alertDetail.Attributes == nil {
-		alertDetail.Attributes = make(map[string]interface{})
+		alertDetail.Attributes = make(map[string]*structpb.Value)
 	}
-	alertDetail.Attributes["alert_index"] = index
-	alertDetail.Attributes["alert_dashboard_id"] = dashboardID
-	alert := alertDetail.ToModel()
+	alertIndex := structpb.NewStringValue(index)
+	alertDashboardID := structpb.NewStringValue(dashboardID)
+	alertDetail.Attributes["alert_index"] = alertIndex
+	alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
+	alert := a.CustomizeAlertToModel(alertDetail)
 	if err := tx.CustomizeAlert.Insert(alert); err != nil {
 		return 0, err
 	}
-	alertDetail.ID = alert.ID
+	alertDetail.Id = alert.ID
 
 	// create alarm rules, only one rule is allowed
 	alertRule := alertDetail.Rules[0]
 	if alertRule.Name == "" {
 		alertRule.Name = alertDetail.Name
 	}
-	rule := alertRule.ToModel(alertDetail, index)
+	rule := a.ToModel(alertRule, alertDetail, index)
 	if err := tx.CustomizeAlertRule.Insert(rule); err != nil {
 		return 0, err
 	}
@@ -475,7 +590,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 
 			if notifyTemplate == nil {
 				notifyTemplate = &CustomizeAlertNotifyTemplate{
-					ID:         notify.ID,
+					ID:         notify.Id,
 					Name:       notify.Name,
 					Title:      notify.Title,
 					Content:    notify.Content,
@@ -496,7 +611,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *CustomizeAlertDetail) (alertID
 			}
 		}
 	}
-	return alertDetail.ID, nil
+	return alertDetail.Id, nil
 }
 
 func (a *Adapt) generateCustomizeAlertIndex() (string, error) {
@@ -504,7 +619,7 @@ func (a *Adapt) generateCustomizeAlertIndex() (string, error) {
 }
 
 // UpdateCustomizeAlert .
-func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err error) {
+func (a *Adapt) UpdateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (err error) {
 	tx := a.db.Begin()
 	defer func() {
 		if err != nil {
@@ -517,15 +632,15 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		}
 	}()
 	if alertDetail.Name != "" {
-		if alert, err := tx.CustomizeAlert.GetByScopeAndScopeIDAndName(alertDetail.AlertScope, alertDetail.AlertScopeID, alertDetail.Name); err != nil {
+		if alert, err := tx.CustomizeAlert.GetByScopeAndScopeIDAndName(alertDetail.AlertScope, alertDetail.AlertScopeId, alertDetail.Name); err != nil {
 			return err
-		} else if alert != nil && alert.ID != alertDetail.ID {
+		} else if alert != nil && alert.ID != alertDetail.Id {
 			return ErrorAlreadyExists
 		}
 	}
 
 	// modify alert
-	alert, err := tx.CustomizeAlert.GetByID(alertDetail.ID)
+	alert, err := tx.CustomizeAlert.GetByID(alertDetail.Id)
 	if err != nil {
 		return err
 	}
@@ -537,21 +652,29 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		return fmt.Errorf("no alert index attributes")
 	}
 
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]*structpb.Value)
 	for k, v := range alert.Attributes {
-		attributes[k] = v
+		data, err := structpb.NewValue(v)
+		if err != nil {
+			logrus.Errorf("transform any type is fail err is %s", err)
+		}
+		attributes[k] = data
 	}
 	for k, v := range alertDetail.Attributes {
-		attributes[k] = v
+		data, err := structpb.NewValue(v)
+		if err != nil {
+			logrus.Errorf("transform any type is fail err is %s", err)
+		}
+		attributes[k] = data
 	}
-
-	attributes["alert_index"] = index
+	alertIndex := structpb.NewStringValue(index)
+	attributes["alert_index"] = alertIndex
 	alertDetail.Attributes = attributes
-	if err := tx.CustomizeAlert.Update(alertDetail.ToModel()); err != nil {
+	if err := tx.CustomizeAlert.Update(a.CustomizeAlertToModel(alertDetail)); err != nil {
 		return err
 	}
 	// modify alert rule
-	rules, err := a.getCustomizeAlertRulesMapByAlertID(alertDetail.ID)
+	rules, err := a.getCustomizeAlertRulesMapByAlertID(alertDetail.Id)
 	if err != nil {
 		return err
 	}
@@ -560,7 +683,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		if item.Name == "" {
 			item.Name = alertDetail.Name
 		}
-		rule := item.ToModel(alertDetail, index)
+		rule := a.ToModel(item, alertDetail, index)
 		// Modify if it exists, add if it doesn't exist
 		if _, ok := rules[rule.ID]; ok {
 			if err := tx.CustomizeAlertRule.Update(rule); err != nil {
@@ -586,7 +709,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 	}
 
 	// modify alert notify template
-	notifyMap, err := a.getCustomizeAlertNotifyTemplateByAlertID(alertDetail.ID)
+	notifyMap, err := a.getCustomizeAlertNotifyTemplateByAlertID(alertDetail.Id)
 	if err != nil {
 		return err
 	}
@@ -600,7 +723,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *CustomizeAlertDetail) (err err
 		for _, target := range notifyDTO.Targets {
 			if templateDTO == nil {
 				templateDTO = &CustomizeAlertNotifyTemplate{
-					ID:         notifyDTO.ID,
+					ID:         notifyDTO.Id,
 					Name:       notifyDTO.Name,
 					Title:      notifyDTO.Title,
 					Content:    notifyDTO.Content,

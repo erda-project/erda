@@ -58,6 +58,7 @@ type ServerConfig struct {
 	UseAdminEndpoint         bool     `default:"false"`
 	AoneAppName              string   `default:""`
 	ClusterName              string   `default:""`
+	ClusterUIType            string   `default:""`
 	TenantGroupKey           string   `default:"58dcbf490ef3"`
 	CenterDomainNameKeepList []string `default:"collector,gittar,hepa,openapi,soldier,uc,dice,uc-adaptor,nexus-sys,sonar-sys"`
 	EdgeDomainNameKeepList   []string `default:"soldier,nexus-sys"`

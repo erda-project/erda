@@ -50,280 +50,280 @@ fields:
     bst_count:
         type: "number"
         name: "Bst Count"
-        uint: 
+        unit: 
     bst_max:
         type: "number"
         name: "Bst Maximum"
-        uint: 
+        unit: 
     bst_mean:
         type: "number"
         name: "Response Size"
-        uint: "B"
+        unit: "B"
     bst_min:
         type: "number"
         name: "Bst Minimum"
-        uint: 
+        unit: 
     bst_sum:
         type: "number"
         name: "Outgoing Bytes"
-        uint: "B"
+        unit: "B"
     cac_count:
         type: "number"
         name: "Cac Count"
-        uint: 
+        unit: 
     cac_max:
         type: "number"
         name: "Cac Maximum"
-        uint: 
+        unit: 
     cac_mean:
         type: "number"
         name: "Cac Mean"
-        uint: 
+        unit: 
     cac_min:
         type: "number"
         name: "Cac Minimum"
-        uint: 
+        unit: 
     cac_sum:
         type: "number"
         name: "Cac Sum"
-        uint: 
+        unit: 
     cerr_count:
         type: "number"
         name: "Cerr Count"
-        uint: 
+        unit: 
     cerr_max:
         type: "number"
         name: "Cerr Maximum"
-        uint: 
+        unit: 
     cerr_mean:
         type: "number"
         name: "Cerr Mean"
-        uint: 
+        unit: 
     cerr_min:
         type: "number"
         name: "Cerr Minimum"
-        uint: 
+        unit: 
     cerr_sum:
         type: "number"
         name: "Client Error"
-        uint: 
+        unit: 
     cnt_count:
         type: "number"
         name: "Cnt Count"
-        uint: 
+        unit: 
     cnt_max:
         type: "number"
         name: "Cnt Maximum"
-        uint: 
+        unit: 
     cnt_mean:
         type: "number"
         name: "Cnt Mean"
-        uint: 
+        unit: 
     cnt_min:
         type: "number"
         name: "Cnt Minimum"
-        uint: 
+        unit: 
     cnt_sum:
         type: "number"
         name: "Requests"
-        uint: 
+        unit: 
     crd_count:
         type: "number"
         name: "Crd Count"
-        uint: 
+        unit: 
     crd_max:
         type: "number"
         name: "Crd Maximum"
-        uint: 
+        unit: 
     crd_mean:
         type: "number"
         name: "Crd Mean"
-        uint: 
+        unit: 
     crd_min:
         type: "number"
         name: "Crd Minimum"
-        uint: 
+        unit: 
     crd_sum:
         type: "number"
         name: "Crd Sum"
-        uint: 
+        unit: 
     cwa_count:
         type: "number"
         name: "Cwa Count"
-        uint: 
+        unit: 
     cwa_max:
         type: "number"
         name: "Cwa Maximum"
-        uint: 
+        unit: 
     cwa_mean:
         type: "number"
         name: "Cwa Mean"
-        uint: 
+        unit: 
     cwa_min:
         type: "number"
         name: "Cwa Minimum"
-        uint: 
+        unit: 
     cwa_sum:
         type: "number"
         name: "Cwa Sum"
-        uint: 
+        unit: 
     cwr_count:
         type: "number"
         name: "Cwr Count"
-        uint: 
+        unit: 
     cwr_max:
         type: "number"
         name: "Cwr Maximum"
-        uint: 
+        unit: 
     cwr_mean:
         type: "number"
         name: "Cwr Mean"
-        uint: 
+        unit: 
     cwr_min:
         type: "number"
         name: "Cwr Minimum"
-        uint: 
+        unit: 
     cwr_sum:
         type: "number"
         name: "Cwr Sum"
-        uint: 
+        unit: 
     err_count:
         type: "number"
         name: "Err Count"
-        uint: 
+        unit: 
     err_max:
         type: "number"
         name: "Err Maximum"
-        uint: 
+        unit: 
     err_mean:
         type: "number"
         name: "Err Mean"
-        uint: 
+        unit: 
     err_min:
         type: "number"
         name: "Err Minimum"
-        uint: 
+        unit: 
     err_sum:
         type: "number"
         name: "Request Failed"
-        uint: 
+        unit: 
     lim_count:
         type: "number"
         name: "Lim Count"
-        uint: 
+        unit: 
     lim_max:
         type: "number"
         name: "Lim Maximum"
-        uint: 
+        unit: 
     lim_mean:
         type: "number"
         name: "Lim Mean"
-        uint: 
+        unit: 
     lim_min:
         type: "number"
         name: "Lim Minimum"
-        uint: 
+        unit: 
     lim_sum:
         type: "number"
         name: "Request Limited"
-        uint: 
+        unit: 
     reql_count:
         type: "number"
         name: "Reql Count"
-        uint: 
+        unit: 
     reql_max:
         type: "number"
         name: "Reql Maximum"
-        uint: 
+        unit: 
     reql_mean:
         type: "number"
         name: "Request Latency"
-        uint: "s"
+        unit: "s"
     reql_min:
         type: "number"
         name: "Reql Minimum"
-        uint: 
+        unit: 
     reql_sum:
         type: "number"
         name: "Reql Sum"
-        uint: 
+        unit: 
     reqt_count:
         type: "number"
         name: "Reqt Count"
-        uint: 
+        unit: 
     reqt_max:
         type: "number"
         name: "Reqt Maximum"
-        uint: 
+        unit: 
     reqt_mean:
         type: "number"
         name: "Request Size"
-        uint: "B"
+        unit: "B"
     reqt_min:
         type: "number"
         name: "Reqt Minimum"
-        uint: 
+        unit: 
     reqt_sum:
         type: "number"
         name: "Incoming Bytes"
-        uint: "B"
+        unit: "B"
     serr_count:
         type: "number"
         name: "Serr Count"
-        uint: 
+        unit: 
     serr_max:
         type: "number"
         name: "Serr Maximum"
-        uint: 
+        unit: 
     serr_mean:
         type: "number"
         name: "Serr Mean"
-        uint: 
+        unit: 
     serr_min:
         type: "number"
         name: "Serr Minimum"
-        uint: 
+        unit: 
     serr_sum:
         type: "number"
         name: "Server Error"
-        uint: 
+        unit: 
     succ_count:
         type: "number"
         name: "Succ Count"
-        uint: 
+        unit: 
     succ_max:
         type: "number"
         name: "Succ Maximum"
-        uint: 
+        unit: 
     succ_mean:
         type: "number"
         name: "Succ Mean"
-        uint: 
+        unit: 
     succ_min:
         type: "number"
         name: "Succ Minimum"
-        uint: 
+        unit: 
     succ_sum:
         type: "number"
         name: "Request Successed"
-        uint: 
+        unit: 
     upl_count:
         type: "number"
         name: "Upl Count"
-        uint: 
+        unit: 
     upl_max:
         type: "number"
         name: "Upl Maximum"
-        uint: 
+        unit: 
     upl_mean:
         type: "number"
         name: "Upstream Service Latency"
-        uint: "s"
+        unit: "s"
     upl_min:
         type: "number"
         name: "Upl Minimum"
-        uint: 
+        unit: 
     upl_sum:
         type: "number"
         name: "Upl Sum"
-        uint:
+        unit:

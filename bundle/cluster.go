@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -38,13 +39,19 @@ func (b *Bundle) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
+
 	if !resp.IsOK() || !getResp.Success {
+		if resp.IsNotfound() {
+			return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{
+				Msg: fmt.Sprintf("cluster %s is not found, response: %s", idOrName, string(resp.Body())),
+			})
+		}
 		return nil, toAPIError(resp.StatusCode(), getResp.Error)
 	}
 	return &getResp.Data, nil
 }
 
-// ListCluster 返回 org 下所有集群; 当 orgID == "" 时，返回所有集群.
+// ListClusters 返回 org 下所有集群; 当 orgID == "" 时，返回所有集群.
 func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs.ClusterInfo, error) {
 	host, err := b.urls.ClusterManager()
 	if err != nil {
@@ -107,7 +114,7 @@ func (b *Bundle) UpdateCluster(req apistructs.ClusterUpdateRequest, header ...ht
 
 	var updateResp apistructs.ClusterUpdateResponse
 
-	q := hc.Put(host).Path("/api/clusters")
+	q := hc.Put(host).Path("/api/clusters").Header(httputil.InternalHeader, "bundle")
 	if len(header) > 0 {
 		q.Headers(header[0])
 	}

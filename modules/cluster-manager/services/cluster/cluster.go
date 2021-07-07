@@ -305,7 +305,7 @@ func (c *Cluster) PatchWithEvent(req *apistructs.ClusterPatchRequest) error {
 
 // DeleteWithEvent delete cluster with delete event
 func (c *Cluster) DeleteWithEvent(clusterName string) error {
-	cluster, err := c.db.GetClusterByName(clusterName)
+	cluster, err := c.GetCluster(clusterName)
 	if err != nil {
 		return apierrors.ErrDeleteCluster.InternalError(err)
 	}
