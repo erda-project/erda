@@ -65,6 +65,8 @@ type Conf struct {
 	AvatarStorageURL string `env:"AVATAR_STORAGE_URL"` // file:///avatars or oss://appkey:appsecret@endpoint/bucket
 
 	TestFilePollingIntervalSec int `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
+
+	ProjectStatsCacheCron string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 }
 
 var cfg Conf
@@ -220,4 +222,9 @@ func AvatarStorageURL() string {
 
 func TestFileIntervalSec() int {
 	return cfg.TestFilePollingIntervalSec
+}
+
+// ProjectStatsCacheCron 项目状态缓存刷新周期
+func ProjectStatsCacheCron() string {
+	return cfg.ProjectStatsCacheCron
 }
