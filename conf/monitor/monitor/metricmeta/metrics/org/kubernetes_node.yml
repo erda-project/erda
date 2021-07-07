@@ -20,29 +20,29 @@ fields:
     allocatable_cpu_cores:
         type: "number"
         name: "Allocatable CPU Cores"
-        uint: 
+        unit: 
     allocatable_memory_bytes:
         type: "number"
         name: "Allocatable Memory Bytes"
-        uint: 
+        unit: 
     allocatable_pods:
         type: "number"
         name: "Allocatable Pods"
-        uint: 
+        unit: 
     capacity_cpu_cores:
         type: "number"
         name: "Capacity CPU Cores"
-        uint: 
+        unit: 
     capacity_memory_bytes:
         type: "number"
         name: "Capacity Memory Bytes"
-        uint: 
+        unit: 
     capacity_pods:
         type: "number"
         name: "Capacity Pods"
-        uint: 
+        unit: 
     ready:
         type: "bool"
         name: "Ready"
-        uint: 
+        unit: 
 

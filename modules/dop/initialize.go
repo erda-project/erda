@@ -14,7 +14,6 @@
 package dop
 
 import (
-	"net/http"
 	"net/url"
 	"time"
 
@@ -42,7 +41,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/comment"
 	"github.com/erda-project/erda/modules/dop/services/cq"
 	"github.com/erda-project/erda/modules/dop/services/environment"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/filetree"
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuepanel"
@@ -117,7 +115,6 @@ func Initialize() error {
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.WithLocaleLoader(bdl.Bdl.GetLocaleLoader())
 	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
-	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 
 	loadMetricKeysFromDb((*dao.DBClient)(dbclient.DB))
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
@@ -215,9 +212,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithDOP(),
 	)
 
-	// init pipeline
-	p := pipeline.New(pipeline.WithBundle(bdl.Bdl))
-
 	c := cdp.New(cdp.WithBundle(bdl.Bdl))
 
 	// init event
@@ -227,21 +221,9 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
-	fileTree := filetree.New(filetree.WithBundle(bdl.Bdl))
-
-	fileSvc := filesvc.New(
-		filesvc.WithDBClient(db),
-		filesvc.WithBundle(bdl.Bdl),
-		filesvc.WithEtcdClient(etcdStore),
-	)
-
-	// init service
-	assetSvc := assetsvc.New()
-
 	testCaseSvc := testcase.New(
 		testcase.WithDBClient(db),
 		testcase.WithBundle(bdl.Bdl),
-		testcase.WithFileSvc(fileSvc),
 	)
 	testSetSvc := testset.New(
 		testset.WithDBClient(db),
@@ -257,19 +239,15 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		sceneset.WithBundle(bdl.Bdl),
 	)
 
-	// 查询
-	pFileTree := projectpipelinefiletree.New(
-		projectpipelinefiletree.WithBundle(bdl.Bdl),
-		projectpipelinefiletree.WithFileTreeSvc(fileTree),
-		projectpipelinefiletree.WithAutoTestSvc(autotest),
-	)
-
 	autotestV2 := atv2.New(
 		atv2.WithDBClient(db),
 		atv2.WithBundle(bdl.Bdl),
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
 	)
+
+	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	autotestV2.CreateFileRecord = testCaseSvc.CreateFileRecord
 
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
@@ -315,6 +293,14 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		branchrule.WithDBClient(db),
 		branchrule.WithBundle(bdl.Bdl),
 	)
+	gittarFileTreeSvc := filetree.New(filetree.WithBundle(bdl.Bdl), filetree.WithBranchRule(branchRule))
+
+	// 查询
+	pFileTree := projectpipelinefiletree.New(
+		projectpipelinefiletree.WithBundle(bdl.Bdl),
+		projectpipelinefiletree.WithFileTreeSvc(gittarFileTreeSvc),
+		projectpipelinefiletree.WithAutoTestSvc(autotest),
+	)
 
 	// init permission
 	perm := permission.New(permission.WithBundle(bdl.Bdl), permission.WithBranchRule(branchRule))
@@ -346,7 +332,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		issue.WithBundle(bdl.Bdl),
 		issue.WithIssueStream(issueStream),
 		issue.WithUCClient(uc),
-		issue.WithFileSvc(fileSvc),
 	)
 
 	issueState := issuestate.New(
@@ -391,7 +376,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// init certificate service
 	cer := certificate.New(
 		certificate.WithDBClient(db),
-		certificate.WithFileClient(fileSvc),
+		certificate.WithBundle(bdl.Bdl),
 	)
 
 	// init appcertificate service
@@ -418,16 +403,16 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(p),
+		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule))),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithGittarFileTree(fileTree),
+		endpoints.WithGittarFileTree(gittarFileTreeSvc),
 		endpoints.WithProjectPipelineFileTree(pFileTree),
 
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithAssetSvc(assetSvc),
+		endpoints.WithAssetSvc(assetsvc.New(assetsvc.WithBranchRuleSvc(branchRule))),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 
 		endpoints.WithDB(db),
@@ -435,7 +420,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithTestSet(testSetSvc),
 		endpoints.WithSonarMetricRule(sonarMetricRule),
 		endpoints.WithTestplan(testPlan),
-		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl))),
+		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule))),
 		endpoints.WithAutoTest(autotest),
 		endpoints.WithAutoTestV2(autotestV2),
 		endpoints.WithSceneSet(sceneset),
@@ -459,7 +444,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithPublisher(pub),
 		endpoints.WithCertificate(cer),
 		endpoints.WithAppCertificate(appCer),
-		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithLibReference(libReference),
 		endpoints.WithOrg(o),
 	)
@@ -499,7 +483,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 }
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -507,12 +491,20 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	if !ok {
 		return
 	}
-	svc.ExportFile(record)
+	switch record.Type {
+	case apistructs.FileActionTypeExport:
+		svc.ExportFile(record)
+	case apistructs.FileSpaceActionTypeExport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ExportFile(record)
+	default:
+
+	}
 }
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -520,5 +512,13 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	if !ok {
 		return
 	}
-	svc.ImportFile(record)
+	switch record.Type {
+	case apistructs.FileActionTypeImport:
+		svc.ImportFile(record)
+	case apistructs.FileSpaceActionTypeImport:
+		at2Svc := ep.AutotestV2Service()
+		at2Svc.ImportFile(record)
+	default:
+
+	}
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -33,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -49,7 +49,6 @@ type Endpoints struct {
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
-	snippetSvc       *snippetsvc.SnippetSvc
 	reportSvc        *reportsvc.ReportSvc
 	queueManage      *queuemanage.QueueManage
 
@@ -135,12 +134,6 @@ func WithPipelineCronSvc(svc *pipelinecronsvc.PipelineCronSvc) Option {
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
-	}
-}
-
-func WithSnippetSvc(svc *snippetsvc.SnippetSvc) Option {
-	return func(e *Endpoints) {
-		e.snippetSvc = svc
 	}
 }
 
@@ -245,5 +238,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// reports
 		{Path: "/api/pipeline-reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryPipelineReportSet},
 		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
+
+		// cluster info
+		{Path: clusterinfo.ClusterHookApiPath, Method: http.MethodPost, Handler: e.clusterHook},
 	}
 }

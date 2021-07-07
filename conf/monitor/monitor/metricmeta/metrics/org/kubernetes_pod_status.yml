@@ -26,13 +26,13 @@ fields:
     message:
         type: "string"
         name: "Message"
-        uint: 
+        unit: 
     reason:
         type: "string"
         name: "Reason"
-        uint: 
+        unit: 
     status:
         type: "string"
         name: "Status"
-        uint: 
+        unit: 
 

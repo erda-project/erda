@@ -14,6 +14,8 @@
 package monitor
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/pkg/database/gormutil"
@@ -51,4 +53,28 @@ func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 		return nil, nil
 	}
 	return &monitor, result.Error
+}
+
+// CompatibleTerminusKey .
+type CompatibleTerminusKey struct {
+	TerminusKey        string `gorm:"column:terminus_key"`
+	TerminusKeyRuntime string `gorm:"column:terminus_key_runtime"`
+}
+
+func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {
+	var list []*CompatibleTerminusKey
+	if err := db.Raw("SELECT terminus_key,terminus_key_runtime FROM sp_monitor WHERE terminus_key_runtime is not null AND is_delete = 0").
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (db *MonitorDB) UpdateStatusByMonitorId(monitorId string, delete int) error {
+	return db.Table(TableMonitor).
+		Where("`monitor_id`=?", monitorId).
+		Update(map[string]interface{}{
+			"is_delete": delete,
+			"updated":   time.Now(),
+		}).Error
 }

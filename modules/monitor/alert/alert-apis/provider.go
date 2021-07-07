@@ -20,33 +20,22 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	"github.com/erda-project/erda/pkg/common/apis"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
-
-type define struct{}
-
-func (d *define) Service() []string { return []string{"alert-apis"} }
-func (d *define) Dependencies() []string {
-	return []string{"http-server", "metrics-query", "mysql", "i18n"}
-}
-func (d *define) Summary() string     { return "alert apis" }
-func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
-}
 
 type config struct {
 	OrgFilterTags               string `file:"org_filter_tags"`
@@ -62,7 +51,7 @@ type config struct {
 type provider struct {
 	C                           *config
 	L                           logs.Logger
-	metricq                     metricq.Queryer
+	metricq                     metricq.Queryer `autowired:"metrics-query" optional:"true"`
 	t                           i18n.Translator
 	db                          *db.DB
 	cql                         *cql.Cql
@@ -73,6 +62,10 @@ type provider struct {
 	orgFilterTags               map[string]bool
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
+
+	Register     transport.Register `autowired:"service-register" optional:"true"`
+	Perm         perm.Interface     `autowired:"permission"`
+	alertService *alertService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -119,19 +112,89 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
-	p.bdl = bundle.New(
-		bundle.WithHTTPClient(hc),
-		bundle.WithCoreServices(),
-	)
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 
 	dashapi := ctx.Service("chart-block").(block.DashboardAPI)
 	p.a = adapt.New(p.L, p.metricq, p.t, p.db, p.cql, p.bdl, p.cmdb, dashapi, p.orgFilterTags, p.microServiceFilterTags, p.microServiceOtherFilterTags, p.silencePolicies)
-	routes := ctx.Service("http-server",
-		//telemetry.HttpMetric(),
-		interceptors.Recover(p.L)).(httpserver.Router)
-	return p.intRoutes(routes)
+
+	p.alertService = &alertService{
+		p: p,
+	}
+
+	if p.Register != nil {
+		type MonitorService = pb.AlertServiceServer
+		pb.RegisterAlertServiceImp(p.Register, p.alertService, apis.Options(), p.Perm.Check(
+			perm.NoPermMethod(MonitorService.QueryCustomizeMetric),
+			perm.NoPermMethod(MonitorService.QueryCustomizeNotifyTarget),
+			perm.NoPermMethod(MonitorService.QueryCustomizeAlert),
+			perm.NoPermMethod(MonitorService.GetCustomizeAlert),
+			perm.NoPermMethod(MonitorService.GetCustomizeAlertDetail),
+			perm.NoPermMethod(MonitorService.CreateCustomizeAlert),
+			perm.NoPermMethod(MonitorService.UpdateCustomizeAlert),
+			perm.NoPermMethod(MonitorService.UpdateCustomizeAlertEnable),
+			perm.NoPermMethod(MonitorService.DeleteCustomizeAlert),
+			perm.Method(MonitorService.QueryOrgCustomizeMetric, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgCustomizeNotifyTarget, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgCustomizeAlerts, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.GetOrgCustomizeAlertDetail, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.CreateOrgCustomizeAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
+			perm.Method(MonitorService.UpdateOrgCustomizeAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.Method(MonitorService.UpdateOrgCustomizeAlertEnable, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.Method(MonitorService.DeleteOrgCustomizeAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionDelete, perm.OrgIDValue()),
+			perm.NoPermMethod(MonitorService.QueryDashboardByAlert),
+			perm.Method(MonitorService.QueryOrgDashboardByAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
+			perm.NoPermMethod(MonitorService.QueryAlertRule),
+			perm.NoPermMethod(MonitorService.QueryAlert),
+			perm.NoPermMethod(MonitorService.GetAlert),
+			perm.NoPermMethod(MonitorService.GetAlertDetail),
+			perm.NoPermMethod(MonitorService.CreateAlert),
+			perm.NoPermMethod(MonitorService.UpdateAlert),
+			perm.NoPermMethod(MonitorService.UpdateAlertEnable),
+			perm.NoPermMethod(MonitorService.DeleteAlert),
+			perm.Method(MonitorService.QueryOrgAlertRule, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.GetOrgAlertDetail, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.CreateOrgAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
+			perm.Method(MonitorService.UpdateOrgAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.Method(MonitorService.UpdateOrgAlertEnable, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+			perm.Method(MonitorService.DeleteOrgAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionDelete, perm.OrgIDValue()),
+			perm.NoPermMethod(MonitorService.GetAlertRecordAttr),
+			perm.NoPermMethod(MonitorService.QueryAlertRecord),
+			perm.NoPermMethod(MonitorService.GetAlertRecord),
+			perm.NoPermMethod(MonitorService.QueryAlertHistory),
+			perm.NoPermMethod(MonitorService.CreateAlertIssue),
+			perm.NoPermMethod(MonitorService.UpdateAlertIssue),
+			perm.Method(MonitorService.GetOrgAlertRecordAttr, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgAlertRecord, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgHostsAlertRecord, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.GetOrgAlertRecord, perm.ScopeOrg, "monitor_org_alert", perm.ActionGet, perm.OrgIDValue()),
+			perm.Method(MonitorService.QueryOrgAlertHistory, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
+			perm.Method(MonitorService.CreateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
+			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
+		))
+	}
+	return nil
+}
+
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	switch {
+	case ctx.Service() == "erda.core.monitor.alert" || ctx.Type() == pb.AlertServiceServerType() || ctx.Type() == pb.AlertServiceHandlerType():
+		return p.alertService
+	}
+	return p
 }
 
 func init() {
-	servicehub.RegisterProvider("alert-apis", &define{})
+	servicehub.Register("erda.core.monitor.alert", &servicehub.Spec{
+		Services:             pb.ServiceNames(),
+		Types:                pb.Types(),
+		OptionalDependencies: []string{"service-register"},
+		Description:          "",
+		ConfigFunc: func() interface{} {
+			return &config{}
+		},
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

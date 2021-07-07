@@ -16,6 +16,7 @@ package k8s
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
@@ -266,21 +267,91 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	return localEngine, nil
 }
 
-// New new kubernetes executor struct
-func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
-	addr, ok := options["ADDR"]
-	if !ok {
-		return nil, errors.Errorf("not found k8s address in env variables")
+// GetClient get http client with cluster info.
+func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
+	inetPortal := "inet://"
+
+	b := bundle.New(bundle.WithClusterManager())
+
+	cluster, err := b.GetCluster(clusterName)
+	if err != nil {
+		return "", nil, err
 	}
 
-	if !strings.HasPrefix(addr, "inet://") {
-		if !strings.HasPrefix(addr, "http") && !strings.HasPrefix(addr, "https") {
-			addr = strutil.Concat("http://", addr)
+	// inet portal default use dialer
+	// if manage config is nil, doesn't create executor
+	if cluster.ManageConfig == nil {
+		return "", nil, fmt.Errorf("manage config is nil")
+	}
+
+	hcOptions := []httpclient.OpOption{
+		httpclient.WithHTTPS(),
+		httpclient.WithAcceptEncoding("identity"),
+	}
+
+	// check mange config type
+	switch cluster.ManageConfig.Type {
+	case apistructs.ManageProxy, apistructs.ManageToken:
+		// cluster-agent -> (register) cluster-dialer -> (patch) cluster-manager
+		// -> (update) eventBox -> (update) scheduler -> scheduler reload executor
+		if cluster.ManageConfig.Token == "" || cluster.ManageConfig.Address == "" {
+			return "", nil, fmt.Errorf("token or address is empty")
 		}
+
+		hc := httpclient.New(hcOptions...)
+		hc.BearerTokenAuth(cluster.ManageConfig.Token)
+
+		if cluster.ManageConfig.Type == apistructs.ManageToken {
+			return cluster.ManageConfig.Address, hc, nil
+		}
+
+		// parseInetAddr parse inet addr, will add proxy header in custom http request
+		return fmt.Sprintf("%s%s/%s", inetPortal, clusterName, cluster.ManageConfig.Address), hc, nil
+	case apistructs.ManageCert:
+		if len(cluster.ManageConfig.KeyData) == 0 ||
+			len(cluster.ManageConfig.CertData) == 0 {
+			return "", nil, fmt.Errorf("cert or key is empty")
+		}
+
+		certBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.CertData)
+		if err != nil {
+			return "", nil, err
+		}
+		keyBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.KeyData)
+		if err != nil {
+			return "", nil, err
+		}
+
+		var certOption httpclient.OpOption
+
+		certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, nil)
+
+		if len(cluster.ManageConfig.CaData) != 0 {
+			caBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.CaData)
+			if err != nil {
+				return "", nil, err
+			}
+			certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, caBase64)
+		}
+		hcOptions = append(hcOptions, certOption)
+
+		return cluster.ManageConfig.Address, httpclient.New(hcOptions...), nil
+	default:
+		return "", nil, fmt.Errorf("manage type is not support")
+	}
+}
+
+// New new kubernetes executor struct
+func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
+	addr, client, err := GetClient(clusterName)
+	if err != nil {
+		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
+		return nil, err
 	}
 
 	//Get the value of the super-scoring ratio for different environments
-	var memSubscribeRatio,
+	var (
+		memSubscribeRatio,
 		cpuSubscribeRatio,
 		devMemSubscribeRatio,
 		devCpuSubscribeRatio,
@@ -288,6 +359,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		testCpuSubscribeRatio,
 		stagingMemSubscribeRatio,
 		stagingCpuSubscribeRatio float64
+	)
 
 	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
 	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
@@ -303,29 +375,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		if num, err := strconv.ParseFloat(cpuNumQuotaValue, 64); err == nil && (num >= 0 || num == -1.0) {
 			cpuNumQuota = num
 			logrus.Debugf("executor(%s) cpuNumQuota set to %v", name, cpuNumQuota)
-		}
-	}
-
-	client := httpclient.New()
-	if _, ok := options["CA_CRT"]; ok {
-		logrus.Infof("k8s executor(%s) addr for https: %v", name, addr)
-		client = httpclient.New(httpclient.WithHttpsCertFromJSON([]byte(options["CLIENT_CRT"]),
-			[]byte(options["CLIENT_KEY"]),
-			[]byte(options["CA_CRT"])))
-
-		token, ok := options["BEARER_TOKEN"]
-		if !ok {
-			return nil, errors.Errorf("not found k8s bearer token")
-		}
-		// RBAC is enabled by default, and user authentication is required through token
-		client.BearerTokenAuth(token)
-	}
-
-	basicAuth, ok := options["BASICAUTH"]
-	if ok {
-		namePassword := strings.Split(basicAuth, ":")
-		if len(namePassword) == 2 {
-			client.BasicAuth(namePassword[0], namePassword[1])
 		}
 	}
 
@@ -354,21 +403,24 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
+	var istioEngine istioctl.IstioEngine
+
 	rawData, err := clusterInfo.Get()
 	if err != nil {
-		return nil, errors.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
+		logrus.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
 			name, clusterName, err)
+	} else {
+		clusterInfoData := apistructs.ClusterInfoData{}
+		for key, value := range rawData {
+			clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
+		}
+		istioEngine, err = getIstioEngine(clusterInfoData)
+		if err != nil {
+			return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
+				name, clusterName, err)
+		}
 	}
 
-	clusterInfoData := apistructs.ClusterInfoData{}
-	for key, value := range rawData {
-		clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
-	}
-	istioEngine, err := getIstioEngine(clusterInfoData)
-	if err != nil {
-		return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
-			name, clusterName, err)
-	}
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
 	k := &Kubernetes{
@@ -403,7 +455,10 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
 		cpuNumQuota:              cpuNumQuota,
 		dbclient:                 dbclient,
-		istioEngine:              istioEngine,
+	}
+
+	if istioEngine != nil {
+		k.istioEngine = istioEngine
 	}
 
 	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, k, k8ssecret, k, client)
@@ -428,7 +483,7 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		k.setProjectServiceName(runtime)
 	}
 
-	logrus.Debugf("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
+	logrus.Infof("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
@@ -670,7 +725,7 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 			return err
 		}
 	}
-	if service.ProjectServiceName != "" {
+	if service.ProjectServiceName != "" && len(service.Ports) > 0 {
 		err := k.createProjectService(service, sg.ID)
 		if err != nil {
 			return err

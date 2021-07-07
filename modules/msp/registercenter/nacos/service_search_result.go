@@ -35,7 +35,7 @@ type ServiceSearchResult struct {
 func (s *ServiceSearchResult) ToHTTPService() *pb.HTTPService {
 	var service pb.HTTPService
 	service.ServiceName = s.ServiceName
-	if len(s.ClusterMap) <= 0 || s.ClusterMap["DEFAULT"] == nil || len(s.ClusterMap["DEFAULT"].Hosts) <= 0 {
+	if len(s.ClusterMap) <= 0 || s.ClusterMap["DEFAULT"] == nil || len(s.ClusterMap["DEFAULT"].Hosts) <= 0 && s.ClusterMap["DEFAULT"].Hosts[0] != nil {
 		return &service
 	}
 	def := s.ClusterMap["DEFAULT"]
@@ -67,13 +67,15 @@ func (s *ServiceSearchResult) ToInterface() *pb.Interface {
 	var i pb.Interface
 	i.Interfacename = s.getInterfaceName()
 	switch s.getSide() {
-	case "consumers:":
+	case "consumers":
 		i.Consumerlist = append(i.Consumerlist, s.getIPs()...)
+		i.Consumermap = make(map[string]*pb.InterfaceOwner)
 		for k, v := range s.getOwnerMap() {
 			i.Consumermap[k] = v
 		}
-	case "providers:":
+	case "providers":
 		i.Providerlist = append(i.Providerlist, s.getIPs()...)
+		i.Providermap = make(map[string]*pb.InterfaceOwner)
 		for k, v := range s.getOwnerMap() {
 			i.Providermap[k] = v
 		}
@@ -159,7 +161,7 @@ type ServiceHost struct {
 	Valid    bool              `json:"valid"`
 	Port     int64             `json:"port"`
 	IP       string            `json:"ip"`
-	Weight   int64             `json:"weight"`
+	Weight   float64           `json:"weight"`
 	Enabled  bool              `json:"enabled"`
 	MetaData map[string]string `json:"metadata"`
 }

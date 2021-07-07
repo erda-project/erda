@@ -26,7 +26,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,7 +40,8 @@ const (
 
 // Pipeline pipeline 结构体
 type Pipeline struct {
-	bdl *bundle.Bundle
+	bdl           *bundle.Bundle
+	branchRuleSvc *branchrule.BranchRule
 }
 
 // Option Pipeline 配置选项
@@ -57,6 +60,12 @@ func New(options ...Option) *Pipeline {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(f *Pipeline) {
 		f.bdl = bdl
+	}
+}
+
+func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
+	return func(f *Pipeline) {
+		f.branchRuleSvc = svc
 	}
 }
 
@@ -287,11 +296,11 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	}
 
 	pv2.PipelineYml = strPipelineYml
-
-	validBranch, err := p.bdl.GetBranchWorkspaceConfig(app.ID, pv1.Branch)
+	rules, err := p.branchRuleSvc.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
-		return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
+		return nil, apierrors.ErrGetGittarRepoFile.InternalError(err)
 	}
+	validBranch := diceworkspace.GetValidBranchByGitReference(pv1.Branch, rules)
 	workspace := validBranch.Workspace
 
 	// 塞入 publisher namespace, publisher 级别配置优先级低于用户指定

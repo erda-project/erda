@@ -26,7 +26,6 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 	"github.com/rakyll/statik/fs"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -47,31 +46,15 @@ func (c *collector) intRoutes(routes httpserver.Router) error {
 	routes.POST("/collect/analytics", c.collectAnalytics)
 
 	// logs and metrics
-	basicAuth := c.basicAuth()
-	routes.POST("/collect/logs/:source", c.collectLogs, basicAuth)
-	routes.POST("/collect/:metric", c.collectMetric, basicAuth)
+	auth := c.basicAuth()
+	routes.POST("/collect/:metric", c.collectMetric, auth)
+	routes.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
+	routes.POST("/collect/logs/:source", c.collectLogs, auth)
 
-	routes.POST("/collect/notify-metrics", c.collectNotifyMetric, basicAuth)
+	// standard API version two
+	signAuth := c.authSignedRequest()
+	routes.POST("/api/v2/collect/logs/:source", c.collectLogs, signAuth)
 	return nil
-}
-
-func (c *collector) basicAuth() interface{} {
-	return middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
-		Validator: func(username string, password string, context echo.Context) (bool, error) {
-			if username == c.Cfg.Auth.Username && password == c.Cfg.Auth.Password {
-				return true, nil
-			}
-			return false, nil
-		},
-		Skipper: func(context echo.Context) bool {
-			if c.Cfg.Auth.Force {
-				return false
-			}
-			// 兼容旧版本，没有添加认证的客户端，这个版本先跳过
-			authorizationHeader := context.Request().Header.Get("Authorization")
-			return authorizationHeader == ""
-		},
-	})
 }
 
 func (c *collector) collectLogs(ctx echo.Context) error {
