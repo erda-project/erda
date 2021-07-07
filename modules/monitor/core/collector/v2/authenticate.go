@@ -21,15 +21,13 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
-
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/validator"
+	"github.com/labstack/echo"
 )
 
 var bdl = bundle.New(bundle.WithCoreServices())
@@ -76,7 +74,7 @@ func (a *Authenticator) getAccessKey(ak string) (*model.AccessKey, bool) {
 	return v, ok
 }
 
-func (c *collector) authSignedRequest() httpserver.Interceptor {
+func (p *provider) authSignedRequest() httpserver.Interceptor {
 	return func(handler func(ctx httpserver.Context) error) func(ctx httpserver.Context) error {
 		return func(ctx httpserver.Context) error {
 			ak, ok := validator.GetAccessKeyID(ctx.Request())
@@ -84,14 +82,14 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 				return echo.NewHTTPError(http.StatusUnauthorized, "must specify accessKeyID")
 			}
 
-			accessKey, ok := c.auth.getAccessKey(ak)
+			accessKey, ok := p.auth.getAccessKey(ak)
 			if !ok {
 				return echo.NewHTTPError(http.StatusUnauthorized, "can't find accessKeyID: "+ak)
 			}
 
 			vd := validator.NewHMACValidator(
 				secret.AkSkPair{AccessKeyID: ak, SecretKey: accessKey.SecretKey},
-				validator.WithMaxExpireInterval(c.Cfg.SignAuth.ExpiredDuration),
+				validator.WithMaxExpireInterval(p.Cfg.SignAuth.ExpiredDuration),
 			)
 			if res := vd.Verify(ctx.Request()); !res.Ok {
 				return echo.NewHTTPError(http.StatusUnauthorized, res.Message)
@@ -99,23 +97,4 @@ func (c *collector) authSignedRequest() httpserver.Interceptor {
 			return handler(ctx)
 		}
 	}
-}
-
-func (c *collector) basicAuth() interface{} {
-	return middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
-		Validator: func(username string, password string, context echo.Context) (bool, error) {
-			if username == c.Cfg.Auth.Username && password == c.Cfg.Auth.Password {
-				return true, nil
-			}
-			return false, nil
-		},
-		Skipper: func(context echo.Context) bool {
-			if c.Cfg.Auth.Force {
-				return false
-			}
-			// 兼容旧版本，没有添加认证的客户端，这个版本先跳过
-			authorizationHeader := context.Request().Header.Get("Authorization")
-			return authorizationHeader == ""
-		},
-	})
 }

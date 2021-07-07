@@ -19,12 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/hmac"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAccessKeyAuthenticate(t *testing.T) {
@@ -33,7 +34,7 @@ func TestAccessKeyAuthenticate(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	res := httptest.NewRecorder()
 
-	coll := &collector{
+	coll := &provider{
 		auth: &Authenticator{
 			store: map[string]*model.AccessKey{
 				AccessKeyID: {
@@ -103,7 +104,8 @@ func TestAccessKeyAuthenticate(t *testing.T) {
 	}
 	ass.Error(h(handler)(c))
 
-	// Not Sign
+	// No Sign
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	c = &mockContext{
 		ctx: e.NewContext(req, res),
 	}
