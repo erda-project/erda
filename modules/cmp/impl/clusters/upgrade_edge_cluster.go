@@ -189,7 +189,7 @@ func (c *Clusters) BatchUpgradeEdgeCluster(req apistructs.BatchUpgradeEdgeCluste
 }
 
 func (c *Clusters) GetOrgInfo(req *apistructs.OrgSearchRequest) (map[uint64]apistructs.OrgDTO, error) {
-	orgs, err := c.bdl.ListDopOrgs(req)
+	orgs, err := c.bdl.ListOrgs(req, "")
 	if err != nil {
 		return nil, err
 	}
@@ -248,19 +248,12 @@ func (c *Clusters) ListClusters(req apistructs.OrgClusterInfoRequest) (result []
 			continue
 		}
 		cSet.Insert(v.Name)
-		// Filter clusters which only contain related cluster
-		if _, ok := (orgsInfo)[uint64(v.OrgID)]; !ok {
-			continue
-		}
 		result = append(result,
 			apistructs.OrgClusterInfoBasicData{
-				ClusterName:    v.Name,
-				OrgID:          uint64(v.OrgID),
-				OrgName:        (orgsInfo)[uint64(v.OrgID)].Name,
-				OrgDisplayName: (orgsInfo)[uint64(v.OrgID)].DisplayName,
-				ClusterType:    v.Type,
-				Version:        "",
-				CreateTime:     v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+				ClusterName: v.Name,
+				ClusterType: v.Type,
+				Version:     "",
+				CreateTime:  v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 			})
 	}
 	sort.Sort(orgClusterInfoList(result))

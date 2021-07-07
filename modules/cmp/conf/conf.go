@@ -15,16 +15,20 @@
 package conf
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/pkg/envconf"
 )
 
 // Conf Define the configuration
 type Conf struct {
-	Debug         bool   `env:"DEBUG" default:"false"`
-	EnableEss     bool   `env:"ENABLE_ESS" default:"false"`
-	ListenAddr    string `env:"LISTEN_ADDR" default:":9027"`
-	SoldierAddr   string `env:"SOLDIER_ADDR"`
-	SchedulerAddr string `env:"SCHEDULER_ADDR"`
+	Debug             bool          `env:"DEBUG" default:"false"`
+	EnableEss         bool          `env:"ENABLE_ESS" default:"false"`
+	ListenAddr        string        `env:"LISTEN_ADDR" default:":9027"`
+	SoldierAddr       string        `env:"SOLDIER_ADDR"`
+	SchedulerAddr     string        `env:"SCHEDULER_ADDR"`
+	TaskSyncDuration  time.Duration `env:"TASK_SYNC_DURATION" default:"2h"`
+	TaskCleanDuration time.Duration `env:"TASK_CLEAN_DURATION" default:"24h"`
 }
 
 var cfg Conf
@@ -56,4 +60,12 @@ func Debug() bool {
 
 func EnableEss() bool {
 	return cfg.EnableEss
+}
+
+func TaskSyncDuration() time.Duration {
+	return cfg.TaskSyncDuration
+}
+
+func TaskCleanDuration() time.Duration {
+	return cfg.TaskCleanDuration
 }
