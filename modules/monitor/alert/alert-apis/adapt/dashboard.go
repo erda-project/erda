@@ -14,14 +14,18 @@
 package adapt
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 func NewDashboard(a *Adapt) *dashgen {
@@ -35,13 +39,12 @@ type dashgen struct {
 	scope, scopeID string
 }
 
-func (d *dashgen) CreateChartDashboard(alertDetail *CustomizeAlertDetail) (string, error) {
-
+func (d *dashgen) CreateChartDashboard(alertDetail *pb.CustomizeAlertDetail) (string, error) {
 	d.init(alertDetail)
 	return d.createChartDashboard(alertDetail)
 }
 
-func (d *dashgen) GenerateDashboardPreView(alertDetail *CustomizeAlertDetail) (res *block.View, err error) {
+func (d *dashgen) GenerateDashboardPreView(alertDetail *pb.CustomizeAlertDetail) (res *pb.View, err error) {
 	if len(alertDetail.Rules) != 1 {
 		return nil, fmt.Errorf("must be only one view")
 	}
@@ -51,10 +54,81 @@ func (d *dashgen) GenerateDashboardPreView(alertDetail *CustomizeAlertDetail) (r
 	if err != nil {
 		return nil, err
 	}
-	return vitems[0].View, nil
+	staticData, err := structpb.NewValue(vitems[0].View.StaticData)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	v := vitems[0].View
+	result, err := d.ToPBView(v)
+	if err != nil {
+		return nil, err
+	}
+	result.StaticData = staticData
+	return result, nil
 }
 
-func (d *dashgen) createChartDashboard(alertDetail *CustomizeAlertDetail) (string, error) {
+func (d *dashgen) ToPBView(v *block.View) (*pb.View, error) {
+	controls, err := structpb.NewValue(v.Controls)
+	if err != nil {
+		return nil, err
+	}
+	result := &pb.View{
+		Title:          v.Title,
+		Description:    v.Description,
+		ChartType:      v.ChartType,
+		DataSourceType: v.DataSourceType,
+		Controls:       controls,
+	}
+	dataSourceConfig, err := structpb.NewValue(v.Config.DataSourceConfig)
+	if err != nil {
+		return nil, err
+	}
+	option, err := structpb.NewValue(v.Config.Option)
+	if err != nil {
+		return nil, err
+	}
+	optionProps := make(map[string]*structpb.Value)
+	if v.Config.OptionProps != nil {
+		optionProps, err = (&Adapt{}).InterfaceMapToValueMap(*(v.Config.OptionProps))
+		if err != nil {
+			return nil, err
+		}
+	}
+	config := &pb.Config{
+		OptionProps:      optionProps,
+		DataSourceConfig: dataSourceConfig,
+		Option:           option,
+	}
+	result.Config = config
+	query, err := (&Adapt{}).InterfaceMapToValueMap(v.API.Query)
+	if err != nil {
+		return nil, err
+	}
+	body, err := (&Adapt{}).InterfaceMapToValueMap(v.API.Body)
+	if err != nil {
+		return nil, err
+	}
+	header, err := (&Adapt{}).InterfaceMapToValueMap(v.API.Header)
+	if err != nil {
+		return nil, err
+	}
+	extraData, err := (&Adapt{}).InterfaceMapToValueMap(v.API.ExtraData)
+	if err != nil {
+		return nil, err
+	}
+	api := &pb.API{
+		Url:       v.API.URL,
+		Query:     query,
+		Body:      body,
+		Header:    header,
+		ExtraData: extraData,
+		Method:    v.API.Method,
+	}
+	result.Api = api
+	return result, nil
+}
+
+func (d *dashgen) createChartDashboard(alertDetail *pb.CustomizeAlertDetail) (string, error) {
 	block, err := d.generateDashboard(alertDetail)
 	if err != nil {
 		return "", fmt.Errorf("generate dashboard fialed. err=%s", err)
@@ -66,9 +140,8 @@ func (d *dashgen) createChartDashboard(alertDetail *CustomizeAlertDetail) (strin
 	return dash.ID, nil
 }
 
-func (d *dashgen) init(alertDetail *CustomizeAlertDetail) {
-	d.lang = alertDetail.Lang
-	d.scopeID = alertDetail.AlertScopeID
+func (d *dashgen) init(alertDetail *pb.CustomizeAlertDetail) {
+	d.scopeID = alertDetail.AlertScopeId
 	d.scope = alertDetail.AlertScope
 
 	if d.scope == "org" {
@@ -80,7 +153,7 @@ func (d *dashgen) init(alertDetail *CustomizeAlertDetail) {
 	}
 }
 
-func (d *dashgen) generateDashboard(alertDetail *CustomizeAlertDetail) (res *block.UserBlock, err error) {
+func (d *dashgen) generateDashboard(alertDetail *pb.CustomizeAlertDetail) (res *block.UserBlock, err error) {
 	block := &block.UserBlock{
 		Name:    "",
 		Scope:   fmt.Sprintf("%s:alert", d.scope),
@@ -95,7 +168,7 @@ func (d *dashgen) generateDashboard(alertDetail *CustomizeAlertDetail) (res *blo
 	return block, nil
 }
 
-func (d *dashgen) createViewConfig(rules []*CustomizeAlertRule) (vc block.ViewConfigDTO, err error) {
+func (d *dashgen) createViewConfig(rules []*pb.CustomizeAlertRule) (vc block.ViewConfigDTO, err error) {
 	res := []*block.ViewConfigItem{}
 	for _, rule := range rules {
 		vci, err := d.generateViewConfigItems(rule)
@@ -107,7 +180,7 @@ func (d *dashgen) createViewConfig(rules []*CustomizeAlertRule) (vc block.ViewCo
 	return res, nil
 }
 
-func (d *dashgen) generateViewConfigItems(r *CustomizeAlertRule) (res []*block.ViewConfigItem, err error) {
+func (d *dashgen) generateViewConfigItems(r *pb.CustomizeAlertRule) (res []*block.ViewConfigItem, err error) {
 	res = []*block.ViewConfigItem{}
 	heigth := 10
 	for idx, f := range r.Functions {
@@ -120,6 +193,15 @@ func (d *dashgen) generateViewConfigItems(r *CustomizeAlertRule) (res []*block.V
 		if err != nil {
 			return nil, err
 		}
+		data, err := json.Marshal(f)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		alertRuleFunction := &CustomizeAlertRuleFunction{}
+		err = json.Unmarshal(data, alertRuleFunction)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
 		view := &block.View{
 			Title:     "",
 			ChartType: ct,
@@ -128,7 +210,7 @@ func (d *dashgen) generateViewConfigItems(r *CustomizeAlertRule) (res []*block.V
 				Query:     query,
 				Body:      nil,
 				Header:    nil,
-				ExtraData: d.generateExtraData(query, f, r.ActivedMetricGroups, r.Metric),
+				ExtraData: d.generateExtraData(query, alertRuleFunction, r.ActivedMetricGroups, r.Metric),
 			},
 		}
 		vci := &block.ViewConfigItem{
@@ -161,7 +243,7 @@ func (d *dashgen) getURL(ct string, field string) (string, error) {
 	return res, nil
 }
 
-func (d *dashgen) getChartType(f *CustomizeAlertRuleFunction) (string, error) {
+func (d *dashgen) getChartType(f *pb.CustomizeAlertRuleFunction) (string, error) {
 	ct := "chart:line"
 	langCode := i18n.LanguageCodes{
 		{
@@ -218,7 +300,7 @@ func (d *dashgen) generateExtraData(query map[string]interface{}, f *CustomizeAl
 	return res
 }
 
-func (d *dashgen) generateQuery(rule *CustomizeAlertRule) (map[string]interface{}, error) {
+func (d *dashgen) generateQuery(rule *pb.CustomizeAlertRule) (map[string]interface{}, error) {
 	metrics, err := d.a.metricq.MetricMeta(d.lang, d.scope, d.scopeID, rule.Metric)
 	if err != nil {
 		return nil, err
