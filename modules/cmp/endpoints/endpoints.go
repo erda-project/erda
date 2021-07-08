@@ -75,6 +75,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+func WithOrgResource(o *org_resource.OrgResource) Option {
+	return func(e *Endpoints) {
+		e.orgResource = o
+	}
+}
+
 // Routes Return routes
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -86,11 +92,15 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/records", Method: http.MethodGet, Handler: auth(i18nPrinter(e.Query))},
 		{Path: "/api/recordtypes", Method: http.MethodGet, Handler: auth(i18nPrinter(e.RecordTypeList))},
 		{Path: "/api/node-logs", Method: http.MethodGet, Handler: auth(i18nPrinter(e.Logs))},
+		{Path: "/api/cluster/actions/import", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ImportCluster))},
+		{Path: "/api/cluster/actions/init-retry", Method: http.MethodPost, Handler: auth(i18nPrinter(e.InitClusterRetry))},
 		{Path: "/api/cluster/actions/upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.UpgradeEdgeCluster))},
 		{Path: "/api/cluster/actions/batch-upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.BatchUpgradeEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.OfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
+		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
 		{Path: "/api/org-cluster-info", Method: http.MethodGet, Handler: auth(i18nPrinter(e.OrgClusterInfo))},
+		{Path: "/api/clusterhook", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ClusterHook))},
 
 		// officer apis
 		{Path: "/api/clusters/{clusterName}/registry/readonly", Method: http.MethodGet, Handler: e.RegistryReadonly},

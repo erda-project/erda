@@ -350,3 +350,40 @@ func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string) (s
 	}
 	return resp.Data, nil
 }
+
+// CreateOrgClusterRelationsByOrg create orgClusters relation by orgID
+func (b *Bundle) CreateOrgClusterRelationsByOrg(clusterName string, userID string, orgID uint64) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	org, err := b.GetOrg(orgID)
+	if err != nil {
+		return err
+	}
+
+	var createResp apistructs.OrgClusterRelationDTOCreateResponse
+
+	req := &apistructs.OrgClusterRelationCreateRequest{
+		OrgID:       orgID,
+		OrgName:     org.Name,
+		ClusterName: clusterName,
+	}
+
+	resp, err := hc.Post(host).Path("/api/orgs/actions/relate-cluster").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).
+		Do().
+		JSON(&createResp)
+
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !createResp.Success {
+		return toAPIError(resp.StatusCode(), createResp.Error)
+	}
+
+	return nil
+}

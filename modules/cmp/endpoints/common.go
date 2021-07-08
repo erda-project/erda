@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
-// Permission check
+// PermissionCheck Permission check
 func (e *Endpoints) PermissionCheck(userID, orgID, projectID, action string) error {
 	if orgID == "" {
 		return e.IsManager(userID, apistructs.SysScope, "")
@@ -89,7 +89,7 @@ func (e *Endpoints) IsManager(userID string, scopeType apistructs.ScopeType, sco
 	return err
 }
 
-// Create cloud resource
+// InitRecord Create cloud resource
 func (e *Endpoints) InitRecord(r dbclient.Record) (*dbclient.Record, httpserver.Responser) {
 	recordID, err := e.dbclient.RecordsWriter().Create(&dbclient.Record{
 		RecordType:  r.RecordType,

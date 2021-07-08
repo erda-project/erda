@@ -19,6 +19,7 @@ import (
 
 const (
 	AddNodesEssSource = "ess-autoscale"
+	ComClusterKey     = "DICE_CLUSTER_NAME"
 )
 
 type AddNodesRequest struct {
@@ -1579,4 +1580,37 @@ type CloudAccount struct {
 type CloudAccountResponse struct {
 	Header
 	Data CloudAccount `json:"data"`
+}
+
+// ImportCluster cluster import request body
+type ImportCluster struct {
+	ClusterName    string             `json:"name"`
+	ScheduleConfig ClusterSchedConfig `json:"scheduler"`
+	Credential     ICCredential       `json:"credential"`
+	CredentialType string             `json:"credentialType"`
+	OrgID          uint64             `json:"orgId"`
+	ClusterType    string             `json:"type"`
+	WildcardDomain string             `json:"wildcardDomain"`
+	DisplayName    string             `json:"displayName"`
+	Description    string             `json:"description"`
+}
+
+// ICCredential import cluster credential
+type ICCredential struct {
+	Address string `json:"address"`
+	Content string `json:"content"`
+}
+
+type ImportClusterResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
+type ClusterInitRetry struct {
+	ClusterName string `json:"clusterName"`
+}
+
+type InitClusterResponse struct {
+	Header
+	Data string `json:"data"`
 }

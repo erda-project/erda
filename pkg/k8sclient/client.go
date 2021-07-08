@@ -14,6 +14,8 @@
 package k8sclient
 
 import (
+	"time"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,17 +33,22 @@ type K8sClient struct {
 
 // New new K8sClient with clusterName.
 func New(clusterName string) (*K8sClient, error) {
-	b := bundle.New(bundle.WithClusterManager())
-
-	ci, err := b.GetCluster(clusterName)
+	rc, err := GetRestConfig(clusterName)
 	if err != nil {
 		return nil, err
 	}
 
-	rc, err := config.ParseManageConfig(clusterName, ci.ManageConfig)
+	return NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+}
+
+// NewWithTimeOut new k8sClient with timeout
+func NewWithTimeOut(clusterName string, timeout time.Duration) (*K8sClient, error) {
+	rc, err := GetRestConfig(clusterName)
 	if err != nil {
 		return nil, err
 	}
+
+	rc.Timeout = timeout
 
 	return NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
 }
@@ -71,4 +78,21 @@ func NewForRestConfig(c *rest.Config, schemes ...func(scheme *runtime.Scheme) er
 	}
 
 	return &kc, nil
+}
+
+// GetRestConfig get rest config with clusterName
+func GetRestConfig(clusterName string) (*rest.Config, error) {
+	b := bundle.New(bundle.WithClusterManager())
+
+	ci, err := b.GetCluster(clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	rc, err := config.ParseManageConfig(clusterName, ci.ManageConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return rc, nil
 }
