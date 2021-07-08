@@ -17,7 +17,6 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -32,28 +31,24 @@ func (mig *Migrator) DB() *gorm.DB {
 	}
 
 	var (
-		err error
-		dsn = mig.MySQLParameters().Format(false)
+		err  error
+		dsn  = mig.MySQLParameters().Format(false)
+		stmt = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 	)
 	open, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logrus.Fatalf("failed to open MySQL connection with DSN %s, err: %v", dsn, err)
+		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
 	}
 	defer open.Close()
 
-	stmt, err := open.Prepare("CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci")
-	if err != nil {
-		logrus.Fatalf("failed to Prepare CREATE DATABASE stmt, err: %v", err)
-	}
-	_, err = stmt.Exec()
-	if err != nil {
-		logrus.Fatalf("failed to Exec stmt %+v, err: %v", stmt, err)
+	if _, err = open.Exec(stmt); err != nil {
+		logrus.WithError(err).Fatalf("failed to Exec stmt %+v", stmt)
 	}
 
 	dsn = mig.MySQLParameters().Format(true)
 	mig.db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
-		logrus.Fatalf("failed to open MySQL connection with DSN %s : %v", dsn, err)
+		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
 	}
 	mig.db.Logger = logger.New(
 		log.New(os.Stdout, "\r\n", log.Ltime),
@@ -86,7 +81,6 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 	var (
 		open           *sql.DB
-		create         *sql.Stmt
 		err            error
 		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 		dropDatabase   = "DROP SCHEMA IF EXISTS " + mig.sandboxSettings.Name
@@ -105,40 +99,30 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
 		open, err = sql.Open("mysql", dsn)
 		if err != nil {
-			logrus.WithField("DSN", dsn).WithError(err).Infoln("failed to connect to sandbox")
+			logrus.WithError(err).WithField("DSN", dsn).Infoln("failed to connect to sandbox")
 			continue
 		}
 
-		drop, err := open.Prepare(dropDatabase)
-		if err != nil {
-			logrus.Warnf("failed to Prepare %s stmt: %v, may sandbox is not working yet, wait it for %d seconds",
-				dropDatabase, err, int(timeout.Seconds()-time.Since(now).Seconds()))
-			continue
-		}
-		if _, err := drop.Exec(); err != nil {
-			logrus.Warnf("failed to Exec %s: %v", dropDatabase, err)
-		}
-
-		create, err = open.Prepare(createDatabase)
-		if err != nil {
-			logrus.Warnf("failed to Prepare %s stmt: %v, may sandbox is not working yet, wait it for %d sencods",
-				createDatabase, err, int(timeout.Seconds()-time.Since(now).Seconds()))
+		if _, err = open.Exec(dropDatabase); err != nil {
+			logrus.WithError(err).WithField("SQL", dropDatabase).Warnln("failed to Exec")
 			continue
 		}
 
-		if _, err = create.Exec(); err != nil {
-			logrus.Fatalf("failed to Exec prepared %s stmt, err: %v", strconv.Quote(createDatabase), err)
+		if _, err = open.Exec(createDatabase); err != nil {
+			logrus.WithError(err).WithField("SQL", createDatabase).Fatalln("failed to Exec")
+			continue
 		}
+
 		break
 	}
 	if err != nil {
-		logrus.Fatalf("failed to dial MySQL sandbox: %s: %v", dsn, err)
+		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial MySQL sandbox")
 	}
 
 	dsn = mig.SandboxParameters().Format(true)
 	mig.sandbox, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
-		logrus.Fatalf("failed to open connection to sandbox, sandbox: %s: %v", mig.SandboxParameters().Format(true), err)
+		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open connection to sandbox")
 	}
 	mig.sandbox.Logger = logger.New(
 		log.New(os.Stdout, "\r\n", log.Ltime),
