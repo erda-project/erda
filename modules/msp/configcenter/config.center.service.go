@@ -133,6 +133,10 @@ func (s *configCenterService) SaveGroupProperties(ctx context.Context, req *pb.S
 	adp := newNacosAdapter(cfg)
 	data := make(map[string]string)
 	for _, prop := range req.Properties {
+		val, err := strconv.Unquote(prop.Value)
+		if err == nil {
+			prop.Value = val
+		}
 		if prop.Source == string(PropertySourceDice) {
 			data[prop.Key] = prop.Value
 		} else {
