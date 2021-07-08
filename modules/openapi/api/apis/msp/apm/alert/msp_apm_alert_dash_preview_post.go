@@ -11,17 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package monitor
+package alert
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_APM_ALERT_RULE_LIST = apis.ApiSpec{
-	Path:        "/api/apm/alerts/rules",
-	BackendPath: "/api/apm/alerts/rules",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+var MSP_APM_ALERT_DASH_PREVIEW_POST = apis.ApiSpec{
+	Path:        "/api/msp/apm/alert-records/custom-alerts/dash-preview/query",
+	BackendPath: "/api/msp/apm/alert-records/custom-alerts/dash-preview/query",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 获取当前租户告警通知对应的告警规则",
 }

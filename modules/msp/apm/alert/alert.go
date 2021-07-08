@@ -15,9 +15,11 @@ package alert
 
 import (
 	"fmt"
+
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const MicroServiceScope = "micro_service"

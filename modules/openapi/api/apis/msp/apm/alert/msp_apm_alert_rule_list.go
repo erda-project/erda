@@ -11,25 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package alert
 
-import (
-	"context"
-	"net/http"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-)
-
-func GetHttpRequest(ctx context.Context) *http.Request {
-	return transhttp.ContextRequest(ctx)
-}
-
-func NewContextWithHeader(ctx context.Context) context.Context {
-	httpRequest := GetHttpRequest(ctx)
-	header := transport.Header{}
-	for k, _ := range httpRequest.Header {
-		header.Set(k, httpRequest.Header.Get(k))
-	}
-	return transport.WithHeader(context.Background(), header)
+var MSP_APM_ALERT_RULE_LIST = apis.ApiSpec{
+	Path:        "/api/apm/alerts/rules",
+	BackendPath: "/api/msp/apm/alert-rules",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 获取当前租户告警通知对应的告警规则",
 }

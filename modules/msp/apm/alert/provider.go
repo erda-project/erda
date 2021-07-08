@@ -14,17 +14,18 @@
 package alert
 
 import (
+	"strings"
+
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/monitor/common/db"
-	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/jinzhu/gorm"
-	"strings"
-
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	"github.com/erda-project/erda/modules/monitor/common/db"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
+	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
@@ -60,10 +61,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	if p.Register != nil {
 		type AlertService = alert.AlertServiceServer
-		//alert.RegisterAlertServiceImp(p.Register,p.alertService,apis.Options())
 		alert.RegisterAlertServiceImp(p.Register, p.alertService, apis.Options(), p.Perm.Check(
 			perm.Method(AlertService.QueryAlertRule, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
-			perm.Method(AlertService.QueryAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()), //X
+			perm.Method(AlertService.QueryAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
 			perm.Method(AlertService.GetAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
 			perm.Method(AlertService.CreateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.alertService.TenantGroupFromParams()),
 			perm.Method(AlertService.UpdateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),

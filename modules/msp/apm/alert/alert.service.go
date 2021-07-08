@@ -17,6 +17,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/mitchellh/mapstructure"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/modcom/api"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
@@ -25,10 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"github.com/mitchellh/mapstructure"
-	"google.golang.org/protobuf/types/known/structpb"
-	"strconv"
-	"strings"
 )
 
 type alertService struct {
@@ -114,12 +116,10 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.UpdateTime = request.UpdateTime
 	alertData.AlertScope = MicroServiceScope
 	alertData.AlertScopeId = request.TenantGroup
-	alertData.Attributes = make(map[string]*structpb.Value)
-	//TODO 等等改成这样的
-	//alertData.Attributes = request.Attributes
-	//if alertData.Attributes == nil {
-	//	alertData.Attributes = make(map[string]*structpb.Value)
-	//}
+	alertData.Attributes = request.Attributes
+	if alertData.Attributes == nil {
+		alertData.Attributes = make(map[string]*structpb.Value)
+	}
 	alertData.Attributes[DiceOrgId] = structpb.NewStringValue(monitorInstance.OrgId)
 	alertData.Attributes[Domain] = structpb.NewStringValue(request.Domain)
 	alertData.Attributes[TenantGroup] = structpb.NewStringValue(request.TenantGroup)
@@ -227,7 +227,8 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	_, err = a.p.Monitor.UpdateAlert(ctx, updateAlertRequest)
+	context := utils.NewContextWithHeader(ctx)
+	_, err = a.p.Monitor.UpdateAlert(context, updateAlertRequest)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -351,7 +352,8 @@ func (a *alertService) QueryCustomizeMetric(ctx context.Context, request *alert.
 
 func (a *alertService) QueryCustomizeNotifyTarget(ctx context.Context, request *alert.QueryCustomizeNotifyTargetRequest) (*alert.QueryCustomizeNotifyTargetResponse, error) {
 	req := &monitor.QueryCustomizeNotifyTargetRequest{}
-	resp, err := a.p.Monitor.QueryCustomizeNotifyTarget(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryCustomizeNotifyTarget(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -370,7 +372,8 @@ func (a *alertService) QueryCustomizeAlerts(ctx context.Context, request *alert.
 		PageNo:   request.PageNo,
 		PageSize: request.PageSize,
 	}
-	resp, err := a.p.Monitor.QueryCustomizeAlert(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -384,12 +387,15 @@ func (a *alertService) GetCustomizeAlert(ctx context.Context, request *alert.Get
 	req := &monitor.GetCustomizeAlertDetailRequest{
 		Id: request.Id,
 	}
-	resp, err := a.p.Monitor.GetCustomizeAlertDetail(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.GetCustomizeAlertDetail(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if resp.Data.AlertScopeId != request.TenantGroup {
-		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scopeId is invalidate")
+	if resp.Data != nil {
+		if resp.Data.AlertScopeId != request.TenantGroup {
+			return nil, errors.NewPermissionError("monitor_project_alert", "update", "scopeId is invalidate")
+		}
 	}
 	result := &alert.GetCustomizeAlertResponse{
 		Data: resp.Data,
@@ -406,7 +412,8 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		Scope:   MicroServiceScope,
 		ScopeId: tk,
 	}
-	customizeMetrics, err := a.p.Monitor.QueryCustomizeMetric(ctx, customizeMetricsReq)
+	context := utils.NewContextWithHeader(ctx)
+	customizeMetrics, err := a.p.Monitor.QueryCustomizeMetric(context, customizeMetricsReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(fmt.Errorf("get metric meta failed"))
 	}
@@ -457,7 +464,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 	}
 	alertDetailReq := &monitor.CreateCustomizeAlertRequest{}
 	err = json.Unmarshal(alertDetailData, alertDetailReq)
-	resp, err := a.p.Monitor.CreateCustomizeAlert(ctx, alertDetailReq)
+	resp, err := a.p.Monitor.CreateCustomizeAlert(context, alertDetailReq)
 	if err != nil {
 		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("alert")
@@ -572,7 +579,8 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	req := &monitor.GetCustomizeAlertRequest{
 		Id: request.Id,
 	}
-	customAlertResp, err := a.p.Monitor.GetCustomizeAlert(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	customAlertResp, err := a.p.Monitor.GetCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -587,7 +595,7 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 		Scope:   MicroServiceScope,
 		ScopeId: tk,
 	}
-	customizeMetricsResp, err := a.p.Monitor.QueryCustomizeMetric(ctx, customizeMetricsReq)
+	customizeMetricsResp, err := a.p.Monitor.QueryCustomizeMetric(context, customizeMetricsReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(fmt.Errorf("get metric meta failed"))
 	}
@@ -641,7 +649,7 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	_, err = a.p.Monitor.UpdateCustomizeAlert(ctx, updateCustomizeAlertReq)
+	_, err = a.p.Monitor.UpdateCustomizeAlert(context, updateCustomizeAlertReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -652,7 +660,8 @@ func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 	req := &monitor.GetCustomizeAlertRequest{
 		Id: request.Id,
 	}
-	resp, err := a.p.Monitor.GetCustomizeAlert(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.GetCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -666,7 +675,7 @@ func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 		Id:     request.Id,
 		Enable: request.Enable,
 	}
-	_, err = a.p.Monitor.UpdateCustomizeAlertEnable(ctx, updateReq)
+	_, err = a.p.Monitor.UpdateCustomizeAlertEnable(context, updateReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -677,7 +686,8 @@ func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.
 	req := &monitor.DeleteCustomizeAlertRequest{
 		Id: request.Id,
 	}
-	resp, err := a.p.Monitor.DeleteCustomizeAlert(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.DeleteCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -693,7 +703,8 @@ func (a *alertService) GetAlertRecordAttrs(ctx context.Context, request *alert.G
 	req := &monitor.GetAlertRecordAttrRequest{
 		Scope: MicroServiceScope,
 	}
-	resp, err := a.p.Monitor.GetAlertRecordAttr(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.GetAlertRecordAttr(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -742,7 +753,8 @@ func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAl
 		PageNo:      uint64(request.PageNo),
 		PageSize:    uint64(request.PageSize),
 	}
-	resp, err := a.p.Monitor.QueryAlertRecord(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryAlertRecord(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -795,7 +807,8 @@ func (a *alertService) GetAlertRecord(ctx context.Context, request *alert.GetAle
 	req := &monitor.GetAlertRecordRequest{
 		GroupId: request.GroupId,
 	}
-	resp, err := a.p.Monitor.GetAlertRecord(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.GetAlertRecord(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -821,7 +834,8 @@ func (a *alertService) GetAlertHistories(ctx context.Context, request *alert.Get
 		End:     request.End,
 		Limit:   uint64(request.Limit),
 	}
-	resp, err := a.p.Monitor.QueryAlertHistory(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryAlertHistory(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -843,12 +857,13 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	httpRequest := utils.GetHttpRequest(ctx)
+	context := utils.NewContextWithHeader(ctx)
+	httpRequest := utils.GetHttpRequest(context)
 	userId := httpRequest.Header.Get("User-ID")
 	getRecordReq := &monitor.GetAlertRecordRequest{
 		GroupId: request.GroupId,
 	}
-	record, err := a.p.Monitor.GetAlertRecord(ctx, getRecordReq)
+	record, err := a.p.Monitor.GetAlertRecord(context, getRecordReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -885,7 +900,7 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 		return nil, errors.NewInternalServerError(err)
 	}
 	req.GroupId = request.GroupId
-	_, err = a.p.Monitor.CreateAlertIssue(ctx, req)
+	_, err = a.p.Monitor.CreateAlertIssue(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(fmt.Errorf("alert record issue create fail"))
 	}
@@ -896,7 +911,8 @@ func (a *alertService) UpdateAlertRecordIssue(ctx context.Context, request *aler
 	req := &monitor.GetAlertRecordRequest{
 		GroupId: request.GroupId,
 	}
-	record, err := a.p.Monitor.GetAlertRecord(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	record, err := a.p.Monitor.GetAlertRecord(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -921,7 +937,7 @@ func (a *alertService) UpdateAlertRecordIssue(ctx context.Context, request *aler
 		return nil, errors.NewInternalServerError(err)
 	}
 	updateDataIssueReq.GroupId = request.GroupId
-	_, err = a.p.Monitor.UpdateAlertIssue(ctx, updateDataIssueReq)
+	_, err = a.p.Monitor.UpdateAlertIssue(context, updateDataIssueReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -947,7 +963,8 @@ func (a *alertService) DashboardPreview(ctx context.Context, request *alert.Dash
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	view, err := a.p.Monitor.QueryDashboardByAlert(ctx, alertDetail)
+	context := utils.NewContextWithHeader(ctx)
+	view, err := a.p.Monitor.QueryDashboardByAlert(context, alertDetail)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package monitor
+package alert
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_APM_CUSTOMIZE_ALERT_ID_DELETE = apis.ApiSpec{
-	Path:        "/api/apm/customize/alert/<id>",
-	BackendPath: "/api/apm/customize/alert/<id>",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+var MSP_APM_ALERT_RECORDS_GET = apis.ApiSpec{
+	Path:        "/api/msp/apm/alert-records",
+	BackendPath: "/api/msp/apm/alert-records",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "DELETE",
+	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 根据ID删除自定义微服务告警策略",
+	Doc:         "查询告警记录",
 }

@@ -11,25 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package alert
 
-import (
-	"context"
-	"net/http"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-)
-
-func GetHttpRequest(ctx context.Context) *http.Request {
-	return transhttp.ContextRequest(ctx)
-}
-
-func NewContextWithHeader(ctx context.Context) context.Context {
-	httpRequest := GetHttpRequest(ctx)
-	header := transport.Header{}
-	for k, _ := range httpRequest.Header {
-		header.Set(k, httpRequest.Header.Get(k))
-	}
-	return transport.WithHeader(context.Background(), header)
+var MSP_APM_ALERT_RECORD_ATTRS_GET = apis.ApiSpec{
+	Path:        "/api/msp/apm/alert-record-attrs",
+	BackendPath: "/api/msp/apm/alert-record-attrs",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckToken:  true,
+	CheckLogin:  true,
+	Doc:         "获取告警记录属性",
 }
