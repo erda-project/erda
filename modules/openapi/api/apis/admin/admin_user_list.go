@@ -11,17 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package exception
+package admin
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var EXCEPTION_EVENT_ID_LIST = apis.ApiSpec{
-	Path:        "/api/msp/apm/exceptions/event-ids",
-	BackendPath: "/api/msp/apm/exceptions/event-ids",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "Query exception event ids",
+var ADMIN_USER_LIST = apis.ApiSpec{
+	Path:         "/api/users",
+	BackendPath:  "/api/users",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	RequestType:  apistructs.UserListRequest{},
+	ResponseType: apistructs.UserListResponse{},
+	Doc:          "summary: 批量查询用户",
+	Group:        "users",
 }

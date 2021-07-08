@@ -11,24 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package trace
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var CMDB_USER_SEARCH = apis.ApiSpec{
-	Path:         "/api/users/actions/search",
-	BackendPath:  "/api/users/actions/search",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.UserListRequest{},
-	ResponseType: apistructs.UserListResponse{},
-	Doc:          "summary:search user by page",
-	Group:        "users",
+var GET_TRACE_DEBUG_HISTORY_STATUS = apis.ApiSpec{
+	Path:        "/api/trace-requests/<requestId>/status",
+	BackendPath: "/api/msp/apm/trace/debug/<requestId>/history/status",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8050",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "Query trace debug history status.",
 }
