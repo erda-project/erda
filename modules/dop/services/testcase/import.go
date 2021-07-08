@@ -95,64 +95,61 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 
 func (svc *Service) ImportFile(record *dao.TestFileRecord) {
 	req := record.Extra.ManualTestFileExtraInfo.ImportRequest
-	ts := dao.FakeRootTestSet(req.ProjectID, false)
-	if req.TestSetID != 0 {
-		_ts, err := svc.db.GetTestSetByID(req.TestSetID)
-		if err != nil {
-			if gorm.IsRecordNotFoundError(err) {
-				logrus.Error(apierrors.ErrImportTestCases.InvalidParameter(fmt.Errorf("testSet not found, id: %d", req.TestSetID)))
-				return
-			}
-			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			return
-		}
-		ts = *_ts
-	}
-	if ts.ProjectID != req.ProjectID {
-		logrus.Error(apierrors.ErrImportTestCases.InvalidParameter("projectID"))
-		return
-	}
-
 	id := record.ID
 	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
 		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
 		return
 	}
-
-	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
-	if err != nil {
-		logrus.Error(err)
+	if err := svc.ImportTestCases(req, record.ApiFileUUID); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		}
 		return
+	}
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+	}
+}
+
+func (svc *Service) ImportTestCases(req *apistructs.TestCaseImportRequest, testFileUUID string) error {
+	ts := dao.FakeRootTestSet(req.ProjectID, false)
+	if req.TestSetID != 0 {
+		_ts, err := svc.db.GetTestSetByID(req.TestSetID)
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return apierrors.ErrImportTestCases.InvalidParameter(fmt.Errorf("testSet not found, id: %d", req.TestSetID))
+			}
+			return apierrors.ErrImportTestCases.InternalError(err)
+		}
+		ts = *_ts
+	}
+	if ts.ProjectID != req.ProjectID {
+		return apierrors.ErrImportTestCases.InvalidParameter("projectID")
+	}
+
+	f, err := svc.bdl.DownloadDiceFile(testFileUUID)
+	if err != nil {
+		return err
 	}
 
 	if req.FileType == apistructs.TestCaseFileTypeExcel {
 		excelTcs, err := svc.decodeFromExcelFile(f)
 		if err != nil {
-			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			}
-			return
+			return apierrors.ErrImportTestCases.InternalError(err)
 		}
 		if _, err := svc.storeExcel2DB(*req, ts, excelTcs); err != nil {
-			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			return
+			return apierrors.ErrImportTestCases.InternalError(err)
 		}
 	} else {
 		xmindTcs, err := svc.decodeFromXMindFile(f)
 		if err != nil {
-			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			}
-			return
+			return apierrors.ErrImportTestCases.InternalError(err)
 		}
 		if _, err := svc.storeXmind2DB(*req, ts, xmindTcs); err != nil {
-			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-			return
+			return apierrors.ErrImportTestCases.InternalError(err)
 		}
 	}
-	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess}); err != nil {
-		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
-	}
+
+	return nil
 }
