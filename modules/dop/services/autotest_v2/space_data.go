@@ -602,7 +602,7 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 	for oldSceneID, steps := range a.Steps {
 		var head uint64
 		for _, each := range steps {
-			each.Value = replacePreStepValue(each.Value, a.sceneIDAssociationMap)
+			each.Value = replacePreStepValue(each.Value, a.stepIDAssociationMap)
 
 			newStep := &dao.AutoTestSceneStep{
 				Type:      each.Type,
@@ -623,7 +623,7 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 			pHead := newStep.ID
 
 			for _, pv := range each.Children {
-				pv.Value = replacePreStepValue(pv.Value, a.sceneIDAssociationMap)
+				pv.Value = replacePreStepValue(pv.Value, a.stepIDAssociationMap)
 
 				newPStep := &dao.AutoTestSceneStep{
 					Type:      pv.Type,
