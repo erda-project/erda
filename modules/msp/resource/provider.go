@@ -14,11 +14,14 @@
 package resource
 
 import (
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
+	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -34,10 +37,11 @@ type provider struct {
 	resourceService   *resourceService
 	DeployCoordinator coordinator.Interface   `autowired:"erda.msp.resource.deploy.coordinator"`
 	ES                elasticsearch.Interface `autowired:"elasticsearch"`
+	DB                *gorm.DB                `autowired:"mysql-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.resourceService = &resourceService{p: p, coordinator: p.DeployCoordinator, es: p.ES.Client()}
+	p.resourceService = &resourceService{p: p, coordinator: p.DeployCoordinator, es: p.ES.Client(), monitorDb: &monitordb.MonitorDB{DB: p.DB}}
 	if p.Register != nil {
 		pb.RegisterResourceServiceImp(p.Register, p.resourceService, apis.Options())
 	}

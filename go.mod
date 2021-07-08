@@ -31,7 +31,7 @@ require (
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
-	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa
+	github.com/containerd/console v0.0.0-20180822173158-c12b1e7919c1
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -40,7 +40,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210707114154-26659d826a1c
-	github.com/erda-project/erda-proto-go v0.0.0-20210707034815-0df3817e79d2
+	github.com/erda-project/erda-proto-go v0.0.0-20210708055220-ccccc409ea19
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -59,6 +59,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
+	github.com/gofrs/flock v0.7.1
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
@@ -85,7 +86,6 @@ require (
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
-	github.com/lib/pq v1.3.0 // indirect
 	github.com/libgit2/git2go/v30 v30.0.5
 	github.com/magiconair/properties v1.8.4
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
@@ -152,10 +152,12 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.8
 	gotest.tools v2.2.0+incompatible
+	helm.sh/helm/v3 v3.3.4
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
 	k8s.io/api v0.19.1
+	k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery v0.19.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubernetes v1.18.3

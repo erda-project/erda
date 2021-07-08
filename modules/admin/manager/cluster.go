@@ -63,6 +63,12 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 
 	newClusters := []apistructs.ClusterInfo{}
 	for _, cluster := range clusters {
+		if cluster.ManageConfig != nil {
+			cluster.ManageConfig = &apistructs.ManageConfig{
+				CredentialSource: cluster.ManageConfig.CredentialSource,
+				Address:          cluster.ManageConfig.Address,
+			}
+		}
 		for _, relate := range clusterRelation {
 			if relate.ClusterID == uint64(cluster.ID) {
 				cluster.IsRelation = "Y"
