@@ -36,7 +36,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	checkByTerminusKeys := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP(
 			"filter_tk", "filter_terminus_key",
-			"filter_target_terminus_key", "filter_source_terminus_key", "filter__metric_scope_id",
+			"filter_target_terminus_key", "filter_source_terminus_key", "filter__metric_scope_id", "filter_fields.terminus_keys",
 		),
 		permissionResource, permission.ActionGet,
 	)
