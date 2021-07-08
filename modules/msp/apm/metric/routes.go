@@ -91,7 +91,7 @@ func (p *provider) getMetricParams(metric string, r *http.Request) (url.Values, 
 	var key, value string
 	for _, k := range []string{
 		"filter_tk", "filter_terminus_key", "filter_target_terminus_key",
-		"filter_source_terminus_key", "filter__metric_scope_id",
+		"filter_source_terminus_key", "filter__metric_scope_id", "filter_fields.terminus_keys",
 	} {
 		val := r.URL.Query().Get(k)
 		if len(val) > 0 {
