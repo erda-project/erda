@@ -116,7 +116,7 @@ func (a *Adapter) SaveConfig(tenantName, groupName, dataID, content string) erro
 	params.Set("group", groupName)
 	params.Set("tenant", tenantName)
 	params.Set("content", content)
-	req, err := a.newRequest(http.MethodGet, "/nacos/v1/cs/configs", params, nil)
+	req, err := a.newRequest(http.MethodPost, "/nacos/v1/cs/configs", params, nil)
 	if err != nil {
 		return err
 	}

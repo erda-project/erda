@@ -148,6 +148,18 @@ func getOwner(ip, owner string) *pb.InterfaceOwner {
 }
 
 func (s *ServiceSearchResult) getHostByIP(ip string) *ServiceHost {
+	if len(ip) == 0 {
+		return nil
+	}
+	def := s.ClusterMap["DEFAULT"]
+	if def == nil {
+		return nil
+	}
+	for _, h := range def.Hosts {
+		if h != nil && h.IP == ip {
+			return h
+		}
+	}
 	return nil
 }
 

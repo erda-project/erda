@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"sort"
@@ -146,13 +147,17 @@ func (a *Adapter) EnableHTTPService(namespace string, service *pb.EnableHTTPServ
 	if err != nil {
 		return nil, err
 	}
+	serviceIP, servicePort, err := net.SplitHostPort(service.Address)
+	if err != nil {
+		serviceIP = service.Address
+	}
 	var result *ServiceSearchResult
 	for _, r := range results {
 		if !strings.EqualFold(r.ServiceName, service.ServiceName) {
 			continue
 		}
 		for _, ip := range r.getIPs() {
-			if ip == service.Ip {
+			if ip == serviceIP {
 				result = r
 				break
 			}
@@ -161,12 +166,15 @@ func (a *Adapter) EnableHTTPService(namespace string, service *pb.EnableHTTPServ
 	if result == nil {
 		return nil, nil
 	}
-	h := result.getHostByIP(service.Ip)
+	h := result.getHostByIP(serviceIP)
+	if h == nil {
+		return nil, nil
+	}
 	params := url.Values{}
 	params.Set("serviceName", service.ServiceName)
 	params.Set("clusterName", "DEFAULT")
-	params.Set("ip", service.Ip)
-	params.Set("port", service.Port)
+	params.Set("ip", serviceIP)
+	params.Set("port", servicePort)
 	params.Set("ephemeral", "true")
 	params.Set("weight", strconv.FormatFloat(h.Weight, 'f', -1, 64))
 	params.Set("enabled", strconv.FormatBool(service.Online))
