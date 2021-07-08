@@ -40,7 +40,7 @@ func (p *provider) BuildSubResourceDeployRequest(name string, addon *diceyml.Add
 			orgDeployment = deployment
 			orgDeployment.ID = 0
 			orgDeployment.OrgId = orgId
-			p.LogInstanceDb.Save(&orgDeployment)
+			p.LogDeploymentDb.Save(&orgDeployment)
 		}
 
 		return nil
@@ -68,7 +68,7 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 			orgDeployment = deployment
 			orgDeployment.ID = 0
 			orgDeployment.OrgId = orgId
-			p.LogInstanceDb.Save(&orgDeployment)
+			p.LogDeploymentDb.Save(&orgDeployment)
 		}
 
 		return config
