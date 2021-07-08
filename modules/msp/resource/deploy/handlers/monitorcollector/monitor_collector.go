@@ -62,7 +62,7 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 
 	config := map[string]string{
 		"BOOTSTRAP_SERVERS":     instanceOptions["KAFKA_HOSTS"],
-		"ZOOKEEPER_ADDR":        "ZK_HOSTS",
+		"ZOOKEEPER_ADDR":        instanceOptions["ZK_HOSTS"],
 		"MONITOR_LOG_COLLECTOR": "http://" + vip + ":7076/collect/logs/container",
 	}
 
