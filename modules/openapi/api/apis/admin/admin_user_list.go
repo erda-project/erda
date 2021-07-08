@@ -11,17 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package admin
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var TMC_TRACE_REQUEST_SEND = apis.ApiSpec{
-	Path:        "/api/trace-requests",
-	BackendPath: "/api/tmc/trace-requests",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 发送链路追踪请求",
+var ADMIN_USER_LIST = apis.ApiSpec{
+	Path:         "/api/users",
+	BackendPath:  "/api/users",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	RequestType:  apistructs.UserListRequest{},
+	ResponseType: apistructs.UserListResponse{},
+	Doc:          "summary: 批量查询用户",
+	Group:        "users",
 }

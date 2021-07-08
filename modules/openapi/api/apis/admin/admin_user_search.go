@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package admin
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_USER_SEARCH = apis.ApiSpec{
+var ADMIN_USER_SEARCH = apis.ApiSpec{
 	Path:         "/api/users/actions/search",
 	BackendPath:  "/api/users/actions/search",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9095",
 	Scheme:       "http",
 	Method:       "GET",
 	CheckLogin:   true,
