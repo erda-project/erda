@@ -111,7 +111,7 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 		drop, err := open.Prepare(dropDatabase)
 		if err != nil {
-			logrus.Warnf("failed to Prepare %s stmt: %v, may sandbox is not working yet, wait it for %v seconds", dropDatabase, err, int(timeout.Seconds()-time.Since(now).Seconds()))
+			logrus.Warnf("failed to Prepare %s stmt: %v, may sandbox is not working yet, wait it for %d seconds", dropDatabase, err, timeout.Seconds()-time.Since(now).Seconds())
 			continue
 		}
 		if _, err := drop.Exec(); err != nil {
