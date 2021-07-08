@@ -405,6 +405,11 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 	if err != nil {
 		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 	}
+	rels, err := e.GetTestPlanCaseRels(uint64(issue.ID))
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
+	}
+	issue.TestPlanCaseRels = rels
 	currentLabelMap := make(map[string]bool)
 	newLabelMap := make(map[string]bool)
 	for _, v := range issue.Labels {
@@ -498,6 +503,11 @@ func (e *Endpoints) DeleteIssue(ctx context.Context, r *http.Request, vars map[s
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	rels, err := e.GetTestPlanCaseRels(uint64(issue.ID))
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
+	}
+	issue.TestPlanCaseRels = rels
 
 	// delete issue
 	if err := e.issue.Delete(id, identityInfo); err != nil {
@@ -588,6 +598,11 @@ func (e *Endpoints) GetIssue(ctx context.Context, r *http.Request, vars map[stri
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	rels, err := e.GetTestPlanCaseRels(uint64(issue.ID))
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
+	}
+	issue.TestPlanCaseRels = rels
 	// 鉴权
 	if !identityInfo.IsInternalClient() {
 		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
@@ -795,4 +810,29 @@ func (e *Endpoints) BatchUpdateIssueSubscriber(ctx context.Context, r *http.Requ
 	}
 
 	return httpserver.OkResp(id)
+}
+
+func (e *Endpoints) GetTestPlanCaseRels(issueID uint64) ([]apistructs.TestPlanCaseRel, error) {
+	// 查询关联的测试计划用例
+	testPlanCaseRels := make([]apistructs.TestPlanCaseRel, 0)
+	issueTestCaseRels, err := e.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: issueID})
+	if err != nil {
+		return nil, err
+	}
+	if len(issueTestCaseRels) > 0 {
+		var relIDs []uint64
+		for _, issueCaseRel := range issueTestCaseRels {
+			relIDs = append(relIDs, issueCaseRel.TestPlanCaseRelID)
+		}
+		relIDs = strutil.DedupUint64Slice(relIDs, true)
+		rels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: relIDs})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, rel := range rels {
+			testPlanCaseRels = append(testPlanCaseRels, rel)
+		}
+	}
+	return testPlanCaseRels, nil
 }

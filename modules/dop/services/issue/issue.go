@@ -429,27 +429,6 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 	if err != nil {
 		return nil, apierrors.ErrGetIssue.InternalError(err)
 	}
-
-	// 查询关联的测试计划用例
-	issueTestCaseRels, err := svc.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: req.ID})
-	if err != nil {
-		return nil, apierrors.ErrGetIssue.InternalError(err)
-	}
-	if len(issueTestCaseRels) > 0 {
-		var relIDs []uint64
-		for _, issueCaseRel := range issueTestCaseRels {
-			relIDs = append(relIDs, issueCaseRel.TestPlanCaseRelID)
-		}
-		relIDs = strutil.DedupUint64Slice(relIDs, true)
-		rels, err := svc.bdl.ListTestPlanCaseRel(relIDs)
-		if err != nil {
-			return nil, err
-		}
-		for _, rel := range rels {
-			issue.TestPlanCaseRels = append(issue.TestPlanCaseRels, rel)
-		}
-	}
-
 	return issue, nil
 }
 
