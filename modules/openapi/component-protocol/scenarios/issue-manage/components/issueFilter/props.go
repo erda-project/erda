@@ -58,7 +58,7 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 		ScopeType: apistructs.ProjectScope,
 		ScopeID:   int64(f.InParams.ProjectID),
 		PageNo:    1,
-		PageSize:  300,
+		PageSize:  500,
 	})
 	if err != nil {
 		return nil, err
