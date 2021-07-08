@@ -20,11 +20,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/erda-project/erda/modules/msp/instance/db"
-
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/netportal"
 )
 
@@ -43,16 +42,12 @@ type ESClient struct {
 }
 
 func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
-	body := `{
-  "aliases": {
-    "` + alias + `": {}
-  }
-}`
+	body := `{"aliases": {"` + alias + `": {}}}`
 
 	ctx := context.Background()
 	createIndex, err := c.CreateIndex(index).BodyString(body).Do(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if !createIndex.Acknowledged {
@@ -136,5 +131,6 @@ func (np *netPortal) newRequest(method, url string) (*elastic.Request, error) {
 	req.Header.Add("User-Agent", "elastic/"+elastic.Version+" ("+runtime.GOOS+"-"+runtime.GOARCH+")")
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", "identity")
 	return (*elastic.Request)(req), nil
 }
