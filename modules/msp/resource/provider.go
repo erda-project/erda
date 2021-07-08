@@ -14,6 +14,8 @@
 package resource
 
 import (
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -22,7 +24,6 @@ import (
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {
