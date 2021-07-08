@@ -43,9 +43,16 @@ func (am *AdminManager) ListUser(ctx context.Context, req *http.Request, resourc
 	if err != nil {
 		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 	}
-	return httpserver.OkResp(resp.Users)
+	return httpserver.OkResp(resp)
 }
 
 func (am *AdminManager) SearchUser(ctx context.Context, req *http.Request, resources map[string]string) (httpserver.Responser, error) {
-	return httpserver.OkResp("")
+	queryDecoder := schema.NewDecoder()
+	queryDecoder.IgnoreUnknownKeys(true)
+
+	resp, err := am.bundle.SearchUser(req.URL.Query())
+	if err != nil {
+		return apierrors.ErrListUser.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(resp)
 }
