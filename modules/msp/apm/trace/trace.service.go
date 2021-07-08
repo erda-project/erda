@@ -16,22 +16,61 @@ package trace
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math"
+	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type traceService struct {
-	p *provider
+	p                     *provider
+	traceRequestHistoryDB *db.TraceRequestHistoryDB
+}
+
+const layout = "2006-01-02 15:04:05"
+
+type DebugStatus int32
+
+const (
+	DebugInit    DebugStatus = 0
+	DebugSuccess DebugStatus = 1
+	DebugFail    DebugStatus = 2
+	DebugStop    DebugStatus = 3
+)
+
+func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode DebugStatus) string {
+	if lang == nil {
+		return ""
+	}
+	switch statusCode {
+	case DebugInit:
+		return s.p.i18n.Text(lang, "waiting_for_tracing_data")
+	case DebugSuccess:
+		return s.p.i18n.Text(lang, "success_get_tracing_data")
+	case DebugFail:
+		return s.p.i18n.Text(lang, "fail_get_tracing_data")
+	case DebugStop:
+		return s.p.i18n.Text(lang, "stop_get_tracing_data")
+	default:
+		return ""
+	}
 }
 
 func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
@@ -59,6 +98,12 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		spans = append(spans, &span)
 	}
 	return &pb.GetSpansResponse{Data: spans}, nil
+}
+
+func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
+	count := 0
+	s.p.cassandraSession.Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Consistency(gocql.All).Iter().Scan(&count)
+	return int64(count), nil
 }
 
 func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
@@ -123,4 +168,232 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	}
 
 	return &pb.GetTracesResponse{Data: traces}, nil
+}
+
+func (s *traceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTraceDebugHistoriesRequest) (*pb.GetTraceDebugHistoriesResponse, error) {
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Limit > 200 {
+		req.Limit = 200
+	}
+	if req.ScopeID == "" {
+		return nil, errors.NewMissingParameterError("scopeId")
+	}
+
+	histories, err := s.traceRequestHistoryDB.QueryHistoriesByScopeID(req.ScopeID, time.Now(), req.Limit)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	td := pb.TraceDebug{}
+	var traceDebugHistories []*pb.TraceDebugHistory
+	for _, history := range histories {
+		debugHistory, err := s.convertToTraceDebugHistory(ctx, history)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		traceDebugHistories = append(traceDebugHistories, debugHistory)
+	}
+	td.History = traceDebugHistories
+	td.Limit = int32(req.Limit)
+	count, err := s.traceRequestHistoryDB.QueryCountByScopeID(req.ScopeID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	td.Total = count
+	return &pb.GetTraceDebugHistoriesResponse{Data: &td}, nil
+}
+
+func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.GetTraceDebugRequest) (*pb.GetTraceDebugResponse, error) {
+	dbHistory, err := s.traceRequestHistoryDB.QueryHistoryByRequestID(req.ScopeID, req.RequestID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	debugHistory, err := s.convertToTraceDebugHistory(ctx, dbHistory)
+	return &pb.GetTraceDebugResponse{Data: debugHistory}, nil
+}
+
+func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
+	req.RequestID = uuid.NewV4().String()
+
+	queryString, err := json.Marshal(req.Query)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	headerString, err := json.Marshal(req.Header)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	bodyString, err := json.Marshal(req.Body)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	createTime, err := time.Parse(layout, req.CreateTime)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	updateTime, err := time.Parse(layout, req.UpdateTime)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	history := &db.TraceRequestHistory{
+		RequestId:      req.RequestID,
+		TerminusKey:    req.ScopeID,
+		Url:            req.Url,
+		QueryString:    string(queryString),
+		Header:         string(headerString),
+		Body:           string(bodyString),
+		Method:         req.Method,
+		Status:         int(req.Status),
+		ResponseBody:   req.ResponseBody,
+		ResponseStatus: int(req.ResponseCode),
+		CreateTime:     createTime,
+		UpdateTime:     updateTime,
+	}
+	insertHistory, err := s.traceRequestHistoryDB.InsertHistory(*history)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	statusInfo := pb.TraceDebugStatus{
+		RequestID:  insertHistory.RequestId,
+		Status:     int32(insertHistory.Status),
+		StatusName: s.getDebugStatus(apis.Language(ctx), DebugStatus(insertHistory.Status)),
+		ScopeID:    insertHistory.TerminusKey,
+	}
+
+	response, err := s.sendHTTPRequest(err, req)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	responseCode := response.StatusCode
+	responseBody, err := ioutil.ReadAll(response.Body)
+
+	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.CreateTraceDebugResponse{Data: &statusInfo}, nil
+}
+
+func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {
+	client := &http.Client{}
+	params := ioutil.NopCloser(strings.NewReader(req.Body))
+	request, err := http.NewRequest(req.Method, req.Url, params)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	for k, v := range req.Header {
+		request.Header.Set(k, v)
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(response.Body)
+	return response, nil
+}
+
+func (s *traceService) StopTraceDebug(ctx context.Context, req *pb.StopTraceDebugRequest) (*pb.StopTraceDebugResponse, error) {
+	_, err := s.traceRequestHistoryDB.UpdateDebugStatusByRequestID(req.ScopeID, req.RequestID, int(DebugFail))
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	return nil, nil
+}
+
+func (s *traceService) isExistSpan(ctx context.Context, requestID string) (bool, error) {
+	count, err := s.GetSpanCount(ctx, requestID)
+	if err != nil {
+		return false, errors.NewInternalServerError(err)
+	}
+	if count < 0 {
+		return false, errors.NewInternalServerError(err)
+	}
+	if count == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *traceService) GetTraceDebugHistoryStatusByRequestID(ctx context.Context, req *pb.GetTraceDebugStatusByRequestIDRequest) (*pb.GetTraceDebugStatusByRequestIDResponse, error) {
+	dbHistory, err := s.traceRequestHistoryDB.QueryHistoryByRequestID(req.ScopeID, req.RequestID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if dbHistory == nil {
+		return nil, errors.NewNotFoundError("trace debug history not found.")
+	}
+
+	statusInfo := pb.TraceDebugStatus{
+		RequestID:  dbHistory.RequestId,
+		Status:     int32(dbHistory.Status),
+		StatusName: s.getDebugStatus(apis.Language(ctx), DebugStatus(dbHistory.Status)),
+		ScopeID:    dbHistory.TerminusKey,
+	}
+
+	if DebugStatus(dbHistory.Status) == DebugInit {
+		exist, err := s.isExistSpan(ctx, req.RequestID)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		if exist {
+			info, err := s.traceRequestHistoryDB.UpdateDebugStatusByRequestID(dbHistory.TerminusKey, dbHistory.RequestId, int(DebugSuccess))
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			statusInfo.Status = int32(info.Status)
+			statusInfo.StatusName = s.getDebugStatus(apis.Language(ctx), DebugStatus(info.Status))
+		} else {
+			// If trace data is not obtained within 20 minutes, it is considered that the writing of trace data has failed.
+			if (time.Now().UnixNano()-dbHistory.UpdateTime.UnixNano())/1e9 > 20*60 {
+				info, err := s.traceRequestHistoryDB.UpdateDebugStatusByRequestID(dbHistory.TerminusKey, dbHistory.RequestId, int(DebugFail))
+				if err != nil {
+					return nil, errors.NewInternalServerError(err)
+				}
+				statusInfo.Status = int32(info.Status)
+				statusInfo.StatusName = s.getDebugStatus(apis.Language(ctx), DebugStatus(info.Status))
+			}
+		}
+	}
+
+	return &pb.GetTraceDebugStatusByRequestIDResponse{Data: &statusInfo}, nil
+}
+
+func (s *traceService) convertToTraceDebugHistory(ctx context.Context, dbHistory *db.TraceRequestHistory) (*pb.TraceDebugHistory, error) {
+	language := apis.Language(ctx)
+
+	query := make(map[string]string)
+	if dbHistory.QueryString != "" {
+		err := json.Unmarshal([]byte(dbHistory.QueryString), &query)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+	}
+	headers := make(map[string]string)
+	if dbHistory.Header != "" {
+		err := json.Unmarshal([]byte(dbHistory.Header), &headers)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+	}
+	return &pb.TraceDebugHistory{
+		RequestID:    dbHistory.RequestId,
+		ScopeID:      dbHistory.TerminusKey,
+		Url:          dbHistory.Url,
+		Query:        query,
+		Header:       headers,
+		Body:         dbHistory.Body,
+		Status:       int32(dbHistory.Status),
+		StatusName:   s.getDebugStatus(language, DebugStatus(dbHistory.Status)),
+		ResponseCode: int32(dbHistory.ResponseStatus),
+		ResponseBody: dbHistory.ResponseBody,
+		Method:       dbHistory.Method,
+		CreateTime:   dbHistory.CreateTime.Format(layout),
+		UpdateTime:   dbHistory.UpdateTime.Format(layout),
+	}, nil
 }
