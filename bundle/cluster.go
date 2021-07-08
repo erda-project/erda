@@ -140,7 +140,7 @@ func (b *Bundle) CreateCluster(req *apistructs.ClusterCreateRequest, header ...h
 
 	var createResp apistructs.ClusterCreateResponse
 
-	q := hc.Post(host).Path("/api/clusters")
+	q := hc.Post(host).Path("/api/clusters").Header(httputil.InternalHeader, "bundle")
 	if len(header) > 0 {
 		q.Headers(header[0])
 	}
@@ -153,6 +153,18 @@ func (b *Bundle) CreateCluster(req *apistructs.ClusterCreateRequest, header ...h
 	if !resp.IsOK() || !createResp.Success {
 		return toAPIError(resp.StatusCode(), createResp.Error)
 	}
+	return nil
+}
+
+func (b *Bundle) CreateClusterWithOrg(userID string, orgID uint64, req *apistructs.ClusterCreateRequest, header ...http.Header) error {
+	if err := b.CreateCluster(req, header...); err != nil {
+		return err
+	}
+
+	if err := b.CreateOrgClusterRelationsByOrg(req.Name, userID, orgID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
