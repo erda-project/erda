@@ -39,7 +39,7 @@ type provider struct {
 	Cfg              *config
 	Log              logs.Logger
 	traceService     *traceService
-	I18N             i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	I18n             i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	Register         transport.Register           `autowired:"service-register"`
 	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	DB               *gorm.DB                     `autowired:"mysql-client"`
@@ -57,7 +57,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.cassandraSession = session
 	p.traceService = &traceService{
 		p:                     p,
-		i18n:                  p.I18N,
+		i18n:                  p.I18n,
 		traceRequestHistoryDB: &db.TraceRequestHistoryDB{DB: p.DB},
 	}
 	if p.Register != nil {
