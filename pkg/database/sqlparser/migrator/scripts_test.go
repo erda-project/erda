@@ -14,6 +14,7 @@
 package migrator_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
@@ -84,7 +85,7 @@ func TestNewScripts(t *testing.T) {
 	}
 
 	// assert
-	if first := scripts.Services[serviceB].Filenames()[0]; first != serviceBBase0 {
+	if first := scripts.Services[serviceB].Filenames()[0]; first != filepath.Base(serviceBBase0) {
 		t.Fatal("base file error")
 	}
 }
