@@ -19,7 +19,8 @@ Omitempty.
 
 ## Fixed Issues
 
-- Fix the issue in ${module} that ${content} (#issue_id_1) (#issue_id_2)
+- ${content} ([#issue_1](issue_link)) ([#issue_2](issue_link))
+- Keep the creator, assignee, create time and man hour unchanged when issue type is switched ([#610](https://github.com/erda-project/erda/pull/610))
 
 # v0.0.1 [2016-03-01]
 
