@@ -65,3 +65,25 @@ func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserList
 	}
 	return &userResp.Data, nil
 }
+
+func (b *Bundle) SearchUser(params url.Values) (*apistructs.UserListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var userResp apistructs.UserListResponse
+	resp, err := hc.Get(host).
+		Path("/api/users/actions/search").
+		Header(httputil.InternalHeader, "bundle").
+		Params(params).
+		Do().JSON(&userResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !userResp.Success {
+		return nil, toAPIError(resp.StatusCode(), userResp.Error)
+	}
+	return &userResp.Data, nil
+}

@@ -11,24 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package utils
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+import "regexp"
 
-var CMDB_USER_LIST = apis.ApiSpec{
-	Path:         "/api/users",
-	BackendPath:  "/api/users",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.UserListRequest{},
-	ResponseType: apistructs.UserListResponse{},
-	Doc:          "summary: 批量查询用户",
-	Group:        "users",
+var orgReg = regexp.MustCompile(`^[0-9a-z]\d*[a-z-][a-z\d-]*[0-9a-z]$`)
+
+// IsValidOrgName check org name can contain a-z0-9- but can not pure 0-9
+func IsValidOrgName(repo string) bool {
+	return orgReg.MatchString(repo)
 }
