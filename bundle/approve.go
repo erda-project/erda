@@ -15,6 +15,7 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 
@@ -101,7 +102,7 @@ func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.
 	return &approve, nil
 }
 
-func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, body interface{}) (
+func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, body io.Reader) (
 	*apistructs.ApproveUpdateResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
@@ -114,7 +115,7 @@ func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, bod
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
 		Header(httputil.UserHeader, userID).
-		JSONBody(body).
+		RawBody(body).
 		Do().
 		JSON(&updateApprove)
 	if err != nil {
