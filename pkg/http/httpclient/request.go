@@ -108,6 +108,10 @@ func (r *Request) Do() AfterDo {
 		req.AddCookie(v)
 	}
 
+	if len(req.Header.Get("Accept")) == 0 {
+		req.Header.Set("Accept", "application/json, */*")
+	}
+
 	r.internal = req
 
 	return AfterDo{r}

@@ -67,6 +67,7 @@ func (am *AdminManager) Routers() []httpserver.Endpoint {
 	am.AppendClusterEndpoint()
 	am.AppendHostEndpoint()
 	am.AppendAdminEndpoint()
+	am.AppendUserEndpoint()
 	return am.endpoints
 }
 

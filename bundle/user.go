@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) GetCurrentUser(userID string) (*apistructs.UserInfo, error) {
 }
 
 func (b *Bundle) ListUsers(req apistructs.UserListRequest) (*apistructs.UserListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
