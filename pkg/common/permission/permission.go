@@ -39,12 +39,13 @@ type Scope string
 
 // Scope values
 const (
-	ScopeSys          = "sys"
-	ScopeOrg          = "org"
-	ScopeProject      = "project"
-	ScopeApp          = "app"
-	ScopePublisher    = "publisher"
-	ScopeMicroService = "micro_service"
+	ScopeSys                   = "sys"
+	ScopeOrg                   = "org"
+	ScopeProject               = "project"
+	ScopeApp                   = "app"
+	ScopePublisher             = "publisher"
+	ScopeMicroService          = "micro_service"
+	MonitorProjectAlert string = "monitor_project_alert"
 )
 
 // Action .
@@ -95,6 +96,9 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 		}
 	}
 	return transport.WithInterceptors(func(h interceptor.Handler) interceptor.Handler {
+		if p.Cfg.Skip {
+			return h
+		}
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			info := transport.ContextServiceInfo(ctx)
 			perm := methods[info.Method()]
@@ -160,8 +164,8 @@ func Method(method interface{}, scope, resource interface{}, action Action, id V
 }
 
 // NoPermMethod 。
-func NoPermMethod(method string) *Permission {
-	return &Permission{method: method}
+func NoPermMethod(method interface{}) *Permission {
+	return &Permission{method: getMethodName(method)}
 }
 
 func getMethodFullName(method interface{}) string {
@@ -221,26 +225,32 @@ func toValueGetter(v interface{}) ValueGetter {
 
 // FieldValue .
 func FieldValue(field string) ValueGetter {
+	fields := strings.Split(field, ".")
+	last := len(fields) - 1
 	return func(ctx context.Context, req interface{}) (string, error) {
-		if req == nil {
-			return "", fmt.Errorf("not found id for permission")
+		if value := req; value != nil {
+			for i, field := range fields {
+				val := reflect.ValueOf(value)
+				for val.Kind() == reflect.Ptr {
+					val = val.Elem()
+				}
+				if val.Kind() != reflect.Struct {
+					return "", fmt.Errorf("invalid request type")
+				}
+				val = val.FieldByName(field)
+				if !val.IsValid() {
+					break
+				}
+				value = val.Interface()
+				if value == nil {
+					break
+				}
+				if i == last {
+					return fmt.Sprint(value), nil
+				}
+			}
 		}
-		val := reflect.ValueOf(req)
-		for val.Kind() == reflect.Ptr {
-			val = val.Elem()
-		}
-		if val.Kind() != reflect.Struct {
-			return "", fmt.Errorf("invalid request type")
-		}
-		val = val.FieldByName(field)
-		if !val.IsValid() {
-			return "", fmt.Errorf("not found id for permission")
-		}
-		v := val.Interface()
-		if v == nil {
-			return "", fmt.Errorf("not found id for permission")
-		}
-		return fmt.Sprint(v), nil
+		return "", fmt.Errorf("not found id for permission")
 	}
 }
 
@@ -249,4 +259,24 @@ func FiexdValue(v string) ValueGetter {
 	return func(ctx context.Context, req interface{}) (string, error) {
 		return v, nil
 	}
+}
+
+// HeaderValue
+func HeaderValue(key string) ValueGetter {
+	return func(ctx context.Context, req interface{}) (string, error) {
+		header := transport.ContextHeader(ctx)
+		if header != nil {
+			for _, v := range header.Get(key) {
+				if len(v) > 0 {
+					return v, nil
+				}
+			}
+		}
+		return "", fmt.Errorf("not found id for permission")
+	}
+}
+
+// OrgIDValue
+func OrgIDValue() ValueGetter {
+	return HeaderValue("org-id")
 }

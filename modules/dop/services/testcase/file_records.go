@@ -40,7 +40,10 @@ func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint
 }
 
 func convertTestFileExtra(fileExtra apistructs.TestFileExtra) dao.TestFileExtra {
-	return dao.TestFileExtra{ManualTestFileExtraInfo: fileExtra.ManualTestFileExtraInfo}
+	return dao.TestFileExtra{
+		ManualTestFileExtraInfo:    fileExtra.ManualTestFileExtraInfo,
+		AutotestSpaceFileExtraInfo: fileExtra.AutotestSpaceFileExtraInfo,
+	}
 }
 
 func (svc *Service) GetFileRecord(id uint64) (*apistructs.TestFileRecord, error) {
@@ -85,8 +88,8 @@ func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsR
 	return records, operators, nil
 }
 
-func (svc *Service) GetFirstFileReady(actionType apistructs.FileActionType) (bool, *dao.TestFileRecord, error) {
-	ok, record, err := svc.db.FirstFileReady(actionType)
+func (svc *Service) GetFirstFileReady(actionType ...apistructs.FileActionType) (bool, *dao.TestFileRecord, error) {
+	ok, record, err := svc.db.FirstFileReady(actionType...)
 	if err != nil || !ok {
 		return false, nil, err
 	}

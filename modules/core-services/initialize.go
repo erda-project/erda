@@ -15,6 +15,7 @@
 package core_services
 
 import (
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -28,11 +29,13 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
+	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
 	"github.com/erda-project/erda/modules/core-services/services/audit"
 	"github.com/erda-project/erda/modules/core-services/services/errorbox"
+	"github.com/erda-project/erda/modules/core-services/services/filesvc"
 	"github.com/erda-project/erda/modules/core-services/services/label"
 	"github.com/erda-project/erda/modules/core-services/services/manual_review"
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
@@ -76,6 +79,7 @@ func Initialize() error {
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// Add auth middleware
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
+	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	return server.ListenAndServe()
@@ -159,6 +163,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithKMS(),
 		bundle.WithHepa(),
 		bundle.WithCollector(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 
@@ -219,7 +224,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		approve.WithMember(m),
 	)
 
-	//通过ui显示错误,不影响启动
+	// 通过ui显示错误,不影响启动
 	license, _ := license.ParseLicense(conf.LicenseKey())
 
 	// init label
@@ -231,6 +236,11 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		notice.WithDBClient(db),
 	)
 
+	accessKey, err := accesskey.New(accesskey.WithDBClient(db))
+	if err != nil {
+		return nil, err
+	}
+
 	audit := audit.New(
 		audit.WithDBClient(db),
 		audit.WithUCClient(uc),
@@ -239,6 +249,12 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	errorBox := errorbox.New(
 		errorbox.WithDBClient(db),
 		errorbox.WithBundle(bdl),
+	)
+
+	fileSvc := filesvc.New(
+		filesvc.WithDBClient(db),
+		filesvc.WithBundle(bdl),
+		filesvc.WithEtcdClient(etcdStore),
 	)
 
 	// queryStringDecoder
@@ -269,6 +285,8 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
+		endpoints.WithAksk(accessKey),
+		endpoints.WithFileSvc(fileSvc),
 	)
 
 	return ep, nil

@@ -16,13 +16,13 @@ package apis
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
 
-	anypb "github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/pkg/protobuf/goany"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
@@ -41,12 +41,12 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
 	}
-	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
+	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
 	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
+		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
 	}
 	now := time.Now()
 	m := &db.Metric{
@@ -61,7 +61,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-	checker := s.metricDB.ConvertToChecker(m, req.ProjectID)
+	checker := s.metricDB.ConvertToChecker(m, req.Data.ProjectID)
 	if checker != nil {
 		s.cache.Put(checker)
 	}
@@ -96,20 +96,58 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
+	if metric == nil {
+		return &pb.DeleteCheckerV1Response{}, nil
+	}
+
+	var projectID int64
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj != nil {
+		projectID = proj.ProjectID
+	}
+
 	err = s.metricDB.Delete(req.Id)
 	if err != nil {
 		return nil, errors.NewDataBaseError(err)
 	}
-
 	s.cache.Remove(req.Id)
 
-	c := &pb.CheckerV1{}
-	if metric != nil {
-		c.Name = metric.Name
-		c.Mode = metric.Mode
-		c.Url = metric.URL
+	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
+		Name:      metric.Name,
+		Mode:      metric.Mode,
+		Url:       metric.URL,
+		ProjectID: projectID,
+		Env:       metric.Env,
+	}}, nil
+}
+
+func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV1Request) (*pb.GetCheckerV1Response, error) {
+	metric, err := s.metricDB.GetByID(req.Id)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
 	}
-	return &pb.DeleteCheckerV1Response{Data: c}, nil
+	if metric == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	proj, err := s.projectDB.GetByID(metric.ProjectID)
+	if err != nil {
+		return nil, errors.NewDataBaseError(err)
+	}
+	if proj == nil {
+		return &pb.GetCheckerV1Response{}, nil
+	}
+	return &pb.GetCheckerV1Response{
+		Data: &pb.CheckerV1{
+			Name:      metric.Name,
+			Mode:      metric.Mode,
+			Url:       metric.URL,
+			ProjectID: proj.ProjectID,
+			Env:       metric.Env,
+		},
+	}, nil
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
@@ -182,54 +220,93 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	}, nil
 }
 
-func (s *checkerV1Service) getTimeRange(unit string, num int) (start int64, end int64) {
+func getTimeRange(unit string, num int, align bool) (start int64, end int64, interval string) {
 	now := time.Now()
-	end = now.UnixNano() / int64(time.Millisecond)
+	alignTime := func(interval string) time.Time {
+		if align {
+			ts := now.UnixNano()
+			switch interval {
+			case "24h":
+				const day = 24 * int64(time.Hour)
+				if ts%day != 0 {
+					ts = ts - ts%day + day
+					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
+				}
+			case "1h":
+				const hour = int64(time.Hour)
+				if ts%hour != 0 {
+					ts = ts - ts%hour + hour
+					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
+				}
+			case "1m":
+				const minute = int64(time.Minute)
+				if ts%minute != 0 {
+					ts = ts - ts%minute + minute
+					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
+				}
+			}
+		}
+		return now
+	}
 	switch strings.ToLower(unit) {
 	case "year":
-		start = now.AddDate(-1*num, 0, 0).UnixNano() / int64(time.Millisecond)
+		interval = "24h"
+		now = alignTime(interval)
+		now = now.AddDate(0, 0, 1)
 	case "month":
+		interval = "24h"
+		now = alignTime(interval)
 		start = now.AddDate(0, -1*num, 0).UnixNano() / int64(time.Millisecond)
 	case "week":
+		interval = "24h"
+		now = alignTime(interval)
 		start = now.AddDate(0, 0, -7*num).UnixNano() / int64(time.Millisecond)
 	case "day":
+		interval = "1h"
+		now = alignTime(interval)
 		start = now.AddDate(0, 0, -1*num).UnixNano() / int64(time.Millisecond)
 	default:
+		interval = "1m"
+		now = alignTime(interval)
 		start = now.Add(time.Duration(-1*int64(num)*int64(time.Hour))).UnixNano() / int64(time.Millisecond)
 	}
+	end = now.UnixNano() / int64(time.Millisecond)
 	return
 }
 
 func (s *checkerV1Service) queryCheckersLatencySummaryByProject(projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
-	return s.queryCheckerMetrics(`
-	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
+	start, end, duration := getTimeRange("hour", 1, false)
+	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
+	return s.queryCheckerMetrics(start, end, `
+	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE project_id=$projectID 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time($interval), metric::tag, status_name::tag 
 	LIMIT 200`,
-		map[string]*anypb.Any{
-			"projectID": goany.MustMarshal(strconv.FormatInt(projectID, 10)),
-		},
-		"hour", metrics,
+		map[string]*structpb.Value{
+			"projectID": structpb.NewStringValue(strconv.FormatInt(projectID, 10)),
+			"interval":  interval,
+		}, metrics,
 	)
 }
 
 func (s *checkerV1Service) queryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
-	return s.queryCheckerMetrics(`
-	SELECT timestamp, metric::tag, status_name::tag, avg(latency), max(latency), min(latency), count(latency), sum(latency)
+	start, end, duration := getTimeRange(timeUnit, 1, false)
+	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
+	return s.queryCheckerMetrics(start, end, `
+	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric=$metric 
-	GROUP time(1m), metric::tag, status_name::tag 
+	GROUP BY time($interval), metric::tag, status_name::tag 
 	LIMIT 200`,
-		map[string]*anypb.Any{
-			"metric": goany.MustMarshal(strconv.FormatInt(metricID, 10)),
-		},
-		timeUnit, metrics,
+		map[string]*structpb.Value{
+			"metric":   structpb.NewStringValue(strconv.FormatInt(metricID, 10)),
+			"interval": interval,
+		}, metrics,
 	)
 }
 
-func (s *checkerV1Service) queryCheckerMetrics(statement string, params map[string]*anypb.Any, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
-	start, end := s.getTimeRange(timeUnit, 1)
+func (s *checkerV1Service) queryCheckerMetrics(start, end int64, statement string, params map[string]*structpb.Value, metrics map[int64]*pb.DescribeItemV1) error {
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
 		End:       strconv.FormatInt(end, 10),
@@ -264,82 +341,37 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 	if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
 		summary := make(map[string]map[string]*summaryItem)
 		serie := resp.Results[0].Series[0]
-		for _, row := range serie.Rows {
-			if row == nil || len(row.Values) != 6 {
+		groupedRows := groupSerieRows(serie.Rows, 2, 3)
+		for _, group := range groupedRows {
+			if len(group.keys) < 2 {
 				continue
 			}
-			idx := 1
-			var timestamp int64
-			err := goany.Unmarshal(row.Values[idx], &timestamp)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var metric string
-			err = goany.Unmarshal(row.Values[idx], &metric)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var statusName string
-			err = goany.Unmarshal(row.Values[idx], &statusName)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var avg float64
-			err = goany.Unmarshal(row.Values[idx], &avg)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var max float64
-			err = goany.Unmarshal(row.Values[idx], &max)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var min float64
-			err = goany.Unmarshal(row.Values[idx], &min)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var sum float64
-			err = goany.Unmarshal(row.Values[idx], &sum)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var count int64
-			err = goany.Unmarshal(row.Values[idx], &count)
-			if err != nil {
-				continue
-			}
-
+			metric := group.keys[0]
 			status := summary[metric]
 			if status == nil {
 				status = make(map[string]*summaryItem)
 				summary[metric] = status
 			}
+			statusName := group.keys[1]
 			item := status[statusName]
 			if item == nil {
 				item = &summaryItem{}
 				status[statusName] = item
 			}
-			item.time = append(item.time, timestamp)
-			item.avg = append(item.avg, avg)
-			item.max = append(item.max, max)
-			item.min = append(item.min, min)
-			item.sum = append(item.min, sum)
-			item.count = append(item.count, count)
+			for _, row := range group.rows {
+				timestamp := int64(row.Values[1].GetNumberValue())
+				avg := row.Values[4].GetNumberValue()
+				max := row.Values[5].GetNumberValue()
+				min := row.Values[6].GetNumberValue()
+				count := int64(row.Values[7].GetNumberValue())
+				sum := row.Values[8].GetNumberValue()
+				item.time = append(item.time, timestamp/int64(time.Millisecond))
+				item.avg = append(item.avg, avg)
+				item.max = append(item.max, max)
+				item.min = append(item.min, min)
+				item.count = append(item.count, count)
+				item.sum = append(item.sum, sum)
+			}
 		}
 		for id, m := range metrics {
 			idstr := strconv.FormatInt(id, 10)
@@ -371,8 +403,8 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 
 			var downCount, upCount int64
 			for stat, item := range status {
-				if stat != statusRED {
-					stat = statusGreen
+				if stat != statusRED && stat != statusGreen {
+					stat = statusMiss
 				}
 				for i := range item.time {
 					if i < len(chart.Status) {
@@ -464,7 +496,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 				}
 			}
 			if count != 0 {
-				m.Avg = sum / float64(count)
+				m.Avg = roundFloat(sum / float64(count))
 				m.Latency = m.Avg
 			}
 			m.Max = max
@@ -491,18 +523,20 @@ func computeApdex(values []float64) float64 {
 }
 
 func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCheckerStatusV1Request) (*pb.GetCheckerStatusV1Response, error) {
-	start, end := s.getTimeRange("mount", 3)
+	start, end, duration := getTimeRange("month", 3, true)
+	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
 	mreq := &metricpb.QueryWithInfluxFormatRequest{
 		Start: strconv.FormatInt(start, 10),
 		End:   strconv.FormatInt(end, 10),
 		Statement: `
-		SELECT timestamp, status_name::tag, count(latency)
+		SELECT timestamp(), status_name::tag, count(latency)
 		FROM status_page 
 		WHERE metric=$metric 
-		GROUP time(1m), status_name::tag 
+		GROUP BY time($interval), status_name::tag 
 		LIMIT 200`,
-		Params: map[string]*anypb.Any{
-			"metric": goany.MustMarshal(strconv.FormatInt(req.Id, 10)),
+		Params: map[string]*structpb.Value{
+			"metric":   structpb.NewStringValue(strconv.FormatInt(req.Id, 10)),
+			"interval": interval,
 		},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -515,62 +549,37 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 	var status []string
 	if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
 		serie := resp.Results[0].Series[0]
-		type groupItem struct {
-			times []int64
-			count []int64
-		}
-		group := make(map[string]*groupItem)
-		for _, row := range serie.Rows {
-			idx := 1
-			var timestamp int64
-			err := goany.Unmarshal(row.Values[idx], &timestamp)
-			if err != nil {
+		groupedRows := groupSerieRows(serie.Rows, 2)
+		for _, group := range groupedRows {
+			if len(group.keys) < 1 {
 				continue
 			}
+			stat := group.keys[0]
+			if stat != statusRED && stat != statusGreen {
+				stat = statusMiss
+			}
+			var ts []int64
+			for i, row := range group.rows {
+				timestamp := int64(row.Values[1].GetNumberValue())
+				count := int64(row.Values[3].GetNumberValue())
 
-			idx++
-			var statusName string
-			err = goany.Unmarshal(row.Values[idx], &statusName)
-			if err != nil {
-				continue
-			}
-
-			idx++
-			var count int64
-			err = goany.Unmarshal(row.Values[idx], &count)
-			if err != nil {
-				continue
-			}
-
-			item := group[statusName]
-			if item == nil {
-				item = &groupItem{}
-				group[statusName] = item
-			}
-			item.times = append(item.times, timestamp)
-			item.count = append(item.count, count)
-		}
-		for stat, item := range group {
-			if len(item.times) > len(times) {
-				times = item.times
-			}
-			if stat != statusRED {
-				stat = statusGreen
-			}
-			for i := range item.times {
+				ts = append(ts, timestamp/int64(time.Millisecond))
 				if i < len(status) {
-					if item.count[i] > 0 {
+					if count > 0 {
 						if stat == statusRED || status[i] == statusMiss {
 							status[i] = stat
 						}
 					}
 				} else {
-					if item.count[i] > 0 {
+					if count > 0 {
 						status = append(status, stat)
 					} else {
 						status = append(status, statusMiss)
 					}
 				}
+			}
+			if len(ts) > len(times) {
+				times = ts
 			}
 		}
 	}
@@ -584,6 +593,52 @@ func (s *checkerV1Service) GetCheckerStatusV1(ctx context.Context, req *pb.GetCh
 
 func (s *checkerV1Service) GetCheckerIssuesV1(ctx context.Context, req *pb.GetCheckerIssuesV1Request) (*pb.GetCheckerIssuesV1Response, error) {
 	return &pb.GetCheckerIssuesV1Response{
-		Data: make([]*anypb.Any, 0), // depracated, so return empty list
+		Data: make([]*structpb.Value, 0), // depracated, so return empty list
 	}, nil
+}
+
+func roundFloat(v float64) float64 {
+	v, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", v), 64)
+	return v
+}
+
+type groupedRows struct {
+	keys []string
+	rows []*metricpb.Row
+}
+
+func groupSerieRows(rows []*metricpb.Row, keys ...int) []*groupedRows {
+	var groups []*groupedRows
+	lastTime := int64(math.MinInt64)
+loop:
+	for _, row := range rows {
+		for _, val := range row.Values {
+			if val == nil {
+				continue loop
+			}
+		}
+		timestamp := int64(row.Values[1].GetNumberValue())
+		if len(groups) > 0 && timestamp > lastTime {
+			groups[len(groups)-1].rows = append(groups[len(groups)-1].rows, row)
+		} else {
+			groups = append(groups, &groupedRows{rows: []*metricpb.Row{row}})
+		}
+		lastTime = timestamp
+	}
+	for _, group := range groups {
+	rowsloop:
+		for _, row := range group.rows {
+			var kvals []string
+			for _, i := range keys {
+				val := row.Values[i].AsInterface()
+				if val == nil {
+					continue rowsloop
+				}
+				kvals = append(kvals, fmt.Sprint(val))
+			}
+			group.keys = kvals
+			break
+		}
+	}
+	return groups
 }

@@ -201,7 +201,6 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 			}
 
 			var reverseSpec ast.AlterTableSpec
-			reverseSpec.IfNotExists = true
 			reverseSpec.Tp = ast.AlterTableAddConstraint
 
 			for _, constraint := range compares.Constraints {
@@ -216,9 +215,9 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 			}
 
 		// spec syntax:
-		// MODIFY [ColumnKeywordOpt] [IfExists] {ColumnDef} [ColumnPosition]
+		// MODIFY [ColumnKeywordOpt] {ColumnDef} [ColumnPosition]
 		//
-		// CHANGE [ColumnKeywordOpt] [IfExists] {ColumnName} {ColumnDef} [ColumnPosition]
+		// CHANGE [ColumnKeywordOpt] {ColumnName} {ColumnDef} [ColumnPosition]
 		//
 		// note: the renaming of columns by AlterTableChangeColumn is not considered here,
 		// because column renaming is not compliant and will be filtered out in ErdaMySQLLint.
@@ -236,7 +235,6 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		case ast.AlterTableModifyColumn, ast.AlterTableChangeColumn, ast.AlterTableAlterColumn:
 			var reverseSpec ast.AlterTableSpec
 			reverseSpec.Tp = ast.AlterTableChangeColumn
-			reverseSpec.IfExists = true
 			reverseSpec.OldColumnName = spec.NewColumns[0].Name // 此处不考虑列被重命名的情况
 			for _, col := range compares.Cols {
 				if reverseSpec.OldColumnName.String() == col.Name.String() {
@@ -255,7 +253,6 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		case ast.AlterTableRenameColumn:
 			var reverseSpec ast.AlterTableSpec
 			reverseSpec.Tp = ast.AlterTableRenameColumn
-			reverseSpec.IfExists = true
 			reverseSpec.NewColumnName = spec.OldColumnName
 			reverseSpec.OldColumnName = spec.NewColumnName
 			restorer.Specs = append(restorer.Specs, &reverseSpec)
@@ -359,7 +356,6 @@ func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.D
 	}
 
 	var spec ast.AlterTableSpec
-	spec.IfNotExists = true
 	spec.Tp = ast.AlterTableAddConstraint
 
 	for _, constraint := range compares.Constraints {

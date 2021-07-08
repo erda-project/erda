@@ -23,25 +23,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
-
-type define struct{}
-
-func (d *define) Service() []string { return []string{"log-metric-rules"} }
-func (d *define) Dependencies() []string {
-	return []string{"http-server", "mysql", "i18n", "metrics-query"}
-}
-func (d *define) Summary() string     { return "logs metric rules" }
-func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
 
 type config struct{}
 
@@ -68,5 +53,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("log-metric-rules", &define{})
+	servicehub.Register("log-metric-rules", &servicehub.Spec{
+		Services:     []string{"log-metric-rules"},
+		Dependencies: []string{"http-server", "mysql", "i18n", "metrics-query"},
+		Description:  "logs metric rules",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

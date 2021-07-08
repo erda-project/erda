@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
@@ -419,20 +421,37 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			},
 		),
 		Metadata: map[string]string{
-			"pipelineID":            strconv.FormatUint(task.PipelineID, 10),
-			"taskID":                strconv.FormatUint(task.ID, 10),
-			httputil.UserHeader:     pre.P.GetRunUserID(),
-			httputil.InternalHeader: handleInternalClient(pre.P),
-			httputil.OrgHeader:      pre.P.Labels[apistructs.LabelOrgID],
+			"pipelineID":                  strconv.FormatUint(task.PipelineID, 10),
+			"taskID":                      strconv.FormatUint(task.ID, 10),
+			httputil.UserHeader:           pre.P.GetRunUserID(),
+			httputil.InternalHeader:       handleInternalClient(pre.P),
+			httputil.InternalActionHeader: handleInternalClient(pre.P),
+			httputil.OrgHeader:            pre.P.Labels[apistructs.LabelOrgID],
 		},
 	}
 
 	// task.Context.OutStorages
 	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+		// only k8sjob support create job volume
+		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
+		if !ok {
+			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
+		}
+		schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
+		if err != nil {
+			return false, fmt.Errorf("failed to createJobVolume, err: can not get k8s executor")
+		}
+		if schedPlugin.Kind() != k8sjob.Kind {
+			return false, fmt.Errorf("can not createJobVolume, err: only k8sjob support")
+		}
+		k8sjobExecutor, ok := schedPlugin.(*k8sjob.K8sJob)
+		if !ok {
+			return false, fmt.Errorf("faile to createJobVolume, err: can not convert to k8sjob executor")
+		}
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
-			volumeID, err := pre.Bdl.CreateJobVolume(apistructs.JobVolume{
+			volumeID, err := k8sjobExecutor.JobVolumeCreate(context.Background(), apistructs.JobVolume{
 				Namespace:   p.Extra.Namespace,
 				Name:        "local-pv-default",
 				Type:        "local",

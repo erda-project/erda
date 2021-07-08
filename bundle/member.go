@@ -266,3 +266,52 @@ func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDReques
 
 	return &memberResp.Data, nil
 }
+
+func (b *Bundle) AddMember(req apistructs.MemberAddRequest, userID string) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var respData apistructs.MemberAddResponse
+	resp, err := hc.Post(host).Path("/api/members").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+
+	return nil
+}
+
+// CountMembersWithoutExtraByScope count member
+func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint64) (int, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return 0, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.ListMembersWithoutExtraByScopeResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/count-by-only-scopeID").
+		Header(httputil.InternalHeader, "bundle").
+		Param("scopeType", scopeType).
+		Param("scopeID", strconv.FormatUint(scopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return 0, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return 0, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to ListMembersWithoutExtraByScope, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return memberResp.Data, nil
+}

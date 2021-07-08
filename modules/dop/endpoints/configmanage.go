@@ -326,7 +326,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 	if err != nil {
 		return nil, err
 	}
-	rules, err := e.bdl.GetProjectBranchRules(app.ProjectID)
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
 		return nil, err
 	}

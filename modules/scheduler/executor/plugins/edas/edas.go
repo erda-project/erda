@@ -431,7 +431,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 	for _, i := range deployList.Items {
 		// Get the deployed deployment of the runtime from the deploylist
 		logrus.Debugf("[EDAS] deploy name: %+v", i.ObjectMeta.Name)
-		if strings.Contains(i.ObjectMeta.Name, group) {
+		if strings.Contains(i.ObjectMeta.Name, group) && *i.Spec.Replicas != 0 {
 			var iService apistructs.Service
 			for _, j := range i.Spec.Template.Spec.Containers[0].Env {
 				if j.Name == diceServiceName {
@@ -1699,7 +1699,7 @@ func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistruct
 	var err error
 	var status AppStatus
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 60; i++ {
 		done := map[string]struct{}{}
 
 		time.Sleep(10 * time.Second)

@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -29,7 +28,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/modules/dop/services/filesvc"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,11 +36,10 @@ import (
 
 // Issue 事件操作封装
 type Issue struct {
-	db      *dao.DBClient
-	bdl     *bundle.Bundle
-	stream  *issuestream.IssueStream
-	uc      *ucauth.UCClient
-	fileSvc *filesvc.FileService
+	db     *dao.DBClient
+	bdl    *bundle.Bundle
+	stream *issuestream.IssueStream
+	uc     *ucauth.UCClient
 }
 
 // Option 定义 Issue 配置选项
@@ -82,13 +79,6 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(issue *Issue) {
 		issue.uc = uc
-	}
-}
-
-// WithPermission 配置 权限 选项
-func WithFileSvc(file *filesvc.FileService) Option {
-	return func(issue *Issue) {
-		issue.fileSvc = file
 	}
 }
 
@@ -161,6 +151,18 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
 	}
 
+	// create subscribers
+	issueID := int64(create.ID)
+	req.Subscribers = append(req.Subscribers, create.Creator)
+	req.Subscribers = strutil.DedupSlice(req.Subscribers)
+	var subscriberModels []dao.IssueSubscriber
+	for _, v := range req.Subscribers {
+		subscriberModels = append(subscriberModels, dao.IssueSubscriber{IssueID: issueID, UserID: v})
+	}
+	if err := svc.db.BatchCreateIssueSubscribers(subscriberModels); err != nil {
+		return nil, apierrors.ErrCreateIssue.InternalError(err)
+	}
+
 	// 生成活动记录
 	users, err := svc.uc.FindUsers([]string{req.UserID})
 	if err != nil {
@@ -175,35 +177,10 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		StreamType:   apistructs.ISTCreate,
 		StreamParams: apistructs.ISTParam{UserName: users[0].Nick},
 	}
-	// create stream
+	// create stream and send issue create event
 	if _, err := svc.stream.Create(&streamReq); err != nil {
 		return nil, err
 	}
-
-	// Send issue create event
-	go func() {
-		content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-		project, _ := svc.bdl.GetProject(create.ProjectID)
-		ev := &apistructs.EventCreateRequest{
-			EventHeader: apistructs.EventHeader{
-				Event:         bundle.IssueEvent,
-				Action:        bundle.CreateAction,
-				OrgID:         strconv.FormatInt(int64(project.OrgID), 10),
-				ProjectID:     strconv.FormatUint(create.ProjectID, 10),
-				ApplicationID: "-1",
-				TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-			},
-			Sender: bundle.SenderDOP,
-			Content: apistructs.IssueEventData{
-				Title:     create.Title,
-				Content:   content,
-				AtUserIDs: create.Assignee,
-			},
-		}
-		if err = svc.bdl.CreateEvent(ev); err != nil {
-			logrus.Warnf("failed to send issue create event, (%v)", err)
-		}
-	}()
 
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
@@ -581,8 +558,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 	}
 	// }
 
-	// 生成活动记录
-	_ = svc.CreateStream(req, issueStreamFields)
+	// create stream and send issue update event
+	if err := svc.CreateStream(req, issueStreamFields); err != nil {
+		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
+	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
@@ -746,7 +725,7 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 	}
 	// 删除测试计划用例关联
 	if issueModel.Type == apistructs.IssueTypeBug {
-		if err := svc.bdl.InternalRemoveTestPlanCaseRelIssueRelationsByIssueID(issueID); err != nil {
+		if err := svc.db.DeleteIssueTestCaseRelationsByIssueIDs([]uint64{issueID}); err != nil {
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
 	}
@@ -966,38 +945,10 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			continue
 		}
 
-		// create stream
+		// create stream and send issue event
 		if _, err := svc.stream.Create(&streamReq); err != nil {
 			logrus.Errorf("[alert] failed to create issueStream when update issue, req: %+v, err: %v", streamReq, err)
-			continue
 		}
-
-		// Send issue update event
-		go func() {
-			issue, _ := svc.db.GetIssue(int64(updateReq.ID))
-			projectModel, _ := svc.bdl.GetProject(issue.ProjectID)
-			content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-			ev := &apistructs.EventCreateRequest{
-				EventHeader: apistructs.EventHeader{
-					Event:         bundle.IssueEvent,
-					Action:        bundle.UpdateAction,
-					OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
-					ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
-					ApplicationID: "-1",
-					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-				},
-				Sender: bundle.SenderDOP,
-				Content: apistructs.IssueEventData{
-					Title:      issue.Title,
-					Content:    content,
-					AtUserIDs:  issue.Assignee,
-					StreamType: streamReq.StreamType,
-				},
-			}
-			if err := svc.bdl.CreateEvent(ev); err != nil {
-				logrus.Warnf("failed to send issue update event, (%v)", err)
-			}
-		}()
 	}
 
 	return nil
@@ -1413,4 +1364,69 @@ func (svc *Issue) Unsubscribe(id int64, identityInfo apistructs.IdentityInfo) er
 	}
 
 	return svc.db.DeleteIssueSubscriber(id, identityInfo.UserID)
+}
+
+// BatchUpdateIssuesSubscriber batch update issue subscriber
+func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatchUpdateRequest) error {
+	issue, err := svc.db.GetIssue(req.IssueID)
+	if err != nil {
+		return err
+	}
+
+	identityInfo := req.IdentityInfo
+	if !identityInfo.IsInternalClient() {
+		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  issue.ProjectID,
+			Resource: issue.Type.GetCorrespondingResource(),
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrSubscribeIssue.InternalError(err)
+		}
+		if !access.Access {
+			return apierrors.ErrSubscribeIssue.AccessDenied()
+		}
+	}
+
+	oldSubscribers, err := svc.db.GetIssueSubscribersByIssueID(req.IssueID)
+	if err != nil {
+		return err
+	}
+
+	subscriberMap := make(map[string]struct{}, 0)
+	req.Subscribers = strutil.DedupSlice(req.Subscribers)
+	for _, v := range req.Subscribers {
+		subscriberMap[v] = struct{}{}
+	}
+
+	var needDeletedSubscribers []string
+	for _, v := range oldSubscribers {
+		_, exist := subscriberMap[v.UserID]
+		if exist {
+			delete(subscriberMap, v.UserID)
+		} else {
+			needDeletedSubscribers = append(needDeletedSubscribers, v.UserID)
+		}
+	}
+
+	if len(needDeletedSubscribers) != 0 {
+		if err := svc.db.BatchDeleteIssueSubscribers(req.IssueID, needDeletedSubscribers); err != nil {
+			return err
+		}
+	}
+
+	var subscribers []dao.IssueSubscriber
+	issueID := int64(req.IssueID)
+	for k := range subscriberMap {
+		subscribers = append(subscribers, dao.IssueSubscriber{IssueID: issueID, UserID: k})
+	}
+	if len(subscribers) != 0 {
+		if err := svc.db.BatchCreateIssueSubscribers(subscribers); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

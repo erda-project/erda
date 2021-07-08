@@ -178,8 +178,11 @@ func (impl *GatewayGlobalServiceImpl) GetClusterUIType(orgId, projectId, env str
 		return res
 	}
 	uiType := gw.UI_NORMAL
-	if az.Type == orm.AT_K8S || strings.HasPrefix(az.MasterAddr, "inet://") {
+	if az.Type == orm.AT_K8S || az.Type == orm.AT_EDAS {
 		uiType = gw.UI_K8S
+	}
+	if config.ServerConf.ClusterUIType != "" {
+		uiType = config.ServerConf.ClusterUIType
 	}
 	return res.SetSuccessAndData(uiType)
 }
@@ -403,7 +406,7 @@ func (impl *GatewayGlobalServiceImpl) CreateTenant(tenant *gw.TenantDto) *common
 			err = errors.Errorf("get az failed, tenant:%+v", tenant)
 			goto failed
 		}
-		if az.Type == orm.AT_K8S || strings.HasPrefix(az.MasterAddr, "inet://") {
+		if az.Type == orm.AT_K8S || az.Type == orm.AT_EDAS {
 			var packageBiz GatewayOpenapiService
 			packageBiz, err = NewGatewayOpenapiServiceImpl()
 			if err != nil {

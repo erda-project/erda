@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/labels"
 	"github.com/erda-project/erda/modules/cmp/impl/mns"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
+	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -36,6 +37,7 @@ type Endpoints struct {
 	nodes        *nodes.Nodes
 	labels       *labels.Labels
 	clusters     *clusters.Clusters
+	orgResource  *org_resource.OrgResource
 	Mns          *mns.Mns
 	Ess          *ess.Ess
 	CloudAccount *cloud_account.CloudAccount
@@ -190,5 +192,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/aliyun-client", Method: http.MethodPost, WriterHandler: e.DoRemoteAction},
 
 		{Path: "/api/internal-cloud-account", Method: http.MethodGet, Handler: i18nPrinter(e.GetCloudAccount)},
+
+		// task list
+		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
+		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
 	}
 }

@@ -84,32 +84,14 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 		if err := s.db.CreateIssueAppRelation(&issueAppRel); err != nil {
 			return 0, err
 		}
-		// Send issue create event
-		go func() {
-			content, _ := GetDefaultContent(is.StreamType, is.StreamParams)
-			issue, _ := s.db.GetIssue(req.IssueID)
-			projectModel, _ := s.bdl.GetProject(issue.ProjectID)
-			ev := &apistructs.EventCreateRequest{
-				EventHeader: apistructs.EventHeader{
-					Event:         bundle.IssueEvent,
-					Action:        bundle.CreateAction,
-					OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
-					ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
-					ApplicationID: "-1",
-					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-				},
-				Sender: bundle.SenderDOP,
-				Content: apistructs.IssueEventData{
-					Title:     issue.Title,
-					Content:   content,
-					AtUserIDs: issue.Assignee,
-				},
-			}
-			if err := s.bdl.CreateEvent(ev); err != nil {
-				logrus.Warnf("failed to send issue mr relate event, (%v)", err)
-			}
-		}()
 	}
+
+	// send issue create or update event when creat issue stream
+	go func() {
+		if err := s.CreateIssueEvent(req.IssueID, req.StreamType, req.StreamParams); err != nil {
+			logrus.Errorf("create issue %d event err: %v", req.IssueID, err)
+		}
+	}()
 
 	return int64(is.ID), nil
 }
@@ -179,4 +161,58 @@ func GetDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam
 	}
 
 	return content.String(), nil
+}
+
+// CreateIssueEvent create issue event
+func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
+	streamParams apistructs.ISTParam) error {
+	content, err := GetDefaultContent(streamType, streamParams)
+	if err != nil {
+		logrus.Errorf("get issue %d content error: %v, content will be empty", issueID, err)
+	}
+	logrus.Debugf("old issue content is: %s", content)
+	issue, err := s.db.GetIssue(issueID)
+	if err != nil {
+		return err
+	}
+	receivers, err := s.db.GetReceiversByIssueID(issueID)
+	if err != nil {
+		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", issueID, err)
+		receivers = []string{}
+	}
+	projectModel, err := s.bdl.GetProject(issue.ProjectID)
+	if err != nil {
+		return err
+	}
+	orgModel, err := s.bdl.GetOrg(int64(projectModel.OrgID))
+	if err != nil {
+		return err
+	}
+	ev := &apistructs.EventCreateRequest{
+		EventHeader: apistructs.EventHeader{
+			Event:         bundle.IssueEvent,
+			Action:        streamType.GetEventAction(),
+			OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
+			ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
+			ApplicationID: "-1",
+			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
+		},
+		Sender: bundle.SenderDOP,
+		Content: apistructs.IssueEventData{
+			Title:        issue.Title,
+			Content:      content,
+			AtUserIDs:    issue.Assignee,
+			IssueType:    issue.Type,
+			StreamType:   streamType,
+			StreamParams: streamParams,
+			Receivers:    receivers,
+			Params: map[string]string{
+				"orgName":     orgModel.Name,
+				"projectName": projectModel.Name,
+				"issueID":     strconv.FormatInt(issueID, 10),
+			},
+		},
+	}
+
+	return s.bdl.CreateEvent(ev)
 }

@@ -17,21 +17,22 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/modules/extensions/loghub"
 
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/query-example"
+	_ "github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
-	_ "github.com/erda-project/erda/modules/monitor/apm/alert"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
 	_ "github.com/erda-project/erda/modules/monitor/apm/trace"
 	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/index"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq"
-	_ "github.com/erda-project/erda/modules/monitor/core/metrics/metricq-example"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
@@ -44,17 +45,11 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/settings"
 
 	// providers
-	_ "github.com/erda-project/erda-infra/providers/cassandra"
-	_ "github.com/erda-project/erda-infra/providers/elasticsearch"
-	_ "github.com/erda-project/erda-infra/providers/health"
-	_ "github.com/erda-project/erda-infra/providers/kafka"
-	_ "github.com/erda-project/erda-infra/providers/mysql"
-	_ "github.com/erda-project/erda-infra/providers/pprof"
-	_ "github.com/erda-project/erda-infra/providers/redis"
+	_ "github.com/erda-project/erda-infra/providers"
 )
 
 func main() {
-	// modcom.RegisterInitializer(loghub.Init)
+	modcom.RegisterInitializer(loghub.Init)
 	modcom.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorConfigFilePath,
 		Content:    conf.MonitorDefaultConfig,

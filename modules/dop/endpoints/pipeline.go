@@ -31,13 +31,27 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
+
+func shouldCheckPermission(isInternalClient, isInternalActionClient bool) bool {
+	if !isInternalClient {
+		return true
+	}
+
+	if isInternalActionClient {
+		return true
+	}
+
+	return false
+}
 
 func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
@@ -54,7 +68,7 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	}
 	createReq.UserID = identityInfo.UserID
 
-	if !identityInfo.IsInternalClient() {
+	if shouldCheckPermission(identityInfo.IsInternalClient(), r.Header.Get(httputil.InternalActionHeader) != "") {
 		if err := e.permission.CheckRuntimeBranch(identityInfo, createReq.AppID, createReq.Branch, apistructs.OperateAction); err != nil {
 			return errorresp.ErrResp(err)
 		}
@@ -71,11 +85,12 @@ func (e *Endpoints) pipelineCreate(ctx context.Context, r *http.Request, vars ma
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	branchrule, err := e.bdl.GetBranchWorkspaceConfigByProject(app.ProjectID, createReq.Branch)
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	if branchrule.NeedApproval {
+	branchRule := diceworkspace.GetValidBranchByGitReference(createReq.Branch, rules)
+	if branchRule.NeedApproval {
 		pipelineymlStruct, err := pipelineyml.New([]byte(reqPipeline.PipelineYml))
 		if err != nil {
 			return errorresp.ErrResp(err)
@@ -294,7 +309,7 @@ func (e *Endpoints) branchWorkspaceMap(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	m, err := e.pipeline.AllValidBranchWorkspaces(appID)
+	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID))
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -487,18 +502,20 @@ func (e *Endpoints) pipelineGetBranchRule(ctx context.Context, r *http.Request, 
 		return apierrors.ErrGetPipelineBranchRule.InvalidParameter(
 			strutil.Concat(pathPipelineID, ": ", pipelineIDStr)).ToResp(), nil
 	}
-	pipelineinfo, err := e.bdl.GetPipeline(pipelineID)
+	pipelineInfo, err := e.bdl.GetPipeline(pipelineID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	validbranch, err := e.bdl.GetBranchWorkspaceConfigByProject(pipelineinfo.ProjectID, pipelineinfo.Branch)
+
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(pipelineInfo.ProjectID))
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-	if validbranch == nil || validbranch.Workspace == "" {
-		return errorresp.ErrResp(fmt.Errorf("not found branch rule for [%s]", pipelineinfo.Branch))
+	validBranch := diceworkspace.GetValidBranchByGitReference(pipelineInfo.Branch, rules)
+	if validBranch == nil || validBranch.Workspace == "" {
+		return errorresp.ErrResp(fmt.Errorf("not found branch rule for [%s]", pipelineInfo.Branch))
 	}
-	return httpserver.OkResp(validbranch)
+	return httpserver.OkResp(validBranch)
 }
 
 func (e *Endpoints) pipelineOperate(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -601,10 +618,12 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 			AutoRun:            true,
 			UserID:             gitEvent.Content.MergeUserId,
 		}
-		validBranch, err := e.bdl.GetBranchWorkspaceConfig(uint64(appID), reqPipeline.Branch)
+
+		rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 		if err != nil {
 			return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 		}
+		validBranch := diceworkspace.GetValidBranchByGitReference(reqPipeline.Branch, rules)
 		workspace := validBranch.Workspace
 		v2, err := e.pipeline.ConvertPipelineToV2(reqPipeline)
 		if err != nil {

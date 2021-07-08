@@ -371,7 +371,7 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 	// 更新 关联测试计划用例
 	if len(updateReq.TestPlanCaseRelIDs) > 0 && !updateReq.RemoveTestPlanCaseRelIDs {
 		// 批量查询测试计划用例
-		testPlanCaseRels, err := e.bdl.ListTestPlanCaseRel(updateReq.TestPlanCaseRelIDs)
+		testPlanCaseRels, err := e.testPlan.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: updateReq.TestPlanCaseRelIDs})
 		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
@@ -764,6 +764,33 @@ func (e *Endpoints) UnsubscribeIssue(ctx context.Context, r *http.Request, vars 
 	}
 
 	if err := e.issue.Unsubscribe(id, identityInfo); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(id)
+}
+
+// BatchUpdateIssueSubscriber batch update issue subscriber
+func (e *Endpoints) BatchUpdateIssueSubscriber(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var updateReq apistructs.IssueSubscriberBatchUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
+		return apierrors.ErrBatchUpdateIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.InvalidParameter(err).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrSubscribeIssue.NotLogin().ToResp(), nil
+	}
+
+	updateReq.IssueID = id
+	updateReq.IdentityInfo = identityInfo
+
+	if err := e.issue.BatchUpdateIssuesSubscriber(updateReq); err != nil {
 		return errorresp.ErrResp(err)
 	}
 

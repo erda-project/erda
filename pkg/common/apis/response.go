@@ -31,6 +31,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 // Response .
@@ -145,8 +146,7 @@ func validRequest(h interceptor.Handler) interceptor.Handler {
 		if v, ok := req.(validator.Validator); ok {
 			err := v.Validate()
 			if err != nil {
-				return nil, err
-				// return nil, errors.ParseValidateError(err)
+				return nil, errors.ParseValidateError(err)
 			}
 		}
 		return h(ctx, req)

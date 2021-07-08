@@ -56,7 +56,7 @@ func (as *AutoScanner) Run() {
 
 func (as *AutoScanner) CheckNoticeExist() {
 	// list all org
-	orgInfo, err := as.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{})
+	orgInfo, err := as.bdl.ListOrgs(&apistructs.OrgSearchRequest{}, "")
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -64,7 +64,7 @@ func (as *AutoScanner) CheckNoticeExist() {
 
 	for _, org := range orgInfo.List {
 		// get notice list
-		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID)
+		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "", nil)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -87,14 +87,14 @@ func (as *AutoScanner) CheckNoticeExist() {
 
 func (as *AutoScanner) CheckNoticeExpired() {
 	// list all org
-	orgInfo, err := as.bdl.ListDopOrgs(&apistructs.OrgSearchRequest{})
+	orgInfo, err := as.bdl.ListOrgs(&apistructs.OrgSearchRequest{}, "")
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
 	for _, org := range orgInfo.List {
 		// get notice list
-		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID)
+		noticeList, err := as.bdl.ListNoticeByOrgID(org.ID, "", nil)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -117,7 +117,7 @@ func (as *AutoScanner) CheckNoticeExpired() {
 }
 
 func (as *AutoScanner) UnPublishNotice(orgID, noticeID uint64) error {
-	err := as.bdl.PublishORUnPublishNotice(orgID, noticeID, "unpublish")
+	err := as.bdl.PublishORUnPublishNotice(orgID, noticeID, "", "unpublish")
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (as *AutoScanner) PublishNotice(orgID uint64) {
 			}
 
 			// publish notice
-			err = as.bdl.PublishORUnPublishNotice(orgID, resp.Data.ID, "publish")
+			err = as.bdl.PublishORUnPublishNotice(orgID, resp.Data.ID, "", "publish")
 			if err != nil {
 				logrus.Error(err)
 			}

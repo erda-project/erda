@@ -18,9 +18,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestClass_genProjectNamespace(t *testing.T) {
@@ -62,4 +63,24 @@ func TestClaas_patchProject(t *testing.T) {
 	assert.Equal(t, oldPrj.MemQuota, float64(2))
 	assert.NotEqual(t, oldPrj.ClusterConfig, "{}")
 	assert.NotEqual(t, oldPrj.RollbackConfig, "{}")
+}
+
+func TestCheckRollbackConfig(t *testing.T) {
+	rollbackConfig := make(map[string]int, 0)
+	assert.NoError(t, checkRollbackConfig(&rollbackConfig))
+	rollbackConfig["DEV"] = 1
+	rollbackConfig["TEST"] = 1
+	rollbackConfig["STAGING"] = 1
+	rollbackConfig["PROD"] = 1
+	assert.NoError(t, checkRollbackConfig(&rollbackConfig))
+}
+
+func TestInitRollbackConfig(t *testing.T) {
+	rollbackConfig := make(map[string]int, 0)
+	err := initRollbackConfig(&rollbackConfig)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, rollbackConfig["DEV"])
+	assert.Equal(t, 5, rollbackConfig["TEST"])
+	assert.Equal(t, 5, rollbackConfig["STAGING"])
+	assert.Equal(t, 5, rollbackConfig["PROD"])
 }

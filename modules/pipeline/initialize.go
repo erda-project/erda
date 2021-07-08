@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -45,7 +46,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -134,7 +134,10 @@ func do() (*httpserver.Server, error) {
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
 	}
 
-	snippetSvc := snippetsvc.New(dbClient, bdl)
+	// init cluster info before pipeline scheduler task executors init
+	if err := clusterinfo.Initialize(bdl); err != nil {
+		return nil, err
+	}
 
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
@@ -144,7 +147,12 @@ func do() (*httpserver.Server, error) {
 		return nil, err
 	}
 
-	registerSnippetClient(dbClient)
+	if err := registerSnippetClient(dbClient); err != nil {
+		return nil, err
+	}
+	if err := pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient); err != nil {
+		return nil, err
+	}
 
 	pvolumes.Initialize(dbClient)
 	pexpr_params.Initialize(dbClient)
@@ -163,7 +171,6 @@ func do() (*httpserver.Server, error) {
 		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineCronSvc(pipelineCronSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
-		endpoints.WithSnippetSvc(snippetSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
@@ -179,9 +186,6 @@ func do() (*httpserver.Server, error) {
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
 
-	// cache lifecycle network hook client information
-	go pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient)
-
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
@@ -192,15 +196,19 @@ func do() (*httpserver.Server, error) {
 		return nil, err
 	}
 
+	// register cluster hook after pipeline service start
+	if err := clusterinfo.RegisterClusterHook(bdl); err != nil {
+		return nil, err
+	}
+
 	return server, nil
 }
 
-func registerSnippetClient(dbclient *dbclient.Client) {
+func registerSnippetClient(dbclient *dbclient.Client) error {
 
 	list, err := dbclient.FindSnippetClientList()
 	if err != nil {
-		logrus.Errorf("not find snippet client list: error %v", err)
-		return
+		return fmt.Errorf("not find snippet client list: error %v", err)
 	}
 
 	clientMap := make(map[string]*apistructs.DicePipelineSnippetClient)
@@ -215,10 +223,7 @@ func registerSnippetClient(dbclient *dbclient.Client) {
 		}
 	}
 	pipeline_snippet_client.SetSnippetClientMap(clientMap)
-
-	time.AfterFunc(time.Hour*2, func() {
-		registerSnippetClient(dbclient)
-	})
+	return nil
 }
 
 func doCrondAbout(crondSvc *crondsvc.CrondSvc, pipelineSvc *pipelinesvc.PipelineSvc) error {

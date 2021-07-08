@@ -22,6 +22,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Language string
@@ -61,7 +63,7 @@ func (cq *CQ) Analyze(req CQRequest) (uint64, error) {
 // GenerateCQPipeline4Go 构造用于 Go 项目代码质量分析的流水线
 func (cq *CQ) GenerateCQPipeline4Go(req CQRequest) (uint64, error) {
 	// get clusterName
-	app, _, _, _, clusterName, err := cq.bdl.GetWorkspaceClusterByAppBranch(req.AppID, req.Commit)
+	app, _, _, _, clusterName, err := cq.getWorkspaceClusterByAppBranch(req.AppID, req.Commit)
 	if err != nil {
 		return 0, err
 	}
@@ -119,6 +121,41 @@ func (cq *CQ) GenerateCQPipeline4Go(req CQRequest) (uint64, error) {
 		return 0, err
 	}
 	return result.ID, nil
+}
+
+func (cq *CQ) getWorkspaceClusterByAppBranch(appID uint64, gitRef string) (
+	app *apistructs.ApplicationDTO,
+	project *apistructs.ProjectDTO,
+	branchRule *apistructs.ValidBranch,
+	workspace apistructs.DiceWorkspace,
+	clusterName string,
+	err error,
+) {
+	// app
+	app, err = cq.bdl.GetApp(appID)
+	if err != nil {
+		return
+	}
+	// get project branch rule for workspace
+	rules, err := cq.branchRuleSvc.Query(apistructs.ProjectScope, int64(app.ProjectID))
+	if err != nil {
+		return
+	}
+
+	branchRule = diceworkspace.GetValidBranchByGitReference(gitRef, rules)
+	workspace = apistructs.DiceWorkspace(branchRule.Workspace)
+	// get clusterName from project
+	project, err = cq.bdl.GetProject(app.ProjectID)
+	if err != nil {
+		return
+	}
+	for _ws, _clusterName := range project.ClusterConfig {
+		if strutil.Equal(_ws, workspace.String(), true) {
+			clusterName = _clusterName
+			break
+		}
+	}
+	return
 }
 
 // generateCQPipelineName 每个代码仓库下一个 commit 只有一个在运行

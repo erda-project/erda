@@ -26,21 +26,21 @@ fields:
     rx_count:
         type: "number"
         name: "Rx Count"
-        uint: 
+        unit: 
     rx_size_in_bytes:
         type: "number"
         name: "Rx Size In Bytes"
-        uint: 
+        unit: 
     server_open:
         type: "number"
         name: "Server Open"
-        uint: 
+        unit: 
     tx_count:
         type: "number"
         name: "Tx Count"
-        uint: 
+        unit: 
     tx_size_in_bytes:
         type: "number"
         name: "Tx Size In Bytes"
-        uint: 
+        unit: 
 

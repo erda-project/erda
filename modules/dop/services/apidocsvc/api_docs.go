@@ -290,11 +290,10 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	appIDStr := strconv.FormatUint(appID, 10)
 
 	// 查询 application (由于不存在项目级目录树, 所以不讨论 pinode != 0 的情况)
-	branches, err := bdl.Bdl.GetAllValidBranchWorkspace(appID)
+	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID))
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetAllValidBranchWorkspace"))
 	}
-
 	// 查询 application 数据构造目录树 node
 	app, err := bdl.Bdl.GetApp(appID)
 	if err != nil {
@@ -318,7 +317,7 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 		go func() {
 			branchInode := ft.Clone().SetBranchName(branch.Name).Inode()
 			hasAPIDoc := branchHasAPIDoc(orgID, branchInode)
-			m.Store(&branch, hasAPIDoc)
+			m.Store(branch, hasAPIDoc)
 			w.Done()
 		}()
 	}
@@ -365,9 +364,7 @@ func (svc *Service) listSchemas(orgID uint64, userID, pinode string) ([]*apistru
 }
 
 // 列出目录树的 service 层的节点列表
-func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot string, filter func(node apistructs.TreeEntry) bool) ([]*apistructs.
-	FileTreeNodeRspData,
-	*errorresp.APIError) {
+func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot string, filter func(node apistructs.TreeEntry) bool) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	ft, err := bundle.NewGittarFileTree(pinode)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InvalidParameter(err)
@@ -392,7 +389,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	// 文档是否只读: 如果用户是应用管理员, 则
 	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
-	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName())
+	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName(), svc.branchRuleSvc)
 	meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
 
 	var (
@@ -422,7 +419,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 }
 
 func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	data, apiError := FetchAPIDocContent(orgID, userID, inode, oasconv.OAS3JSON)
+	data, apiError := FetchAPIDocContent(orgID, userID, inode, oasconv.OAS3JSON, svc.branchRuleSvc)
 	if apiError != nil {
 		return nil, apiError
 	}

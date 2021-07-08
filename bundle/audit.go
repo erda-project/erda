@@ -15,10 +15,16 @@ package bundle
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/url"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -68,4 +74,64 @@ func (b *Bundle) BatchCreateAuditEvent(audits *apistructs.AuditBatchCreateReques
 			))
 	}
 	return nil
+}
+
+func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) (*apistructs.AuditsListResponse, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var listAudit apistructs.AuditsListResponse
+	resp, err := hc.
+		Get(host).
+		Path("/api/audits/actions/list").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Params(params).
+		Do().
+		JSON(&listAudit)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to list Audit, status code: %d, body: %v",
+				resp.StatusCode(),
+				resp.Body(),
+			))
+	}
+
+	return &listAudit, nil
+}
+
+func (b *Bundle) ExportAuditExcel(orgID uint64, userID string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, nil, err
+	}
+	hc := b.hc
+
+	respBody, resp, err := hc.
+		Get(host).
+		Path("/api/audits/actions/export-excel").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
+		Header(httputil.UserHeader, userID).
+		Params(params).
+		Do().StreamBody()
+	if err != nil {
+		return nil, nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		bodyBytes, _ := ioutil.ReadAll(respBody)
+		var downloadResp apistructs.FileDownloadFailResponse
+		if err := json.Unmarshal(bodyBytes, &downloadResp); err == nil {
+			return nil, nil, toAPIError(resp.StatusCode(), downloadResp.Error)
+		}
+		return nil, nil, fmt.Errorf("failed to export audit excel, responseBody: %s", string(bodyBytes))
+	}
+	return respBody, resp, nil
 }

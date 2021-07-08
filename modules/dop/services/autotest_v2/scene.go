@@ -439,10 +439,7 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 }
 
 func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteSceneStepRequest) (*apistructs.AutotestExecuteSceneStepRespData, error) {
-	var autotestGetSceneStepReq apistructs.AutotestGetSceneStepReq
-	autotestGetSceneStepReq.ID = req.SceneStepID
-	autotestGetSceneStepReq.UserID = req.UserID
-	step, err := svc.bdl.GetAutoTestSceneStep(autotestGetSceneStepReq)
+	step, err := svc.db.GetAutoTestSceneStep(req.SceneStepID)
 	if err != nil {
 		return nil, err
 	}

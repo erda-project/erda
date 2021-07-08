@@ -224,7 +224,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(c *gin.Context, reqDto
 		goto failed
 	}
 	if isK8S {
-		k8sAdapter, err = k8s.NewAdapter(azInfo.MasterAddr)
+		k8sAdapter, err = k8s.NewAdapter(reqDto.ClusterName)
 		if err != nil {
 			goto failed
 		}

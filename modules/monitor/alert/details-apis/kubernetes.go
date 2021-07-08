@@ -20,7 +20,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/modules/monitor/core/metrics/metricq/query"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/query"
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
