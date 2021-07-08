@@ -11,24 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package core_services
+package cmp
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMDB_USER_LIST = apis.ApiSpec{
-	Path:         "/api/users",
-	BackendPath:  "/api/users",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.UserListRequest{},
-	ResponseType: apistructs.UserListResponse{},
-	Doc:          "summary: 批量查询用户",
-	Group:        "users",
+var CMP_CLUSTER_INIT_COMMAND = apis.ApiSpec{
+	Path:        "/api/cluster/init-command",
+	BackendPath: "/api/cluster/init-command",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
+	Scheme:      "http",
+	Method:      "GET",
+	Doc:         "summary: 获取集群初始化命令",
 }

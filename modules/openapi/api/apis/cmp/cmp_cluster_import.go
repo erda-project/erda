@@ -11,17 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package cmp
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var TMC_TRACE_REQUEST_HISTORY = apis.ApiSpec{
-	Path:        "/api/trace-requests",
-	BackendPath: "/api/tmc/trace-requests",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+var CMP_CLUSTER_IMPORT = apis.ApiSpec{
+	Path:        "/api/clusters",
+	BackendPath: "/api/cluster/actions/import",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 查询链路追踪发送的请求历史列表",
+	IsOpenAPI:   true,
+	Doc:         "summary: 创建集群",
 }

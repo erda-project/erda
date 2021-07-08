@@ -188,14 +188,14 @@ type CloudClusterNewCreateInfo struct {
 	CloudBasicRsc   string // ecs\ack
 
 	// 云环境vpc配置信息
-	Region       string      `json:"region"`                         //区域
-	ClusterType  string      `json:"clusterType" default:"Edge"`     //集群类型，默认边缘集群
-	ClusterSpec  ClusterSpec `json:"clusterSpec" default:"Standard"` //集群规格，Standard, Small, Test
-	ChargeType   string      `json:"chargeType" default:"PrePaid"`   //付费类型，PrePaid, PostPaid
-	ChargePeriod int         `json:"chargePeriod" default:"1"`       //付费周期
-	AppNodeNum   int         `json:"appNodeNum" default:"-1"`        //平台节点数
-	AccessKey    string      `json:"accessKey"`
-	SecretKey    string      `json:"secretKey"`
+	Region       string               `json:"region"`                         //区域
+	ClusterType  string               `json:"clusterType" default:"Edge"`     //集群类型，默认边缘集群
+	ClusterSpec  ClusterSpecification `json:"clusterSpec" default:"Standard"` //集群规格，Standard, Small, Test
+	ChargeType   string               `json:"chargeType" default:"PrePaid"`   //付费类型，PrePaid, PostPaid
+	ChargePeriod int                  `json:"chargePeriod" default:"1"`       //付费周期
+	AppNodeNum   int                  `json:"appNodeNum" default:"-1"`        //平台节点数
+	AccessKey    string               `json:"accessKey"`
+	SecretKey    string               `json:"secretKey"`
 	// 从已有vpc创建，指定该值；否则新建vpc，指定VpcCIDR
 	VpcID   string `json:"vpcID"`
 	VpcCIDR string `json:"vpcCIDR"`
@@ -298,15 +298,15 @@ const (
 	NasSpec = "1TB"
 )
 
-type ClusterSpec string
+type ClusterSpecification string
 
 const (
-	ClusterSpecStandard ClusterSpec = "Standard"
-	ClusterSpecSmall    ClusterSpec = "Small"
-	ClusterSpecTest     ClusterSpec = "Test"
+	ClusterSpecStandard ClusterSpecification = "Standard"
+	ClusterSpecSmall    ClusterSpecification = "Small"
+	ClusterSpecTest     ClusterSpecification = "Test"
 )
 
-func (spec ClusterSpec) GetSpecNum() int {
+func (spec ClusterSpecification) GetSpecNum() int {
 	switch spec {
 	case ClusterSpecStandard:
 		return EdgeStandardNum
