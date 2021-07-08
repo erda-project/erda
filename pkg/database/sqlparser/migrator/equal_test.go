@@ -29,7 +29,7 @@ func TestFieldTypeEqual(t *testing.T) {
                    c varchar(32),
                    d bigint,
                    e decimal(5,2),
-                   f decimal,
+                   f decimal(10),
                    g varchar(255) COLLATE latin1_german2_ci,
                    h varchar(255) COLLATE utf8_unicode_ci,
                    i ENUM('x-small', 'small', 'medium', 'large', 'x-large'),
