@@ -164,7 +164,7 @@ func (p *provider) getMetricFromSQL(r *http.Request) (metric string) {
 				}
 				json.Unmarshal(byts, &body)
 				if len(body.From) != 1 {
-					return body.From[0]
+					return strings.TrimSpace(body.From[0])
 				}
 				return strings.TrimSpace(body.From[0])
 			}
