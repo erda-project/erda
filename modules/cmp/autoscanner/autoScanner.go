@@ -14,6 +14,8 @@
 package autoscanner
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -145,8 +147,14 @@ func (as *AutoScanner) PublishNotice(orgID uint64) {
 				},
 			}
 
+			nrByte, err := json.Marshal(nr)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+			body := bytes.NewReader(nrByte)
 			// create notice
-			resp, err := as.bdl.CreateNoticeRequest(nr, orgID)
+			resp, err := as.bdl.CreateNoticeRequest(nr.UserID, orgID, body)
 			if err != nil {
 				logrus.Error(err)
 				break

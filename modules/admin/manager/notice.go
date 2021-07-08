@@ -15,14 +15,12 @@ package manager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -39,19 +37,10 @@ func (am *AdminManager) AppendNoticeEndpoint() {
 }
 
 func (am *AdminManager) CreateNotice(contenxt context.Context, req *http.Request, resources map[string]string) (httpserver.Responser, error) {
-	var createReq apistructs.NoticeCreateRequest
-	if err := json.NewDecoder(req.Body).Decode(&createReq); err != nil {
-		return apierrors.ErrCreateNotice.InvalidParameter(err).ToResp(), nil
-	}
-
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
-	}
-
-	if createReq.UserID != "" {
-		createReq.UserID = userID
 	}
 
 	orgID, err := GetOrgID(req)
@@ -59,7 +48,7 @@ func (am *AdminManager) CreateNotice(contenxt context.Context, req *http.Request
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
 
-	resp, err := am.bundle.CreateNoticeRequest(&createReq, orgID)
+	resp, err := am.bundle.CreateNoticeRequest(userID, orgID, req.Body)
 	if err != nil {
 		return apierrors.ErrCreateNotice.InternalError(err).ToResp(), nil
 	}
