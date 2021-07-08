@@ -65,7 +65,8 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := a.p.Monitor.QueryAlert(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -114,6 +115,11 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	alertData.AlertScope = MicroServiceScope
 	alertData.AlertScopeId = request.TenantGroup
 	alertData.Attributes = make(map[string]*structpb.Value)
+	//TODO 等等改成这样的
+	//alertData.Attributes = request.Attributes
+	//if alertData.Attributes == nil {
+	//	alertData.Attributes = make(map[string]*structpb.Value)
+	//}
 	alertData.Attributes[DiceOrgId] = structpb.NewStringValue(monitorInstance.OrgId)
 	alertData.Attributes[Domain] = structpb.NewStringValue(request.Domain)
 	alertData.Attributes[TenantGroup] = structpb.NewStringValue(request.TenantGroup)
@@ -196,6 +202,9 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	alertData.CreateTime = request.CreateTime
 	alertData.UpdateTime = request.UpdateTime
 	alertData.Attributes = request.Attributes
+	if alertData.Attributes == nil {
+		alertData.Attributes = make(map[string]*structpb.Value)
+	}
 	if request.AppIds != nil && len(request.AppIds) > 0 {
 		alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
 		if err != nil {

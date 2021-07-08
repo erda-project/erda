@@ -62,30 +62,30 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		type AlertService = alert.AlertServiceServer
 		//alert.RegisterAlertServiceImp(p.Register,p.alertService,apis.Options())
 		alert.RegisterAlertServiceImp(p.Register, p.alertService, apis.Options(), p.Perm.Check(
-			perm.Method(AlertService.QueryAlertRule, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.QueryAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.GetAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.CreateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.UpdateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.UpdateAlertEnable, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.DeleteAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, perm.FieldValue("tenantGroup")),
+			perm.Method(AlertService.QueryAlertRule, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.QueryAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()), //X
+			perm.Method(AlertService.GetAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.CreateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.UpdateAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.UpdateAlertEnable, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.DeleteAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, p.alertService.TenantGroupFromParams()),
 
-			perm.Method(AlertService.QueryCustomizeMetric, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.QueryCustomizeNotifyTarget, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.QueryCustomizeAlerts, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.GetCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.CreateCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.UpdateCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.UpdateCustomizeAlertEnable, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.DeleteCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, perm.FieldValue("tenantGroup")),
+			perm.Method(AlertService.QueryCustomizeMetric, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.QueryCustomizeNotifyTarget, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.QueryCustomizeAlerts, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.GetCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.CreateCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.UpdateCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.UpdateCustomizeAlertEnable, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.DeleteCustomizeAlert, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionDelete, p.alertService.TenantGroupFromParams()),
 
-			perm.Method(AlertService.GetAlertRecordAttrs, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.GetAlertRecords, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.GetAlertRecord, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.GetAlertHistories, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.CreateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.UpdateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
-			perm.Method(AlertService.DashboardPreview, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, perm.FieldValue("tenantGroup")),
+			perm.Method(AlertService.GetAlertRecordAttrs, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.GetAlertRecords, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.GetAlertRecord, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionGet, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.GetAlertHistories, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionList, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.CreateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionCreate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.UpdateAlertRecordIssue, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
+			perm.Method(AlertService.DashboardPreview, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.alertService.TenantGroupFromParams()),
 		))
 	}
 	return nil

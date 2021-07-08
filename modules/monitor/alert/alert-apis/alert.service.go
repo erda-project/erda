@@ -784,7 +784,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	httpRequest := getHttpRequest(ctx)
+	httpRequest := utils.GetHttpRequest(ctx)
 	data, err := m.p.a.QueryAlert(api.Language(httpRequest), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -841,8 +841,9 @@ func (m *alertService) UpdateAlert(ctx context.Context, request *pb.UpdateAlertR
 	if err := m.p.checkAlert(alertRequest); err != nil {
 		return nil, fmt.Errorf("check alert is failed err is %s", err)
 	}
-	orgID := alertRequest.Attributes["dice_org_id"]
-	org, err := m.p.bdl.GetOrg(orgID.AsInterface())
+	//orgID := alertRequest.Attributes["dice_org_id"]
+	orgID := apis.GetHeader(ctx, "Org-ID")
+	org, err := m.p.bdl.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
