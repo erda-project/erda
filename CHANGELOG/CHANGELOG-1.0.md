@@ -7,16 +7,16 @@
 
 ## New features
 
-- Support individual developer to create organization if he/she doesn't belong to any organizations ([#592](https://github.com/erda-project/erda/pull/592))
-- Support scaling your application without restarting instances which already exists ([#645](https://github.com/erda-project/erda/pull/645)) ([#644](https://github.com/erda-project/erda/pull/644))
+- Support individuals to create organization if he/she doesn't belong to any organizations ([#592](https://github.com/erda-project/erda/pull/592))
+- Support scaling application without restarting the existing instances ([#644](https://github.com/erda-project/erda/pull/644)) ([#645](https://github.com/erda-project/erda/pull/645))
 
 ## Fixed Issues
 
-- Fix the issue in cmdb that custom stages created with null value ([#588](https://github.com/erda-project/erda/pull/588)) ([#606](https://github.com/erda-project/erda/pull/606))
-- Fix the issue in cmdb that issue retain creator&assignee&createdAt&manHour after type changing ([#610](https://github.com/erda-project/erda/pull/610)) ([#612](https://github.com/erda-project/erda/pull/612))
-- Fix the issue in scheduler that update specify namespace error when deal job #632 ([#636](https://github.com/erda-project/erda/pull/636))
-- Fix the issue in ui that increase guest permissions for dashboard and ticket #701 ([#705](https://github.com/erda-project/erda/pull/705))
-- Fix the issue in pipeline that task loop reset flags for wait step when timeout ([#715](https://github.com/erda-project/erda/pull/715))
+- Fix the issue that custom stages were created with null value ([#588](https://github.com/erda-project/erda/pull/588)) ([#606](https://github.com/erda-project/erda/pull/606))
+- Keep the creator, assignee, create time and man hour unchanged when issue type is switched ([#610](https://github.com/erda-project/erda/pull/610)) ([#612](https://github.com/erda-project/erda/pull/612))
+- Fix the logic error of job deletion under the specified namespace ([#632](https://github.com/erda-project/erda/pull/632)) ([#636](https://github.com/erda-project/erda/pull/636))
+- Add guest permissions for dashboard and ticket ([#701](https://github.com/erda-project/erda/pull/701)) ([#705](https://github.com/erda-project/erda/pull/705))
+- Reset flags before loop for wait step when timed out ([#715](https://github.com/erda-project/erda/pull/715))
 
 # v1.0.0 [2021-06-09]
 
