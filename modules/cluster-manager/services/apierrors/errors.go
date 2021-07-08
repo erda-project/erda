@@ -25,6 +25,7 @@ var (
 	ErrGetCluster      = err("ErrGetCluster", "failed to get cluster")
 	ErrListCluster     = err("ErrListCluster", "failed to list cluster")
 	ErrDeleteCluster   = err("ErrDeleteCluster", "failed to delete cluster")
+	ErrGetClusterInfo  = err("ErrGetClusterInfo", "failed to get cluster info")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
