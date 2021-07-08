@@ -41,6 +41,7 @@ import (
 
 type traceService struct {
 	p                     *provider
+	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
 }
 
@@ -61,13 +62,13 @@ func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode DebugS
 	}
 	switch statusCode {
 	case DebugInit:
-		return s.p.i18n.Text(lang, "waiting_for_tracing_data")
+		return s.i18n.Text(lang, "waiting_for_tracing_data")
 	case DebugSuccess:
-		return s.p.i18n.Text(lang, "success_get_tracing_data")
+		return s.i18n.Text(lang, "success_get_tracing_data")
 	case DebugFail:
-		return s.p.i18n.Text(lang, "fail_get_tracing_data")
+		return s.i18n.Text(lang, "fail_get_tracing_data")
 	case DebugStop:
-		return s.p.i18n.Text(lang, "stop_get_tracing_data")
+		return s.i18n.Text(lang, "stop_get_tracing_data")
 	default:
 		return ""
 	}
