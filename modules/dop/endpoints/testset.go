@@ -298,9 +298,12 @@ func (e *Endpoints) CopyTestSet(ctx context.Context, r *http.Request, vars map[s
 	req.TestSetID = testSetID
 	req.IdentityInfo = identityInfo
 
-	recordID, err := e.testset.Copy(req)
+	id, isAsync, err := e.testset.Copy(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
+	}
+	if !isAsync {
+		return httpserver.OkResp(id)
 	}
 
 	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileActionTypeCopy)
@@ -308,11 +311,11 @@ func (e *Endpoints) CopyTestSet(ctx context.Context, r *http.Request, vars map[s
 		return errorresp.ErrResp(err)
 	}
 	if ok {
-		e.CopyChannel <- recordID
+		e.CopyChannel <- id
 	}
 
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,
-		Content: recordID,
+		Content: id,
 	}, nil
 }

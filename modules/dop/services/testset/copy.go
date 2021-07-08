@@ -19,23 +19,25 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 )
 
-func (svc *Service) Copy(req apistructs.TestSetCopyRequest) (uint64, error) {
+func (svc *Service) Copy(req apistructs.TestSetCopyRequest) (uint64, bool, error) {
 	// 参数校验
+	var isAsync bool
 	if req.TestSetID == 0 {
-		return 0, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy root testset")
+		return 0, isAsync, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy root testset")
 	}
 	if req.CopyToTestSetID == req.TestSetID {
-		return 0, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy to itself")
+		return 0, isAsync, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy to itself")
 	}
 
 	// 查询待拷贝测试集
 	srcTs, err := svc.Get(req.TestSetID)
 	if err != nil {
-		return 0, err
+		return 0, isAsync, err
 	}
 
 	// 查询目标测试集
@@ -43,26 +45,46 @@ func (svc *Service) Copy(req apistructs.TestSetCopyRequest) (uint64, error) {
 	if req.CopyToTestSetID != 0 {
 		dstTs, err = svc.Get(req.CopyToTestSetID)
 		if err != nil {
-			return 0, err
+			return 0, isAsync, err
 		}
 		findInSub, err := svc.findTargetTestSetIDInSubTestSets([]uint64{srcTs.ID}, srcTs.ProjectID, dstTs.ID)
 		if err != nil {
-			return 0, apierrors.ErrCopyTestSet.InternalError(err)
+			return 0, isAsync, apierrors.ErrCopyTestSet.InternalError(err)
 		}
 		if findInSub {
-			return 0, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy to sub testset")
+			return 0, isAsync, apierrors.ErrCopyTestSet.InvalidParameter("cannot copy to sub testset")
 		}
 	}
 
+	pagingReq := apistructs.TestCasePagingRequest{
+		PageNo:    -1,
+		PageSize:  -1,
+		TestSetID: req.TestSetID,
+		ProjectID: srcTs.ProjectID,
+		Recycled:  false,
+	}
+	totalResult, err := svc.tcSvc.PagingTestCases(pagingReq)
+	if err != nil {
+		return 0, isAsync, apierrors.ErrCopyTestSet.InternalError(err)
+	}
+	if int(totalResult.Total) <= conf.TestSetSyncCopyMaxNum() {
+		copiedTsIDs, err := svc.recursiveCopy(srcTs, dstTs, req.IdentityInfo)
+		if err != nil {
+			return 0, isAsync, apierrors.ErrCopyTestSet.InternalError(err)
+		}
+		return copiedTsIDs[0], isAsync, nil
+	}
+
+	isAsync = true
 	fileReq := apistructs.TestFileRecordRequest{
 		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", srcTs.ProjectID, req.TestSetID),
 		ProjectID:    srcTs.ProjectID,
-		TestSetID:    req.TestSetID,
 		Type:         apistructs.FileActionTypeCopy,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
 			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				TestSetID: req.TestSetID,
 				CopyRequest: &apistructs.TestSetCopyAsyncRequest{
 					SourceTestSet: srcTs,
 					DestTestSet:   dstTs,
@@ -74,10 +96,10 @@ func (svc *Service) Copy(req apistructs.TestSetCopyRequest) (uint64, error) {
 
 	id, err := svc.tcSvc.CreateFileRecord(fileReq)
 	if err != nil {
-		return 0, err
+		return 0, isAsync, err
 	}
 
-	return id, nil
+	return id, isAsync, nil
 }
 
 func (svc *Service) CopyTestSet(record *dao.TestFileRecord) {

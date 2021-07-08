@@ -67,12 +67,12 @@ func (svc *Service) Export(req apistructs.TestCaseExportRequest) (uint64, error)
 		FileName:     sheetName,
 		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", req.ProjectID, req.TestSetID),
 		ProjectID:    req.ProjectID,
-		TestSetID:    req.TestSetID,
 		Type:         apistructs.FileActionTypeExport,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
 			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				TestSetID:     req.TestSetID,
 				ExportRequest: &req,
 			},
 		},

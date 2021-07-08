@@ -22,6 +22,7 @@ type TestFileRecord struct {
 	FileName    string          `json:"name"`
 	Description string          `json:"description"`
 	ProjectID   uint64          `json:"projectID"`
+	TestSetID   uint64          `json:"testSetID"`
 	ApiFileUUID string          `json:"apiFileUUID"`
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
@@ -34,7 +35,6 @@ type TestFileRecordRequest struct {
 	ID          uint64          `json:"id"`
 	FileName    string          `json:"name"`
 	ProjectID   uint64          `json:"projectID"`
-	TestSetID   uint64          `json:"testSetID"`
 	Description string          `json:"description"`
 	ApiFileUUID string          `json:"apiFileUUID"`
 	Type        FileActionType  `json:"type"`
@@ -49,6 +49,7 @@ type TestFileExtra struct {
 }
 
 type ManualTestFileExtraInfo struct {
+	TestSetID     uint64                   `json:"testSetID,omitempty"`
 	ImportRequest *TestCaseImportRequest   `json:"importRequest,omitempty"`
 	ExportRequest *TestCaseExportRequest   `json:"exportRequest,omitempty"`
 	CopyRequest   *TestSetCopyAsyncRequest `json:"copyRequest,omitempty"`

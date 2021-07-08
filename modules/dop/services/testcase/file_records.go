@@ -123,10 +123,16 @@ func mapping(s *dao.TestFileRecord) *apistructs.TestFileRecord {
 		Description: s.Description,
 		ProjectID:   s.ProjectID,
 		ApiFileUUID: s.ApiFileUUID,
-		Type:        s.Type,
-		State:       s.State,
-		CreatedAt:   s.CreatedAt,
-		UpdatedAt:   s.UpdatedAt,
-		OperatorID:  s.OperatorID,
+		TestSetID: func() uint64 {
+			if info := s.Extra.ManualTestFileExtraInfo; info != nil {
+				return info.TestSetID
+			}
+			return 0
+		}(),
+		Type:       s.Type,
+		State:      s.State,
+		CreatedAt:  s.CreatedAt,
+		UpdatedAt:  s.UpdatedAt,
+		OperatorID: s.OperatorID,
 	}
 }

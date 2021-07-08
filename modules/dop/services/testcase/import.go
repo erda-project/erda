@@ -75,13 +75,13 @@ func (svc *Service) Import(req apistructs.TestCaseImportRequest, r *http.Request
 		FileName:     fileHeader.Filename,
 		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", req.ProjectID, req.TestSetID),
 		ProjectID:    req.ProjectID,
-		TestSetID:    req.TestSetID,
 		Type:         apistructs.FileActionTypeImport,
 		ApiFileUUID:  file.UUID,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
 			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				TestSetID:     req.TestSetID,
 				ImportRequest: &req,
 			},
 		},
