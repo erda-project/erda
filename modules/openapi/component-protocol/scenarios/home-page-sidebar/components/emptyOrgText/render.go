@@ -19,9 +19,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -113,7 +115,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	this.Operations["toJoinOrgDoc"] = Operation{
 		Command: Command{
 			Key:     "goto",
-			Target:  "https://docs.erda.cloud/1.0/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E4%BC%81%E4%B8%9A",
+			Target:  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E7%BB%84%E7%BB%87"),
 			JumpOut: true,
 			Visible: visible,
 		},
