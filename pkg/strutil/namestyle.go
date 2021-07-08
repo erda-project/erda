@@ -29,7 +29,7 @@ func SnakeToUpCamel(name string) string {
 			continue
 		}
 		if big && s >= 'a' && s <= 'z' {
-			buf.WriteRune(s-32)
+			buf.WriteRune(s - 32)
 		} else {
 			buf.WriteRune(s)
 		}
