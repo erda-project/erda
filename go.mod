@@ -29,7 +29,6 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/clbanning/mxj v1.8.4 // indirect
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v0.0.0-20170925154832-84eeaae905fa
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -72,7 +71,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/gorm v1.9.16
