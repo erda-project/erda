@@ -16,7 +16,6 @@ package nacos
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -26,20 +25,22 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
-	"github.com/erda-project/erda/pkg/netportal"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // Adapter .
 type Adapter struct {
 	ClusterName string
 	Addr        string
+	client      *httpclient.HTTPClient
 }
 
 // NewAdapter .
 func NewAdapter(clusterName, addr string) *Adapter {
 	return &Adapter{
 		ClusterName: clusterName,
-		Addr:        fmt.Sprintf("http://%s", addr),
+		Addr:        addr,
+		client:      httpclient.New(httpclient.WithClusterDialer(clusterName)),
 	}
 }
 
@@ -181,7 +182,7 @@ func (a *Adapter) EnableHTTPService(namespace string, service *pb.EnableHTTPServ
 	params.Set("namespaceId", namespace)
 	byts, _ := json.Marshal(h.MetaData)
 	params.Set("metadata", string(byts))
-	resp, err := a.doRequest(http.MethodPut, "/nacos/v1/ns/instance", params, nil)
+	resp, err := a.client.Put(a.Addr).Path("/nacos/v1/ns/instance").Params(params).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +206,7 @@ func (a *Adapter) countInterface(namespace, keyword string) (int64, error) {
 	params.Set("pageSize", "10")
 	params.Set("serviceNameParam", keyword)
 	params.Set("namespaceId", namespace)
-	resp, err := a.doRequest(http.MethodGet, "/nacos/v1/ns/catalog/services", params, nil)
+	resp, err := a.client.Get(a.Addr).Path("/nacos/v1/ns/catalog/services").Params(params).Do().RAW()
 	if err != nil {
 		return 0, err
 	}
@@ -229,7 +230,7 @@ func (a *Adapter) getInterfaceDetail(namespace, keyword string, pageNo, pageSize
 	params.Set("pageSize", strconv.FormatInt(pageSize, 10))
 	params.Set("serviceNameParam", keyword)
 	params.Set("namespaceId", namespace)
-	resp, err := a.doRequest(http.MethodGet, "/nacos/v1/ns/catalog/services", params, nil)
+	resp, err := a.client.Get(a.Addr).Path("/nacos/v1/ns/catalog/services").Params(params).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -248,29 +249,4 @@ func (a *Adapter) getInterfaceDetail(namespace, keyword string, pageNo, pageSize
 		filtered = append(filtered, item)
 	}
 	return filtered, nil
-}
-
-func (a *Adapter) doRequest(method, path string, params url.Values, body io.Reader) (*http.Response, error) {
-	req, err := a.newRequest(method, path, params, body)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func (a *Adapter) newRequest(method, path string, params url.Values, body io.Reader) (*http.Request, error) {
-	var ustr string
-	if len(params) > 0 {
-		ustr = fmt.Sprintf("%s%s?%s", a.Addr, path, params.Encode())
-	} else {
-		ustr = fmt.Sprintf("%s%s", a.Addr, path)
-	}
-	if len(a.ClusterName) > 0 {
-		return netportal.NewNetportalRequest(a.ClusterName, method, ustr, body)
-	}
-	return http.NewRequest(method, ustr, body)
 }
