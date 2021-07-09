@@ -392,6 +392,9 @@ func (m *alertService) GetOrgCustomizeAlertDetail(ctx context.Context, request *
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if alert == nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	if alert.AlertScope != "org" && alert.AlertScopeId != orgID {
 		return nil, errors.NewPermissionError("monitor_org_alert", "list", "access denied")
 	}
@@ -552,7 +555,8 @@ func (m *alertService) checkMetricMeta(
 		if !ok {
 			return fmt.Errorf(fmt.Sprintf("not support rule filter operator %s", filter.Operator))
 		}
-		if utils.StringType != utils.TypeOf(filter.Value) {
+		filterValue := filter.Value.AsInterface()
+		if utils.StringType != utils.TypeOf(filterValue) {
 			return fmt.Errorf(fmt.Sprintf("not support rule filter value %v", filter.Value))
 		}
 
