@@ -61,7 +61,7 @@ func Test_getMetricFromSQL(t *testing.T) {
 		},
 		{
 			sql:  "SELECT field from metric1,metric2",
-			want: "",
+			want: "metric1",
 		},
 	}
 	for i, tt := range tests {

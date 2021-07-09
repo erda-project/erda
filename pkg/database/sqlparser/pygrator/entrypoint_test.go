@@ -11,9 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package config
+package pygrator_test
 
-type Config struct {
-	Debug bool   `default:"false" env:"DEBUG" desc:"enable debug logging"`
-	Port  string `default:"9095" env:"ADMIN_PORT" desc:"specified admin component port"`
+import (
+	"os"
+	"testing"
+
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
+)
+
+var (
+	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename}
+)
+
+func TestGenEntrypoint(t *testing.T) {
+	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
+		t.Fatal(err)
+	}
 }

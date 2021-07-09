@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var PUT_TRACE_DEBUG_HISTORY_STOP = apis.ApiSpec{
 	Path:        "/api/trace-requests/<requestId>/actions/cancel",
 	BackendPath: "/api/msp/apm/trace/debug/<requestId>",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8050",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
