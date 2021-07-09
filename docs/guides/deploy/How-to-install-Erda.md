@@ -115,13 +115,13 @@
 
    ```shell
    # install erda-base
-   helm install package/erda-base-0.1.0.tgz --generate-name
+   helm install package/erda-base-$(cat VERSION).tgz --generate-name
    
    # install erda-addons
-   helm install package/erda-addons-0.1.0.tgz --generate-name
+   helm install package/erda-addons-$(cat VERSION).tgz --generate-name
    
    # install erda
-   helm install package/erda-0.1.0.tgz --generate-name
+   helm install package/erda-$(cat VERSION).tgz --generate-name
    ```
 
    

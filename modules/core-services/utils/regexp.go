@@ -11,17 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package utils
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import "regexp"
 
-var TMC_TRACE_REQUEST_HISTORY = apis.ApiSpec{
-	Path:        "/api/trace-requests",
-	BackendPath: "/api/tmc/trace-requests",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 查询链路追踪发送的请求历史列表",
+var orgReg = regexp.MustCompile(`^[0-9a-z]\d*[a-z-][a-z\d-]*[0-9a-z]$`)
+
+// IsValidOrgName check org name can contain a-z0-9- but can not pure 0-9
+func IsValidOrgName(repo string) bool {
+	return orgReg.MatchString(repo)
 }

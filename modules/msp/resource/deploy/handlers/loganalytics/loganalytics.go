@@ -16,6 +16,7 @@ package loganalytics
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
@@ -39,7 +40,7 @@ func (p *provider) BuildSubResourceDeployRequest(name string, addon *diceyml.Add
 			orgDeployment = deployment
 			orgDeployment.ID = 0
 			orgDeployment.OrgId = orgId
-			p.LogInstanceDb.Save(&orgDeployment)
+			p.LogDeploymentDb.Save(&orgDeployment)
 		}
 
 		return nil
@@ -67,7 +68,7 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 			orgDeployment = deployment
 			orgDeployment.ID = 0
 			orgDeployment.OrgId = orgId
-			p.LogInstanceDb.Save(&orgDeployment)
+			p.LogDeploymentDb.Save(&orgDeployment)
 		}
 
 		return config
@@ -151,6 +152,8 @@ func (p *provider) createLogDeployment(orgId string, clusterName string, esUrls 
 		EsConfig:     "{}",
 		CollectorUrl: collector,
 		Domain:       domain,
+		Created:      time.Now(),
+		Updated:      time.Now(),
 	}
 
 	p.LogDeploymentDb.Save(&deploy)
@@ -188,6 +191,8 @@ func (p *provider) createLogAnalytics(logKey string, clusterName string, options
 		IsDelete:        0,
 		Version:         options["version"],
 		Config:          configStr,
+		Created:         time.Now(),
+		Updated:         time.Now(),
 	}
 	if err := p.InstanceDb.Save(instance).Error; err != nil {
 		return nil, err
