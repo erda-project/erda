@@ -15,7 +15,8 @@ package utils
 
 import "regexp"
 
-var orgReg = regexp.MustCompile(`^[0-9a-z]\d*[a-z-][a-z\d-]*[0-9a-z]$`)
+// org regexp modify from pkg/strutil/regexp.go/reg, but org name can not be pure digital
+var orgReg = regexp.MustCompile(`^(?:[a-z]+|[0-9]+[a-z]+|[0-9]+[-]+[a-z0-9])+(?:(?:(?:[-]*)[a-z0-9]+)+)?$`)
 
 // IsValidOrgName check org name can contain a-z0-9- but can not pure 0-9
 func IsValidOrgName(repo string) bool {
