@@ -119,7 +119,7 @@ func (k *Kubernetes) UpdateUnitedDeployment(clusterName, namespace string, unite
 	if err != nil {
 		return fmt.Errorf("get cluster %s clientset error, %v", clusterName, err)
 	}
-
+	unitedDeployment.Namespace = namespace
 	if err = client.CRClient.Update(context.Background(), unitedDeployment); err != nil {
 		return fmt.Errorf("cluster %s update united deployment error, %v", clusterName, err)
 	}

@@ -91,7 +91,7 @@ func (p *provider) getMetricParams(metric string, r *http.Request) (url.Values, 
 	var key, value string
 	for _, k := range []string{
 		"filter_tk", "filter_terminus_key", "filter_target_terminus_key",
-		"filter_source_terminus_key", "filter__metric_scope_id",
+		"filter_source_terminus_key", "filter__metric_scope_id", "filter_fields.terminus_keys",
 	} {
 		val := r.URL.Query().Get(k)
 		if len(val) > 0 {
@@ -163,7 +163,7 @@ func (p *provider) getMetricFromSQL(r *http.Request) (metric string) {
 					From []string `json:"from"`
 				}
 				json.Unmarshal(byts, &body)
-				if len(body.From) != 1 {
+				if len(body.From) <= 0 {
 					return ""
 				}
 				return strings.TrimSpace(body.From[0])
@@ -181,9 +181,6 @@ func getMetricFromSQL(sql string) string {
 		find := find[0]
 		if len(find) > 0 {
 			metrics := strings.Split(find[len(find)-1], ",")
-			if len(metrics) != 1 {
-				return ""
-			}
 			return metrics[0]
 		}
 	}

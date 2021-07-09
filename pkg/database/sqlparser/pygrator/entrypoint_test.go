@@ -11,17 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package pygrator_test
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"os"
+	"testing"
 
-var TMC_TRACE_REQUEST_STATUS = apis.ApiSpec{
-	Path:        "/api/trace-requests/<requestId>/status",
-	BackendPath: "/api/tmc/trace-requests/<requestId>/status",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 查询链路追踪发送的请求历史列表",
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
+)
+
+var (
+	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename}
+)
+
+func TestGenEntrypoint(t *testing.T) {
+	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
+		t.Fatal(err)
+	}
 }

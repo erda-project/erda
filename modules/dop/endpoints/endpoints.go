@@ -644,6 +644,7 @@ type Endpoints struct {
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
+	CopyChannel   chan uint64
 }
 
 type Option func(*Endpoints)
@@ -978,4 +979,8 @@ func (e *Endpoints) TestCaseService() *testcase.Service {
 
 func (e *Endpoints) AutotestV2Service() *atv2.Service {
 	return e.autotestV2
+}
+
+func (e *Endpoints) TestSetService() *testset.Service {
+	return e.testset
 }

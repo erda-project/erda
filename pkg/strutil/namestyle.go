@@ -11,17 +11,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package strutil
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"bytes"
+)
 
-var TMC_TRACE_REQUEST_SEND = apis.ApiSpec{
-	Path:        "/api/trace-requests",
-	BackendPath: "/api/tmc/trace-requests",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 发送链路追踪请求",
+// SnakeToUpCamel make a snake style name to up-camel style
+func SnakeToUpCamel(name string) string {
+	var (
+		buf = bytes.NewBuffer(nil)
+		big = true
+	)
+	for _, s := range name {
+		if s == '_' {
+			big = true
+			continue
+		}
+		if big && s >= 'a' && s <= 'z' {
+			buf.WriteRune(s - 32)
+		} else {
+			buf.WriteRune(s)
+		}
+		big = false
+	}
+	return buf.String()
 }
