@@ -24,7 +24,7 @@ type EdgeHostOffline struct {
 var CMP_EDGE_HOST_OFFLINE = apis.ApiSpec{
 	Path:        "/api/edge/site/offline/<ID>",
 	BackendPath: "/api/edge/site/offline/<ID>",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
+	Host:        "ecp.marathon.l4lb.thisdcos.directory:9029",
 	Scheme:      "http",
 	Method:      "DELETE",
 	RequestType: EdgeHostOffline{},

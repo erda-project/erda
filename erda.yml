@@ -11,6 +11,7 @@ values:
 envs:
   ETCDCTL_API: "3"
   MONITOR_ADDR: monitor:7096
+  COLLECTOR_ADDR: collector:7076
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -296,15 +297,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
-      ALIYUN_ACCESS_KEY_ID: ""
-      ALIYUN_ACCESS_KEY_SECRET: ""
-      ALIYUN_SMS_SIGN_NAME: ""
-      DICE_EMAIL_SMTP_DISPLAY_USER: ""
-      DICE_EMAIL_SMTP_HOST: ""
-      DICE_EMAIL_SMTP_PASSWORD: ""
-      DICE_EMAIL_SMTP_PORT: ""
-      DICE_EMAIL_SMTP_USERNAME: ""
-      DICE_PROXY: ""
+      DEBUG: "false"
     resources:
       cpu: ${request_cpu:2}
       max_cpu: 2
@@ -514,6 +507,9 @@ services:
       exec: {}
   cmp:
     cmd: "/app/cmp"
+    envs:
+      UC_CLIENT_ID: "dice"
+      UC_CLIENT_SECRET: "secret"
     ports:
       - port: 9027
         protocol: "TCP"
@@ -544,6 +540,7 @@ services:
     envs:
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
+      MSP_ADDR: "msp:8080"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1

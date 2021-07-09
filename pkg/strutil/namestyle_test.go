@@ -11,17 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package strutil_test
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"testing"
 
-var TMC_TRACE_REQUEST_STATUS_CANCEL = apis.ApiSpec{
-	Path:        "/api/trace-requests/<requestId>/actions/cancel",
-	BackendPath: "/api/tmc/trace-requests/<requestId>/actions/cancel",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 发送链路追踪请求",
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+func TestSnakeToUpCamel(t *testing.T) {
+	var names = map[string]string{
+		"this_is_a_snake_name": "ThisIsASnakeName",
+		"This_Is_A_Snake_name": "ThisIsASnakeName",
+	}
+	for snake, camel := range names {
+		if s := strutil.SnakeToUpCamel(snake); s != camel {
+			t.Fatalf("snake: %s, s: %s, camel: %s", snake, snake, camel)
+		}
+	}
 }

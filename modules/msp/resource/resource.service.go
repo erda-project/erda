@@ -15,10 +15,12 @@ package resource
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-proto-go/msp/resource/pb"
+	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/coordinator"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 )
@@ -27,9 +29,34 @@ type resourceService struct {
 	p           *provider
 	coordinator coordinator.Interface
 	es          *elastic.Client
+	monitorDb   *monitordb.MonitorDB
 }
 
-func (s *resourceService) GetRuntime(ctx context.Context, req *pb.GetRuntimeRequest) (*pb.GetRuntimeResponse, error) {
+func (s *resourceService) GetMonitorInstance(ctx context.Context, request *pb.GetMonitorInstanceRequest) (*pb.GetMonitorInstanceResponse, error) {
+	instance, err := s.monitorDb.GetByTerminusKey(request.TerminusKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if instance == nil {
+		return nil, fmt.Errorf("terminusKey not exists")
+	}
+
+	return &pb.GetMonitorInstanceResponse{
+		Data: &pb.MonitorInstance{
+			MonitorId:   instance.MonitorId,
+			MonitorName: instance.ProjectName + "-" + instance.Workspace,
+			TerminusKey: instance.TerminusKey,
+			Workspace:   instance.Workspace,
+			ProjectId:   instance.ProjectId,
+			ProjectName: instance.ProjectName,
+			CreateTime:  instance.Created.Format("2006-01-02 15:04:05"),
+			UpdateTime:  instance.Updated.Format("2006-01-02 15:04:05"),
+		},
+	}, nil
+}
+
+func (s *resourceService) GetMonitorRuntime(ctx context.Context, req *pb.GetMonitorRuntimeRequest) (*pb.GetMonitorRuntimeResponse, error) {
 	result, err := s.QueryRuntime(RuntimeQuery{
 		RuntimeName:   req.RuntimeName,
 		RuntimeId:     "", // todo why here omit the runtimeId from request
@@ -41,7 +68,7 @@ func (s *resourceService) GetRuntime(ctx context.Context, req *pb.GetRuntimeRequ
 		return nil, err
 	}
 
-	return &pb.GetRuntimeResponse{
+	return &pb.GetMonitorRuntimeResponse{
 		Data: &pb.MonitorRuntime{
 			RuntimeId:       result.RuntimeId,
 			RuntimeName:     result.RuntimeName,

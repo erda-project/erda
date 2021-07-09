@@ -114,7 +114,7 @@ func (e *EmptyOrgContent) Render(ctx context.Context, c *apistructs.Component, s
 	}, Value{
 		Props: PropValue{
 			RenderType: "linkText",
-			Title:      i18nLocale.Get(i18n.I18nKeyOrgCreate),
+			Title:      fmt.Sprintf("* %s", i18nLocale.Get(i18n.I18nKeyOrgCreate)),
 			Visible:    createOrgVisible,
 			GapSize:    "small",
 			Value: map[string]interface{}{
