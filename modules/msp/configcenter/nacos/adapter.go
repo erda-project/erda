@@ -57,21 +57,31 @@ func NewAdapter(clusterName, addr, user, password string) *Adapter {
 
 // SearchResponse .
 type SearchResponse struct {
-	Total       int64         `json:"json:"totalCount"`
-	Pages       int64         `json:"json:"pagesAvailable"`
-	ConfigItems []*ConfigItem `json:"json:"pageItems"`
+	Total       int64         `json:"totalCount"`
+	Pages       int64         `json:"pagesAvailable"`
+	ConfigItems []*ConfigItem `json:"pageItems"`
 }
 
 // ConfigItem .
 type ConfigItem struct {
-	DataID  string
-	Group   string
-	Content string
+	DataID  string `json:"dataId"`
+	Group   string `json:"group"`
+	Content string `json:"content"`
 }
 
 // ToConfigCenterGroups .
 func (s *SearchResponse) ToConfigCenterGroups() *pb.Groups {
-	return &pb.Groups{}
+	list := make([]string, 0, len(s.ConfigItems))
+	for _, item := range s.ConfigItems {
+		if item == nil {
+			continue
+		}
+		list = append(list, item.Group)
+	}
+	return &pb.Groups{
+		Total: s.Total,
+		List:  list,
+	}
 }
 
 // SearchConfig .
