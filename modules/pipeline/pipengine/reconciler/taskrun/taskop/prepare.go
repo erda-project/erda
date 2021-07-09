@@ -437,7 +437,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		if !ok {
 			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
 		}
-		schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
+		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
 		if err != nil {
 			return false, fmt.Errorf("failed to createJobVolume, err: can not get k8s executor")
 		}

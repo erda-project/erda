@@ -241,5 +241,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// cluster info
 		{Path: clusterinfo.ClusterHookApiPath, Method: http.MethodPost, Handler: e.clusterHook},
+
+		// executor info, only for internal check executor and cluster info
+		{Path: "/api/pipeline-executors/actions/query", Method: http.MethodGet, Handler: e.executorInfo},
 	}
 }
