@@ -65,6 +65,7 @@ type Conf struct {
 	AvatarStorageURL string `env:"AVATAR_STORAGE_URL"` // file:///avatars or oss://appkey:appsecret@endpoint/bucket
 
 	TestFilePollingIntervalSec int `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
+	TestSetSyncCopyMaxNum      int `env:"TEST_SET_SYNC_COPY_MAX_NUM" default:"300"`
 
 	ProjectStatsCacheCron string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 }
@@ -227,4 +228,8 @@ func TestFileIntervalSec() int {
 // ProjectStatsCacheCron 项目状态缓存刷新周期
 func ProjectStatsCacheCron() string {
 	return cfg.ProjectStatsCacheCron
+}
+
+func TestSetSyncCopyMaxNum() int {
+	return cfg.TestSetSyncCopyMaxNum
 }
