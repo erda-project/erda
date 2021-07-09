@@ -28,7 +28,7 @@ func GetHttpRequest(ctx context.Context) *http.Request {
 func NewContextWithHeader(ctx context.Context) context.Context {
 	httpRequest := GetHttpRequest(ctx)
 	header := transport.Header{}
-	for k, _ := range httpRequest.Header {
+	for k := range httpRequest.Header {
 		header.Set(k, httpRequest.Header.Get(k))
 	}
 	return transport.WithHeader(context.Background(), header)
