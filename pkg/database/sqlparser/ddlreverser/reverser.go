@@ -113,10 +113,10 @@ func ReverseDDLWithSnapshot(tx *gorm.DB, ddl ast.DDLNode) (reversing string, ok 
 	return "", false, nil
 }
 
-// ReverseCreateTableStmtsToDropTableStmts reverses DDLs without snapshot.
+// ReverseCreateTableStmts reverses DDLs without snapshot.
 // Generally, this function is used to process the baseline,
 // because when processing the baseline, it only needs to Drop all the newly created tables.
-func ReverseCreateTableStmtsToDropTableStmts(ddlNodes interface{ DDLNodes() []ast.DDLNode }) string {
+func ReverseCreateTableStmts(ddlNodes interface{ DDLNodes() []ast.DDLNode }) string {
 	var buf = bytes.NewBuffer(nil)
 	for _, ddl := range ddlNodes.DDLNodes() {
 		if create, ok := ddl.(*ast.CreateTableStmt); ok {
