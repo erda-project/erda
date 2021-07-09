@@ -152,6 +152,19 @@ func Initialize() error {
 		}
 	}()
 
+	// Scheduled polling copy task
+	go func() {
+		ticker := time.NewTicker(time.Second * interval)
+		for {
+			select {
+			case <-ticker.C:
+				copyTestFileTask(ep)
+			case <-ep.CopyChannel:
+				copyTestFileTask(ep)
+			}
+		}
+	}()
+
 	// Daily clear test file records
 	go func() {
 		day := time.NewTicker(time.Hour * 24)
@@ -454,6 +467,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 
 	ep.ImportChannel = make(chan uint64)
 	ep.ExportChannel = make(chan uint64)
+	ep.CopyChannel = make(chan uint64)
 	return ep, nil
 }
 
@@ -485,6 +499,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 		logrus.Warnf("failed to register approval status changed event, %v", err)
 	}
 }
+
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
@@ -525,4 +540,16 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	default:
 
 	}
+}
+
+func copyTestFileTask(ep *endpoints.Endpoints) {
+	ok, record, err := ep.TestCaseService().GetFirstFileReady(apistructs.FileActionTypeCopy)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		return
+	}
+	if !ok {
+		return
+	}
+	ep.TestSetService().CopyTestSet(record)
 }
