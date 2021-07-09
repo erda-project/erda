@@ -63,6 +63,7 @@ metric-report-client:
 
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.metric-client:
 
 grpc-client@erda.core.monitor.alert:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
