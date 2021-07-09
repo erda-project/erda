@@ -1,0 +1,52 @@
+package endpoints
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	// clusterTypeK8S Identify the k8s cluster type in the colony event
+	clusterTypeK8S = "k8s"
+)
+
+// SteveClusterHook starts steve server when create cluster and stop steve server when delete cluster
+func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	req := apistructs.ClusterEvent{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errstr := fmt.Sprintf("decode clusterhook request fail: %v", err)
+		logrus.Error(errstr)
+		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errstr}, nil
+	}
+
+	if !strutil.Equal(req.Content.Type, clusterTypeK8S, true) {
+		return httpserver.HTTPResponse{Status: http.StatusOK}, nil
+	}
+
+	if strutil.Equal(req.Action, bundle.CreateAction, true) {
+		err := e.SteveAggregator.Add(&req.Content)
+		if err != nil {
+			logrus.Errorf("failed to start steve server for cluster %s, %v", req.Content.Name, err)
+			return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, nil
+		}
+	}
+
+	if strutil.Equal(req.Action, bundle.DeleteAction, true) {
+		err := e.SteveAggregator.Delete(req.Content.Name)
+		if err != nil {
+			logrus.Errorf("failed to stop steve server for cluster %s, %v", req.Content.Name, err)
+			return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, nil
+		}
+	}
+
+	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
+}
