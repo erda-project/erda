@@ -18,7 +18,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var POST_TRACE_DEBUG_HISTORIES = apis.ApiSpec{
 	Path:        "/api/trace-requests",
 	BackendPath: "/api/msp/apm/trace/debug",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8050",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
