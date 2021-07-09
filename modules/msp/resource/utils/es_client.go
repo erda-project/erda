@@ -17,14 +17,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda/modules/msp/instance/db"
-	"github.com/erda-project/erda/pkg/netportal"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // log versions
@@ -42,10 +43,12 @@ type ESClient struct {
 }
 
 func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
-	body := `{"aliases": {"` + alias + `": {}}}`
-
 	ctx := context.Background()
-	createIndex, err := c.CreateIndex(index).BodyString(body).Do(ctx)
+	createIndex, err := c.CreateIndex(index).BodyJson(map[string]interface{}{
+		"aliases": map[string]interface{}{
+			alias: map[string]interface{}{},
+		},
+	}).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -81,15 +84,12 @@ func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string)
 			}
 		}
 	}
+	if logDeployment.ClusterType == 1 {
+		options = append(options, elastic.SetHttpClient(newHTTPClient(logDeployment.ClusterName)))
+	}
 	client, err := elastic.NewClient(options...)
 	if err != nil {
 		return nil
-	}
-	if logDeployment.ClusterType == 1 {
-		netp := &netPortal{
-			ClusterName: logDeployment.ClusterName,
-		}
-		client.RequestBuilder = netp.newRequest
 	}
 	logDeployment.CollectorUrl = strings.TrimSpace(logDeployment.CollectorUrl)
 	if len(logDeployment.CollectorUrl) > 0 {
@@ -116,20 +116,18 @@ func getLogIndices(prefix, addon string) []string {
 	return []string{prefix + "*"}
 }
 
-// netPortal .
-type netPortal struct {
-	Addr        string
-	Domain      string
-	ClusterName string
-}
-
-func (np *netPortal) newRequest(method, url string) (*elastic.Request, error) {
-	req, err := netportal.NewNetportalRequest(np.ClusterName, method, url, nil)
-	if err != nil {
-		return nil, err
+func newHTTPClient(clusterName string) *http.Client {
+	hclient := httpclient.New(httpclient.WithClusterDialer(clusterName))
+	t := hclient.BackendClient().Transport.(*http.Transport)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           t.DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
-	req.Header.Add("User-Agent", "elastic/"+elastic.Version+" ("+runtime.GOOS+"-"+runtime.GOARCH+")")
-	req.Header.Add("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	return (*elastic.Request)(req), nil
 }
