@@ -11,29 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package cmp Core components of multi-cloud management platform
 package cmp
 
 import (
-	"context"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type provider struct{}
-
-// Run Run the provider
-func (p *provider) Run(ctx context.Context) error {
-	logrus.Info("cmp provider is running...")
-	return initialize(ctx)
-}
-
-func init() {
-	servicehub.Register("cmp", &servicehub.Spec{
-		Services:    []string{"cmp"},
-		Description: "Core components of multi-cloud management platform.",
-		Creator:     func() servicehub.Provider { return &provider{} },
-	})
+var CMP_STEVE_CREATE = apis.ApiSpec{
+	Path:         "/api/k8s/clusters/<*>",
+	BackendPath:  "/api/k8s/clusters/<*>",
+	Method:       "POST",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	K8SHost:      "cmp:9027",
+	Scheme:       "http",
+	Audit:        nil,
+	CheckLogin:   true,
+	Doc:          "create a k8s resource",
+	RequestType:  apistructs.K8SResource{},
+	ResponseType: apistructs.SteveCollection{},
+	IsOpenAPI:    true,
 }
