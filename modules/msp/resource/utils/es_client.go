@@ -131,6 +131,5 @@ func (np *netPortal) newRequest(method, url string) (*elastic.Request, error) {
 	req.Header.Add("User-Agent", "elastic/"+elastic.Version+" ("+runtime.GOOS+"-"+runtime.GOARCH+")")
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept-Encoding", "identity")
 	return (*elastic.Request)(req), nil
 }

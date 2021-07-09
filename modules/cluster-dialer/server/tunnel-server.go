@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"sync"
@@ -166,8 +167,11 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 		return
 	}
 	defer resp.Body.Close()
-
 	logrus.Infof("[%d] REQ OK code=%d latency=%dms %s", id, resp.StatusCode, time.Since(start).Milliseconds(), url)
+	rwHeader := rw.Header()
+	for key, values := range resp.Header {
+		rwHeader[textproto.CanonicalMIMEHeaderKey(key)] = values
+	}
 	rw.WriteHeader(resp.StatusCode)
 	io.Copy(rw, resp.Body)
 	logrus.Infof("[%d] REQ DONE latency=%dms %s", id, time.Since(start).Milliseconds(), url)

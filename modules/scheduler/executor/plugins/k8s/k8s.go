@@ -286,7 +286,6 @@ func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
 
 	hcOptions := []httpclient.OpOption{
 		httpclient.WithHTTPS(),
-		httpclient.WithAcceptEncoding("identity"),
 	}
 
 	// check mange config type
