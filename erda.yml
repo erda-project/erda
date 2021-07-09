@@ -76,6 +76,8 @@ services:
         mode: container
   admin:
     cmd: "/app/admin"
+    envs:
+      DEBUG: "false"
     ports:
       - port: 9095
         protocol: TCP
@@ -606,8 +608,9 @@ services:
       DEBUG: "false"
     resources:
       cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
+      max_cpu: 1
       mem: 128
+      max_mem: 2048
       network:
         mode: "container"
     binds:

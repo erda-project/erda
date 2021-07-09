@@ -29,6 +29,7 @@ import (
 
 	"github.com/gocql/gocql"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -229,6 +230,10 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if req.CreateTime == "" || req.UpdateTime == "" {
+		req.CreateTime = time.Now().Format(layout)
+		req.UpdateTime = time.Now().Format(layout)
+	}
 	createTime, err := time.Parse(layout, req.CreateTime)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -293,7 +298,7 @@ func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugReques
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-
+			log.Error("http response close fail.")
 		}
 	}(response.Body)
 	return response, nil
