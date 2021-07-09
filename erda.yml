@@ -430,7 +430,6 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
-      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     resources:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
