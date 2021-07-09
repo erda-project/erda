@@ -14,15 +14,16 @@
 package tab
 
 const (
-	CPU_TAB = "cpu"
+	CPU_TAB    = "cpu"
 	CPU_TAB_ZH = "cpu分析"
 
-	MEM_TAB = "mem"
+	MEM_TAB    = "mem"
 	MEM_TAB_ZH = "mem分析"
 
-	POD_TAB = "pod"
+	POD_TAB    = "pod"
 	POD_TAB_ZH = "pod分析"
 )
+
 type SteveTab struct {
 	Type       string     `json:"type"`
 	Props      Props      `json:"props,omitempty"`
@@ -33,7 +34,7 @@ type Props struct {
 	TabMenu []MenuPair `json:"tab_menu,omitempty"`
 }
 type MenuPair struct {
-	key string
+	key  string
 	name string
 }
 type PropsState struct {

@@ -16,12 +16,12 @@ package clusterFilter
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
-
 
 // GenComponentState 获取state
 func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
@@ -117,18 +117,18 @@ func (i *ComponentFilter) getFilterOptions() error {
 	//}
 	//for _, cluster := range clusterList {
 
-		//req := apistructs.K8SResourceRequest{
-		//	ClusterName:   cluster.Name,
-		//	Namespace:     "",
-		//	LabelSelector: nil,
-		//}
-		//if nodes, err := i.ctxBdl.Bdl.ListNodes(&req); err != nil {
-		//	return nil
-		//} else {
-			//for _, node := range nodes {
-				//ops = append(ops, node.)
-			//}
-		//}
+	//req := apistructs.K8SResourceRequest{
+	//	ClusterName:   cluster.Name,
+	//	Namespace:     "",
+	//	LabelSelector: nil,
+	//}
+	//if nodes, err := i.ctxBdl.Bdl.ListNodes(&req); err != nil {
+	//	return nil
+	//} else {
+	//for _, node := range nodes {
+	//ops = append(ops, node.)
+	//}
+	//}
 
 	//}
 	return nil

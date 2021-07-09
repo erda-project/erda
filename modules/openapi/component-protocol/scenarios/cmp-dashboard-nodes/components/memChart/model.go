@@ -20,7 +20,6 @@ import (
 
 type MemChart struct {
 	CtxBdl protocol.ContextBundle
-	State  common.State    `json:"state"`
+	State  common.State           `json:"state"`
 	Data   []common.ChartDataItem `json:"data"`
 }
-

@@ -27,7 +27,7 @@ type provider struct{}
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Info("cmp provider is running...")
-	return initialize()
+	return initialize(ctx)
 }
 
 func init() {

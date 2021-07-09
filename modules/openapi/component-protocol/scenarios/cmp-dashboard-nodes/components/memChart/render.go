@@ -16,19 +16,21 @@ package memChart
 import (
 	"context"
 	"encoding/json"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
-	"time"
 )
 
 var (
-	metricsServer = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
-	defaultDuration = 24*time.Hour
+	metricsServer   = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
+	defaultDuration = 24 * time.Hour
 )
 
 // GenComponentState 获取state
@@ -78,7 +80,7 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 	ORDER BY TIMESTAMP DESC`,
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue(chart.State.ClusterName),
-			"hostname":    structpb.NewStringValue(chart.State.Name),
+			"hostname":     structpb.NewStringValue(chart.State.Name),
 		},
 	}
 	if resp, err = metricsServer.QueryWithInfluxFormat(context.Background(), req); err != nil {
@@ -87,7 +89,7 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 	var items []common.ChartDataItem
 	for _, res := range resp.Results {
 		for _, serie := range res.Series {
-			for _,row:=range serie.Rows{
+			for _, row := range serie.Rows {
 				v := row.Values[0].GetNumberValue()
 				t := row.Values[1].GetNumberValue()
 				items = append(items, common.ChartDataItem{
@@ -99,4 +101,8 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 	}
 	chart.Data = items
 	return nil
+}
+func RenderCreator() protocol.CompRender {
+	mc := MemChart{}
+	return &mc
 }

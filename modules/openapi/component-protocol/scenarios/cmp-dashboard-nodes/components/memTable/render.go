@@ -16,17 +16,18 @@ package cpuTable
 import (
 	"context"
 	"encoding/json"
-	"github.com/cznic/mathutil"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"reflect"
 	"strings"
+
+	"github.com/cznic/mathutil"
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
 )
 
 const (
@@ -289,6 +290,7 @@ func (mt *MemInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.Resour
 	}
 	return ri, nil
 }
+
 // SetComponentValue transfer MemInfoTable struct to Component
 func (mt *MemInfoTable) SetComponentValue(c *apistructs.Component) error {
 	var (

@@ -14,9 +14,10 @@
 package nodeDetail
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
-	v1 "k8s.io/api/core/v1"
 )
 
 type NodeDetail struct {
@@ -27,4 +28,3 @@ type NodeDetail struct {
 	State      common.State      `json:"state"`
 }
 type NodeStatus []common.SteveStatusEnum
-

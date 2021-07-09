@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -115,7 +116,7 @@ func (t *SteveTab) Render(ctx context.Context, c *apistructs.Component, s apistr
 	}
 	switch event.Operation {
 	case apistructs.OnChangeOperation:
-		if t.State.ActiveKey == CPU_TAB{
+		if t.State.ActiveKey == CPU_TAB {
 
 		}
 	default:
@@ -130,7 +131,7 @@ func getOperations(currentTab string) map[string]interface{} {
 			Key:      "changeTab",
 			Reload:   true,
 			FillMeta: "activeKey",
-			Meta: map[string]string{"activeKey":currentTab},
+			Meta:     map[string]string{"activeKey": currentTab},
 		},
 	}
 }

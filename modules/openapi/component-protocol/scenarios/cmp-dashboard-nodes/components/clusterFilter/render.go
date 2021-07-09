@@ -17,11 +17,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
 
 // SetCtxBundle 设置bundle
@@ -95,7 +96,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 	}
 	switch event.Operation {
 	case apistructs.InitializeOperation:
-		ops ,err := i.getFilterOptions()
+		ops, err := i.getFilterOptions()
 		if err != nil {
 			return err
 		}
@@ -108,20 +109,20 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 
 	return i.RenderProtocol(c, gs)
 }
-func (i *ComponentFilter) getFilterOptions() ([]Options,error) {
+func (i *ComponentFilter) getFilterOptions() ([]Options, error) {
 	clusters, err := i.ctxBdl.Bdl.ListClusters("")
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	var ops []Options
-	for _,cluster := range clusters{
+	for _, cluster := range clusters {
 		ops = append(ops, Options{
-			Label:    "",
-			Value:    cluster.Name,
+			Label: "",
+			Value: cluster.Name,
 		})
 	}
 
-	return ops,nil
+	return ops, nil
 }
 func getFilterState() State {
 	sc := StateCondition{

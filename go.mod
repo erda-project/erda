@@ -32,6 +32,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
@@ -102,7 +103,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rakyll/statik v0.1.7
-	github.com/rancher/remotedialer v0.0.0
+	github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
+	github.com/rancher/dynamiclistener v0.2.1-0.20200714201033-9c1939da3af9
+	github.com/rancher/remotedialer v0.2.6-0.20210318171128-d1ebd5202be4
+	github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
+	github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852
 	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
@@ -129,7 +134,8 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210714021259-044028024a4f
@@ -151,6 +157,7 @@ require (
 	k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.21.2
+	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f

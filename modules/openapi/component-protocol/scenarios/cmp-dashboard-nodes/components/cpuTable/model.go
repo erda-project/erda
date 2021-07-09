@@ -21,4 +21,3 @@ type CpuInfoTable struct {
 	common.Table
 	Data []common.RowItem
 }
-

@@ -17,18 +17,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var (
@@ -51,7 +53,7 @@ type Table struct {
 }
 
 type TableInterface interface {
-	SetData(resources apistructs.SteveResource, resName v1.ResourceName)  error
+	SetData(resources apistructs.SteveResource, resName v1.ResourceName) error
 	GenComponentState(c *apistructs.Component) error
 }
 
@@ -197,7 +199,6 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 	}
 	return nil, ResourceEmptyErr
 }
-
 
 func (t *Table) GetItemStatus(node *v1.Node) (*SteveStatus, error) {
 	if node == nil {
@@ -363,7 +364,7 @@ func (t *Table) GetRole(labels map[string]string) string {
 	return strutil.Join(res, ",", true)
 }
 
-func (t *Table)GetPodLabels(labels map[string]string) []LabelsValue {
+func (t *Table) GetPodLabels(labels map[string]string) []LabelsValue {
 	labelValues := make([]LabelsValue, 0)
 	for key, value := range labels {
 		lv := LabelsValue{
@@ -376,7 +377,7 @@ func (t *Table)GetPodLabels(labels map[string]string) []LabelsValue {
 	return labelValues
 }
 
-func (t *Table)GetLabelOperation(rowId string) map[string]Operation {
+func (t *Table) GetLabelOperation(rowId string) map[string]Operation {
 	return map[string]Operation{
 		"add": {
 			Key:    "addLabel",
@@ -401,7 +402,7 @@ func (t *Table)GetLabelOperation(rowId string) map[string]Operation {
 	}
 }
 
-func (t *Table)GetNodeOperation() map[string]Operation {
+func (t *Table) GetNodeOperation() map[string]Operation {
 	return map[string]Operation{
 		"click": {Key: "goto", Target: "orgRoot"},
 	}

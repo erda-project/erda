@@ -221,7 +221,7 @@ const (
 	// cmp bashboard table
 	CMPDashboardChangePageNoOperationKey   OperationKey = "changePageNo"
 	CMPDashboardChangePageSizeOperationKey OperationKey = "changePageSize"
-	CMPDashboardSortByColumnOperationKey OperationKey = "sort"
+	CMPDashboardSortByColumnOperationKey   OperationKey = "sort"
 
 	// cmp bashboard clusterFilter
 	CMPDashboardFilterOperationKey OperationKey = "filter"
@@ -231,11 +231,10 @@ const (
 	CMPDashboardUnfreezeNode OperationKey = "click"
 
 	// Node Detail
-	CMPDashboardNodeDetail OperationKey ="show"
+	CMPDashboardNodeDetail OperationKey = "show"
 
 	// Cpu and mem chart
 	CMPDashboardChart OperationKey = "updateTime"
-
 )
 
 type ComponentProtocolParams interface{}

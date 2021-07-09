@@ -15,8 +15,9 @@ package common
 
 import (
 	"errors"
-	v1 "k8s.io/api/core/v1"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -102,7 +103,7 @@ var (
 )
 var (
 	NodeNotFoundErr           = errors.New("node not found")
-	NodeRoleInvalidErr           = errors.New("node role is invalid")
+	NodeRoleInvalidErr        = errors.New("node role is invalid")
 	PodNotFoundErr            = errors.New("pod not found")
 	OperationsEmptyErr        = errors.New("operation is empty")
 	ResourceEmptyErr          = errors.New("node resource is empty")

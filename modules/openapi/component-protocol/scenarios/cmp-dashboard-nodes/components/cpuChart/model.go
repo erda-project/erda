@@ -19,9 +19,7 @@ import (
 )
 
 type CpuChart struct {
-	CtxBdl     protocol.ContextBundle
-	State common.State `json:"state"`
-	Data []common.ChartDataItem `json:"data"`
+	CtxBdl protocol.ContextBundle
+	State  common.State           `json:"state"`
+	Data   []common.ChartDataItem `json:"data"`
 }
-
-

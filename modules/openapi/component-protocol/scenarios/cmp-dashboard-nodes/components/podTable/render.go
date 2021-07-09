@@ -17,20 +17,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/cznic/mathutil"
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
-	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/resourceinfo"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"reflect"
 	"strings"
 
+	"github.com/cznic/mathutil"
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -434,9 +435,7 @@ func (pt *PodInfoTable) updateTable(c *apistructs.Component) error {
 }
 
 func RenderCreator() protocol.CompRender {
-	pi := PodInfoTable{
-
-	}
+	pi := PodInfoTable{}
 	pi.Type = "Table"
 	pi.Props = getProps()
 	pi.Operations = getTableOperation()

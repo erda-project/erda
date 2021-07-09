@@ -69,7 +69,7 @@ func GetPercent(a, b float64) int {
 }
 func GetInt64Len(a int64) int {
 	length := 0
-	for ; a > 0; {
+	for a > 0 {
 		length++
 		a /= 10
 	}

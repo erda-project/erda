@@ -16,7 +16,7 @@ package freezeButton
 import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
 type FreezeButton struct {
-	ctxBdl protocol.ContextBundle
+	ctxBdl     protocol.ContextBundle
 	Type       string
 	Props      Props
 	Operations map[string]Operation `json:"operations,omitempty"`
@@ -26,8 +26,8 @@ type Props struct {
 	Type    string
 	Tooltip string
 }
-type Meta struct{
-	NodeName string `json:"node_name"`
+type Meta struct {
+	NodeName    string `json:"node_name"`
 	ClusterName string `json:"cluster_name"`
 }
 type Operation struct {

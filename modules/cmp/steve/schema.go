@@ -1,10 +1,22 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package steve
 
 import (
 	"context"
 	"strings"
 
-	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 	"github.com/rancher/apiserver/pkg/store/apiroot"
 	"github.com/rancher/apiserver/pkg/subscribe"
 	"github.com/rancher/apiserver/pkg/types"
@@ -22,6 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+
+	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
 
 func DefaultSchemas(ctx context.Context, baseSchema *types.APISchemas, cg proxy.ClientGetter,
@@ -60,9 +74,9 @@ func DefaultSchemaTemplates(cf *client.Factory,
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter, ) schema.Template {
+func DefaultTemplate(clientGetter proxy.ClientGetter) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(clientGetter),
+		//Store:     cmpproxy.NewProxyStore(clientGetter),
 		Formatter: formatter(),
 	}
 }

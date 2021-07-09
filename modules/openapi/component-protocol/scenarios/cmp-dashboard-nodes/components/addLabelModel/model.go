@@ -15,7 +15,7 @@ package addLabelModel
 
 type AddLabelModel struct {
 	Type      string                 `json:"type"`
-	Props     map[string][]Fields `json:"props"`
+	Props     map[string][]Fields    `json:"props"`
 	State     State                  `json:"state"`
 	Operation map[string]interface{} `json:"operation"`
 }
@@ -34,7 +34,7 @@ type Fields struct {
 	Rules          []map[string]string
 }
 type Options struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 

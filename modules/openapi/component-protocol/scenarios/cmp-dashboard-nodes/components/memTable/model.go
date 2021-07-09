@@ -19,5 +19,5 @@ import (
 
 type MemInfoTable struct {
 	common.Table
-	Data [] common.RowItem
+	Data []common.RowItem
 }

@@ -19,7 +19,7 @@ import (
 
 type PodInfoTable struct {
 	common.Table
-	Data       []RowItem              `json:"data"`
+	Data []RowItem `json:"data"`
 }
 
 type RowItem struct {

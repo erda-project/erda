@@ -14,8 +14,9 @@
 package issueTable
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetTotalPage(t *testing.T) {

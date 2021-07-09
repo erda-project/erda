@@ -16,16 +16,18 @@ package cpuTable
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"strings"
+
 	"github.com/cznic/mathutil"
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	"reflect"
-	"strings"
 )
 
 const (
@@ -170,6 +172,7 @@ func (ct *CpuInfoTable) RenderList(component *apistructs.Component, event apistr
 	component.Data["list"] = nodes
 	return nil
 }
+
 // SetData assemble rowItem of table
 func (ct *CpuInfoTable) SetData(nodes []apistructs.SteveResource, resName v1.ResourceName) error {
 	var (

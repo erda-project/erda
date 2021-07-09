@@ -46,7 +46,7 @@ func (nd *NodeDetail) GenComponentState(c *apistructs.Component) error {
 }
 func (nd *NodeDetail) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	nd.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if err := nd.GenComponentState(c);err != nil {
+	if err := nd.GenComponentState(c); err != nil {
 		return err
 	}
 	switch event.Operation {
@@ -62,22 +62,23 @@ func (nd *NodeDetail) Render(ctx context.Context, c *apistructs.Component, s api
 	}
 	return nil
 }
+
 // RenderDetail set data
 func (nd *NodeDetail) RenderDetail() error {
 	var (
 		resp *apistructs.SteveResource
 		node *v1.Node
-		err error
+		err  error
 	)
 	req := apistructs.SteveRequest{
-		Type:         apistructs.K8SNode,
-		ClusterName:   nd.State.ClusterName,
-		Name:          nd.State.Name,
+		Type:        apistructs.K8SNode,
+		ClusterName: nd.State.ClusterName,
+		Name:        nd.State.Name,
 	}
-	if resp, err = nd.CtxBdl.Bdl.GetSteveResource(&req);err != nil {
+	if resp, err = nd.CtxBdl.Bdl.GetSteveResource(&req); err != nil {
 		return err
 	}
-	if err = common.Transfer(resp, node);err != nil{
+	if err = common.Transfer(resp, node); err != nil {
 		return err
 	}
 	return nd.setData(node)
@@ -102,4 +103,6 @@ func (nd *NodeDetail) setData(node *v1.Node) error {
 	return nil
 }
 
-
+func RenderCreator() protocol.CompRender {
+	return &NodeDetail{}
+}

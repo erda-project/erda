@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package steve
 
 import (
@@ -5,27 +18,73 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 type Aggregator struct {
+	ctx     context.Context
 	bdl     *bundle.Bundle
 	servers sync.Map
 	cancels sync.Map
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
-func NewAggregator(bdl *bundle.Bundle) *Aggregator {
-	a := &Aggregator{bdl: bdl}
+func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
+	a := &Aggregator{
+		ctx: ctx,
+		bdl: bdl,
+	}
 	a.init(bdl)
+	go a.watchClusters(ctx)
 	return a
+}
+
+func (a *Aggregator) watchClusters(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.Tick(time.Hour):
+			clusters, err := a.bdl.ListClusters("k8s")
+			if err != nil {
+				logrus.Errorf("failed to list clusters when watch: %v", err)
+				continue
+			}
+			exists := make(map[string]struct{})
+			for _, cluster := range clusters {
+				exists[cluster.Name] = struct{}{}
+				if _, ok := a.servers.Load(cluster.Name); ok {
+					continue
+				}
+				if err = a.Add(&cluster); err != nil {
+					logrus.Errorf("failed to add steve server for cluster %s when watch, %v", cluster.Name, err)
+					continue
+				}
+				logrus.Infof("start steve server for cluster %s when watch", cluster.Name)
+			}
+
+			checkDeleted := func(key interface{}, value interface{}) (res bool) {
+				res = true
+				if _, ok := exists[key.(string)]; ok {
+					return
+				}
+				if err = a.Delete(key.(string)); err != nil {
+					logrus.Errorf("failed to stop steve server for cluster %s when watch, %v", key.(string), err)
+					return
+				}
+				return
+			}
+			a.servers.Range(checkDeleted)
+		}
+	}
 }
 
 func (a *Aggregator) init(bdl *bundle.Bundle) {
@@ -39,26 +98,9 @@ func (a *Aggregator) init(bdl *bundle.Bundle) {
 		if cluster.ManageConfig == nil {
 			continue
 		}
-		restConfig, err := k8sclient.GetRestConfig(cluster.Name)
-		if err != nil {
-			logrus.Errorf("failed to get rest config for cluster %s, %v", cluster.Name, err)
-			continue
+		if err = a.Add(&cluster); err != nil {
+			logrus.Errorf("failed to start steve for cluster %s when init aggragetor, %v", cluster.Name, err)
 		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		prefix := GetURLPrefix(cluster.Name)
-		server, err := New(ctx, restConfig, &Options{
-			Router:    RoutesWrapper(prefix),
-			URLPrefix: prefix,
-		})
-
-		if err != nil {
-			cancel()
-			logrus.Errorf("failed to init steve server for cluster %s, %v", restConfig.Host, err)
-			continue
-		}
-		a.servers.Store(cluster.Name, server)
-		a.cancels.Store(cluster.Name, cancel)
 	}
 }
 
@@ -162,7 +204,7 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(a.ctx)
 	prefix := GetURLPrefix(clusterInfo.Name)
 	server, err := New(ctx, restConfig, &Options{
 		Router:    RoutesWrapper(prefix),
