@@ -277,7 +277,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		{Path: "/api/apitests/actions/execute-tests", Method: http.MethodPost, Handler: e.ExecuteApiTests},
 		{Path: "/api/apitests/actions/cancel-testplan", Method: http.MethodPost, Handler: e.CancelApiTests},
-		{Path: "/api/apitests/actions/attempt-test", Method: http.MethodPost, Handler: e.ExecuteAttemptTest},
+		{Path: "/api/apitests/actions/attempt-test", Method: http.MethodPost, Handler: e.ExecuteManualTestAPI},
 		{Path: "/api/apitests/actions/statistic-results", Method: http.MethodPost, Handler: e.StatisticResults},
 		{Path: "/api/apitests/pipeline/{pipelineID}", Method: http.MethodGet, Handler: e.GetPipelineDetail},
 		{Path: "/api/apitests/pipeline/{pipelineID}/task/{taskID}/logs", Method: http.MethodGet, Handler: e.GetPipelineTaskLogs},
