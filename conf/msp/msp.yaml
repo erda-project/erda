@@ -83,7 +83,7 @@ erda.msp.registercenter:
 # checker
 erda.msp.apm.checker: # checkers apis
 
-erda.msp.apm.checker.storage.cache.sycn:
+erda.msp.apm.checker.storage.cache.sync:
   cache_key: "${CHECKER_CACHE_KEY:checkers}"
   delay_on_start: "5s"
   interval: "5m"
