@@ -20,24 +20,24 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/admin/config"
 	"github.com/erda-project/erda/modules/admin/dao"
 	"github.com/erda-project/erda/modules/admin/manager"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
+type Config struct {
+	Debug bool `default:"false" env:"DEBUG" desc:"enable debug logging"`
+}
+
 type provider struct {
-	Cfg *config.Config // auto inject this field
+	Config Config
 }
 
 func init() {
 	servicehub.Register("admin", &servicehub.Spec{
 		Services:    []string{"admin"},
 		Description: "erda platform admin",
-		ConfigFunc: func() interface{} {
-			return &config.Config{}
-		},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},
@@ -45,6 +45,7 @@ func init() {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,
@@ -52,7 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	})
 	logrus.SetOutput(os.Stdout)
 
-	if p.Cfg.Debug {
+	if p.Config.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
@@ -93,7 +94,7 @@ func (p *provider) RunServer(dbClient *dao.DBClient, etcdStore *etcd.Store) erro
 }
 
 func (p *provider) NewServer(endpoints []httpserver.Endpoint) (*httpserver.Server, error) {
-	server := httpserver.New(":" + p.Cfg.Port)
+	server := httpserver.New(":9095")
 	server.Router().UseEncodedPath()
 	server.RegisterEndpoint(endpoints)
 	return server, nil
