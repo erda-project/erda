@@ -29,7 +29,6 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/clbanning/mxj v1.8.4 // indirect
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v0.0.0-20180822173158-c12b1e7919c1
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -73,7 +72,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/gorm v1.9.16
@@ -131,7 +129,6 @@ require (
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
-	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
@@ -165,6 +162,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
 	moul.io/http2curl v1.0.0 // indirect
+	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/controller-runtime v0.6.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.2.0
