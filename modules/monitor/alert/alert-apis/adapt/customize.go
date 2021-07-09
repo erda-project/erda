@@ -14,10 +14,12 @@
 package adapt
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -385,13 +387,14 @@ func (a *Adapt) FromModel(m *db.CustomizeAlert) *pb.CustomizeAlertDetail {
 }
 
 func CustomizeAlertRuleFromModel(m *db.CustomizeAlertRule) (*pb.CustomizeAlertRule, error) {
-	r := &pb.CustomizeAlertRule{
-		Id:         m.ID,
-		Name:       m.Name,
-		CreateTime: m.CreateTime.UnixNano() / int64(time.Millisecond),
-		UpdateTime: m.UpdateTime.UnixNano() / int64(time.Millisecond),
-		Attributes: make(map[string]*structpb.Value),
+	r := &CustomizeAlertRule{}
+	if err := mapstructure.Decode(m.Template, r); err != nil {
+		return nil, err
 	}
+	r.ID = m.ID
+	r.Name = m.Name
+	r.CreateTime = m.CreateTime.UnixNano() / int64(time.Millisecond)
+	r.UpdateTime = m.UpdateTime.UnixNano() / int64(time.Millisecond)
 
 	for _, function := range r.Functions {
 		function.DataType = TypeOf(function.Value)
@@ -399,13 +402,7 @@ func CustomizeAlertRuleFromModel(m *db.CustomizeAlertRule) (*pb.CustomizeAlertRu
 	for _, filter := range r.Filters {
 		filter.DataType = TypeOf(filter.Value)
 	}
-	for k, v := range m.Attributes {
-		att, err := structpb.NewValue(v)
-		if err != nil {
-			return nil, err
-		}
-		r.Attributes[k] = att
-	}
+	r.Attributes = m.Attributes
 
 	if len(m.Attributes) != 0 {
 		if v, ok := m.Attributes["active_metric_groups"]; ok {
@@ -416,7 +413,16 @@ func CustomizeAlertRuleFromModel(m *db.CustomizeAlertRule) (*pb.CustomizeAlertRu
 			}
 		}
 	}
-	return r, nil
+	result := &pb.CustomizeAlertRule{}
+	data, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (a *Adapt) CustomizeAlertToModel(customizeAlertDetail *pb.CustomizeAlertDetail) *db.CustomizeAlert {
