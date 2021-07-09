@@ -518,7 +518,7 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db
 	if err != nil {
 		return err
 	}
-	adapter, err := k8s.NewAdapter(az.MasterAddr)
+	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return err
 	}
