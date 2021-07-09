@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -485,24 +484,9 @@ func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Set
 }
 
 func (mig *Migrator) destructiveLint() error {
-	sql, ok := mig.LocalScripts.HasDestructiveOperationInPending()
+	text, ok := mig.LocalScripts.HasDestructiveOperationInPending()
 	if ok {
-		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", sql)
-	}
-
-	for _, module := range mig.LocalScripts.Services {
-		for _, script := range module.Scripts {
-			if !script.Pending || script.IsBaseline() {
-				continue
-			}
-			for _, n := range script.Nodes {
-				if node, ok := n.(ast.DDLNode); ok {
-					if _, _, err := ddlreverser.ReverseDDLWithSnapshot(mig.DB(), node); err != nil {
-						return errors.Errorf("there is desctructive SQL in pending scripts, it can not be reversed: %v, SQL: %s", err, node.Text())
-					}
-				}
-			}
-		}
+		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", text)
 	}
 
 	return nil
