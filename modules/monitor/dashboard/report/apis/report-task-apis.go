@@ -15,8 +15,10 @@ package apis
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -29,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) creatOrgReportTask(obj *reportTask) interface{} {
@@ -406,13 +409,24 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	if err != nil {
 		return "", errors.Errorf("failed to generate pipeline yaml, can not get OrgName by OrgID:%v,(%+v)", r.ScopeID, err)
 	}
+
+	maddr, err := p.createFQDN(discover.Monitor())
+	if err != nil {
+		return "", err
+	}
+	eaddr, err := p.createFQDN(discover.EventBox())
+	if err != nil {
+		return "", err
+	}
 	pipelineYml.Stages = [][]*dicestructs.PipelineYmlAction{{{
 		Type:    p.Cfg.Pipeline.ActionType,
 		Version: p.Cfg.Pipeline.ActionVersion,
 		Params: map[string]interface{}{
-			"report_id":   r.ID,
-			"org_name":    org.Name,
-			"domain_addr": fmt.Sprintf("%s://%s", p.Cfg.DiceProtocol, org.Domain),
+			"monitor_addr":  maddr,
+			"eventbox_addr": eaddr,
+			"report_id":     r.ID,
+			"org_name":      org.Name,
+			"domain_addr":   fmt.Sprintf("%s://%s", p.Cfg.DiceProtocol, org.Domain),
 		},
 	}}}
 	byteContent, err := yaml.Marshal(pipelineYml)
@@ -422,4 +436,19 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 
 	logrus.Debugf("[PipelineYml]: %s", string(byteContent))
 	return string(byteContent), nil
+}
+
+func (p *provider) createFQDN(addr string) (string, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", err
+	}
+	var svc string
+	idx := strings.Index(host, ".")
+	if idx == -1 {
+		svc = host
+	} else {
+		svc = host[:idx]
+	}
+	return net.JoinHostPort(svc+"."+p.Cfg.DiceNameSpace, port), nil
 }

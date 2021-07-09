@@ -51,8 +51,9 @@ type config struct {
 		WeeklyCron  string `file:"weekly_cron"`
 		MonthlyCron string `file:"monthly_cron"`
 	} `file:"report_cron"`
-	ClusterName  string `env:"DICE_CLUSTER_NAME" default:""`
-	DiceProtocol string `env:"DICE_PROTOCOL" default:"http"`
+	ClusterName   string `env:"DICE_CLUSTER_NAME" default:""`
+	DiceProtocol  string `env:"DICE_PROTOCOL" default:"http"`
+	DiceNameSpace string `file:"namespace" env:"DICE_NAMESPACE" default:"default"`
 }
 
 type provider struct {

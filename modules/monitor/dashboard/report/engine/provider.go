@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/discover"
 )
 
 type define struct{}
@@ -31,10 +30,7 @@ func (d *define) Dependencies() []string { return []string{} }
 func (d *define) Summary() string        { return "report engine" }
 func (d *define) Description() string    { return d.Summary() }
 func (d *define) Config() interface{} {
-	return &config{
-		MonitorAddr:  discover.Monitor(),
-		EventboxAddr: discover.EventBox(),
-	}
+	return &config{}
 }
 func (d *define) Creator() servicehub.Creator {
 	return func() servicehub.Provider {
@@ -43,8 +39,8 @@ func (d *define) Creator() servicehub.Creator {
 }
 
 type config struct {
-	MonitorAddr  string `file:"monitor_addr"`
-	EventboxAddr string `file:"eventbox_addr"`
+	MonitorAddr  string `file:"monitor_addr" env:"ACTION_MONITOR_ADDR" validate:"required"`
+	EventboxAddr string `file:"eventbox_addr" env:"ACTION_EVENTBOX_ADDR" validate:"required"`
 	DomainAddr   string `file:"domain_addr" env:"ACTION_DOMAIN_ADDR" validate:"required"`
 	ReportID     string `file:"report_id" env:"ACTION_REPORT_ID" validate:"required"`
 	OrgName      string `file:"org_name" env:"ACTION_ORG_NAME" validate:"required"`
