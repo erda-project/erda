@@ -72,3 +72,10 @@ func (db *InstanceTenantDB) GetClusterNameByTenantGroup(group string) (string, e
 	}
 	return list[0].Az, nil
 }
+
+func (db *InstanceTenantDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*InstanceTenant, error) {
+	return db.GetByFields(map[string]interface{}{
+		"Engine":      engine,
+		"TenantGroup": tenantGroup,
+	})
+}
