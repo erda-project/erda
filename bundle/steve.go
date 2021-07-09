@@ -1,0 +1,227 @@
+package bundle
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"reflect"
+
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/strutil"
+)
+
+// All methods here need bundle withCMP
+
+// GetSteveResource gets k8s resource from steve server.
+// Required fields: ClusterName, Name, Type.
+func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
+	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
+		return nil, errors.Errorf("clusterName, name and type fields are required")
+	}
+
+	host, err := b.urls.CMP()
+	if err != nil {
+		return nil, err
+	}
+
+	// path format: /k8s/clusters/{clusterName}/v1/{type}/{namespace}/{name}
+	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	hc := b.hc
+	resp, err := hc.Get(host).Path(path).Do().RAW()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if err = isSteveError(data); err != nil {
+		return nil, err
+	}
+
+	var resource apistructs.SteveResource
+	if err = json.Unmarshal(data, &resource); err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	return &resource, nil
+}
+
+// ListSteveResource lists k8s resource from steve server.
+// Required fields: ClusterName, Type.
+func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveCollection, error) {
+	if req.Type == "" || req.ClusterName == "" {
+		return nil, errors.Errorf("clusterName and type fields are required")
+	}
+
+	host, err := b.urls.CMP()
+	if err != nil {
+		return nil, err
+	}
+
+	// path format: /k8s/clusters/{clusterName}/v1/{type}/{namespace}?{label selectors}
+	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
+	hc := b.hc
+	resp, err := hc.Get(host).Path(path).Params(req.URLQueryString()).Do().RAW()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if err = isSteveError(data); err != nil {
+		return nil, err
+	}
+
+	var collection apistructs.SteveCollection
+	if err = json.Unmarshal(data, &collection); err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	return &collection, nil
+}
+
+// UpdateSteveResource update a k8s resource described by req.Obj from steve server.
+// Required fields: ClusterName, Type, Name, Obj
+func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
+	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
+		return nil, errors.Errorf("clusterName, name and type fields are required")
+	}
+	if !isObjInvalid(req.Obj) {
+		return nil, errors.Errorf("obj in req is invalid")
+	}
+
+	host, err := b.urls.CMP()
+	if err != nil {
+		return nil, err
+	}
+
+	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	hc := b.hc
+	resp, err := hc.Put(host).Path(path).JSONBody(req.Obj).Do().RAW()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if err = isSteveError(data); err != nil {
+		return nil, err
+	}
+
+	var resource apistructs.SteveResource
+	if err = json.Unmarshal(data, &resource); err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	return &resource, nil
+}
+
+// CreateSteveResource creates a k8s resource described by req.Obj from steve server.
+// Required fields: ClusterName, Type, Obj
+func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
+	if req.Type == "" || req.ClusterName == "" {
+		return nil, errors.Errorf("clusterName and type fields are required")
+	}
+	if !isObjInvalid(req.Obj) {
+		return nil, errors.Errorf("obj in req is invalid")
+	}
+
+	host, err := b.urls.CMP()
+	if err != nil {
+		return nil, err
+	}
+
+	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type))
+	hc := b.hc
+	resp, err := hc.Post(host).Path(path).JSONBody(req.Obj).Do().RAW()
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if err = isSteveError(data); err != nil {
+		return nil, err
+	}
+
+	var resource apistructs.SteveResource
+	if err = json.Unmarshal(data, &resource); err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	return &resource, nil
+}
+
+// DeleteSteveResource delete a k8s resource from steve server.
+// Required fields: ClusterName, Type, Name
+func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
+	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
+		return errors.Errorf("clusterName, name and type fields are required")
+	}
+
+	host, err := b.urls.CMP()
+	if err != nil {
+		return err
+	}
+
+	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	hc := b.hc
+	resp, err := hc.Delete(host).Path(path).Do().RAW()
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return isSteveError(data)
+}
+
+func isObjInvalid(obj interface{}) bool {
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		return !v.IsNil()
+	}
+	return false
+}
+
+func isSteveError(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+	var obj map[string]interface{}
+	err := json.Unmarshal(data, &obj)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	typ, ok := obj["type"].(string)
+	if !ok {
+		return apierrors.ErrInvoke.InternalError(fmt.Errorf("type field is null"))
+	}
+
+	if typ == apistructs.SteveErrorType {
+		var steveErr apistructs.SteveError
+		if err = json.Unmarshal(data, &steveErr); err != nil {
+			return apierrors.ErrInvoke.InternalError(err)
+		}
+		return toAPIError(steveErr.Status, apistructs.ErrorResponse{
+			Code: steveErr.Code,
+			Msg:  steveErr.Message,
+		})
+	}
+	return nil
+}

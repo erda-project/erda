@@ -1,0 +1,177 @@
+package steve
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"sync"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/k8sclient"
+	"github.com/erda-project/erda/pkg/k8sclient/config"
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+)
+
+type Aggregator struct {
+	bdl     *bundle.Bundle
+	servers sync.Map
+	cancels sync.Map
+}
+
+// NewAggregator new an aggregator with steve servers for all current clusters
+func NewAggregator(bdl *bundle.Bundle) *Aggregator {
+	a := &Aggregator{bdl: bdl}
+	a.init(bdl)
+	return a
+}
+
+func (a *Aggregator) init(bdl *bundle.Bundle) {
+	clusters, err := bdl.ListClusters("k8s")
+	if err != nil {
+		logrus.Errorf("failed to list clusters, %v", err)
+		return
+	}
+
+	for _, cluster := range clusters {
+		if cluster.ManageConfig == nil {
+			continue
+		}
+		restConfig, err := k8sclient.GetRestConfig(cluster.Name)
+		if err != nil {
+			logrus.Errorf("failed to get rest config for cluster %s, %v", cluster.Name, err)
+			continue
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		prefix := GetURLPrefix(cluster.Name)
+		server, err := New(ctx, restConfig, &Options{
+			Router:    RoutesWrapper(prefix),
+			URLPrefix: prefix,
+		})
+
+		if err != nil {
+			cancel()
+			logrus.Errorf("failed to init steve server for cluster %s, %v", restConfig.Host, err)
+			continue
+		}
+		a.servers.Store(cluster.Name, server)
+		a.cancels.Store(cluster.Name, cancel)
+	}
+}
+
+// Add starts a steve server for k8s cluster with clusterName and add it into aggregator
+func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) error {
+	if clusterInfo.Type != "k8s" {
+		return nil
+	}
+
+	if _, ok := a.servers.Load(clusterInfo.Name); ok {
+		return nil
+	}
+
+	server, cancel, err := a.createSteve(clusterInfo)
+	if err != nil {
+		return err
+	}
+
+	a.servers.Store(clusterInfo.Name, server)
+	a.cancels.Store(clusterInfo.Name, cancel)
+	return nil
+}
+
+// Delete closes a steve server for k8s cluster with clusterName and delete it from aggregator
+func (a *Aggregator) Delete(clusterName string) error {
+	if _, ok := a.servers.Load(clusterName); !ok {
+		return nil
+	}
+	a.servers.Delete(clusterName)
+
+	c, ok := a.cancels.Load(clusterName)
+	if !ok {
+		return nil
+	}
+	cancel, _ := c.(context.CancelFunc)
+	cancel()
+	a.cancels.Delete(clusterName)
+
+	return nil
+}
+
+// ServeHTTP forwards API request to corresponding steve server
+func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	clusterName := vars["clusterName"]
+
+	if clusterName == "" {
+		rw.WriteHeader(http.StatusNotFound)
+		rw.Write([]byte("cluster name is required"))
+		return
+	}
+
+	s, ok := a.servers.Load(clusterName)
+	if !ok {
+		cluster, err := a.bdl.GetCluster(clusterName)
+		if err != nil {
+			apiErr, _ := err.(*errorresp.APIError)
+			if apiErr.HttpCode() != http.StatusNotFound {
+				logrus.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte("Internal server error"))
+				return
+			}
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(fmt.Sprintf("cluster %s not found", clusterName)))
+			return
+		}
+
+		if cluster.Type != "k8s" {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(fmt.Sprintf("cluster %s is not a k8s cluster", clusterName)))
+			return
+		}
+
+		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
+		server, cancel, err := a.createSteve(cluster)
+		if err != nil {
+			logrus.Errorf("failed to create steve for cluster %s", cluster.Name)
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Internal server error"))
+			return
+		}
+		a.servers.Store(cluster.Name, server)
+		a.cancels.Store(cluster.Name, cancel)
+
+		server.ServeHTTP(rw, req)
+		return
+	}
+
+	server := s.(*Server)
+	server.ServeHTTP(rw, req)
+}
+
+func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
+	if clusterInfo.ManageConfig == nil {
+		return nil, nil, fmt.Errorf("manageConfig of cluster %s is null", clusterInfo.Name)
+	}
+
+	restConfig, err := config.ParseManageConfig(clusterInfo.Name, clusterInfo.ManageConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	prefix := GetURLPrefix(clusterInfo.Name)
+	server, err := New(ctx, restConfig, &Options{
+		Router:    RoutesWrapper(prefix),
+		URLPrefix: prefix,
+	})
+	if err != nil {
+		cancel()
+		return nil, nil, err
+	}
+
+	return server, cancel, nil
+}
