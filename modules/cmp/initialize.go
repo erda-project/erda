@@ -67,7 +67,7 @@ func initialize() error {
 
 	server, err := do()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return server.ListenAndServe()
@@ -116,7 +116,7 @@ func do() (*httpserver.Server, error) {
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*60),
+				httpclient.WithTimeout(30*time.Second, time.Second*60),
 			)),
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
@@ -140,12 +140,20 @@ func do() (*httpserver.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = ep.RegisterEvents()
+	if err != nil {
+		return nil, err
+	}
+
 	if conf.EnableEss() {
 		initServices(ep)
 	}
 
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(append(ep.Routes()))
+
+	server.Router().PathPrefix("/k8s/clusters/{clusterName}").Handler(ep.SteveAggregator)
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
