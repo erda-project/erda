@@ -229,6 +229,10 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if req.CreateTime == "" || req.UpdateTime == "" {
+		req.CreateTime = time.Now().Format(layout)
+		req.UpdateTime = time.Now().Format(layout)
+	}
 	createTime, err := time.Parse(layout, req.CreateTime)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
