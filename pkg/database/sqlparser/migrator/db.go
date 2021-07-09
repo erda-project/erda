@@ -97,14 +97,17 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	)
 
 	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
+		waiting := timeout.Seconds() - time.Since(now).Seconds()
 		open, err = sql.Open("mysql", dsn)
 		if err != nil {
-			logrus.WithError(err).WithField("DSN", dsn).Infoln("failed to connect to sandbox")
+			logrus.WithError(err).WithField("DSN", dsn).
+				Warnf("failed to connect to sandbox, may it is not working yet, wait it for %.1f seconds", waiting)
 			continue
 		}
 
 		if _, err = open.Exec(dropDatabase); err != nil {
-			logrus.WithError(err).WithField("SQL", dropDatabase).Warnln("failed to Exec")
+			logrus.WithError(err).WithField("SQL", dropDatabase).
+				Warnf("failed to Exec, may the sandbox it not working yet, wait it for %.1f seconds", waiting)
 			continue
 		}
 

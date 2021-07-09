@@ -76,6 +76,38 @@ func (p *Package) Make() (err error) {
 	return nil
 }
 
+func (p *Package) Remove() error {
+	return os.RemoveAll(packageName)
+}
+
+func (p *Package) Run() error {
+	python := os.Getenv("PYTHON_HOME")
+	if python == "" {
+		python = "python3"
+	}
+
+	cmd := exec.Command(python, "-m", "pip", "install", "-r", "--no-cache-dir", filepath.Join(packageName, RequirementsFilename), "-v")
+	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	cmd = exec.Command(python, filepath.Join(packageName, EntryFilename))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Package) writeDeveloperScript() error {
 	filename := filepath.Join(packageName, FeatureFilename)
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 777)
@@ -112,31 +144,4 @@ func (p *Package) writeRequirements() error {
 
 	_, err = f.Write(p.Requirements)
 	return err
-}
-
-func (p *Package) Remove() error {
-	return os.RemoveAll(packageName)
-}
-
-func (p *Package) Run() error {
-	cmd := exec.Command("pip", "install", "-r", filepath.Join(packageName, RequirementsFilename), "-v")
-	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-
-	cmd = exec.Command("python", filepath.Join(packageName, EntryFilename))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-
-	return nil
 }
