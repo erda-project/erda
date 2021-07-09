@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package trace
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var TMC_TRACE_REQUEST_DESC = apis.ApiSpec{
-	Path:        "/api/trace-requests/<requestId>",
-	BackendPath: "/api/tmc/trace-requests/<requestId>",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+var POST_TRACE_DEBUG_HISTORIES = apis.ApiSpec{
+	Path:        "/api/trace-requests",
+	BackendPath: "/api/msp/apm/trace/debug",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8050",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 查询链路追踪发送的请求详情",
+	Doc:         "send trace debug request",
 }

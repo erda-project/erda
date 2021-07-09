@@ -59,3 +59,4 @@ apistructs/generated_desc.go
 # temp data of quickstart
 quick-start/data
 
+modules/openapi/api/generate
