@@ -163,7 +163,7 @@ func (p *provider) getMetricFromSQL(r *http.Request) (metric string) {
 					From []string `json:"from"`
 				}
 				json.Unmarshal(byts, &body)
-				if len(body.From) != 1 {
+				if len(body.From) <= 0 {
 					return ""
 				}
 				return strings.TrimSpace(body.From[0])
@@ -181,9 +181,6 @@ func getMetricFromSQL(sql string) string {
 		find := find[0]
 		if len(find) > 0 {
 			metrics := strings.Split(find[len(find)-1], ",")
-			if len(metrics) != 1 {
-				return ""
-			}
 			return metrics[0]
 		}
 	}
