@@ -52,10 +52,10 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	key, _ := p.TmcIniDb.GetMicroServiceEngineJumpKey(handlers.ResourceMonitor)
 
 	tk := ""
-	var monitorInstance, _ = p.InstanceDb.GetByEngineAndTenantGroup(handlers.ResourceMonitor, tenant.TenantGroup)
-	if monitorInstance != nil {
+	var monitorTenant, _ = p.TenantDb.GetByEngineAndTenantGroup(handlers.ResourceMonitor, tenant.TenantGroup)
+	if monitorTenant != nil {
 		monitorConfig := map[string]string{}
-		utils.JsonConvertObjToType(monitorInstance.Config, &monitorConfig)
+		utils.JsonConvertObjToType(monitorTenant.Config, &monitorConfig)
 		tk = monitorConfig["TERMINUS_KEY"]
 	}
 
