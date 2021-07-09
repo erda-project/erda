@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package alert
+package monitor
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MSP_APM_CUSTOMIZE_ALERT_ID_SWITCH_PUT = apis.ApiSpec{
-	Path:        "/api/apm/customize/alert/<id>/switch",
-	BackendPath: "/api/msp/apm/custom-alerts/<id>/switch",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+var MONITOR_APM_CUSTOMIZE_ALERT_METRICS_GET = apis.ApiSpec{
+	Path:        "/api/apm/customize/alerts/metrics",
+	BackendPath: "/api/apm/customize/alerts/metrics",
+	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
 	Scheme:      "http",
-	Method:      "PUT",
+	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 根据ID修改自定义微服务告警策略是否开启",
+	Doc:         "summary: 获取自定义微服务告警指标",
 }
