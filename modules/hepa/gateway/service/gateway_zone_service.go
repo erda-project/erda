@@ -514,10 +514,6 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db
 	if zone == nil {
 		return errors.Errorf("zone not find, id:%s", zoneId)
 	}
-	az, err := impl.azDb.GetAzInfoByClusterName(zone.DiceClusterName)
-	if err != nil {
-		return err
-	}
 	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return err
