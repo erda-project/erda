@@ -221,7 +221,7 @@ func TestReverseCreateTableStmtsToDropTableStmts(t *testing.T) {
 	}
 
 	var s = S{nodes: []ast.DDLNode{node.(*ast.CreateTableStmt)}}
-	reversing := ddlreverser.ReverseCreateTableStmtsToDropTableStmts(s)
+	reversing := ddlreverser.ReverseCreateTableStmts(s)
 	t.Log(reversing)
 }
 

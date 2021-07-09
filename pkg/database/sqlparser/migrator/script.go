@@ -25,10 +25,14 @@ import (
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
-
-	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
 )
+
+const (
+	ScriptTypeSQL    ScriptType = ".sql"
+	ScriptTypePython ScriptType = ".py"
+)
+
+type ScriptType string
 
 const (
 	baseScriptLabel  = "# MIGRATION_BASE"
@@ -46,6 +50,7 @@ type Script struct {
 	Pending   bool
 	Record    *HistoryModel
 	Workdir   string
+	Type      ScriptType
 	isBase    bool
 }
 
@@ -59,25 +64,37 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 		return r == ' ' || r == '\n' || r == '\t' || r == '\r'
 	})
 
-	nodes, warns, err := parser.New().Parse(string(data), "", "")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to Parse file text data")
-	}
-	for _, warn := range warns {
-		logrus.Fatalln(warn)
-	}
-
-	var s = &Script{
-		Name:      pathFromRepoRoot,
-		Rawtext:   data,
-		Reversing: nil,
-		Nodes:     nil,
-		Pending:   true,
-		Record:    nil,
-		Workdir:   workdir,
-		isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
-			bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
-			bytes.HasPrefix(data, []byte(baseScriptLabel3)),
+	var (
+		s = &Script{
+			Name:      pathFromRepoRoot,
+			Rawtext:   data,
+			Reversing: nil,
+			Nodes:     nil,
+			Pending:   true,
+			Record:    nil,
+			Workdir:   workdir,
+			Type:      "",
+			isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
+				bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
+				bytes.HasPrefix(data, []byte(baseScriptLabel3)),
+		}
+		warns []error
+		nodes []ast.StmtNode
+	)
+	switch ext := filepath.Ext(s.GetName()); {
+	case strings.EqualFold(ext, string(ScriptTypeSQL)):
+		s.Type = ScriptTypeSQL
+		nodes, warns, err = parser.New().Parse(string(data), "", "")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to Parse file text data")
+		}
+		for _, warn := range warns {
+			logrus.Fatalln(warn)
+		}
+	case strings.EqualFold(ext, string(ScriptTypePython)):
+		s.Type = ScriptTypePython
+	default:
+		return nil, errors.Errorf("invalid script type: only support .sql or .py file: %s", ext)
 	}
 
 	for _, node := range nodes {
@@ -150,39 +167,10 @@ func (s *Script) IsBaseline() bool {
 	return s.isBase
 }
 
-// Install installs the script in database
-func (s *Script) Install(begin func() *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
-	tx := begin()
-	defer after(tx, err)
+func (s *Script) GetName() string {
+	return filepath.Base(s.Name)
+}
 
-	s.Reversing = nil
-
-	for _, node := range s.DDLNodes() {
-		var (
-			reverse string
-			ok      bool
-		)
-		reverse, ok, err = ddlreverser.ReverseDDLWithSnapshot(DB(), node)
-		if err != nil {
-			return errors.Wrapf(err, "failed to generate reversed DDL. "+
-				"Ther script name: %s, the SQL: %s", s.Name, node.Text())
-		}
-		if ok {
-			s.Reversing = append(s.Reversing, reverse)
-		}
-
-		if err = Exec(node.Text()).Error; err != nil {
-			return errors.Wrapf(err, "failed to pre-migrate schema SQL, all migrations will be rolled back. "+
-				"The script name: %s, the SQL: %s", s.Name, node.Text())
-		}
-	}
-
-	for _, node := range s.DMLNodes() {
-		if err = tx.Exec(node.Text()).Error; err != nil {
-			return errors.Wrapf(err, "failed to pre-migrate data SQL, all migration will be rolled back. "+
-				"The script filename: %s, the data SQL:\n%s", s.Name, node.Text())
-		}
-	}
-
-	return nil
+func (s *Script) GetData() []byte {
+	return s.Rawtext
 }
