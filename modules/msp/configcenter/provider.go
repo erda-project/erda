@@ -56,7 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			transport.WithHTTPOptions(transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
 				// compatibility with api "/api/tmc/config/tenants/{tenantID}/groups/{groupID}" response
 				if resp, ok := data.(*apis.Response); ok && resp != nil {
-					if data, ok := data.([]*pb.GroupProperties); ok {
+					if data, ok := resp.Data.([]*pb.GroupProperties); ok {
 						m := make(map[string]interface{})
 						for _, item := range data {
 							m[item.Group] = item.Properties
