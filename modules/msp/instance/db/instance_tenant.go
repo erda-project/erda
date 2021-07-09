@@ -73,8 +73,8 @@ func (db *InstanceTenantDB) GetClusterNameByTenantGroup(group string) (string, e
 	return list[0].Az, nil
 }
 
-func (db *InstanceTenantDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*Instance, error) {
-	var list []*Instance
+func (db *InstanceTenantDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*InstanceTenant, error) {
+	var list []*InstanceTenant
 	if err := db.Table(TableInstanceTenant).
 		Where("`engine`=?", engine).
 		Where("`tenant_group`=?", tenantGroup).
