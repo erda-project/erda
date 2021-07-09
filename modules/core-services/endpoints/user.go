@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmdb/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/desensitize"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -57,7 +57,7 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 			}
 		}
 
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		access, err := e.permission.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   identityInfo.UserID,
 			Scope:    apistructs.OrgScope,
 			ScopeID:  orgID,
@@ -67,7 +67,7 @@ func (e *Endpoints) ListUser(ctx context.Context, r *http.Request, vars map[stri
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
-		if !access.Access {
+		if !access {
 			return apierrors.ErrListUser.AccessDenied().ToResp(), nil
 		}
 	}
@@ -162,7 +162,7 @@ func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[st
 			}
 		}
 
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		access, err := e.permission.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   identityInfo.UserID,
 			Scope:    apistructs.OrgScope,
 			ScopeID:  orgID,
@@ -172,7 +172,7 @@ func (e *Endpoints) SearchUser(ctx context.Context, r *http.Request, vars map[st
 		if err != nil {
 			return apierrors.ErrListUser.InternalError(err).ToResp(), nil
 		}
-		if !access.Access {
+		if !access {
 			return apierrors.ErrListUser.AccessDenied().ToResp(), nil
 		}
 	}

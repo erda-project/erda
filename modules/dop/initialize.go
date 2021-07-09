@@ -267,14 +267,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
 
-	testPlan := testplan.New(
-		testplan.WithDBClient(db),
-		testplan.WithBundle(bdl.Bdl),
-		testplan.WithTestCase(testCaseSvc),
-		testplan.WithTestSet(testSetSvc),
-		testplan.WithAutoTest(autotest),
-	)
-
 	sonarMetricRule := sonar_metric_rule.New(
 		sonar_metric_rule.WithDBClient(db),
 		sonar_metric_rule.WithBundle(bdl.Bdl),
@@ -365,6 +357,16 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		iteration.WithIssue(issue),
 	)
 
+	testPlan := testplan.New(
+		testplan.WithDBClient(db),
+		testplan.WithBundle(bdl.Bdl),
+		testplan.WithTestCase(testCaseSvc),
+		testplan.WithTestSet(testSetSvc),
+		testplan.WithAutoTest(autotest),
+		testplan.WithIssue(issue),
+		testplan.WithIssueState(issueState),
+	)
+
 	rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 		PublicKey:          conf.Base64EncodedRsaPublicKey(),
 		PublicKeyDataType:  encryption.Base64,
@@ -418,7 +420,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule))),
+		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule), pipeline.WithPublisherSvc(pub))),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),

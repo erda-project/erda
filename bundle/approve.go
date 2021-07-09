@@ -15,6 +15,7 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 
@@ -45,25 +46,18 @@ func (b *Bundle) CreateApprove(req *apistructs.ApproveCreateRequest, userID stri
 	return &createResp.Data, nil
 }
 
-func (b *Bundle) ListApprove(req *apistructs.ApproveListRequest, userID string) (*apistructs.ApproveListResponse, error) {
+func (b *Bundle) ListApprove(orgID uint64, userID string, params url.Values) (*apistructs.ApproveListResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 
 	hc := b.hc
-
-	params := url.Values{}
-	for _, v := range req.Status {
-		params.Add("status", v)
-	}
 	var approveList apistructs.ApproveListResponse
 	resp, err := hc.Get(host).Path("/api/approves/actions/list-approves").
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, fmt.Sprintf("%d", req.OrgID)).
+		Header(httputil.OrgHeader, fmt.Sprintf("%d", orgID)).
 		Header(httputil.UserHeader, userID).
-		Param("pageSize", strconv.Itoa(req.PageSize)).
-		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Params(params).
 		Do().
 		JSON(&approveList)
@@ -108,7 +102,7 @@ func (b *Bundle) GetApprove(orgID, userID string, approveID int64) (*apistructs.
 	return &approve, nil
 }
 
-func (b *Bundle) UpdateApprove(approve apistructs.ApproveUpdateRequest, userID string, approveID int64) (
+func (b *Bundle) UpdateApprove(orgID uint64, userID string, approveID int64, body io.Reader) (
 	*apistructs.ApproveUpdateResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
@@ -119,9 +113,9 @@ func (b *Bundle) UpdateApprove(approve apistructs.ApproveUpdateRequest, userID s
 	var updateApprove apistructs.ApproveUpdateResponse
 	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/approves/%d", approveID)).
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, strconv.Itoa(int(approve.OrgID))).
+		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
 		Header(httputil.UserHeader, userID).
-		JSONBody(approve).
+		RawBody(body).
 		Do().
 		JSON(&updateApprove)
 	if err != nil {

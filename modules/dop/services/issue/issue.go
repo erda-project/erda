@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -178,19 +177,10 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		StreamType:   apistructs.ISTCreate,
 		StreamParams: apistructs.ISTParam{UserName: users[0].Nick},
 	}
-	// create stream
+	// create stream and send issue create event
 	if _, err := svc.stream.Create(&streamReq); err != nil {
 		return nil, err
 	}
-
-	// Send issue create event
-	go func() {
-		content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-		if err := svc.CreateIssueEvent(int64(create.ID), streamReq.StreamType, content,
-			bundle.CreateAction); err != nil {
-			logrus.Warnf("failed to send issue create event, (%v)", err)
-		}
-	}()
 
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
@@ -439,27 +429,6 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 	if err != nil {
 		return nil, apierrors.ErrGetIssue.InternalError(err)
 	}
-
-	// 查询关联的测试计划用例
-	issueTestCaseRels, err := svc.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: req.ID})
-	if err != nil {
-		return nil, apierrors.ErrGetIssue.InternalError(err)
-	}
-	if len(issueTestCaseRels) > 0 {
-		var relIDs []uint64
-		for _, issueCaseRel := range issueTestCaseRels {
-			relIDs = append(relIDs, issueCaseRel.TestPlanCaseRelID)
-		}
-		relIDs = strutil.DedupUint64Slice(relIDs, true)
-		rels, err := svc.bdl.ListTestPlanCaseRel(relIDs)
-		if err != nil {
-			return nil, err
-		}
-		for _, rel := range rels {
-			issue.TestPlanCaseRels = append(issue.TestPlanCaseRels, rel)
-		}
-	}
-
 	return issue, nil
 }
 
@@ -568,8 +537,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 	}
 	// }
 
-	// 生成活动记录
-	_ = svc.CreateStream(req, issueStreamFields)
+	// create stream and send issue update event
+	if err := svc.CreateStream(req, issueStreamFields); err != nil {
+		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
+	}
 
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
@@ -953,20 +924,10 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			continue
 		}
 
-		// create stream
+		// create stream and send issue event
 		if _, err := svc.stream.Create(&streamReq); err != nil {
 			logrus.Errorf("[alert] failed to create issueStream when update issue, req: %+v, err: %v", streamReq, err)
-			continue
 		}
-
-		// Send issue update event
-		// go func() {
-		// 	content, _ := issuestream.GetDefaultContent(streamReq.StreamType, streamReq.StreamParams)
-		// 	if err := svc.CreateIssueEvent(int64(updateReq.ID), streamReq.StreamType, content,
-		// 		bundle.UpdateAction); err != nil {
-		// 		logrus.Warnf("failed to send issue update event, (%v)", err)
-		// 	}
-		// }()
 	}
 
 	return nil
@@ -1447,42 +1408,4 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	}
 
 	return nil
-}
-
-// CreateIssueEvent create issue event
-func (svc *Issue) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType, content, action string) error {
-	issue, _ := svc.db.GetIssue(issueID)
-	receivers, err := svc.db.GetReceiversByIssueID(issueID)
-	if err != nil {
-		logrus.Errorf("get recevier error: %v, recevicer will be empty", err)
-		receivers = []string{}
-	}
-	projectModel, _ := svc.bdl.GetProject(issue.ProjectID)
-	orgModel, _ := svc.bdl.GetOrg(int64(projectModel.OrgID))
-	ev := &apistructs.EventCreateRequest{
-		EventHeader: apistructs.EventHeader{
-			Event:         bundle.IssueEvent,
-			Action:        action,
-			OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
-			ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
-			ApplicationID: "-1",
-			TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-		},
-		Sender: bundle.SenderDOP,
-		Content: apistructs.IssueEventData{
-			Title:      issue.Title,
-			Content:    content,
-			AtUserIDs:  issue.Assignee,
-			IssueType:  issue.Type,
-			StreamType: streamType,
-			Receivers:  receivers,
-			Params: map[string]string{
-				"orgName":     orgModel.Name,
-				"projectName": projectModel.Name,
-				"issueID":     strconv.FormatInt(issueID, 10),
-			},
-		},
-	}
-
-	return svc.bdl.CreateEvent(ev)
 }

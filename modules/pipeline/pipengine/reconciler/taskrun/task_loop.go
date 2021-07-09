@@ -51,7 +51,7 @@ func (tr *TaskRun) handleTaskLoop() error {
 		loopOpt.Strategy = &apistructs.PipelineTaskDefaultLoopStrategy
 	}
 	// Determine whether the exit conditions are still not met
-	params := pexpr_params.GenerateParamsFromTask(tr.P.ID, tr.Task.ID)
+	params := pexpr_params.GenerateParamsFromTask(tr.P.ID, tr.Task.ID, tr.Task.Status)
 	result, err := pexpr.Eval(expr, params)
 	if err != nil {
 		return fmt.Errorf("loop break expr %s evaluate failed, err: %v", expr, err)

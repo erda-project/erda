@@ -11,17 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package apistructs
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"testing"
 
-var TMC_TRACE_REQUEST_HISTORY = apis.ApiSpec{
-	Path:        "/api/trace-requests",
-	BackendPath: "/api/tmc/trace-requests",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 查询链路追踪发送的请求历史列表",
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetEventAction(t *testing.T) {
+	assert.Equal(t, ISTCreate.GetEventAction(), "create")
+	assert.Equal(t, ISTComment.GetEventAction(), "update")
+	assert.Equal(t, ISTChangeContent.GetEventAction(), "update")
 }
