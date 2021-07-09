@@ -20,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func (p *provider) creatOrgReportTask(obj *reportTask) interface{} {

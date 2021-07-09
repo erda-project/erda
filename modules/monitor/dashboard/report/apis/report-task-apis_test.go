@@ -17,8 +17,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 func Test_provider_createFQDN(t *testing.T) {
