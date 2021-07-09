@@ -17,8 +17,8 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MICRO_SERVICE_ALERT_RECORD_HISTORIES = apis.ApiSpec{
 	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-records/<groupId>/histories",
-	BackendPath: "/api/tmc/tenantGroup/<tenantGroup>/alert-records/<groupId>/histories",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/apm/alert-records/<groupId>/histories",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

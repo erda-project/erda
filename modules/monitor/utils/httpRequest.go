@@ -11,21 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package utils
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"context"
+	"net/http"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
-var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
-	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	BackendPath: "/api/msp/apm/custom-alerts/<id>",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 修改微服务自定义告警",
-	Audit:       auditOperateMicroserviceCustomAlert(apistructs.UpdateMicroserviceCustomAlert, "update"),
+func GetHttpRequest(ctx context.Context) *http.Request {
+	return transhttp.ContextRequest(ctx)
+}
+
+func NewContextWithHeader(ctx context.Context) context.Context {
+	httpRequest := GetHttpRequest(ctx)
+	header := transport.Header{}
+	for k := range httpRequest.Header {
+		header.Set(k, httpRequest.Header.Get(k))
+	}
+	return transport.WithHeader(context.Background(), header)
 }
