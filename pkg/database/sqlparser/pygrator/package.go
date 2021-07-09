@@ -86,7 +86,7 @@ func (p *Package) Run() error {
 		python = "python3"
 	}
 
-	cmd := exec.Command(python, "-m", "pip", "install", "-r", "--no-cache-dir", filepath.Join(packageName, RequirementsFilename), "-v")
+	cmd := exec.Command(python, "-m", "pip", "install", "-r", filepath.Join(packageName, RequirementsFilename))
 	cmd.Stderr = io.MultiWriter(os.Stdout, os.Stderr)
 	if err := cmd.Start(); err != nil {
 		return err
