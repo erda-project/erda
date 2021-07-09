@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/gocql/gocql"
 	"github.com/recallsong/go-utils/conv"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -31,10 +30,7 @@ type exceptionService struct {
 
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
 
-	iter := s.p.cassandraSession.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).
-		Consistency(gocql.All).
-		RetryPolicy(nil).
-		Iter()
+	iter := s.p.cassandraSession.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).Iter()
 
 	var exceptions []*pb.Exception
 	for {
@@ -57,10 +53,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 		layout := "2006-01-02 15:04:05"
 
 		stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC LIMIT 1"
-		iterCount := s.p.cassandraSession.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).
-			Consistency(gocql.All).
-			RetryPolicy(nil).
-			Iter()
+		iterCount := s.p.cassandraSession.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
 		count := int64(0)
 		index := 0
 		for {
@@ -87,10 +80,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 }
 
 func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) (*pb.GetExceptionEventIdsResponse, error) {
-	iter := s.p.cassandraSession.Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).
-		Consistency(gocql.All).
-		RetryPolicy(nil).
-		Iter()
+	iter := s.p.cassandraSession.Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).Iter()
 
 	var data []string
 	for {
@@ -104,10 +94,7 @@ func (s *exceptionService) GetExceptionEventIds(ctx context.Context, req *pb.Get
 }
 
 func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.GetExceptionEventResponse, error) {
-	iter := s.p.cassandraSession.Query("SELECT * FROM error_events WHERE event_id = ?", req.ExceptionEventID).
-		Consistency(gocql.All).
-		RetryPolicy(nil).
-		Iter()
+	iter := s.p.cassandraSession.Query("SELECT * FROM error_events WHERE event_id = ?", req.ExceptionEventID).Iter()
 	event := pb.ExceptionEvent{}
 	for {
 		row := make(map[string]interface{})
