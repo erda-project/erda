@@ -318,6 +318,10 @@ func (c *Clusters) RenderInitCmd(clusterName string) (string, error) {
 				return "", fmt.Errorf("only support proxy manage type")
 			}
 
+			if cluster.ManageConfig.Token != "" || cluster.ManageConfig.Address != "" {
+				return fmt.Sprintf("cluster %s already registered", clusterName), nil
+			}
+
 			cmd := fmt.Sprintf("kubectl apply -f '$REQUEST_PREFIX?clusterName=%s&accessKey=%s'", clusterName, cluster.ManageConfig.AccessKey)
 			return cmd, nil
 		}

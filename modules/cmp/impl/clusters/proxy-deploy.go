@@ -76,7 +76,7 @@ spec:
             - name: "ERDA_BASE_VALUES"
               value: "configmap.clustername={{.ClusterName}},configmap.domain={{.RootDomain}}"
             - name: "ERDA_VALUES"
-              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},clusterDomain={{.RootDomain}}"
+              value: "domain={{.RootDomain}},clusterName={{.ClusterName}},clusterDomain={{.CustomDomain}}"
           command:
             - sh
             - -c
