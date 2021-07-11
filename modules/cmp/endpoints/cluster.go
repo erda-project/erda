@@ -509,17 +509,17 @@ func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
-	reqUrl, err := e.clusters.RenderInitCmd(clusterName)
+	respInfo, err := e.clusters.RenderInitCmd(clusterName)
 	if err != nil {
 		return err
 	}
 
-	resp := apistructs.InitClusterResponse{
+	respObj := apistructs.InitClusterResponse{
 		Header: apistructs.Header{Success: true},
-		Data:   reqUrl,
+		Data:   respInfo,
 	}
 
-	respData, err := json.Marshal(resp)
+	respData, err := json.Marshal(respObj)
 	if err != nil {
 		return err
 	}
