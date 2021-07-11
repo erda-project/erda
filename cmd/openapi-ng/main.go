@@ -23,12 +23,19 @@ import (
 	_ "github.com/erda-project/erda/modules/openapi-ng"
 	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/audit"
 	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth"
-	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/legacy"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/user/fixed-users"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/user/kratos"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/auth/user/uc"
 	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/common"
+	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/cookie-compatibility"
 	_ "github.com/erda-project/erda/modules/openapi-ng/interceptors/csrf"
 	_ "github.com/erda-project/erda/modules/openapi-ng/services"
 	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
 	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
+
+	// test modules
+	_ "github.com/erda-project/erda/modules/openapi-ng/testapis/test-apis"
+	_ "github.com/erda-project/erda/modules/openapi-ng/testapis/test-backend"
 )
 
 func main() {

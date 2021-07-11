@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package legacy
+package compatibility
 
 import (
 	"net/http"
@@ -23,9 +23,9 @@ import (
 )
 
 type config struct {
-	Order             int
-	OldCookieDomain   string `file:"old_cookie_domain"`
-	SessionCookieName string `file:"session_cookie_name"`
+	Order           int
+	OldCookieDomain string `file:"old_cookie_domain"`
+	CookieName      string `file:"cookie_name"`
 }
 
 // +provider
@@ -46,14 +46,14 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		cs := r.Cookies()
 		count := 0
 		for _, c := range cs {
-			if c.Name == p.Cfg.SessionCookieName {
+			if c.Name == p.Cfg.CookieName {
 				count++
 			}
 		}
 		if count > 1 {
 			p.Log.Debugf("reset cookie to remove old session")
 			http.SetCookie(rw, &http.Cookie{
-				Name:     p.Cfg.SessionCookieName,
+				Name:     p.Cfg.CookieName,
 				Value:    "",
 				Path:     "/",
 				Expires:  time.Unix(0, 0),
@@ -67,8 +67,8 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func init() {
-	servicehub.Register("openapi-interceptor-auth-session-compatibility", &servicehub.Spec{
-		Services:   []string{"openapi-interceptor-auth-session-compatibility"},
+	servicehub.Register("openapi-interceptor-cookie-compatibility", &servicehub.Spec{
+		Services:   []string{"openapi-interceptor-cookie-compatibility"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

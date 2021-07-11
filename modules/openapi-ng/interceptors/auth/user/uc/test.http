@@ -1,0 +1,16 @@
+@url = http://localhost
+
+### charts
+GET {{url}}/api/openapi/login
+
+### uc basic
+POST {{url}}/login
+Content-Type: application/json
+
+{
+    "username": "dice",
+    "password": "12345678"
+}
+
+### test api
+GET {{url}}/api/test/hello/recallsong

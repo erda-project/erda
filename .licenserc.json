@@ -13,6 +13,8 @@
     "pkg/pipe.v2/pipe.go",
     "modules/tools/admin-tools/statik/statik.go",
     "modules/gittar/pkg/gitmodule",
-    "modules/openapi-ng/services/apis.go"
+    "modules/openapi-ng/services/apis.go",
+    "modules/openapi/api/generate/collectAPIs.go",
+    "modules/openapi/api/generate/collectEvents.go"
   ]
 }

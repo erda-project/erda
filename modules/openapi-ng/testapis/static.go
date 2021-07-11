@@ -11,29 +11,40 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package services
+package testapis
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapi-ng"
+	"embed"
+	"net/http"
+	"strings"
 )
 
-// +provider
-type provider struct {
-	Router openapi.Interface `autowired:"openapi-ng"`
+//go:embed *.html
+var staticFiles embed.FS
+
+// FileSystemWithPrefix .
+func FileSystemWithPrefix(prefix string) http.FileSystem {
+	fs := http.FS(staticFiles)
+	if len(prefix) <= 0 {
+		return fs
+	}
+	return &prefixFS{
+		fs:     fs,
+		prefix: prefix,
+	}
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	RegisterAPIs(p.Router.AddAPI)
-	RegisterOldAPIs(p.Router.AddAPI)
-	return nil
+type prefixFS struct {
+	fs     http.FileSystem
+	prefix string
 }
 
-func init() {
-	servicehub.Register("openapi-services", &servicehub.Spec{
-		Services: []string{"openapi-services"},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
-	})
+func (fs *prefixFS) Open(name string) (http.File, error) {
+	if strings.HasPrefix(name, fs.prefix) {
+		name = name[len(fs.prefix):]
+		if len(name) == 0 {
+			name = "/"
+		}
+	}
+	return fs.fs.Open(name)
 }

@@ -27,17 +27,17 @@ import (
 	"github.com/labstack/gommon/random"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/openapi-ng/common"
+	"github.com/erda-project/erda/modules/openapi-ng/httperror"
 	"github.com/erda-project/erda/modules/openapi-ng/interceptors"
 )
 
 type config struct {
 	Order             int
 	AllowEmptyReferer bool          `file:"allow_empty_referer" default:"false"`
-	TokenGenerator    string        `file:"token_generator" default:"random"` // random、random:
+	TokenGenerator    string        `file:"token_generator" default:"random"` // random
 	TokenLookup       string        `file:"token_lookup"`                     // "header:<name>"、"form:<name>"、 "query:<name>"
 	CookieName        string        `file:"cookie_name" default:"csrf" desc:"name of the CSRF cookie. This cookie will store CSRF token. optional."`
-	CookieDomain      string        `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
+	CookieDomain      []string      `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
 	CookiePath        string        `file:"cookie_path" desc:"path of the CSRF cookie. optional."`
 	CookieMaxAge      time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the CSRF cookie. optional."`
 	CookieSecure      bool          `file:"cookie_secure" desc:"indicates if CSRF cookie is secure. optional."`
@@ -134,12 +134,12 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 			clientToken, err := p.extractor(r)
 			if err != nil {
 				rw.WriteHeader(http.StatusBadRequest)
-				common.WriteError(err, rw)
+				httperror.WriteError(err, rw)
 				return
 			}
 			if !p.generator.valid(token, clientToken, r) {
 				rw.WriteHeader(http.StatusForbidden)
-				common.WriteError(errors.New("invalid csrf token"), rw)
+				httperror.WriteError(errors.New("invalid csrf token"), rw)
 				return
 			}
 		}
@@ -155,9 +155,7 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		if p.Cfg.CookiePath != "" {
 			cookie.Path = p.Cfg.CookiePath
 		}
-		if p.Cfg.CookieDomain != "" {
-			cookie.Domain = p.Cfg.CookieDomain
-		}
+		cookie.Domain = getDomain(r.URL.Host, p.Cfg.CookieDomain)
 		cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
 		cookie.Secure = p.Cfg.CookieSecure
 		cookie.HttpOnly = p.Cfg.CookieHTTPOnly
@@ -223,6 +221,15 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 		}
 		return token, nil
 	}
+}
+
+func getDomain(host string, domains []string) string {
+	for _, v := range domains {
+		if strings.HasSuffix(host, v) {
+			return v
+		}
+	}
+	return ""
 }
 
 func init() {

@@ -3,11 +3,25 @@
 
 package services
 
-// RegisterAPIs register all apis
-func RegisterAPIs(add func(method, path, backendPath, service string)) {
-	// source: greeter.proto service: GreeterService
-	add("GET", "/api/greeter/hello/{name}", "/api/hello/{name}", "user-center")
+import (
+	api "github.com/erda-project/erda/modules/openapi-ng/api"
+)
 
-	// source: user.proto service: UserService
-	add("GET", "/api/user/{id}", "/api/user/{id}", "user-center")
+// RegisterAPIs register all apis
+func RegisterAPIs(add func(spec *api.Spec)) {
+	// // source: greeter.proto service: GreeterService
+	// add(&api.Spec{
+	// 	Method:      "GET",
+	// 	Path:        "/api/greeter/hello/{name}",
+	// 	BackendPath: "/api/hello/{name}",
+	// 	Service:     "user-center",
+	// })
+
+	// // source: user.proto service: UserService
+	// add(&api.Spec{
+	// 	Method:      "GET",
+	// 	Path:        "/api/user/{id}",
+	// 	BackendPath: "/api/user/{id}",
+	// 	Service:     "user-center",
+	// })
 }

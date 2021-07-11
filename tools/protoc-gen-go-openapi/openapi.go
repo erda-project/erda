@@ -30,6 +30,7 @@ const (
 	contextPackage   = protogen.GoImportPath("context")
 	grpcPackage      = protogen.GoImportPath("google.golang.org/grpc")
 	transgrpcPackage = protogen.GoImportPath("github.com/erda-project/erda-infra/pkg/transport/grpc")
+	apiPackage       = protogen.GoImportPath("github.com/erda-project/erda/modules/openapi-ng/api")
 )
 
 func generateFiles(gen *protogen.Plugin, files []*protogen.File) error {
@@ -53,7 +54,7 @@ func generateFiles(gen *protogen.Plugin, files []*protogen.File) error {
 	g.P("package ", *pkgName)
 	g.P()
 	g.P("// RegisterAPIs register all apis")
-	g.P("func RegisterAPIs(add func(method, path, backendPath, service string)) {")
+	g.P("func RegisterAPIs(add func(spec *", apiPackage.Ident("Spec"), ")) {")
 	for i, file := range files {
 		if len(file.Services) <= 0 {
 			continue
@@ -200,6 +201,10 @@ func genMethodAPI(g *protogen.GeneratedFile, file *protogen.File, service *proto
 			method = pattern.Custom.Kind
 		}
 	}
+	idx := strings.Index(path, "?")
+	if idx >= 0 {
+		path = path[:idx]
+	}
 	if len(path) <= 0 {
 		path = fmt.Sprintf("/%s/%s", service.Desc.FullName(), m.Desc.Name())
 	} else {
@@ -232,7 +237,36 @@ func genMethodAPI(g *protogen.GeneratedFile, file *protogen.File, service *proto
 	if len(prefix) > 0 {
 		pubPath = strings.TrimRight(prefix, "/") + "/" + strings.TrimLeft(pubPath, "/")
 	}
-	g.P("add(", strconv.Quote(method), ", ", strconv.Quote(pubPath), ", ", strconv.Quote(path), ", ", strconv.Quote(serviceName), ")")
+
+	g.P("add(&", apiPackage.Ident("Spec"), "{")
+	g.P("	Method: ", strconv.Quote(method), ",")
+	g.P("	Path: ", strconv.Quote(pubPath), ",")
+	g.P("	BackendPath: ", strconv.Quote(path), ",")
+	g.P("	Service: ", strconv.Quote(serviceName), ",")
+	authers, aok := m.tag.Lookup("authers")
+	tryAuth, tok := m.tag.Lookup("try_auth")
+	if aok || tok {
+		g.P("	Attributes: map[string]interface{}{")
+		if aok {
+			var list []string
+			for _, item := range strings.Split(authers, ",") {
+				item = strings.TrimSpace(item)
+				if len(item) <= 0 {
+					continue
+				}
+				list = append(list, strconv.Quote(item))
+			}
+			g.P(" ", strconv.Quote("authers"), ": []string{", strings.Join(list, ","), "},")
+		}
+		if tok {
+			b, err := strconv.ParseBool(tryAuth)
+			if err != nil || b {
+				g.P(" ", strconv.Quote("try_auth"), ": true,")
+			}
+		}
+		g.P("},")
+	}
+	g.P("})")
 	return nil
 }
 
