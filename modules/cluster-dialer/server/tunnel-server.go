@@ -105,25 +105,25 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 500, err)
 			return
 		}
-		if c.ManageConfig != nil && c.ManageConfig.Type != apistructs.ManageProxy {
-			err = fmt.Errorf("cluster %s is not proxy type", clusterKey)
-			logrus.Debug(err)
-			remotedialer.DefaultErrorWriter(rw, req, 500, err)
-			return
-		}
-		if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
-			Name: clusterKey,
-			ManageConfig: &apistructs.ManageConfig{
-				Type:    apistructs.ManageProxy,
-				Address: clusterInfo.Address,
-				CaData:  clusterInfo.CACert,
-				Token:   clusterInfo.Token,
-			},
-		}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
-			remotedialer.DefaultErrorWriter(rw, req, 500, err)
-			return
+
+		if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
+			if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+				Name: clusterKey,
+				ManageConfig: &apistructs.ManageConfig{
+					Type:    apistructs.ManageProxy,
+					Address: clusterInfo.Address,
+					CaData:  clusterInfo.CACert,
+					Token:   clusterInfo.Token,
+				},
+			}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+				remotedialer.DefaultErrorWriter(rw, req, 500, err)
+				return
+			}
+		} else {
+			logrus.Debugf("cluster %s is not proxy type", clusterKey)
 		}
 	}
+
 	server.ServeHTTP(rw, req)
 }
 
