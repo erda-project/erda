@@ -143,6 +143,7 @@ func (c *Cluster) Create(req *apistructs.ClusterCreateRequest) error {
 	}
 
 	cluster := &model.Cluster{
+		OrgID:           req.OrgID,
 		Name:            req.Name,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
