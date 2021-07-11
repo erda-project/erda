@@ -64,7 +64,7 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 	}
 
 	// check the org name is invalid
-	if !strutil.IsValidPrjOrAppName(orgCreateReq.Name) || utils.IsValidOrgName(orgCreateReq.Name) {
+	if !utils.IsValidOrgName(orgCreateReq.Name) {
 		return apierrors.ErrCreateOrg.InvalidParameter(errors.Errorf("org name is invalid %s",
 			orgCreateReq.Name)).ToResp(), nil
 	}
