@@ -17,7 +17,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MICRO_SERVICE_ALERT_RECORD_ATTRS = apis.ApiSpec{
 	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-record-attrs",
-	BackendPath: "/api/msp/apm/alert-record-attrs",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alert-record-attrs?tenantGroup=<tenantGroup>",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",

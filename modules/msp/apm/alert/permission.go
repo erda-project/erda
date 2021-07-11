@@ -19,17 +19,22 @@ import (
 
 	table "github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
 func (m *alertService) TenantGroupFromParams() func(ctx context.Context, req interface{}) (string, error) {
 	return func(ctx context.Context, req interface{}) (string, error) {
-		return projectIdFromTenantGroup(ctx, m.p.authDb)
+		return projectIdFromTenantGroup(ctx, m.p.authDb, req)
 	}
 }
 
-func projectIdFromTenantGroup(ctx context.Context, db *table.DB) (string, error) {
+func projectIdFromTenantGroup(ctx context.Context, db *table.DB, req interface{}) (string, error) {
 	value := QueryValue("tenantGroup")
 	tenantGroup, err := value(ctx)
+	if err != nil {
+		fieldValueGetter := perm.FieldValue("tenantGroup")
+		tenantGroup, err = fieldValueGetter(ctx, req)
+	}
 	if err != nil {
 		return "", err
 	}
