@@ -207,6 +207,8 @@ services:
       exec: {}
   cluster-dialer:
     cmd: "/app/cluster-dialer"
+    expose:
+      - 80
     ports:
       - port: 80
         protocol: "TCP"
@@ -610,7 +612,7 @@ services:
     resources:
       cpu: ${request_cpu:0.3}
       max_cpu: 1
-      mem: 128
+      mem: ${request_mem:2048}
       max_mem: 2048
       network:
         mode: "container"

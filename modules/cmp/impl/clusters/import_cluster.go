@@ -75,6 +75,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 
 	// create cluster request to cluster-manager and core-service
 	if err = c.bdl.CreateClusterWithOrg(userID, req.OrgID, &apistructs.ClusterCreateRequest{
+		OrgID:           int64(req.OrgID),
 		Name:            req.ClusterName,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
