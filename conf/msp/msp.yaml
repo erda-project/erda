@@ -65,6 +65,14 @@ grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.core.monitor.metric-client:
 
+grpc-client@erda.core.monitor.alert:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.alert-client:
+
+
+erda.msp.apm.alert:
+  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
+
 permission:
 
 msp.permission:
@@ -75,7 +83,7 @@ erda.msp.registercenter:
 # checker
 erda.msp.apm.checker: # checkers apis
 
-erda.msp.apm.checker.storage.cache.sycn:
+erda.msp.apm.checker.storage.cache.sync:
   cache_key: "${CHECKER_CACHE_KEY:checkers}"
   delay_on_start: "5s"
   interval: "5m"

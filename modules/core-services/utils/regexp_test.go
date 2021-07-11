@@ -20,24 +20,72 @@ import (
 )
 
 func TestIsValidOrgName(t *testing.T) {
-	orgName1 := "123"
-	orgName2 := "123-a"
-	orgName3 := ""
-	orgName4 := "a-1"
-	orgName5 := "12345677890"
-	orgName6 := "12df-fjel"
-	orgName7 := "-123"
-	orgName8 := "123-"
-	orgName9 := "*fjle"
-	orgName10 := "fjlejf*"
-	assert.Equal(t, IsValidOrgName(orgName1), false)
-	assert.Equal(t, IsValidOrgName(orgName2), true)
-	assert.Equal(t, IsValidOrgName(orgName3), false)
-	assert.Equal(t, IsValidOrgName(orgName4), true)
-	assert.Equal(t, IsValidOrgName(orgName5), false)
-	assert.Equal(t, IsValidOrgName(orgName6), true)
-	assert.Equal(t, IsValidOrgName(orgName7), false)
-	assert.Equal(t, IsValidOrgName(orgName8), false)
-	assert.Equal(t, IsValidOrgName(orgName9), false)
-	assert.Equal(t, IsValidOrgName(orgName10), false)
+	ss := []struct {
+		s    string
+		want bool
+	}{
+		{
+			"",
+			false,
+		},
+		{
+			"a",
+			true,
+		},
+		{
+			"1",
+			false,
+		},
+		{
+			"1233",
+			false,
+		},
+		{
+			"-",
+			false,
+		},
+		{
+			"-123",
+			false,
+		},
+		{
+			"3434-",
+			false,
+		},
+		{
+			"abd-3-c",
+			true,
+		},
+		{
+			"123-456",
+			true,
+		},
+		{
+			"123a-456-abc",
+			true,
+		},
+		{
+			"jfljef",
+			true,
+		},
+		{
+			"a---b",
+			true,
+		},
+		{
+			"a34jjl",
+			true,
+		},
+		{
+			"123a",
+			true,
+		},
+		{
+			"1----a",
+			true,
+		},
+	}
+	for _, v := range ss {
+		assert.Equal(t, v.want, IsValidOrgName(v.s))
+	}
 }
