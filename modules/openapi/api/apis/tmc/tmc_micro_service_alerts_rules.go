@@ -17,7 +17,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MICRO_SERVICE_ALERTS_RULES = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/alerts/rules",
-	BackendPath: "/api/msp/apm/alert-rules",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alert-rules",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",

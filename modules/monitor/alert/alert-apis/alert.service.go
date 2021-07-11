@@ -225,6 +225,9 @@ func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.Cre
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	alert.Rules = request.Rules
+	alert.Notifies = request.Notifies
+	alert.Attributes = request.Attributes
 	err = m.checkCustomizeAlert(alert)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -531,7 +534,7 @@ func (m *alertService) checkMetricMeta(
 		}
 
 		// According to the data type and operation type conversion threshold
-		value, apiErr := m.formatOperatorValue(opType, dataType, function.Value)
+		value, apiErr := m.formatOperatorValue(opType, dataType, function.Value.AsInterface())
 		if apiErr != nil {
 			return apiErr
 		}
@@ -775,8 +778,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	httpRequest := utils.GetHttpRequest(ctx)
-	data, err := m.p.a.QueryAlert(api.Language(httpRequest), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
+	data, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -915,6 +917,9 @@ func (m *alertService) GetOrgAlertDetail(ctx context.Context, request *pb.GetOrg
 	data, err := m.p.a.GetOrgAlertDetail(lang, uint64(request.Id))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
+	}
+	if data == nil {
+		return nil, errors.NewNotFoundError("monitor_org_alert")
 	}
 	if data.AlertScope != "org" || data.AlertScopeId != orgID {
 		return nil, nil
