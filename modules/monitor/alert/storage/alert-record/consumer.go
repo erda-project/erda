@@ -48,6 +48,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 			"alert_index": record.AlertIndex,
 			"alert_name":  record.AlertName,
 			"alert_time":  record.AlertTime,
+			"update_time": time.Now(),
 		}).Error
 		return err
 	}

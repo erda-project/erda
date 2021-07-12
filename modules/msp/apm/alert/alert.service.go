@@ -38,15 +38,9 @@ type alertService struct {
 }
 
 func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryAlertRuleRequest) (*alert.QueryAlertRuleResponse, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	req := &monitor.QueryAlertRuleRequest{}
-	err = json.Unmarshal(data, req)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	req.ScopeId = request.TenantGroup
+	req.Scope = MicroServiceScope
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlertRule(context, req)
 	if err != nil {

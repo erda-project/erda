@@ -559,7 +559,7 @@ func (m *alertService) checkMetricMeta(
 		}
 
 		// 根据数据类型和操作类型转换阈值
-		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value)
+		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value.AsInterface())
 		if apiErr != nil {
 			return apiErr
 		}
