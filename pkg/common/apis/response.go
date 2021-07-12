@@ -25,12 +25,11 @@ import (
 	validator "github.com/mwitkow/go-proto-validators"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/pkg/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -61,7 +60,7 @@ func (s *Error) Error() string {
 var I18n i18n.I18n
 
 func init() {
-	modcom.RegisterHubListener(&servicehub.DefaultListener{
+	common.RegisterHubListener(&servicehub.DefaultListener{
 		BeforeInitFunc: func(h *servicehub.Hub, config map[string]interface{}) error {
 			if _, ok := config["i18n"]; !ok {
 				config["i18n"] = nil // i18n is required
@@ -91,7 +90,7 @@ func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 	var msg string
 	if e, ok := err.(i18n.Internationalizable); I18n != nil && ok {
-		msg = e.Translate(I18n.Translator("apis"), api.Language(r))
+		msg = e.Translate(I18n.Translator("apis"), HTTPLanguage(r))
 	} else {
 		msg = err.Error()
 	}

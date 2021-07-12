@@ -34,7 +34,6 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/conv"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
@@ -42,6 +41,7 @@ import (
 	apm "github.com/erda-project/erda/modules/monitor/apm/common"
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type Vo struct {
