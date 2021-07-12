@@ -18,16 +18,16 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-func (c *collector) basicAuth() interface{} {
+func (p *provider) basicAuth() interface{} {
 	return middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
 		Validator: func(username string, password string, context echo.Context) (bool, error) {
-			if username == c.Cfg.Auth.Username && password == c.Cfg.Auth.Password {
+			if username == p.Cfg.Auth.Username && password == p.Cfg.Auth.Password {
 				return true, nil
 			}
 			return false, nil
 		},
 		Skipper: func(context echo.Context) bool {
-			if c.Cfg.Auth.Force {
+			if p.Cfg.Auth.Force {
 				return false
 			}
 			// 兼容旧版本，没有添加认证的客户端，这个版本先跳过

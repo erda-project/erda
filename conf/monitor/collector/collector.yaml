@@ -22,6 +22,9 @@ monitor-collector:
         username: "${COLLECTOR_AUTH_USERNAME:collector}"
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
+    sign_auth:
+        sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
+        expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
 
 monitor-collector-v2:
     _enable: ${COLLECTORV2_ENABLE:true}
@@ -33,11 +36,11 @@ monitor-collector-v2:
             size: ${KAFKA_BATCH_SIZE:50}
             timeout: "30s"
     sign_auth:
-        sync_interval: 3m
-        expired_duration: 10m
+        sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
+        expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
     limiter:
         # `4x` or `4xB`, where x is one of the multiple from K, M, G, T or P.
-        request_body_size: 2M
+        request_body_size: ${COLLECTOR_LIMIT_REQUEST_BODY_SIZE:2M}
 
 pprof:
 http-server@admin:

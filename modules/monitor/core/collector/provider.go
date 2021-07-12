@@ -14,7 +14,9 @@
 package collector
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -22,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/modules/core-services/model"
 )
 
 type config struct {
@@ -32,6 +35,8 @@ type config struct {
 	}
 	Output         kafka.ProducerConfig `file:"output"`
 	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
+
+	SignAuth signAuthConfig `file:"sign_auth"`
 }
 
 type define struct{}
@@ -42,32 +47,61 @@ func (m *define) Summary() string        { return "log and metrics collector" }
 func (m *define) Description() string    { return m.Summary() }
 func (m *define) Config() interface{}    { return &config{} }
 func (m *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &collector{} }
+	return func() servicehub.Provider { return &provider{} }
 }
 
-// collector .
-type collector struct {
+// provider .
+type provider struct {
 	Cfg    *config
 	Logger logs.Logger
 	writer writer.Writer
 	Kafka  kafka.Interface
+
+	auth *Authenticator
 }
 
-func (c *collector) Init(ctx servicehub.Context) error {
-	w, err := c.Kafka.NewProducer(&c.Cfg.Output)
+func (p *provider) Init(ctx servicehub.Context) error {
+	if err := p.initAuthenticator(context.TODO()); err != nil {
+		return err
+	}
+	w, err := p.Kafka.NewProducer(&p.Cfg.Output)
 	if err != nil {
 		return fmt.Errorf("fail to create kafka producer: %s", err)
 	}
-	c.writer = w
+	p.writer = w
 
 	r := ctx.Service("http-server",
 		// telemetry.HttpMetric(),
 		interceptors.CORS(),
-		interceptors.Recover(c.Logger),
+		interceptors.Recover(p.Logger),
 	).(httpserver.Router)
-	if err := c.intRoute(r); err != nil {
+	if err := p.intRoute(r); err != nil {
 		return fmt.Errorf("fail to init route: %s", err)
 	}
+	return nil
+}
+
+func (p *provider) initAuthenticator(ctx context.Context) error {
+	p.auth = &Authenticator{
+		store:  make(map[string]*model.AccessKey),
+		logger: p.Logger.Sub("Authenticator"),
+	}
+	if err := p.auth.syncAccessKey(ctx); err != nil {
+		return err
+	}
+	go func() {
+		p.Logger.Info("start syncAccessKey...")
+		tick := time.NewTicker(p.Cfg.SignAuth.SyncInterval)
+		defer tick.Stop()
+		for {
+			select {
+			case <-tick.C:
+			}
+			if err := p.auth.syncAccessKey(ctx); err != nil {
+				p.Logger.Errorf("auth.syncAccessKey failed. err: %s", err)
+			}
+		}
+	}()
 	return nil
 }
 
