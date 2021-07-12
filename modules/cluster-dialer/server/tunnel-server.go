@@ -42,9 +42,11 @@ import (
 )
 
 var (
-	l       sync.Mutex
-	clients = map[string]*http.Client{}
-	counter int64
+	l                     sync.Mutex
+	clients               = map[string]*http.Client{}
+	counter               int64
+	registerTimeout       = 30 * time.Second
+	registerCheckInterval = 1 * time.Second
 )
 
 const (
@@ -61,7 +63,55 @@ type cluster struct {
 }
 
 func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *http.Request, needClusterInfo bool) {
+	registerFunc := func(clusterKey string, clusterInfo cluster) {
+		ctx, cancel := context.WithTimeout(context.Background(), registerTimeout)
+		defer cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				logrus.Errorf("register cluster info timeout [%s]", clusterKey)
+				return
+			default:
+				if !server.HasSession(clusterKey) {
+					logrus.Infof("session not found, try again [%s]", clusterKey)
+					<-time.After(registerCheckInterval)
+					continue
+				}
+				logrus.Infof("session exsited, patch cluster info to cluster-manager [%s]", clusterKey)
+				// register to cluster manager
+				bdl := bundle.New(bundle.WithClusterManager())
+				c, err := bdl.GetCluster(clusterKey)
+				if err != nil {
+					logrus.Errorf("failed to get cluster from cluster-manager: %s, err: %v", clusterKey, err)
+					remotedialer.DefaultErrorWriter(rw, req, 500, err)
+					return
+				}
+
+				if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
+					if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+						Name: clusterKey,
+						ManageConfig: &apistructs.ManageConfig{
+							Type:    apistructs.ManageProxy,
+							Address: clusterInfo.Address,
+							CaData:  clusterInfo.CACert,
+							Token:   clusterInfo.Token,
+						},
+					}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+						logrus.Errorf("failed to patch cluster [%s], err: %v", clusterKey, err)
+						remotedialer.DefaultErrorWriter(rw, req, 500, err)
+						return
+					}
+					logrus.Infof("patch cluster info success [%s]", clusterKey)
+				} else {
+					logrus.Infof("cluster is not proxy type [%s]", clusterKey)
+				}
+				return
+			}
+		}
+	}
+
 	if needClusterInfo {
+		// Get cluster info from agent request
 		clusterKey := req.Header.Get("Authorization")
 		if clusterKey == "" {
 			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
@@ -97,31 +147,7 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 400, err)
 			return
 		}
-
-		bdl := bundle.New(bundle.WithClusterManager())
-		c, err := bdl.GetCluster(clusterKey)
-		if err != nil {
-			logrus.Debugf("failed to get cluster from cluster-manager: %s, err: %v", clusterKey, err)
-			remotedialer.DefaultErrorWriter(rw, req, 500, err)
-			return
-		}
-
-		if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
-			if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
-				Name: clusterKey,
-				ManageConfig: &apistructs.ManageConfig{
-					Type:    apistructs.ManageProxy,
-					Address: clusterInfo.Address,
-					CaData:  clusterInfo.CACert,
-					Token:   clusterInfo.Token,
-				},
-			}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
-				remotedialer.DefaultErrorWriter(rw, req, 500, err)
-				return
-			}
-		} else {
-			logrus.Debugf("cluster %s is not proxy type", clusterKey)
-		}
+		go registerFunc(clusterKey, clusterInfo)
 	}
 
 	server.ServeHTTP(rw, req)
