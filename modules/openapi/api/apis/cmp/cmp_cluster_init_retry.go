@@ -11,17 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package trace
+package cmp
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var GET_TRACE_DEBUG_HISTORIES = apis.ApiSpec{
-	Path:        "/api/trace-requests/<requestId>",
-	BackendPath: "/api/msp/apm/trace/debug/<requestId>",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+var CMP_CLUSTER_INIT_RETRY = apis.ApiSpec{
+	Path:        "/api/cluster/actions/init-retry",
+	BackendPath: "/api/cluster/actions/init-retry",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "Query trace debug info.",
+	IsOpenAPI:   true,
+	Doc:         "summary: 集群初始化重试",
 }
