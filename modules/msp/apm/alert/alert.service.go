@@ -775,9 +775,8 @@ func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAl
 	}
 	return &alert.GetAlertRecordsResponse{
 		Data: &alert.GetAlertRecordsData{
-			List:    resp.Data.List,
-			Total:   resp.Data.Total,
-			UserIds: userIds,
+			List:  resp.Data.List,
+			Total: resp.Data.Total,
 		},
 	}, nil
 }
