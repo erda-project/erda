@@ -55,7 +55,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
-	github.com/gofrs/flock v0.7.1
+	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
@@ -112,9 +112,9 @@ require (
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.2.0
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
@@ -144,7 +144,7 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.8
 	gotest.tools v2.2.0+incompatible
-	helm.sh/helm/v3 v3.3.4
+	helm.sh/helm/v3 v3.6.2
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
