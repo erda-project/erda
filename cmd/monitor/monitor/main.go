@@ -15,9 +15,9 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/modules/extensions/loghub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
@@ -48,8 +48,8 @@ import (
 )
 
 func main() {
-	modcom.RegisterInitializer(loghub.Init)
-	modcom.Run(&servicehub.RunOptions{
+	common.RegisterInitializer(loghub.Init)
+	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorConfigFilePath,
 		Content:    conf.MonitorDefaultConfig,
 	})

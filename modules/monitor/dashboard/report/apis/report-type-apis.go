@@ -16,8 +16,8 @@ package apis
 import (
 	"net/http"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	dicestructs "github.com/erda-project/erda/apistructs"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) listReportType(r *http.Request, params struct {

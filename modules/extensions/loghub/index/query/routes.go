@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {

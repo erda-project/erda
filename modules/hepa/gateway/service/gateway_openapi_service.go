@@ -2394,7 +2394,7 @@ func (impl *GatewayOpenapiServiceImpl) DeletePackageApi(packageId, apiId string)
 	return res.SetSuccessAndData(true)
 failed:
 	log.Errorf("error happened, err:%+v", err)
-	return res
+	return res.SetErrorInfo(&common.ErrInfo{Msg: errors.Cause(err).Error()})
 }
 
 func (impl GatewayOpenapiServiceImpl) TouchRuntimePackageMeta(endpoint *orm.GatewayRuntimeService, session *db.SessionHelper) (string, bool, error) {

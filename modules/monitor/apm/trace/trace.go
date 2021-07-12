@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) traceDebugRecords(r *http.Request, params struct {
