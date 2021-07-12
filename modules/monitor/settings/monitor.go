@@ -28,8 +28,8 @@ import (
 	"github.com/recallsong/go-utils/encoding/md5x"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/router"
 )
 
