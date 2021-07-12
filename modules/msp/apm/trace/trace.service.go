@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -28,7 +29,6 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -273,6 +273,13 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	responseCode := response.StatusCode
 	responseBody, err := ioutil.ReadAll(response.Body)
 
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("http response close fail.")
+		}
+	}(response.Body)
+
 	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -294,12 +301,6 @@ func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugReques
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("http response close fail.")
-		}
-	}(response.Body)
 	return response, nil
 }
 
