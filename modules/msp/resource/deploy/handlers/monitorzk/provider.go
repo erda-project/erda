@@ -33,7 +33,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB)
+	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB, p.Log)
 	return nil
 }
 
