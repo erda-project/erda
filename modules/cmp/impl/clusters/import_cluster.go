@@ -75,6 +75,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 
 	// create cluster request to cluster-manager and core-service
 	if err = c.bdl.CreateClusterWithOrg(userID, req.OrgID, &apistructs.ClusterCreateRequest{
+		OrgID:           int64(req.OrgID),
 		Name:            req.ClusterName,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
@@ -315,6 +316,10 @@ func (c *Clusters) RenderInitCmd(clusterName string) (string, error) {
 
 			if cluster.ManageConfig.Type != apistructs.ManageProxy {
 				return "", fmt.Errorf("only support proxy manage type")
+			}
+
+			if cluster.ManageConfig.Token != "" || cluster.ManageConfig.Address != "" {
+				return fmt.Sprintf("cluster %s already registered", clusterName), nil
 			}
 
 			cmd := fmt.Sprintf("kubectl apply -f '$REQUEST_PREFIX?clusterName=%s&accessKey=%s'", clusterName, cluster.ManageConfig.AccessKey)
