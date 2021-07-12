@@ -84,7 +84,7 @@ type K8SAdapter interface {
 	SetUpstreamHost(namespace, name, host string) error
 	SetRewritePath(namespace, name, target string) error
 	EnableRegex(namespace, name string) error
-	CheckIngressExist(namespace, name string) bool
+	CheckIngressExist(namespace, name string) (bool, error)
 	UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error
 	UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error
 }
@@ -272,11 +272,14 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 }
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
-	exist := impl.CheckIngressExist(namespace, name)
+	exist, err := impl.CheckIngressExist(namespace, name)
+	if err != nil {
+		return err
+	}
 	if !exist {
 		return nil
 	}
-	err := impl.client.ExtensionsV1beta1().Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
+	err = impl.client.ExtensionsV1beta1().Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
 	}
@@ -517,13 +520,16 @@ func (impl *K8SAdapterImpl) replaceSnippet(source, replace string) (string, erro
 	return b.String(), nil
 }
 
-func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) bool {
+func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) (bool, error) {
 	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
-	ingress, _ := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
-	if ingress == nil || ingress.Name == "" {
-		return false
+	ingress, err := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
+	if err != nil {
+		return false, errors.WithStack(err)
 	}
-	return true
+	if ingress == nil || ingress.Name == "" {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error {

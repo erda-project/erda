@@ -18,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type statusQuery struct {

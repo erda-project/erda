@@ -23,7 +23,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type alertService struct {

@@ -14,12 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/cmdb"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/cmdb", "cmdb")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/cmdb/cmdb.yaml",
+	})
 }
