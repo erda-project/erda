@@ -968,7 +968,7 @@ func (topology *provider) handleInstanceInfo(response *query.ResultSet) []*Insta
 	instanceIds := []*InstanceInfo{}
 	for _, row := range rows {
 
-		status, err := strconv.ParseBool(conv.ToString(row[1]))
+		status, err := strconv.ParseBool(conv.ToString(row[2]))
 		if err != nil {
 			status = false
 		}
