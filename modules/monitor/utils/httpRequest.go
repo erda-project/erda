@@ -11,26 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package example
+package utils
 
 import (
 	"context"
+	"net/http"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	"github.com/erda-project/erda-proto-go/examples/pb"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
-type userService struct {
-	p *provider
+func GetHttpRequest(ctx context.Context) *http.Request {
+	return transhttp.ContextRequest(ctx)
 }
 
-func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
-}
-func (s *userService) UpdateUser(ctx context.Context, req *pb.GetUserRequest) (*pb.UpdateUserResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
+func NewContextWithHeader(ctx context.Context) context.Context {
+	httpRequest := GetHttpRequest(ctx)
+	header := transport.Header{}
+	for k := range httpRequest.Header {
+		header.Set(k, httpRequest.Header.Get(k))
+	}
+	return transport.WithHeader(context.Background(), header)
 }

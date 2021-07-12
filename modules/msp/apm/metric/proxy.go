@@ -19,7 +19,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/erda-project/erda-infra/modcom/api"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) proxy(hostpath string, header http.Header, params url.Values, rw http.ResponseWriter, r *http.Request) error {
