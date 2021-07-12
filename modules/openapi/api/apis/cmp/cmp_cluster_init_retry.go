@@ -11,16 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cmp
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/hepa"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-func main() {
-	modcom.RunWithCfgDir("conf/hepa", "hepa")
+var CMP_CLUSTER_INIT_RETRY = apis.ApiSpec{
+	Path:        "/api/cluster/actions/init-retry",
+	BackendPath: "/api/cluster/actions/init-retry",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
+	Scheme:      "http",
+	Method:      "POST",
+	CheckLogin:  true,
+	IsOpenAPI:   true,
+	Doc:         "summary: 集群初始化重试",
 }
