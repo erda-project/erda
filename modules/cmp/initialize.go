@@ -28,7 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/endpoints"
-	"github.com/erda-project/erda/modules/cmp/endpoints/kubernetes"
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -108,10 +107,8 @@ func do() (*httpserver.Server, error) {
 		initServices(ep)
 	}
 
-	k8sep := newKubernetesEndpoints(bdl)
-
 	server := httpserver.New(conf.ListenAddr())
-	server.RegisterEndpoint(append(ep.Routes(), k8sep.Routers()...))
+	server.RegisterEndpoint(append(ep.Routes()))
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
@@ -153,10 +150,6 @@ func initServices(ep *endpoints.Endpoints) {
 	// run mns service, monitor mns messages & consume them
 	ep.Mns.Run()
 	ep.Ess.AutoScale()
-}
-
-func newKubernetesEndpoints(bdl *bundle.Bundle) *kubernetes.Endpoints {
-	return kubernetes.New(bdl)
 }
 
 func registerWebHook(bdl *bundle.Bundle) {
