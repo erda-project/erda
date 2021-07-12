@@ -14,8 +14,9 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/extensions/loghub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis"
@@ -34,6 +35,6 @@ import (
 )
 
 func main() {
-	modcom.RegisterInitializer(loghub.Init)
-	modcom.RunWithCfgDir("conf/monitor/extensions/loghub", "loghub")
+	common.RegisterInitializer(loghub.Init)
+	common.Run(&servicehub.RunOptions{})
 }

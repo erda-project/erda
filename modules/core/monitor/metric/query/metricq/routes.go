@@ -17,8 +17,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {

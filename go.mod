@@ -137,7 +137,7 @@ require (
 	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62
-	google.golang.org/grpc v1.37.0
+	google.golang.org/grpc v1.37.0 // indirect
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

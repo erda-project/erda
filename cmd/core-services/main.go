@@ -14,11 +14,14 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda/modules/core-services"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/core-services", "core-services")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/core-services/core-services.yaml",
+	})
 }
