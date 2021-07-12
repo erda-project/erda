@@ -653,7 +653,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if value != nil && newFunction.Value != nil {
 			opType := functionOperatorRel[operator]
 			dataType := utils.TypeOf(value)
-			val, err := formatOperatorValue(opType, dataType, newFunction.Value)
+			val, err := formatOperatorValue(opType, dataType, newFunction.Value.AsInterface())
 			if err != nil {
 				return nil, err
 			}
