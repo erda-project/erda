@@ -47,7 +47,8 @@ func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryA
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := a.p.Monitor.QueryAlertRule(ctx, req)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryAlertRule(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -67,6 +68,8 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	req.Scope = MicroServiceScope
+	req.ScopeId = request.TenantGroup
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlert(context, req)
 	if err != nil {

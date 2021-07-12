@@ -20,7 +20,7 @@ import (
 
 var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_DELETE = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	BackendPath: "/api/msp/apm/custom-alerts/<id>",
+	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "DELETE",

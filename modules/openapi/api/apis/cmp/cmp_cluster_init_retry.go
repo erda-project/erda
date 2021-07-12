@@ -11,17 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package cmp
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT = apis.ApiSpec{
-	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+var CMP_CLUSTER_INIT_RETRY = apis.ApiSpec{
+	Path:        "/api/cluster/actions/init-retry",
+	BackendPath: "/api/cluster/actions/init-retry",
+	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 获取微服务自定义告警详情",
+	IsOpenAPI:   true,
+	Doc:         "summary: 集群初始化重试",
 }
