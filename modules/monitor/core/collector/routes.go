@@ -33,7 +33,7 @@ import (
 )
 
 //go:generate statik -src=./ -ns "monitor/metrics-collector" -include=*.jpg,*.txt,*.html,*.css,*.js
-func (c *collector) intRoute(r httpserver.Router) error {
+func (p *provider) intRoute(r httpserver.Router) error {
 	assets, err := fs.NewWithNamespace("monitor/metrics-collector")
 	if err != nil {
 		return fmt.Errorf("fail to init file system: %s", err)
@@ -42,19 +42,27 @@ func (c *collector) intRoute(r httpserver.Router) error {
 	r.File("/ta.js", "/ta.js", httpserver.WithFileSystem(fileSystem))
 
 	// browser and mobile metrics
-	r.POST("/collect", c.collectAnalytics) // compatible for legacy
-	r.POST("/collect/analytics", c.collectAnalytics)
+	r.POST("/collect", p.collectAnalytics) // compatible for legacy
+	r.POST("/collect/analytics", p.collectAnalytics)
 
 	// logs and metrics
-	auth := c.basicAuth()
-	r.POST("/collect/:metric", c.collectMetric, auth)
-	r.POST("/collect/notify-metrics", c.collectNotifyMetric, auth)
-	r.POST("/collect/logs/:source", c.collectLogs, auth)
+	auth := p.basicAuth()
+	r.POST("/collect/:metric", p.collectMetric, auth)
+	r.POST("/collect/notify-metrics", p.collectNotifyMetric, auth)
+	r.POST("/collect/logs/:source", p.collectLogs, auth)
 
+	// api version one
+	// authenticate with access keys
+	signAuth := p.authSignedRequest()
+	groupV1 := "/api/v1"
+	{
+		r.POST(groupV1+"/collect/:metric", p.collectMetric, signAuth)
+		r.POST(groupV1+"/collect/logs/:source", p.collectLogs, signAuth)
+	}
 	return nil
 }
 
-func (c *collector) collectLogs(ctx echo.Context) error {
+func (p *provider) collectLogs(ctx echo.Context) error {
 	source := ctx.Param("source")
 	if source == "" {
 		return ctx.NoContent(http.StatusBadRequest)
@@ -64,21 +72,21 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 	body, err := ReadRequestBody(ctx.Request())
 
 	if err != nil {
-		c.Logger.Errorf("fail to read request body, err: %v", err)
+		p.Logger.Errorf("fail to read request body, err: %v", err)
 		return err
 	}
 	if !isJSONArray(body) {
-		c.Logger.Warnf("the body is not a json array. body=%s", string(body))
+		p.Logger.Warnf("the body is not a json array. body=%s", string(body))
 		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	if _, err := jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
-			c.Logger.Errorf("fail to json parse, err: %v", err)
+			p.Logger.Errorf("fail to json parse, err: %v", err)
 			return
 		}
-		if err := c.send(name, value); err != nil {
-			c.Logger.Errorf("fail to send msg to kafka, name: %s, err: %v", name, err)
+		if err := p.send(name, value); err != nil {
+			p.Logger.Errorf("fail to send msg to kafka, name: %s, err: %v", name, err)
 		}
 	}); err != nil {
 		return err
@@ -86,7 +94,7 @@ func (c *collector) collectLogs(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (c *collector) collectAnalytics(ctx echo.Context) error {
+func (p *provider) collectAnalytics(ctx echo.Context) error {
 	params, err := ctx.FormParams()
 	if err != nil {
 		return ctx.NoContent(http.StatusBadRequest)
@@ -94,12 +102,12 @@ func (c *collector) collectAnalytics(ctx echo.Context) error {
 	ak := ctx.FormValue("ak") // ak as terminus key
 	ai := ctx.FormValue("ai")
 
-	if c.Cfg.TaSamplingRate <= 0 {
+	if p.Cfg.TaSamplingRate <= 0 {
 		return ctx.NoContent(http.StatusOK)
 	}
-	if c.Cfg.TaSamplingRate < 99.999999 { // 99.999999认为是100，避免浮点数精度问题导致 100.0<100.0 为true
+	if p.Cfg.TaSamplingRate < 99.999999 { // 99.999999认为是100，避免浮点数精度问题导致 100.0<100.0 为true
 		hash := float64(adler32.Checksum([]byte(ak)) % 100)
-		if c.Cfg.TaSamplingRate <= hash {
+		if p.Cfg.TaSamplingRate <= hash {
 			return ctx.NoContent(http.StatusOK)
 		}
 	}
@@ -138,36 +146,36 @@ func (c *collector) collectAnalytics(ctx echo.Context) error {
 			message = fmt.Sprintf(`%s,%s,%s,%s,%s`,
 				ak, cid, uid, ip, qs.Encode())
 		}
-		_ = c.send("analytics", []byte(message))
+		_ = p.send("analytics", []byte(message))
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (c *collector) collectMetric(ctx echo.Context) error {
+func (p *provider) collectMetric(ctx echo.Context) error {
 	contentType := ctx.Request().Header.Get("Content-Type")
 	if strings.Contains(contentType, "application/json") {
-		return c.parseJSON(ctx, ctx.Param("metric"))
+		return p.parseJSON(ctx, ctx.Param("metric"))
 	}
-	return c.parseLine(ctx, ctx.Param("metric"))
+	return p.parseLine(ctx, ctx.Param("metric"))
 }
 
-func (c *collector) collectNotifyMetric(ctx echo.Context) error {
+func (p *provider) collectNotifyMetric(ctx echo.Context) error {
 	contentType := ctx.Request().Header.Get("Content-Type")
 	if strings.Contains(contentType, "application/json") {
-		return c.parseJSON(ctx, ctx.Param("erda-notify-event"))
+		return p.parseJSON(ctx, ctx.Param("erda-notify-event"))
 	}
 	return nil
 }
 
-func (c *collector) parseJSON(ctx echo.Context, name string) error {
+func (p *provider) parseJSON(ctx echo.Context, name string) error {
 	body, err := ReadRequestBody(ctx.Request())
 	if err != nil {
 		return err
 	}
 	if _, err := jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err == nil {
-			err = c.send(name, value)
+			err = p.send(name, value)
 		}
 	}, name); err != nil {
 		return err
@@ -176,7 +184,7 @@ func (c *collector) parseJSON(ctx echo.Context, name string) error {
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (c *collector) parseLine(ctx echo.Context, name string) error {
+func (p *provider) parseLine(ctx echo.Context, name string) error {
 	reader, err := ReadRequestBodyReader(ctx.Request())
 	if err != nil {
 		return err
@@ -184,7 +192,7 @@ func (c *collector) parseLine(ctx echo.Context, name string) error {
 	buf := bufio.NewReader(reader)
 	for {
 		line, err := buf.ReadString('\n')
-		if e := c.send(name, []byte(line)); e != nil {
+		if e := p.send(name, []byte(line)); e != nil {
 			return e
 		}
 		if err != nil || err == io.EOF {

@@ -38,12 +38,12 @@ type config struct {
 }
 
 type outputConfig struct {
-	Name string `file:"name" env:"OUTPUT_NAME"`
+	Name string `file:"name" default:"kafka" env:"OUTPUT_NAME"`
 	kafka.ProducerConfig
 }
 
 type limitConfig struct {
-	RequestBodySize string `file:"request_body_size" env:"LIMIT_REQUEST_BODY_SIZE"`
+	RequestBodySize string `file:"request_body_size"`
 }
 
 type define struct{}
