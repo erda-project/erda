@@ -15,14 +15,14 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
 )
 
 func main() {
-	modcom.Run(&servicehub.RunOptions{
+	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorReportEngineFilePath,
 		Content:    conf.MonitorReportEngineDefaultConfig,
 	})

@@ -15,6 +15,7 @@ package apis
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -38,6 +39,16 @@ func Language(ctx context.Context) i18n.LanguageCodes {
 		}
 	}
 	return nil
+}
+
+// HTTPLanguage .
+func HTTPLanguage(r *http.Request) i18n.LanguageCodes {
+	lang := r.Header.Get("Lang")
+	if len(lang) <= 0 {
+		lang = r.Header.Get("Accept-Language")
+	}
+	langs, _ := i18n.ParseLanguageCode(lang)
+	return langs
 }
 
 // GetOrgID .

@@ -24,8 +24,8 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type groupHostTypeData struct {

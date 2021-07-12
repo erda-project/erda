@@ -14,12 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/dicehub"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/dicehub", "dicehub")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/dicehub/dicehub.yaml",
+	})
 }

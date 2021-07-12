@@ -18,8 +18,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 const MicroServiceScope = "micro_service"

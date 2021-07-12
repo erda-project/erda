@@ -22,9 +22,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {

@@ -14,10 +14,14 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
+
 	_ "github.com/erda-project/erda/modules/cluster-manager"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/cluster-manager", "cluster-manager")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/cluster-manager/cluster-manager.yaml",
+	})
 }

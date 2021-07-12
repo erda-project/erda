@@ -20,12 +20,12 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) initRoutes(routes httpserver.Router) error {

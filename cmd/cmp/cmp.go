@@ -14,12 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/cmp"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/cmp", "cmp")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/cmp/cmp.yaml",
+	})
 }

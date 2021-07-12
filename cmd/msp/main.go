@@ -15,8 +15,8 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/pkg/common"
 
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
@@ -68,7 +68,7 @@ import (
 )
 
 func main() {
-	modcom.Run(&servicehub.RunOptions{
+	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MSPConfigFilePath,
 		Content:    conf.MSPDefaultConfig,
 	})

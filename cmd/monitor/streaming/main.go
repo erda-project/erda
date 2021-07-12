@@ -15,8 +15,8 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/modcom"
 	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/pkg/common"
 
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
@@ -39,7 +39,7 @@ import (
 )
 
 func main() {
-	modcom.Run(&servicehub.RunOptions{
+	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MonitorStreamingConfigFilePath,
 		Content:    conf.MonitorStreamingDefaultConfig,
 	})

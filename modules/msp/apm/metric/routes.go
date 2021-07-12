@@ -23,9 +23,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	permission "github.com/erda-project/erda/modules/monitor/common/permission"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 const permissionResource = "microservice_metric"

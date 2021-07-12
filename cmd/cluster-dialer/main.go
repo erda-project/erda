@@ -14,11 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
+
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/cluster-dialer"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/cluster-dialer", "cluster-dialer")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/cluster-dialer/cluster-dialer.yaml",
+	})
 }

@@ -14,12 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/soldier"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/soldier", "soldier")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/soldier/soldier.yaml",
+	})
 }

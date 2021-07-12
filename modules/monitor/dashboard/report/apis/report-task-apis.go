@@ -25,11 +25,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	dicestructs "github.com/erda-project/erda/apistructs"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 )

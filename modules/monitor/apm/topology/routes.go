@@ -17,8 +17,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (topology *provider) initRoutes(routes httpserver.Router) error {

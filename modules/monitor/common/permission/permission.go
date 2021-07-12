@@ -22,12 +22,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	table "github.com/erda-project/erda/modules/monitor/common/db"
 	bundlecmdb "github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
