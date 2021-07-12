@@ -36,5 +36,5 @@ func (p *provider) setupTrace(req *http.Request, tags map[string]string, fields 
 	requestID := uuid.NewV4().String()
 	tags["request_id"] = requestID
 	req.Header.Set("terminus-request-id", requestID)
-	req.Header.Set("terminus-request-id", "true")
+	req.Header.Set("terminus-request-sampled", "true")
 }
