@@ -1162,12 +1162,7 @@ func (m *alertService) QueryOrgAlertRecord(ctx context.Context, request *pb.Quer
 		}
 		userIDMap[item.HandlerId] = true
 	}
-	userIDs := make([]string, 0)
-	for key := range userIDMap {
-		userIDs = append(userIDs, key)
-	}
 	return &pb.QueryOrgAlertRecordResponse{
-		UserIDs: userIDs,
 		Data: &pb.ListResult{
 			List:  list,
 			Total: int64(count),
@@ -1196,8 +1191,7 @@ func (m *alertService) QueryOrgHostsAlertRecord(ctx context.Context, request *pb
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.QueryOrgAlertRecordResponse{
-		Data:    resp.Data,
-		UserIDs: resp.UserIDs,
+		Data: resp.Data,
 	}, nil
 }
 
