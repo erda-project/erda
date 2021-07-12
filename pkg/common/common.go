@@ -18,10 +18,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/recallsong/go-utils/config"
-	uuid "github.com/satori/go.uuid"
 )
 
 var instanceID = uuid.NewV4().String()
