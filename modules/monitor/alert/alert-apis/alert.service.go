@@ -967,7 +967,7 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		return nil, errors.NewMissingParameterError("cluster names")
 	}
 	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
+		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
