@@ -136,7 +136,12 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 	var issueStatusSlice []int64
 	var issueMap = map[uint64]*apistructs.Issue{}
 	for _, issueID := range issueIDs {
-		issue, err := t.bdl.GetIssue(issueID)
+		issue, err := t.issueSvc.GetIssue(apistructs.IssueGetRequest{ID: issueID})
+		if err == nil {
+			var rels []apistructs.TestPlanCaseRel
+			rels, err = t.getTestPlanCaseRels(issueID)
+			issue.TestPlanCaseRels = rels
+		}
 		if err != nil {
 			// 若 issue 已经不存在，则主动删除该依赖关系
 			if apiErr, ok := err.(*errorresp.APIError); ok {
@@ -149,6 +154,7 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 			}
 			return nil, err
 		}
+
 		issueMap[issueID] = issue
 		issueStatusSlice = append(issueStatusSlice, issue.State)
 	}
@@ -181,8 +187,33 @@ func (t *TestPlan) GetRel(relID uint64) (*apistructs.TestPlanCaseRel, error) {
 	return rel, nil
 }
 
+func (t *TestPlan) getTestPlanCaseRels(issueID uint64) ([]apistructs.TestPlanCaseRel, error) {
+	// 查询关联的测试计划用例
+	testPlanCaseRels := make([]apistructs.TestPlanCaseRel, 0)
+	issueTestCaseRels, err := t.db.ListIssueTestCaseRelations(apistructs.IssueTestCaseRelationsListRequest{IssueID: issueID})
+	if err != nil {
+		return nil, err
+	}
+	if len(issueTestCaseRels) > 0 {
+		var relIDs []uint64
+		for _, issueCaseRel := range issueTestCaseRels {
+			relIDs = append(relIDs, issueCaseRel.TestPlanCaseRelID)
+		}
+		relIDs = strutil.DedupUint64Slice(relIDs, true)
+		rels, err := t.ListTestPlanCaseRels(apistructs.TestPlanCaseRelListRequest{IDs: relIDs})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, rel := range rels {
+			testPlanCaseRels = append(testPlanCaseRels, rel)
+		}
+	}
+	return testPlanCaseRels, nil
+}
+
 func (t *TestPlan) batchGetIssueState(issueStatusSlice []int64) (results map[int64]apistructs.IssueStatus, err error) {
-	issueStates, err := t.bdl.GetIssueStatesByID(issueStatusSlice)
+	issueStates, err := t.issueStateSvc.GetIssuesStatesNameByID(issueStatusSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +357,14 @@ func (t *TestPlan) AddTestPlanCaseRelIssueRelations(req apistructs.TestPlanCaseR
 	// 新增
 	var issues []apistructs.Issue
 	for _, issueID := range req.IssueIDs {
-		issue, err := t.bdl.GetIssue(issueID)
+		issue, err := t.issueSvc.GetIssue(apistructs.IssueGetRequest{
+			ID: issueID,
+		})
+		if err == nil {
+			var rels []apistructs.TestPlanCaseRel
+			rels, err = t.getTestPlanCaseRels(issueID)
+			issue.TestPlanCaseRels = rels
+		}
 		if err != nil {
 			return err
 		}

@@ -550,3 +550,24 @@ func (e *Endpoints) ListScopeManagersByScopeID(ctx context.Context, r *http.Requ
 
 	return httpserver.OkResp(list)
 }
+
+// CountMembersWithoutExtraByScope .
+func (e *Endpoints) CountMembersWithoutExtraByScope(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ListMembersWithoutExtraByScope.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.ListMembersWithoutExtraByScopeRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ListMembersWithoutExtraByScope.InvalidParameter(err).ToResp(), nil
+	}
+
+	total, _, err := e.db.GetMembersWithoutExtraByScope(req.ScopeType, req.ScopeID)
+	if err != nil {
+		return apierrors.ListMembersWithoutExtraByScope.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(total)
+}

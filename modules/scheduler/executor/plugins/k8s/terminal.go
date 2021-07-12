@@ -15,8 +15,13 @@ package k8s
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"regexp"
 	"sync"
@@ -24,8 +29,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/conf"
-	"github.com/erda-project/erda/pkg/http/customhttp"
+	"github.com/erda-project/erda/pkg/clusterdialer"
 )
 
 const (
@@ -69,27 +75,88 @@ func (k *Kubernetes) Terminal(namespace, podname, containername string, upperCon
 		s += "$s"
 		cmd := url.QueryEscape(fmt.Sprintf(s, cols, rows))
 		query := "command=sh&command=-c&command=" + cmd + "&container=" + containername + "&stdin=1&stdout=1&tty=true"
-		req, err := customhttp.NewRequest("GET", k.addr, nil)
+
+		mc := k.cluster.ManageConfig
+
+		if mc == nil {
+			return nil, fmt.Errorf("manage config is nil")
+		}
+
+		dialer := websocket.DefaultDialer
+		dialer.TLSClientConfig = &tls.Config{}
+		header := http.Header{}
+
+		var host string
+
+		parseURL, err := url.Parse(mc.Address)
 		if err != nil {
-			logrus.Errorf("failed to customhttp.NewRequest: %v", err)
-			return nil, err
+			host = mc.Address
+		} else {
+			host = parseURL.Host
 		}
 
 		execURL := url.URL{
-			Scheme:   "ws",
-			Host:     req.URL.Host,
+			Scheme:   "wss",
 			Path:     path,
+			Host:     host,
 			RawQuery: query,
 		}
-		req.Header.Add("X-Portal-Websocket", "on")
-		if req.Header.Get("X-Portal-Host") != "" {
-			req.Header.Add("Host", req.Header.Get("X-Portal-Host"))
+
+		// ca cert if empty, skip verify secure
+		if mc.CaData != "" {
+			caBytes, err := base64.StdEncoding.DecodeString(mc.CaData)
+			if err != nil {
+				logrus.Errorf("ca bytes load error: %v", err)
+				return nil, err
+			}
+
+			pool := x509.NewCertPool()
+			pool.AppendCertsFromPEM(caBytes)
+			dialer.TLSClientConfig.RootCAs = pool
+		} else {
+			dialer.TLSClientConfig.InsecureSkipVerify = true
 		}
-		conn, _, err := websocket.DefaultDialer.Dial(execURL.String(), req.Header)
+
+		switch mc.Type {
+		case apistructs.ManageToken:
+			header.Add("Authorization", "Bearer "+mc.Token)
+		case apistructs.ManageCert:
+			certData, err := base64.StdEncoding.DecodeString(mc.CertData)
+			if err != nil {
+				logrus.Errorf("decode cert data error: %v", err)
+				return nil, err
+			}
+			keyData, err := base64.StdEncoding.DecodeString(mc.KeyData)
+			if err != nil {
+				logrus.Errorf("decode key data error: %v", err)
+				return nil, err
+			}
+			pair, err := tls.X509KeyPair(certData, keyData)
+			if err != nil {
+				logrus.Errorf("load X509Key pair error: %v", err)
+				return nil, err
+			}
+			dialer.TLSClientConfig.Certificates = []tls.Certificate{pair}
+		case apistructs.ManageProxy:
+			// Dialer
+			dialer.NetDialContext = clusterdialer.DialContext(k.clusterName)
+			header.Add("Authorization", "Bearer "+mc.Token)
+		default:
+			return nil, fmt.Errorf("not support manage type: %v", mc.Type)
+		}
+
+		conn, resp, err := dialer.Dial(execURL.String(), header)
 		if err != nil {
 			logrus.Errorf("failed to connect to %s: %v", execURL.String(), err)
+			if resp == nil {
+				return nil, err
+			}
+			logrus.Debugf("connect to %s request info: %+v", execURL.String(), resp.Request)
+			respBody, _ := ioutil.ReadAll(resp.Body)
+			logrus.Debugf("connect to %s response body: %s", execURL.String(), string(respBody))
 			return nil, err
 		}
+
 		return conn, nil
 	}
 	var conn *websocket.Conn

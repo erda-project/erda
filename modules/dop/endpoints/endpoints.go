@@ -277,7 +277,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		{Path: "/api/apitests/actions/execute-tests", Method: http.MethodPost, Handler: e.ExecuteApiTests},
 		{Path: "/api/apitests/actions/cancel-testplan", Method: http.MethodPost, Handler: e.CancelApiTests},
-		{Path: "/api/apitests/actions/attempt-test", Method: http.MethodPost, Handler: e.ExecuteAttemptTest},
+		{Path: "/api/apitests/actions/attempt-test", Method: http.MethodPost, Handler: e.ExecuteManualTestAPI},
 		{Path: "/api/apitests/actions/statistic-results", Method: http.MethodPost, Handler: e.StatisticResults},
 		{Path: "/api/apitests/pipeline/{pipelineID}", Method: http.MethodGet, Handler: e.GetPipelineDetail},
 		{Path: "/api/apitests/pipeline/{pipelineID}/task/{taskID}/logs", Method: http.MethodGet, Handler: e.GetPipelineTaskLogs},
@@ -644,6 +644,7 @@ type Endpoints struct {
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
+	CopyChannel   chan uint64
 }
 
 type Option func(*Endpoints)
@@ -978,4 +979,8 @@ func (e *Endpoints) TestCaseService() *testcase.Service {
 
 func (e *Endpoints) AutotestV2Service() *atv2.Service {
 	return e.autotestV2
+}
+
+func (e *Endpoints) TestSetService() *testset.Service {
+	return e.testset
 }

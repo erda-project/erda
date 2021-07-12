@@ -19,6 +19,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -36,7 +37,7 @@ import (
 // - 内置变量
 //   - pipeline_status
 //   - task_status
-func GenerateParamsFromTask(pipelineID uint64, taskID uint64) map[string]string {
+func GenerateParamsFromTask(pipelineID uint64, taskID uint64, taskStatus apistructs.PipelineStatus) map[string]string {
 	// get data from db
 	var (
 		p           *spec.Pipeline
@@ -53,6 +54,8 @@ func GenerateParamsFromTask(pipelineID uint64, taskID uint64) map[string]string 
 		tasks = pWithTasks.Tasks
 		for _, task := range tasks {
 			if task.ID == taskID {
+				// because loop is before update current task db storage status
+				task.Status = taskStatus
 				currentTask = task
 				break
 			}

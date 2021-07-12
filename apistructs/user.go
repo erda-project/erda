@@ -115,13 +115,13 @@ type SimpleUser struct {
 // UserListRequest 用户批量查询请求
 type UserListRequest struct {
 	// 查询关键字，可根据用户名/手机号/邮箱模糊匹配
-	Query string `query:"q"`
+	Query string `query:"q" schema:"q"`
 
 	// 用户信息是否明文
-	Plaintext bool `query:"plaintext"`
+	Plaintext bool `query:"plaintext" schema:"plaintext"`
 
 	// 支持批量查询，传参形式: userID=xxx&userID=yyy
-	UserIDs []string `query:"userID"`
+	UserIDs []string `query:"userID" schema:"userID"`
 }
 
 // UserListResponse 用户批量查询响应

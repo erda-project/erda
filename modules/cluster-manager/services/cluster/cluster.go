@@ -143,6 +143,7 @@ func (c *Cluster) Create(req *apistructs.ClusterCreateRequest) error {
 	}
 
 	cluster := &model.Cluster{
+		OrgID:           req.OrgID,
 		Name:            req.Name,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
@@ -272,6 +273,10 @@ func (c *Cluster) PatchWithEvent(req *apistructs.ClusterPatchRequest) error {
 	if req.ManageConfig == nil {
 		return nil
 	}
+
+	cCluster := c.convert(cluster)
+
+	req.ManageConfig.CredentialSource = cCluster.ManageConfig.CredentialSource
 
 	manageConfig, err := json.MarshalIndent(req.ManageConfig, "", "\t")
 	if err != nil {

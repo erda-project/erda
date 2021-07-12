@@ -56,7 +56,7 @@ func (s *configCenterService) GetGroups(ctx context.Context, req *pb.GetGroupReq
 		return nil, errors.NewServiceInvokingError("nacos.SearchConfig", err)
 	}
 	if resp == nil {
-		return nil, errors.NewNotFoundError("NacosConfig")
+		return &pb.GetGroupResponse{Data: &pb.Groups{}}, nil
 	}
 	return &pb.GetGroupResponse{
 		Data: resp.ToConfigCenterGroups(),
@@ -133,6 +133,10 @@ func (s *configCenterService) SaveGroupProperties(ctx context.Context, req *pb.S
 	adp := newNacosAdapter(cfg)
 	data := make(map[string]string)
 	for _, prop := range req.Properties {
+		val, err := strconv.Unquote(prop.Value)
+		if err == nil {
+			prop.Value = val
+		}
 		if prop.Source == string(PropertySourceDice) {
 			data[prop.Key] = prop.Value
 		} else {
@@ -186,7 +190,7 @@ func parseConfigInfo(instance *instancedb.Instance, tenant *instancedb.InstanceT
 	tcfg := make(map[string]interface{})
 	json.Unmarshal([]byte(instance.Config), &cfg)
 	json.Unmarshal([]byte(instance.Options), &opts)
-	json.Unmarshal([]byte(tenant.Options), &tcfg)
+	json.Unmarshal([]byte(tenant.Config), &tcfg)
 	if host, ok := cfg["CONFIGCENTER_ADDRESS"].(string); ok {
 		c.Host = host
 	}

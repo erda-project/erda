@@ -17,8 +17,8 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_DASH_PREVIEW = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/dash-preview/query",
-	BackendPath: "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/dash-preview/query",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alert-records/custom-alerts/dash-preview/query",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

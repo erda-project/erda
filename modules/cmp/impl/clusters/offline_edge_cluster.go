@@ -59,13 +59,13 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 			Path("/api/projects/actions/refer-cluster").
 			Param("cluster", req.ClusterName).Do().JSON(&projectRefer)
 		if err != nil {
-			errstr := fmt.Sprintf("failed to call cmdb /api/projects/actions/refer-cluster: %v", err)
+			errstr := fmt.Sprintf("failed to call core-services /api/projects/actions/refer-cluster: %v", err)
 			logrus.Errorf(errstr)
 			err := errors.New(errstr)
 			return recordID, err
 		}
 		if !resp.IsOK() || !projectRefer.Success {
-			errstr := fmt.Sprintf("call cmdb /api/projects/actions/refer-cluster, statuscode: %d, resp: %+v", resp.StatusCode(), projectRefer)
+			errstr := fmt.Sprintf("call core-services /api/projects/actions/refer-cluster, statuscode: %d, resp: %+v", resp.StatusCode(), projectRefer)
 			logrus.Errorf(errstr)
 			err := errors.New(errstr)
 			return recordID, err
@@ -102,19 +102,23 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	}
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
+		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid); err != nil {
+			return recordID, err
+		}
+
 		deletecluster := cmdbDeleteClusterResp{}
-		resp, err := httpclient.New().Delete(discover.CMDB()).
+		resp, err := httpclient.New().Delete(discover.ClusterManager()).
 			Header("Internal-Client", "cmp").
 			Path(fmt.Sprintf("/api/clusters/%s", req.ClusterName)).
 			Do().JSON(&deletecluster)
 		if err != nil {
-			errstr := fmt.Sprintf("failed to call cmdb /api/clusters/%s : %v", req.ClusterName, err)
+			errstr := fmt.Sprintf("failed to call cluster-manager /api/clusters/%s : %v", req.ClusterName, err)
 			logrus.Errorf(errstr)
 			err := errors.New(errstr)
 			return recordID, err
 		}
 		if !resp.IsOK() || !deletecluster.Success {
-			errstr := fmt.Sprintf("call cmdb /api/clusters/%s, statuscode: %d, resp: %+v",
+			errstr := fmt.Sprintf("call cluster-manager /api/clusters/%s, statuscode: %d, resp: %+v",
 				req.ClusterName, resp.StatusCode(), deletecluster)
 			logrus.Errorf(errstr)
 			err := errors.New(errstr)

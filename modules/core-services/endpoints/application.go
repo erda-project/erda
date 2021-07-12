@@ -892,3 +892,23 @@ func (e *Endpoints) convertToApplicationDTO(application model.Application, withP
 		Extra:          application.Extra,
 	}
 }
+
+// CountAppByProID count app by proID
+func (e Endpoints) CountAppByProID(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCountApplication.NotLogin().ToResp(), nil
+	}
+	projectIDStr := r.URL.Query().Get("projectID")
+
+	projectID, err := strconv.ParseInt(projectIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrCountApplication.InvalidParameter(err).ToResp(), nil
+	}
+	count, err := e.db.GetApplicationCountByProjectID(projectID)
+	if err != nil {
+		return apierrors.ErrCountApplication.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(count)
+}

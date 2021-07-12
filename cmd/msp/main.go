@@ -20,7 +20,9 @@ import (
 
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/plugins/certificate"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/plugins/dns"

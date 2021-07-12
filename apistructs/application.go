@@ -102,6 +102,11 @@ type ApplicationDeleteResponse struct {
 	Data ApplicationDTO `json:"data"`
 }
 
+type CountAppResponse struct {
+	Header
+	Data int64 `json:"data"`
+}
+
 // ApplicationFetchRequest GET /api/applications/<applicationId> 获取应用详情请求结构
 type ApplicationFetchRequest struct {
 	// 应用id/应用名

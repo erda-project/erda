@@ -99,6 +99,12 @@ type ClusterUpdateRequest struct {
 	URLs map[string]string `json:"urls"`
 }
 
+type CMPClusterUpdateRequest struct {
+	ClusterUpdateRequest
+	CredentialType string       `json:"credentialType"`
+	Credential     ICCredential `json:"credential"`
+}
+
 // ClusterUpdateResponse 集群更新响应
 type ClusterUpdateResponse struct {
 	Header
@@ -324,10 +330,14 @@ type DereferenceClusterResponse struct {
 }
 
 type ManageConfig struct {
-	Type     string `json:"type"`
-	Address  string `json:"address"`
-	CaData   string `json:"caData"`
-	CertData string `json:"certData"`
-	KeyData  string `json:"keyData"`
-	Token    string `json:"token"`
+	// manage type, support proxy,token,cert
+	Type      string `json:"type"`
+	Address   string `json:"address"`
+	CaData    string `json:"caData"`
+	CertData  string `json:"certData"`
+	KeyData   string `json:"keyData"`
+	Token     string `json:"token"`
+	AccessKey string `json:"accessKey"`
+	// credential content from, support kubeconfig, serviceAccount
+	CredentialSource string `json:"credentialSource"`
 }

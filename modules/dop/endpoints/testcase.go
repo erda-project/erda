@@ -263,16 +263,22 @@ func (e *Endpoints) ExportTestCases(ctx context.Context, r *http.Request, vars m
 
 	// TODO:鉴权
 
-	fileId, err := e.testcase.Export(req)
+	fileID, err := e.testcase.Export(req)
 	if err != nil {
 		return apierrors.ErrExportTestCases.InternalError(err).ToResp(), nil
 	}
 
-	e.ExportChannel <- fileId
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileActionTypeExport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
 
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,
-		Content: fileId,
+		Content: fileID,
 	}, nil
 }
 
@@ -296,7 +302,13 @@ func (e *Endpoints) ImportTestCases(ctx context.Context, r *http.Request, vars m
 		return errorresp.ErrResp(err)
 	}
 
-	e.ImportChannel <- importResult.Id
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- importResult.Id
+	}
 
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,

@@ -298,11 +298,6 @@ var (
 	ErrFindFileTreeNodeAncestors = err("ErrFindFileTreeNodeAncestors", "目录树节点寻祖失败")
 
 	ErrGetWorkBenchData = err("ErrGetWorkBenchData", "failed to query workbench data")
-
-	ErrCreateAccessKey = err("ErrCreateSecretKey", "创建密钥对失败")
-	ErrUpdateAccessKey = err("ErrCreateSecretKey", "更新密钥对失败")
-	ErrGetAccessKey    = err("ErrGetAccessKey", "查询密钥对失败")
-	ErrDeleteAccessKey = err("ErrDeleteAccessKey", "删除密钥对失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

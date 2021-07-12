@@ -16,14 +16,15 @@ package query
 import (
 	"encoding/json"
 	"fmt"
-	"runtime"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda/pkg/netportal"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // log versions
@@ -130,15 +131,12 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 				}
 			}
 		}
+		if d.ClusterType == 1 {
+			options = append(options, elastic.SetHttpClient(newHTTPClient(d.ClusterName)))
+		}
 		client, err := elastic.NewClient(options...)
 		if err != nil {
 			continue
-		}
-		if d.ClusterType == 1 {
-			netp := &NetPortal{
-				ClusterName: d.ClusterName,
-			}
-			client.RequestBuilder = netp.NewRequest
 		}
 		d.CollectorURL = strings.TrimSpace(d.CollectorURL)
 		if len(d.CollectorURL) > 0 {
@@ -167,20 +165,18 @@ func getLogIndices(prefix, addon string) []string {
 	return []string{prefix + "*"}
 }
 
-// NetPortal .
-type NetPortal struct {
-	Addr        string
-	Domain      string
-	ClusterName string
-}
-
-func (np *NetPortal) NewRequest(method, url string) (*elastic.Request, error) {
-	req, err := netportal.NewNetportalRequest(np.ClusterName, method, url, nil)
-	if err != nil {
-		return nil, err
+func newHTTPClient(clusterName string) *http.Client {
+	hclient := httpclient.New(httpclient.WithClusterDialer(clusterName))
+	t := hclient.BackendClient().Transport.(*http.Transport)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           t.DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
-	req.Header.Add("User-Agent", "elastic/"+elastic.Version+" ("+runtime.GOOS+"-"+runtime.GOARCH+")")
-	req.Header.Add("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	return (*elastic.Request)(req), nil
 }

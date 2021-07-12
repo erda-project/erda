@@ -291,20 +291,6 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
 	}
 
-	// 太多了扛不住
-	if params.PageSize <= 15 {
-		for i := range pagingProjects.List {
-			prjID := int64(pagingProjects.List[i].ID)
-			stats, ok := e.project.ProjectStatsCache.Load(prjID)
-			if !ok {
-				logrus.Infof("get a new project %v add in cache", prjID)
-				stats, _ = e.project.GetProjectStats(prjID)
-				e.project.ProjectStatsCache.Store(prjID, stats)
-			}
-			pagingProjects.List[i].Stats = *stats.(*apistructs.ProjectStats)
-		}
-	}
-
 	var userIDs []string
 	for _, v := range pagingProjects.List {
 		userIDs = append(userIDs, v.Owners...)

@@ -53,6 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(RegisterCenterService.ListInterface, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("ProjectID")),
 			perm.Method(RegisterCenterService.GetHTTPServices, perm.ScopeProject, "registercenter", perm.ActionGet, perm.FieldValue("ProjectID")),
 			perm.Method(RegisterCenterService.EnableHTTPService, perm.ScopeProject, "registercenter", perm.ActionUpdate, perm.FieldValue("ProjectID")),
+			perm.Method(RegisterCenterService.GetServiceIpInfo, perm.ScopeProject, "registercenter", perm.ActionUpdate, perm.FieldValue("ProjectID")),
 		))
 	}
 	return nil

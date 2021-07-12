@@ -101,8 +101,8 @@ func (o *OrgFormModal) SetProps() {
 				"required":  true,
 				"rules": []interface{}{
 					map[string]interface{}{
-						"msg":     "由小写字母、数字，-组成",
-						"pattern": "/^[a-z0-9-]*$/",
+						"msg":     "由小写字母、数字，-组成(不允许纯数字)",
+						"pattern": "/^(?![0-9]+$)^[^-](.*[^-])?$[a-z0-9-]*$/",
 					},
 				},
 			},

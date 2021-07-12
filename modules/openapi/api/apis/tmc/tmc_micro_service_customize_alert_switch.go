@@ -20,8 +20,8 @@ import (
 
 var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_SWITCH = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>/switch",
-	BackendPath: "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>/switch",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>/switch",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,

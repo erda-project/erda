@@ -22,6 +22,7 @@ import (
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiorbacv1alpha1 "istio.io/client-go/pkg/apis/rbac/v1alpha1"
 	istiosecv1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sschema "k8s.io/client-go/kubernetes/scheme"
 
@@ -40,4 +41,5 @@ var LocalSchemeBuilder = runtime.SchemeBuilder{
 	istiorbacv1alpha1.AddToScheme,
 	istiosecv1beta1.AddToScheme,
 	flinkoperatoryv1beta1.AddToScheme,
+	apiextensions.AddToScheme,
 }

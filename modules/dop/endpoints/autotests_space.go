@@ -264,7 +264,13 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, r *http.Request, va
 		return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
 	}
 
-	e.ExportChannel <- fileID
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeExport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
 
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,
@@ -306,7 +312,13 @@ func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, va
 		return errorresp.ErrResp(err)
 	}
 
-	e.ImportChannel <- recordID
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
 
 	return httpserver.HTTPResponse{
 		Status:  http.StatusAccepted,

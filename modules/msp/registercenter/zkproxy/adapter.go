@@ -14,22 +14,20 @@
 package zkproxy
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"github.com/erda-project/erda/pkg/netportal"
 )
 
 // Adapter .
 type Adapter struct {
 	ClusterName string
 	Addr        string
+	client      *httpclient.HTTPClient
 }
 
 // NewAdapter .
@@ -37,15 +35,12 @@ func NewAdapter(clusterName, addr string) *Adapter {
 	return &Adapter{
 		ClusterName: clusterName,
 		Addr:        addr,
+		client:      httpclient.New(httpclient.WithClusterDialer(clusterName)),
 	}
 }
 
 func (a *Adapter) GetAllInterfaceList(projectID, env, namespace string) ([]*pb.Interface, error) {
-	req, err := a.newRequestN(http.MethodGet, httputil.JoinPathR("listinterface", projectID, env), nil, nil, namespace)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("listinterface", projectID, env)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +55,7 @@ func (a *Adapter) GetAllInterfaceList(projectID, env, namespace string) ([]*pb.I
 }
 
 func (a *Adapter) GetRouteRule(interfaceName, projectID, env, namespace string) (*pb.RequestRule, error) {
-	resp, err := a.doRequetN(http.MethodGet, httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env), nil, nil, namespace)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +63,7 @@ func (a *Adapter) GetRouteRule(interfaceName, projectID, env, namespace string) 
 }
 
 func (a *Adapter) CreateRouteRule(interfaceName, projectID, env, namespace string, rule *pb.RequestRule) (*pb.RequestRule, error) {
-	byts, _ := json.Marshal(rule)
-	resp, err := a.doRequetN(http.MethodPost, httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env), nil, bytes.NewReader(byts), namespace)
+	resp, err := a.client.Post(a.Addr).Path(httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env)).Header("namespace", namespace).JSONBody(rule).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +71,7 @@ func (a *Adapter) CreateRouteRule(interfaceName, projectID, env, namespace strin
 }
 
 func (a *Adapter) DeleteRouteRule(interfaceName, projectID, env, namespace string) (*pb.RequestRule, error) {
-	resp, err := a.doRequetN(http.MethodDelete, httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env), nil, nil, namespace)
+	resp, err := a.client.Delete(a.Addr).Path(httputil.JoinPathR("listinterface", "route", interfaceName, projectID, env)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +99,7 @@ func getRequestRuleFromResponse(resp *http.Response) (*pb.RequestRule, error) {
 }
 
 func (a *Adapter) GetHostRule(projectID, env, appID, namespace string) (*pb.HostRules, error) {
-	resp, err := a.doRequetN(http.MethodGet, httputil.JoinPathR("rule", "branch", projectID, env, appID), nil, nil, namespace)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("rule", "branch", projectID, env, appID)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +107,7 @@ func (a *Adapter) GetHostRule(projectID, env, appID, namespace string) (*pb.Host
 }
 
 func (a *Adapter) CreateHostRoute(projectID, env, appID, namespace string, rules *pb.HostRules) (*pb.HostRules, error) {
-	byts, _ := json.Marshal(rules)
-	resp, err := a.doRequetN(http.MethodPost, httputil.JoinPathR("rule", "branch", projectID, env, appID), nil, bytes.NewReader(byts), namespace)
+	resp, err := a.client.Post(a.Addr).Path(httputil.JoinPathR("rule", "branch", projectID, env, appID)).Header("namespace", namespace).JSONBody(rules).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +115,7 @@ func (a *Adapter) CreateHostRoute(projectID, env, appID, namespace string, rules
 }
 
 func (a *Adapter) DeleteHostRoute(projectID, env, appID, namespace string) (*pb.HostRules, error) {
-	resp, err := a.doRequetN(http.MethodDelete, httputil.JoinPathR("rule", "branch", projectID, env, appID), nil, nil, namespace)
+	resp, err := a.client.Delete(a.Addr).Path(httputil.JoinPathR("rule", "branch", projectID, env, appID)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +143,7 @@ func getHostRulesFromResponse(resp *http.Response) (*pb.HostRules, error) {
 }
 
 func (a *Adapter) GetHostRuntimeRule(host, projectID, env, namespace string) (*pb.HostRuntimeRules, error) {
-	resp, err := a.doRequetN(http.MethodGet, httputil.JoinPathR("rule", "host", projectID, env, host), nil, nil, namespace)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("rule", "host", projectID, env, host)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +151,7 @@ func (a *Adapter) GetHostRuntimeRule(host, projectID, env, namespace string) (*p
 }
 
 func (a *Adapter) CreateHostRuntimeRule(projectID, env, host, namespace string, rules *pb.HostRuntimeRules) (*pb.HostRuntimeRules, error) {
-	byts, _ := json.Marshal(rules)
-	resp, err := a.doRequetN(http.MethodPost, httputil.JoinPathR("rule", "host", projectID, env, host), nil, bytes.NewReader(byts), namespace)
+	resp, err := a.client.Post(a.Addr).Path(httputil.JoinPathR("rule", "host", projectID, env, host)).Header("namespace", namespace).JSONBody(rules).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +179,7 @@ func getHostRuntimeRulesFromResponse(resp *http.Response) (*pb.HostRuntimeRules,
 }
 
 func (a *Adapter) GetAllHostRuntimeRules(projectID, env, appID, namespace string) (*pb.HostRuntimeInterfaces, error) {
-	resp, err := a.doRequetN(http.MethodGet, httputil.JoinPathR("listhostinterface", "timestamp", projectID, env, appID), nil, nil, namespace)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("listhostinterface", "timestamp", projectID, env, appID)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +203,7 @@ func (a *Adapter) GetAllHostRuntimeRules(projectID, env, appID, namespace string
 }
 
 func (a *Adapter) GetDubboInterfaceTime(interfaceName, projectID, env, namespace string) (*pb.DubboInterfaceTime, error) {
-	resp, err := a.doRequetN(http.MethodGet, httputil.JoinPathR("interface", "timestamp", interfaceName, projectID, env), nil, nil, namespace)
+	resp, err := a.client.Get(a.Addr).Path(httputil.JoinPathR("interface", "timestamp", interfaceName, projectID, env)).Header("namespace", namespace).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -232,37 +224,4 @@ func (a *Adapter) GetDubboInterfaceTime(interfaceName, projectID, env, namespace
 	}
 	// return nil, fmt.Errorf("unexpect status=%d", resp.StatusCode)
 	return nil, nil
-}
-
-func (a *Adapter) doRequetN(method, path string, params url.Values, body io.Reader, namespace string) (*http.Response, error) {
-	req, err := a.newRequestN(method, path, params, body, namespace)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func (a *Adapter) newRequestN(method, path string, params url.Values, body io.Reader, namespace string) (*http.Request, error) {
-	req, err := a.newRequest(method, path, params, body)
-	if err == nil {
-		req.Header.Set("namespace", namespace)
-	}
-	return req, err
-}
-
-func (a *Adapter) newRequest(method, path string, params url.Values, body io.Reader) (*http.Request, error) {
-	var ustr string
-	if len(params) > 0 {
-		ustr = fmt.Sprintf("%s%s?%s", a.Addr, path, params.Encode())
-	} else {
-		ustr = fmt.Sprintf("%s%s", a.Addr, path)
-	}
-	if len(a.ClusterName) > 0 {
-		return netportal.NewNetportalRequest(a.ClusterName, method, ustr, body)
-	}
-	return http.NewRequest(method, ustr, body)
 }

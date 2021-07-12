@@ -14,6 +14,7 @@
 package migrator_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
@@ -25,12 +26,12 @@ type parameter struct {
 	migrationDir string
 }
 
-func (p parameter) DSN() string {
-	return ""
+func (p parameter) MySQLParameters() *migrator.DSNParameters {
+	return nil
 }
 
-func (p parameter) SandboxDSN() string {
-	return ""
+func (p parameter) SandboxParameters() *migrator.DSNParameters {
+	return nil
 }
 
 func (p parameter) Database() string {
@@ -84,7 +85,7 @@ func TestNewScripts(t *testing.T) {
 	}
 
 	// assert
-	if first := scripts.Services[serviceB].Filenames()[0]; first != serviceBBase0 {
+	if first := scripts.Services[serviceB].Filenames()[0]; first != filepath.Base(serviceBBase0) {
 		t.Fatal("base file error")
 	}
 }

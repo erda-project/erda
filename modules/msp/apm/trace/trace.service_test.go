@@ -14,12 +14,11 @@
 package trace
 
 import (
-	"context"
-	"reflect"
-	"testing"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	context "context"
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	reflect "reflect"
+	testing "testing"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {
@@ -131,6 +130,291 @@ func Test_traceService_GetTraces(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("traceService.GetTraces() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_GetTraceDebugHistories(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetTraceDebugHistoriesRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetTraceDebugHistoriesResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTraceDebugHistoriesRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTraceDebugHistoriesResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.GetTraceDebugHistories(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.GetTraceDebugHistories() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.GetTraceDebugHistories() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_GetTraceDebugByRequestID(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetTraceDebugRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetTraceDebugResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTraceDebugRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTraceDebugResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.GetTraceDebugByRequestID(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.GetTraceDebugByRequestID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.GetTraceDebugByRequestID() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_CreateTraceDebug(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.CreateTraceDebugRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.CreateTraceDebugResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CreateTraceDebugRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CreateTraceDebugResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.CreateTraceDebug(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.CreateTraceDebug() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_StopTraceDebug(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.StopTraceDebugRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.StopTraceDebugResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.StopTraceDebugRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.StopTraceDebugResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.StopTraceDebug(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.StopTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.StopTraceDebug() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_GetTraceDebugHistoryStatusByRequestID(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetTraceDebugStatusByRequestIDRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetTraceDebugStatusByRequestIDResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTraceDebugStatusByRequestIDRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTraceDebugStatusByRequestIDResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.GetTraceDebugHistoryStatusByRequestID(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.GetTraceDebugHistoryStatusByRequestID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.GetTraceDebugHistoryStatusByRequestID() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}

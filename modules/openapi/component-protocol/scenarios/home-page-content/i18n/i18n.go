@@ -59,4 +59,5 @@ const (
 	I18nKeyIssueSevenDayExpired  = "wb.content.component.issue.sevenDayExpired"
 	I18nKeyIssueThirtyDayExpired = "wb.content.component.issue.thirtyDayExpired"
 	I18nKeyIssueFeatureExpired   = "wb.content.component.issue.featureExpired"
+	I18nKeyIssueNotSpecifiedDate = "wb.content.component.issue.notSpecifiedDate"
 )

@@ -14,18 +14,19 @@
 package migrator
 
 import (
+	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 )
 
 type Parameters interface {
-	// DSN gets MySQL DSN
-	DSN() string
+	// MySQLParameters returns MySQL DSN configuration
+	MySQLParameters() *DSNParameters
 
-	// SandboxDSN gets sandbox DSN
-	SandboxDSN() string
-
-	// database name
-	Database() string
+	// SandboxParameters returns Sandbox DSN configuration
+	SandboxParameters() *DSNParameters
 
 	// MigrationDir gets migration scripts direction from repo, like .dice/migrations or 4.1/sqls
 	MigrationDir() string
@@ -43,4 +44,33 @@ type Parameters interface {
 	NeedErdaMySQLLint() bool
 
 	Rules() []rules.Ruler
+}
+
+type DSNParameters struct {
+	Username  string
+	Password  string
+	Host      string
+	Port      int
+	Database  string
+	ParseTime bool
+	Timeout   time.Duration
+}
+
+func (c DSNParameters) Format(database bool) (dsn string) {
+	dsnPat := "%s:%s@tcp(%s:%v)/%s"
+	if database {
+		dsn = fmt.Sprintf(dsnPat, c.Username, c.Password, c.Host, c.Port, c.Database)
+	} else {
+		dsn = fmt.Sprintf(dsnPat, c.Username, c.Password, c.Host, c.Port, "")
+	}
+
+	var params = make(url.Values)
+	if c.ParseTime {
+		params.Add("parseTime", "true")
+	}
+	if c.Timeout == 0 {
+		c.Timeout = time.Second * 150
+	}
+	params.Add("timeout", fmt.Sprintf("%vs", int(c.Timeout.Seconds())))
+	return dsn + "?" + params.Encode()
 }

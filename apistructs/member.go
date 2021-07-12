@@ -281,3 +281,13 @@ type ListScopeManagersByScopeIDResponse struct {
 	Header
 	Data []Member `json:"data"`
 }
+
+type ListMembersWithoutExtraByScopeRequest struct {
+	ScopeType ScopeType `json:"scopeType"`
+	ScopeID   int64     `json:"scopeID"`
+}
+
+type ListMembersWithoutExtraByScopeResponse struct {
+	Header
+	Data int `json:"data"`
+}

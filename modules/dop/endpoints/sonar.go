@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/database/cimysql"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -657,7 +658,7 @@ func (e *Endpoints) dealTickets(so *apistructs.SonarStoreRequest, issueType stri
 	// }
 
 	//logrus.Infof("close resolved ticket, issues: %+v", nl)
-	err = e.bdl.DeleteTicketByTargetID(so.ApplicationID, string(convert2TicketType(issueType)), "application")
+	err = e.ticket.Delete(strconv.FormatInt(so.ApplicationID, 10), string(convert2TicketType(issueType)), "application")
 	e.createTicket(tmpIssue, so, issueType)
 
 	return err
@@ -665,8 +666,7 @@ func (e *Endpoints) dealTickets(so *apistructs.SonarStoreRequest, issueType stri
 
 func (e *Endpoints) closeTicket(issues []*apistructs.TestIssues, appID int64, issueType string) error {
 	var (
-		ticketList *apistructs.TicketListResponseData
-		ticketID   int64
+		ticketList []apistructs.Ticket
 		err        error
 	)
 
@@ -680,31 +680,30 @@ func (e *Endpoints) closeTicket(issues []*apistructs.TestIssues, appID int64, is
 			PageSize:   PAGE,
 		}
 
-		if ticketList, err = e.bdl.ListTicket(req); err != nil {
+		if _, ticketList, err = e.ticket.List(&req); err != nil {
 			return err
 		}
 
-		for i := range ticketList.Tickets {
-			if ticketList.Tickets[i].Title != issue.Message || ticketList.Tickets[i].Creator != apistructs.TicketUserQA {
+		for i := range ticketList {
+			if ticketList[i].Title != issue.Message || ticketList[i].Creator != apistructs.TicketUserQA {
 				continue
 			}
-			if p, ok := ticketList.Tickets[i].Label["path"]; !ok || p != issue.Path {
+			if p, ok := ticketList[i].Label["path"]; !ok || p != issue.Path {
 				continue
 			}
-			if r, ok := ticketList.Tickets[i].Label["rule"]; !ok || r != issue.Rule {
+			if r, ok := ticketList[i].Label["rule"]; !ok || r != issue.Rule {
 				continue
 			}
-			if l, ok := ticketList.Tickets[i].Label["line"]; !ok || l != strconv.Itoa(issue.Line) {
+			if l, ok := ticketList[i].Label["line"]; !ok || l != strconv.Itoa(issue.Line) {
 				continue
 			}
 
 			// if close ticket failed, skip this error
-			if ticketID, err = e.bdl.CloseTicket(ticketList.Tickets[i].TicketID, apistructs.TicketUserQA); err != nil {
+			if err = e.ticket.Close(e.permission, nil, ticketList[i].TicketID, user.ID(apistructs.TicketUserQA)); err != nil {
 				logrus.Warning(err)
 				continue
 			}
-
-			logrus.Infof("successed to close ticket, ticketID:%d", ticketID)
+			logrus.Infof("successed to close ticket, ticketID:%d", ticketList[i].TicketID)
 		}
 	}
 
@@ -742,7 +741,7 @@ func (e *Endpoints) createTicket(issues []*apistructs.TestIssues, sonar *apistru
 			TargetID:   strconv.FormatInt(sonar.ApplicationID, 10),
 		}
 
-		ticketID, err := e.bdl.CreateTicket(uuid.UUID(), req)
+		ticketID, err := e.ticket.Create(user.ID(req.UserID), uuid.UUID(), req)
 		if err != nil {
 			logrus.Warningf("failed to create ticket, req: %+v, (%+v)", req, err)
 			continue

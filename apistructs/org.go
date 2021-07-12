@@ -228,6 +228,11 @@ type OrgClusterRelationDTOResponse struct {
 	Data []OrgClusterRelationDTO `json:"data"`
 }
 
+type OrgClusterRelationDTOCreateResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
 // OrgClusterRelationDTO 企业对应集群关系结构
 type OrgClusterRelationDTO struct {
 	ID          uint64    `json:"id"`

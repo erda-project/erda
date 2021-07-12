@@ -16,7 +16,6 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
-	"net/http"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -44,6 +43,10 @@ func ParseManageConfig(clusterName string, c *apistructs.ManageConfig) (*rest.Co
 
 // GetDialerRestConfig get cluster dialer rest.Config
 func GetDialerRestConfig(clusterName string, c *apistructs.ManageConfig) (*rest.Config, error) {
+	if c.Address == "" {
+		return nil, fmt.Errorf("proxy must spcified address")
+	}
+
 	rc, err := GetRestConfig(c)
 	if err != nil {
 		return nil, err
@@ -51,12 +54,7 @@ func GetDialerRestConfig(clusterName string, c *apistructs.ManageConfig) (*rest.
 
 	rc.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	rc.UserAgent = rest.DefaultKubernetesUserAgent() + " cluster " + clusterName
-	rc.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		if ht, ok := rt.(*http.Transport); ok {
-			ht.DialContext = clusterdialer.DialContext(clusterName)
-		}
-		return rt
-	}
+	rc.Dial = clusterdialer.DialContext(clusterName)
 
 	return rc, nil
 }

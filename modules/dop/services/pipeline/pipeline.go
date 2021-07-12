@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
@@ -42,6 +43,7 @@ const (
 type Pipeline struct {
 	bdl           *bundle.Bundle
 	branchRuleSvc *branchrule.BranchRule
+	publisherSvc  *publisher.Publisher
 }
 
 // Option Pipeline 配置选项
@@ -66,6 +68,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	return func(f *Pipeline) {
 		f.branchRuleSvc = svc
+	}
+}
+
+func WithPublisherSvc(svc *publisher.Publisher) Option {
+	return func(f *Pipeline) {
+		f.publisherSvc = svc
 	}
 }
 
@@ -311,7 +319,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		if publishItem, ok := relationResp.Data[strings.ToUpper(workspace)]; ok {
 			pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, publishItem.PublishItemNs...)
 			// 根据 publishierID 获取 namespaces
-			publisher, err := p.bdl.FetchPublisher(uint64(publishItem.PublisherID))
+			publisher, err := p.publisherSvc.Get(publishItem.PublisherID)
 			if err == nil || publisher != nil {
 				pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, publisher.PipelineCmNamespaces...)
 			}

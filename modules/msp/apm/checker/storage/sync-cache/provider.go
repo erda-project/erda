@@ -98,7 +98,7 @@ func (p *provider) doSync() error {
 }
 
 func init() {
-	servicehub.Register("erda.msp.apm.checker.storage.cache.sycn", &servicehub.Spec{
+	servicehub.Register("erda.msp.apm.checker.storage.cache.sync", &servicehub.Spec{
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

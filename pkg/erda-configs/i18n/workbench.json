@@ -79,7 +79,8 @@
     "wb.content.component.issue.tomorrowExpired": "，明天到期:",
     "wb.content.component.issue.sevenDayExpired": "，7日内到期:",
     "wb.content.component.issue.thirtyDayExpired": "，30日内到期:",
-    "wb.content.component.issue.featureExpired": "，未来:"
+    "wb.content.component.issue.featureExpired": "，未来:",
+    "wb.content.component.issue.notSpecifiedDate": "未指定截止日期"
   },
   "en-US": {
     "wb.sidebar.component.or": "Or",
@@ -161,6 +162,7 @@
     "wb.content.component.issue.tomorrowExpired": ", Due tomorrow:",
     "wb.content.component.issue.sevenDayExpired": ", Due within 7 days:",
     "wb.content.component.issue.thirtyDayExpired": ", Expires within 30 days:",
-    "wb.content.component.issue.featureExpired": ",Future:"
+    "wb.content.component.issue.featureExpired": ",Future:",
+    "wb.content.component.issue.notSpecifiedDate": "not specified date"
   }
 }

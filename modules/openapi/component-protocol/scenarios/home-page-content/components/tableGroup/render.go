@@ -270,6 +270,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 				},
 				OrgName: orgName,
 			}
+			issueItem.PlanFinishedAt = i18nLocale.Get(i18n.I18nKeyIssueNotSpecifiedDate)
 			if issue.PlanFinishedAt != nil {
 				issueItem.PlanFinishedAt = issue.PlanFinishedAt.Format("2006-01-02")
 			}

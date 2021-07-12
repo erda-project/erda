@@ -27,6 +27,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
+	"github.com/erda-project/erda/modules/dop/services/issue"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -34,11 +36,13 @@ import (
 
 // TestPlan
 type TestPlan struct {
-	db          *dao.DBClient
-	bdl         *bundle.Bundle
-	testCaseSvc *testcase.Service
-	testSetSvc  *testset.Service
-	autotest    *autotest.Service
+	db            *dao.DBClient
+	bdl           *bundle.Bundle
+	testCaseSvc   *testcase.Service
+	testSetSvc    *testset.Service
+	autotest      *autotest.Service
+	issueSvc      *issue.Issue
+	issueStateSvc *issuestate.IssueState
 }
 
 // Option
@@ -84,6 +88,18 @@ func WithTestSet(testSetSvc *testset.Service) Option {
 func WithAutoTest(autotest *autotest.Service) Option {
 	return func(svc *TestPlan) {
 		svc.autotest = autotest
+	}
+}
+
+func WithIssue(issueSvc *issue.Issue) Option {
+	return func(svc *TestPlan) {
+		svc.issueSvc = issueSvc
+	}
+}
+
+func WithIssueState(issueStateSvc *issuestate.IssueState) Option {
+	return func(svc *TestPlan) {
+		svc.issueStateSvc = issueStateSvc
 	}
 }
 

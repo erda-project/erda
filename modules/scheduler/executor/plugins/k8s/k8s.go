@@ -162,6 +162,7 @@ func init() {
 type Kubernetes struct {
 	name         executortypes.Name
 	clusterName  string
+	cluster      *apistructs.ClusterInfo
 	options      map[string]string
 	addr         string
 	client       *httpclient.HTTPClient
@@ -268,56 +269,42 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 }
 
 // GetClient get http client with cluster info.
-func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
+func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
 	inetPortal := "inet://"
-
-	b := bundle.New(bundle.WithClusterManager())
-
-	cluster, err := b.GetCluster(clusterName)
-	if err != nil {
-		return "", nil, err
-	}
-
-	// inet portal default use dialer
-	// if manage config is nil, doesn't create executor
-	if cluster.ManageConfig == nil {
-		return "", nil, fmt.Errorf("manage config is nil")
-	}
 
 	hcOptions := []httpclient.OpOption{
 		httpclient.WithHTTPS(),
-		httpclient.WithAcceptEncoding("identity"),
 	}
 
 	// check mange config type
-	switch cluster.ManageConfig.Type {
+	switch manageConfig.Type {
 	case apistructs.ManageProxy, apistructs.ManageToken:
 		// cluster-agent -> (register) cluster-dialer -> (patch) cluster-manager
 		// -> (update) eventBox -> (update) scheduler -> scheduler reload executor
-		if cluster.ManageConfig.Token == "" || cluster.ManageConfig.Address == "" {
+		if manageConfig.Token == "" || manageConfig.Address == "" {
 			return "", nil, fmt.Errorf("token or address is empty")
 		}
 
 		hc := httpclient.New(hcOptions...)
-		hc.BearerTokenAuth(cluster.ManageConfig.Token)
+		hc.BearerTokenAuth(manageConfig.Token)
 
-		if cluster.ManageConfig.Type == apistructs.ManageToken {
-			return cluster.ManageConfig.Address, hc, nil
+		if manageConfig.Type == apistructs.ManageToken {
+			return manageConfig.Address, hc, nil
 		}
 
 		// parseInetAddr parse inet addr, will add proxy header in custom http request
-		return fmt.Sprintf("%s%s/%s", inetPortal, clusterName, cluster.ManageConfig.Address), hc, nil
+		return fmt.Sprintf("%s%s/%s", inetPortal, clusterName, manageConfig.Address), hc, nil
 	case apistructs.ManageCert:
-		if len(cluster.ManageConfig.KeyData) == 0 ||
-			len(cluster.ManageConfig.CertData) == 0 {
+		if len(manageConfig.KeyData) == 0 ||
+			len(manageConfig.CertData) == 0 {
 			return "", nil, fmt.Errorf("cert or key is empty")
 		}
 
-		certBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.CertData)
+		certBase64, err := base64.StdEncoding.DecodeString(manageConfig.CertData)
 		if err != nil {
 			return "", nil, err
 		}
-		keyBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.KeyData)
+		keyBase64, err := base64.StdEncoding.DecodeString(manageConfig.KeyData)
 		if err != nil {
 			return "", nil, err
 		}
@@ -326,8 +313,8 @@ func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
 
 		certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, nil)
 
-		if len(cluster.ManageConfig.CaData) != 0 {
-			caBase64, err := base64.StdEncoding.DecodeString(cluster.ManageConfig.CaData)
+		if len(manageConfig.CaData) != 0 {
+			caBase64, err := base64.StdEncoding.DecodeString(manageConfig.CaData)
 			if err != nil {
 				return "", nil, err
 			}
@@ -335,7 +322,7 @@ func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
 		}
 		hcOptions = append(hcOptions, certOption)
 
-		return cluster.ManageConfig.Address, httpclient.New(hcOptions...), nil
+		return manageConfig.Address, httpclient.New(hcOptions...), nil
 	default:
 		return "", nil, fmt.Errorf("manage type is not support")
 	}
@@ -343,7 +330,20 @@ func GetClient(clusterName string) (string, *httpclient.HTTPClient, error) {
 
 // New new kubernetes executor struct
 func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
-	addr, client, err := GetClient(clusterName)
+	// get cluster from cluster manager
+	b := bundle.New(bundle.WithClusterManager())
+	cluster, err := b.GetCluster(clusterName)
+	if err != nil {
+		logrus.Errorf("get cluster error: %v", cluster)
+		return nil, err
+	}
+
+	// credential config
+	if cluster.ManageConfig == nil {
+		return nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
+	}
+
+	addr, client, err := GetClient(clusterName, cluster.ManageConfig)
 	if err != nil {
 		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
 		return nil, err
@@ -426,6 +426,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	k := &Kubernetes{
 		name:                     name,
 		clusterName:              clusterName,
+		cluster:                  cluster,
 		options:                  options,
 		addr:                     addr,
 		client:                   client,

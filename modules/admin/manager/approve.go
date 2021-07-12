@@ -15,14 +15,11 @@ package manager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,18 +35,18 @@ func (am *AdminManager) AppendApproveEndpoint() {
 
 func (am *AdminManager) ListApprove(contenxt context.Context, req *http.Request, resources map[string]string) (httpserver.Responser, error) {
 
-	listReq, err := getListApprovesParam(req)
-	if err != nil {
-		return apierrors.ErrListApprove.InvalidParameter(err).ToResp(), nil
-	}
-
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id")).ToResp(), nil
 	}
 
-	resp, err := am.bundle.ListApprove(listReq, userID)
+	orgID, err := GetOrgID(req)
+	if err != nil {
+		return nil, errors.Errorf("invalid param, orgId is invalid")
+	}
+
+	resp, err := am.bundle.ListApprove(orgID, userID, req.URL.Query())
 	if err != nil {
 		return apierrors.ErrListApprove.InternalError(err).ToResp(), nil
 	}
@@ -106,76 +103,14 @@ func (am *AdminManager) UpdateApprove(contenxt context.Context, req *http.Reques
 		return nil, errors.Errorf("invalid param, orgId is invalid")
 	}
 
-	var approveUpdateReq apistructs.ApproveUpdateRequest
 	if req.Body == nil {
 		return apierrors.ErrUpdateApprove.MissingParameter("body").ToResp(), nil
 	}
-	if err := json.NewDecoder(req.Body).Decode(&approveUpdateReq); err != nil {
-		return apierrors.ErrUpdateApprove.InvalidParameter(err).ToResp(), nil
-	}
-	approveUpdateReq.OrgID = orgID
 
-	resp, err := am.bundle.UpdateApprove(approveUpdateReq, userID, approveID)
+	resp, err := am.bundle.UpdateApprove(orgID, userID, approveID, req.Body)
 	if err != nil {
 		return apierrors.ErrUpdateApprove.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(resp.Data)
-}
-
-// Approve列表时获取请求参数
-func getListApprovesParam(r *http.Request) (*apistructs.ApproveListRequest, error) {
-	orgID, err := GetOrgID(r)
-	if err != nil {
-		return nil, errors.Errorf("invalid param, orgId is invalid")
-	}
-
-	var status []string
-	statusMap := r.URL.Query()
-	if statusList, ok := statusMap["status"]; ok {
-		for _, s := range statusList {
-			if s != string(apistructs.ApprovalStatusPending) &&
-				s != string(apistructs.ApprovalStatusApproved) &&
-				s != string(apistructs.ApprovalStatusDeined) {
-				return nil, errors.Errorf("status type error")
-			}
-			status = append(status, s)
-		}
-	}
-
-	// 获取pageSize
-	pageSizeStr := r.URL.Query().Get("pageSize")
-	if pageSizeStr == "" {
-		pageSizeStr = "20"
-	}
-	pageSize, err := strconv.Atoi(pageSizeStr)
-	if err != nil {
-		return nil, errors.Errorf("invalid param, pageSize is invalid")
-	}
-	// 获取pageNo
-	pageNoStr := r.URL.Query().Get("pageNo")
-	if pageNoStr == "" {
-		pageNoStr = "1"
-	}
-	pageNo, err := strconv.Atoi(pageNoStr)
-	if err != nil {
-		return nil, errors.Errorf("invalid param, pageNo is invalid")
-	}
-	var id *int64
-	id_str := r.URL.Query().Get("id")
-	if id_str != "" {
-		id_int, err := strconv.ParseInt(id_str, 10, 64)
-		if err != nil {
-			return nil, errors.Errorf("invalid param, id is invalid")
-		}
-		id = &id_int
-	}
-
-	return &apistructs.ApproveListRequest{
-		OrgID:    orgID,
-		Status:   status,
-		PageNo:   pageNo,
-		PageSize: pageSize,
-		ID:       id,
-	}, nil
 }

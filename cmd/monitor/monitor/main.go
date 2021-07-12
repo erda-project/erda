@@ -38,7 +38,6 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/project-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/apis"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/engine"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"

@@ -38,6 +38,11 @@ var (
 	//go:embed monitor/streaming/streaming.yaml
 	MonitorStreamingDefaultConfig  string
 	MonitorStreamingConfigFilePath string = "conf/monitor/streaming/streaming.yaml"
+
+	// extensions
+	//go:embed monitor/extensions/report-engine.yaml
+	MonitorReportEngineDefaultConfig string
+	MonitorReportEngineFilePath      string = "conf/monitor/extensions/report-engine.yaml"
 )
 
 // msp

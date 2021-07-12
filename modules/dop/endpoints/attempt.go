@@ -20,17 +20,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/publicsuffix"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/signauth"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -240,4 +244,128 @@ func (e *Endpoints) ExecuteAttemptTest(ctx context.Context, r *http.Request, var
 	}
 
 	return httpserver.OkResp(map[string]interface{}{"request": apiReq, "response": apiResp})
+}
+
+// ExecuteManualTestAPI 用户尝试执行单个或者多个API测试
+func (e *Endpoints) ExecuteManualTestAPI(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	envData := &apistructs.APITestEnvData{
+		Header: make(map[string]string),
+		Global: make(map[string]*apistructs.APITestEnvVariable),
+	}
+
+	var req apistructs.APITestsAttemptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrAttemptExecuteAPITest.InvalidParameter(err).ToResp(), nil
+	}
+
+	if len(req.APIs) == 0 {
+		return apierrors.ErrAttemptExecuteAPITest.InvalidParameter(fmt.Errorf("API 个数为 0")).ToResp(), nil
+	}
+
+	// 获取测试环境变量
+	if req.ProjectTestEnvID != 0 {
+		envDB, err := dbclient.GetTestEnv(req.ProjectTestEnvID)
+		if err != nil || envDB == nil {
+			// 忽略错误
+			logrus.Warningf("failed to get project test env info, projectID:%d", req.ProjectTestEnvID)
+		}
+
+		envData, err = convert2TestEnvResp(envDB)
+		if err != nil || envData == nil {
+			// 忽略错误
+			logrus.Warningf("failed to convert project test env info, env:%+v", envDB)
+		}
+	}
+
+	if req.UsecaseTestEnvID != 0 {
+		envList, err := dbclient.GetTestEnvListByEnvID(req.UsecaseTestEnvID, Usecase)
+		if err != nil || envList == nil {
+			// 忽略错误
+			logrus.Warningf("failed to get usecase test env info, usecaseID:%d", req.UsecaseTestEnvID)
+		}
+
+		var envDB dbclient.APITestEnv
+		if len(envList) > 0 {
+			envDB = envList[0]
+			usecaseEnvData, err := convert2TestEnvResp(&envDB)
+			if err != nil || usecaseEnvData == nil {
+				// 忽略错误
+				logrus.Warningf("failed to convert project test env info, env:%+v", envDB)
+			}
+
+			if usecaseEnvData != nil {
+				// render usecase env data
+				if usecaseEnvData.Domain != "" {
+					envData.Domain = usecaseEnvData.Domain
+				}
+
+				for k, v := range usecaseEnvData.Global {
+					envData.Global[k] = v
+				}
+
+				for k, v := range usecaseEnvData.Header {
+					envData.Header[k] = v
+				}
+			}
+		}
+	}
+
+	caseParams := make(map[string]*apistructs.CaseParams)
+	// render project env global params, least low priority
+	if envData != nil && envData.Global != nil {
+		for k, v := range envData.Global {
+			caseParams[k] = &apistructs.CaseParams{
+				Type:  v.Type,
+				Value: v.Value,
+			}
+		}
+	}
+
+	// add cookie jar
+	cookieJar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		logrus.Warningf("failed to new cookie jar")
+	}
+
+	httpClient := &http.Client{}
+
+	if cookieJar != nil {
+		httpClient.Jar = cookieJar
+	}
+
+	respDataList := make([]*apistructs.APITestsAttemptResponseData, 0, len(req.APIs))
+	for _, apiInfo := range req.APIs {
+		respData := &apistructs.APITestsAttemptResponseData{}
+		apiTest := apitestsv2.New(apiInfo, apitestsv2.WithTryV1RenderJsonBodyFirst())
+		apiReq, apiResp, err := apiTest.Invoke(httpClient, envData, caseParams)
+		if err != nil {
+			// 单个 API 执行失败，不返回失败，继续执行下一个
+			logrus.Warningf("invoke api error, apiInfo:%+v, (%+v)", apiTest.API, err)
+			respData.Response = &apistructs.APIResp{
+				BodyStr: err.Error(),
+			}
+			respData.Request = apiReq
+			respDataList = append(respDataList, respData)
+			continue
+		}
+		respData.Response = apiResp
+		respData.Request = apiReq
+
+		outParams := apiTest.ParseOutParams(apiTest.API.OutParams, apiResp, caseParams)
+
+		if len(apiTest.API.Asserts) > 0 {
+			asserts := apiTest.API.Asserts[0]
+			succ, assertResult := apiTest.JudgeAsserts(outParams, asserts)
+			logrus.Infof("judge assert result: %v", succ)
+
+			respData.Asserts = &apistructs.APITestsAssertResult{
+				Success: succ,
+				Result:  assertResult,
+			}
+		}
+
+		respDataList = append(respDataList, respData)
+	}
+
+	return httpserver.OkResp(respDataList)
 }

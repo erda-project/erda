@@ -14,8 +14,11 @@
 package snapshot
 
 import (
+	"bytes"
+
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
@@ -137,7 +140,27 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 		}
 
 		// install
-		if err := tx.Exec(create.Text()).Error; err != nil {
+		var (
+			options []*ast.TableOption
+			buf     = bytes.NewBuffer(nil)
+		)
+		for _, opt := range create.Options {
+			switch opt.Tp {
+			case ast.TableOptionCollate:
+			default:
+				options = append(options, opt)
+			}
+		}
+		create.Options = options
+		if err := create.Restore(&format.RestoreCtx{
+			Flags:     format.DefaultRestoreFlags,
+			In:        buf,
+			JoinLevel: 0,
+		}); err != nil {
+			return errors.Wrap(err, "failed to Restore table definition")
+		}
+
+		if err := tx.Exec(buf.String()).Error; err != nil {
 			return err
 		}
 		installed[create.Table.Name.String()] = create

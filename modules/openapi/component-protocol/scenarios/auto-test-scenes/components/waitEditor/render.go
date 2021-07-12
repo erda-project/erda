@@ -87,10 +87,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		c.Props = map[string]interface{}{
 			"fields": []map[string]interface{}{
 				{
-					"label":     "等待时间(s)",
-					"component": "inputNumber",
-					"required":  true,
-					"key":       "waitTime",
+					"label":          "等待时间(s)",
+					"component":      "inputNumber",
+					"required":       true,
+					"key":            "waitTime",
+					"componentProps": map[string]interface{}{"min": 1},
 				},
 			},
 		}

@@ -160,8 +160,8 @@ type LogDeployment struct {
 	KafkaConfig  string    `gorm:"column:kafka_config"`
 	CollectorUrl string    `gorm:"column:collector_url"`
 	Domain       string    `gorm:"column:domain"`
-	Created      time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
-	Updated      time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
+	Created      time.Time `gorm:"column:created"`
+	Updated      time.Time `gorm:"column:updated"`
 }
 
 func (LogDeployment) TableName() string {
@@ -185,8 +185,8 @@ type LogInstance struct {
 	Version         string    `gorm:"column:version"`
 	Plan            string    `gorm:"column:plan"`
 	IsDelete        int       `gorm:"column:is_delete"`
-	Created         time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
-	Updated         time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
+	Created         time.Time `gorm:"column:created"`
+	Updated         time.Time `gorm:"column:updated"`
 }
 
 func (LogInstance) TableName() string {

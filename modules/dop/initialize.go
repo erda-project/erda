@@ -104,6 +104,8 @@ func Initialize() error {
 
 	registerWebHook(bdl.Bdl)
 
+	go endpoints.SetProjectStatsCache()
+
 	// 注册 hook
 	if err := ep.RegisterEvents(); err != nil {
 		return err
@@ -146,6 +148,19 @@ func Initialize() error {
 				importTestFileTask(ep)
 			case <-ep.ImportChannel:
 				importTestFileTask(ep)
+			}
+		}
+	}()
+
+	// Scheduled polling copy task
+	go func() {
+		ticker := time.NewTicker(time.Second * interval)
+		for {
+			select {
+			case <-ticker.C:
+				copyTestFileTask(ep)
+			case <-ep.CopyChannel:
+				copyTestFileTask(ep)
 			}
 		}
 	}()
@@ -252,14 +267,6 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
 
-	testPlan := testplan.New(
-		testplan.WithDBClient(db),
-		testplan.WithBundle(bdl.Bdl),
-		testplan.WithTestCase(testCaseSvc),
-		testplan.WithTestSet(testSetSvc),
-		testplan.WithAutoTest(autotest),
-	)
-
 	sonarMetricRule := sonar_metric_rule.New(
 		sonar_metric_rule.WithDBClient(db),
 		sonar_metric_rule.WithBundle(bdl.Bdl),
@@ -350,6 +357,16 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		iteration.WithIssue(issue),
 	)
 
+	testPlan := testplan.New(
+		testplan.WithDBClient(db),
+		testplan.WithBundle(bdl.Bdl),
+		testplan.WithTestCase(testCaseSvc),
+		testplan.WithTestSet(testSetSvc),
+		testplan.WithAutoTest(autotest),
+		testplan.WithIssue(issue),
+		testplan.WithIssueState(issueState),
+	)
+
 	rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 		PublicKey:          conf.Base64EncodedRsaPublicKey(),
 		PublicKeyDataType:  encryption.Base64,
@@ -403,7 +420,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule))),
+		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule), pipeline.WithPublisherSvc(pub))),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),
@@ -450,6 +467,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 
 	ep.ImportChannel = make(chan uint64)
 	ep.ExportChannel = make(chan uint64)
+	ep.CopyChannel = make(chan uint64)
 	return ep, nil
 }
 
@@ -481,6 +499,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 		logrus.Warnf("failed to register approval status changed event, %v", err)
 	}
 }
+
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport)
@@ -521,4 +540,16 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	default:
 
 	}
+}
+
+func copyTestFileTask(ep *endpoints.Endpoints) {
+	ok, record, err := ep.TestCaseService().GetFirstFileReady(apistructs.FileActionTypeCopy)
+	if err != nil {
+		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
+		return
+	}
+	if !ok {
+		return
+	}
+	ep.TestSetService().CopyTestSet(record)
 }

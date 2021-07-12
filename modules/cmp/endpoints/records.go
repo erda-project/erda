@@ -35,6 +35,10 @@ func (e *Endpoints) RecordTypeList(ctx context.Context, r *http.Request, vars ma
 		},
 		Data: []apistructs.RecordTypeData{
 			{
+				RecordType:    i18n.Sprintf(string(dbclient.RecordTypeImportKubernetesCluster)),
+				RawRecordType: string(dbclient.RecordTypeImportKubernetesCluster),
+			},
+			{
 				RecordType:    i18n.Sprintf(string(dbclient.RecordTypeRmNodes)),
 				RawRecordType: string(dbclient.RecordTypeRmNodes),
 			},
