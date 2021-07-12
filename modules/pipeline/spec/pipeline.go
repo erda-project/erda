@@ -200,9 +200,11 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 			p.Extra.ConfigManageNamespaces...), true)
 }
 
+var DefaultHalfHourSec = uint64(60 * 30)
+
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
-	var halfHourSec uint64 = 60 * 30
+	halfHourSec := DefaultHalfHourSec
 	gc := &p.Extra.GC
 	// resource
 	if gc.ResourceGC.SuccessTTLSecond == nil {

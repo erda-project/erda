@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (r *Reconciler) doCompensateIfHave(pCtx context.Context, pipelineID uint64) {
+func (r *Reconciler) doStrategyRunCompensateIfHave(pCtx context.Context, pipelineID uint64) {
 
 	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
 	if err != nil {
