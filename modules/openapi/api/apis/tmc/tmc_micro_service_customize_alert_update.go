@@ -20,8 +20,8 @@ import (
 
 var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	BackendPath: "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "PUT",
 	CheckLogin:  true,
