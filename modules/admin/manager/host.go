@@ -21,7 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/apierrors"
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/modules/admin/model"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )

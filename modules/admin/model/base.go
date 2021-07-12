@@ -11,24 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dao
+package model
 
 import (
-	"github.com/jinzhu/gorm"
-
-	"github.com/erda-project/erda/modules/admin/model"
+	"time"
 )
 
-// GetHostByClusterAndIP get host info according cluster & privateAddr
-func (client *DBClient) GetHostByClusterAndIP(clusterName, privateAddr string) (*model.Host, error) {
-	var host model.Host
-	if err := client.Where("cluster = ?", clusterName).
-		Where("private_addr = ?", privateAddr).First(&host).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &host, nil
+// BaseModel common info for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
