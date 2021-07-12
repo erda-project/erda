@@ -41,7 +41,7 @@ func (db *TraceRequestHistoryDB) InsertHistory(history TraceRequestHistory) (*Tr
 
 func (db *TraceRequestHistoryDB) QueryHistoriesByScopeID(scopeID string, timestamp time.Time, limit int64) ([]*TraceRequestHistory, error) {
 	var list []*TraceRequestHistory
-	err := db.db().Select("`request_id`, `url`, `method`, `create_time`, `update_time`").
+	err := db.db().Select("`request_id`, `url`, `method`, `create_time`, `update_time`, `terminus_key`").
 		Where("`terminus_key` = ?", scopeID).
 		Order("`create_time` DESC").
 		Limit(limit).Find(&list).Error
