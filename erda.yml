@@ -207,6 +207,8 @@ services:
       exec: {}
   cluster-dialer:
     cmd: "/app/cluster-dialer"
+    expose:
+      - 80
     ports:
       - port: 80
         protocol: "TCP"
@@ -391,15 +393,6 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
-      BROWSER_ENABLE: "true"
-      BROWSER_GROUP_ID: "spot-monitor-browser"
-      CASSANDRA_BATCH_SIZE: "50"
-      CASSANDRA_PARALLELISM: "3"
-      ES_BATCH_SIZE: "50"
-      ES_PARALLELISM: "3"
-      LOG_TTL: "168h"
-      METRIC_INDEX_TTL: "192h"
-      TRACE_TTL: "168h"
     resources:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
@@ -433,6 +426,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     resources:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
@@ -609,7 +603,7 @@ services:
     resources:
       cpu: ${request_cpu:0.3}
       max_cpu: 1
-      mem: 128
+      mem: ${request_mem:2048}
       max_mem: 2048
       network:
         mode: "container"
@@ -639,12 +633,6 @@ services:
     envs:
       BROWSER_ENABLE: "true"
       BROWSER_GROUP_ID: "spot-monitor-browser"
-      CASSANDRA_BATCH_SIZE: "50"
-      CASSANDRA_PARALLELISM: "3"
-      ES_BATCH_SIZE: "50"
-      ES_PARALLELISM: "3"
-      KAFKA_BATCH_SIZE: "50"
-      KAFKA_PARALLELISM: "3"
       LOG_GROUP_ID: "spot-monitor-log"
       LOG_STORE_ENABLE: "true"
       LOG_TTL: "168h"

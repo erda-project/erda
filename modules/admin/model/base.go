@@ -11,17 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package model
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"time"
+)
 
-var TMC_MICRO_SERVICE_ALERT_RECORD_ATTRS = apis.ApiSpec{
-	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-record-attrs",
-	BackendPath: "/api/msp/apm/<tenantGroup>/alert-record-attrs",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 获取微服务告警记录属性",
+// BaseModel common info for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

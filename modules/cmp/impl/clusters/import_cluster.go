@@ -75,6 +75,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 
 	// create cluster request to cluster-manager and core-service
 	if err = c.bdl.CreateClusterWithOrg(userID, req.OrgID, &apistructs.ClusterCreateRequest{
+		OrgID:           int64(req.OrgID),
 		Name:            req.ClusterName,
 		DisplayName:     req.DisplayName,
 		Description:     req.Description,
@@ -197,8 +198,11 @@ func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRet
 			return fmt.Errorf("retry init job timeout, please try again")
 		default:
 			// delete old init job
+			propagationPolicy := metav1.DeletePropagationBackground
 			if err = cs.BatchV1().Jobs(conf.ErdaNamespace()).Delete(context.Background(), generateInitJobName(orgID,
-				req.ClusterName), metav1.DeleteOptions{}); err != nil {
+				req.ClusterName), metav1.DeleteOptions{
+				PropagationPolicy: &propagationPolicy,
+			}); err != nil {
 				// if delete error is job not found, try again
 				if !k8serrors.IsNotFound(err) {
 					time.Sleep(500 * time.Millisecond)
@@ -315,6 +319,10 @@ func (c *Clusters) RenderInitCmd(clusterName string) (string, error) {
 
 			if cluster.ManageConfig.Type != apistructs.ManageProxy {
 				return "", fmt.Errorf("only support proxy manage type")
+			}
+
+			if cluster.ManageConfig.Token != "" || cluster.ManageConfig.Address != "" {
+				return fmt.Sprintf("cluster %s already registered", clusterName), nil
 			}
 
 			cmd := fmt.Sprintf("kubectl apply -f '$REQUEST_PREFIX?clusterName=%s&accessKey=%s'", clusterName, cluster.ManageConfig.AccessKey)

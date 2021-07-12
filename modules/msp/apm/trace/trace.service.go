@@ -27,9 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gocql/gocql"
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -82,7 +80,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
 	}
-	iter := s.p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Consistency(gocql.All).Iter()
+	iter := s.p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
 	var spans []*pb.Span
 	for {
 		row := make(map[string]interface{})
@@ -104,7 +102,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
 	count := 0
-	s.p.cassandraSession.Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Consistency(gocql.All).Iter().Scan(&count)
+	s.p.cassandraSession.Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&count)
 	return int64(count), nil
 }
 
@@ -274,6 +272,13 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	responseCode := response.StatusCode
 	responseBody, err := ioutil.ReadAll(response.Body)
 
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			s.p.Log.Error("http response close fail.")
+		}
+	}(response.Body)
+
 	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -295,12 +300,6 @@ func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugReques
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("http response close fail.")
-		}
-	}(response.Body)
 	return response, nil
 }
 
