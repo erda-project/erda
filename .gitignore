@@ -38,7 +38,7 @@
 # for local debug
 /.env
 /.env.*
-/conf/**/*.local.yml
+/conf/**/*.local.yaml
 
 # generated files
 # openapi

@@ -14,8 +14,9 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/extensions/loghub"
+	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis"
@@ -28,6 +29,8 @@ import (
 )
 
 func main() {
-	modcom.RegisterInitializer(loghub.Init)
-	modcom.RunWithCfgDir("conf/monitor/extensions", "cloud-import")
+	common.RegisterInitializer(loghub.Init)
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/monitor/extensions/cloud-import.yaml",
+	})
 }

@@ -11,22 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package example
+package utils
 
 import (
 	"context"
+	"net/http"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	"github.com/erda-project/erda-proto-go/examples/pb"
+	"github.com/erda-project/erda-infra/pkg/transport"
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
-type greeterService struct {
-	p *provider
+func GetHttpRequest(ctx context.Context) *http.Request {
+	return transhttp.ContextRequest(ctx)
 }
 
-func (s *greeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+func NewContextWithHeader(ctx context.Context) context.Context {
+	httpRequest := GetHttpRequest(ctx)
+	header := transport.Header{}
+	for k := range httpRequest.Header {
+		header.Set(k, httpRequest.Header.Get(k))
+	}
+	return transport.WithHeader(context.Background(), header)
 }
