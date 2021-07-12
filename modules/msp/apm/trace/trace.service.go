@@ -28,7 +28,6 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -276,7 +275,7 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Error("http response close fail.")
+			s.p.Log.Error("http response close fail.")
 		}
 	}(response.Body)
 
