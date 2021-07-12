@@ -432,6 +432,10 @@ github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382 h1:zZe7KTM
 github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
 github.com/erda-project/erda-proto-go v0.0.0-20210712040237-13b419ccb916 h1:czPQQASp+LrDdWievgMbSFhE8Z9KGlJ5QIVKFfvS5XQ=
 github.com/erda-project/erda-proto-go v0.0.0-20210712040237-13b419ccb916/go.mod h1:3p+zdizZPn3d0qq5y1GjNRP31Jd3mIvqN4809cldvN4=
+github.com/erda-project/erda-proto-go v0.0.0-20210712090734-93dcf870d728 h1:oR1YK+wqQpAKzbAChir27czCWUIbh8Bx0XS/fwfLNj4=
+github.com/erda-project/erda-proto-go v0.0.0-20210712090734-93dcf870d728/go.mod h1:3p+zdizZPn3d0qq5y1GjNRP31Jd3mIvqN4809cldvN4=
+github.com/erda-project/erda-proto-go v0.0.0-20210712100141-8e21182f69d1 h1:a34/4oWqAmRFj5tcI/kFV0fUn1YU99VJXk/g814Ptvg=
+github.com/erda-project/erda-proto-go v0.0.0-20210712100141-8e21182f69d1/go.mod h1:3p+zdizZPn3d0qq5y1GjNRP31Jd3mIvqN4809cldvN4=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb h1:fkVZXQpz6JjPKkzr45/JNvQtQwOTk3WDVyLsItxwVKI=
