@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"os"
 	"strconv"
@@ -28,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
-	"github.com/erda-project/erda/pkg/mimetype"
+	_ "github.com/erda-project/erda/pkg/mimetype"
 )
 
 const (
@@ -91,7 +92,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 		HeaderContentLength:      strconv.FormatInt(file.ByteSize, 10),
 	}
 
-	contentType := mimetype.TypeByExtension(file.Ext)
+	contentType := mime.TypeByExtension(file.Ext)
 	if contentType != "" {
 		headers[headerContentType] = contentType
 	}
