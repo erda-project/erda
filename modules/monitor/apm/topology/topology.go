@@ -44,6 +44,8 @@ import (
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
+const TimeLayout = "2006-01-02 15:04:05"
+
 type Vo struct {
 	StartTime   int64    `query:"startTime"`
 	EndTime     int64    `query:"endTime"`
@@ -62,8 +64,6 @@ func GetTopologyPermission(db *db.DB) httpserver.Interceptor {
 		apm.MonitorTopology, permission.ActionGet,
 	)
 }
-
-const TimeLayout = "2006-01-02 15:04:05"
 
 type Node struct {
 	Id              string  `json:"id,omitempty"`
