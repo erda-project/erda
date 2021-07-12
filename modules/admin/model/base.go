@@ -11,22 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package example
+package model
 
 import (
-	"context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	"github.com/erda-project/erda-proto-go/examples/pb"
+	"time"
 )
 
-type greeterService struct {
-	p *provider
-}
-
-func (s *greeterService) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+// BaseModel common info for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
