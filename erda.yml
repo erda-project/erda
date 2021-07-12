@@ -11,6 +11,7 @@ values:
 envs:
   ETCDCTL_API: "3"
   MONITOR_ADDR: monitor:7096
+  COLLECTOR_ADDR: collector:7076
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -75,6 +76,8 @@ services:
         mode: container
   admin:
     cmd: "/app/admin"
+    envs:
+      DEBUG: "false"
     ports:
       - port: 9095
         protocol: TCP
@@ -204,6 +207,8 @@ services:
       exec: {}
   cluster-dialer:
     cmd: "/app/cluster-dialer"
+    expose:
+      - 80
     ports:
       - port: 80
         protocol: "TCP"
@@ -296,15 +301,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
-      ALIYUN_ACCESS_KEY_ID: ""
-      ALIYUN_ACCESS_KEY_SECRET: ""
-      ALIYUN_SMS_SIGN_NAME: ""
-      DICE_EMAIL_SMTP_DISPLAY_USER: ""
-      DICE_EMAIL_SMTP_HOST: ""
-      DICE_EMAIL_SMTP_PASSWORD: ""
-      DICE_EMAIL_SMTP_PORT: ""
-      DICE_EMAIL_SMTP_USERNAME: ""
-      DICE_PROXY: ""
+      DEBUG: "false"
     resources:
       cpu: ${request_cpu:2}
       max_cpu: 2
@@ -396,15 +393,6 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
-      BROWSER_ENABLE: "true"
-      BROWSER_GROUP_ID: "spot-monitor-browser"
-      CASSANDRA_BATCH_SIZE: "50"
-      CASSANDRA_PARALLELISM: "3"
-      ES_BATCH_SIZE: "50"
-      ES_PARALLELISM: "3"
-      LOG_TTL: "168h"
-      METRIC_INDEX_TTL: "192h"
-      TRACE_TTL: "168h"
     resources:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
@@ -438,6 +426,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     resources:
       cpu: ${request_cpu:1}
       mem: ${request_mem:512}
@@ -514,6 +503,9 @@ services:
       exec: {}
   cmp:
     cmd: "/app/cmp"
+    envs:
+      UC_CLIENT_ID: "dice"
+      UC_CLIENT_SECRET: "secret"
     ports:
       - port: 9027
         protocol: "TCP"
@@ -544,6 +536,7 @@ services:
     envs:
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
+      MSP_ADDR: "msp:8080"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
@@ -609,8 +602,9 @@ services:
       DEBUG: "false"
     resources:
       cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: 128
+      max_cpu: 1
+      mem: ${request_mem:2048}
+      max_mem: 2048
       network:
         mode: "container"
     binds:
@@ -639,12 +633,6 @@ services:
     envs:
       BROWSER_ENABLE: "true"
       BROWSER_GROUP_ID: "spot-monitor-browser"
-      CASSANDRA_BATCH_SIZE: "50"
-      CASSANDRA_PARALLELISM: "3"
-      ES_BATCH_SIZE: "50"
-      ES_PARALLELISM: "3"
-      KAFKA_BATCH_SIZE: "50"
-      KAFKA_PARALLELISM: "3"
       LOG_GROUP_ID: "spot-monitor-log"
       LOG_STORE_ENABLE: "true"
       LOG_TTL: "168h"

@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -191,7 +192,6 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 			},
 		})
 	}
-
 	// permission check
 	p := apistructs.PermissionCheckRequest{
 		UserID:   userid,
@@ -240,12 +240,23 @@ func (e *Endpoints) ClusterInfo(ctx context.Context, r *http.Request, vars map[s
 	clusternames := r.URL.Query().Get("clusterName")
 	clusternameList := strutil.Split(clusternames, ",", true)
 
+	orgIDHeader := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.Atoi(orgIDHeader)
+	if err != nil {
+		return mkResponse(apistructs.ImportClusterResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
+	}
+
 	if len(clusternameList) == 0 {
 		errstr := "empty clusterName arg"
 		return httpserver.ErrResp(200, "1", errstr)
 	}
 
-	result, err := e.clusters.ClusterInfo(ctx, clusternameList)
+	result, err := e.clusters.ClusterInfo(ctx, uint64(orgID), clusternameList)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to get clusterinfo: %s, %v", clusternames, err)
 		return httpserver.ErrResp(200, "2", errstr)
@@ -259,7 +270,7 @@ func (e *Endpoints) ClusterInfo(ctx context.Context, r *http.Request, vars map[s
 func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	header := r.Header
 
-	var req apistructs.ClusterUpdateRequest
+	var req apistructs.CMPClusterUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errstr := fmt.Sprintf("failed to parse request body: %v", err)
 		return httpserver.ErrResp(200, "2", errstr)
@@ -272,7 +283,7 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 		}
 	}
 
-	err := e.bdl.UpdateCluster(req, header)
+	err := e.clusters.UpdateCluster(req, header)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to update clusterinfo: %v", err)
 		return httpserver.ErrResp(200, "2", errstr)
@@ -283,7 +294,7 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 	})
 }
 
-func (e *Endpoints) handleUpdateReq(req *apistructs.ClusterUpdateRequest) string {
+func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) string {
 	var as *ess.Ess
 	var isEdit bool
 	clusterInfo, err := e.bdl.GetCluster(req.Name)
@@ -408,4 +419,128 @@ func (e *Endpoints) validateOpsConfig(opsConf *apistructs.OpsConfig) error {
 
 func (e Endpoints) isEmpty(str string) bool {
 	return strings.Replace(str, " ", "", -1) == ""
+}
+
+func (e *Endpoints) ImportCluster(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	var req apistructs.ImportCluster
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errStr := fmt.Sprintf("failed to unmarshal to apistructs.ImportCluster: %v", err)
+		return mkResponse(apistructs.ImportClusterResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: errStr},
+			},
+		})
+	}
+
+	logrus.Debugf("cluster init retry reuqest body: %v", req)
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		return resp, nil
+	}
+
+	if err = e.clusters.ImportClusterWithRecord(i.UserID, &req); err != nil {
+		return mkResponse(apistructs.BaseResponse{
+			Success: false,
+			Err: &apistructs.BaseResponseErr{
+				Msg: err.Error(),
+			},
+		})
+	}
+
+	return mkResponse(apistructs.ImportClusterResponse{
+		Header: apistructs.Header{Success: true},
+	})
+}
+
+func (e *Endpoints) InitClusterRetry(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	var req apistructs.ClusterInitRetry
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errStr := fmt.Sprintf("failed to unmarshal to apistructs.ImportCluster: %v", err)
+		return mkResponse(apistructs.ImportClusterResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: errStr},
+			},
+		})
+	}
+
+	logrus.Debugf("cluster init retry reuqest body: %v", req)
+
+	orgIDHeader := r.Header.Get(httputil.OrgHeader)
+	orgID, err := strconv.Atoi(orgIDHeader)
+	if err != nil {
+		return mkResponse(apistructs.ImportClusterResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
+	}
+
+	if err = e.clusters.ClusterInitRetry(uint64(orgID), &req); err != nil {
+		return mkResponse(apistructs.BaseResponse{
+			Success: false,
+			Err: &apistructs.BaseResponseErr{
+				Msg: err.Error(),
+			},
+		})
+	}
+	return mkResponse(apistructs.ImportClusterResponse{
+		Header: apistructs.Header{Success: true},
+	})
+}
+
+func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	clusterName := r.URL.Query().Get("clusterName")
+	accessKey := r.URL.Query().Get("accessKey")
+
+	if accessKey != "" {
+		content, err := e.clusters.RenderInitContent(clusterName, accessKey)
+		if err != nil {
+			return err
+		}
+
+		w.Write([]byte(content))
+
+		return nil
+	}
+
+	respInfo, err := e.clusters.RenderInitCmd(clusterName)
+	if err != nil {
+		return err
+	}
+
+	respObj := apistructs.InitClusterResponse{
+		Header: apistructs.Header{Success: true},
+		Data:   respInfo,
+	}
+
+	respData, err := json.Marshal(respObj)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respData)
+
+	return nil
+}
+
+func (e *Endpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	req := apistructs.ClusterEvent{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errstr := fmt.Sprintf("decode clusterhook request fail: %v", err)
+		logrus.Error(errstr)
+		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errstr}, nil
+	}
+	if err := e.clusters.Hook(&req); err != nil {
+		errstr := fmt.Sprintf("failed to handle cluster event: %v", err)
+		logrus.Error(errstr)
+		return httpserver.HTTPResponse{Status: http.StatusInternalServerError, Content: errstr}, nil
+	}
+	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
 }

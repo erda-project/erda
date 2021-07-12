@@ -16,7 +16,7 @@ package dao
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/modules/cmdb/model"
+	"github.com/erda-project/erda/modules/admin/model"
 )
 
 // GetHostByClusterAndIP get host info according cluster & privateAddr
