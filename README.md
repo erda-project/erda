@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/github/license/erda-project/erda.svg)](https://github.com/erda-project/erda/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/erda-project/erda)](https://goreportcard.com/report/github.com/erda-project/erda)
 [![release](https://img.shields.io/github/release/erda-project/erda/all.svg)](https://github.com/erda-project/erda/releases)
-###  [Introduction](#Introduction) | [Quick Start](#Quick-Start) | [Installation](#Installation) | [Documentation](#User-Manual) | [Contributing](#Contributing) 
+###  [Introduction](#Introduction) | [Quick Start](#Quick-Start) | [Installation](#Installation) | [Documentation](#User-Manual) | [CHANGELOG](./CHANGELOG/README.md) | [Contributing](#Contributing) 
 
 ## Demo
 ![Screenshot](https://static.erda.cloud/images/erda.gif)

@@ -67,12 +67,12 @@ func (svc *Service) Export(req apistructs.TestCaseExportRequest) (uint64, error)
 		FileName:     sheetName,
 		Description:  fmt.Sprintf("ProjectID: %v, TestsetID: %v", req.ProjectID, req.TestSetID),
 		ProjectID:    req.ProjectID,
-		TestSetID:    req.TestSetID,
 		Type:         apistructs.FileActionTypeExport,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
 			ManualTestFileExtraInfo: &apistructs.ManualTestFileExtraInfo{
+				TestSetID:     req.TestSetID,
 				ExportRequest: &req,
 			},
 		},
@@ -87,12 +87,30 @@ func (svc *Service) Export(req apistructs.TestCaseExportRequest) (uint64, error)
 
 func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 	req := record.Extra.ManualTestFileExtraInfo.ExportRequest
+	id := record.ID
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		return
+	}
+	fileUUID, err := svc.ExportTestCases(req, record.FileName)
+	if err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+			logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+		}
+		return
+	}
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID}); err != nil {
+		logrus.Error(apierrors.ErrImportTestCases.InternalError(err))
+	}
+}
+
+func (svc *Service) ExportTestCases(req *apistructs.TestCaseExportRequest, sheetName string) (string, error) {
 	req.PageNo = -1
 	req.PageSize = -1
 	totalResult, err := svc.PagingTestCases(req.TestCasePagingRequest)
 	if err != nil {
-		logrus.Error(err)
-		return
+		return "", err
 	}
 
 	var testCases []apistructs.TestCaseWithSimpleSetInfo
@@ -102,17 +120,9 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 		}
 	}
 
-	id := record.ID
-	sheetName := record.FileName
-	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateProcessing}); err != nil {
-		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-		return
-	}
-
 	f, err := ioutil.TempFile("", "export.*")
 	if err != nil {
-		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-		return
+		return "", apierrors.ErrExportTestCases.InternalError(err)
 	}
 
 	defer func() {
@@ -126,36 +136,20 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 	if req.FileType == apistructs.TestCaseFileTypeExcel {
 		excelLines, err := svc.convert2Excel(testCases, req.Locale)
 		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
+			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 
 		if err := excel.Export(f, excelLines, sheetName); err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
+			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 	} else {
 		xmindContent, err := svc.convert2XMind(testCases, req.Locale)
 		if err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
+			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 
 		if err := xmind.Export(f, xmindContent, sheetName); err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-				logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-			}
-			return
+			return "", apierrors.ErrExportTestCases.InternalError(err)
 		}
 	}
 
@@ -171,14 +165,7 @@ func (svc *Service) ExportFile(record *dao.TestFileRecord) {
 	}
 	file, err := svc.bdl.UploadFile(uploadReq)
 	if err != nil {
-		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-		if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
-			logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-		}
-		return
+		return "", apierrors.ErrExportTestCases.InternalError(err)
 	}
-
-	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: file.UUID}); err != nil {
-		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
-	}
+	return file.UUID, nil
 }

@@ -112,6 +112,13 @@ type TestSetCopyRequest struct {
 
 	IdentityInfo
 }
+
+type TestSetCopyAsyncRequest struct {
+	SourceTestSet *TestSet
+	DestTestSet   *TestSet
+	IdentityInfo
+}
+
 type TestSetCopyResponse struct {
 	Header
 	Data uint64 `json:"data"`

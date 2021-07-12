@@ -422,3 +422,7 @@ func constructBasicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
+
+func (c *HTTPClient) BackendClient() *http.Client {
+	return c.cli
+}
