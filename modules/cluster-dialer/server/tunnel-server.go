@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,25 +105,25 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 			remotedialer.DefaultErrorWriter(rw, req, 500, err)
 			return
 		}
-		if c.ManageConfig != nil && c.ManageConfig.Type != apistructs.ManageProxy {
-			err = fmt.Errorf("cluster %s is not proxy type", clusterKey)
-			logrus.Debug(err)
-			remotedialer.DefaultErrorWriter(rw, req, 500, err)
-			return
-		}
-		if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
-			Name: clusterKey,
-			ManageConfig: &apistructs.ManageConfig{
-				Type:    apistructs.ManageProxy,
-				Address: clusterInfo.Address,
-				CaData:  clusterInfo.CACert,
-				Token:   clusterInfo.Token,
-			},
-		}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
-			remotedialer.DefaultErrorWriter(rw, req, 500, err)
-			return
+
+		if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
+			if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+				Name: clusterKey,
+				ManageConfig: &apistructs.ManageConfig{
+					Type:    apistructs.ManageProxy,
+					Address: clusterInfo.Address,
+					CaData:  clusterInfo.CACert,
+					Token:   clusterInfo.Token,
+				},
+			}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+				remotedialer.DefaultErrorWriter(rw, req, 500, err)
+				return
+			}
+		} else {
+			logrus.Debugf("cluster %s is not proxy type", clusterKey)
 		}
 	}
+
 	server.ServeHTTP(rw, req)
 }
 
@@ -166,8 +167,11 @@ func netportal(server *remotedialer.Server, rw http.ResponseWriter, req *http.Re
 		return
 	}
 	defer resp.Body.Close()
-
 	logrus.Infof("[%d] REQ OK code=%d latency=%dms %s", id, resp.StatusCode, time.Since(start).Milliseconds(), url)
+	rwHeader := rw.Header()
+	for key, values := range resp.Header {
+		rwHeader[textproto.CanonicalMIMEHeaderKey(key)] = values
+	}
 	rw.WriteHeader(resp.StatusCode)
 	io.Copy(rw, resp.Body)
 	logrus.Infof("[%d] REQ DONE latency=%dms %s", id, time.Since(start).Milliseconds(), url)

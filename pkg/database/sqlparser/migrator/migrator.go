@@ -14,6 +14,7 @@
 package migrator
 
 import (
+	"database/sql"
 	"path/filepath"
 	"strings"
 	"time"
@@ -23,17 +24,18 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 	"github.com/erda-project/erda/pkg/database/sqlparser/snapshot"
 )
 
-const defaultDatabase = "dice"
-
 // installing type
 const (
-	firstTimeInstall = "first_time_install"
-	normalUpdate     = "normal_update"
-	firstTimeUpdate  = "first_time_update"
+	firstTimeInstall installType = "first_time_install"
+	normalUpdate     installType = "normal_update"
+	firstTimeUpdate  installType = "first_time_update"
 )
+
+type installType string
 
 type Migrator struct {
 	Parameters
@@ -42,71 +44,90 @@ type Migrator struct {
 	LocalScripts *Scripts
 	reversing    []string
 
-	installingType string
+	installingType installType
+
+	dbSettings      *pygrator.Settings // database settings
+	sandboxSettings *pygrator.Settings // sandbox settings
+	db              *gorm.DB
+	sandbox         *gorm.DB
 }
 
-func New(parameters Parameters) (*Migrator, error) {
+func New(parameters Parameters) (mig *Migrator, err error) {
 	if parameters == nil {
 		return nil, errors.New("parameters is nil")
 	}
-
-	// init parameters
-	dsn = parameters.DSN()
-	sandboxDSN = parameters.SandboxDSN()
-	debugSQL = parameters.DebugSQL()
-	database = parameters.Database()
-	if database == "" {
-		database = defaultDatabase
+	if parameters.MySQLParameters() == nil {
+		return nil, errors.New("MySQL DSN is invalid, did you set the right DSN ?")
+	}
+	if parameters.SandboxParameters() == nil {
+		return nil, errors.New("sandbox DSN is invalid, did you set the right DSN ?")
 	}
 
-	scripts, err := NewScripts(parameters)
+	// init parameters
+	mig = new(Migrator)
+	mig.Parameters = parameters
+	mig.dbSettings = &pygrator.Settings{
+		Engine:   pygrator.DjangoMySQLEngine,
+		User:     mig.MySQLParameters().Username,
+		Password: mig.MySQLParameters().Password,
+		Host:     mig.MySQLParameters().Host,
+		Port:     mig.MySQLParameters().Port,
+		Name:     mig.MySQLParameters().Database,
+		TimeZone: pygrator.TimeZoneAsiaShanghai,
+	}
+	mig.sandboxSettings = &pygrator.Settings{
+		Engine:   pygrator.DjangoMySQLEngine,
+		User:     mig.SandboxParameters().Username,
+		Password: mig.SandboxParameters().Password,
+		Host:     mig.SandboxParameters().Host,
+		Port:     mig.SandboxParameters().Port,
+		Name:     mig.SandboxParameters().Database,
+		TimeZone: pygrator.TimeZoneAsiaShanghai,
+	}
+
+	// load scripts
+	mig.LocalScripts, err = NewScripts(parameters)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewScripts")
 	}
 
-	var mig = Migrator{
-		Parameters:   parameters,
-		snap:         nil,
-		LocalScripts: scripts,
-		reversing:    nil,
-	}
-	return &mig, nil
+	return mig, nil
 }
 
-func (mig *Migrator) Run() error {
+func (mig *Migrator) Run() (err error) {
 	// snapshot database schema structure
-	snap, err := snapshot.From(DB(), SchemaMigrationHistory)
+	mig.snap, err = snapshot.From(mig.DB(), SchemaMigrationHistory)
 	if err != nil {
 		return err
 	}
-	mig.snap = snap
 
 	// if there is no table then goto new installation
-	if !snap.HasAnyTable() {
-		logrus.Infoln("first time installation...")
+	if !mig.snap.HasAnyTable() {
+		logrus.Infoln("there is not any table, it is the first time installation...")
 		mig.installingType = firstTimeInstall
 		return mig.newInstallation()
 	}
+
 	// if there is any history record then goto normal update,
 	// otherwise goto first time update
-	tx := DB().Find(new([]HistoryModel))
+	tx := mig.DB().Find(new([]HistoryModel))
 	if tx.Error == nil && tx.RowsAffected > 0 {
-		logrus.Infoln("normal update...")
+		logrus.Infoln("found migration histries, it is the normal update installation...")
 		mig.installingType = normalUpdate
 		return mig.normalUpdate()
 	}
-	if tx.Error != nil {
-		logrus.Infof("failed to Find HistoryModel records, err: %v", tx.Error)
-	}
 
-	logrus.Infoln("first time update...")
+	if tx.Error != nil {
+		logrus.WithError(tx.Error).Warnln("failed to Find HistoryModel records")
+	}
+	logrus.Infoln("there are some tables but no migration histories, it is the first time update installation by Erda MySQL Migration...")
 	mig.installingType = firstTimeUpdate
 	return mig.firstTimeUpdate()
 }
 
 func (mig *Migrator) newInstallation() (err error) {
-	history := new(HistoryModel)
-	history.create()
+	new(HistoryModel).CreateTable(mig.DB())
+	mig.LocalScripts.MarkPending(mig.DB())
 
 	// Erda mysql lint
 	if mig.NeedErdaMySQLLint() {
@@ -149,6 +170,7 @@ func (mig *Migrator) newInstallation() (err error) {
 
 func (mig *Migrator) normalUpdate() (err error) {
 	// Erda mysql lint
+	mig.LocalScripts.MarkPending(mig.DB())
 	if mig.NeedErdaMySQLLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT....")
 		if err = mig.LocalScripts.Lint(); err != nil {
@@ -180,7 +202,7 @@ func (mig *Migrator) normalUpdate() (err error) {
 
 	// copy database snapshot to sandbox
 	logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX....")
-	if err = mig.snap.RecoverTo(SandBox()); err != nil {
+	if err = mig.snap.RecoverTo(mig.SandBox()); err != nil {
 		return err
 	}
 	logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX OK")
@@ -217,31 +239,32 @@ func (mig *Migrator) firstTimeUpdate() (err error) {
 	// compare local base schema and cloud base schema for every service
 	logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
 	for _, service := range mig.LocalScripts.Services {
-		if equal := service.BaselineEqualCloud(DB()); !equal.Equal() {
+		if equal := service.BaselineEqualCloud(mig.DB()); !equal.Equal() {
 			return errors.Errorf("local base schema is not equal with cloud schema: %s", equal.Reason())
 		}
 	}
 
 	// record base
 	logrus.Infoln("RECORD BASE... ..")
+	new(HistoryModel).CreateTable(mig.DB())
 	now := time.Now()
-	new(HistoryModel).create()
-	for serviceName, service := range mig.LocalScripts.Services {
-		for i := range service {
-			if service[i].isBase {
-				service[i].Pending = false
-				if err := (&HistoryModel{
+	for moduleName, module := range mig.LocalScripts.Services {
+		for i := range module.Scripts {
+			if module.Scripts[i].IsBaseline() {
+				module.Scripts[i].Pending = false
+				record := HistoryModel{
 					ID:           0,
 					CreatedAt:    now,
 					UpdatedAt:    now,
-					ServiceName:  serviceName,
-					Filename:     filepath.Base(service[i].Name),
-					Checksum:     service[i].Checksum(),
+					ServiceName:  moduleName,
+					Filename:     filepath.Base(module.Scripts[i].GetName()),
+					Checksum:     module.Scripts[i].Checksum(),
 					InstalledBy:  "",
 					InstalledOn:  "",
-					LanguageType: "SQL",
-					Reversed:     ddlreverser.ReverseCreateTableStmtsToDropTableStmts(service[i]),
-				}).insert(); err != nil {
+					LanguageType: string(module.Scripts[i].Type),
+					Reversed:     ddlreverser.ReverseCreateTableStmts(module.Scripts[i]),
+				}
+				if err := mig.DB().Create(&record).Error; err != nil {
 					return err
 				}
 			}
@@ -251,73 +274,94 @@ func (mig *Migrator) firstTimeUpdate() (err error) {
 	return mig.normalUpdate()
 }
 
-func (mig *Migrator) reverse(reversing []string, reverseSlice bool) {
+func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 	if len(reversing) == 0 {
-		return
+		return nil
 	}
 	if reverseSlice {
 		ddlreverser.ReverseSlice(reversing)
 	}
 	for _, s := range mig.reversing {
-		if err := DB().Exec(s).Error; err != nil {
-			logrus.Fatalf("failed to exec reversing SQL: %s", s)
+		if err := mig.DB().Exec(s).Error; err != nil {
+			return errors.Errorf("failed to exec reversing SQL: %s", s)
 		}
 	}
+	return nil
 }
 
 func (mig *Migrator) migrateSandbox() (err error) {
-	for _, serviceName := range mig.LocalScripts.ServicesNames {
-		scripts := mig.LocalScripts.Services[serviceName]
-		for _, script := range scripts {
+	if err = mig.destructiveLint(); err != nil {
+		return err
+	}
+
+	// install every module
+	for moduleName, module := range mig.LocalScripts.Services {
+		for _, script := range module.Scripts {
 			if !script.Pending {
 				continue
 			}
-			for _, ddl := range script.DDLNodes() {
-				if err = SandBox().Exec(ddl.Text()).Error; err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox. The service name: %s, the script filename: %s, the schema SQL: %s",
-						serviceName, script.Name, ddl.Text())
+			switch script.Type {
+			case ScriptTypeSQL:
+				after := func(tx *gorm.DB, err error) {
+					tx.Commit()
 				}
-			}
-			for _, dml := range script.DMLNodes() {
-				if err = SandBox().Exec(dml.Text()).Error; err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox. The service name: %s, the script filename: %s, the data SQL: %s",
-						serviceName, script.Name, dml.Text())
+				if err := mig.installSQL(script, mig.SandBox, mig.SandBox().Begin, after); err != nil {
+					return errors.Wrapf(err, "failed to migrate in sandbox: %+v",
+						map[string]interface{}{"moduleName": moduleName, "filename": script.GetName(), "type": ScriptTypeSQL})
+				}
+			case ScriptTypePython:
+				if err := mig.installPy(script, module, mig.sandboxSettings, true); err != nil {
+					return errors.Wrapf(err, "failed to migrate in sandbox: %+v",
+						map[string]interface{}{"moduleName": moduleName, "filename": script.GetName(), "type": ScriptTypePython})
 				}
 			}
 		}
 	}
+
 	return err
 }
 
 // pre migrate data SQLs, all applied in this runtime will be rollback
-func (mig *Migrator) preMigrate() error {
-	if mig.LocalScripts.HasDestructiveOperationInPending() {
-		logrus.Warnln("there are destructive SQL in pending scripts, stop doing pre-migration")
-		return nil
+func (mig *Migrator) preMigrate() (err error) {
+	if err = mig.destructiveLint(); err != nil {
+		return err
 	}
 
 	// finally roll all DDL back
 	defer func() {
-		logrus.Infoln("\tREVERSE PRE-MIGRATIONS")
-		mig.reverse(mig.reversing, true)
+		logrus.Infoln("	REVERSE PRE-MIGRATIONS: all schema migration")
+		if err := mig.reverse(mig.reversing, true); err != nil {
+			logrus.Fatalln(err)
+		}
 	}()
 
 	mig.reversing = nil
 
-	for _, serviceName := range mig.LocalScripts.ServicesNames {
-		scripts := mig.LocalScripts.Services[serviceName]
-		for _, script := range scripts {
+	// install every module
+	for moduleName, module := range mig.LocalScripts.Services {
+		for _, script := range module.Scripts {
 			if !script.Pending {
 				continue
 			}
-			if err := script.Install(Begin, func(tx *gorm.DB, _ error) {
-				logrus.Infof("\tROLLBACK PRE-MIGRATIONS: %s", script.Name)
-				tx.Rollback()
-			}); err != nil {
-				return err
-			}
 
-			mig.reversing = append(mig.reversing, script.Reversing...)
+			switch script.Type {
+			case ScriptTypeSQL:
+				after := func(tx *gorm.DB, err error) {
+					logrus.WithField("module name", moduleName).
+						WithField("script name", script.GetName()).
+						Infoln("	ROLLBACK PRE-MIGRATIONS: current script data migration")
+					tx.Rollback()
+				}
+				if err := mig.installSQL(script, mig.DB, mig.DB().Begin, after); err != nil {
+					return errors.Wrapf(err, "failed to pre-migrate: %+v",
+						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
+				}
+			case ScriptTypePython:
+				if err := mig.installPy(script, module, mig.dbSettings, false); err != nil {
+					return errors.Wrapf(err, "failed to pre-migrate: %+v",
+						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypePython})
+				}
+			}
 		}
 	}
 
@@ -326,40 +370,123 @@ func (mig *Migrator) preMigrate() error {
 
 func (mig *Migrator) migrate() error {
 	now := time.Now()
-	for _, serviceName := range mig.LocalScripts.ServicesNames {
-		scripts := mig.LocalScripts.Services[serviceName]
-		for _, script := range scripts {
+
+	// install every service
+	for moduleName, module := range mig.LocalScripts.Services {
+		logrus.WithField("module", moduleName).Infoln()
+		for _, script := range module.Scripts {
 			if !script.Pending {
 				continue
 			}
-			logrus.Infoln("install", script.Name)
-			if err := script.Install(Begin, func(tx *gorm.DB, err error) {
-				if err != nil {
-					tx.Rollback()
-					mig.reverse(script.Reversing, true) // script granularity rollback, not overall rollback.
-				} else {
-					tx.Commit()
+
+			logrus.WithField("script name", script.GetName()).Infoln("install")
+			switch script.Type {
+			case ScriptTypeSQL:
+				after := func(tx *gorm.DB, err error) {
+					if err != nil {
+						tx.Rollback()
+						mig.reverse(script.Reversing, true)
+					} else {
+						tx.Commit()
+					}
 				}
-			}); err != nil {
-				return err
+				if err := mig.installSQL(script, mig.DB, mig.DB().Begin, after); err != nil {
+					return errors.Wrapf(err, "failed to migrate: %+v",
+						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
+				}
+
+			case ScriptTypePython:
+				if err := mig.installPy(script, module, mig.dbSettings, true); err != nil {
+					return errors.Wrapf(err, "failed to migrate: %+v",
+						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypePython})
+				}
 			}
 
+			// record it
 			ddlreverser.ReverseSlice(script.Reversing)
-			if err := (&HistoryModel{
+			record := HistoryModel{
 				ID:           0,
 				CreatedAt:    now,
 				UpdatedAt:    now,
-				ServiceName:  serviceName,
-				Filename:     filepath.Base(script.Name),
+				ServiceName:  moduleName,
+				Filename:     script.GetName(),
 				Checksum:     script.Checksum(),
 				InstalledBy:  "",
 				InstalledOn:  "",
-				LanguageType: "SQL",
+				LanguageType: string(script.Type),
 				Reversed:     strings.Join(script.Reversing, "\n"),
-			}).insert(); err != nil {
-				return errors.Wrap(err, "internal error: failed to record migration. All migrations will be rolled back.")
+			}
+			if err := mig.DB().Create(&record).Error; err != nil {
+				return errors.Wrapf(err, "internal error: failed to record migration")
 			}
 		}
+	}
+
+	return nil
+}
+
+func (mig *Migrator) installSQL(s *Script, exec func() *gorm.DB, begin func(opts ...*sql.TxOptions) *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
+	tx := begin()
+	defer after(tx, err)
+	defer func() {
+		mig.reversing = append(mig.reversing, s.Reversing...)
+	}()
+
+	s.Reversing = nil
+
+	for _, node := range s.DDLNodes() {
+		var (
+			reverse string
+			ok      bool
+		)
+		reverse, ok, err = ddlreverser.ReverseDDLWithSnapshot(exec(), node)
+		if err != nil {
+			return errors.Wrapf(err, "failed to generate reversed DDL: %+v",
+				map[string]string{"scritpName": s.GetName(), "SQL": node.Text()})
+		}
+		if ok {
+			s.Reversing = append(s.Reversing, reverse)
+		}
+
+		if err = exec().Exec(node.Text()).Error; err != nil {
+			return errors.Wrapf(err, "failed to do schema migration: %+v",
+				map[string]string{"scriptName": s.GetName(), "SQL": node.Text()})
+		}
+	}
+
+	for _, node := range s.DMLNodes() {
+		if err = tx.Exec(node.Text()).Error; err != nil {
+			return errors.Wrapf(err, "failed to do data migration: %+v",
+				map[string]string{"scriptName": s.GetName(), "SQL": node.Text()})
+		}
+	}
+
+	return nil
+}
+
+func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Settings, commit bool) error {
+	var p = pygrator.Package{
+		DeveloperScript: s,
+		Requirements:    module.PythonRequirementsText,
+		Settings:        *settings,
+		Commit:          commit,
+	}
+	if len(p.Requirements) == 0 {
+		p.Requirements = []byte(pygrator.BaseRequirements)
+	}
+
+	if err := p.Make(); err != nil {
+		return err
+	}
+	defer p.Remove()
+
+	return p.Run()
+}
+
+func (mig *Migrator) destructiveLint() error {
+	text, ok := mig.LocalScripts.HasDestructiveOperationInPending()
+	if ok {
+		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", text)
 	}
 
 	return nil

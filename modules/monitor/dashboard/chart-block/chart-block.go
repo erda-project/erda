@@ -19,9 +19,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) getSystemBlock(params struct {

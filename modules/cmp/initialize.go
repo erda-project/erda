@@ -16,9 +16,12 @@ package cmp
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
@@ -30,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/endpoints"
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
+	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -37,6 +41,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func initialize() error {
@@ -69,6 +74,8 @@ func initialize() error {
 }
 
 func do() (*httpserver.Server, error) {
+	var redisCli *redis.Client
+
 	db := dbclient.Open(dbengine.MustOpen())
 
 	i18n.InitI18N()
@@ -81,6 +88,28 @@ func do() (*httpserver.Server, error) {
 	js, err := jsonstore.New()
 	if err != nil {
 		return nil, err
+	}
+
+	if conf.LocalMode() {
+		redisCli = redis.NewClient(&redis.Options{
+			Addr:     conf.RedisAddr(),
+			Password: conf.RedisPwd(),
+		})
+	} else {
+		redisCli = redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:    conf.RedisMasterName(),
+			SentinelAddrs: strings.Split(conf.RedisSentinelAddrs(), ","),
+			Password:      conf.RedisPwd(),
+		})
+	}
+	if _, err := redisCli.Ping().Result(); err != nil {
+		return nil, err
+	}
+
+	// init uc client
+	uc := ucauth.NewUCClient(discover.UC(), conf.UCClientID(), conf.UCClientSecret())
+	if conf.OryEnabled() {
+		uc = ucauth.NewUCClient(conf.OryKratosPrivateAddr(), conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 	}
 
 	// init Bundle
@@ -99,7 +128,14 @@ func do() (*httpserver.Server, error) {
 	}
 	bdl := bundle.New(bundleOpts...)
 
-	ep, err := initEndpoints(db, js, cachedJs, bdl)
+	o := org_resource.New(
+		org_resource.WithDBClient(db),
+		org_resource.WithUCClient(uc),
+		org_resource.WithBundle(bdl),
+		org_resource.WithRedisClient(redisCli),
+	)
+
+	ep, err := initEndpoints(db, js, cachedJs, bdl, o)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +157,7 @@ func do() (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle) (*endpoints.Endpoints, error) {
+func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
@@ -129,6 +165,7 @@ func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl 
 		js,
 		cachedJS,
 		endpoints.WithBundle(bdl),
+		endpoints.WithOrgResource(o),
 	)
 
 	// Sync org resource task status
@@ -167,5 +204,20 @@ func registerWebHook(bdl *bundle.Bundle) {
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
+	}
+
+	clusterEv := apistructs.CreateHookRequest{
+		Name:   "cmp-clusterhook",
+		Events: []string{"cluster"},
+		URL:    fmt.Sprintf("http://%s/api/clusterhook", discover.CMP()),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(clusterEv); err != nil {
+		logrus.Warnf("failed to register cluster event, (%v)", err)
 	}
 }

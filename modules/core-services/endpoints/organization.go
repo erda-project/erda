@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
+	"github.com/erda-project/erda/modules/core-services/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -63,7 +64,7 @@ func (e *Endpoints) CreateOrg(ctx context.Context, r *http.Request, vars map[str
 	}
 
 	// check the org name is invalid
-	if !strutil.IsValidPrjOrAppName(orgCreateReq.Name) {
+	if !utils.IsValidOrgName(orgCreateReq.Name) {
 		return apierrors.ErrCreateOrg.InvalidParameter(errors.Errorf("org name is invalid %s",
 			orgCreateReq.Name)).ToResp(), nil
 	}

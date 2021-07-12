@@ -17,8 +17,8 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var TMC_MICRO_SERVICE_ALERT_RECORD_ISSUE_CREATE = apis.ApiSpec{
 	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-records/<groupId>/issues",
-	BackendPath: "/api/tmc/tenantGroup/<tenantGroup>/alert-records/<groupId>/issues",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alert-records/<groupId>/issues",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

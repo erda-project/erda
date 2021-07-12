@@ -16,14 +16,13 @@ package nacos
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/configcenter/pb"
-	"github.com/erda-project/erda/pkg/netportal"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // SearchMode .
@@ -42,35 +41,47 @@ type Adapter struct {
 	Addr        string
 	User        string
 	Password    string
+	client      *httpclient.HTTPClient
 }
 
 // NewAdapter .
 func NewAdapter(clusterName, addr, user, password string) *Adapter {
 	return &Adapter{
 		ClusterName: clusterName,
-		Addr:        fmt.Sprintf("http://%s", addr),
+		Addr:        addr,
 		User:        user,
 		Password:    password,
+		client:      httpclient.New(httpclient.WithClusterDialer(clusterName)),
 	}
 }
 
 // SearchResponse .
 type SearchResponse struct {
-	Total       int64         `json:"json:"totalCount"`
-	Pages       int64         `json:"json:"pagesAvailable"`
-	ConfigItems []*ConfigItem `json:"json:"pageItems"`
+	Total       int64         `json:"totalCount"`
+	Pages       int64         `json:"pagesAvailable"`
+	ConfigItems []*ConfigItem `json:"pageItems"`
 }
 
 // ConfigItem .
 type ConfigItem struct {
-	DataID  string
-	Group   string
-	Content string
+	DataID  string `json:"dataId"`
+	Group   string `json:"group"`
+	Content string `json:"content"`
 }
 
 // ToConfigCenterGroups .
 func (s *SearchResponse) ToConfigCenterGroups() *pb.Groups {
-	return &pb.Groups{}
+	list := make([]string, 0, len(s.ConfigItems))
+	for _, item := range s.ConfigItems {
+		if item == nil {
+			continue
+		}
+		list = append(list, item.Group)
+	}
+	return &pb.Groups{
+		Total: s.Total,
+		List:  list,
+	}
 }
 
 // SearchConfig .
@@ -86,12 +97,7 @@ func (a *Adapter) SearchConfig(mode SearchMode, tenantName, groupName, dataID st
 	params.Set("tenant", tenantName)
 	params.Set("pageNo", strconv.Itoa(page))
 	params.Set("pageSize", strconv.Itoa(pageSize))
-	req, err := a.newRequest(http.MethodGet, "/nacos/v1/cs/configs", params, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", auth)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := a.client.Get(a.Addr).Path("/nacos/v1/cs/configs").Params(params).Header("Authorization", auth).Do().RAW()
 	if err != nil {
 		return nil, err
 	}
@@ -116,12 +122,7 @@ func (a *Adapter) SaveConfig(tenantName, groupName, dataID, content string) erro
 	params.Set("group", groupName)
 	params.Set("tenant", tenantName)
 	params.Set("content", content)
-	req, err := a.newRequest(http.MethodGet, "/nacos/v1/cs/configs", params, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", auth)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := a.client.Post(a.Addr).Path("/nacos/v1/cs/configs").Params(params).Header("Authorization", auth).Do().RAW()
 	if err != nil {
 		return err
 	}
@@ -136,11 +137,7 @@ func (a *Adapter) loginNacos() (string, error) {
 	params := url.Values{}
 	params.Set("username", a.User)
 	params.Set("password", a.Password)
-	req, err := a.newRequest(http.MethodPost, "/nacos/v1/auth/login", params, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := a.client.Post(a.Addr).Path("/nacos/v1/auth/login").Params(params).Do().RAW()
 	if err != nil {
 		return "", err
 	}
@@ -160,17 +157,4 @@ func (a *Adapter) loginNacos() (string, error) {
 		}
 	}
 	return "", nil
-}
-
-func (a *Adapter) newRequest(method, path string, params url.Values, body io.Reader) (*http.Request, error) {
-	var ustr string
-	if len(params) > 0 {
-		ustr = fmt.Sprintf("%s%s?%s", a.Addr, path, params.Encode())
-	} else {
-		ustr = fmt.Sprintf("%s%s", a.Addr, path)
-	}
-	if len(a.ClusterName) > 0 {
-		return netportal.NewNetportalRequest(a.ClusterName, method, ustr, body)
-	}
-	return http.NewRequest(method, ustr, body)
 }

@@ -23,7 +23,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/erda-project/erda-infra/modcom/api"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 // exportMetrics .

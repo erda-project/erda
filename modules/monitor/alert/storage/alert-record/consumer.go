@@ -37,6 +37,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	if sqlRecord.GroupID == "" {
 		//create
+		record.CreateTime = time.Now()
 		err := p.mysql.Create(record).Error
 		return err
 	} else {
