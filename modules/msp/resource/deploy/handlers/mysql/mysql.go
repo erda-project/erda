@@ -184,7 +184,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	err = p.initDb(dbNames, mysqldto, clusterConfig, err)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	tenantConfig["MYSQL_DATABASES"] = strings.Join(dbNames, ",")
