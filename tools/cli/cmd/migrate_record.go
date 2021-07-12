@@ -88,12 +88,15 @@ func RunMigrateRecord(ctx *command.Context, host string, port int, username, pas
 	}
 
 	insert := fmt.Sprintf(recordSQLPat, module, filename, script.Checksum(), script.Type)
+	fmt.Println("-- ---------------------------------------------------------------------------")
 	if dry {
-		fmt.Println("-- -------------------------------------------------------------------------")
-		fmt.Println("-- This is the record SQL, you can copy it and execute on you MySQL server--")
-		fmt.Println(insert, ";")
-		fmt.Println("-- -------------------------------------------------------------------------")
-
+		fmt.Println("-- This is the record SQL, you can copy it and execute on your MySQL server --")
+	} else {
+		fmt.Println("-- This is the record SQL, the tool will execute it on your MySQL server -----")
+	}
+	fmt.Println(insert, ";")
+	fmt.Println("-- ---------------------------------------------------------------------------")
+	if dry {
 		return nil
 	}
 
