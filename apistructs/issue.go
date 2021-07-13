@@ -88,7 +88,7 @@ const (
 	IssueTypeTask        IssueType = "TASK"        // 任务
 	IssueTypeBug         IssueType = "BUG"         // 缺陷
 	IssueTypeTicket      IssueType = "TICKET"      // 工单
-	IssueTypeEpic        IssueType = "EPIC"        // 史诗
+	IssueTypeEpic        IssueType = "EPIC"        // 里程碑
 )
 
 func (t IssueType) String() string {
@@ -106,7 +106,7 @@ func (t IssueType) GetZhName() string {
 	case IssueTypeTicket:
 		return "工单"
 	case IssueTypeEpic:
-		return "史诗"
+		return "里程碑"
 	default:
 		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
 	}

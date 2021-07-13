@@ -113,12 +113,19 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 }
 
 func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent) error {
+	if len(req.Content.Receivers) == 0 {
+		return nil
+	}
+
 	emailTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.email", strings.ToLower(req.Action))
 	mboxTemplateName := fmt.Sprintf("notify.issue_%s.personal_message.markdown", strings.ToLower(req.Action))
 
 	org, err := e.bdl.GetOrg(req.OrgID)
 	if err != nil {
 		return err
+	}
+	if org.Locale == "" {
+		org.Locale = "zh-CN"
 	}
 
 	params := req.GenEventParams(org.Locale, conf.UIPublicURL())
@@ -136,10 +143,10 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	logrus.Debugf("email addr is: %v", emailAddrs)
 
 	if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
-		return err
+		logrus.Errorf("send personal issue %s event email err: %v", params["issueID"], err)
 	}
 	if err := e.bdl.CreateMboxNotify(mboxTemplateName, params, org.Locale, org.ID, req.Content.Receivers); err != nil {
-		return err
+		logrus.Errorf("send personal issue %s event mbox err: %v", params["issueID"], err)
 	}
 
 	return nil
