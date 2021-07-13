@@ -21,6 +21,7 @@ on:
       - master
       - release/*
   pull_request:
+    types: [opened, edited, reopened]
 jobs:
   CI:
     runs-on: ubuntu-latest
