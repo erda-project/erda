@@ -36,7 +36,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB)
+	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB, p.Log)
 	p.LogDeploymentDb = &db.LogDeploymentDB{DB: p.DB}
 	p.LogInstanceDb = &db.LogInstanceDB{DB: p.DB}
 	return nil

@@ -14,12 +14,14 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/msp/instance/db"
@@ -126,6 +128,7 @@ type DefaultDeployHandler struct {
 	TmcVersionDb         *db.TmcVersionDB
 	TmcIniDb             *db.TmcIniDB
 	Bdl                  *bundle.Bundle
+	Log                  logs.Logger
 }
 
 func (h *DefaultDeployHandler) DeleteRequestRelation(parentId string, childId string) error {
@@ -228,7 +231,7 @@ func (h *DefaultDeployHandler) CheckIfHasCustomConfig(clusterConfig map[string]s
 	return nil, false
 }
 
-func NewDefaultHandler(dbClient *gorm.DB) *DefaultDeployHandler {
+func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHandler {
 	return &DefaultDeployHandler{
 		TenantDb:             &db.InstanceTenantDB{DB: dbClient},
 		InstanceDb:           &db.InstanceDB{DB: dbClient},
@@ -246,6 +249,7 @@ func NewDefaultHandler(dbClient *gorm.DB) *DefaultDeployHandler {
 			bundle.WithMonitor(),
 			bundle.WithCollector(),
 		),
+		Log: logger,
 	}
 }
 
@@ -445,8 +449,11 @@ func (h *DefaultDeployHandler) DoDeploy(serviceGroupDeployRequest interface{}, r
 
 	serviceGroup := serviceGroupDeployRequest.(*apistructs.ServiceGroupCreateV2Request)
 	// request scheduler
+	reqData, _ := utils.JsonConvertObjToString(serviceGroup)
+	h.Log.Infof("about to call scheduler, request: %s", reqData)
 	err := h.Bdl.CreateServiceGroup(*serviceGroup)
 	if err != nil {
+		h.Log.Infof("scheduler resp err: %s", err.Error())
 		return nil, err
 	}
 
@@ -562,18 +569,21 @@ func (h *DefaultDeployHandler) Callback(url string, id string, success bool, con
 		isSuccess bool `json:"isSuccess"`
 	}{isSuccess: success}
 
+	var body bytes.Buffer
 	resp, err := httpclient.New().
 		Post(url+"/api/addon-platform/addons/"+id+"/action/provision").
 		Header("User-ID", userId).
 		JSONBody(req).
 		Do().
-		DiscardBody()
+		Body(&body)
 
 	if err != nil {
+		h.Log.Errorf("callback orchestrator err:%s, resp body:%s", err.Error(), body.String())
 		return err
 	}
 
 	if !resp.IsOK() {
+		h.Log.Errorf("callback orchestrator status code error[%d], resp body:%s", resp.StatusCode(), body.String())
 		return nil
 	}
 
