@@ -39,7 +39,7 @@ type provider struct {
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
 	// build default handler instance for some common use
-	p.defaultHandler = handlers.NewDefaultHandler(p.DB)
+	p.defaultHandler = handlers.NewDefaultHandler(p.DB, p.Log)
 
 	// load all other registered handlers
 	p.handlers = map[string]handlers.ResourceDeployHandler{}

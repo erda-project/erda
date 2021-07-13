@@ -292,7 +292,7 @@ func (m *alertService) UpdateCustomizeAlert(ctx context.Context, request *pb.Upd
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	return &pb.UpdateCustomizeAlertResponse{}, nil
 }
 
 func (m *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *pb.UpdateCustomizeAlertEnableRequest) (*pb.UpdateCustomizeAlertEnableResponse, error) {
@@ -300,7 +300,7 @@ func (m *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	return &pb.UpdateCustomizeAlertEnableResponse{}, nil
 }
 
 func (m *alertService) DeleteCustomizeAlert(ctx context.Context, request *pb.DeleteCustomizeAlertRequest) (*pb.DeleteCustomizeAlertResponse, error) {
@@ -559,7 +559,7 @@ func (m *alertService) checkMetricMeta(
 		}
 
 		// 根据数据类型和操作类型转换阈值
-		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value)
+		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value.AsInterface())
 		if apiErr != nil {
 			return apiErr
 		}
@@ -705,8 +705,6 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 		Data: true,
 	}
 	return result, nil
-
-	return nil, nil
 }
 
 func (m *alertService) UpdateOrgCustomizeAlertEnable(ctx context.Context, request *pb.UpdateOrgCustomizeAlertEnableRequest) (*pb.UpdateOrgCustomizeAlertEnableResponse, error) {
@@ -967,7 +965,7 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		return nil, errors.NewMissingParameterError("cluster names")
 	}
 	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
+		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -1162,12 +1160,7 @@ func (m *alertService) QueryOrgAlertRecord(ctx context.Context, request *pb.Quer
 		}
 		userIDMap[item.HandlerId] = true
 	}
-	userIDs := make([]string, 0)
-	for key := range userIDMap {
-		userIDs = append(userIDs, key)
-	}
 	return &pb.QueryOrgAlertRecordResponse{
-		UserIDs: userIDs,
 		Data: &pb.ListResult{
 			List:  list,
 			Total: int64(count),
@@ -1196,8 +1189,7 @@ func (m *alertService) QueryOrgHostsAlertRecord(ctx context.Context, request *pb
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.QueryOrgAlertRecordResponse{
-		Data:    resp.Data,
-		UserIDs: resp.UserIDs,
+		Data: resp.Data,
 	}, nil
 }
 

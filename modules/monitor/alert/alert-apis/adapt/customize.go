@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
 // FieldMeta .
@@ -434,8 +435,9 @@ func (a *Adapt) CustomizeAlertToModel(customizeAlertDetail *pb.CustomizeAlertDet
 		AlertScopeID: customizeAlertDetail.AlertScopeId,
 		Enable:       customizeAlertDetail.Enable,
 	}
+	data.Attributes = make(jsonmap.JSONMap)
 	for k, v := range customizeAlertDetail.Attributes {
-		customizeAlertDetail.Attributes[k] = v
+		data.Attributes[k] = v
 	}
 	return data
 }
@@ -667,11 +669,7 @@ func (a *Adapt) UpdateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (err 
 		attributes[k] = data
 	}
 	for k, v := range alertDetail.Attributes {
-		data, err := structpb.NewValue(v)
-		if err != nil {
-			logrus.Errorf("transform any type is fail err is %s", err)
-		}
-		attributes[k] = data
+		attributes[k] = v
 	}
 	alertIndex := structpb.NewStringValue(index)
 	attributes["alert_index"] = alertIndex

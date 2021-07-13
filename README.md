@@ -32,7 +32,7 @@ Erda is mainly composed of the following parts:
 
 ![](./docs/assets/arch.png)
 
-The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons), [docs](https://github.com/erda-project/docs), [website](https://github.com/erda-project/website).
+The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons), [docs](https://github.com/erda-project/docs).
 
 ### **[erda](https://github.com/erda-project/erda)** 
 
@@ -61,10 +61,6 @@ It holds the definition for the official Addons of the Erda Addon Marketplace as
 ### **[docs](https://github.com/erda-project/docs)** 
 
 It is the codebase of Erda documentation built with [vuepress](https://vuepress.vuejs.org).
-
-### **[website](https://github.com/erda-project/website)** 
-
-It is the codebase of the Erda [official website](https://www.erda.cloud/).
 
 There are some extra repositories that plays as customized third-partiy independent components and tools in Erda project such as 
 * [erda-proto-go](https://github.com/erda-project/erda-proto-go) generated code for Erda protobuf data modals and protocols.
