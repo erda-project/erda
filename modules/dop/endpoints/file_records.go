@@ -36,7 +36,8 @@ func (e *Endpoints) GetFileRecord(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrGetFileRecord.InvalidParameter("id").ToResp(), nil
 	}
 
-	record, err := e.testcase.GetFileRecord(id)
+	locale := e.bdl.GetLocaleByRequest(r).Name()
+	record, err := e.testcase.GetFileRecord(id, locale)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -56,6 +57,7 @@ func (e *Endpoints) GetFileRecordsByProjectId(ctx context.Context, r *http.Reque
 		return apierrors.ErrListFileRecord.InvalidParameter(err).ToResp(), nil
 	}
 
+	req.Locale = e.bdl.GetLocaleByRequest(r).Name()
 	rsp, operators, err := e.testcase.ListFileRecordsByProject(req)
 	if err != nil {
 		return errorresp.ErrResp(err)

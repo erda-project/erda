@@ -14,11 +14,13 @@
 package testcase
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/i18n"
 )
 
 func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint64, error) {
@@ -46,12 +48,15 @@ func convertTestFileExtra(fileExtra apistructs.TestFileExtra) dao.TestFileExtra 
 	}
 }
 
-func (svc *Service) GetFileRecord(id uint64) (*apistructs.TestFileRecord, error) {
+func (svc *Service) GetFileRecord(id uint64, locale string) (*apistructs.TestFileRecord, error) {
 	record, err := svc.db.GetRecord(id)
 	if err != nil {
 		return nil, apierrors.ErrGetFileRecord.InternalError(err)
 	}
-	return mapping(record), nil
+	l := svc.bdl.GetLocale(locale)
+	project := l.Get(i18n.I18nKeyProjectName)
+	testSet := l.Get(i18n.I18nKeyCaseSetName)
+	return mapping(record, project, testSet), nil
 }
 
 func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error {
@@ -80,9 +85,14 @@ func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsR
 	}
 
 	records := make([]apistructs.TestFileRecord, 0)
+
+	l := svc.bdl.GetLocale(req.Locale)
+	project := l.Get(i18n.I18nKeyProjectName)
+	testSet := l.Get(i18n.I18nKeyCaseSetName)
+
 	operators := make([]string, 0)
 	for _, i := range recordDtos {
-		records = append(records, *mapping(&i))
+		records = append(records, *mapping(&i, project, testSet))
 		operators = append(operators, i.OperatorID)
 	}
 	return records, operators, nil
@@ -116,11 +126,10 @@ func (svc *Service) DeleteRecordApiFilesByTime(t time.Time) error {
 	return nil
 }
 
-func mapping(s *dao.TestFileRecord) *apistructs.TestFileRecord {
-	return &apistructs.TestFileRecord{
+func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFileRecord {
+	record := &apistructs.TestFileRecord{
 		ID:          s.ID,
 		FileName:    s.FileName,
-		Description: s.Description,
 		ProjectID:   s.ProjectID,
 		ApiFileUUID: s.ApiFileUUID,
 		TestSetID: func() uint64 {
@@ -135,4 +144,7 @@ func mapping(s *dao.TestFileRecord) *apistructs.TestFileRecord {
 		UpdatedAt:  s.UpdatedAt,
 		OperatorID: s.OperatorID,
 	}
+
+	record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	return record
 }

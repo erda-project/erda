@@ -79,6 +79,7 @@ const (
 type ListTestFileRecordsRequest struct {
 	ProjectID uint64           `json:"projectID"`
 	Types     []FileActionType `json:"types"`
+	Locale    string           `json:"locale"`
 }
 
 type GetTestFileRecordResponse struct {
