@@ -103,4 +103,6 @@ const (
 	I18nKeyConfigGlobalType        = "tp.export.config.global.type"
 	I18nKeyConfigGlobalValue       = "tp.export.config.global.value"
 	I18nKeyConfigGlobalDescription = "tp.export.config.global.description"
+
+	I18nKeyProjectName = "tp.export.project.name"
 )
