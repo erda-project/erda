@@ -53,7 +53,7 @@ type DialContextProtoFunc func(ctx context.Context, address string) (net.Conn, e
 func DialContext(clusterKey string) DialContextFunc {
 	once.Do(func() { Init() })
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
-		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
+		logrus.Debugf("use cluster dialer, key:%s, addr:%s", clusterKey, addr)
 		f := session.getClusterDialer(ctx, clusterKey)
 		if f == nil {
 			return nil, errors.New("get cluster dialer failed")
@@ -65,7 +65,7 @@ func DialContext(clusterKey string) DialContextFunc {
 func DialContextProto(clusterKey, proto string) DialContextProtoFunc {
 	once.Do(func() { Init() })
 	return func(ctx context.Context, addr string) (net.Conn, error) {
-		logrus.Debugf("use cluster dialer, key:%s", clusterKey)
+		logrus.Debugf("use cluster dialer, key:%s, addr:%s", clusterKey, addr)
 		f := session.getClusterDialer(ctx, clusterKey)
 		if f == nil {
 			return nil, errors.New("get cluster dialer failed")
