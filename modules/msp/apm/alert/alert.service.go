@@ -858,8 +858,7 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 		return nil, errors.NewInternalServerError(err)
 	}
 	context := utils.NewContextWithHeader(ctx)
-	httpRequest := utils.GetHttpRequest(context)
-	userId := httpRequest.Header.Get("User-ID")
+	userID := apis.GetUserID(ctx)
 	getRecordReq := &monitor.GetAlertRecordRequest{
 		GroupId: request.GroupId,
 	}
@@ -885,7 +884,7 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 	}
 	if request.Body == nil {
 		request.Body = make(map[string]*structpb.Value)
-		request.Body["creator"] = structpb.NewStringValue(userId)
+		request.Body["creator"] = structpb.NewStringValue(userID)
 		request.Body["projectID"] = structpb.NewNumberValue(float64(projectId))
 	}
 	createIssue := &apistructs.IssueCreateRequest{}
