@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -38,4 +39,8 @@ func (e *Endpoints) clusterHook(ctx context.Context, r *http.Request, vars map[s
 		return httpserver.ErrResp(http.StatusBadRequest, "", errStr)
 	}
 	return httpserver.OkResp(nil)
+}
+
+func (e *Endpoints) executorInfos(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	return httpserver.OkResp(executor.GetExecutorInfo())
 }
