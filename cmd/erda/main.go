@@ -19,7 +19,6 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/cmdb"
 	_ "github.com/erda-project/erda/modules/openapi"
 	_ "github.com/erda-project/erda/modules/pipeline"
 	_ "github.com/erda-project/erda/modules/scheduler"
