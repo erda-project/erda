@@ -57,6 +57,7 @@ type Conf struct {
 	GittarPublicURL    string `env:"GITTAR_PUBLIC_URL" required:"true"`
 	OpenAPIPublicURL   string `env:"OPENAPI_PUBLIC_URL" required:"true"`
 	CollectorPublicURL string `env:"COLLECTOR_PUBLIC_URL" required:"false"`
+	UIDomain           string `env:"UI_PUBLIC_ADDR" required:"false"`
 
 	// oss/nfs storage
 	PipelineStorageURL string `env:"PIPELINE_STORAGE_URL" required:"true"`
@@ -314,4 +315,8 @@ func CronCompensateConcurrentNumber() int64 {
 
 func CronFailureCreateIntervalCompensateTimeSecond() int64 {
 	return cfg.CronFailureCreateIntervalCompensateTimeSecond
+}
+
+func UIDomain() string {
+	return cfg.UIDomain
 }
