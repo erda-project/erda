@@ -374,7 +374,10 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress *v1beta1.Ingress, optio
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
 	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
 	ingressName := strings.ToLower(name)
-	exist, _ := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return false, errors.WithStack(err)
+	}
 	var ingress *v1beta1.Ingress
 	routeOptions := RouteOptions{}
 	if len(options) > 0 {
@@ -412,7 +415,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 		}
 	}
 	ingress.Annotations = exist.Annotations
-	err := impl.setOptionAnnotations(ingress, routeOptions)
+	err = impl.setOptionAnnotations(ingress, routeOptions)
 	if err != nil {
 		return true, err
 	}
@@ -433,7 +436,7 @@ func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error 
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -455,7 +458,7 @@ func (impl *K8SAdapterImpl) SetRewritePath(namespace, name, target string) error
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -477,7 +480,7 @@ func (impl *K8SAdapterImpl) EnableRegex(namespace, name string) error {
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -523,7 +526,7 @@ func (impl *K8SAdapterImpl) replaceSnippet(source, replace string) (string, erro
 func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) (bool, error) {
 	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
 	ingress, err := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
 	if ingress == nil || ingress.Name == "" {
@@ -540,7 +543,7 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
 	}
