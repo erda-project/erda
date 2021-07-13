@@ -653,7 +653,7 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 	} else if alert == nil {
 		return nil, errors.NewNotFoundError(request.Name)
 	}
-	if request.AlertScope != "org" && request.AlertScopeId != orgID {
+	if alert.AlertScope != "org" && alert.AlertScopeId != orgID {
 		return nil, errors.NewPermissionError("monitor_org_alert", "update", "scope or scopeId is invalidate")
 	}
 	request.AlertScope = alert.AlertScope
@@ -767,7 +767,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 	lang := apis.Language(ctx)
 	data, err := m.p.a.QueryAlertRule(lang, request.Scope, request.ScopeId)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return &pb.QueryAlertRuleResponse{}, errors.NewInternalServerError(err)
 	}
 	result := &pb.QueryAlertRuleResponse{
 		Data: data,

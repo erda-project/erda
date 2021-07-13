@@ -11,21 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package alert
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_DELETE = apis.ApiSpec{
-	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>",
-	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>",
+var APM_ALERT_RECORDS = apis.ApiSpec{
+	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-records",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alert-records",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "DELETE",
+	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 删除微服务自定义告警",
-	Audit:       auditOperateMicroserviceCustomAlert(apistructs.DeleteMicroserviceCustomAlert, "delete"),
+	Doc:         "summary: 获取微服务告警记录列表",
 }

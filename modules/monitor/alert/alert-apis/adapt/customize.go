@@ -500,7 +500,7 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error
 		// filter
 		filters := make([]*pb.CustomizeAlertRuleFilter, 0)
 		for _, filter := range rule.Filters {
-			if filter.Tag == applicationIdTag && filter.Value.String() == applicationIdValue {
+			if filter.Tag == applicationIdTag && filter.Value.GetStringValue() == applicationIdValue {
 				continue
 			}
 
