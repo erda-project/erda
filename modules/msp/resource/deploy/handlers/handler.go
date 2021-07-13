@@ -566,8 +566,10 @@ func (h *DefaultDeployHandler) Callback(url string, id string, success bool, con
 	userId := h.GetDiceOperatorId()
 
 	req := struct {
-		isSuccess bool `json:"isSuccess"`
-	}{isSuccess: success}
+		IsSuccess bool `json:"isSuccess"`
+	}{IsSuccess: success}
+
+	h.Log.Infof("about to callback, request:%+v", req)
 
 	var body bytes.Buffer
 	resp, err := httpclient.New().
