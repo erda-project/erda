@@ -371,6 +371,10 @@ rendering:
       state:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
+    - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
         - name: "chooseScenesID"
@@ -472,6 +476,10 @@ rendering:
         - name: "sceneId"
           value: "{{ fileTree.sceneId }}"
     - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: refreshButton
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
@@ -690,6 +698,10 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
       state:
         - name: "pipelineId"
@@ -773,6 +785,7 @@ rendering:
           value: "{{ executeHistoryTable.pipelineId }}"
   cancelExecuteButton:
     - name: executeHistoryTable
+    - name: refreshButton
     - name: executeTaskTable
       state:
         - name: pipelineId
@@ -797,6 +810,10 @@ rendering:
     - name: executeInfo
       state:
         - name: pipelineId
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: refreshButton
+      state:
+        - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
@@ -910,6 +927,9 @@ rendering:
     - name: resultDrawer
     - name: executeInfoTitle
     - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
         - name: "chooseScenesID"
