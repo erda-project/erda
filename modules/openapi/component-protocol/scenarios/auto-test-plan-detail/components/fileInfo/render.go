@@ -100,14 +100,14 @@ func (i *ComponentFileInfo) GetInParams() error {
 func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	if err = i.SetCtxBundle(bdl); err != nil {
-		return
+		return err
 	}
 	if err = i.GenComponentState(c); err != nil {
-		return
+		return err
 	}
 	if err = i.GetInParams(); err != nil {
 		logrus.Errorf("get filter request failed, content:%+v, err:%v", *gs, err)
-		return
+		return err
 	}
 
 	// visible
@@ -167,7 +167,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	}
 
 	i.RenderProtocol(c, gs)
-	return
+	return nil
 }
 
 func RenderCreator() protocol.CompRender {

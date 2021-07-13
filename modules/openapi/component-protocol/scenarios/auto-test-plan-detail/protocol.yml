@@ -195,6 +195,9 @@ rendering:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
     - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfoTitle
     - name: cancelExecuteButton
       state:
@@ -207,6 +210,10 @@ rendering:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeTaskTable
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: refreshButton
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
@@ -264,6 +271,8 @@ rendering:
       state:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
         # - name: "visible"
@@ -303,6 +312,10 @@ rendering:
       state:
         - name: pipelineId
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
       state:
         - name: "pipelineId"
@@ -330,6 +343,9 @@ rendering:
         - name: activeKey
           value: "{{ tabExecuteButton.activeKey }}"
     - name: refreshButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeAlertInfo
       state:
         - name: "pipelineId"
