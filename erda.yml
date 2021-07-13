@@ -119,7 +119,7 @@ services:
       LISTEN_ADDR: ":9093"
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
-      CREATE_ORG_ENABLE: "false"
+      CREATE_ORG_ENABLED: "false"
     resources:
       cpu: ${request_cpu:0.3}
       max_cpu: 0.3
@@ -159,7 +159,7 @@ services:
       LISTEN_ADDR: ":9526"
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
-      CREATE_ORG_ENABLE: "false"
+      CREATE_ORG_ENABLED: "false"
     resources:
       cpu: ${request_cpu:0.3}
       max_cpu: 0.3
@@ -458,7 +458,7 @@ services:
         l4_protocol: "TCP"
         expose: true
     envs:
-      CREATE_ORG_ENABLE: "false"
+      CREATE_ORG_ENABLED: "false"
     resources:
       cpu: ${request_cpu:0.5}
       max_cpu: 0.5
