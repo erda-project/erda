@@ -55,5 +55,5 @@ func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {
 		return false, ""
 	}
 
-	return true, fmt.Sprintf("%s://%s/workBench/projects/%d/apps/%d/pipeline/%d", protocol, org.Domain, projectID, appID, p.ID)
+	return true, fmt.Sprintf("%s://%s/%s/workBench/projects/%d/apps/%d/pipeline/%d", protocol, org.Name, org.Domain, projectID, appID, p.ID)
 }
