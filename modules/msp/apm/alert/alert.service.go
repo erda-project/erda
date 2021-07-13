@@ -44,7 +44,7 @@ func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryA
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlertRule(context, req)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return &alert.QueryAlertRuleResponse{}, errors.NewInternalServerError(err)
 	}
 	result := &alert.QueryAlertRuleResponse{
 		Data: resp.Data,
