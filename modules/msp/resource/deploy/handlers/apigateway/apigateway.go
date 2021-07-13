@@ -193,7 +193,6 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	config["PROXY_KONG_PORT"] = "8000"
 	config["GATEWAY_ENDPOINT"] = "gateway." + clusterConfig["DICE_ROOT_DOMAIN"]
 	config["GATEWAY_INSTANCE_ID"] = tmcInstance.ID
-
 	config["ADMIN_ENDPOINT"] = vip + ":8001"
 	config["KONG_HOST"] = vip
 
