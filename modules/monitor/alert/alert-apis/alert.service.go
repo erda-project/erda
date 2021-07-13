@@ -767,7 +767,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 	lang := apis.Language(ctx)
 	data, err := m.p.a.QueryAlertRule(lang, request.Scope, request.ScopeId)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return &pb.QueryAlertRuleResponse{}, errors.NewInternalServerError(err)
 	}
 	result := &pb.QueryAlertRuleResponse{
 		Data: data,
