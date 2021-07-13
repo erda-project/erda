@@ -41,10 +41,10 @@ func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryA
 	req := &monitor.QueryAlertRuleRequest{}
 	req.ScopeId = request.TenantGroup
 	req.Scope = MicroServiceScope
-	context := utils.NewContextWithHeader(ctx)
-	resp, err := a.p.Monitor.QueryAlertRule(context, req)
+	headerCtx := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.QueryAlertRule(headerCtx, req)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, errors.NewServiceInvokingError("monitor", err)
 	}
 	result := &alert.QueryAlertRuleResponse{
 		Data: resp.Data,
