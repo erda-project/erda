@@ -15,6 +15,7 @@ package collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,23 +26,29 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/core-services/model"
+	"github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/console"
+	kafka2 "github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/kafka"
 )
 
 type config struct {
-	Auth struct {
-		Username string `file:"username"`
-		Password string `file:"password"`
-		Force    bool   `file:"force"`
-	}
-	Output         kafka.ProducerConfig `file:"output"`
-	TaSamplingRate float64              `file:"ta_sampling_rate" default:"100"`
+	SignAuth       signAuthConfig `file:"sign_auth"`
+	Output         outputConfig   `file:"output"`
+	TaSamplingRate float64        `file:"ta_sampling_rate" default:"100"`
+	Limiter        limitConfig    `file:"limiter"`
+}
 
-	SignAuth signAuthConfig `file:"sign_auth"`
+type outputConfig struct {
+	Name string `file:"name" default:"kafka" env:"OUTPUT_NAME"`
+	kafka.ProducerConfig
+}
+
+type limitConfig struct {
+	RequestBodySize string `file:"request_body_size"`
 }
 
 type define struct{}
 
-func (m *define) Services() []string     { return []string{"metrics-collector"} }
+func (m *define) Services() []string     { return []string{} }
 func (m *define) Dependencies() []string { return []string{"http-server", "kafka-producer"} }
 func (m *define) Summary() string        { return "log and metrics collector" }
 func (m *define) Description() string    { return m.Summary() }
@@ -50,33 +57,52 @@ func (m *define) Creator() servicehub.Creator {
 	return func() servicehub.Provider { return &provider{} }
 }
 
-// provider .
 type provider struct {
 	Cfg    *config
 	Logger logs.Logger
 	writer writer.Writer
 	Kafka  kafka.Interface
 
-	auth *Authenticator
+	auth   *Authenticator
+	output Output
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if err := p.initAuthenticator(context.TODO()); err != nil {
 		return err
 	}
-	w, err := p.Kafka.NewProducer(&p.Cfg.Output)
-	if err != nil {
-		return fmt.Errorf("fail to create kafka producer: %s", err)
+	if err := p.initOutput(p.Cfg.Output); err != nil {
+		return err
 	}
-	p.writer = w
 
 	r := ctx.Service("http-server",
 		// telemetry.HttpMetric(),
 		interceptors.CORS(),
 		interceptors.Recover(p.Logger),
 	).(httpserver.Router)
-	if err := p.intRoute(r); err != nil {
-		return fmt.Errorf("fail to init route: %s", err)
+	if err := p.intRouteV2(r); err != nil {
+		return fmt.Errorf("initRouteV2 faile: %w", err)
+	}
+	return nil
+}
+
+func (p *provider) initOutput(cfg outputConfig) error {
+	switch cfg.Name {
+	case kafka2.Selector:
+		pcfg := &kafka.ProducerConfig{
+			Parallelism: p.Cfg.Output.Parallelism,
+		}
+		pcfg.Batch = p.Cfg.Output.Batch
+
+		w, err := p.Kafka.NewProducer(pcfg)
+		if err != nil {
+			return fmt.Errorf("fail to create kafka producer: %s", err)
+		}
+		p.output = kafka2.New(w)
+	case console.Selector:
+		p.output = console.New()
+	default:
+		return errors.New("must specify a output")
 	}
 	return nil
 }
@@ -106,5 +132,5 @@ func (p *provider) initAuthenticator(ctx context.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("monitor-collector", &define{})
+	servicehub.RegisterProvider("monitor-collector-v2", &define{})
 }

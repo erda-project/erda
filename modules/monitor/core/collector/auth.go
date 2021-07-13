@@ -14,64 +14,20 @@
 package collector
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/secret"
-	"github.com/erda-project/erda/pkg/secret/validator"
 )
 
-var bdl = bundle.New(bundle.WithCoreServices())
-
-type staticSKProviderConfig struct {
-	SecretKey string `file:"secretKey"`
-}
-
-func (c *collector) authSignedRequest() httpserver.Interceptor {
-	return func(handler func(ctx httpserver.Context) error) func(ctx httpserver.Context) error {
-		return func(ctx httpserver.Context) error {
-			ak, ok := validator.GetAccessKeyID(ctx.Request())
-			if !ok {
-				return handler(ctx)
-			}
-
-			var sk string
-			switch c.Cfg.SignAuth.SKProvider {
-			case "static":
-				// todo BindConfig
-				if !ok {
-					return echo.NewHTTPError(http.StatusUnauthorized, "no secret_key in config with static sk_provider")
-				}
-			default:
-				aksk, err := bdl.GetAccessKeyByAccessKeyID(ak)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusUnauthorized)
-				}
-				sk = aksk.SecretKey
-			}
-			vd := validator.NewHMACValidator(secret.AkSkPair{AccessKeyID: ak, SecretKey: sk})
-			if res := vd.Verify(ctx.Request()); !res.Ok {
-				return echo.NewHTTPError(http.StatusUnauthorized, res.Message)
-			}
-			return handler(ctx)
-		}
-	}
-}
-
-func (c *collector) basicAuth() interface{} {
+func (p *provider) basicAuth() interface{} {
 	return middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
 		Validator: func(username string, password string, context echo.Context) (bool, error) {
-			if username == c.Cfg.Auth.Username && password == c.Cfg.Auth.Password {
+			if username == p.Cfg.Auth.Username && password == p.Cfg.Auth.Password {
 				return true, nil
 			}
 			return false, nil
 		},
 		Skipper: func(context echo.Context) bool {
-			if c.Cfg.Auth.Force {
+			if p.Cfg.Auth.Force {
 				return false
 			}
 			// 兼容旧版本，没有添加认证的客户端，这个版本先跳过

@@ -11,15 +11,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package collector
+package kafka
 
 import (
-	"github.com/pkg/errors"
+	"context"
+	"errors"
 
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 )
 
+const (
+	topicPrefix = "spot-v2-"
+
+	Selector = "kafka"
+)
+
 var (
+	ErrTopicMustSpecify = errors.New("topic must specify")
+	ErrTopicInvalid     = errors.New("invalid topic")
+
 	topics = map[string]string{
 		"metrics":       topicPrefix + "metrics",
 		"trace":         topicPrefix + "trace",
@@ -37,24 +48,36 @@ var (
 	}
 )
 
-const (
-	topicPrefix = "spot-"
-)
+func New(w writer.Writer) *Output {
+	return &Output{
+		w: w,
+	}
+}
 
-func (p *provider) send(name string, data []byte) error {
-	topic, err := p.getTopic(name)
+type Output struct {
+	w writer.Writer
+}
+
+func (o *Output) Send(ctx context.Context, data []byte) error {
+	topic, ok := ctx.Value("topic").(string)
+	if !ok {
+		return ErrTopicMustSpecify
+	}
+
+	topic, err := getTopic(topic)
 	if err != nil {
 		return err
 	}
-	return p.writer.Write(&kafka.Message{
+
+	return o.w.Write(&kafka.Message{
 		Topic: &topic,
 		Data:  data,
 	})
 }
 
-func (p *provider) getTopic(typ string) (string, error) {
+func getTopic(typ string) (string, error) {
 	if topic, ok := topics[typ]; ok {
 		return topic, nil
 	}
-	return "", errors.Errorf("not support type")
+	return "", ErrTopicInvalid
 }
