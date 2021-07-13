@@ -123,12 +123,13 @@ func init() {
 		dbclient := instanceinfo.New(dbengine.MustOpen())
 		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
+
 		if options["IS_EDAS"] == "true" {
 			return k, nil
 		}
-
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
+
 		go func() {
 			for {
 				select {
@@ -224,7 +225,9 @@ func (k *Kubernetes) Name() executortypes.Name {
 }
 
 func (k *Kubernetes) CleanUpBeforeDelete() {
-	k.instanceinfoSyncCancelFunc()
+	if k.instanceinfoSyncCancelFunc != nil {
+		k.instanceinfoSyncCancelFunc()
+	}
 }
 
 // Addr return kubernetes addr

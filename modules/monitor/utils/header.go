@@ -11,15 +11,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package model
+package utils
 
 import (
-	"time"
+	"context"
+
+	"github.com/erda-project/erda-infra/pkg/transport"
 )
 
-// BaseModel common info for all models
-type BaseModel struct {
-	ID        int64     `json:"id" gorm:"primary_key"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+func NewContextWithHeader(ctx context.Context) context.Context {
+	header := transport.Header{}
+	for k, vals := range transport.ContextHeader(ctx) {
+		header.Append(k, vals...)
+	}
+	return transport.WithHeader(context.Background(), header)
 }
