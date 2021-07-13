@@ -23,7 +23,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type alertService struct {
@@ -38,15 +38,9 @@ type alertService struct {
 }
 
 func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryAlertRuleRequest) (*alert.QueryAlertRuleResponse, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	req := &monitor.QueryAlertRuleRequest{}
-	err = json.Unmarshal(data, req)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	req.ScopeId = request.TenantGroup
+	req.Scope = MicroServiceScope
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlertRule(context, req)
 	if err != nil {
@@ -781,9 +775,8 @@ func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAl
 	}
 	return &alert.GetAlertRecordsResponse{
 		Data: &alert.GetAlertRecordsData{
-			List:    resp.Data.List,
-			Total:   resp.Data.Total,
-			UserIds: userIds,
+			List:  resp.Data.List,
+			Total: resp.Data.Total,
 		},
 	}, nil
 }

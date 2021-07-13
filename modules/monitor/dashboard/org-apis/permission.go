@@ -21,9 +21,9 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {

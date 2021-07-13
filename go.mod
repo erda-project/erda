@@ -30,16 +30,15 @@ require (
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
-	github.com/containerd/console v0.0.0-20180822173158-c12b1e7919c1
+	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
-	github.com/creack/pty v1.1.11 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
-	github.com/erda-project/erda-proto-go v0.0.0-20210711055256-56f16dc8be9c
+	github.com/erda-project/erda-proto-go v0.0.0-20210712100141-8e21182f69d1
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -49,8 +48,6 @@ require (
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.5.0
-	github.com/go-logr/logr v0.4.0 // indirect
-	github.com/go-logr/zapr v0.4.0 // indirect
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-playground/validator v9.31.0+incompatible
@@ -58,7 +55,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
-	github.com/gofrs/flock v0.7.1
+	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
@@ -77,7 +74,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.2
 	github.com/jmespath/go-jmespath v0.4.0
-	github.com/json-iterator/go v1.1.10
+	github.com/json-iterator/go v1.1.11
 	github.com/kr/pty v1.1.8
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
@@ -103,7 +100,7 @@ require (
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/remotedialer v0.0.0
 	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
@@ -115,9 +112,9 @@ require (
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.2.0
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
@@ -132,12 +129,10 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
-	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62
-	google.golang.org/grpc v1.37.0
+	google.golang.org/grpc v1.37.0 // indirect
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
@@ -149,21 +144,21 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.8
 	gotest.tools v2.2.0+incompatible
-	helm.sh/helm/v3 v3.3.4
+	helm.sh/helm/v3 v3.6.2
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 	istio.io/api v0.0.0-20200715212100-dbf5277541ef
 	istio.io/client-go v0.0.0-20201005161859-d8818315d678
-	k8s.io/api v0.19.1
-	k8s.io/apiextensions-apiserver v0.18.8
-	k8s.io/apimachinery v0.19.1
+	k8s.io/api v0.21.2
+	k8s.io/apiextensions-apiserver v0.21.2
+	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kubernetes v1.18.3
+	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
 	moul.io/http2curl v1.0.0 // indirect
 	rsc.io/letsencrypt v0.0.3 // indirect
-	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 	sigs.k8s.io/yaml v1.2.0
 )
@@ -171,37 +166,37 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
-	github.com/googlecloudplatform/flink-operator => github.com/googlecloudplatform/flink-on-k8s-operator v0.0.0-20200909223554-f302312417ee
+	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
-	k8s.io/api => k8s.io/api v0.18.3
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.18.3
-	k8s.io/apiserver => k8s.io/apiserver v0.18.3
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.18.3
-	k8s.io/client-go => k8s.io/client-go v0.18.3
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.3
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.18.3
-	k8s.io/code-generator => k8s.io/code-generator v0.18.3
-	k8s.io/component-base => k8s.io/component-base v0.18.3
-	k8s.io/component-helpers => k8s.io/component-helpers v0.18.3
-	k8s.io/controller-manager => k8s.io/controller-manager v0.18.3
-	k8s.io/cri-api => k8s.io/cri-api v0.18.3
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.18.3
+	k8s.io/api => k8s.io/api v0.21.2
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.21.2
+	k8s.io/apimachinery => k8s.io/apimachinery v0.21.2
+	k8s.io/apiserver => k8s.io/apiserver v0.21.2
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.21.2
+	k8s.io/client-go => k8s.io/client-go v0.21.2
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.21.2
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.21.2
+	k8s.io/code-generator => k8s.io/code-generator v0.21.2
+	k8s.io/component-base => k8s.io/component-base v0.21.2
+	k8s.io/component-helpers => k8s.io/component-helpers v0.21.2
+	k8s.io/controller-manager => k8s.io/controller-manager v0.21.2
+	k8s.io/cri-api => k8s.io/cri-api v0.21.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.21.2
 	k8s.io/klog => k8s.io/klog v1.0.0
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.18.3
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.18.3
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.18.3
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.18.3
-	k8s.io/kubectl => k8s.io/kubectl v0.18.3
-	k8s.io/kubelet => k8s.io/kubelet v0.18.3
-	k8s.io/kubernetes => k8s.io/kubernetes v1.18.3
-	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.18.3
-	k8s.io/metrics => k8s.io/metrics v0.18.3
-	k8s.io/mount-utils => k8s.io/mount-utils v0.18.3
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.18.3
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.21.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.21.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.21.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.21.2
+	k8s.io/kubectl => k8s.io/kubectl v0.21.2
+	k8s.io/kubelet => k8s.io/kubelet v0.21.2
+	k8s.io/kubernetes => k8s.io/kubernetes v1.21.2
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.21.2
+	k8s.io/metrics => k8s.io/metrics v0.21.2
+	k8s.io/mount-utils => k8s.io/mount-utils v0.21.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.21.2
 )

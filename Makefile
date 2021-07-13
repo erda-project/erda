@@ -38,7 +38,7 @@ VERSION_OPS := -ldflags "\
 GO_BUILD_ENV := PROJ_PATH=${PROJ_PATH} GOPRIVATE=${GOPRIVATE}
 
 .PHONY: build-version clean tidy
-build-all:
+build-all: build-version submodule tidy
 	@set -o errexit; \
 	MODULES=$$(find "./cmd" -maxdepth 10 -type d); \
 	for path in $${MODULES}; \
@@ -48,7 +48,6 @@ build-all:
 			MODULE_PATH=$${path#cmd/}; \
 			echo "gona to build module: $$MODULE_PATH"; \
 			MODULE_PATHS="$${MODULE_PATHS} $${path}"; \
-			echo ""; \
 		fi; \
 	done; \
 	mkdir -p "${PROJ_PATH}/bin" && \

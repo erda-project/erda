@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -33,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type alertService struct {
@@ -559,7 +559,7 @@ func (m *alertService) checkMetricMeta(
 		}
 
 		// 根据数据类型和操作类型转换阈值
-		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value)
+		value, apiErr := m.formatOperatorValue(opType, utils.StringType, filter.Value.AsInterface())
 		if apiErr != nil {
 			return apiErr
 		}
@@ -967,7 +967,7 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		return nil, errors.NewMissingParameterError("cluster names")
 	}
 	if !m.checkOrgClusterNames(id, request.ClusterNames) {
-		return nil, errors.NewPermissionError("monitor_org_alert", "create", "access denied")
+		return nil, errors.NewPermissionError("monitor_org_alert", "update", "access denied")
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -1162,12 +1162,7 @@ func (m *alertService) QueryOrgAlertRecord(ctx context.Context, request *pb.Quer
 		}
 		userIDMap[item.HandlerId] = true
 	}
-	userIDs := make([]string, 0)
-	for key := range userIDMap {
-		userIDs = append(userIDs, key)
-	}
 	return &pb.QueryOrgAlertRecordResponse{
-		UserIDs: userIDs,
 		Data: &pb.ListResult{
 			List:  list,
 			Total: int64(count),
@@ -1196,8 +1191,7 @@ func (m *alertService) QueryOrgHostsAlertRecord(ctx context.Context, request *pb
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.QueryOrgAlertRecordResponse{
-		Data:    resp.Data,
-		UserIDs: resp.UserIDs,
+		Data: resp.Data,
 	}, nil
 }
 

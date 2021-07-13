@@ -11,16 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package model
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/hepa"
+	"time"
 )
 
-func main() {
-	modcom.RunWithCfgDir("conf/hepa", "hepa")
+// BaseModel common info for all models
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

@@ -327,14 +327,14 @@ func patchK8SConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error {
 				return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
 			}
 			local.Options["ADDR"] = u.String()
-			c, err := url.Parse(request.SchedConfig.CPUSubscribeRatio)
-			if err != nil {
-				return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
-			}
-			local.Options["DEV_CPU_SUBSCRIBE_RATIO"] = c.String()
-			local.Options["TEST_CPU_SUBSCRIBE_RATIO"] = c.String()
-			local.Options["STAGING_CPU_SUBSCRIBE_RATIO"] = c.String()
 		}
+		c, err := url.Parse(request.SchedConfig.CPUSubscribeRatio)
+		if err != nil {
+			return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
+		}
+		local.Options["DEV_CPU_SUBSCRIBE_RATIO"] = c.String()
+		local.Options["TEST_CPU_SUBSCRIBE_RATIO"] = c.String()
+		local.Options["STAGING_CPU_SUBSCRIBE_RATIO"] = c.String()
 	}
 	return nil
 }
