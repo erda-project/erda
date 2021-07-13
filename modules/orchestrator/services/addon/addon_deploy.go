@@ -237,6 +237,8 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 		}
 	}
 
+	logrus.Infof("start checkMysqlHa, request: %+v", mysqlExec)
+
 	// 请求init 接口
 	status, err := mysqlExec.GetSlaveState()
 	if err != nil {
