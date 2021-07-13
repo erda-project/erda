@@ -296,11 +296,17 @@ func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugReques
 	for k, v := range req.Header {
 		request.Header.Set(k, v)
 	}
+	s.tracing(request, req)
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return response, nil
+}
+
+func (s *traceService) tracing(request *http.Request, req *pb.CreateTraceDebugRequest) {
+	request.Header.Set("terminus-request-id", req.RequestID)
+	request.Header.Set("terminus-request-sampled", "true")
 }
 
 func (s *traceService) StopTraceDebug(ctx context.Context, req *pb.StopTraceDebugRequest) (*pb.StopTraceDebugResponse, error) {
