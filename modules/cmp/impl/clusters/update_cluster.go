@@ -42,8 +42,14 @@ func (c *Clusters) UpdateCluster(req apistructs.CMPClusterUpdateRequest, header 
 		}
 	}
 
-	newSchedulerConfig := cluster.SchedConfig
-	newSchedulerConfig.CPUSubscribeRatio = req.SchedulerConfig.CPUSubscribeRatio
+	var newSchedulerConfig *apistructs.ClusterSchedConfig
+
+	if req.Type != apistructs.EDAS {
+		newSchedulerConfig = cluster.SchedConfig
+		newSchedulerConfig.CPUSubscribeRatio = req.SchedulerConfig.CPUSubscribeRatio
+	} else {
+		newSchedulerConfig = req.SchedulerConfig
+	}
 
 	return c.bdl.UpdateCluster(apistructs.ClusterUpdateRequest{
 		Name:            cluster.Name,
