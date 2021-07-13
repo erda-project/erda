@@ -16,12 +16,9 @@ package openapi
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/openapi/api"
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
@@ -29,29 +26,6 @@ func NewServer() (*http.Server, error) {
 	s, err := NewLoginServer()
 	if err != nil {
 		return nil, err
-	}
-	customNs := conf.CustomNamespace()
-	if customNs != "" {
-		if customNs == "local" {
-			for i := range api.API {
-				oldHost := api.API[i].K8SHost
-				localHost := strings.Replace(oldHost, ".default.svc.cluster.local", "", -1)
-				componentName := strings.ToUpper(strings.Split(localHost, ":")[0]) + "_ADDR"
-				componentAddr := os.Getenv(componentName)
-				if componentAddr != "" {
-					l := strings.Split(componentAddr, ":")
-					api.API[i].K8SHost = l[0]
-					port, _ := strconv.ParseInt(l[1], 10, 64)
-					api.API[i].Port = int(port)
-				} else {
-					api.API[i].K8SHost = localHost
-				}
-			}
-		} else {
-			for i := range api.API {
-				api.API[i].K8SHost = strings.Replace(api.API[i].K8SHost, ".default.", "."+customNs+".", -1)
-			}
-		}
 	}
 
 	srv := &http.Server{
