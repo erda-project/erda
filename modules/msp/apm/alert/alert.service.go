@@ -437,6 +437,9 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 	for _, rule := range request.Rules {
 		rule.Attributes = map[string]*structpb.Value{}
 		rule.Attributes[Scope] = structpb.NewStringValue(fmt.Sprintf("{{%s}}", tk))
+		if rule.Filters == nil {
+			rule.Filters = make([]*monitor.CustomizeAlertRuleFilter, 0)
+		}
 		scopeFilter := monitor.CustomizeAlertRuleFilter{}
 		scopeFilter.Tag = "_metric_scope"
 		scopeFilter.Operator = OperateEq
@@ -455,13 +458,13 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		scopeApplicationFilter.Value = structpb.NewStringValue("$" + "application_id")
 		rule.Filters = append(rule.Filters, &scopeApplicationFilter)
 	}
-	alertDetailData, err := json.Marshal(alertDetail)
+	requestData, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	alertDetailReq := &monitor.CreateCustomizeAlertRequest{}
-	err = json.Unmarshal(alertDetailData, alertDetailReq)
-	resp, err := a.p.Monitor.CreateCustomizeAlert(context, alertDetailReq)
+	createAlertRequest := &monitor.CreateCustomizeAlertRequest{}
+	err = json.Unmarshal(requestData, createAlertRequest)
+	resp, err := a.p.Monitor.CreateCustomizeAlert(context, createAlertRequest)
 	if err != nil {
 		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("alert")
@@ -611,6 +614,7 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	}
 	alertDetail.Enable = customAlertResp.Data.Enable
 	alertDetail.AlertScope = MicroServiceScope
+	alertDetail.AlertScopeId = request.TenantGroup
 	alertDetail.Attributes = customAlertResp.Data.Attributes
 	for _, rule := range alertDetail.Rules {
 		rule.Attributes = map[string]*structpb.Value{}
@@ -854,8 +858,7 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 		return nil, errors.NewInternalServerError(err)
 	}
 	context := utils.NewContextWithHeader(ctx)
-	httpRequest := utils.GetHttpRequest(context)
-	userId := httpRequest.Header.Get("User-ID")
+	userID := apis.GetUserID(ctx)
 	getRecordReq := &monitor.GetAlertRecordRequest{
 		GroupId: request.GroupId,
 	}
@@ -881,7 +884,7 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 	}
 	if request.Body == nil {
 		request.Body = make(map[string]*structpb.Value)
-		request.Body["creator"] = structpb.NewStringValue(userId)
+		request.Body["creator"] = structpb.NewStringValue(userID)
 		request.Body["projectID"] = structpb.NewNumberValue(float64(projectId))
 	}
 	createIssue := &apistructs.IssueCreateRequest{}

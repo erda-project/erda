@@ -292,7 +292,7 @@ func (m *alertService) UpdateCustomizeAlert(ctx context.Context, request *pb.Upd
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	return &pb.UpdateCustomizeAlertResponse{}, nil
 }
 
 func (m *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *pb.UpdateCustomizeAlertEnableRequest) (*pb.UpdateCustomizeAlertEnableResponse, error) {
@@ -300,7 +300,7 @@ func (m *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	return &pb.UpdateCustomizeAlertEnableResponse{}, nil
 }
 
 func (m *alertService) DeleteCustomizeAlert(ctx context.Context, request *pb.DeleteCustomizeAlertRequest) (*pb.DeleteCustomizeAlertResponse, error) {
@@ -705,8 +705,6 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 		Data: true,
 	}
 	return result, nil
-
-	return nil, nil
 }
 
 func (m *alertService) UpdateOrgCustomizeAlertEnable(ctx context.Context, request *pb.UpdateOrgCustomizeAlertEnableRequest) (*pb.UpdateOrgCustomizeAlertEnableResponse, error) {
