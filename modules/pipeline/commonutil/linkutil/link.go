@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -46,14 +47,7 @@ func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {
 	}
 
 	// get domain protocol
-	clusterInfo, err := bdl.QueryClusterInfo(p.ClusterName)
-	if err != nil {
-		return false, ""
-	}
-	protocol := clusterInfo.Get(apistructs.DICE_PROTOCOL)
-	if protocol == "" {
-		return false, ""
-	}
+	Domain := conf.UIDomain()
 
-	return true, fmt.Sprintf("%s://%s/workBench/projects/%d/apps/%d/pipeline/%d", protocol, org.Domain, projectID, appID, p.ID)
+	return true, fmt.Sprintf("https://%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%d", Domain, org.Name, projectID, appID, p.ID)
 }
