@@ -15,21 +15,14 @@ package utils
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 )
 
-func GetHttpRequest(ctx context.Context) *http.Request {
-	return transhttp.ContextRequest(ctx)
-}
-
 func NewContextWithHeader(ctx context.Context) context.Context {
-	httpRequest := GetHttpRequest(ctx)
 	header := transport.Header{}
-	for k := range httpRequest.Header {
-		header.Set(k, httpRequest.Header.Get(k))
+	for k, vals := range transport.ContextHeader(ctx) {
+		header.Append(k, vals...)
 	}
 	return transport.WithHeader(context.Background(), header)
 }

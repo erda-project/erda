@@ -23,9 +23,9 @@ import (
 	"unicode"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
-	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -123,13 +123,7 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), fmt.Sprintf("invalid %s id=%q", scope, id))
 				}
 
-				// TODO: get userID from http or grpc
-				var userID string
-				httpReq := transhttp.ContextRequest(ctx)
-				if httpReq != nil {
-					userID = httpReq.Header.Get("User-ID")
-				}
-
+				userID := apis.GetUserID(ctx)
 				resp, err := p.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 					UserID:   userID,
 					Scope:    apistructs.ScopeType(scope),
