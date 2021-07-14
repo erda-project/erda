@@ -43,7 +43,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	}
 	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if proj == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
@@ -59,7 +59,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 		UpdateTime: now,
 	}
 	if err := s.metricDB.Create(m); err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	checker := s.metricDB.ConvertToChecker(m, req.Data.ProjectID)
 	if checker != nil {
@@ -74,7 +74,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	}
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if metric == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("metric/%d", req.Id))
@@ -82,7 +82,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	metric.URL = req.Data.Url
 	metric.Name = req.Data.Name
 	if err := s.metricDB.Update(metric); err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	checker := s.metricDB.ConvertToChecker(metric, -1)
 	if checker != nil {
@@ -94,7 +94,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCheckerV1Request) (*pb.DeleteCheckerV1Response, error) {
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if metric == nil {
 		return &pb.DeleteCheckerV1Response{}, nil
@@ -103,7 +103,7 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	var projectID int64
 	proj, err := s.projectDB.GetByID(metric.ProjectID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if proj != nil {
 		projectID = proj.ProjectID
@@ -111,7 +111,7 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 
 	err = s.metricDB.Delete(req.Id)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	s.cache.Remove(req.Id)
 
@@ -127,14 +127,14 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV1Request) (*pb.GetCheckerV1Response, error) {
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if metric == nil {
 		return &pb.GetCheckerV1Response{}, nil
 	}
 	proj, err := s.projectDB.GetByID(metric.ProjectID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if proj == nil {
 		return &pb.GetCheckerV1Response{}, nil
@@ -153,14 +153,14 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
 	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if proj == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
 	}
 	list, err := s.metricDB.ListByProjectID(proj.ID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
@@ -192,7 +192,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.DescribeCheckerV1Request) (*pb.DescribeCheckerV1Response, error) {
 	metric, err := s.metricDB.GetByID(req.Id)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	results := make(map[int64]*pb.DescribeItemV1)
 	var downCount int64
