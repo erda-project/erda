@@ -529,6 +529,8 @@ func (e *Endpoints) AddonCreateCallback(ctx context.Context, r *http.Request, va
 		return apierrors.ErrCreateAddon.InvalidParameter(err).ToResp(), nil
 	}
 
+	logrus.Infof("received addon create callback: %+v", req)
+
 	if err := e.addon.AddonProvisionCallback(vars["addonID"], &req); err != nil {
 		return apierrors.ErrCreateAddon.InvalidParameter(err.Error()).ToResp(), nil
 	}

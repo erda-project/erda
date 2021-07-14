@@ -56,6 +56,7 @@ var (
 		"migrate",
 		"lint",
 		"mkpy",
+		"mkpypkg",
 		"record",
 		"help",
 	}

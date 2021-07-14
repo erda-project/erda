@@ -202,27 +202,26 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
-	var halfHourSec uint64 = 60 * 30
 	gc := &p.Extra.GC
 	// resource
 	if gc.ResourceGC.SuccessTTLSecond == nil {
-		gc.ResourceGC.SuccessTTLSecond = &halfHourSec
+		gc.ResourceGC.SuccessTTLSecond = &[]uint64{conf.SuccessPipelineDefaultResourceGCTTLSec()}[0]
 	}
 	if gc.ResourceGC.FailedTTLSecond == nil {
-		gc.ResourceGC.FailedTTLSecond = &halfHourSec
+		gc.ResourceGC.FailedTTLSecond = &[]uint64{conf.FailedPipelineDefaultResourceGCTTLSec()}[0]
 	}
 	// database
 	if gc.DatabaseGC.Analyzed.NeedArchive == nil {
 		gc.DatabaseGC.Analyzed.NeedArchive = &[]bool{false}[0]
 	}
 	if gc.DatabaseGC.Analyzed.TTLSecond == nil {
-		gc.DatabaseGC.Analyzed.TTLSecond = &[]uint64{60 * 60 * 24}[0]
+		gc.DatabaseGC.Analyzed.TTLSecond = &[]uint64{conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()}[0]
 	}
 	if gc.DatabaseGC.Finished.NeedArchive == nil {
 		gc.DatabaseGC.Finished.NeedArchive = &[]bool{true}[0]
 	}
 	if gc.DatabaseGC.Finished.TTLSecond == nil {
-		gc.DatabaseGC.Finished.TTLSecond = &[]uint64{60 * 60 * 24 * 30 * 2}[0]
+		gc.DatabaseGC.Finished.TTLSecond = &[]uint64{conf.FinishedPipelineDefaultDatabaseGCTTLSec()}[0]
 	}
 }
 

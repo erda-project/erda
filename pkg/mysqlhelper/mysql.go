@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/clusterdialer"
 )
@@ -62,6 +63,7 @@ func (r Request) dbOpen() (*sql.DB, error) {
 		proto = fmt.Sprintf("tcp-%s", r.ClusterKey)
 		mysql.RegisterDialContext(proto, mysql.DialContextFunc(clusterdialer.DialContextTCP(r.ClusterKey)))
 	}
+	logrus.Debugf("mysql dsn is:%s", r.dsn(proto))
 	db, err := sql.Open("mysql", r.dsn(proto))
 	if err != nil {
 		return nil, err

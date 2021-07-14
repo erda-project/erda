@@ -203,6 +203,6 @@ CREATE TABLE IF NOT EXISTS roles (
 	role varchar(50) NOT NULL
 );
 
-INSERT INTO users (username, password, enabled) VALUES ('nacos', '$2a$10$EuWPZHzz32dJN7jexM34MOeYirDdFAZm2kuWj7VEOJhhZkDrxfvUu', TRUE);
+INSERT IGNORE INTO users (username, password, enabled) VALUES ('nacos', '$2a$10$EuWPZHzz32dJN7jexM34MOeYirDdFAZm2kuWj7VEOJhhZkDrxfvUu', TRUE);
 
-INSERT INTO roles (username, role) VALUES ('nacos', 'ROLE_ADMIN');
+INSERT IGNORE INTO roles (username, role) VALUES ('nacos', 'ROLE_ADMIN');

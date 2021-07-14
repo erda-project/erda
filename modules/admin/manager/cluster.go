@@ -27,6 +27,7 @@ import (
 func (am *AdminManager) AppendClusterEndpoint() {
 	am.endpoints = append(am.endpoints, []httpserver.Endpoint{
 		{Path: "/api/clusters", Method: http.MethodGet, Handler: am.ListCluster},
+		{Path: "/api/clusters/{clusterName}", Method: http.MethodGet, Handler: am.InspectCluster},
 		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: am.DereferenceCluster},
 	}...)
 }
@@ -38,11 +39,6 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 		err   error
 	)
 
-	orgID, err = GetOrgID(req)
-	if err != nil {
-		return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
-	}
-
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
@@ -50,29 +46,43 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 	}
 
 	clusterType := req.URL.Query().Get("clusterType")
-
-	clusterRelation, err := am.bundle.GetOrgClusterRelationsByOrg(orgID)
-	if err != nil {
-		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
-	}
-
-	clusters, err := am.bundle.ListClusters(clusterType, orgID)
-	if err != nil {
-		return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
-	}
-
 	newClusters := []apistructs.ClusterInfo{}
-	for _, cluster := range clusters {
-		if cluster.ManageConfig != nil {
-			cluster.ManageConfig = &apistructs.ManageConfig{
-				CredentialSource: cluster.ManageConfig.CredentialSource,
-				Address:          cluster.ManageConfig.Address,
-			}
+
+	// use sys symbol if use admin user and return all cluster info
+	// else return cluster with org relation
+	if req.URL.Query().Get("sys") != "" {
+		clusters, err := am.bundle.ListClusters(clusterType)
+		if err != nil {
+			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
 		}
-		for _, relate := range clusterRelation {
-			if relate.ClusterID == uint64(cluster.ID) {
-				cluster.IsRelation = "Y"
-				newClusters = append(newClusters, cluster)
+		newClusters = clusters
+	} else {
+		orgID, err = GetOrgID(req)
+		if err != nil {
+			return apierrors.ErrListCluster.InvalidParameter(err).ToResp(), nil
+		}
+
+		clusterRelation, err := am.bundle.GetOrgClusterRelationsByOrg(orgID)
+		if err != nil {
+			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
+		}
+		clusters, err := am.bundle.ListClusters(clusterType)
+		if err != nil {
+			return apierrors.ErrListCluster.InternalError(err).ToResp(), nil
+		}
+
+		for _, cluster := range clusters {
+			if cluster.ManageConfig != nil {
+				cluster.ManageConfig = &apistructs.ManageConfig{
+					CredentialSource: cluster.ManageConfig.CredentialSource,
+					Address:          cluster.ManageConfig.Address,
+				}
+			}
+			for _, relate := range clusterRelation {
+				if relate.ClusterID == uint64(cluster.ID) && relate.OrgID == orgID {
+					cluster.IsRelation = "Y"
+					newClusters = append(newClusters, cluster)
+				}
 			}
 		}
 	}
@@ -102,4 +112,19 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 	}
 
 	return httpserver.OkResp(resp)
+}
+
+func (am *AdminManager) InspectCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+
+	clusterName := vars["clusterName"]
+	if clusterName == "" {
+		return apierrors.ErrGetCluster.MissingParameter("clusterName").ToResp(), nil
+	}
+
+	info, err := am.bundle.GetCluster(clusterName)
+	if err != nil {
+		return apierrors.ErrGetCluster.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(info)
 }
