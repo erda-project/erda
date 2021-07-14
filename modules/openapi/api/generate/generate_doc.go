@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/pkg/errors"
@@ -272,6 +273,11 @@ func generateDoc(onlyOpenapi bool, resultfile string) {
 func Struct2OpenapiSchema(i interface{}) (name string, schema *openapi3.Schema, err error) {
 	if i == nil {
 		return "", nil, errors.New("the input is nil")
+	}
+
+	switch i.(type) {
+	case time.Time, *time.Time:
+		return reflect.TypeOf(i).Name(), openapi3.NewDateTimeSchema(), nil
 	}
 
 	switch reflect.ValueOf(i).Type().Kind() {
