@@ -60,19 +60,19 @@ func (*PipelineTask) TableName() string {
 }
 
 type PipelineTaskExtra struct {
-	Namespace    string            `json:"namespace,omitempty"`
-	ExecutorName string            `json:"executorName,omitempty"`
-	ClusterName  string            `json:"clusterName,omitempty"`
-	AllowFailure bool              `json:"allowFailure,omitempty"`
-	Pause        bool              `json:"pause,omitempty"`
-	Timeout      time.Duration     `json:"timeout,omitempty"`
-	PrivateEnvs  map[string]string `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
-	PublicEnvs   map[string]string `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
-	Labels       map[string]string `json:"labels,omitempty"`
-	Image        string            `json:"image,omitempty"`
-	Cmd          string            `json:"cmd,omitempty"`
-	CmdArgs      []string          `json:"cmdArgs,omitempty"`
-	Binds        []apistructs.Bind `json:"binds,omitempty"`
+	Namespace    string                   `json:"namespace,omitempty"`
+	ExecutorName PipelineTaskExecutorName `json:"executorName,omitempty"`
+	ClusterName  string                   `json:"clusterName,omitempty"`
+	AllowFailure bool                     `json:"allowFailure,omitempty"`
+	Pause        bool                     `json:"pause,omitempty"`
+	Timeout      time.Duration            `json:"timeout,omitempty"`
+	PrivateEnvs  map[string]string        `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
+	PublicEnvs   map[string]string        `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
+	Labels       map[string]string        `json:"labels,omitempty"`
+	Image        string                   `json:"image,omitempty"`
+	Cmd          string                   `json:"cmd,omitempty"`
+	CmdArgs      []string                 `json:"cmdArgs,omitempty"`
+	Binds        []apistructs.Bind        `json:"binds,omitempty"`
 	// Volumes 创建 task 时的 volumes 快照
 	// 若一开始 volume 无 volumeID，启动 task 后返回的 volumeID 不会在这里更新，只会更新到 task.Context.OutStorages 里
 	Volumes         []apistructs.MetadataField `json:"volumes,omitempty"` //
@@ -135,13 +135,39 @@ var (
 	PipelineTaskExecutorKindScheduler PipelineTaskExecutorKind = "SCHEDULER"
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
 	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
+	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest}
 )
 
+func (that PipelineTaskExecutorKind) Check() bool {
+	for _, kind := range PipelineTaskExecutorKindList {
+		if string(kind) == string(that) {
+			return true
+		}
+	}
+	return false
+}
+
+type PipelineTaskExecutorName string
+
+func (that PipelineTaskExecutorName) String() string {
+	return string(that)
+}
+
 var (
-	PipelineTaskExecutorNameEmpty            = ""
-	PipelineTaskExecutorNameSchedulerDefault = "scheduler"
-	PipelineTaskExecutorNameAPITestDefault   = "api-test"
+	PipelineTaskExecutorNameEmpty            PipelineTaskExecutorName = ""
+	PipelineTaskExecutorNameSchedulerDefault PipelineTaskExecutorName = "scheduler"
+	PipelineTaskExecutorNameAPITestDefault   PipelineTaskExecutorName = "api-test"
+	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault}
 )
+
+func (that PipelineTaskExecutorName) Check() bool {
+	for _, name := range PipelineTaskExecutorNameList {
+		if string(name) == string(that) {
+			return true
+		}
+	}
+	return false
+}
 
 type RuntimeResource struct {
 	CPU    float64 `json:"cpu"`

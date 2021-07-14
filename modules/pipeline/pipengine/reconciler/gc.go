@@ -235,7 +235,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	}
 
 	// group tasks by executorName
-	groupedTasks := make(map[string][]*spec.PipelineTask) // key: executorName
+	groupedTasks := make(map[spec.PipelineTaskExecutorName][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
 		dbTasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
 		if err != nil {
