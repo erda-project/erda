@@ -83,6 +83,8 @@ type columns struct {
 	Title     string `json:"title"`
 	DataIndex string `json:"dataIndex"`
 	Width     int    `json:"width,omitempty"`
+	Ellipsis  bool   `json:"ellipsis"`
+	Fixed     string `json:"fixed"`
 }
 
 type dataOperation struct {
@@ -194,18 +196,26 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey": "id",
+		"scroll": map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
 				Title:     "步骤名称",
 				DataIndex: "name",
+				Width:     200,
+				Ellipsis:  true,
+				Fixed:     "left",
 			},
 			{
 				Title:     "步骤类型",
 				DataIndex: "type",
+				Width:     85,
+				Ellipsis:  true,
 			},
 			{
 				Title:     "子任务数",
 				DataIndex: "tasksNum",
+				Width:     85,
+				Ellipsis:  true,
 			},
 			{
 				Title:     "接口路径",
@@ -214,10 +224,15 @@ func getProps() map[string]interface{} {
 			{
 				Title:     "状态",
 				DataIndex: "status",
+				Width:     120,
+				Ellipsis:  true,
 			},
 			{
 				Title:     "操作",
 				DataIndex: "operate",
+				Width:     120,
+				Ellipsis:  true,
+				Fixed:     "right",
 			},
 		},
 	}
