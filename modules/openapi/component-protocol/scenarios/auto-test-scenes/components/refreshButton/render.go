@@ -39,7 +39,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		c.State["reloadScenesInfo"] = true
 		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
 			c.Operations["autoRefresh"] = map[string]interface{}{
-				"key":         "refresh",
+				"key":         "autoRefresh",
 				"reload":      true,
 				"showLoading": false,
 				"duration":    10000,
@@ -61,7 +61,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
 			c.Operations["autoRefresh"] = map[string]interface{}{
-				"key":         "refresh",
+				"key":         "autoRefresh",
 				"reload":      true,
 				"showLoading": false,
 				"duration":    10000,
