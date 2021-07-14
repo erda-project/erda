@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -152,6 +153,111 @@ func Test_calculateNormalTaskRequestResource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := calculateNormalTaskRequestResource(tt.args.action, tt.args.actionDefine, tt.args.defaultRes); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("calculateNormalTaskRequestResource() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
+	type args struct {
+		action     *pipelineyml.Action
+		actionSpec *apistructs.ActionSpec
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    spec.PipelineTaskExecutorKind
+		want1   spec.PipelineTaskExecutorName
+		wantErr bool
+	}{
+		{
+			name: "empty executor",
+			args: args{
+				actionSpec: &apistructs.ActionSpec{
+					Executor: nil,
+				},
+			},
+			want:    spec.PipelineTaskExecutorKindScheduler,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+		{
+			name:    "empty spec",
+			args:    args{},
+			want:    spec.PipelineTaskExecutorKindScheduler,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+		{
+			name: "not match kind",
+			args: args{
+				actionSpec: &apistructs.ActionSpec{
+					Executor: &apistructs.ActionExecutor{
+						Name: spec.PipelineTaskExecutorNameEmpty.String(),
+						Kind: "__other",
+					},
+				},
+			},
+			want:    spec.PipelineTaskExecutorKindScheduler,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+		{
+			name: "not match name",
+			args: args{
+				actionSpec: &apistructs.ActionSpec{
+					Executor: &apistructs.ActionExecutor{
+						Kind: string(spec.PipelineTaskExecutorKindMemory),
+						Name: "__other",
+					},
+				},
+			},
+			want:    spec.PipelineTaskExecutorKindScheduler,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+		{
+			name: "normal",
+			args: args{
+				actionSpec: &apistructs.ActionSpec{
+					Executor: &apistructs.ActionExecutor{
+						Kind: string(spec.PipelineTaskExecutorKindAPITest),
+						Name: spec.PipelineTaskExecutorNameSchedulerDefault.String(),
+					},
+				},
+			},
+			want:    spec.PipelineTaskExecutorKindAPITest,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+		{
+			name: "not find kind or name",
+			args: args{
+				actionSpec: &apistructs.ActionSpec{
+					Executor: &apistructs.ActionExecutor{
+						Kind: "__test_kind",
+						Name: "__test_name",
+					},
+				},
+			},
+			want:    spec.PipelineTaskExecutorKindScheduler,
+			want1:   spec.PipelineTaskExecutorNameSchedulerDefault,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &PipelineSvc{}
+			got, got1, err := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("judgeTaskExecutor() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("judgeTaskExecutor() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("judgeTaskExecutor() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
