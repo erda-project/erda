@@ -5,6 +5,7 @@ FROM ${BASE_DOCKER_IMAGE} as build
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
+ENV GOPROXY https://goproxy.cn/,direct
 
 ARG CONFIG_PATH
 ARG MODULE_PATH
