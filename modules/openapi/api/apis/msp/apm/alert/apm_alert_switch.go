@@ -11,14 +11,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package alert
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var TMC_MICRO_SERVICE_ALERT_SWITCH = apis.ApiSpec{
+var APM_ALERT_SWITCH = apis.ApiSpec{
 	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/alerts/<id>/switch",
 	BackendPath: "/api/msp/apm/<tenantGroup>/alerts/<id>/switch",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",

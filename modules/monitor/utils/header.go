@@ -11,17 +11,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package utils
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"context"
 
-var TMC_MICRO_SERVICE_ALERT_RECORD = apis.ApiSpec{
-	Path:        "/api/tmc/tenantGroup/<tenantGroup>/alert-records/<groupId>",
-	BackendPath: "/api/msp/apm/<tenantGroup>/alert-records/<groupId>",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 获取微服务告警记录",
+	"github.com/erda-project/erda-infra/pkg/transport"
+)
+
+func NewContextWithHeader(ctx context.Context) context.Context {
+	header := transport.Header{}
+	for k, vals := range transport.ContextHeader(ctx) {
+		header.Append(k, vals...)
+	}
+	return transport.WithHeader(context.Background(), header)
 }

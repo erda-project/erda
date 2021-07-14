@@ -259,14 +259,19 @@ func (h *DefaultDeployHandler) CheckIfNeedTmcInstance(req *ResourceDeployRequest
 		return nil, false, err
 	}
 
-	if instance == nil {
+	// we only care about the RUNNING one
+	isValid := func(ins *db.Instance) bool {
+		return instance != nil && instance.Status == TmcInstanceStatusRunning
+	}
+
+	if !isValid(instance) {
 		instance, err = h.InstanceDb.GetByEngineAndVersionAndAz(resourceInfo.TmcVersion.Engine, resourceInfo.TmcVersion.Version, req.Az)
 		if err != nil {
 			return nil, false, err
 		}
 	}
 
-	return instance, instance == nil, nil
+	return instance, !isValid(instance), nil
 }
 
 func (h *DefaultDeployHandler) GetClusterConfig(az string) (map[string]string, error) {
@@ -497,6 +502,12 @@ func (h *DefaultDeployHandler) CheckIfNeedTmcInstanceTenant(req *ResourceDeployR
 		return nil, need, err
 	}
 
+	// if tenant already marked deleted, the caller(orchestrator) should use new uuid for next request
+	// we return error here if the same failed id came again
+	if tenant != nil && tenant.IsDeleted == "Y" {
+		return tenant, need, fmt.Errorf("tenant id not valid")
+	}
+
 	return tenant, need && tenant == nil, nil
 }
 
@@ -570,7 +581,6 @@ func (h *DefaultDeployHandler) Callback(url string, id string, success bool, con
 	}{IsSuccess: success}
 
 	h.Log.Infof("about to callback, request:%+v", req)
-
 	var body bytes.Buffer
 	resp, err := httpclient.New().
 		Post(url+"/api/addon-platform/addons/"+id+"/action/provision").

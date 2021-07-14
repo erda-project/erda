@@ -11,17 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package alert
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_NOTIFY_TARGET = apis.ApiSpec{
-	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/notifies/targets",
-	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/notifies/targets",
+var APM_ALERT_UPDATE = apis.ApiSpec{
+	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/alerts/<id>",
+	BackendPath: "/api/msp/apm/<tenantGroup>/alerts/<id>",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "PUT",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 获取企业自定义告警通知方式",
+	Doc:         "summary: 修改微服务告警",
+	Audit:       auditOperateMicroserviceAlert(apistructs.UpdateMicroserviceAlert, "update"),
 }
