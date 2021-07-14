@@ -14,6 +14,7 @@
 package clusters
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -23,9 +24,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/envconf"
-
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/envconf"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string) (uint64, error) {
@@ -164,6 +165,117 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		return recordID, err
 	}
 	return recordID, nil
+}
+
+func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
+	var dto *apistructs.PipelineDetailDTO
+	reader := c.db.RecordsReader()
+	clusterTypes := []string{
+		dbclient.RecordTypeAddAliACKECluster.String(),
+		dbclient.RecordTypeAddAliCSECluster.String(),
+		dbclient.RecordTypeAddAliCSManagedCluster.String(),
+		dbclient.RecordTypeAddAliECSECluster.String(),
+	}
+	// interval: two hour
+	interval := 2 * 60 * 60
+	status := []string{dbclient.StatusTypeSuccess.String(), dbclient.StatusTypeProcessing.String()}
+	reader.ByCreateTime(interval).ByStatuses(status...).ByRecordTypes(clusterTypes...).PageNum(0).PageSize(500)
+
+	records, err := reader.Do()
+	if err != nil {
+		logrus.Errorf("get create cluster record failed, error: %v", err)
+		return
+	}
+	for _, record := range records {
+		if record.PipelineID == 0 {
+			err = fmt.Errorf("invalid pipeline id")
+			_ = c.processFailedPipeline(record, err)
+			continue
+		}
+		dto, err = c.bdl.GetPipeline(record.PipelineID)
+		if err != nil && strutil.Contains(err.Error(), "not found") {
+			err = fmt.Errorf("not found pipeline: %d", record.PipelineID)
+			_ = c.processFailedPipeline(record, err)
+			continue
+		}
+		if dto == nil {
+			err = fmt.Errorf("empty pipeline content")
+			_ = c.processFailedPipeline(record, err)
+			continue
+		}
+		if len(dto.PipelineStages) == 0 {
+			err = fmt.Errorf("empty pipeline stages, pipelineid: %d", record.PipelineID)
+			_ = c.processFailedPipeline(record, err)
+			continue
+		}
+		for _, stage := range dto.PipelineStages {
+			if len(stage.PipelineTasks) == 0 {
+				err = fmt.Errorf("empty task in pipeline stage")
+				_ = c.processFailedPipeline(record, err)
+				break
+			}
+			for _, task := range stage.PipelineTasks {
+				if task.Status.IsFailedStatus() {
+					if len(task.Result.Errors) != 0 {
+						err = fmt.Errorf("%s", task.Result.Errors[0].Msg)
+					} else {
+						err = fmt.Errorf("run pipeline failed")
+					}
+					_ = c.processFailedPipeline(record, err)
+					break
+				}
+				if !task.Status.IsSuccessStatus() {
+					break
+				}
+				if task.Status.IsSuccessStatus() && task.Name == "diceInstall" {
+					_ = c.processSuccessPipeline(task.Result, record)
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) error {
+	record.Status = dbclient.StatusTypeFailed
+	record.Detail = error.Error()
+	err := c.db.RecordsWriter().Update(record)
+	if err != nil {
+		logrus.Errorf("update add edge cluster to failed status failed, cluster:%s, pipeline:%v, err:%v", record.ClusterName, record.PipelineID, err)
+		return err
+	}
+	return nil
+}
+
+func (c *Clusters) processSuccessPipeline(pTaskResult apistructs.PipelineTaskResult, record dbclient.Record) error {
+	var req apistructs.ClusterCreateRequest
+	// get cluster info from pipeline result
+	for _, m := range pTaskResult.Metadata {
+		if m.Name == "cluster_info" {
+			cluster := []byte(m.Value)
+			err := json.Unmarshal(cluster, &req)
+			if err != nil {
+				logrus.Errorf("unmarshal create cluster request failed, error: %v", err)
+				return err
+			}
+			break
+		}
+	}
+	// create cluster
+	err := c.bdl.CreateCluster(&req)
+	if err != nil {
+		logrus.Errorf("create cluster failed, error: %v", err)
+		return err
+	}
+	// update record
+	record.Status = dbclient.StatusTypeSuccessed
+	err = c.db.RecordsWriter().Update(record)
+	if err != nil {
+		logrus.Errorf("update record failed, error: %v", err)
+		return err
+	}
+	return nil
 }
 
 func isEmpty(str string) bool {

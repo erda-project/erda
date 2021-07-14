@@ -54,10 +54,15 @@ type StatusType string
 
 const (
 	StatusTypeSuccess    StatusType = "success"
+	StatusTypeSuccessed  StatusType = "successed"
 	StatusTypeFailed     StatusType = "failed"
 	StatusTypeProcessing StatusType = "processing"
 	StatusTypeUnknown    StatusType = "unknown"
 )
+
+func (s StatusType) String() string {
+	return string(s)
+}
 
 type Record struct {
 	dbengine.BaseModel

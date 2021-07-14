@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -125,6 +126,7 @@ func do() (*httpserver.Server, error) {
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
 		bundle.WithEventBox(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 
@@ -153,6 +155,9 @@ func do() (*httpserver.Server, error) {
 	as := autoscanner.New(db, bdl)
 	logrus.Info("start autoScanner to scan expired cmp cluster")
 	go as.Run()
+
+	// init cron job
+	initCron(ep)
 
 	return server, nil
 }
@@ -187,6 +192,12 @@ func initServices(ep *endpoints.Endpoints) {
 	// run mns service, monitor mns messages & consume them
 	ep.Mns.Run()
 	ep.Ess.AutoScale()
+}
+
+// 初始化定时任务
+func initCron(ep *endpoints.Endpoints) {
+	// cron job to monitor pipeline created edge clusters
+	go loop.New(loop.WithInterval(10 * time.Second)).Do(ep.GetCluster().MonitorCloudCluster)
 }
 
 func registerWebHook(bdl *bundle.Bundle) {
