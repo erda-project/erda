@@ -45,12 +45,12 @@ func (s *registerCenterService) ListInterface(ctx context.Context, req *pb.ListI
 	}
 	clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	ins := instance.New(s.p.DB)
 	config, err := ins.GetConfigOptionByGroup(engineName, req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if addr, ok := config.Config["ZKPROXY_PUBLIC_HOST"].(string); ok {
 		namespace := req.TenantID
@@ -84,12 +84,12 @@ func (s *registerCenterService) GetHTTPServices(ctx context.Context, req *pb.Get
 	}
 	clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	ins := instance.New(s.p.DB)
 	config, err := ins.GetConfigOptionByGroup(engineName, req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if addr, ok := config.Config["NACOS_ADDRESS"].(string); ok {
 		namespace, _ := config.Config["NACOS_TENANT_ID"].(string)
@@ -110,12 +110,12 @@ func (s *registerCenterService) EnableHTTPService(ctx context.Context, req *pb.E
 	}
 	clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	ins := instance.New(s.p.DB)
 	config, err := ins.GetConfigOptionByGroup(engineName, req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if addr, ok := config.Config["NACOS_ADDRESS"].(string); ok {
 		namespace, _ := config.Config["NACOS_TENANT_ID"].(string)

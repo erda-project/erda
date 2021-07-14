@@ -56,7 +56,7 @@ func (p *provider) TenantToProjectID(tgroup, tenant string) permission.ValueGett
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 	tenant, err := p.instanceTenantDB.GetByID(id)
 	if err != nil {
-		return "", errors.NewDataBaseError(err)
+		return "", errors.NewDatabaseError(err)
 	}
 	if tenant == nil {
 		return "", fmt.Errorf("fail to find tenant by id %q", id)
@@ -68,7 +68,7 @@ func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	tenants, err := p.instanceTenantDB.GetByTenantGroup(group)
 	if err != nil {
-		return "", errors.NewDataBaseError(err)
+		return "", errors.NewDatabaseError(err)
 	}
 	if len(tenants) <= 0 {
 		return "", fmt.Errorf("tenant group %q not found", group)
@@ -76,7 +76,7 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 	for _, tenant := range tenants {
 		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
 		if err != nil {
-			return "", errors.NewDataBaseError(err)
+			return "", errors.NewDatabaseError(err)
 		}
 		if tmc == nil {
 			continue
@@ -110,7 +110,7 @@ func (p *provider) TerminusKeyToProjectID(terminusKey string) permission.ValueGe
 		}
 		m, err := p.monitorDB.GetByTerminusKey(tk)
 		if err != nil {
-			return "", errors.NewDataBaseError(err)
+			return "", errors.NewDatabaseError(err)
 		}
 		return m.ProjectId, nil
 	}

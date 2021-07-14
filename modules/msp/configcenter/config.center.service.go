@@ -157,14 +157,14 @@ func (s *configCenterService) SaveGroupProperties(ctx context.Context, req *pb.S
 func (s *configCenterService) extractConfig(tenantID string) (*ConfigInfo, error) {
 	tenant, err := s.instanceTenantDB.GetByID(tenantID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if tenant == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("tenant/%s", tenantID))
 	}
 	instance, err := s.instanceDB.GetByID(tenant.InstanceID)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if instance == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("instance/%s", tenant.InstanceID))

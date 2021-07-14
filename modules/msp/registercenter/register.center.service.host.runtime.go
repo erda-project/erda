@@ -30,7 +30,7 @@ func (s *registerCenterService) GetHostRuntimeRule(ctx context.Context, req *pb.
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rule, err := adp.GetHostRuntimeRule(req.ProjectID, req.Env, req.Host, namespace)
@@ -48,7 +48,7 @@ func (s *registerCenterService) CreateHostRuntimeRule(ctx context.Context, req *
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rule, err := adp.CreateHostRuntimeRule(req.ProjectID, req.Env, req.Host, namespace, req.Rules)
@@ -66,7 +66,7 @@ func (s *registerCenterService) GetAllHostRuntimeRules(ctx context.Context, req 
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rules, err := adp.GetAllHostRuntimeRules(req.ProjectID, req.Env, req.AppID, namespace)

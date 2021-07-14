@@ -40,7 +40,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	// get cluster info
 	clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantGroup)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if len(clusterName) <= 0 {
 		return nil, errors.NewNotFoundError("TenantGroup.ClusterName")
@@ -54,7 +54,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	// get menu items
 	items, err := s.getMenuItems()
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	menuMap := make(map[string]*pb.MenuItem)
 	for _, item := range items {
@@ -75,14 +75,14 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	for engine, config := range configs {
 		menuKey, err := s.db.GetMicroServiceEngineKey(engine)
 		if err != nil {
-			return nil, errors.NewDataBaseError(err)
+			return nil, errors.NewDatabaseError(err)
 		}
 		if len(menuKey) <= 0 {
 			continue
 		}
 		item := menuMap[menuKey]
 		if item == nil {
-			return nil, errors.NewDataBaseError(fmt.Errorf("not found menu by key %q", menuKey))
+			return nil, errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
 		}
 
 		// setup params
@@ -92,7 +92,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 			params := make(map[string]interface{})
 			err := json.Unmarshal([]byte(paramsStr), &params)
 			if err != nil {
-				return nil, errors.NewDataBaseError(fmt.Errorf("PUBLIC_HOST format error"))
+				return nil, errors.NewDatabaseError(fmt.Errorf("PUBLIC_HOST format error"))
 			}
 			for k, v := range params {
 				item.Params[k] = fmt.Sprint(v)
@@ -126,7 +126,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
 	items, err := s.getMenuItems()
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	menuMap := make(map[string]*pb.MenuItem)
 	for _, item := range items {
@@ -140,14 +140,14 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 	for engine, config := range configs {
 		menuKey, err := s.db.GetMicroServiceEngineKey(engine)
 		if err != nil {
-			return nil, errors.NewDataBaseError(err)
+			return nil, errors.NewDatabaseError(err)
 		}
 		if len(menuKey) <= 0 {
 			continue
 		}
 		item := menuMap[menuKey]
 		if item == nil {
-			return nil, errors.NewDataBaseError(fmt.Errorf("not found menu by key %q", menuKey))
+			return nil, errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
 		}
 		if _, ok := config["PUBLIC_HOST"]; ok {
 			delete(config, "PUBLIC_HOST")
@@ -165,7 +165,7 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 func (s *menuService) getMenuItems() ([]*pb.MenuItem, error) {
 	menuIni, err := s.db.GetMicroServiceMenu()
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if menuIni == nil {
 		return nil, nil
@@ -181,7 +181,7 @@ func (s *menuService) getMenuItems() ([]*pb.MenuItem, error) {
 func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[string]string, error) {
 	tenants, err := s.instanceTenantDB.GetByTenantGroup(group)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	if len(tenants) <= 0 {
 		return nil, nil
@@ -192,17 +192,17 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 		if configs[tenant.Engine] == nil || tenant.ID == tenantID {
 			instance, err := s.instanceDB.GetByID(tenant.InstanceID)
 			if err != nil {
-				return nil, errors.NewDataBaseError(err)
+				return nil, errors.NewDatabaseError(err)
 			}
 			if instance == nil {
-				return nil, errors.NewDataBaseError(fmt.Errorf("fail to find instance by id=%s", tenant.InstanceID))
+				return nil, errors.NewDatabaseError(fmt.Errorf("fail to find instance by id=%s", tenant.InstanceID))
 			}
 			config := make(map[string]string)
 			if len(instance.Config) > 0 {
 				instanceConfig := make(map[string]interface{})
 				err = json.Unmarshal([]byte(instance.Config), &config)
 				if err != nil {
-					return nil, errors.NewDataBaseError(fmt.Errorf("fail to unmarshal instance config: %w", err))
+					return nil, errors.NewDatabaseError(fmt.Errorf("fail to unmarshal instance config: %w", err))
 				}
 				for k, v := range instanceConfig {
 					config[k] = fmt.Sprint(v)
@@ -212,7 +212,7 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 				tenantConfig := make(map[string]interface{})
 				err = json.Unmarshal([]byte(tenant.Config), &config)
 				if err != nil {
-					return nil, errors.NewDataBaseError(fmt.Errorf("fail to unmarshal tenant config: %w", err))
+					return nil, errors.NewDatabaseError(fmt.Errorf("fail to unmarshal tenant config: %w", err))
 				}
 				for k, v := range tenantConfig {
 					config[k] = fmt.Sprint(v)

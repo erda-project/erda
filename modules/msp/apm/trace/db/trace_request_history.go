@@ -33,7 +33,7 @@ func (db *TraceRequestHistoryDB) db() *gorm.DB {
 func (db *TraceRequestHistoryDB) InsertHistory(history TraceRequestHistory) (*TraceRequestHistory, error) {
 	result := db.db().Create(&history)
 	if result.Error != nil {
-		return nil, errors.NewDataBaseError(result.Error)
+		return nil, errors.NewDatabaseError(result.Error)
 	}
 	value := result.Value.(*TraceRequestHistory)
 	return value, nil
