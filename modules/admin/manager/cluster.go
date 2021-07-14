@@ -27,6 +27,7 @@ import (
 func (am *AdminManager) AppendClusterEndpoint() {
 	am.endpoints = append(am.endpoints, []httpserver.Endpoint{
 		{Path: "/api/clusters", Method: http.MethodGet, Handler: am.ListCluster},
+		{Path: "/api/clusters/{clusterName}", Method: http.MethodGet, Handler: am.InspectCluster},
 		{Path: "/api/clusters/actions/dereference", Method: http.MethodPut, Handler: am.DereferenceCluster},
 	}...)
 }
@@ -78,7 +79,7 @@ func (am *AdminManager) ListCluster(ctx context.Context, req *http.Request, reso
 				}
 			}
 			for _, relate := range clusterRelation {
-				if relate.ClusterID == uint64(cluster.ID) && cluster.OrgID == int(orgID) {
+				if relate.ClusterID == uint64(cluster.ID) && relate.OrgID == orgID {
 					cluster.IsRelation = "Y"
 					newClusters = append(newClusters, cluster)
 				}
@@ -111,4 +112,19 @@ func (am *AdminManager) DereferenceCluster(ctx context.Context, r *http.Request,
 	}
 
 	return httpserver.OkResp(resp)
+}
+
+func (am *AdminManager) InspectCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+
+	clusterName := vars["clusterName"]
+	if clusterName == "" {
+		return apierrors.ErrGetCluster.MissingParameter("clusterName").ToResp(), nil
+	}
+
+	info, err := am.bundle.GetCluster(clusterName)
+	if err != nil {
+		return apierrors.ErrGetCluster.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(info)
 }
