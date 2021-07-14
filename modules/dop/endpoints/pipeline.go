@@ -596,11 +596,10 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		if !strings.Contains(strPipelineYml, "merge:") {
 			continue
 		}
-		for _, branch := range pipelineYml.Spec().On.Merge.Branches {
-			if gitEvent.Content.TargetBranch == branch {
-				exist = true
-				break
-			}
+
+		if diceworkspace.IsRefPatternMatch(gitEvent.Content.TargetBranch, pipelineYml.Spec().On.Merge.Branches) {
+			exist = true
+			break
 		}
 
 		if !exist {
