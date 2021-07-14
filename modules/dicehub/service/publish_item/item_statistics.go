@@ -1025,33 +1025,14 @@ func (i *PublishItem) EffactUsersRate(point uint64, start, end time.Time, av str
 	for _, v := range dataList.Data.Results[0].Data[0] {
 		effactUsers = v.Data
 	}
-	totalReq := query.CreateQueryRequest("ta_metric_mobile_metrics")
-	totalReq = totalReq.
-		SetDiagram("histogram").
-		StartFrom(start).
-		EndWith(end).
-		Filter("tk", mk.AK).
-		Filter("ai", mk.AI).
-		Match("uid", "?*").
-		Apply("cardinality", "tags.uid").
-		LimitPoint(int(point))
-	if av != "" {
-		totalReq = totalReq.Filter("av", av)
-	}
-	totalResp, err := metrics.Client.QueryMetric(totalReq)
-	logrus.Infof("monitor request params 影响用户占比: %s", totalReq.ConstructParam().Encode())
 
+	// get cumulative users for each point
+	allUserResp, err := i.CumulativeUsers(point, start, end, mk)
 	if err != nil {
 		return nil, err
 	}
-	totalDataList, err := parsingDataListResp(totalResp)
-	if err != nil {
-		return nil, err
-	}
-	allUsers := make([]uint64, 0, point)
-	for _, v := range totalDataList.Data.Results[0].Data[0] {
-		allUsers = v.Data
-	}
+	logrus.Debugf("all user resp: %v", allUserResp)
+	allUsers := allUserResp.Results[0].Data[0]["cardinality.tags.uid"].Data
 
 	rateArr := make([]float64, 0, point)
 	for index, v := range effactUsers {
