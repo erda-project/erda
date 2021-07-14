@@ -54,6 +54,7 @@ type FlinkConf struct {
 	Parallelism         int32           `json:"parallelism"`
 	JobManagerResource  BigdataResource `json:"jobManagerResource"`
 	TaskManagerResource BigdataResource `json:"taskManagerResource"`
+	LogConfig           string          `json:"logConfig"`
 }
 
 type SparkConf struct {
