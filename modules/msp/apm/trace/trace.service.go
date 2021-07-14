@@ -162,6 +162,9 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	if req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("scopeId")
 	}
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
 	if req.EndTime <= 0 || req.StartTime <= 0 {
 		req.EndTime = time.Now().UnixNano() / 1e6
 		h, _ := time.ParseDuration("-1h")
@@ -173,7 +176,6 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 
 	queryParams := make(map[string]*structpb.Value)
 	queryParams["terminus_keys"] = structpb.NewStringValue(req.ScopeID)
-	queryParams["limit"] = structpb.NewStringValue(strconv.FormatInt(req.Limit, 10))
 	var where bytes.Buffer
 	if req.ApplicationID > 0 {
 		queryParams["applications_ids"] = structpb.NewStringValue(strconv.FormatInt(req.ApplicationID, 10))
@@ -182,7 +184,7 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	//-1 error, 0 both, 1 success
 	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
 		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
-		"ORDER BY start_time::field LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
+		"ORDER BY start_time::field DESC LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
