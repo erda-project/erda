@@ -46,7 +46,7 @@ func (c *NacosClient) Login() (string, error) {
 		return "", err
 	}
 	if !resp.IsOK() {
-		return "", fmt.Errorf("response code error")
+		return "", fmt.Errorf("nacos login response code error[%d], body:%s", resp.StatusCode(), string(resp.Body()))
 	}
 	accessToken, ok := result["accessToken"]
 	if !ok {
@@ -77,7 +77,7 @@ func (c *NacosClient) GetNamespaceId(namespaceName string) (string, error) {
 		return "", err
 	}
 	if !resp.IsOK() {
-		return "", fmt.Errorf("response code error")
+		return "", fmt.Errorf("nacos get namespaceid response code error[%d], body:%s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	for _, namespace := range result.Data {
@@ -102,7 +102,7 @@ func (c *NacosClient) CreateNamespace(namespaceName string) (string, error) {
 		return "", err
 	}
 	if !resp.IsOK() {
-		return "", fmt.Errorf("response code error")
+		return "", fmt.Errorf("nacos create namespace response code error[%d], body:%s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return c.GetNamespaceId(namespaceName)
@@ -120,7 +120,7 @@ func (c *NacosClient) SaveConfig(tenantName string, groupName string, dataId str
 		return err
 	}
 	if !resp.IsOK() {
-		return fmt.Errorf("response code error")
+		return fmt.Errorf("nacos save config response code error[%d], body:%s", resp.StatusCode(), string(resp.Body()))
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func (c *NacosClient) DeleteConfig(tenantName string, groupName string) error {
 		return err
 	}
 	if !resp.IsOK() {
-		return fmt.Errorf("response code error")
+		return fmt.Errorf("nacos delete config response code error[%d], body:%s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return nil
