@@ -505,7 +505,7 @@ func (h *DefaultDeployHandler) CheckIfNeedTmcInstanceTenant(req *ResourceDeployR
 	// if tenant already marked deleted, the caller(orchestrator) should use new uuid for next request
 	// we return error here if the same failed id came again
 	if tenant != nil && tenant.IsDeleted == "Y" {
-		return nil, need, fmt.Errorf("tenant id not valid")
+		return tenant, need, fmt.Errorf("tenant id not valid")
 	}
 
 	return tenant, need && tenant == nil, nil
