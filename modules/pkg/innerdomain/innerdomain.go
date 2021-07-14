@@ -40,7 +40,6 @@ package innerdomain
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -249,13 +248,7 @@ func (a *domaininfoLegacy) k8s() (string, error) {
 	if a.servicegroupName != "" || a.servicegroupNamespace != "" {
 		return "", ErrNoLegacyK8SAddr
 	}
-	ns := namespaceForDice
-	customns := os.Getenv("CUSTOM_NAMESPACE")
-	if customns != "" {
-		ns = customns
-	}
-	components := []string{a.serviceName, ns, k8sSuffix}
-	return strutil.Join(components, "."), nil
+	return a.serviceName, nil
 }
 
 func (a *domaininfoLegacy) marathon() (string, error) {
