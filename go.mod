@@ -39,7 +39,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
-	github.com/erda-project/erda-proto-go v0.0.0-20210712040237-13b419ccb916
+	github.com/erda-project/erda-proto-go v0.0.0-20210714025152-31855363f907
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -85,7 +85,7 @@ require (
 	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f
 	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/libgit2/git2go/v30 v30.0.5
-	github.com/magiconair/properties v1.8.4
+	github.com/magiconair/properties v1.8.5
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/minio/md5-simd v1.1.2
@@ -98,7 +98,7 @@ require (
 	github.com/otiai10/copy v1.5.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pelletier/go-toml v1.8.1
+	github.com/pelletier/go-toml v1.9.3
 	github.com/pingcap/errors v0.11.5-0.20200917111840-a15ef68f753d
 	github.com/pingcap/parser v0.0.0-20201022083903-fbe80b0c40bb
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
@@ -134,10 +134,8 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
-	golang.org/x/sys v0.0.0-20210421221651-33663a62ff08 // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210422153429-2279cbceda62
-	google.golang.org/grpc v1.37.0 // indirect
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
