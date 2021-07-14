@@ -240,6 +240,12 @@ type ActionSpec struct {
 	OutputsFromParams []OutputsFromParams   `json:"outputsFromParams" yaml:"outputsFromParams"`
 	Loop              *PipelineTaskLoop     `json:"loop" yaml:"loop"`
 	Priority          *PipelineTaskPriority `json:"priority" yaml:"priority"`
+	Executor          *ActionExecutor       `json:"executor" yaml:"executor"`
+}
+
+type ActionExecutor struct {
+	Kind string `json:"kind" yaml:"kind"`
+	Name string `json:"name" yaml:"name"`
 }
 
 type ActionMatchOutputType string
