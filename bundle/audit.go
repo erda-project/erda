@@ -20,7 +20,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
-	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -107,7 +106,7 @@ func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) 
 	return &listAudit, nil
 }
 
-func (b *Bundle) ExportAuditExcel(orgID uint64, userID string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
+func (b *Bundle) ExportAuditExcel(orgID, userID string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, nil, err
@@ -118,7 +117,7 @@ func (b *Bundle) ExportAuditExcel(orgID uint64, userID string, params url.Values
 		Get(host).
 		Path("/api/audits/actions/export-excel").
 		Header(httputil.InternalHeader, "bundle").
-		Header(httputil.OrgHeader, strconv.Itoa(int(orgID))).
+		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
 		Params(params).
 		Do().StreamBody()

@@ -19,8 +19,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -60,23 +58,28 @@ func (am *AdminManager) ExportExcelAudit(
 	ctx context.Context, w http.ResponseWriter,
 	req *http.Request, resources map[string]string) error {
 
-	orgID, err := GetOrgID(req)
-	if err != nil {
-		return errors.Errorf("invalid param, orgId is invalid")
-	}
-
 	userID := req.Header.Get("USER-ID")
 	id := USERID(userID)
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id"))
 	}
 
-	respBody, resp, err := am.bundle.ExportAuditExcel(orgID, userID, req.URL.Query())
+	var orgIDStr = ""
+	if req.URL.Query().Get("sys") == "" {
+		id, err := GetOrgID(req)
+		if err != nil {
+			return apierrors.ErrListAudit.InvalidParameter(err)
+		}
+		orgIDStr = fmt.Sprintf("%d", id)
+	}
+
+	respBody, resp, err := am.bundle.ExportAuditExcel(orgIDStr, userID, req.URL.Query())
 	if err != nil {
 		return fmt.Errorf("failed to get spec from file: %v", err)
 	}
 	w.Header().Set("Content-Disposition", resp.Headers().Get("Content-Disposition"))
 	w.Header().Set("Content-Type", resp.Headers().Get("Content-Type"))
 	_, err = io.Copy(w, respBody)
+
 	return err
 }
