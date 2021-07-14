@@ -71,7 +71,7 @@ func (db *TraceRequestHistoryDB) QueryHistoryByRequestID(scopeID string, request
 
 func (db *TraceRequestHistoryDB) UpdateDebugStatusByRequestID(scopeID string, requestID string, statusCode int) (*TraceRequestHistory, error) {
 	history := TraceRequestHistory{}
-	err := db.db().Where("`terminus_key` = ? AND `request_id` = ?", scopeID, requestID).Update("status", statusCode).Find(&history).Error
+	err := db.db().Where("`terminus_key` = ? AND `request_id` = ?", scopeID, requestID).Update("status", statusCode).Update("update_time", time.Now()).Find(&history).Error
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (db *TraceRequestHistoryDB) UpdateDebugStatusByRequestID(scopeID string, re
 
 func (db *TraceRequestHistoryDB) UpdateDebugResponseByRequestID(scopeID string, requestID string, responseCode int, responseBody string) (*TraceRequestHistory, error) {
 	history := TraceRequestHistory{}
-	err := db.db().Where("`terminus_key` = ? AND `request_id` = ?", scopeID, requestID).Update("response_status", responseCode).Update("response_body", responseBody).Find(&history).Error
+	err := db.db().Where("`terminus_key` = ? AND `request_id` = ?", scopeID, requestID).Update("response_status", responseCode).Update("response_body", responseBody).Update("update_time", time.Now()).Find(&history).Error
 	if err != nil {
 		return nil, err
 	}

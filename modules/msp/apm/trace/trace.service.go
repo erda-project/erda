@@ -286,11 +286,11 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		req.CreateTime = time.Now().Format(layout)
 		req.UpdateTime = time.Now().Format(layout)
 	}
-	createTime, err := time.Parse(layout, req.CreateTime)
+	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	updateTime, err := time.Parse(layout, req.UpdateTime)
+	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
