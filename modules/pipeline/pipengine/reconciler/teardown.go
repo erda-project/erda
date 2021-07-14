@@ -85,6 +85,11 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 func closePipelineExitChannel(ctx context.Context, p *spec.Pipeline) {
 	rlog.PDebugf(p.ID, "pipeline exit, begin send signal to exit channel to stop other related things")
 	defer rlog.PDebugf(p.ID, "pipeline exit, end send signal to exit channel to stop other related things")
+	defer func() {
+		if err := recover(); err != nil {
+			rlog.PErrorf(p.ID, "pipeline trigger a panic when closePipelineExitChannel, err: %v", err)
+		}
+	}()
 	exitCh, ok := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})
 	if !ok {
 		return
