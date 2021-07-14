@@ -30,7 +30,7 @@ func (s *registerCenterService) GetHostRule(ctx context.Context, req *pb.CetHost
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rule, err := adp.GetHostRule(req.ProjectID, req.Env, req.AppID, namespace)
@@ -50,7 +50,7 @@ func (s *registerCenterService) CreateHostRule(ctx context.Context, req *pb.Crea
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rule, err := adp.CreateHostRoute(req.ProjectID, req.Env, req.AppID, namespace, req.Rules)
@@ -70,7 +70,7 @@ func (s *registerCenterService) DeleteHostRule(ctx context.Context, req *pb.Dele
 	}
 	host, err := s.getzkProxyHost(req.ClusterName)
 	if err != nil {
-		return nil, errors.NewDataBaseError(err)
+		return nil, errors.NewDatabaseError(err)
 	}
 	adp := zkproxy.NewAdapter(req.ClusterName, host)
 	rule, err := adp.DeleteHostRoute(req.ProjectID, req.Env, req.AppID, namespace)
