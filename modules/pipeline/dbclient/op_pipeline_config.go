@@ -24,7 +24,7 @@ var defaultAPITestActionExecutor = spec.PipelineConfig{
 	Type: spec.PipelineConfigTypeActionExecutor,
 	Value: spec.ActionExecutorConfig{
 		Kind:    string(spec.PipelineTaskExecutorKindAPITest),
-		Name:    spec.PipelineTaskExecutorNameAPITestDefault,
+		Name:    spec.PipelineTaskExecutorNameAPITestDefault.String(),
 		Options: nil,
 	},
 }
