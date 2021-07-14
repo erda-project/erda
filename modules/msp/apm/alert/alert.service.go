@@ -84,7 +84,7 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 		appIdStr := v.Attributes["application_id"]
 		idData := appIdStr.GetListValue().AsSlice()
 		appIds := make([]string, 0)
-		if idData == nil {
+		if idData != nil {
 			for _, v := range idData {
 				appIds = append(appIds, v.(string))
 			}
