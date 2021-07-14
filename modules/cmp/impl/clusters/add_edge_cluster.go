@@ -14,6 +14,7 @@
 package clusters
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -23,9 +24,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/envconf"
-
 	"github.com/erda-project/erda/modules/cmp/dbclient"
+	"github.com/erda-project/erda/pkg/envconf"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string) (uint64, error) {
@@ -209,7 +210,6 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 		logrus.Errorf("get create cluster record failed, error: %v", err)
 		return
 	}
-	logrus.Infof("get %d add edge cluster records", len(records))
 	for _, record := range records {
 		if record.PipelineID == 0 {
 			err = fmt.Errorf("invalid pipeline id")
