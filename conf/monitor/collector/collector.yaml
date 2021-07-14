@@ -30,6 +30,7 @@ monitor-collector-v2:
     _enable: ${COLLECTORV2_ENABLE:true}
     output:
         name: ${COLLECTOR_OUTPUT_NAME:kafka}
+        # topicPrefix: spot-v2-  # TODO
         # kafka config
         parallelism: ${KAFKA_PARALLELISM:3}
         batch:

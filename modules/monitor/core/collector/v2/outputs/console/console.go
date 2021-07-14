@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/erda-project/erda/modules/monitor/core/collector/v2/pb"
+	"github.com/erda-project/erda/modules/monitor/core/logs/pb"
 )
 
 const (
