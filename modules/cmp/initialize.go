@@ -197,6 +197,10 @@ func initServices(ep *endpoints.Endpoints) {
 	ep.Ess.AutoScale()
 }
 
+func newKubernetesEndpoints(bdl *bundle.Bundle) *kubernetes.Endpoints {
+	return kubernetes.New(bdl)
+}
+
 // 初始化定时任务
 func initCron(ep *endpoints.Endpoints) {
 	// cron job to monitor pipeline created edge clusters
