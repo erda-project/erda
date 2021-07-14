@@ -176,7 +176,14 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 
 // SoldierTerminal proxy of soldier
 func SoldierTerminal(r *http.Request, initmessage []byte, upperConn *websocket.Conn) {
-	soldierAddr, err := url.Parse(r.URL.Query().Get("url"))
+	bdl := bundle.New(bundle.WithClusterManager())
+	clusterName := r.URL.Query().Get("clusterName")
+	clusterInfo, err := bdl.GetCluster(clusterName)
+	if err != nil {
+		logrus.Errorf("failed to get cluster info with bundle err :%v", err)
+	}
+
+	soldierAddr, err := url.Parse(clusterInfo.URLs["colonySoldier"])
 	if err != nil {
 		logrus.Errorf("failed to url parse: %v, err: %v", r.URL.Query().Get("url"), err)
 	}
