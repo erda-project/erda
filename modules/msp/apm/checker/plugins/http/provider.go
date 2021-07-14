@@ -38,9 +38,8 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	traceSampleIndex int64
+	Cfg *config
+	Log logs.Logger
 }
 
 func (p *provider) Init(ctx servicehub.Context) error { return nil }
