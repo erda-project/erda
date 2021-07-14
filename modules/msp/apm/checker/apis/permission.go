@@ -40,14 +40,14 @@ func getProjectFromMetricID(metricDB *db.MetricDB, projectDB *db.ProjectDB) func
 		}
 		m, err := metricDB.GetByID(metricID)
 		if err != nil {
-			return "", errors.NewDataBaseError(err)
+			return "", errors.NewDatabaseError(err)
 		}
 		if m == nil {
 			return "", fmt.Errorf("not found id for permission")
 		}
 		proj, err := projectDB.GetByID(m.ProjectID)
 		if err != nil {
-			return "", errors.NewDataBaseError(err)
+			return "", errors.NewDatabaseError(err)
 		}
 		if proj == nil {
 			return "", fmt.Errorf("not found id for permission")

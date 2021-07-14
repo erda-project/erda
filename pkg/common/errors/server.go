@@ -22,12 +22,17 @@ import (
 
 // InternalServerError .
 type InternalServerError struct {
-	Cause error
+	Cause   error
+	Message string
 }
 
 // NewInternalServerError .
 func NewInternalServerError(err error) *InternalServerError {
 	return &InternalServerError{Cause: err}
+}
+
+func NewInternalServerErrorMessage(message string) *InternalServerError {
+	return &InternalServerError{Message: message}
 }
 
 func (e *InternalServerError) Error() string {
@@ -38,21 +43,21 @@ func (e *InternalServerError) Translate(t i18n.Translator, langs i18n.LanguageCo
 	return t.Sprintf(langs, "${internal} ${error}: %s", e.Cause)
 }
 
-// DataBaseError .
-type DataBaseError struct {
+// DatabaseError .
+type DatabaseError struct {
 	Cause error
 }
 
-// NewDataBaseError .
-func NewDataBaseError(err error) *DataBaseError {
-	return &DataBaseError{Cause: err}
+// NewDatabaseError .
+func NewDatabaseError(err error) *DatabaseError {
+	return &DatabaseError{Cause: err}
 }
 
-func (e *DataBaseError) Error() string {
+func (e *DatabaseError) Error() string {
 	return fmt.Sprintf("database error: %s", e.Cause)
 }
-func (e *DataBaseError) HTTPStatus() int { return http.StatusInternalServerError }
-func (e *DataBaseError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
+func (e *DatabaseError) HTTPStatus() int { return http.StatusInternalServerError }
+func (e *DatabaseError) Translate(t i18n.Translator, langs i18n.LanguageCodes) string {
 	return t.Sprintf(langs, "${database} ${error}: %s", e.Cause)
 }
 
