@@ -11,21 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package monitor
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var TMC_MICRO_SERVICE_CUSTOMIZE_ALERT_SWITCH = apis.ApiSpec{
-	Path:        "/api/tmc/micro-service/tenantGroup/<tenantGroup>/customize/alerts/<id>/switch",
-	BackendPath: "/api/msp/apm/<tenantGroup>/custom-alerts/<id>/switch",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 切换微服务自定义告警开关",
-	Audit:       auditOperateMicroserviceCustomAlert(apistructs.SwitchMicroserviceCustomAlert, ""),
+var MONITOR_HOST_STATUS = apis.ApiSpec{
+	Path:         "/api/host-status",
+	BackendPath:  "/api/resources/host-status",
+	Host:         "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Scheme:       "http",
+	Method:       "POST",
+	CheckLogin:   true,
+	RequestType:  apistructs.HostStatusListRequest{},
+	ResponseType: apistructs.HostStatusListResponse{},
+	Doc:          "集群主机状态",
 }

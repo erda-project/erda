@@ -38,7 +38,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
-	github.com/erda-project/erda-proto-go v0.0.0-20210713021328-fa5fcedfebc8
+	github.com/erda-project/erda-proto-go v0.0.0-20210714025152-31855363f907
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
-	github.com/tealeg/xlsx/v3 v3.2.3
+	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
@@ -168,7 +168,7 @@ replace (
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
-	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb
+	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
