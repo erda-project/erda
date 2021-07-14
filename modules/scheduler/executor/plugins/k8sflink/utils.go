@@ -193,51 +193,86 @@ func composeOwnerReferences(versionGroup, kind, name string, uid types.UID) meta
 
 func composeLogConfig() map[string]string {
 	logConfig := map[string]string{
-		"log4j-console.properties": `rootLogger.level = INFO
-      rootLogger.appenderRef.file.ref = LogFile
-      rootLogger.appenderRef.console.ref = LogConsole
-      appender.file.name = LogFile
-      appender.file.type = File
-      appender.file.append = false
-      appender.file.fileName = ${sys:log.file}
-      appender.file.layout.type = PatternLayout
-      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
-      appender.console.name = LogConsole
-      appender.console.type = CONSOLE
-      appender.console.layout.type = PatternLayout
-      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
-      logger.akka.name = akka
-      logger.akka.level = INFO
-      logger.kafka.name= org.apache.kafka
-      logger.kafka.level = INFO
-      logger.hadoop.name = org.apache.hadoop
-      logger.hadoop.level = INFO
-      logger.zookeeper.name = org.apache.zookeeper
-      logger.zookeeper.level = INFO
-      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
-      logger.netty.level = OFF`,
+		"log4j-console.properties": `rootLogger.level = WARN,ERROR
+            rootLogger.level = WARN,ERROR
+            rootLogger.appenderRef.file.ref = LogFile
+            rootLogger.appenderRef.console.ref = LogConsole
+            appender.file.name = LogFile
+            appender.file.type = File
+            appender.file.append = false
+            appender.file.fileName = ${sys:log.file}
+            appender.file.layout.type = PatternLayout
+            appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+            appender.console.name = LogConsole
+            appender.console.type = CONSOLE
+            appender.console.layout.type = PatternLayout
+            appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+            logger.akka.name = akka
+            logger.akka.level = ERROR,WARN
+            logger.kafka.name= org.apache.kafka
+            logger.kafka.level = ERROR,WARN
+            logger.hadoop.name = org.apache.hadoop
+            logger.hadoop.level = ERROR,WARN
+            logger.zookeeper.name = org.apache.zookeeper
+            logger.zookeeper.level = ERROR,WARN
+            logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
+            logger.netty.level = OFF`,
 		"logback-console.xml": `<configuration>
         <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
           <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
           </encoder>
         </appender>
-        <appender name="file" class="ch.qos.logback.core.FileAppender">
-          <file>${log.file}</file>
-          <append>false</append>
-          <encoder>
+        </appender>
+        <!-- 按照每天生成WARN级别日志文件 -->
+        <appender name="WARN"  class="ch.qos.logback.core.rolling.RollingFileAppender">
+          <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+          <!--日志文件输出的文件名-->
+            <FileNamePattern>${log.file}/warn.%d{yyyy-MM-dd}.%i.log</FileNamePattern>
+          <!--日志文件保留天数-->
+            <MaxHistory>3</MaxHistory>
+            <MaxFileSize>200MB</MaxFileSize>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
           </encoder>
-        </appender>
-        <root level="INFO">
+        <!-- 此日志文件只记录WARN级别的 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>WARN</level>
+        <onMatch>ACCEPT</onMatch>
+        <onMismatch>DENY</onMismatch>
+        </filter>
+       </appender>
+        <!-- 按照每天生成ERROR级别日志文件 -->
+        <appender name="ERROR"  class="ch.qos.logback.core.rolling.RollingFileAppender">
+          <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+          <!--日志文件输出的文件名-->
+            <FileNamePattern>${log.file}/error.%d{yyyy-MM-dd}.%i.log</FileNamePattern>
+          <!--日志文件保留天数-->
+            <MaxHistory>3</MaxHistory>
+            <MaxFileSize>200MB</MaxFileSize>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        <!-- 此日志文件只记录error级别的 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>ERROR</level>
+        <onMatch>ACCEPT</onMatch>
+        <onMismatch>DENY</onMismatch>
+        </filter>
+       </appender>
+        <root level="ERROR">
           <appender-ref ref="console"/>
           <appender-ref ref="file"/>
         </root>
-        <logger name="akka" level="INFO" />
-        <logger name="org.apache.kafka" level="INFO" />
-        <logger name="org.apache.hadoop" level="INFO" />
-        <logger name="org.apache.zookeeper" level="INFO" />
-        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="INFO" />
+        <logger name="akka" level="ERROR" />
+        <logger name="org.apache.kafka" level="ERROR" />
+        <logger name="org.apache.hadoop" level="ERROR" />
+        <logger name="org.apache.zookeeper" level="ERROR" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="ERROR" />
       </configuration>`,
 	}
 	return logConfig
