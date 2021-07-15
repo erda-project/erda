@@ -342,7 +342,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				cond.PageNo = uint64(c.State["pageNo"].(float64))
 			}
 		}
-	} else if event.Operation.String() == "changePageSize" {
 		cond.PageSize = uint64(c.State["pageSize"].(float64))
 	} else if event.Operation == apistructs.InitializeOperation {
 		cond.PageNo = 1
