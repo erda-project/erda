@@ -16,6 +16,7 @@ package details_apis
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -58,75 +59,93 @@ func (p *provider) getPodInfo(clusterName, podName string, start, end int64) (*P
 		Filter(elastic.NewTermQuery(query.ClusterNameKey, clusterName)).
 		Filter(elastic.NewTermQuery(query.TagKey+".pod_name", podName))
 	searchSource := elastic.NewSearchSource().Query(boolQuery).Size(0)
-	searchSource.Aggregation("pod", elastic.NewFilterAggregation().
-		Filter(elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "kubernetes_pod_container"))).
-		SubAggregation("pod", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false)),
-	)
-	const containerIDKey = query.TagKey + ".container_id"
-	searchSource.Aggregation("containers", elastic.NewFilterAggregation().
-		Filter(elastic.NewBoolQuery().Filter(elastic.NewTermQuery("name", "docker_container_status")).MustNot(elastic.NewTermQuery("tags.podsandbox", "true"))).
-		SubAggregation(containerIDKey, elastic.NewTermsAggregation().Field(containerIDKey).
-			SubAggregation("container", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false).Sort("fields.finished_at", false)),
-		),
-	)
+	searchSource = searchSource.Aggregation("pod", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false))
 
-	resp, err := p.metricq.QueryRaw([]string{"kubernetes_pod_container", "docker_container_status"},
+	resp, err := p.metricq.QueryRaw([]string{"kubernetes_pod_container"},
 		[]string{clusterName}, start, end, searchSource)
 	if err != nil {
+		if esErr, ok := err.(*elastic.Error); ok {
+			if esErr.Status < http.StatusInternalServerError {
+				return &PodInfo{}, nil
+			}
+		}
 		return nil, fmt.Errorf("fail to query pod and containers: %s", err)
 	}
 	var info PodInfo
 	if resp.Aggregations == nil {
 		return &info, nil
 	}
-	pod, ok := resp.Aggregations.Filter("pod")
-	if ok && pod != nil && pod.Aggregations != nil {
-		topHis, ok := pod.Aggregations.TopHits("pod")
-
-		if ok && topHis != nil && topHis.Hits != nil && len(topHis.Hits.Hits) > 0 {
-
-			var source map[string]interface{}
-			err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
-			if err == nil {
-				info.Summary.ClusterName = utils.GetMapValue("tags.cluster_name", source)
-				info.Summary.NodeName = utils.GetMapValue("tags.node_name", source)
-				info.Summary.HostIP = utils.GetMapValue("tags.host_ip", source)
-				info.Summary.Namespace = utils.GetMapValue("tags.namespace", source)
-				info.Summary.PodName = utils.GetMapValue("tags.pod_name", source)
-				info.Summary.StateCode = utils.GetMapValue("fields.state_code", source)
-				info.Summary.RestartTotal = utils.GetMapValue("fields.restarts_total", source)
-				info.Summary.TerminatedReason = utils.GetMapValue("fields.terminated_reason", source)
-			}
+	topHis, ok := resp.Aggregations.TopHits("pod")
+	if ok && topHis != nil && topHis.Hits != nil && len(topHis.Hits.Hits) > 0 {
+		var source map[string]interface{}
+		err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
+		if err == nil {
+			info.Summary.ClusterName = utils.GetMapValue(query.TagKey+".cluster_name", source)
+			info.Summary.NodeName = utils.GetMapValue(query.TagKey+".node_name", source)
+			info.Summary.HostIP = utils.GetMapValue(query.TagKey+".host_ip", source)
+			info.Summary.Namespace = utils.GetMapValue(query.TagKey+".namespace", source)
+			info.Summary.PodName = utils.GetMapValue(query.TagKey+".pod_name", source)
+			info.Summary.StateCode = utils.GetMapValue(query.FieldKey+".state_code", source)
+			info.Summary.RestartTotal = utils.GetMapValue(query.FieldKey+".restarts_total", source)
+			info.Summary.TerminatedReason = utils.GetMapValue(query.FieldKey+".terminated_reason", source)
 		}
 	}
-	containers, ok := resp.Aggregations.Filter("containers")
-	if ok && containers != nil && containers.Aggregations != nil {
-		terms, ok := containers.Aggregations.Terms(containerIDKey)
-		if ok && terms != nil {
-			for _, b := range terms.Buckets {
-				if b.Aggregations == nil {
-					continue
-				}
-				topHis, ok := b.Aggregations.TopHits("container")
-				if ok && topHis != nil && topHis.Hits != nil && len(topHis.Hits.Hits) > 0 {
-					var source map[string]interface{}
-					err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
-					if err == nil {
-						inst := &PodInfoInstanse{
-							ContainerID: b.Key,
-							HostIP:      utils.GetMapValue("tags.host_ip", source),
-							StartedAt:   formatDate(utils.GetMapValue("fields.started_at", source)),
-							FinishedAt:  formatDate(utils.GetMapValue("fields.finished_at", source)),
-							ExitCode:    utils.GetMapValue("fields.exitcode", source),
-							OomKilled:   utils.GetMapValue("fields.oomkilled", source),
-						}
-						info.Instances = append(info.Instances, inst)
-					}
-				}
-			}
-		}
+	err = p.getContainers(clusterName, podName, start, end, &info)
+	if err != nil {
+		return nil, err
 	}
 	return &info, nil
+}
+
+func (p *provider) getContainers(clusterName, podName string, start, end int64, info *PodInfo) error {
+	boolQuery := elastic.NewBoolQuery().
+		Filter(elastic.NewRangeQuery(query.TimestampKey).Gte(start * 1000000).Lte(end * 1000000)).
+		Filter(elastic.NewTermQuery(query.ClusterNameKey, clusterName)).
+		Filter(elastic.NewTermQuery(query.TagKey+".pod_name", podName)).
+		MustNot(elastic.NewTermQuery(query.TagKey+".podsandbox", "true"))
+	searchSource := elastic.NewSearchSource().Query(boolQuery).Size(0)
+
+	const containerIDKey = query.TagKey + ".container_id"
+	searchSource.Aggregation(containerIDKey, elastic.NewTermsAggregation().Field(containerIDKey).
+		SubAggregation("container", elastic.NewTopHitsAggregation().Size(1).Sort(query.TimestampKey, false).Sort(query.FieldKey+".finished_at", false)))
+	resp, err := p.metricq.QueryRaw([]string{"docker_container_summary"},
+		[]string{clusterName}, start, end, searchSource)
+	if err != nil {
+		if esErr, ok := err.(*elastic.Error); ok {
+			if esErr.Status < http.StatusInternalServerError {
+				return nil
+			}
+		}
+		return fmt.Errorf("fail to query pod and containers: %s", err)
+	}
+	if resp.Aggregations == nil {
+		return nil
+	}
+	terms, ok := resp.Aggregations.Terms(containerIDKey)
+	if ok && terms != nil {
+		for _, b := range terms.Buckets {
+			if b.Aggregations == nil {
+				continue
+			}
+			topHis, ok := b.Aggregations.TopHits("container")
+			if ok && topHis != nil && topHis.Hits != nil && len(topHis.Hits.Hits) > 0 {
+				var source map[string]interface{}
+				err := json.Unmarshal([]byte(*topHis.Hits.Hits[0].Source), &source)
+				if err == nil {
+					inst := &PodInfoInstanse{
+						ContainerID: b.Key,
+						HostIP:      utils.GetMapValue(query.TagKey+".host_ip", source),
+						StartedAt:   formatDate(utils.GetMapValue(query.FieldKey+".started_at", source)),
+						FinishedAt:  formatDate(utils.GetMapValue(query.FieldKey+".finished_at", source)),
+						ExitCode:    utils.GetMapValue(query.FieldKey+".exitcode", source),
+						OomKilled:   utils.GetMapValue(query.FieldKey+".oomkilled", source),
+					}
+					info.Instances = append(info.Instances, inst)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func formatDate(date interface{}) interface{} {
