@@ -46,7 +46,7 @@ func New(options ...Option) *Bundle {
 	}
 	if b.hc == nil {
 		b.hc = httpclient.New(
-			httpclient.WithTimeout(time.Second, time.Second*3),
+			httpclient.WithTimeout(time.Second*10, time.Second*60),
 		)
 	}
 	if b.i18nLoader == nil {
