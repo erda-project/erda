@@ -375,21 +375,9 @@ func (a *alertService) QueryCustomizeMetric(ctx context.Context, request *alert.
 			i--
 		}
 	}
-	for _, v := range lang {
-		if v.Code == "en" {
-			resp.Data.NotifySample = adapt.OrgNotifyTemplateSampleEn
-			break
-		}
-	}
-	resp.Data.NotifySample = adapt.OrgNotifyTemplateSample
-	data, err := json.Marshal(resp)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	result := &alert.QueryCustomizeMetricResponse{
 		Data: resp.Data,
 	}
-	err = json.Unmarshal(data, result.Data)
 	return result, nil
 }
 
