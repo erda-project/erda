@@ -1,0 +1,1 @@
+alter table dice_api_assets add column col_name varchar(255);
