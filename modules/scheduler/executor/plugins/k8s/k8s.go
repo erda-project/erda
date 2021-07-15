@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -947,6 +949,46 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		k.setProjectServiceName(sg)
 	}
 	isReady := true
+
+	deploys, err := k.deploy.List(ns, map[string]string{
+		LabelServiceGroupID: sg.ID,
+	})
+	if err != nil {
+		return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
+	}
+	deployMap := make(map[string]appsv1.Deployment, len(deploys.Items))
+	for _, deploy := range deploys.Items {
+		deployMap[deploy.Name] = deploy
+	}
+
+	daemonsetExist := false
+
+	for _, svc := range sg.Services {
+		if svc.WorkLoad == ServicePerNode {
+			daemonsetExist = true
+			break
+		}
+	}
+	var dsMap map[string]appsv1.DaemonSet
+	if daemonsetExist {
+		daemonsets, err := k.ds.List(ns, map[string]string{
+			LabelServiceGroupID: sg.ID,
+		})
+		if err != nil {
+			return apistructs.StatusDesc{}, fmt.Errorf("list daemonset in ns %s err: %v", ns, err)
+		}
+
+		dsMap = make(map[string]appsv1.DaemonSet, len(daemonsets.Items))
+		for _, ds := range daemonsets.Items {
+			dsMap[ds.Name] = ds
+		}
+	}
+
+	pods, err := k.pod.ListNamespacePods(ns)
+	if err != nil {
+		return apistructs.StatusDesc{}, err
+	}
+
 	for i := range sg.Services {
 		var (
 			status apistructs.StatusDesc
@@ -954,12 +996,12 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		)
 		switch sg.Services[i].WorkLoad {
 		case ServicePerNode:
-			status, err = k.getDaemonSetStatus(&sg.Services[i])
+			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
 		default:
 			// To distinguish the following exceptions：
 			// 1, An error occurred during the creation process, and the entire runtime is deleted and then come back to query
 			// 2, Others
-			status, err = k.getDeploymentStatus(&sg.Services[i])
+			status, err = k.getDeploymentStatusFromMap(&sg.Services[i], deployMap)
 		}
 		if err != nil {
 			// TODO: the state can be chanded to "Error"..
@@ -993,7 +1035,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			isReady = false
 			resultStatus.Status = apistructs.StatusProgressing
 			sg.Services[i].Status = apistructs.StatusProgressing
-			podstatuses, err := k.pod.GetNamespacedPodsStatus(sg.Services[i].Namespace)
+			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items)
 			if err != nil {
 				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
 					sg.Services[i].Namespace,

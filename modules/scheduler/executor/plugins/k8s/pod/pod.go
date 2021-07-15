@@ -369,13 +369,10 @@ type PodStatus struct {
 	Message string
 }
 
-func (p *Pod) GetNamespacedPodsStatus(namespace string) ([]PodStatus, error) {
-	pods, err := p.ListNamespacePods(namespace)
-	if err != nil {
-		return nil, err
-	}
+func (p *Pod) GetNamespacedPodsStatus(pods []apiv1.Pod) ([]PodStatus, error) {
+
 	r := []PodStatus{}
-	for _, pod := range pods.Items {
+	for _, pod := range pods {
 		reason, message := p.UnreadyPodReason(&pod)
 		switch reason {
 		case None:

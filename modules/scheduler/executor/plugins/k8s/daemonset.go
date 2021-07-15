@@ -39,21 +39,22 @@ func (k *Kubernetes) createDaemonSet(service *apistructs.Service, sg *apistructs
 	return k.ds.Create(daemonset)
 }
 
-func (k *Kubernetes) getDaemonSetStatus(service *apistructs.Service) (apistructs.StatusDesc, error) {
-	var statusDesc apistructs.StatusDesc
+func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daemonsets map[string]appsv1.DaemonSet) (apistructs.StatusDesc, error) {
+	var (
+		statusDesc apistructs.StatusDesc
+	)
 	dsName := getDeployName(service)
-	daemonSet, err := k.getDaemonSet(service.Namespace, dsName)
-	if err != nil {
-		return statusDesc, err
-	}
-	status := daemonSet.Status
 
-	statusDesc.Status = apistructs.StatusUnknown
+	if daemonSet, ok := daemonsets[dsName]; ok {
+		status := daemonSet.Status
 
-	if status.NumberAvailable == status.DesiredNumberScheduled {
-		statusDesc.Status = apistructs.StatusReady
-	} else {
-		statusDesc.Status = apistructs.StatusUnHealthy
+		statusDesc.Status = apistructs.StatusUnknown
+
+		if status.NumberAvailable == status.DesiredNumberScheduled {
+			statusDesc.Status = apistructs.StatusReady
+		} else {
+			statusDesc.Status = apistructs.StatusUnHealthy
+		}
 	}
 
 	return statusDesc, nil
