@@ -10,7 +10,7 @@ elasticsearch:
   password: "${ES_SECURITY_PASSWORD}"
 
 elasticsearch@logs:
-  urls: "${ES_URL:http://localhost:9200}"
+  urls: "${LOGS_ES_URL:http://localhost:9200}"
   security: ${LOGS_ES_SECURITY_ENABLE:false}
   username: "${LOGS_ES_SECURITY_USERNAME}"
   password: "${LOGS_ES_SECURITY_PASSWORD}"
