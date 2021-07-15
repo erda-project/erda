@@ -28,6 +28,8 @@ jobs:
       image: letmein7788/letmein:golangci-lint
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Go generate files
         run: make prepare
       - name: erda-cli
