@@ -75,6 +75,7 @@ func (engine *Engine) Start() {
 	go engine.reconciler.ListenDatabaseGC()
 	go engine.reconciler.EnsureDatabaseGC()
 	go engine.reconciler.ContinueBackupThrottler()
+	go engine.reconciler.CompensateGCNamespaces()
 
 	// 开始 Listen 后再开始加载已经在处理中的流水线，否则组件还未准备好，包括 eventManger(阻塞)
 	go func() {
