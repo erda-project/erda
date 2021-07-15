@@ -122,6 +122,7 @@ func Initialize() error {
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	interval := time.Duration(conf.TestFileIntervalSec())
+	purgeCycle := conf.TestFileRecordPurgeCycleDay()
 	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
 		logrus.Error(err)
 		return err
@@ -167,11 +168,11 @@ func Initialize() error {
 
 	// Daily clear test file records
 	go func() {
-		day := time.NewTicker(time.Hour * 24)
+		day := time.NewTicker(time.Hour * 24 * time.Duration(purgeCycle))
 		for {
 			select {
 			case <-day.C:
-				if err := ep.TestCaseService().DeleteRecordApiFilesByTime(time.Now().AddDate(0, 0, -1)); err != nil {
+				if err := ep.TestCaseService().DeleteRecordApiFilesByTime(time.Now().AddDate(0, 0, -purgeCycle)); err != nil {
 					logrus.Error(err)
 				}
 			}
