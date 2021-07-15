@@ -53,7 +53,11 @@ func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bo
 		return false, err
 	}
 
-	return needDeployInstance, err
+	// if addon has no services or depend addons, no real deploy will perform
+	hasServices := resourceInfo.Dice != nil && resourceInfo.Dice.Services != nil && len(resourceInfo.Dice.Services) > 0
+	hasAddons := resourceInfo.Dice != nil && resourceInfo.Dice.AddOns != nil && len(resourceInfo.Dice.AddOns) > 0
+
+	return needDeployInstance && (hasServices || hasAddons), err
 }
 
 func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
