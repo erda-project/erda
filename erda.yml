@@ -623,45 +623,6 @@ services:
         path: "/api/health"
         duration: 120
       exec: {}
-  soldier:
-    cmd: /app/soldier
-    ports:
-    - port: 9028
-      protocol: TCP
-      l4_protocol: TCP
-      expose: true
-      default: false
-    envs:
-      FPS_BACKEND_URL: http://fps:17621
-      NETDATA_AGENT_PATH: devops/ci/action-agent
-      NETDATA_CI_PATH: devops/ci/pipelines
-      NETDATA_REGISTRY_PATH: dice/registry
-      NETDATA_SQLDATA_PATH: devops/storage
-      PROXY_SERVICES: fps,territory,troy,zkproxy
-      TERRITORY_BACKEND_RE: ^territory
-      TROY_BACKEND_RE: ^troy
-      ZKPROXY_BACKEND_RE: ^terminus-zkproxy
-    resources:
-      cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: 64
-      network:
-        mode: container
-    binds:
-    - ${nfs_root:/netdata}:/netdata:rw
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: dice
-    expose:
-    - 9028
-    health_check:
-      http:
-        port: 9028
-        path: /_health_check
-        duration: 120
-      exec: {}
   uc-adaptor:
     cmd: "/app/uc-adaptor"
     ports:
