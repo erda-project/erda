@@ -1133,6 +1133,8 @@ type AddonProviderDataResp struct {
 	CreateAt string `json:"createAt"`
 	// UpdateAt 更新时间
 	UpdateAt string `json:"updateAt"`
+	// Status 部署状态
+	Status string `json:"status"`
 }
 
 // AddonDependsRelation addon依赖信息
