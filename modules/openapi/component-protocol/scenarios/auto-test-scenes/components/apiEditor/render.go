@@ -157,12 +157,12 @@ LABEL:
 		if sStep.ID == stepID {
 			break
 		}
-		steps = append(steps, sStep)
 		for _, pStep := range sStep.Children {
 			if pStep.ID == stepID {
 				break LABEL
 			}
 		}
+		steps = append(steps, sStep)
 		steps = append(steps, sStep.Children...)
 	}
 	maps, err := GetStepOutPut(steps)
