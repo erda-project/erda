@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tmc
+package msp
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var TMC_MICRO_SERVICE_CREATE = apis.ApiSpec{
-	Path:        "/api/micro-service/<*>",
-	BackendPath: "/api/tmc/micro-service/<*>",
-	Host:        "tmc.marathon.l4lb.thisdcos.directory:8050",
+var MONITOR_RUNTIME = apis.ApiSpec{
+	Path:        "/api/tmc/monitor/runtime/<runtimeId>",
+	BackendPath: "/api/msp/monitor/runtime/<runtimeId>",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "POST",
+	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 管理微服务的创建",
+	Doc:         "summary: 获取Runtime信息",
 }
