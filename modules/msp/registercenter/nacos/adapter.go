@@ -104,8 +104,8 @@ func mergeInterface(a *pb.Interface, b *pb.Interface) *pb.Interface {
 			consumers[p] = struct{}{}
 		}
 		for _, p := range b.Consumerlist {
-			if _, ok := providers[p]; !ok {
-				a.Providerlist = append(a.Providerlist, p)
+			if _, ok := consumers[p]; !ok {
+				a.Consumerlist = append(a.Consumerlist, p)
 			}
 		}
 		if len(b.Consumermap) > 0 && a.Consumermap == nil {
