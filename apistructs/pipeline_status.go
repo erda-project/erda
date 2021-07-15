@@ -74,6 +74,12 @@ const (
 	PipelineStatusApprovalFail    PipelineStatus = "Reject"      // 人工审核拒绝
 )
 
+var PipelineEndStatuses = []PipelineStatus{
+	PipelineStatusSuccess, PipelineStatusAnalyzeFailed, PipelineStatusFailed, PipelineStatusTimeout,
+	PipelineStatusStopByUser, PipelineStatusNoNeedBySystem, PipelineStatusCreateError, PipelineStatusStartError, PipelineStatusDBError,
+	PipelineStatusError, PipelineStatusUnknown, PipelineStatusLostConn, PipelineStatusCancelByRemote,
+}
+
 func (status PipelineStatus) ToDesc() string {
 	switch status {
 	case PipelineStatusAnalyzed, PipelineStatusBorn:
