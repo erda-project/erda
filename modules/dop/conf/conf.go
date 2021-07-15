@@ -66,7 +66,7 @@ type Conf struct {
 
 	TestFilePollingIntervalSec  int `env:"TEST_FILE_POLLING_INTERVAL_SEC" default:"30"`
 	TestSetSyncCopyMaxNum       int `env:"TEST_SET_SYNC_COPY_MAX_NUM" default:"300"`
-	TestFileRecordPurgeCycleDay int `env:"TEST_FILE_RECORD_CLEAR_CYCLE_DAY" default:"7"`
+	TestFileRecordPurgeCycleDay int `env:"TEST_FILE_RECORD_PURGE_CYCLE_DAY" default:"7"`
 
 	ProjectStatsCacheCron string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 }
