@@ -19,6 +19,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -44,6 +45,13 @@ type Repo struct {
 	Size        int64
 	IsExternal  bool
 	Config      string
+}
+
+type RepoLock struct {
+	*Repo
+
+	// to ensure sync operation precedes commit
+	RwMutex *sync.RWMutex
 }
 
 func (Repo) TableName() string {

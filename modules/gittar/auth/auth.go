@@ -197,8 +197,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	for _, skipUrl := range conf.SkipAuthUrls() {
 		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
 			logrus.Debugf("skip authenticate host: %s", host)
-
-			gitRepository, err = openRepository(repo)
+			repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
+			gitRepository, err = openRepository(repoLock)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
@@ -224,6 +224,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 					return
 				}
 				c.Set("repository", gitRepository)
+				//c.Set("lock", repoLock.Lock)
 				c.Set("user", &models.User{
 					Name:     userInfoDto.Username,
 					NickName: userInfoDto.NickName,
@@ -242,7 +243,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	//如果是内置账户不做校验
 	innerUser, err := GetInnerUser(c)
 	if err == nil {
-		gitRepository, err = openRepository(repo)
+		repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
+		gitRepository, err = openRepository(repoLock)
 		if err != nil {
 			c.AbortWithStatus(500, err)
 			return
@@ -259,7 +261,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		if validateError != nil {
 			c.AbortWithString(403, validateError.Error()+" 403")
 		} else {
-			gitRepository, err = openRepository(repo)
+			repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
+			gitRepository, err = openRepository(repoLock)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
@@ -402,7 +405,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 // 用于外置仓库的锁定，同一时间只有一个线程在同步外置仓库
 var lockMap = sync.Map{}
 
-func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
+func openRepository(repo models.RepoLock) (*gitmodule.Repository, error) {
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err
@@ -423,20 +426,26 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 				// 假如没有锁定，就开始锁定
 				lockMap.Store(repoPath, true)
 				// 结束后取消锁定
+				repo.RwMutex.Lock()
 				go func() {
-					defer lockMap.Store(repoPath, false)
+					defer func() {
+						lockMap.Store(repoPath, false)
+						repo.RwMutex.Unlock()
+					}()
 					err = gitmodule.SyncExternalRepository(repoPath)
 					if err != nil {
 						logrus.Errorf(" SyncExternalRepository error: %v ", err)
 					}
 				}()
-			} else {
-				lockMap.Store(repoPath, false)
 			}
 		} else {
 			lockMap.Store(repoPath, true)
+			repo.RwMutex.Lock()
 			go func() {
-				defer lockMap.Store(repoPath, false)
+				defer func() {
+					lockMap.Store(repoPath, false)
+					repo.RwMutex.Unlock()
+				}()
 				err = gitmodule.SyncExternalRepository(repoPath)
 				if err != nil {
 					logrus.Errorf(" SyncExternalRepository error: %v ", err)
@@ -446,6 +455,7 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 
 	}
 	gitRepository.IsExternal = repo.IsExternal
+	gitRepository.RwLock = repo.RwMutex
 
 	return gitRepository, nil
 }
