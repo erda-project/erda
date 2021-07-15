@@ -904,7 +904,8 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRo
 
 		return err
 	}
-	if statusCode == 202 {
+	// leave it to the callback if deploying
+	if statusCode == 202 || providerResponse != nil && providerResponse.Data.Status == "INIT" {
 		return nil
 	}
 	if len(providerResponse.Data.Config) > 0 {
