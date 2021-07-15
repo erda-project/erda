@@ -15,6 +15,7 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda/modules/extensions/loghub"
 
 	// log hub
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
@@ -58,6 +59,6 @@ import (
 )
 
 func main() {
-	// modcom.RegisterInitializer(loghub.Init)
+	modcom.RegisterInitializer(loghub.Init)
 	modcom.RunWithCfgDir("conf/monitor", "monitor")
 }
