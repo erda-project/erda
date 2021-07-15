@@ -69,12 +69,39 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &alert.QueryAlertResponse{
+	if resp == nil || resp.Data == nil || resp.Data.List == nil {
+		return nil, nil
+	}
+
+	result := &alert.QueryAlertResponse{
 		Data: &alert.QueryAlertData{
-			List:  resp.Data.List,
+			List:  make([]*alert.ApmAlertData, 0),
 			Total: resp.Data.Total,
 		},
-	}, nil
+	}
+
+	for _, v := range resp.Data.List {
+		appIdStr := v.Attributes["application_id"]
+		idData := appIdStr.GetListValue().AsSlice()
+		appIds := make([]string, 0)
+		if idData != nil {
+			for _, v := range idData {
+				appIds = append(appIds, v.(string))
+			}
+		}
+		apmAlert := &alert.ApmAlertData{}
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		err = json.Unmarshal(data, apmAlert)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		apmAlert.AppIds = appIds
+		result.Data.List = append(result.Data.List, apmAlert)
+	}
+	return result, nil
 }
 
 func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequest) (*alert.GetAlertResponse, error) {
@@ -88,14 +115,13 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	if resp.Data.AlertScope != MicroServiceScope || resp.Data.AlertScopeId != request.TenantGroup {
 		return nil, errors.NewPermissionError("monitor_project_alert", "GET", "alertScope or alertScopeId is invalidate")
 	}
-	//appIdsStr := resp.Data.Attributes["application_id"].GetStringValue()
 	appIdStr := resp.Data.Attributes["application_id"]
 	idData := appIdStr.GetListValue().AsSlice()
 	appIds := make([]string, 0)
 	for _, v := range idData {
 		appIds = append(appIds, v.(string))
 	}
-	getAlertData := &alert.GetAlertData{
+	getAlertData := &alert.ApmAlertData{
 		Id:           int64(resp.Data.Id),
 		Name:         resp.Data.Name,
 		AlertScope:   resp.Data.AlertScope,
