@@ -29,10 +29,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -189,11 +187,6 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	return p, nil
 }
 
-// passedDataWhenCreate stores data passed recursively when create graph.
-type passedDataWhenCreate struct {
-	actionJobDefines map[string]*diceyml.Job
-}
-
 // createPipelineGraph recursively create pipeline graph.
 // passedData stores data passed recursively.
 func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...passedDataWhenCreate) (err error) {
@@ -201,9 +194,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 	if len(passedDataOpt) > 0 {
 		passedData = passedDataOpt[0]
 	}
-	if passedData.actionJobDefines == nil {
-		passedData.actionJobDefines = make(map[string]*diceyml.Job)
-	}
+	passedData.initData(s.extMarketSvc)
 
 	// tx
 	txSession := s.dbClient.NewSession()
@@ -238,35 +229,14 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 		return apierrors.ErrParsePipelineYml.InternalError(err)
 	}
 
+	// search and cache action define and spec
+	if err := passedData.putPassedDataByPipelineYml(pipelineYml); err != nil {
+		return err
+	}
+
 	lastSuccessTaskMap, _, err := s.dbClient.ParseRerunFailedDetail(p.Extra.RerunFailedDetail)
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
-
-	// batch search extensions
-	var extItems []string
-	for _, stage := range pipelineYml.Spec().Stages {
-		for _, typedAction := range stage.Actions {
-			for _, action := range typedAction {
-				if action.Type.IsSnippet() {
-					continue
-				}
-				extItem := extmarketsvc.MakeActionTypeVersion(action)
-				// extension already searched, skip
-				if _, ok := passedData.actionJobDefines[extItem]; ok {
-					continue
-				}
-				extItems = append(extItems, extmarketsvc.MakeActionTypeVersion(action))
-			}
-		}
-	}
-	extItems = strutil.DedupSlice(extItems, true)
-	actionJobDefines, _, err := s.extMarketSvc.SearchActions(extItems)
-	if err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
-	for extItem, actionJobDefine := range actionJobDefines {
-		passedData.actionJobDefines[extItem] = actionJobDefine
 	}
 
 	var snippetTasks []*spec.PipelineTask
@@ -303,7 +273,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 						}
 						snippetTasks = append(snippetTasks, pt)
 					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData.actionJobDefines[extmarketsvc.MakeActionTypeVersion(action)])
+						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData)
 						if err != nil {
 							return apierrors.ErrCreatePipelineTask.InternalError(err)
 						}
