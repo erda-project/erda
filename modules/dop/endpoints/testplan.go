@@ -98,7 +98,7 @@ func (e *Endpoints) UpdateTestPlan(ctx context.Context, r *http.Request, vars ma
 			return apierrors.ErrCheckPermission.InternalError(err).ToResp(), nil
 		}
 		if !access.Access {
-			return apierrors.ErrDeleteTestPlan.AccessDenied().ToResp(), nil
+			return apierrors.ErrUpdateTestPlan.AccessDenied().ToResp(), nil
 		}
 	}
 
