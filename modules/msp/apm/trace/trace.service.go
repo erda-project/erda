@@ -162,8 +162,11 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	if req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("scopeId")
 	}
-	if req.Limit == 0 {
+	if req.Limit <= 0 {
 		req.Limit = 10
+	}
+	if req.Limit > 1000 {
+		req.Limit = 1000
 	}
 	if req.EndTime <= 0 || req.StartTime <= 0 {
 		req.EndTime = time.Now().UnixNano() / 1e6
@@ -181,7 +184,10 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		queryParams["applications_ids"] = structpb.NewStringValue(strconv.FormatInt(req.ApplicationID, 10))
 		where.WriteString("applications_ids::field=$applications_ids AND ")
 	}
-	//-1 error, 0 both, 1 success
+	if req.TraceID != "" {
+		queryParams["trace_id"] = structpb.NewStringValue(req.TraceID)
+		where.WriteString("trace_id::tag=$trace_id AND ")
+	}
 	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
 		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
 		"ORDER BY start_time::field DESC LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
@@ -207,12 +213,13 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		var trace pb.Trace
 		values := row.Values
 		trace.StartTime = int64(values[0].GetNumberValue() / 1e6)
-		trace.Elapsed = math.Abs((values[1].GetNumberValue() - values[0].GetNumberValue()) / 1e6)
+		trace.Elapsed = math.Abs(values[1].GetNumberValue() - values[0].GetNumberValue())
 		for _, serviceName := range values[2].GetListValue().Values {
 			trace.Services = append(trace.Services, serviceName.GetStringValue())
 		}
 		trace.Id = values[3].GetStringValue()
 		status := values[4].GetStringValue()
+		//-1 error, 0 both, 1 success
 		if status == "error" && req.Status == 1 {
 			continue
 		} else if status == "success" && req.Status == -1 {
