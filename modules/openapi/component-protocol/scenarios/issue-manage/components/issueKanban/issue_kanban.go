@@ -872,7 +872,7 @@ func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePaging
 			cl.PageNo = req.PageNo
 			cl.PageSize = req.PageSize
 			if i.swt.enableChangePageNo {
-				cl.RenderChangePageNoOperation(cl.LabelKey.(string))
+				cl.RenderChangePageNoOperation(strconv.FormatInt(cl.LabelKey.(int64), 10))
 			}
 			for _, v := range rsp.Data.List {
 				c := GenCart(i.boardType, v, i.ctxBdl.I18nPrinter, i.swt, nil)
