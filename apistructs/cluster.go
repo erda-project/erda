@@ -85,6 +85,7 @@ type ClusterUpdateRequest struct {
 	Name            string              `json:"name"`
 	DisplayName     string              `json:"displayName"`
 	Type            string              `json:"type"`
+	CloudVendor     string              `json:"cloudVendor"`
 	Logo            string              `json:"logo"`
 	Description     string              `json:"description"`
 	WildcardDomain  string              `json:"wildcardDomain"`
