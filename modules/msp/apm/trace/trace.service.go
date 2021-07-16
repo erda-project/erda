@@ -189,6 +189,7 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		where.WriteString("trace_id::tag=$trace_id AND ")
 	}
 
+	// -1 error, 0 both, 1 success
 	if req.Status == 1 {
 		where.WriteString("errors_sum::field=0 AND")
 	} else if req.Status == 0 {
