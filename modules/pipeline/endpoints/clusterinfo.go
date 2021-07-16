@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
@@ -43,4 +44,9 @@ func (e *Endpoints) clusterHook(ctx context.Context, r *http.Request, vars map[s
 
 func (e *Endpoints) executorInfos(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	return httpserver.OkResp(executor.GetExecutorInfo())
+}
+
+func (e *Endpoints) triggerRefreshExecutors(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	clusterinfo.TriggerManualRefresh()
+	return httpserver.OkResp("trigger refresh executors successfully")
 }
