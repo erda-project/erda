@@ -1,0 +1,43 @@
+{
+  "attributes": {},
+  "version": "3.0",
+  "expression": {
+    "metric": "dice_health",
+    "window": 8,
+    "windowBehavior": "allowedLateness",
+    "filter": {},
+    "group": [
+      "cluster_name",
+      "dice_component",
+      "dice_pod_name"
+    ],
+    "functions": [
+      {
+        "field": "health_status",
+        "field_script": "function invoke(field,tag){switch(field.status){case\"fail\":case\"unavailable\":return 2;case\"warning\":case\"unknown\":return 1;default:return 0}};",
+        "aggregator": "max",
+        "alias": "health_status"
+      },
+      {
+        "field": "weight",
+        "aggregator": "value",
+        "field_script": "function invoke(field,tag){var a=new Array(\"pipeline\",\"scheduler\",\"openapi\",\"cmdb\",\"telegraf\",\"telegraf-platform\");if(a.indexOf(tag.dice_component)!=-1){return 1}else{return 0}};",
+        "alias": "weight"
+      }
+    ],
+    "select": {
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "component_name": "#dice_component",
+      "cluster_name": "#cluster_name",
+      "org_name": "#org_name",
+      "component_group": "dice_component",
+      "message": "#message"
+    },
+    "alias": "leaf_component_status",
+    "outputs": [
+      "metric"
+    ]
+  }
+}
