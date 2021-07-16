@@ -197,8 +197,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	for _, skipUrl := range conf.SkipAuthUrls() {
 		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
 			logrus.Debugf("skip authenticate host: %s", host)
-			repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
-			gitRepository, err = openRepository(repoLock)
+			repo.RwMutex = &sync.RWMutex{}
+			gitRepository, err = openRepository(repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
@@ -243,8 +243,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	//如果是内置账户不做校验
 	innerUser, err := GetInnerUser(c)
 	if err == nil {
-		repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
-		gitRepository, err = openRepository(repoLock)
+		repo.RwMutex = &sync.RWMutex{}
+		gitRepository, err = openRepository(repo)
 		if err != nil {
 			c.AbortWithStatus(500, err)
 			return
@@ -261,8 +261,8 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		if validateError != nil {
 			c.AbortWithString(403, validateError.Error()+" 403")
 		} else {
-			repoLock := models.RepoLock{Repo: repo, RwMutex: &sync.RWMutex{}}
-			gitRepository, err = openRepository(repoLock)
+			repo.RwMutex = &sync.RWMutex{}
+			gitRepository, err = openRepository(repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
@@ -405,7 +405,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 // 用于外置仓库的锁定，同一时间只有一个线程在同步外置仓库
 var lockMap = sync.Map{}
 
-func openRepository(repo models.RepoLock) (*gitmodule.Repository, error) {
+func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err
