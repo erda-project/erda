@@ -461,7 +461,8 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						break
 					}
 				}
-			} else {
+			}
+			if len(m.Status) == 0 {
 				m.Status = statusMiss
 			}
 			totalCount := downCount + upCount
