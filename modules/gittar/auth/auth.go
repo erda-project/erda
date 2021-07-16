@@ -197,7 +197,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	for _, skipUrl := range conf.SkipAuthUrls() {
 		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
 			logrus.Debugf("skip authenticate host: %s", host)
-			repo.RwMutex = &sync.RWMutex{}
 			gitRepository, err = openRepository(repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
@@ -243,7 +242,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	//如果是内置账户不做校验
 	innerUser, err := GetInnerUser(c)
 	if err == nil {
-		repo.RwMutex = &sync.RWMutex{}
 		gitRepository, err = openRepository(repo)
 		if err != nil {
 			c.AbortWithStatus(500, err)
@@ -261,7 +259,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		if validateError != nil {
 			c.AbortWithString(403, validateError.Error()+" 403")
 		} else {
-			repo.RwMutex = &sync.RWMutex{}
 			gitRepository, err = openRepository(repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
@@ -406,6 +403,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 var lockMap = sync.Map{}
 
 func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
+	repo.RwMutex = &sync.RWMutex{}
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err
