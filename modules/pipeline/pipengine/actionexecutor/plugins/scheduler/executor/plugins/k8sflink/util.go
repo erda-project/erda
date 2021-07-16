@@ -205,6 +205,8 @@ func getJobRestartPolicy(restartPolicy flinkoperatorv1beta1.JobRestartPolicy) *f
 
 func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistructs.StatusDesc {
 	statusDesc := apistructs.StatusDesc{}
+
+	// If query status immediately after create flinkCluster, will get empty status, but actually it`s running
 	switch status.State {
 	case flinkoperatorv1beta1.ClusterStateCreating,
 		flinkoperatorv1beta1.ClusterStateReconciling,
