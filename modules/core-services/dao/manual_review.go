@@ -29,6 +29,9 @@ func (client *DBClient) GetReviewByTaskId(param *apistructs.GetReviewByTaskIdIdR
 
 	err := client.Table("dice_manual_review").Where("task_id = ?", param.TaskId).Find(&reviews).Count(&total).Error
 	var review apistructs.GetReviewByTaskIdIdResponse
+	if len(reviews) == 0 {
+		return review, nil
+	}
 	review.ApprovalStatus = reviews[0].ApprovalStatus
 	review.Total = total
 	review.Id = reviews[0].ID
