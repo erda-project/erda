@@ -158,16 +158,17 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	if proj == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
 	}
-	list, err := s.metricDB.ListByProjectID(proj.ID)
+	list, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
 		result := &pb.DescribeItemV1{
-			Name: item.Name,
-			Mode: item.Mode,
-			Url:  item.URL,
+			Name:   item.Name,
+			Mode:   item.Mode,
+			Url:    item.URL,
+			Status: statusMiss,
 		}
 		results[item.ID] = result
 	}
@@ -198,9 +199,10 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	var downCount int64
 	if metric != nil {
 		results[req.Id] = &pb.DescribeItemV1{
-			Name: metric.Name,
-			Mode: metric.Mode,
-			Url:  metric.URL,
+			Name:   metric.Name,
+			Mode:   metric.Mode,
+			Url:    metric.URL,
+			Status: statusMiss,
 		}
 		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
@@ -461,7 +463,8 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						break
 					}
 				}
-			} else {
+			}
+			if len(m.Status) <= 0 {
 				m.Status = statusMiss
 			}
 			totalCount := downCount + upCount
