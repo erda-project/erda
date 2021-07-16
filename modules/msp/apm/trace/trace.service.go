@@ -188,6 +188,17 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		queryParams["trace_id"] = structpb.NewStringValue(req.TraceID)
 		where.WriteString("trace_id::tag=$trace_id AND ")
 	}
+
+	if req.Status == 1 {
+		where.WriteString("errors_sum::field=0 AND")
+	} else if req.Status == 0 {
+		where.WriteString("errors_sum::field>=0 AND")
+	} else if req.Status == -1 {
+		where.WriteString("errors_sum::field>0 AND")
+	} else {
+		return nil, errors.NewParameterTypeError("status just -1,0,1")
+	}
+
 	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
 		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
 		"ORDER BY start_time::field DESC LIMIT %s", where.String(), strconv.FormatInt(req.Limit, 10))
@@ -218,13 +229,6 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 			trace.Services = append(trace.Services, serviceName.GetStringValue())
 		}
 		trace.Id = values[3].GetStringValue()
-		status := values[4].GetStringValue()
-		//-1 error, 0 both, 1 success
-		if status == "error" && req.Status == 1 {
-			continue
-		} else if status == "success" && req.Status == -1 {
-			continue
-		}
 		traces = append(traces, &trace)
 	}
 
