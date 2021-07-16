@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 // objectCache provides thread-safe cache opeations.
@@ -101,6 +103,7 @@ func GetMirrorRepoUrl(repoPath string) string {
 	remoteCmd.Dir = repoPath
 	out, err := remoteCmd.CombinedOutput()
 	if err != nil {
+		logrus.Errorf("fail to GetMirrorRepoUrl,err: %s", err.Error())
 		return ""
 	}
 	return re.ReplaceAllString(string(out), "")
