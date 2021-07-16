@@ -209,7 +209,8 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 	case flinkoperatorv1beta1.ClusterStateCreating,
 		flinkoperatorv1beta1.ClusterStateReconciling,
 		flinkoperatorv1beta1.ClusterStateUpdating,
-		flinkoperatorv1beta1.ClusterStateRunning:
+		flinkoperatorv1beta1.ClusterStateRunning,
+		"":
 		statusDesc.Status = apistructs.StatusRunning
 	case flinkoperatorv1beta1.ClusterStateStopping,
 		flinkoperatorv1beta1.ClusterStatePartiallyStopped,
