@@ -197,7 +197,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	for _, skipUrl := range conf.SkipAuthUrls() {
 		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
 			logrus.Debugf("skip authenticate host: %s", host)
-
 			gitRepository, err = openRepository(repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
@@ -224,6 +223,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 					return
 				}
 				c.Set("repository", gitRepository)
+				//c.Set("lock", repoLock.Lock)
 				c.Set("user", &models.User{
 					Name:     userInfoDto.Username,
 					NickName: userInfoDto.NickName,
@@ -403,6 +403,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 var lockMap = sync.Map{}
 
 func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
+	repo.RwMutex = &sync.RWMutex{}
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err
@@ -423,20 +424,26 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 				// 假如没有锁定，就开始锁定
 				lockMap.Store(repoPath, true)
 				// 结束后取消锁定
+				repo.RwMutex.Lock()
 				go func() {
-					defer lockMap.Store(repoPath, false)
+					defer func() {
+						lockMap.Store(repoPath, false)
+						repo.RwMutex.Unlock()
+					}()
 					err = gitmodule.SyncExternalRepository(repoPath)
 					if err != nil {
 						logrus.Errorf(" SyncExternalRepository error: %v ", err)
 					}
 				}()
-			} else {
-				lockMap.Store(repoPath, false)
 			}
 		} else {
 			lockMap.Store(repoPath, true)
+			repo.RwMutex.Lock()
 			go func() {
-				defer lockMap.Store(repoPath, false)
+				defer func() {
+					lockMap.Store(repoPath, false)
+					repo.RwMutex.Unlock()
+				}()
 				err = gitmodule.SyncExternalRepository(repoPath)
 				if err != nil {
 					logrus.Errorf(" SyncExternalRepository error: %v ", err)
@@ -446,6 +453,7 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 
 	}
 	gitRepository.IsExternal = repo.IsExternal
+	gitRepository.RwLock = repo.RwMutex
 
 	return gitRepository, nil
 }

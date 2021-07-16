@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -54,6 +55,8 @@ type Repository struct {
 	tree       *Tree   `json:"-"` //只有RefType是tree才有值
 	IsLocked   bool    `json:"-"`
 	IsExternal bool    // 是否是外置仓库
+	// to ensure sync operation precedes commit
+	RwLock *sync.RWMutex `json:"-"`
 }
 
 const (
@@ -380,7 +383,6 @@ func UpdateExternalRepository(repoPath string, url string, username string, pass
 
 // SyncExternalRepository 同步外部仓库
 func SyncExternalRepository(repoPath string) error {
-	//mirrorRepoUrl := GetMirrorRepoUrl(repoPath)
 	cmd := exec.Command("git", "remote", "update", "--prune")
 	cmd.Dir = repoPath
 	output, err := cmd.CombinedOutput()
@@ -400,6 +402,7 @@ func PushExternalRepository(repoPath string) error {
 	if err != nil {
 		return fmt.Errorf("err:%s output:%s", err, RemoveAuthInfo(string(output), mirrorRepoUrl))
 	}
+	logrus.Info("PushExternalRepository: ", RemoveAuthInfo(string(output), mirrorRepoUrl))
 
 	return nil
 }

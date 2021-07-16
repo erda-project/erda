@@ -58,6 +58,8 @@ type CreateCommit struct {
 }
 
 func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
+	repo.RwLock.RLock()
+	defer repo.RwLock.RUnlock()
 	branch := request.Branch
 	message := request.Message
 	isInitCommit := false
