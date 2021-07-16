@@ -158,7 +158,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	if proj == nil {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
 	}
-	list, err := s.metricDB.ListByProjectID(proj.ID)
+	list, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
