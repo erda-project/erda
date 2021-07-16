@@ -87,6 +87,8 @@ func (k *Kubernetes) UpdateClient(clusterName string) error {
 }
 
 func (k *Kubernetes) RemoveClient(clusterName string) {
+	k.Lock()
+	defer k.Unlock()
 	delete(k.clients, clusterName)
 }
 
