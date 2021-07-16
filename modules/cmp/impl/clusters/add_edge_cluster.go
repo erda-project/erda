@@ -60,6 +60,7 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		return recordID, err
 	}
 
+	// build create cluster pipeline
 	if req.CollectorURL == "" {
 		// protocol is http,https in gts dice-cluster-info (key: DICE_PROTOCOL), manual is http or https;
 		if strings.Contains(req.CentralDiceProtocol, "https") {
@@ -71,6 +72,9 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 	}
 	if req.OpenAPI == "" {
 		req.OpenAPI = fmt.Sprintf("%s://openapi.%s", req.CentralDiceProtocol, req.CentralRootDomain)
+	}
+	if req.ClusterDialer == "" {
+		req.ClusterDialer = fmt.Sprintf("%s://cluster-dialer.%s", req.CentralDiceProtocol, req.CentralRootDomain)
 	}
 
 	// check DICE_ROOT_DOMAIN
@@ -136,6 +140,7 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
+	logrus.Infof("add edge cluster yaml: %v", string(b))
 
 	dto, err := c.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
 		PipelineYml:     string(b),
@@ -164,6 +169,25 @@ func (c *Clusters) AddClusters(req apistructs.CloudClusterRequest, userid string
 		logrus.Errorf(errstr)
 		return recordID, err
 	}
+
+	// import cluster
+	ic := apistructs.ImportCluster{
+		CredentialType: "proxy",
+		ClusterName:    req.ClusterName,
+		DisplayName:    req.DisplayName,
+		OrgID:          req.OrgID,
+		ScheduleConfig: apistructs.ClusterSchedConfig{
+			CPUSubscribeRatio: "1",
+		},
+		ClusterType:    "k8s",
+		WildcardDomain: req.RootDomain,
+	}
+	err = c.importCluster(userid, &ic)
+	if err != nil {
+		logrus.Errorf("import cluster failed, request: %v, error: %v", req, err)
+		return recordID, err
+	}
+
 	return recordID, nil
 }
 
@@ -186,6 +210,7 @@ func (c *Clusters) MonitorCloudCluster() (abort bool, err error) {
 		logrus.Errorf("get create cluster record failed, error: %v", err)
 		return
 	}
+	logrus.Infof("get %d add edge cluster records", len(records))
 	for _, record := range records {
 		if record.PipelineID == 0 {
 			err = fmt.Errorf("invalid pipeline id")
@@ -245,6 +270,19 @@ func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) er
 		logrus.Errorf("update add edge cluster to failed status failed, cluster:%s, pipeline:%v, err:%v", record.ClusterName, record.PipelineID, err)
 		return err
 	}
+	orgID, err := strconv.Atoi(record.OrgID)
+	if err != nil {
+		return err
+	}
+	req := apistructs.OfflineEdgeClusterRequest{
+		OrgID:       uint64(orgID),
+		ClusterName: record.ClusterName,
+	}
+	// if create cluster failed, delete the init record
+	_, err = c.OfflineEdgeCluster(req, record.UserID, record.OrgID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -262,10 +300,27 @@ func (c *Clusters) processSuccessPipeline(pTaskResult apistructs.PipelineTaskRes
 			break
 		}
 	}
-	// create cluster
-	err := c.bdl.CreateCluster(&req)
+
+	// get cluster info
+	cluster, err := c.bdl.GetCluster(record.ClusterName)
 	if err != nil {
-		logrus.Errorf("create cluster failed, error: %v", err)
+		logrus.Errorf("get cluster info failed, cluster:%s,  error: %v", record.ClusterName, err)
+		return err
+	}
+
+	// update cluster info
+	ur := apistructs.ClusterUpdateRequest{
+		Name:            cluster.Name,
+		DisplayName:     cluster.DisplayName,
+		Type:            cluster.Type,
+		CloudVendor:     req.CloudVendor,
+		WildcardDomain:  cluster.WildcardDomain,
+		SchedulerConfig: cluster.SchedConfig,
+		OpsConfig:       req.OpsConfig,
+	}
+	err = c.bdl.UpdateCluster(ur)
+	if err != nil {
+		logrus.Errorf("update cluster info failed, cluster:%s,  error: %v", record.ClusterName, err)
 		return err
 	}
 	// update record
@@ -313,15 +368,16 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Alias:   string(apistructs.NodePhasePlan),
 			Params: map[string]interface{}{
 				// base fields which create cluster
-				"org_name":      req.OrgName,
-				"dice_version":  req.DiceVersion,
-				"cluster_name":  req.ClusterName,
-				"root_domain":   req.RootDomain,
-				"enable_https":  req.EnableHttps,
-				"cluster_size":  req.ClusterSize,
-				"nameservers":   req.Nameservers,
-				"collector_url": req.CollectorURL,
-				"open_api":      req.OpenAPI,
+				"org_name":       req.OrgName,
+				"dice_version":   req.DiceVersion,
+				"cluster_name":   req.ClusterName,
+				"root_domain":    req.RootDomain,
+				"enable_https":   req.EnableHttps,
+				"cluster_size":   req.ClusterSize,
+				"nameservers":    req.Nameservers,
+				"collector_url":  req.CollectorURL,
+				"open_api":       req.OpenAPI,
+				"cluster_dialer": req.ClusterDialer,
 
 				// fields which create cluster on vpc
 				"cloud_vendor":     req.CloudVendor,
@@ -370,15 +426,16 @@ func buildEcsPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml
 			Version: "1.0",
 			Alias:   string(apistructs.NodePhaseBuyNode),
 			Params: map[string]interface{}{
-				"org_name":      req.OrgName,
-				"dice_version":  req.DiceVersion,
-				"cluster_name":  req.ClusterName,
-				"root_domain":   req.RootDomain,
-				"enable_https":  req.EnableHttps,
-				"cluster_size":  req.ClusterSize,
-				"nameservers":   req.Nameservers,
-				"collector_url": req.CollectorURL,
-				"open_api":      req.OpenAPI,
+				"org_name":       req.OrgName,
+				"dice_version":   req.DiceVersion,
+				"cluster_name":   req.ClusterName,
+				"root_domain":    req.RootDomain,
+				"enable_https":   req.EnableHttps,
+				"cluster_size":   req.ClusterSize,
+				"nameservers":    req.Nameservers,
+				"collector_url":  req.CollectorURL,
+				"open_api":       req.OpenAPI,
+				"cluster_dialer": req.ClusterDialer,
 
 				"cloud_vendor":     req.CloudVendor,
 				"region":           req.Region,
@@ -482,6 +539,7 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 
 				"collector_url":     req.CollectorURL,
 				"openapi_url":       req.OpenAPI,
+				"cluster_dialer":    req.ClusterDialer,
 				"terraform_command": "plan",
 			},
 		}}, {{
@@ -515,6 +573,7 @@ func buildCSPipeline(req apistructs.CloudClusterRequest) apistructs.PipelineYml 
 
 				"collector_url":     req.CollectorURL,
 				"openapi_url":       req.OpenAPI,
+				"cluster_dialer":    req.ClusterDialer,
 				"terraform_command": req.Terraform,
 				// "terraform_command": "plan",
 			},
