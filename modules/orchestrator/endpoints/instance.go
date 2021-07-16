@@ -205,6 +205,7 @@ func (e *Endpoints) InstancesUsage(ctx context.Context, r *http.Request, vars ma
 		req := apistructs.InstanceInfoRequest{
 			InstanceIP: ip_s,
 			Phases:     []string{"unhealthy", "healthy", "running"}, // exclude 'dead'
+			Workspace:  r.URL.Query().Get("environment"),
 		}
 		if cluster != "" {
 			req.Cluster = cluster
