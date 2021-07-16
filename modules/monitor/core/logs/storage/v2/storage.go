@@ -74,8 +74,6 @@ func (p *provider) getLogStatementV2(log *pb.Log, reusedWriter *gzip.Writer) (st
 	}
 	// nolint
 	cql := fmt.Sprintf(`INSERT INTO %s (source, id, stream, time_bucket, timestamp, offset, content, level, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) USING TTL ?;`, table)
-	p.Log.Info("cql: " + cql)
-	p.Log.Infof("%+v", log)
 	return cql, []interface{}{
 		log.Source,
 		log.Id,

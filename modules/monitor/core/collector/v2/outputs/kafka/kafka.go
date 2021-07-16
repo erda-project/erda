@@ -16,7 +16,6 @@ package kafka
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
@@ -69,7 +68,6 @@ func (o *Output) Send(ctx context.Context, data []byte) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("===== topic: " + topic)
 	return o.w.Write(&kafka.Message{
 		Topic: &topic,
 		Data:  data,
