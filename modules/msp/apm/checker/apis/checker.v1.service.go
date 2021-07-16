@@ -165,9 +165,10 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
 		result := &pb.DescribeItemV1{
-			Name: item.Name,
-			Mode: item.Mode,
-			Url:  item.URL,
+			Name:   item.Name,
+			Mode:   item.Mode,
+			Url:    item.URL,
+			Status: statusMiss,
 		}
 		results[item.ID] = result
 	}
@@ -198,9 +199,10 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 	var downCount int64
 	if metric != nil {
 		results[req.Id] = &pb.DescribeItemV1{
-			Name: metric.Name,
-			Mode: metric.Mode,
-			Url:  metric.URL,
+			Name:   metric.Name,
+			Mode:   metric.Mode,
+			Url:    metric.URL,
+			Status: statusMiss,
 		}
 		err = s.queryCheckersLatencySummary(req.Id, req.Period, results)
 		if err != nil {
@@ -462,7 +464,7 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 					}
 				}
 			}
-			if len(m.Status) == 0 {
+			if len(m.Status) <= 0 {
 				m.Status = statusMiss
 			}
 			totalCount := downCount + upCount
