@@ -1138,9 +1138,11 @@ func (fsm *DeployFSMContext) buildAddonVars(addonnameMap map[string][]dbclient.A
 		if err != nil {
 			return nil, err
 		}
-		config := addonConfig.Config
-		for configk, v := range config {
-			r[fmt.Sprintf("addons.%s.%s", k, configk)] = fmt.Sprintf("%v", v)
+		if addonConfig != nil {
+			config := addonConfig.Config
+			for configk, v := range config {
+				r[fmt.Sprintf("addons.%s.%s", k, configk)] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 
@@ -1154,9 +1156,11 @@ func (fsm *DeployFSMContext) buildAddonVars(addonnameMap map[string][]dbclient.A
 		if err != nil {
 			return nil, err
 		}
-		config := addonConfig.Config
-		for configk, v := range config {
-			r[fmt.Sprintf("addons.%s.%s", id, configk)] = fmt.Sprintf("%v", v)
+		if addonConfig != nil {
+			config := addonConfig.Config
+			for configk, v := range config {
+				r[fmt.Sprintf("addons.%s.%s", id, configk)] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 
