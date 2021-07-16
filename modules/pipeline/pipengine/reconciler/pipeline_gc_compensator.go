@@ -34,7 +34,7 @@ func (r *Reconciler) CompensateGCNamespaces() {
 	r.doWaitGCCompensate(true)
 
 	time.AfterFunc(24*time.Hour, func() {
-		go r.CompensateGCNamespaces()
+		r.CompensateGCNamespaces()
 	})
 }
 
@@ -70,6 +70,7 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 	for _, end := range apistructs.PipelineEndStatuses {
 		req.Statuses = append(req.Statuses, end.String())
 	}
+	req.AllSources = true
 	req.IncludeSnippet = isSnippet
 	pipelines, _, total, _, err := r.dbClient.PageListPipelines(req)
 	if err != nil {
@@ -89,11 +90,16 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 				ttl = defaultGCTime
 			}
 
-			if p.TimeEnd.IsZero() {
+			var endTime = p.TimeEnd
+			if endTime == nil {
+				endTime = p.TimeUpdated
+			}
+
+			if endTime == nil || endTime.IsZero() {
 				continue
 			}
 
-			if uint64(time.Now().Unix()-p.TimeEnd.Unix()) < (ttl + bufferTime) {
+			if uint64(time.Now().Unix()-endTime.Unix()) < (ttl + bufferTime) {
 				continue
 			}
 
