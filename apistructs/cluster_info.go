@@ -154,6 +154,7 @@ func (info ClusterInfoData) GetIstioInfo() IstioInfo {
 
 func (info ClusterInfoData) GetApiServerUrl() string {
 	currentCluster := os.Getenv("DICE_CLUSTER_NAME")
+	masterAddr := info.Get(MASTER_VIP_ADDR)
 	cluster := info.Get(DICE_CLUSTER_NAME)
 	if cluster == currentCluster {
 		return masterAddr
