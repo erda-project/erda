@@ -99,6 +99,20 @@ func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistr
 		return nil, err
 	}
 
+	var (
+		unReadMboxs []model.MBox
+		unReadCount int
+	)
+	if err := client.Model(&model.MBox{}).Where("org_id=? and user_id =?", request.OrgID, request.UserID).
+		Where("status =? ", apistructs.MBoxUnReadStatus).Where("unread_count > 1 and deduplicate_id != \"\"").
+		Find(&unReadMboxs).Count(&unReadCount).Error; err != nil {
+		return nil, err
+	}
+	count = count - unReadCount
+	for _, v := range unReadMboxs {
+		count = count + int(v.UnreadCount)
+	}
+
 	result := &apistructs.QueryMBoxData{
 		Total: count,
 		List:  []*apistructs.MBox{},
