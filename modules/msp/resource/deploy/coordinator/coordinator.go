@@ -22,6 +22,7 @@ import (
 )
 
 type Interface interface {
+	CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bool, error)
 	Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error)
 	UnDeploy(resourceId string) error
 }
@@ -33,6 +34,30 @@ func (p *provider) findHandler(tmc *db.Tmc) handlers.ResourceDeployHandler {
 		}
 	}
 	return nil
+}
+
+func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bool, error) {
+	resourceInfo, err := p.defaultHandler.GetResourceInfo(&req)
+	if err != nil {
+		return false, err
+	}
+
+	handler := p.findHandler(resourceInfo.Tmc)
+	if handler == nil {
+		return false, fmt.Errorf("could not find deploy handler for %s", req.Engine)
+	}
+
+	// pre-check if need do further deploy
+	_, needDeployInstance, err := handler.CheckIfNeedTmcInstance(&req, resourceInfo)
+	if err != nil {
+		return false, err
+	}
+
+	// if addon has no services or depend addons, no real deploy will perform
+	hasServices := resourceInfo.Dice != nil && resourceInfo.Dice.Services != nil && len(resourceInfo.Dice.Services) > 0
+	hasAddons := resourceInfo.Dice != nil && resourceInfo.Dice.AddOns != nil && len(resourceInfo.Dice.AddOns) > 0
+
+	return needDeployInstance && (hasServices || hasAddons), err
 }
 
 func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
