@@ -52,7 +52,7 @@ func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExcepti
 		exception.RuntimeID = conv.ToString(tags["runtime_id"])
 		layout := "2006-01-02 15:04:05"
 
-		stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC LIMIT 1"
+		stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC"
 		iterCount := s.p.cassandraSession.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
 		count := int64(0)
 		index := 0
