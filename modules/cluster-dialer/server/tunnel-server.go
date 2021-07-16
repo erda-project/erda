@@ -88,6 +88,12 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 				}
 
 				if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
+					if clusterInfo.Token == c.ManageConfig.Token && clusterInfo.Address == c.ManageConfig.Address &&
+						clusterInfo.CACert == c.ManageConfig.CaData {
+						logrus.Infof("cluster info doesn't change [%s]", clusterKey)
+						return
+					}
+
 					if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
 						Name: clusterKey,
 						ManageConfig: &apistructs.ManageConfig{
