@@ -17,11 +17,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/customhttp"
 )
@@ -34,15 +32,11 @@ func init() {
 
 // NewNetportalRequest 在NewRequest基础上增加ClusterName参数，完成netportal代理请求
 func NewNetportalRequest(clusterName, method, url string, body io.Reader) (*http.Request, error) {
-	info, err := bdl.QueryClusterInfo(clusterName)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	netportalUrl := info.Get(apistructs.NETPORTAL_URL)
-	if netportalUrl != "" {
+	currentClusterName := os.Getenv("DICE_CLUSTER_NAME")
+	if currentClusterName != clusterName {
 		url = strings.TrimPrefix(url, "http://")
 		url = strings.TrimPrefix(url, "https://")
-		url = fmt.Sprintf("%s/%s", netportalUrl, url)
+		url = fmt.Sprintf("inet://%s/%s", clusterName, url)
 	}
 	return customhttp.NewRequest(method, url, body)
 }
