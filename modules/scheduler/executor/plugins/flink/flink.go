@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const (
@@ -257,4 +257,8 @@ func (*Flink) JobVolumeCreate(ctx context.Context, spec interface{}) (string, er
 }
 func (*Flink) KillPod(podname string) error {
 	return fmt.Errorf("not support for flink")
+}
+
+func (f *Flink) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	return apistructs.ServiceGroup{}, fmt.Errorf("scale not support for flink")
 }

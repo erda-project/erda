@@ -17,6 +17,9 @@ package k8sservice
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -24,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -78,8 +81,19 @@ func (s *Service) Create(service *apiv1.Service) error {
 	return nil
 }
 
-func (s *Service) List(namespace string) (apiv1.ServiceList, error) {
+func (s *Service) List(namespace string, labelSelector map[string]string) (apiv1.ServiceList, error) {
 	var b bytes.Buffer
+	var params url.Values
+	if len(labelSelector) > 0 {
+		var kvs []string
+		params = make(url.Values, 0)
+
+		for key, value := range labelSelector {
+			kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+		}
+		params.Add("labelSelector", strings.Join(kvs, ","))
+	}
+
 	svclist := apiv1.ServiceList{}
 
 	path := strutil.Concat("/api/v1/namespaces/", namespace, "/services")

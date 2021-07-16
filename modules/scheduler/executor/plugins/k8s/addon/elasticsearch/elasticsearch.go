@@ -29,8 +29,8 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -194,7 +194,7 @@ func (eo *ElasticsearchOperator) Inspect(sg *apistructs.ServiceGroup) (*apistruc
 	if err != nil {
 		return nil, err
 	}
-	svclist, err := eo.service.List(genK8SNamespace(sg.Type, sg.ID))
+	svclist, err := eo.service.List(genK8SNamespace(sg.Type, sg.ID), nil)
 	if err != nil {
 		return nil, err
 	}

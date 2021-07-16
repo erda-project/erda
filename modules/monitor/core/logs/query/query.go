@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scylladb/gocqlx"
 	"github.com/scylladb/gocqlx/qb"
 
@@ -33,8 +34,11 @@ const (
 	maxIdsLength = 20
 )
 
-func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (res []*LogMeta, err error) {
-	cqlBuilder := qb.Select(LogMetaTableName).Limit(10)
+var ErrEmptyLogMeta = errors.New("empty log meta record")
+
+func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (*LogMeta, error) {
+	var res []*LogMeta
+	cqlBuilder := qb.Select(LogMetaTableName).Limit(1)
 	for key := range filters {
 		cqlBuilder = cqlBuilder.Where(qb.Eq(key))
 	}
@@ -44,7 +48,10 @@ func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (
 	if err := cql.SelectRelease(&res); err != nil {
 		return nil, fmt.Errorf("query cassandra failed. err=%s", err)
 	}
-	return
+	if len(res) == 0 {
+		return nil, ErrEmptyLogMeta
+	}
+	return res[0], nil
 }
 
 func (p *provider) queryRequestLog(table, requestID string) ([]*Log, error) {

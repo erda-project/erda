@@ -27,21 +27,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
-
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"sls-import"} }
-func (d *define) Dependencies() []string { return []string{"kafka", "elasticsearch"} }
-func (d *define) Summary() string        { return "import logs from aliyun sls" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
 
 type config struct {
 	AccountsReloadInterval time.Duration `file:"accounts_reload_interval"`
@@ -71,8 +58,9 @@ type config struct {
 }
 
 type provider struct {
-	C         *config
-	L         logs.Logger
+	C *config
+	L logs.Logger
+
 	importers map[string]*Importer
 	lock      sync.RWMutex
 	closeCh   chan struct{}
@@ -93,8 +81,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
-		bundle.WithOps(),
+		bundle.WithCoreServices(),
+		bundle.WithCMP(),
 	)
 	filters, err := buildFilters(p.C.Projects)
 	if err != nil {
@@ -155,5 +143,13 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider("sls-import", &define{})
+	servicehub.Register("sls-import", &servicehub.Spec{
+		Services:     []string{"sls-import"},
+		Dependencies: []string{"kafka", "elasticsearch"},
+		Description:  "import logs from aliyun sls",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

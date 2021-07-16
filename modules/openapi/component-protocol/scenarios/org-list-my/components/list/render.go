@@ -122,7 +122,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 		PageSize: i.State.PageSize,
 	}
 	req.UserID = i.CtxBdl.Identity.UserID
-	orgs, err := i.CtxBdl.Bdl.ListOrgs(&req)
+	orgs, err := i.CtxBdl.Bdl.ListDopOrgs(&req)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 
 	if i.State.SearchEntry != "" {
 		req.Q = i.State.SearchEntry
-		orgs, err = i.CtxBdl.Bdl.ListOrgs(&req)
+		orgs, err = i.CtxBdl.Bdl.ListDopOrgs(&req)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ func (i *ComponentList) RenderMyOrgs() error {
 				Reload: false,
 				Command: Command{
 					Key:    "goto",
-					Target: "https://" + org.Domain + "/workBench/projects",
+					Target: "https://" + org.Domain + "/dop/projects",
 				},
 			},
 		}

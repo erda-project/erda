@@ -19,13 +19,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // GetNotifyGroupDetail 查询通知组详情
 func (b *Bundle) GetNotifyGroupDetail(id int64, orgID int64, userID string) (*apistructs.NotifyGroupDetail, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) GetNotifyGroupDetail(id int64, orgID int64, userID string) (*ap
 }
 
 func (b *Bundle) QueryNotifiesBySource(orgID string, sourceType, sourceID, itemName, label string, clusterNames ...string) ([]*apistructs.NotifyDetail, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (b *Bundle) QueryNotifiesBySource(orgID string, sourceType, sourceID, itemN
 }
 
 func (b *Bundle) CreateNotifyHistory(request *apistructs.CreateNotifyHistoryRequest) (int64, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return 0, err
 	}
@@ -95,7 +95,7 @@ func (b *Bundle) CreateNotifyHistory(request *apistructs.CreateNotifyHistoryRequ
 // GetNotifyConfig 获取通知配置
 func (b *Bundle) GetNotifyConfig(orgIDstr, userID string) (*apistructs.NotifyConfigUpdateRequestBody, error) {
 	// TODO: userID should be deprecated
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -122,7 +122,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 			logrus.Errorf("failed to parse orgid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCMDB()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.OrgScope,
 			ScopeID:  orgid,
@@ -143,7 +143,7 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 			logrus.Errorf("failed to parse applicationid for instance: %v, %v", instance.ContainerID, err)
 			return
 		}
-		p, err := bundle.New(bundle.WithCMDB()).CheckPermission(&apistructs.PermissionCheckRequest{
+		p, err := bundle.New(bundle.WithCoreServices()).CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   r.Header.Get("User-ID"),
 			Scope:    apistructs.AppScope,
 			ScopeID:  appid,
@@ -176,7 +176,14 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 
 // SoldierTerminal proxy of soldier
 func SoldierTerminal(r *http.Request, initmessage []byte, upperConn *websocket.Conn) {
-	soldierAddr, err := url.Parse(r.URL.Query().Get("url"))
+	bdl := bundle.New(bundle.WithClusterManager())
+	clusterName := r.URL.Query().Get("clusterName")
+	clusterInfo, err := bdl.GetCluster(clusterName)
+	if err != nil {
+		logrus.Errorf("failed to get cluster info with bundle err :%v", err)
+	}
+
+	soldierAddr, err := url.Parse(clusterInfo.URLs["colonySoldier"])
 	if err != nil {
 		logrus.Errorf("failed to url parse: %v, err: %v", r.URL.Query().Get("url"), err)
 	}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -33,8 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/snippetsvc"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 // Endpoints 定义 endpoint 方法
@@ -49,7 +49,6 @@ type Endpoints struct {
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
-	snippetSvc       *snippetsvc.SnippetSvc
 	reportSvc        *reportsvc.ReportSvc
 	queueManage      *queuemanage.QueueManage
 
@@ -138,12 +137,6 @@ func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	}
 }
 
-func WithSnippetSvc(svc *snippetsvc.SnippetSvc) Option {
-	return func(e *Endpoints) {
-		e.snippetSvc = svc
-	}
-}
-
 func WithReportSvc(svc *reportsvc.ReportSvc) Option {
 	return func(e *Endpoints) {
 		e.reportSvc = svc
@@ -187,6 +180,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/{pipelineID}/actions/cancel", Method: http.MethodPost, Handler: e.pipelineCancel},
 		{Path: "/api/pipelines/{pipelineID}/actions/rerun", Method: http.MethodPost, Handler: e.pipelineRerun},
 		{Path: "/api/pipelines/{pipelineID}/actions/rerun-failed", Method: http.MethodPost, Handler: e.pipelineRerunFailed},
+
+		// labels
+		{Path: "/api/pipelines-labels/actions/batch-insert-labels", Method: http.MethodPost, Handler: e.batchInsertLabels},
+		{Path: "/api/pipelines-labels", Method: http.MethodGet, Handler: e.pipelineLabelList},
 
 		// tasks
 		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
@@ -241,5 +238,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// reports
 		{Path: "/api/pipeline-reportsets/{pipelineID}", Method: http.MethodGet, Handler: e.queryPipelineReportSet},
 		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
+
+		// cluster info
+		{Path: clusterinfo.ClusterHookApiPath, Method: http.MethodPost, Handler: e.clusterHook},
+
+		// executor info, only for internal check executor and cluster info
+		{Path: "/api/pipeline-executors", Method: http.MethodGet, Handler: e.executorInfos},
 	}
 }

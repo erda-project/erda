@@ -44,13 +44,14 @@ type Conf struct {
 	BuildCacheExpireIn     time.Duration `env:"BUILD_CACHE_EXPIRE_IN" default:"168h"`
 
 	// bundle
-	GittarAddr    string `env:"GITTAR_ADDR" required:"false"`
-	OpenAPIAddr   string `env:"OPENAPI_ADDR" required:"false"`
-	EventboxAddr  string `env:"EVENTBOX_ADDR" required:"false"`
-	DiceHubAddr   string `env:"DICEHUB_ADDR" required:"false"`
-	SchedulerAddr string `env:"SCHEDULER_ADDR" required:"false"`
-	HepaAddr      string `env:"HEPA_ADDR" required:"false"`
-	CollectorAddr string `env:"COLLECTOR_ADDR" required:"false"`
+	GittarAddr         string `env:"GITTAR_ADDR" required:"false"`
+	OpenAPIAddr        string `env:"OPENAPI_ADDR" required:"false"`
+	EventboxAddr       string `env:"EVENTBOX_ADDR" required:"false"`
+	DiceHubAddr        string `env:"DICEHUB_ADDR" required:"false"`
+	SchedulerAddr      string `env:"SCHEDULER_ADDR" required:"false"`
+	HepaAddr           string `env:"HEPA_ADDR" required:"false"`
+	CollectorAddr      string `env:"COLLECTOR_ADDR" required:"false"`
+	ClusterManagerAddr string `env:"CLUSTER_MANAGER_ADDR" required:"false"`
 
 	// public url
 	GittarPublicURL    string `env:"GITTAR_PUBLIC_URL" required:"true"`
@@ -87,6 +88,24 @@ type Conf struct {
 
 	// API-Test
 	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
+
+	// initialize send running pipeline interval
+	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
+	InitializeSendRunningIntervalNum uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_NUM" default:"20"`
+
+	// cron compensate time
+	CronCompensateTimeMinute       int64 `env:"CRON_COMPENSATE_TIME_MINUTE" default:"5"`
+	CronCompensateConcurrentNumber int64 `env:"CRON_COMPENSATE_CONCURRENT_NUMBER" default:"10"`
+
+	// cron interrupt compensate identification failure time second
+	CronFailureCreateIntervalCompensateTimeSecond int64 `env:"CRON_FAILURE_CREATE_INTERVAL_COMPENSATE_TIME_SECOND" default:"300"`
+
+	// database gc
+	AnalyzedPipelineDefaultDatabaseGCTTLSec uint64 `env:"ANALYZED_PIPELINE_DEFAULT_DATABASE_GC_TTL_SEC" default:"86400"`   // 60 * 60 * 24 analyzed pipeline db record default retains 1 day
+	FinishedPipelineDefaultDatabaseGCTTLSec uint64 `env:"FINISHED_PIPELINE_DEFAULT_DATABASE_GC_TTL_SEC" default:"5184000"` // 60 * 60 * 24 * 30 * 2 finished pipeline db record default retains 2 month
+	// resource gc
+	SuccessPipelineDefaultResourceGCTTLSec uint64 `env:"SUCCESS_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"` // 60 * 30 success pipeline resources default retains 30 min
+	FailedPipelineDefaultResourceGCTTLSec  uint64 `env:"FAILED_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"`  // 60 * 30 failed pipeline resources default retains 30 min
 }
 
 var cfg Conf
@@ -202,6 +221,11 @@ func CollectorAddr() string {
 	return cfg.CollectorAddr
 }
 
+// ClusterManagerAddr return cluster-manager address
+func ClusterManagerAddr() string {
+	return cfg.ClusterManagerAddr
+}
+
 // GittarPublicURL 返回 gittar 的公网地址.
 func GittarPublicURL() string {
 	return cfg.GittarPublicURL
@@ -275,4 +299,46 @@ func QueueLoopHandleIntervalSec() uint64 {
 // APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
 func APITestNetportalAccessK8sNamespaceBlacklist() []string {
 	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
+}
+
+// InitializeSendIntervalTime return initialize send running pipeline id interval second
+func InitializeSendRunningIntervalSec() uint64 {
+	return cfg.InitializeSendRunningIntervalSec
+}
+
+// InitializeSendIntervalNum return initialize send running pipeline id interval num
+func InitializeSendRunningIntervalNum() uint64 {
+	return cfg.InitializeSendRunningIntervalNum
+}
+
+func CronCompensateTimeMinute() int64 {
+	return cfg.CronCompensateTimeMinute
+}
+
+func CronCompensateConcurrentNumber() int64 {
+	return cfg.CronCompensateConcurrentNumber
+}
+
+func CronFailureCreateIntervalCompensateTimeSecond() int64 {
+	return cfg.CronFailureCreateIntervalCompensateTimeSecond
+}
+
+// AnalyzedPipelineDefaultDatabaseGCTTLSec return default database gc ttl for analyzed pipeline record
+func AnalyzedPipelineDefaultDatabaseGCTTLSec() uint64 {
+	return cfg.AnalyzedPipelineDefaultDatabaseGCTTLSec
+}
+
+// FinishedPipelineDefaultDatabaseGCTTLSec return default database gc ttl for finished pipeline record
+func FinishedPipelineDefaultDatabaseGCTTLSec() uint64 {
+	return cfg.FinishedPipelineDefaultDatabaseGCTTLSec
+}
+
+// SuccessPipelineDefaultResourceGCTTLSec return default resource gc for success pipeline
+func SuccessPipelineDefaultResourceGCTTLSec() uint64 {
+	return cfg.SuccessPipelineDefaultResourceGCTTLSec
+}
+
+// FailedPipelineDefaultResourceGCTTLSec return default resource gc for failed pipeline
+func FailedPipelineDefaultResourceGCTTLSec() uint64 {
+	return cfg.FailedPipelineDefaultResourceGCTTLSec
 }

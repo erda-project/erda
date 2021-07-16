@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -137,11 +138,13 @@ func (a *Addon) initMsAfterStart(serviceGroup *apistructs.ServiceGroup, masterNa
 
 	// 先处理master节点信息
 	var masterService apistructs.Service
-	var mysqlExecList []apistructs.MysqlExec
+	var mysqlExecList []mysqlhelper.Request
 	for _, valueItem := range serviceGroup.Dice.Services {
 		if valueItem.Name == masterName {
 			// master节点
-			var execDto apistructs.MysqlExec
+			var execDto mysqlhelper.Request
+			// set cluster name
+			execDto.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
 			// 设置默认密码
 			execDto.User = apistructs.MySQLDefaultUser
 			// 密码
@@ -150,7 +153,7 @@ func (a *Addon) initMsAfterStart(serviceGroup *apistructs.ServiceGroup, masterNa
 			if len(valueItem.InstanceInfos) <= 0 {
 				return errors.New("InstanceInfos为空")
 			}
-			execDto.URL = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
+			execDto.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
 			// 设置执行sql
 			execDto.Sqls = []string{strings.Replace(apistructs.AddonMysqlMasterGrantBackupSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
 				strings.Replace(apistructs.AddonMysqlCreateMysqlUserSqls, "${MYSQL_ROOT_PASSWORD}", password, -1),
@@ -165,7 +168,9 @@ func (a *Addon) initMsAfterStart(serviceGroup *apistructs.ServiceGroup, masterNa
 	for _, valueItem := range serviceGroup.Dice.Services {
 		if valueItem.Name != masterName {
 			// master节点
-			var execDto apistructs.MysqlExec
+			var execDto mysqlhelper.Request
+			// set cluster name
+			execDto.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
 			// 设置默认密码
 			execDto.User = apistructs.MySQLDefaultUser
 			// 密码
@@ -174,7 +179,7 @@ func (a *Addon) initMsAfterStart(serviceGroup *apistructs.ServiceGroup, masterNa
 			if len(valueItem.InstanceInfos) <= 0 {
 				return errors.New("InstanceInfos为空")
 			}
-			execDto.URL = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
+			execDto.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
 			execDto.Sqls = []string{strings.Replace(strings.Replace(apistructs.AddonMysqlSlaveChangeMasterSqls, "${MYSQL_ROOT_PASSWORD}", password, -1), "${MASTER_HOST}", masterService.ShortVIP, -1),
 				apistructs.AddonMysqlSlaveResetSlaveSqls,
 				apistructs.AddonMysqlSlaveStartSlaveSqls,
@@ -186,8 +191,13 @@ func (a *Addon) initMsAfterStart(serviceGroup *apistructs.ServiceGroup, masterNa
 	}
 
 	// 请求init 接口
-	err := a.bdl.MySQLInit(&mysqlExecList, formatSoldierUrl(clusterInfo))
-	return err
+	for _, request := range mysqlExecList {
+		err := request.Exec()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // formatSoldierUrl 拼接soldier地址
@@ -211,9 +221,10 @@ func formatSoldierUrl(clusterInfo *apistructs.ClusterInfoData) string {
 func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, password string, clusterInfo *apistructs.ClusterInfoData) error {
 
 	// slave节点信息
-	var mysqlExec apistructs.MysqlExec
+	var mysqlExec mysqlhelper.Request
 	for _, valueItem := range serviceGroup.Dice.Services {
 		if valueItem.Name != masterName {
+			mysqlExec.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
 			// 设置默认密码
 			mysqlExec.User = apistructs.MySQLDefaultUser
 			// 密码
@@ -222,13 +233,26 @@ func (a *Addon) checkMysqlHa(serviceGroup *apistructs.ServiceGroup, masterName, 
 			if len(valueItem.InstanceInfos) <= 0 {
 				return errors.New("InstanceInfos为空")
 			}
-			mysqlExec.URL = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.Vip, ":", apistructs.AddonMysqlDefaultPort}, "")
+			mysqlExec.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.Vip, ":", apistructs.AddonMysqlDefaultPort}, "")
 		}
 	}
 
+	logrus.Infof("start checkMysqlHa, request: %+v", mysqlExec)
+
 	// 请求init 接口
-	err := a.bdl.MySQLCheck(&mysqlExec, formatSoldierUrl(clusterInfo))
-	return err
+	status, err := mysqlExec.GetSlaveState()
+	if err != nil {
+		return err
+	}
+
+	if !strings.EqualFold(status.IORunning, "connecting") &&
+		!strings.EqualFold(status.IORunning, "yes") ||
+		!strings.EqualFold(status.SQLRunning, "connecting") &&
+			!strings.EqualFold(status.SQLRunning, "yes") {
+		return fmt.Errorf("slave status error")
+	}
+
+	return nil
 }
 
 // createDBs mysql 创建数据库
@@ -238,7 +262,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 	// create_dbs从options里面取出来
 	var dbNamesStr string
 
-	var execSqlDto apistructs.MysqlExec
+	var execSqlDto mysqlhelper.Request
 	if serviceGroup != nil && serviceGroup.ID != "" {
 		if addonIns.Options == "" {
 			return nil, nil
@@ -251,6 +275,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 
 		for _, valueItem := range serviceGroup.Dice.Services {
 			if valueItem.Name == masterName {
+				execSqlDto.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
 				// 设置默认密码
 				execSqlDto.User = apistructs.MySQLDefaultUser
 				// 密码
@@ -259,7 +284,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 				if len(valueItem.InstanceInfos) <= 0 {
 					return nil, errors.New("InstanceInfos为空")
 				}
-				execSqlDto.URL = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
+				execSqlDto.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, valueItem.InstanceInfos[0].Ip, ":", apistructs.AddonMysqlDefaultPort}, "")
 			}
 		}
 	}
@@ -268,17 +293,18 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 			return nil, nil
 		}
 		dbNamesStr = existsMysqlExec.Options["create_dbs"]
+		execSqlDto.ClusterKey = (*clusterInfo)[apistructs.DICE_CLUSTER_NAME]
 		// 设置默认密码
 		execSqlDto.User = existsMysqlExec.User
 		// 密码
 		execSqlDto.Password = existsMysqlExec.Password
 		// 设置jdbc连接
-		execSqlDto.URL = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, existsMysqlExec.MysqlHost, ":", existsMysqlExec.MysqlPort}, "")
+		execSqlDto.Url = strings.Join([]string{apistructs.AddonMysqlJdbcPrefix, existsMysqlExec.MysqlHost, ":", existsMysqlExec.MysqlPort}, "")
 	}
 	if dbNamesStr == "" {
 		return nil, nil
 	}
-	if execSqlDto.URL == "" {
+	if execSqlDto.Url == "" {
 		return nil, nil
 	}
 
@@ -294,7 +320,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 	execSqlDto.Sqls = sqls
 
 	// 请求create_dbs接口 接口
-	err := a.bdl.MySQLExec(&execSqlDto, formatSoldierUrl(clusterInfo))
+	err := execSqlDto.Exec()
 	if err != nil {
 		return nil, err
 	}
@@ -303,6 +329,7 @@ func (a *Addon) createDBs(serviceGroup *apistructs.ServiceGroup, existsMysqlExec
 }
 
 // initSqlFile 初始化init.sql
+// Deprecated
 func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlExec *apistructs.ExistsMysqlExec,
 	addonIns *dbclient.AddonInstance, createDbs []string, masterName, password string, clusterInfo *apistructs.ClusterInfoData) error {
 	if createDbs == nil || len(createDbs) <= 0 {

@@ -52,6 +52,7 @@ type Issue struct {
 	TaskType         string             `json:"taskType"` // 任务类型
 	BugStage         string             `json:"bugStage"` // BUG阶段
 	Owner            string             `json:"owner"`    // 责任人
+	Subscribers      []string           `json:"subscribers"`
 
 	// 切换到已完成状态的时间 （等事件可以记录历史信息了 删除该字段）
 	FinishTime *time.Time `json:"finishTime"`
@@ -87,7 +88,7 @@ const (
 	IssueTypeTask        IssueType = "TASK"        // 任务
 	IssueTypeBug         IssueType = "BUG"         // 缺陷
 	IssueTypeTicket      IssueType = "TICKET"      // 工单
-	IssueTypeEpic        IssueType = "EPIC"        // 史诗
+	IssueTypeEpic        IssueType = "EPIC"        // 里程碑
 )
 
 func (t IssueType) String() string {
@@ -105,7 +106,7 @@ func (t IssueType) GetZhName() string {
 	case IssueTypeTicket:
 		return "工单"
 	case IssueTypeEpic:
-		return "史诗"
+		return "里程碑"
 	default:
 		panic(fmt.Sprintf("invalid issue type: %s", string(t)))
 	}
@@ -549,6 +550,8 @@ type IssueCreateRequest struct {
 	BugStage string `json:"bugStage"`
 	// +optionaln 负责人
 	Owner string `json:"owner"`
+	// +optional issue subscribers
+	Subscribers []string `json:"subscribers"`
 	// internal use, get from *http.Request
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
@@ -651,6 +654,10 @@ type IssueListRequest struct {
 	EndFinishedAt int64 `schema:"endFinishedAt" json:"endFinishedAt"`
 	// +optional 是否只筛选截止日期为空的事项
 	IsEmptyPlanFinishedAt bool `schema:"isEmptyPlanFinishedAt" json:"isEmptyPlanFinishedAt"`
+	// +optional ms
+	StartClosedAt int64 `schema:"startClosedAt" json:"startClosedAt"`
+	// +optional ms
+	EndClosedAt int64 `schema:"endClosedAt" json:"endClosedAt"`
 	// +optional 优先级
 	Priority []IssuePriority `schema:"priority" json:"priority"`
 	// +optional 复杂度
@@ -682,6 +689,10 @@ type IssueListRequest struct {
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
 	External bool `json:"-"`
+	// Optional custom panel id for issues
+	CustomPanelID int64 `json:"customPanelID"`
+
+	OnlyIDResult bool `json:"onlyIdResult"`
 }
 
 func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
@@ -737,6 +748,12 @@ func (ipr *IssuePagingRequest) UrlQueryString() map[string][]string {
 	}
 	if ipr.IsEmptyPlanFinishedAt == true {
 		query["isEmptyPlanFinishedAt"] = append(query["isEmptyPlanFinishedAt"], "true")
+	}
+	if ipr.StartClosedAt > 0 {
+		query["startClosedAt"] = append(query["startClosedAt"], strconv.FormatInt(ipr.StartClosedAt, 10))
+	}
+	if ipr.EndClosedAt > 0 {
+		query["endClosedAt"] = append(query["endClosedAt"], strconv.FormatInt(ipr.EndClosedAt, 10))
 	}
 	for _, v := range ipr.Priority {
 		query["priority"] = append(query["priority"], string(v))
@@ -1049,4 +1066,11 @@ type IssueImportExcelResponse struct {
 	SuccessNumber int    `json:"successNumber"`
 	FalseNumber   int    `json:"falseNumber"`
 	UUID          string `json:"uuid"`
+}
+
+// IssueSubscriberBatchUpdateRequest batch update the requests of issue subscribers
+type IssueSubscriberBatchUpdateRequest struct {
+	Subscribers  []string `json:"subscribers"`
+	IssueID      int64    `json:"-"`
+	IdentityInfo `json:"-"`
 }

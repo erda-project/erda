@@ -17,7 +17,7 @@ coverage:
     project:
       default:
         # basic
-        target: 15%
+        target: 10%
         threshold: 0%
         base: auto
         if_ci_failed: error
@@ -34,3 +34,10 @@ coverage:
 
 github_checks:
   annotations: true
+
+ignore:
+  # ignore the boilerplate code
+  - "modules/*/conf"
+  - "modules/*/dbclient"
+  - "modules/*/dao"
+  - "bundle"

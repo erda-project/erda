@@ -20,8 +20,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ProjectTipWithoutOrg struct {
@@ -93,6 +96,7 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 		return err
 	}
 
+	i18nLocale := p.ctxBdl.Bdl.GetLocale(p.ctxBdl.Locale)
 	p.Type = "Text"
 	var visible bool
 	if p.ctxBdl.Identity.OrgID == "" {
@@ -101,8 +105,8 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 	p.Props.Visible = visible
 	p.Props.RenderType = "linkText"
 	p.Props.Value = map[string]interface{}{
-		"text": []interface{}{"请先加入组织或者", map[string]interface{}{
-			"text":         "了解更多内容",
+		"text": []interface{}{i18nLocale.Get(i18n.I18nKeyOrgAddFirstOr), map[string]interface{}{
+			"text":         i18nLocale.Get(i18n.I18nKeyMoreContent),
 			"operationKey": "toJoinOrgDoc",
 		}},
 	}
@@ -110,7 +114,7 @@ func (p *ProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.Compone
 		"toJoinOrgDoc": {
 			Command: Command{
 				Key:     "goto",
-				Target:  "https://docs.erda.cloud/",
+				Target:  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E9%A1%B9%E7%9B%AE%E5%92%8C%E5%BA%94%E7%94%A8"),
 				JumpOut: true,
 				Visible: visible,
 			},

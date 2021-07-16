@@ -25,6 +25,19 @@ import (
 
 const SECRECT_PLACEHOLDER = "******"
 
+// OrgType organization type
+type OrgType string
+
+const (
+	EnterpriseOrgType OrgType = "ENTERPRISE"
+	TeamOrgType       OrgType = "TEAM"
+	FreeOrgType       OrgType = "FREE"
+)
+
+func (ot OrgType) String() string {
+	return string(ot)
+}
+
 // OrgCreateRequest POST /api/orgs 创建组织请求结构
 type OrgCreateRequest struct {
 	Logo        string `json:"logo"`
@@ -36,11 +49,18 @@ type OrgCreateRequest struct {
 	Admins []string `json:"admins"` // TODO 改为企业owner,只有一个
 
 	// 发布商名称
-	PublisherName string `json:"publisherName"`
+	PublisherName string  `json:"publisherName"`
+	IsPublic      bool    `json:"isPublic"`
+	Type          OrgType `json:"type"`
 }
 
 // OrgCreateResponse POST /api/orgs 创建组织响应结构
 type OrgCreateResponse struct {
+	Header
+	Data OrgDTO `json:"data"`
+}
+
+type OrgUpdateResponse struct {
 	Header
 	Data OrgDTO `json:"data"`
 }
@@ -74,14 +94,18 @@ type OrgFetchResponse struct {
 	Data OrgDTO `json:"data"`
 }
 
+type OrgDeleteResponse struct {
+	Header
+	Data OrgDTO `json:"data"`
+}
+
 // OrgUpdateRequest PUT /api/orgs/<orgId> 更新组织请求结构
 type OrgUpdateRequest struct {
 	OrgID int                  `json:"-" path:"orgId"`
 	Body  OrgUpdateRequestBody `json:"body"`
 }
 
-// OrgUpdateResponse PUT /api/orgs/<orgId> 更新组织响应结构
-type OrgUpdateResponse struct {
+type OrgUpdateIngressResponse struct {
 	Header
 	Data bool `json:"data"`
 }
@@ -197,6 +221,16 @@ type NotifyConfigUpdateRequestBody struct {
 type NotifyConfigGetResponse struct {
 	Header
 	Data NotifyConfigUpdateRequestBody `json:"data"`
+}
+
+type OrgClusterRelationDTOResponse struct {
+	Header
+	Data []OrgClusterRelationDTO `json:"data"`
+}
+
+type OrgClusterRelationDTOCreateResponse struct {
+	Header
+	Data string `json:"data"`
 }
 
 // OrgClusterRelationDTO 企业对应集群关系结构
@@ -395,4 +429,9 @@ func DecodeUserID(code string) (string, error) {
 	}
 
 	return "", errors.New("code is illegal")
+}
+
+type DeleteOrgClusterRelationResponse struct {
+	Header
+	Data string `json:"data"`
 }

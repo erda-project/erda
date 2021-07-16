@@ -28,23 +28,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
-
-type define struct{}
-
-func (d *define) Service() []string { return []string{"logs-index-query"} }
-func (d *define) Dependencies() []string {
-	return []string{"elasticsearch", "elasticsearch@logs", "mysql", "i18n", "http-server"}
-}
-func (d *define) Summary() string     { return "logs query" }
-func (d *define) Description() string { return d.Summary() }
-func (d *define) Config() interface{} { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
 
 type config struct {
 	Timeout     time.Duration `file:"timeout" default:"60s"`
@@ -66,7 +51,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	hc := httpclient.New(httpclient.WithTimeout(time.Second, time.Second*60))
 	p.bdl = bundle.New(
 		bundle.WithHTTPClient(hc),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	)
 	p.mysql = ctx.Service("mysql").(mysql.Interface).DB()
 	p.db = db.New(p.mysql)
@@ -84,9 +69,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return p.intRoutes(routes)
 }
 
-// func (p *provider) Start() error { return nil }
-// func (p *provider) Close() error { return nil }
-
 func init() {
-	servicehub.RegisterProvider("logs-index-query", &define{})
+	servicehub.Register("logs-index-query", &servicehub.Spec{
+		Services:     []string{"logs-index-query"},
+		Dependencies: []string{"elasticsearch", "elasticsearch@logs", "mysql", "i18n", "http-server"},
+		Description:  "logs query",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

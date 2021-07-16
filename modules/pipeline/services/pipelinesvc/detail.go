@@ -37,6 +37,21 @@ func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
 	return &p, nil
 }
 
+func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
+	base, find, err := s.dbClient.GetPipelineBase(pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	if !find {
+		return nil, fmt.Errorf("not find this pipeline id %v", pipelineID)
+	}
+
+	var detail apistructs.PipelineDetailDTO
+	detail.PipelineDTO = s.convertPipelineBase(base)
+
+	return &detail, nil
+}
+
 func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
 	p, err := s.dbClient.GetPipeline(pipelineID)
 
@@ -58,15 +73,25 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
 	}
+
+	tasks, err := s.dbClient.ListPipelineTasksByPipelineID(p.ID)
+	if err != nil {
+		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
+	}
+
+	var needApproval bool
 	var stageDetailDTO []apistructs.PipelineStageDetailDTO
+
 	for _, stage := range stages {
-		tasks, err := s.dbClient.ListPipelineTasksByStageID(stage.ID)
-		if err != nil {
-			return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
-		}
-		taskDTOs := make([]apistructs.PipelineTaskDTO, 0, len(tasks))
+		var taskDTOs []apistructs.PipelineTaskDTO
 		for _, task := range tasks {
-			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(task)
+			if task.StageID != stage.ID {
+				continue
+			}
+			if task.Type == "manual-review" {
+				needApproval = true
+			}
+			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,
@@ -102,6 +127,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	}
 
 	var detail apistructs.PipelineDetailDTO
+	detail.NeedApproval = needApproval
 	detail.PipelineDTO = *s.ConvertPipeline(&p)
 
 	// 插入 label

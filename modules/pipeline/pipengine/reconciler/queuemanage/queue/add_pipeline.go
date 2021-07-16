@@ -40,10 +40,6 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 		now := time.Now()
 		createdTime = &now
 	}
-	// need reRangePendingQueue if already in ranging
-	if q.rangingPendingQueue {
-		q.needReRangePendingQueueFlag = true
-	}
 
 	// add input p to caches before add p to eq
 	q.pipelineCaches[p.ID] = p
@@ -53,10 +49,22 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	//   else add to pending queue.
 	if p.Status.AfterPipelineQueue() {
 		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
+		go func() {
+			doneCh <- struct{}{}
+			close(doneCh)
+		}()
 	} else {
 		q.eq.Add(itemKey, priority, *createdTime)
+		q.doneChanByPipelineID[p.ID] = doneCh
 	}
-	q.doneChanByPipelineID[p.ID] = doneCh
+
+	// judge needReRangePendingQueue flag after p is added into queue.
+	// need reRangePendingQueue when all conditions are matched:
+	// - already in ranging
+	// - newItem has higher order than currentItemAtRanging
+	if q.rangingPendingQueue && q.eq.PendingQueue().LeftHasHigherOrder(itemKey, q.currentItemKeyAtRanging) {
+		q.needReRangePendingQueueFlag = true
+	}
 
 	go func() {
 		q.rangeAtOnceCh <- true

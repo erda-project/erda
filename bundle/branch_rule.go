@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // GetProjectBranchRules 查询项目分支规则
@@ -34,7 +34,7 @@ func (b *Bundle) GetAppBranchRules(appId uint64) ([]*apistructs.BranchRule, erro
 
 // GetBranchRules 查询分支规则
 func (b *Bundle) GetBranchRules(scopeType apistructs.ScopeType, scopeID uint64) ([]*apistructs.BranchRule, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (b *Bundle) GetBranchRules(scopeType apistructs.ScopeType, scopeID uint64) 
 }
 
 func (b *Bundle) GetAllValidBranchWorkspace(appId uint64) ([]apistructs.ValidBranch, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

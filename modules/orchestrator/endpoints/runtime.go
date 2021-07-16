@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -65,7 +65,7 @@ func (e *Endpoints) CreateRuntimeByRelease(ctx context.Context, r *http.Request,
 	}
 	orgid, err := getOrgID(r)
 	if err != nil {
-		return apierrors.ErrDeleteRuntime.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrCreateRuntime.InvalidParameter(err).ToResp(), nil
 	}
 	var req apistructs.RuntimeReleaseCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

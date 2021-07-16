@@ -21,6 +21,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,7 +47,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -226,10 +227,26 @@ func checkRuntime(r *apistructs.ServiceGroup) error {
 	group := r.Type + "-" + r.ID
 	length := appNameLengthLimit - len(group)
 
+	var regexString = "^[A-Za-z_][A-Za-z0-9_]*$"
+
 	for _, s := range r.Services {
 		if len(s.Name) > length {
 			return errors.Errorf("edas app name is longer than %d characters, name: %s",
 				appNameLengthLimit, group+s.Name)
+		}
+
+		for k := range s.Env {
+			match, err := regexp.MatchString(regexString, k)
+			if err != nil {
+				errMsg := fmt.Sprintf("regexp env key err %v", err)
+				logrus.Errorf(errMsg)
+				return errors.New(errMsg)
+			}
+			if !match {
+				errMsg := fmt.Sprintf("key %s not match the regex express %s", k, regexString)
+				logrus.Errorf(errMsg)
+				return errors.New(errMsg)
+			}
 		}
 	}
 	return nil
@@ -431,7 +448,7 @@ func (e *EDAS) getK8sDeployList(namespace string, name string, services *[]apist
 	for _, i := range deployList.Items {
 		// Get the deployed deployment of the runtime from the deploylist
 		logrus.Debugf("[EDAS] deploy name: %+v", i.ObjectMeta.Name)
-		if strings.Contains(i.ObjectMeta.Name, group) {
+		if strings.Contains(i.ObjectMeta.Name, group) && *i.Spec.Replicas != 0 {
 			var iService apistructs.Service
 			for _, j := range i.Spec.Template.Spec.Containers[0].Env {
 				if j.Name == diceServiceName {
@@ -1468,7 +1485,11 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	group := runtime.Type + "-" + runtime.ID
 
 	appName := group + "-" + s.Name
+
 	envs = s.Env
+	if envs == nil {
+		envs = make(map[string]string, 10)
+	}
 
 	addEnv := func(s *apistructs.Service, envs *map[string]string) error {
 		appName := group + "-" + s.Name
@@ -1543,9 +1564,11 @@ func (e *EDAS) generateServiceEnvs(s *apistructs.Service, runtime *apistructs.Se
 	envs["IS_K8S"] = "true"
 	// add svc label
 	envs["SELF_HOST"] = svcAddr
-	envs["SELF_PORT"] = strconv.Itoa(s.Ports[0].Port)
-	envs["SELF_URL"] = "http://" + svcAddr + ":" + strconv.Itoa(s.Ports[0].Port)
-	envs["SELF_PORT0"] = strconv.Itoa(s.Ports[0].Port)
+	if len(s.Ports) != 0 {
+		envs["SELF_PORT"] = strconv.Itoa(s.Ports[0].Port)
+		envs["SELF_URL"] = "http://" + svcAddr + ":" + strconv.Itoa(s.Ports[0].Port)
+		envs["SELF_PORT0"] = strconv.Itoa(s.Ports[0].Port)
+	}
 
 	// TODO: add self env
 	//Problem: After the service is created, there will be k8s service, which makes it impossible to insert SELF_HOST env in advance
@@ -1693,7 +1716,7 @@ func (e *EDAS) waitRuntimeRunningOnBatch(ctx context.Context, batch []*apistruct
 	var err error
 	var status AppStatus
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 60; i++ {
 		done := map[string]struct{}{}
 
 		time.Sleep(10 * time.Second)
@@ -2170,4 +2193,165 @@ func (*EDAS) JobVolumeCreate(ctx context.Context, spec interface{}) (string, err
 }
 func (*EDAS) KillPod(podname string) error {
 	return fmt.Errorf("not support for edas")
+}
+
+func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, error) {
+	sg, ok := specObj.(apistructs.ServiceGroup)
+	if !ok {
+		errMsg := fmt.Sprintf("edas k8s scale: invalid service group spec")
+		logrus.Errorf(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	// only support scale one service resources
+	if len(sg.Services) != 1 {
+		errMsg := fmt.Sprintf("the scaling service count is not equal 1")
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	if err := checkRuntime(&sg); err != nil {
+		errMsg := fmt.Sprintf("check the runtime struct err: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	services := []apistructs.Service{}
+	destService := sg.Services[0]
+	originService := &apistructs.Service{}
+
+	appName := sg.Type + "-" + sg.ID + "-" + destService.Name
+	var (
+		appID string
+		err   error
+	)
+	if appID, err = e.getAppID(appName); err != nil {
+		errMsg := fmt.Sprintf("get appID errL: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	logrus.Infof("[EDAS] start to get k8s deployment %s", strutil.Concat(sg.Type, "-", sg.ID))
+	if _, err = e.getK8sDeployList(sg.Type, sg.ID, &services); err != nil {
+		logrus.Debugf("[EDAS] Get deploy from k8s error: %+v", err)
+		return nil, err
+	}
+	for _, service := range services {
+		if service.Name == destService.Name {
+			service.Resources.Cpu = service.Resources.Cpu / 1000
+			service.Resources.Mem = service.Resources.Mem / 1024 / 1024
+			originService = &service
+			break
+		}
+	}
+	var errString = make(chan string, 0)
+	go func() {
+		if originService != nil {
+			// Query the latest release order, and terminate if it is running
+			orderList, _ := e.listRecentChangeOrderInfo(appID)
+			if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
+				e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
+			}
+
+			if originService.Resources.Cpu == destService.Resources.Cpu &&
+				originService.Resources.Mem == destService.Resources.Mem &&
+				originService.Scale != destService.Scale {
+				request := e.composeApplicationScale(destService.Scale)
+				request.AppId = appID
+				resp, err := e.client.ScaleK8sApplication(request)
+				if err != nil {
+					errMsg := fmt.Sprintf("scale k8s application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				if resp.Code != 200 {
+					errMsg := fmt.Sprintf("scale k8s application resp err: %v", resp.Message)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+			} else {
+				request := e.composeGetApplicationRequest(appID)
+				resp, err := e.client.GetK8sApplication(request)
+				if err != nil {
+					errMsg := fmt.Sprintf("get k8s application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				if resp.Code != 200 {
+					errMsg := fmt.Sprintf("get k8s application resp err: %v", resp.Message)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				spec, err := e.composeServiceSpecFromApplication(resp.Applcation)
+				if err != nil {
+					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+				spec.CPU = int(destService.Resources.Cpu)
+				spec.Mem = int(destService.Resources.Mem)
+				spec.Mcpu = int(destService.Resources.Cpu * 1000)
+				spec.Instances = destService.Scale
+				err = e.deployApp(appID, spec)
+				if err != nil {
+					errMsg := fmt.Sprintf("compose service Spec application err: %v", err)
+					logrus.Errorf(errMsg)
+					errString <- errMsg
+				}
+			}
+			errString <- ""
+		}
+		errString <- fmt.Sprintf("not found service %s", destService.Name)
+	}()
+	select {
+	case str := <-errString:
+		if str != "" {
+			return nil, fmt.Errorf(str)
+		}
+	case <-time.After(5 * time.Second):
+	}
+	return sg, nil
+}
+
+func (e *EDAS) composeApplicationScale(replica int) *api.ScaleK8sApplicationRequest {
+	scaleRequest := api.CreateScaleK8sApplicationRequest()
+	scaleRequest.Replicas = requests.NewInteger(replica)
+	scaleRequest.SetDomain(e.addr)
+	scaleRequest.Headers["Content-Type"] = "application/json"
+	scaleRequest.RegionId = e.regionID
+	return scaleRequest
+}
+
+func (e *EDAS) composeGetApplicationRequest(appID string) *api.GetK8sApplicationRequest {
+	request := api.CreateGetK8sApplicationRequest()
+	request.AppId = appID
+	request.SetDomain(e.addr)
+	request.Headers["Content-Type"] = "application/json"
+	request.RegionId = e.regionID
+	return request
+}
+
+func (e *EDAS) composeServiceSpecFromApplication(application api.Applcation) (*ServiceSpec, error) {
+	edasEnvs := make([]EdasEnv, 0, len(application.App.EnvList.Env))
+	for _, env := range application.App.EnvList.Env {
+		edasEnvs = append(edasEnvs, EdasEnv{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
+	envs, err := json.Marshal(edasEnvs)
+	if err != nil {
+		return nil, err
+	}
+	spec := ServiceSpec{}
+	spec.Name = application.Name
+	spec.Args = application.Conf.K8sCmdArgs
+	spec.Cmd = application.Conf.K8sCmd
+	spec.LocalVolume = application.Conf.K8sLocalvolumeInfo
+	spec.Liveness = application.Conf.Liveness
+	spec.Readiness = application.Conf.Readiness
+	spec.Envs = string(envs)
+	spec.Image = application.ImageInfo.ImageUrl
+
+	return &spec, nil
 }

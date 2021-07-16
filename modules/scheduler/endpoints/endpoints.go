@@ -35,7 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/scheduler/impl/terminal"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -82,7 +82,6 @@ func NewHTTPEndpoints(
 const (
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
 	RetainNamespace                = "RETAIN_NAMESPACE"
-	QueryRetainNamespace           = "retainNamespace"
 )
 
 // Routes scheduler
@@ -555,24 +554,11 @@ func (h *HTTPEndpoints) JobStart(ctx context.Context, r *http.Request, vars map[
 			},
 		}, nil
 	}
-	var job apistructs.Job
-	if err := json.NewDecoder(r.Body).Decode(&job); err != nil && r.ContentLength != 0 {
-		errstr := fmt.Sprintf("failed to decode jobStart body, err: %v", err)
-		logrus.Error(errstr)
-		return httpserver.HTTPResponse{
-			Status: http.StatusBadRequest,
-			Content: apistructs.JobStartResponse{
-				Error: errstr,
-			},
-		}, nil
-	}
-
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-		job.Namespace = namespace
 	}
 
-	resultJob, err := h.job.Start(namespace, name, job.Env)
+	resultJob, err := h.job.Start(namespace, name, map[string]string{})
 	if err != nil {
 		errstr := fmt.Sprintf("failed to start job, err: %v", err)
 		logrus.Error(errstr)
@@ -632,16 +618,11 @@ func (h *HTTPEndpoints) JobStop(ctx context.Context, r *http.Request, vars map[s
 		}, nil
 	}
 
-	var retainNamespace = true
-	if r.URL.Query().Get(QueryRetainNamespace) == "false" {
-		retainNamespace = false
-	}
-
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
 		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 
-	if err := h.job.Stop(namespace, name, retainNamespace); err != nil {
+	if err := h.job.Stop(namespace, name); err != nil {
 		errstr := fmt.Sprintf("failed to stop job, err: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{
@@ -668,20 +649,14 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 		}, nil
 	}
 
-	var namespace = job.Namespace
 	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-	}
-
-	var retainNamespace = false
-	if r.URL.Query().Get(QueryRetainNamespace) != "" {
-		retainNamespace = true
+		job.Namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 
 	if job.Env == nil {
 		job.Env = make(map[string]string, 0)
 	}
-	job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
+	job.Env[RetainNamespace] = "true"
 
 	if err := h.job.Delete(job); err != nil {
 		errstr := fmt.Sprintf("failed to delete job, err: %v", err)
@@ -690,7 +665,7 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 			Status: http.StatusBadRequest,
 			Content: apistructs.JobDeleteResponse{
 				Name:      job.Name,
-				Namespace: namespace,
+				Namespace: job.Namespace,
 				Error:     errstr,
 			},
 		}, nil
@@ -698,6 +673,9 @@ func (h *HTTPEndpoints) JobDelete(ctx context.Context, r *http.Request, vars map
 	return mkResponse(apistructs.JobDeleteResponse{Name: job.Name, Namespace: job.Namespace})
 }
 
+// batch Delete Jobs will set retainNamespace is false
+// so that the namespace will be deleted when the
+// job count is zero
 func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var jobs []apistructs.Job
 	if err := json.NewDecoder(r.Body).Decode(&jobs); err != nil && r.ContentLength != 0 {
@@ -712,10 +690,6 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 			},
 		}, nil
 	}
-	var retainNamespace = false
-	if r.URL.Query().Get(QueryRetainNamespace) != "false" {
-		retainNamespace = true
-	}
 
 	deleteResponseList := apistructs.JobsDeleteResponse{}
 	logrus.Infof("batch delete %d jobs", len(jobs))
@@ -724,19 +698,18 @@ func (h *HTTPEndpoints) DeleteJobs(ctx context.Context, r *http.Request, vars ma
 		if job.Env == nil {
 			job.Env = make(map[string]string, 0)
 		}
-		job.Env[RetainNamespace] = strconv.FormatBool(retainNamespace)
+		job.Env[RetainNamespace] = "false"
 
-		var namespace = job.Namespace
 		if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-			namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			job.Namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 		}
 
 		if err := h.job.Delete(job); err != nil {
-			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, namespace, err)
+			errstr := fmt.Sprintf("failed to delete job %s in ns %s, err: %v", job.Name, job.Namespace, err)
 			logrus.Error(errstr)
 			deleteResponseList = append(deleteResponseList, apistructs.JobDeleteResponse{
 				Name:      job.Name,
-				Namespace: namespace,
+				Namespace: job.Namespace,
 				Error:     errstr,
 			})
 		}
@@ -1222,6 +1195,36 @@ func (h *HTTPEndpoints) CapacityInfo(ctx context.Context, r *http.Request, vars 
 	return mkResponse(apistructs.CapacityInfoResponse{
 		Header: apistructs.Header{Success: true},
 		Data:   data,
+	})
+}
+
+func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+
+	sg := apistructs.ServiceGroup{}
+	err := json.NewDecoder(r.Body).Decode(&sg)
+	if err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("unmarshall to decoder the service err: %v", err),
+				}},
+		})
+	}
+	if _, err = h.serviceGroupImpl.Scale(&sg); err != nil {
+		return mkResponse(apistructs.ScheduleLabelSetResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error: apistructs.ErrorResponse{
+					Msg: fmt.Sprintf("scale service %s error: %v", sg.Services[0].Name, err),
+				}},
+		})
+	}
+	return mkResponse(apistructs.ScheduleLabelSetResponse{
+		Header: apistructs.Header{
+			Success: true,
+		},
 	})
 }
 

@@ -35,7 +35,7 @@ const (
 	gcGraceSeconds   = 86400
 )
 
-var bdl = bundle.New(bundle.WithCMDB())
+var bdl = bundle.New(bundle.WithCoreServices())
 
 type LogSchema interface {
 	Name() string
@@ -161,7 +161,7 @@ func (cs *CassandraSchema) existedCheck(keyspace string) (keyspaceExisted bool, 
 
 func (cs *CassandraSchema) listOrgNames() (res []string, err error) {
 	res = []string{}
-	resp, err := bdl.ListOrgs(&apistructs.OrgSearchRequest{PageNo: 1, PageSize: impossibleOrgNum})
+	resp, err := bdl.ListDopOrgs(&apistructs.OrgSearchRequest{PageNo: 1, PageSize: impossibleOrgNum})
 	if err != nil {
 		// return res, nil
 		return nil, fmt.Errorf("get orglist failed. err: %s", err)

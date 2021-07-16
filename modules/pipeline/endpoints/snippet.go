@@ -19,8 +19,8 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func (e *Endpoints) querySnippetDetails(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -30,7 +30,7 @@ func (e *Endpoints) querySnippetDetails(ctx context.Context, r *http.Request, va
 		return errorresp.ErrResp(err)
 	}
 
-	data, err := e.snippetSvc.QueryDetails(&req)
+	data, err := e.pipelineSvc.QueryDetails(&req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

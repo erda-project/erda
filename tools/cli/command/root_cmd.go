@@ -33,7 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/dicedir"
 	"github.com/erda-project/erda/tools/cli/format"
@@ -48,18 +48,31 @@ var (
 )
 
 // Cmds which not require login
-var loginWhiteListCmds = strings.Join([]string{"init", "parse", "version", "miglint", "help"}, ",")
+var (
+	loginWhiteList = []string{
+		"init",
+		"parse",
+		"version",
+		"migrate",
+		"lint",
+		"mkpy",
+		"mkpypkg",
+		"record",
+		"help",
+	}
+	loginWhiteListCmds = strings.Join(loginWhiteList, ",")
+)
 
 // rootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "dice",
 	Short: "Dice commandline client",
 	Long: `
-      _/_/_/   	_/_/_/ 	  _/_/_/  _/_/_/_/
-     _/	   _/  	 _/    _/      	 _/
-    _/ 	  _/   	_/    _/       	_/_/_/
-   _/  	 _/    _/    _/	       _/
-  _/_/_/    _/_/_/    _/_/_/  _/_/_/_/
+    _/_/_/_/       _/_/_/        _/_/_/          _/_/    
+   _/             _/    _/      _/    _/      _/    _/   
+  _/_/_/         _/_/_/        _/    _/      _/_/_/_/    
+ _/             _/    _/      _/    _/      _/    _/     
+_/_/_/_/       _/    _/      _/_/_/        _/    _/      
 `,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type define struct{}
@@ -51,8 +51,9 @@ type config struct {
 		WeeklyCron  string `file:"weekly_cron"`
 		MonthlyCron string `file:"monthly_cron"`
 	} `file:"report_cron"`
-	ClusterName  string `env:"DICE_CLUSTER_NAME" default:""`
-	DiceProtocol string `env:"DICE_PROTOCOL" default:"http"`
+	ClusterName   string `env:"DICE_CLUSTER_NAME" default:""`
+	DiceProtocol  string `env:"DICE_PROTOCOL" default:"http"`
+	DiceNameSpace string `file:"namespace" env:"DICE_NAMESPACE" default:"default"`
 }
 
 type provider struct {
@@ -72,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(hc),
 		bundle.WithPipeline(),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	}
 
 	p.bdl = bundle.New(bundleOpts...)

@@ -24,8 +24,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 var hookClientMap map[string]*apistructs.PipelineLifecycleHookClient
@@ -70,13 +70,12 @@ func PostLifecycleHookHttpClient(source string, req interface{}, resp interface{
 	return nil
 }
 
-// cache client information in the database every 2 hours
-func RegisterLifecycleHookClient(client *dbclient.Client) {
+// cache client information
+func RegisterLifecycleHookClient(client *dbclient.Client) error {
 
 	list, err := client.FindLifecycleHookClientList()
 	if err != nil {
-		logrus.Errorf("not find lifecycleHook hook client list: error %v", err)
-		return
+		return fmt.Errorf("not find lifecycleHook hook client list: error %v", err)
 	}
 
 	var clientMap = map[string]*apistructs.PipelineLifecycleHookClient{}
@@ -90,4 +89,5 @@ func RegisterLifecycleHookClient(client *dbclient.Client) {
 	}
 
 	hookClientMap = clientMap
+	return nil
 }

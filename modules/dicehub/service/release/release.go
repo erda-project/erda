@@ -28,10 +28,10 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/event"
 	"github.com/erda-project/erda/modules/dicehub/registry"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/template"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const (
@@ -214,7 +214,7 @@ func (r *Release) Delete(orgID int64, releaseID string) error {
 		for _, v := range images {
 			imgs = append(imgs, v.Image)
 		}
-		if err := registry.DeleteManifests(release.ClusterName, imgs); err != nil {
+		if err := registry.DeleteManifests(r.bdl, release.ClusterName, imgs); err != nil {
 			logrus.Errorf(err.Error())
 		}
 	}
@@ -422,7 +422,7 @@ func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
 				continue
 			}
 			if count == 0 && release.ClusterName != "" && !strings.HasPrefix(image.Image, AliYunRegistry) {
-				if err := registry.DeleteManifests(release.ClusterName, []string{image.Image}); err != nil {
+				if err := registry.DeleteManifests(r.bdl, release.ClusterName, []string{image.Image}); err != nil {
 					deletable = false
 					logrus.Errorf(err.Error())
 					continue

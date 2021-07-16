@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -234,4 +234,11 @@ func GetAndSetTokenAuth(client *httpclient.HTTPClient, executorName string) {
 	}
 
 	logrus.Debugf("env AUTH_TOKEN not set, executor(%s) goroutine exit", executorName)
+}
+
+func IsNotFound(err error) bool {
+	if strings.Contains(err.Error(), "not found") {
+		return true
+	}
+	return false
 }

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/customhttp"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 )
 
 func Test_getK8sNamespace(t *testing.T) {
@@ -110,7 +110,7 @@ func Test_useNetportal(t *testing.T) {
 }
 
 func Test_handleCustomNetportalRequest(t *testing.T) {
-	inetAddr := "netportal.default.svc.cluster.local:80"
+	inetAddr := "web.n1.svc.cluster.local:80"
 	netportalURL := "inet://xxx.yyy"
 	customhttp.SetInetAddr(inetAddr)
 	type args struct {

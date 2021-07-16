@@ -15,41 +15,37 @@
 package registry
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/registryhelper"
 )
 
-func DeleteManifests(clusterName string, images []string) error {
+func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) error {
 	if len(images) == 0 {
 		return nil
 	}
-
-	imageReq := &apistructs.RegistryManifestsRemoveRequest{
-		Images: images,
+	removeReq := registryhelper.RemoveManifestsRequest{
+		Images:     images,
+		ClusterKey: clusterName,
 	}
+	clusterInfo, err := bdl.QueryClusterInfo(clusterName)
 
-	var imageResp apistructs.RegistryManifestsRemoveResponse
-	path := fmt.Sprintf("/api/clusters/%s/registry/manifests/actions/remove", clusterName)
-	resp, err := httpclient.New().Post(discover.Ops()).
-		Path(path).
-		Header("Content-Type", "application/json").
-		JSONBody(imageReq).
-		Do().
-		JSON(&imageResp)
 	if err != nil {
-		return errors.Errorf("recycle image: %+v error: %v", images, err)
+		return err
 	}
-	if !resp.IsOK() || !imageResp.Success {
-		return errors.Errorf("recycle image: %+v fail, statusCode: %d, err: %+v", images, resp.StatusCode(), imageResp.Error)
+	registryUrl := clusterInfo.Get(apistructs.REGISTRY_ADDR)
+	if registryUrl == "" {
+		return errors.New("registryUrl is empty")
 	}
-	if len(imageResp.Data.Failed) > 0 {
-		return errors.Errorf("recycle image fail: %+v", imageResp.Data.Failed)
+	removeReq.RegistryURL = registryUrl
+	removeResp, err := registryhelper.RemoveManifests(removeReq)
+	if err != nil {
+		return err
 	}
-
+	if len(removeResp.Failed) > 0 {
+		return errors.Errorf("recycle image fail: %+v", removeResp.Failed)
+	}
 	return nil
 }

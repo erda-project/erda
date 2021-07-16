@@ -42,7 +42,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume/driver"
 	"github.com/erda-project/erda/modules/scheduler/task"
-	"github.com/erda-project/erda/pkg/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -227,6 +227,7 @@ func (s *Server) initEndpoints() {
 		{"/api/servicegroup/actions/precheck", http.MethodPost, s.httpendpoints.ServiceGroupPrecheck},
 		{"/api/servicegroup/actions/config", http.MethodPut, s.httpendpoints.ServiceGroupConfigUpdate},
 		{"/api/servicegroup/actions/killpod", http.MethodPost, s.httpendpoints.ServiceGroupKillPod},
+		{"/api/servicegroup/actions/scale", http.MethodPut, s.httpendpoints.ServiceScaling},
 
 		// creating cluster by hooking colony-soldier's event
 		{"/clusterhook", http.MethodPost, s.httpendpoints.ClusterHook},

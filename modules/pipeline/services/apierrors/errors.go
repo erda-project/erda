@@ -15,7 +15,7 @@
 package apierrors
 
 import (
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 var (
@@ -56,6 +56,9 @@ var (
 	ErrPreCheckPipeline      = err("ErrPreCheckPipeline", "流水线前置校验失败")
 	ErrGetOpenapiOAuth2Token = err("ErrGetOpenapiOAuth2Token", "申请 openapi oauth2 token 失败")
 	ErrQuerySnippetYaml      = err("ErrQuerySnippetYaml", "查询嵌套流水线片段失败")
+
+	ErrCreatePipelineLabel = err("ErrCreatePipelineLabel", "创建流水线标签失败")
+	ErrListPipelineLabel   = err("ErrListPipelineLabel", "查询流水线标签失败")
 
 	ErrCheckSecrets          = err("ErrCheckSecrets", "校验私有配置失败")
 	ErrMakeConfigNamespace   = err("ErrMakeConfigNamespace", "创建私有配置命名空间失败")

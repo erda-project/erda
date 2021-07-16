@@ -157,12 +157,12 @@ LABEL:
 		if sStep.ID == stepID {
 			break
 		}
-		steps = append(steps, sStep)
 		for _, pStep := range sStep.Children {
 			if pStep.ID == stepID {
 				break LABEL
 			}
 		}
+		steps = append(steps, sStep)
 		steps = append(steps, sStep.Children...)
 	}
 	maps, err := GetStepOutPut(steps)
@@ -204,7 +204,7 @@ LABEL:
 	inputs = append(inputs, Input{Label: "全局变量入参", Value: "全局变量入参", IsLeaf: false, Children: cfgChildren0})
 
 	// mock 入参
-	inputs = append(inputs, mockInput)
+	inputs = append(inputs, genMockInput(bdl))
 
 	inputBytes, err := json.Marshal(inputs)
 	if err != nil {

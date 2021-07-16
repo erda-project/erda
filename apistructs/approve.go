@@ -64,7 +64,7 @@ type ApproveUpdateRequest struct {
 	Approver string            `json:"approver"`
 }
 
-//  ApproveUpdateResponse PUT /api/approves/{approveId} 更新审批响应结构
+// ApproveUpdateResponse PUT /api/approves/{approveId} 更新审批响应结构
 type ApproveUpdateResponse struct {
 	Header
 	Data interface{} `json:"data"`
@@ -79,7 +79,7 @@ type ApproveDeleteResponse struct {
 // ApproveDetailResponse GET /api/approves/{approveId} 审批详情响应结构
 type ApproveDetailResponse struct {
 	Header
-	ApproveDTO `json:"data"`
+	Data ApproveDTO `json:"data"`
 }
 
 // ApproveListRequest GET /api/Approve 获取证书列表请求
@@ -89,6 +89,12 @@ type ApproveListRequest struct {
 	PageNo   int      `query:"pageNo"`
 	PageSize int      `query:"pageSize"`
 	ID       *int64   `query:"id"`
+}
+
+type ApproveListResponse struct {
+	Header
+	UserInfoHeader
+	Data PagingApproveDTO `json:"data"`
 }
 
 // PagingApproveDTO 查询审批列表响应Body

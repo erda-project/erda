@@ -14,12 +14,15 @@
 package main
 
 import (
-	"github.com/erda-project/erda-infra/modcom"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/uc-adaptor"
 )
 
 func main() {
-	modcom.RunWithCfgDir("conf/uc-adaptor", "uc-adaptor")
+	common.Run(&servicehub.RunOptions{
+		ConfigFile: "conf/uc-adaptor/uc-adaptor.yaml",
+	})
 }

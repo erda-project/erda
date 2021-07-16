@@ -25,8 +25,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -121,12 +121,25 @@ func (e *Endpoints) pipelineDetail(ctx context.Context, r *http.Request, vars ma
 			strutil.Concat(pathPipelineID, ": ", v)).ToResp(), nil
 	}
 
-	detail, err := e.pipelineSvc.Detail(pipelineID)
+	var req apistructs.PipelineDetailRequest
+	err = e.queryStringDecoder.Decode(&req, r.URL.Query())
+	if err != nil {
+		return apierrors.ErrGetPipelineDetail.InvalidParameter(err).ToResp(), nil
+	}
+	req.PipelineID = pipelineID
+
+	var detailDTO *apistructs.PipelineDetailDTO
+	if req.SimplePipelineBaseResult {
+		detailDTO, err = e.pipelineSvc.SimplePipelineBaseDetail(pipelineID)
+	} else {
+		detailDTO, err = e.pipelineSvc.Detail(pipelineID)
+	}
+
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(detail)
+	return httpserver.OkResp(detailDTO)
 }
 
 func (e *Endpoints) pipelineDelete(ctx context.Context, r *http.Request, vars map[string]string) (

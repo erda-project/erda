@@ -80,7 +80,7 @@ func (p *provider) getAccountInfo() (map[string]*AccountInfo, error) {
 		resp, err := p.bdl.ListOrgs(&apistructs.OrgSearchRequest{
 			PageNo:   pageNo,
 			PageSize: pageSize,
-		})
+		}, "")
 		if err != nil {
 			return nil, err
 		}

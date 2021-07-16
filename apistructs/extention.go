@@ -62,7 +62,7 @@ type Spec struct {
 	Desc              string            `json:"desc" yaml:"desc"`
 	Labels            map[string]string `json:"labels" yaml:"labels"`
 	LogoUrl           string            `json:"logoUrl" yaml:"logoUrl"`
-	SupportedVersions []string          `json:"supportedVersions" yaml:"supportedVersions"`
+	SupportedVersions []string          `json:"supportedErdaVersions" yaml:"supportedErdaVersions"`
 	Public            bool              `json:"public" yaml:"public"`
 	IsDefault         bool              `json:"isDefault" yaml:"isDefault"`
 }
@@ -231,14 +231,30 @@ func (v *ExtensionVersion) NotExist() bool {
 }
 
 type ActionSpec struct {
-	Spec           `yaml:",inline"`
-	Concurrency    *ActionConcurrency    `json:"concurrency" yaml:"concurrency"`
-	Params         []ActionSpecParam     `json:"params" yaml:"params"`
-	FormProps      []FormPropItem        `json:"formProps" yaml:"formProps"`
-	AccessibleAPIs []AccessibleAPI       `json:"accessibleAPIs" yaml:"accessibleAPIs"`
-	Outputs        []ActionSpecOutput    `json:"outputs" yaml:"outputs"`
-	Loop           *PipelineTaskLoop     `json:"loop" yaml:"loop"`
-	Priority       *PipelineTaskPriority `json:"priority" yaml:"priority"`
+	Spec              `yaml:",inline"`
+	Concurrency       *ActionConcurrency    `json:"concurrency" yaml:"concurrency"`
+	Params            []ActionSpecParam     `json:"params" yaml:"params"`
+	FormProps         []FormPropItem        `json:"formProps" yaml:"formProps"`
+	AccessibleAPIs    []AccessibleAPI       `json:"accessibleAPIs" yaml:"accessibleAPIs"`
+	Outputs           []ActionSpecOutput    `json:"outputs" yaml:"outputs"`
+	OutputsFromParams []OutputsFromParams   `json:"outputsFromParams" yaml:"outputsFromParams"`
+	Loop              *PipelineTaskLoop     `json:"loop" yaml:"loop"`
+	Priority          *PipelineTaskPriority `json:"priority" yaml:"priority"`
+	Executor          *ActionExecutor       `json:"executor" yaml:"executor"`
+}
+
+type ActionExecutor struct {
+	Kind string `json:"kind" yaml:"kind"`
+	Name string `json:"name" yaml:"name"`
+}
+
+type ActionMatchOutputType string
+
+const JqActionMatchOutputType = "jq"
+
+type OutputsFromParams struct {
+	Type       ActionMatchOutputType `json:"type" yaml:"type"`
+	Expression string                `json:"keyExpr" yaml:"keyExpr"`
 }
 
 type LoopStrategy struct {

@@ -57,7 +57,11 @@ func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
 
 func (i *ComponentFilter) SetComponentValue() {
 	i.Props = Props{
-		Delay: 1000,
+		Delay:   1000,
+		Visible: true,
+	}
+	if i.State.IsEmpty {
+		i.Props.Visible = false
 	}
 	i.Operations = map[string]interface{}{
 		apistructs.ListProjectFilterOperation.String(): Operations{

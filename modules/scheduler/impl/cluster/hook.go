@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -98,6 +98,11 @@ func (c *ClusterImpl) Hook(clusterEvent *apistructs.ClusterEvent) error {
 			}
 		}
 		return nil
+	} else if clusterEvent.Action == clusterActionDelete {
+		if err := c.deleteExecutor(clusterEvent.Content.Name); err != nil {
+			content := fmt.Sprintf("delete cluster(%s) error: %v", clusterEvent.Content.Name, err)
+			return errors.New(content)
+		}
 	}
 	return errors.Wrap(ErrInvalidAction, clusterEvent.Action)
 }
@@ -259,6 +264,8 @@ func (c *ClusterImpl) handleK8SCluster(clusterEvent *apistructs.ClusterEvent) er
 		return c.createK8SExecutor(clusterEvent)
 	} else if clusterEvent.Action == clusterActionUpdate {
 		return c.updateK8SExecutor(clusterEvent)
+	} else if clusterEvent.Action == clusterActionDelete {
+		return c.deleteExecutor(clusterEvent.Content.Name)
 	}
 	return nil
 }
@@ -281,32 +288,6 @@ func (c *ClusterImpl) createK8SExecutor(clusterEvent *apistructs.ClusterEvent) e
 	svcPath := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterK8SSuffix)
 	if err := create(c.js, svcPath, serviceCfg); err != nil {
 		logrus.Errorf("failed to create k8s service executor, cluster: %s", clusterEvent.Content.Name)
-		return err
-	}
-
-	jobCfg := ClusterInfo{
-		ClusterName:  clusterEvent.Content.Name,
-		ExecutorName: clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.JobKindMetronome),
-		Kind:         clusterutil.JobKindK8S,
-		Options: map[string]string{
-			"ADDR": clusterEvent.Content.SchedConfig.MasterURL,
-		},
-	}
-	setDefaultClusterConfig(&jobCfg)
-
-	jobPath := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterK8SJobSuffix)
-	if err := create(c.js, jobPath, jobCfg); err != nil {
-		logrus.Errorf("failed to create k8s job executor, cluster: %s", clusterEvent.Content.Name)
-		return err
-	}
-
-	if err := createK8SFlinkExecutor(clusterEvent, c.js); err != nil {
-		logrus.Errorf("failed to create k8s flink executor, cluster: %s", clusterEvent.Content.Name)
-		return err
-	}
-
-	if err := createK8SSparkExecutor(clusterEvent, c.js); err != nil {
-		logrus.Errorf("failed to create k8s spark executor, cluster: %s", clusterEvent.Content.Name)
 		return err
 	}
 
@@ -346,15 +327,32 @@ func patchK8SConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error {
 				return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
 			}
 			local.Options["ADDR"] = u.String()
-			c, err := url.Parse(request.SchedConfig.CPUSubscribeRatio)
-			if err != nil {
-				return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
-			}
-			local.Options["DEV_CPU_SUBSCRIBE_RATIO"] = c.String()
-			local.Options["TEST_CPU_SUBSCRIBE_RATIO"] = c.String()
-			local.Options["STAGING_CPU_SUBSCRIBE_RATIO"] = c.String()
+		}
+		c, err := url.Parse(request.SchedConfig.CPUSubscribeRatio)
+		if err != nil {
+			return errors.Errorf("k8s cluster addr is invalid, addr: %s", request.SchedConfig.MasterURL)
+		}
+		local.Options["DEV_CPU_SUBSCRIBE_RATIO"] = c.String()
+		local.Options["TEST_CPU_SUBSCRIBE_RATIO"] = c.String()
+		local.Options["STAGING_CPU_SUBSCRIBE_RATIO"] = c.String()
+	}
+	return nil
+}
+
+// deleteExecutor delete cluster executor
+func (c *ClusterImpl) deleteExecutor(clusterName string) error {
+	keys, err := c.findKeysByCluster(clusterName)
+	if err != nil {
+		return err
+	}
+
+	for _, k := range keys {
+		if err := c.js.Remove(context.Background(), k, nil); err != nil {
+			content := fmt.Sprintf("delete cluster(%s, key: %s) from etcd error: %v", clusterName, k, err)
+			return errors.New(content)
 		}
 	}
+
 	return nil
 }
 
@@ -369,6 +367,8 @@ func (c *ClusterImpl) handleEdasCluster(clusterEvent *apistructs.ClusterEvent) e
 		return c.createEdasExecutor(clusterEvent)
 	} else if clusterEvent.Action == clusterActionUpdate {
 		return c.updateEdasExecutor(clusterEvent)
+	} else if clusterEvent.Action == clusterActionDelete {
+		return c.deleteExecutor(clusterEvent.Content.Name)
 	}
 	return nil
 }
@@ -497,33 +497,4 @@ func patchEdasConfig(local *ClusterInfo, request *apistructs.ClusterInfo) error 
 		local.Options["REGADDR"] = request.SchedConfig.RegAddr
 	}
 	return nil
-}
-
-func createK8SFlinkExecutor(clusterEvent *apistructs.ClusterEvent, js jsonstore.JsonStore) error {
-	flinkCfg := ClusterInfo{
-		ClusterName:  clusterEvent.Content.Name,
-		ExecutorName: clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.K8SKindFlink),
-		Kind:         clusterutil.K8SKindFlink,
-		Options: map[string]string{
-			"ADDR": clusterEvent.Content.SchedConfig.MasterURL,
-		},
-		OptionsPlus: nil,
-	}
-	flinkKey := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterK8SFlinkSuffix)
-	return create(js, flinkKey, flinkCfg)
-}
-
-func createK8SSparkExecutor(clusterEvent *apistructs.ClusterEvent, js jsonstore.JsonStore) error {
-	sparkCfg := ClusterInfo{
-		ClusterName:  clusterEvent.Content.Name,
-		ExecutorName: clusterutil.GenerateExecutorByCluster(clusterEvent.Content.Name, clusterutil.K8SKindSpark),
-		Kind:         clusterutil.K8SKindSpark,
-		Options: map[string]string{
-			"ADDR":          clusterEvent.Content.SchedConfig.MasterURL,
-			"SPARK_VERSION": clusterutil.K8SSparkVersion,
-		},
-		OptionsPlus: nil,
-	}
-	sparkKey := strutil.Concat(clusterPrefix, clusterEvent.Content.Name, clusterK8SSparkSuffix)
-	return create(js, sparkKey, sparkCfg)
 }

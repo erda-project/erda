@@ -19,12 +19,14 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // GetCluster 查询集群
 func (b *Bundle) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.ClusterManager()
 	if err != nil {
 		return nil, err
 	}
@@ -37,15 +39,21 @@ func (b *Bundle) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
+
 	if !resp.IsOK() || !getResp.Success {
+		if resp.IsNotfound() {
+			return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{
+				Msg: fmt.Sprintf("cluster %s is not found, response: %s", idOrName, string(resp.Body())),
+			})
+		}
 		return nil, toAPIError(resp.StatusCode(), getResp.Error)
 	}
 	return &getResp.Data, nil
 }
 
-// ListCluster 返回 org 下所有集群; 当 orgID == "" 时，返回所有集群.
+// ListClusters 返回 org 下所有集群; 当 orgID == "" 时，返回所有集群.
 func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs.ClusterInfo, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.ClusterManager()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +83,7 @@ func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs
 func (b *Bundle) DeleteImageManifests(clusterIDOrName string, images []string) (
 	*apistructs.RegistryManifestsRemoveResponseData, error) {
 
-	host, err := b.urls.Ops()
+	host, err := b.urls.CMP()
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +104,9 @@ func (b *Bundle) DeleteImageManifests(clusterIDOrName string, images []string) (
 	return &deleteResp.Data, nil
 }
 
-// UpdateCluster 更新集群信息
+// UpdateCluster update cluster
 func (b *Bundle) UpdateCluster(req apistructs.ClusterUpdateRequest, header ...http.Header) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.ClusterManager()
 	if err != nil {
 		return err
 	}
@@ -106,7 +114,7 @@ func (b *Bundle) UpdateCluster(req apistructs.ClusterUpdateRequest, header ...ht
 
 	var updateResp apistructs.ClusterUpdateResponse
 
-	q := hc.Put(host).Path("/api/clusters")
+	q := hc.Put(host).Path("/api/clusters").Header(httputil.InternalHeader, "bundle")
 	if len(header) > 0 {
 		q.Headers(header[0])
 	}
@@ -119,5 +127,97 @@ func (b *Bundle) UpdateCluster(req apistructs.ClusterUpdateRequest, header ...ht
 	if !resp.IsOK() || !updateResp.Success {
 		return toAPIError(resp.StatusCode(), updateResp.Error)
 	}
+	return nil
+}
+
+// CreateCluster Create cluster with event
+func (b *Bundle) CreateCluster(req *apistructs.ClusterCreateRequest, header ...http.Header) error {
+	host, err := b.urls.ClusterManager()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var createResp apistructs.ClusterCreateResponse
+
+	q := hc.Post(host).Path("/api/clusters").Header(httputil.InternalHeader, "bundle")
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+	resp, err := q.JSONBody(req).
+		Do().
+		JSON(&createResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !createResp.Success {
+		return toAPIError(resp.StatusCode(), createResp.Error)
+	}
+	return nil
+}
+
+func (b *Bundle) CreateClusterWithOrg(userID string, orgID uint64, req *apistructs.ClusterCreateRequest, header ...http.Header) error {
+	if err := b.CreateCluster(req, header...); err != nil {
+		return err
+	}
+
+	if err := b.CreateOrgClusterRelationsByOrg(req.Name, userID, orgID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PatchCluster patch cluster with event
+func (b *Bundle) PatchCluster(req *apistructs.ClusterPatchRequest, header ...http.Header) error {
+	host, err := b.urls.ClusterManager()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	q := hc.Patch(host).Path("/api/clusters")
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+
+	var httpResp httpserver.Resp
+
+	resp, err := q.JSONBody(req).Do().JSON(&httpResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() || !httpResp.Success {
+		return toAPIError(resp.StatusCode(), httpResp.Err)
+	}
+
+	return nil
+}
+
+// DeleteCluster Delete cluster with event
+func (b *Bundle) DeleteCluster(clusterName string, header ...http.Header) error {
+	host, err := b.urls.ClusterManager()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	q := hc.Delete(host).Path("/api/clusters/" + clusterName)
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+
+	var httpResp httpserver.Resp
+
+	resp, err := q.Do().JSON(&httpResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if !resp.IsOK() || !httpResp.Success {
+		return toAPIError(resp.StatusCode(), httpResp.Err)
+	}
+
 	return nil
 }

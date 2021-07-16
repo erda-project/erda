@@ -24,7 +24,6 @@ import (
 )
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
-	p.mysql.LogMode(true)
 	alertRecord := &adapt.AlertRecord{}
 	if err := json.Unmarshal(value, alertRecord); err != nil {
 		return err
@@ -38,6 +37,8 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	if sqlRecord.GroupID == "" {
 		//create
+		record.CreateTime = time.Now()
+		record.UpdateTime = time.Now()
 		err := p.mysql.Create(record).Error
 		return err
 	} else {
@@ -48,6 +49,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 			"alert_index": record.AlertIndex,
 			"alert_name":  record.AlertName,
 			"alert_time":  record.AlertTime,
+			"update_time": time.Now(),
 		}).Error
 		return err
 	}

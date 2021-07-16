@@ -243,6 +243,9 @@ func RunScenarioRender(ctx context.Context, req *apistructs.ComponentProtocolReq
 		req.Protocol.GlobalState = &gs
 	}
 
+	// clean pre render error
+	SetGlobalStateKV(req.Protocol, GlobalInnerKeyError.String(), "")
+
 	PolishProtocol(req.Protocol)
 
 	for _, v := range compRending {
@@ -270,7 +273,7 @@ func RunScenarioRender(ctx context.Context, req *apistructs.ComponentProtocolReq
 		start := time.Now() // 获取当前时间
 		err = wrapCompRender(cr.RenderC(), req.Protocol.Version).Render(ctx, c, req.Scenario, event, req.Protocol.GlobalState)
 		if err != nil {
-			logrus.Errorf("render component failed, scenario:%+v, component:%s", req.Scenario, cr.CompName)
+			logrus.Errorf("render component failed,err: %s, scenario:%+v, component:%s", err.Error(), req.Scenario, cr.CompName)
 			return err
 		}
 		elapsed := time.Since(start)

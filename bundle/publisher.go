@@ -18,12 +18,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // FetchPublisher 获取 publisher 详情
 func (b *Bundle) FetchPublisher(publisherID uint64) (*apistructs.PublisherDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (b *Bundle) FetchPublisher(publisherID uint64) (*apistructs.PublisherDTO, e
 }
 
 func (b *Bundle) GetUserRelationPublisher(userID string, orgID string) (*apistructs.PagingPublisherDTO, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

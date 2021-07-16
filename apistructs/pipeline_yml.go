@@ -16,11 +16,11 @@ package apistructs
 import (
 	"sort"
 
-	"github.com/erda-project/erda/pkg/jsonparse"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 const (
-	SnippetActionSourceType = "action"
+	ActionSourceType = "action"
 
 	ActionTypeAPITest      = "api-test"
 	ActionTypeSnippet      = "snippet"
@@ -183,8 +183,8 @@ type ActionCache struct {
 	// 缓存生成的 key 或者是用户指定的 key
 	// 用户指定的话 需要 {{basePath}}/路径/{{endPath}} 来自定义 key
 	// 用户没有指定 key 有一定的生成规则, 具体生成规则看 prepare.go 的 setActionCacheStorageAndBinds 方法
-	Key  string `yaml:"key,omitempty"`
-	Path string `yaml:"path,omitempty"` // 指定那个目录被缓存, 只能是由 / 开始的绝对路径
+	Key  string `json:"key,omitempty"`
+	Path string `json:"path,omitempty"` // 指定那个目录被缓存, 只能是由 / 开始的绝对路径
 }
 
 type CronCompensator struct {

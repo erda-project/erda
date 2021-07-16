@@ -16,13 +16,15 @@ package k8s
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/mohae/deepcopy"
+	appsv1 "k8s.io/api/apps/v1"
 
+	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -55,13 +57,14 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/cpupolicy"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/dlock"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -79,11 +82,14 @@ const (
 	MIN_CPU_SIZE = 0.1
 
 	// ProjectNamespace Env
-	LabelServiceGroupID                = "servicegroup-id"
-	KeyServiceGroupID                  = "SERVICE_GROUP_ID"
-	KeyOriginServiceName               = "ORIGIN_SERVICE_NAME"
-	ProjectNamespaceServiceNameNameKey = "PROJECT_NAMESPACE_SERVICE_NAME"
-	ProjectNamespace                   = "PROJECT_NAMESPACE"
+	LabelServiceGroupID = "servicegroup-id"
+)
+
+type RuntimeServiceOperator string
+
+const (
+	RuntimeServiceRetain RuntimeServiceOperator = "Retain"
+	RuntimeServiceDelete RuntimeServiceOperator = "Delete"
 )
 
 // K8S plugin's configure
@@ -117,14 +123,15 @@ func init() {
 		}
 		// Synchronize instance status
 		dbclient := instanceinfo.New(dbengine.MustOpen())
-		bdl := bundle.New(bundle.WithCMDB())
+		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
+
 		if options["IS_EDAS"] == "true" {
 			return k, nil
 		}
-
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
+
 		go func() {
 			for {
 				select {
@@ -158,6 +165,7 @@ func init() {
 type Kubernetes struct {
 	name         executortypes.Name
 	clusterName  string
+	cluster      *apistructs.ClusterInfo
 	options      map[string]string
 	addr         string
 	client       *httpclient.HTTPClient
@@ -219,7 +227,9 @@ func (k *Kubernetes) Name() executortypes.Name {
 }
 
 func (k *Kubernetes) CleanUpBeforeDelete() {
-	k.instanceinfoSyncCancelFunc()
+	if k.instanceinfoSyncCancelFunc != nil {
+		k.instanceinfoSyncCancelFunc()
+	}
 }
 
 // Addr return kubernetes addr
@@ -263,21 +273,90 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	return localEngine, nil
 }
 
-// New new kubernetes executor struct
-func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
-	addr, ok := options["ADDR"]
-	if !ok {
-		return nil, errors.Errorf("not found k8s address in env variables")
+// GetClient get http client with cluster info.
+func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
+	inetPortal := "inet://"
+
+	hcOptions := []httpclient.OpOption{
+		httpclient.WithHTTPS(),
 	}
 
-	if !strings.HasPrefix(addr, "inet://") {
-		if !strings.HasPrefix(addr, "http") && !strings.HasPrefix(addr, "https") {
-			addr = strutil.Concat("http://", addr)
+	// check mange config type
+	switch manageConfig.Type {
+	case apistructs.ManageProxy, apistructs.ManageToken:
+		// cluster-agent -> (register) cluster-dialer -> (patch) cluster-manager
+		// -> (update) eventBox -> (update) scheduler -> scheduler reload executor
+		if manageConfig.Token == "" || manageConfig.Address == "" {
+			return "", nil, fmt.Errorf("token or address is empty")
 		}
+
+		hc := httpclient.New(hcOptions...)
+		hc.BearerTokenAuth(manageConfig.Token)
+
+		if manageConfig.Type == apistructs.ManageToken {
+			return manageConfig.Address, hc, nil
+		}
+
+		// parseInetAddr parse inet addr, will add proxy header in custom http request
+		return fmt.Sprintf("%s%s/%s", inetPortal, clusterName, manageConfig.Address), hc, nil
+	case apistructs.ManageCert:
+		if len(manageConfig.KeyData) == 0 ||
+			len(manageConfig.CertData) == 0 {
+			return "", nil, fmt.Errorf("cert or key is empty")
+		}
+
+		certBase64, err := base64.StdEncoding.DecodeString(manageConfig.CertData)
+		if err != nil {
+			return "", nil, err
+		}
+		keyBase64, err := base64.StdEncoding.DecodeString(manageConfig.KeyData)
+		if err != nil {
+			return "", nil, err
+		}
+
+		var certOption httpclient.OpOption
+
+		certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, nil)
+
+		if len(manageConfig.CaData) != 0 {
+			caBase64, err := base64.StdEncoding.DecodeString(manageConfig.CaData)
+			if err != nil {
+				return "", nil, err
+			}
+			certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, caBase64)
+		}
+		hcOptions = append(hcOptions, certOption)
+
+		return manageConfig.Address, httpclient.New(hcOptions...), nil
+	default:
+		return "", nil, fmt.Errorf("manage type is not support")
+	}
+}
+
+// New new kubernetes executor struct
+func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
+	// get cluster from cluster manager
+	b := bundle.New(bundle.WithClusterManager())
+	cluster, err := b.GetCluster(clusterName)
+	if err != nil {
+		logrus.Errorf("get cluster error: %v", cluster)
+		return nil, err
+	}
+
+	// credential config
+	if cluster.ManageConfig == nil {
+		return nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
+	}
+
+	addr, client, err := GetClient(clusterName, cluster.ManageConfig)
+	if err != nil {
+		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
+		return nil, err
 	}
 
 	//Get the value of the super-scoring ratio for different environments
-	var memSubscribeRatio,
+	var (
+		memSubscribeRatio,
 		cpuSubscribeRatio,
 		devMemSubscribeRatio,
 		devCpuSubscribeRatio,
@@ -285,6 +364,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		testCpuSubscribeRatio,
 		stagingMemSubscribeRatio,
 		stagingCpuSubscribeRatio float64
+	)
 
 	getWorkspaceRatio(options, "PROD", "MEM", &memSubscribeRatio)
 	getWorkspaceRatio(options, "PROD", "CPU", &cpuSubscribeRatio)
@@ -300,29 +380,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		if num, err := strconv.ParseFloat(cpuNumQuotaValue, 64); err == nil && (num >= 0 || num == -1.0) {
 			cpuNumQuota = num
 			logrus.Debugf("executor(%s) cpuNumQuota set to %v", name, cpuNumQuota)
-		}
-	}
-
-	client := httpclient.New()
-	if _, ok := options["CA_CRT"]; ok {
-		logrus.Infof("k8s executor(%s) addr for https: %v", name, addr)
-		client = httpclient.New(httpclient.WithHttpsCertFromJSON([]byte(options["CLIENT_CRT"]),
-			[]byte(options["CLIENT_KEY"]),
-			[]byte(options["CA_CRT"])))
-
-		token, ok := options["BEARER_TOKEN"]
-		if !ok {
-			return nil, errors.Errorf("not found k8s bearer token")
-		}
-		// RBAC is enabled by default, and user authentication is required through token
-		client.BearerTokenAuth(token)
-	}
-
-	basicAuth, ok := options["BASICAUTH"]
-	if ok {
-		namePassword := strings.Split(basicAuth, ":")
-		if len(namePassword) == 2 {
-			client.BasicAuth(namePassword[0], namePassword[1])
 		}
 	}
 
@@ -351,26 +408,30 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	// Synchronize cluster info to ETCD (every 10m)
 	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
+	var istioEngine istioctl.IstioEngine
+
 	rawData, err := clusterInfo.Get()
 	if err != nil {
-		return nil, errors.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
+		logrus.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
 			name, clusterName, err)
+	} else {
+		clusterInfoData := apistructs.ClusterInfoData{}
+		for key, value := range rawData {
+			clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
+		}
+		istioEngine, err = getIstioEngine(clusterInfoData)
+		if err != nil {
+			return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
+				name, clusterName, err)
+		}
 	}
 
-	clusterInfoData := apistructs.ClusterInfoData{}
-	for key, value := range rawData {
-		clusterInfoData[apistructs.ClusterInfoMapKey(key)] = value
-	}
-	istioEngine, err := getIstioEngine(clusterInfoData)
-	if err != nil {
-		return nil, errors.Errorf("failed to get istio engine, executorName:%s, clusterName:%s, err:%v",
-			name, clusterName, err)
-	}
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
 	k := &Kubernetes{
 		name:                     name,
 		clusterName:              clusterName,
+		cluster:                  cluster,
 		options:                  options,
 		addr:                     addr,
 		client:                   client,
@@ -400,7 +461,10 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		stagingMemSubscribeRatio: stagingMemSubscribeRatio,
 		cpuNumQuota:              cpuNumQuota,
 		dbclient:                 dbclient,
-		istioEngine:              istioEngine,
+	}
+
+	if istioEngine != nil {
+		k.istioEngine = istioEngine
 	}
 
 	elasticsearchoperator := elasticsearch.New(k, sts, ns, svc, k, k8ssecret, k, client)
@@ -422,10 +486,10 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 	}
 
 	if runtime.ProjectNamespace != "" {
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 
-	logrus.Debugf("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
+	logrus.Infof("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
@@ -465,7 +529,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 	if runtime.ProjectNamespace == "" {
 		if err := k.destroyRuntime(ns); err != nil {
@@ -531,7 +595,7 @@ func (k *Kubernetes) Update(ctx context.Context, specObj interface{}) (interface
 	var ns = MakeNamespace(runtime)
 	if !IsGroupStateful(runtime) && runtime.ProjectNamespace != "" {
 		ns = runtime.ProjectNamespace
-		k.setProjectNamespaceEnvs(runtime)
+		k.setProjectServiceName(runtime)
 	}
 
 	notFound, err := k.NotfoundNamespace(ns)
@@ -660,27 +724,16 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	if service == nil {
 		return errors.Errorf("service empty")
 	}
-
-	if sg.ProjectNamespace != "" && len(service.Ports) > 0 {
-		var runtimeService, _ = deepcopy.Copy(service).(*apistructs.Service)
-
-		runtimeService.Env[KeyOriginServiceName] = service.Name
-		runtimeService.Name = service.Env[ProjectNamespaceServiceNameNameKey]
-		if err := k.updateService(runtimeService); err != nil {
-			return err
-		}
-
-		if k.istioEngine != istioctl.EmptyEngine {
-			if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, runtimeService); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Step 1. Firstly create service
 	// Only create k8s service for services with exposed ports
 	if len(service.Ports) > 0 {
-		if err := k.updateService(service); err != nil {
+		if err := k.updateService(service, nil); err != nil {
+			return err
+		}
+	}
+	if service.ProjectServiceName != "" && len(service.Ports) > 0 {
+		err := k.createProjectService(service, sg.ID)
+		if err != nil {
 			return err
 		}
 	}
@@ -702,6 +755,14 @@ func (k *Kubernetes) createOne(service *apistructs.Service, sg *apistructs.Servi
 	if k.istioEngine != istioctl.EmptyEngine {
 		if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, service); err != nil {
 			return err
+		}
+		if service.ProjectServiceName != "" {
+			if projectService, ok := deepcopy.Copy(service).(*apistructs.Service); ok {
+				projectService.Name = service.ProjectServiceName
+				if err := k.istioEngine.OnServiceOperator(istioctl.ServiceCreate, projectService); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -734,9 +795,14 @@ func (k *Kubernetes) tryDelete(namespace, name string) error {
 	}()
 	wg.Wait()
 
-	if err1 != nil || err2 != nil {
-		return errors.Errorf("failed to delete deployment or  daemonset, namespace: %s, name: %s, (%v, %v)",
-			namespace, name, err1, err2)
+	if err1 != nil && !util.IsNotFound(err1) {
+		return errors.Errorf("failed to delete deployment, namespace: %s, name: %s, (%v)",
+			namespace, name, err2)
+	}
+
+	if err2 != nil && !util.IsNotFound(err2) {
+		return errors.Errorf("failed to delete daemonset, namespace: %s, name: %s, (%v)",
+			namespace, name, err2)
 	}
 
 	return nil
@@ -761,51 +827,26 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 		labelSelector[LabelServiceGroupID] = sg.ID
 	}
 
-	visited := make([]string, 0)
-	oldSpecServices, err := k.listServiceName(ns, labelSelector)
+	runtimeServiceMap, err := k.getRuntimeServiceMap(ns, labelSelector)
 	if err != nil {
 		//TODO:
-		return err
+		errMsg := fmt.Sprintf("list runtime service name err %v", err)
+		logrus.Errorf(errMsg)
+		return fmt.Errorf(errMsg)
 	}
-	// runtime.Services are services with desired states
+
 	for _, svc := range sg.Services {
 		svc.Namespace = ns
-		// find it in oldServices
-		found := false
-		deployName := getDeployName(&svc)
-		for _, s := range oldSpecServices {
-			if deployName != s {
-				continue
-			}
-			found = true
-			break
-		}
-		if found {
-			// Existing in the old service collection, do the put operation
-			// The visited record has been updated service
-			visited = append(visited, deployName)
-			continue
-		}
-
-		// Does not exist in the old service collection, do the create operation
-		// TODO: what to do if errors in Create ? before k8s create deployment ?
-		// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
-		if err := k.createOne(&svc, sg); err != nil {
-			logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
-			return err
-		}
-	}
-
-	for _, svc := range sg.Services {
-		deployName := getDeployName(&svc)
-		for _, s := range visited {
-			if s != deployName {
-				continue
-			}
-
+		runtimeServiceName := getDeployName(&svc)
+		// Existing in the old service collection, do the put operation
+		// The visited record has been updated service
+		if _, ok := runtimeServiceMap[runtimeServiceName]; ok {
 			// firstly update the service
 			// service is not the same as deployment, service is only created for services with exposed ports
-			if err := k.updateService(&svc); err != nil {
+			if err := k.updateService(&svc, nil); err != nil {
+				return err
+			}
+			if err := k.updateProjectService(&svc, sg.ID); err != nil {
 				return err
 			}
 			switch svc.WorkLoad {
@@ -834,79 +875,63 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 					return err
 				}
 			}
-			break
-		}
-	}
-
-	if len(visited) == len(oldSpecServices) {
-		return nil
-	}
-
-	// Remove the updated service from the old service, that is, the service that needs to be deleted
-	toBeDeleted := make([]string, 0)
-	for _, s := range oldSpecServices {
-		existed := false
-		for _, v := range visited {
-			if s == v {
-				existed = true
-				break
-			}
-		}
-		if !existed {
-			toBeDeleted = append(toBeDeleted, s)
-		}
-	}
-
-	k8sServices := []string{}
-
-	for _, svc := range sg.Services {
-		deployName := getDeployName(&svc)
-		for _, svcName := range toBeDeleted {
-			if deployName == svcName {
-				k8sServices = append(k8sServices, svc.Name)
-				break
-			}
-		}
-	}
-
-	for _, svcName := range toBeDeleted {
-		// logrus.Debugf("in Update interface, going to delete service(%s/%s)", ns, svcName)
-		// TODO: what to do if errors in DELETE ?
-		if err := k.tryDelete(ns, svcName); err != nil {
-			logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-			return err
-		}
-	}
-
-	for _, svcName := range toBeDeleted {
-		if err = k.service.Delete(ns, svcName); err != nil {
-			logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
-			return err
-		}
-	}
-
-	for _, svc := range k8sServices {
-		deploys, err := k.deploy.List(ns, map[string]string{"app": svc})
-		if err != nil {
-			logrus.Errorf("failed to get deploys in ns %s", ns)
-			return err
-		}
-
-		remainCount := 0
-		for _, deploy := range deploys.Items {
-			if deploy.DeletionTimestamp == nil {
-				remainCount++
-			}
-		}
-		if remainCount < 1 {
-			err = k.service.Delete(ns, svc)
-			if err != nil {
-				logrus.Errorf("failed to delete global service %s in ns %s", svc, ns)
+			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
+		} else {
+			// Does not exist in the old service collection, do the create operation
+			// TODO: what to do if errors in Create ? before k8s create deployment ?
+			// logrus.Debugf("in Update interface, going to create service(%s/%s)", ns, svc.Name)
+			if err := k.createOne(&svc, sg); err != nil {
+				logrus.Errorf("failed to create service in update interface, name: %s, (%v)", svc.Name, err)
 				return err
 			}
+			runtimeServiceMap[runtimeServiceName] = RuntimeServiceRetain
 		}
 	}
 
+	for svcName, operator := range runtimeServiceMap {
+		if operator == RuntimeServiceDelete {
+			if err := k.tryDelete(ns, svcName); err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to delete service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			svc, err := k.service.Get(ns, svcName)
+			if err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to get k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			if err = k.service.Delete(ns, svcName); err != nil {
+				if !util.IsNotFound(err) {
+					logrus.Errorf("failed to delete k8s service in update interface, namespace: %s, name: %s, (%v)", ns, svcName, err)
+					return err
+				}
+			}
+			appLabelValue := svc.Spec.Selector["app"]
+			deploys, err := k.deploy.List(ns, map[string]string{"app": appLabelValue})
+			if err != nil {
+				logrus.Errorf("failed to get deploys in ns %s", ns)
+				return err
+			}
+			remainCount := 0
+			for _, deploy := range deploys.Items {
+				if deploy.DeletionTimestamp == nil {
+					remainCount++
+				}
+			}
+			if remainCount < 1 {
+				err = k.service.Delete(ns, appLabelValue)
+				if err != nil {
+					if !util.IsNotFound(err) {
+						logrus.Errorf("failed to delete global service %s in ns %s", svc.Name, ns)
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -921,9 +946,49 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
-		k.setProjectNamespaceEnvs(sg)
+		k.setProjectServiceName(sg)
 	}
 	isReady := true
+
+	deploys, err := k.deploy.List(ns, map[string]string{
+		LabelServiceGroupID: sg.ID,
+	})
+	if err != nil {
+		return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
+	}
+	deployMap := make(map[string]appsv1.Deployment, len(deploys.Items))
+	for _, deploy := range deploys.Items {
+		deployMap[deploy.Name] = deploy
+	}
+
+	daemonsetExist := false
+
+	for _, svc := range sg.Services {
+		if svc.WorkLoad == ServicePerNode {
+			daemonsetExist = true
+			break
+		}
+	}
+	var dsMap map[string]appsv1.DaemonSet
+	if daemonsetExist {
+		daemonsets, err := k.ds.List(ns, map[string]string{
+			LabelServiceGroupID: sg.ID,
+		})
+		if err != nil {
+			return apistructs.StatusDesc{}, fmt.Errorf("list daemonset in ns %s err: %v", ns, err)
+		}
+
+		dsMap = make(map[string]appsv1.DaemonSet, len(daemonsets.Items))
+		for _, ds := range daemonsets.Items {
+			dsMap[ds.Name] = ds
+		}
+	}
+
+	pods, err := k.pod.ListNamespacePods(ns)
+	if err != nil {
+		return apistructs.StatusDesc{}, err
+	}
+
 	for i := range sg.Services {
 		var (
 			status apistructs.StatusDesc
@@ -931,12 +996,12 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		)
 		switch sg.Services[i].WorkLoad {
 		case ServicePerNode:
-			status, err = k.getDaemonSetStatus(&sg.Services[i])
+			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
 		default:
 			// To distinguish the following exceptions：
 			// 1, An error occurred during the creation process, and the entire runtime is deleted and then come back to query
 			// 2, Others
-			status, err = k.getDeploymentStatus(&sg.Services[i])
+			status, err = k.getDeploymentStatusFromMap(&sg.Services[i], deployMap)
 		}
 		if err != nil {
 			// TODO: the state can be chanded to "Error"..
@@ -970,7 +1035,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			isReady = false
 			resultStatus.Status = apistructs.StatusProgressing
 			sg.Services[i].Status = apistructs.StatusProgressing
-			podstatuses, err := k.pod.GetNamespacedPodsStatus(sg.Services[i].Namespace)
+			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items)
 			if err != nil {
 				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
 					sg.Services[i].Namespace,
@@ -1072,11 +1137,9 @@ func GenTolerations() []apiv1.Toleration {
 	}
 }
 
-func (k *Kubernetes) setProjectNamespaceEnvs(sg *apistructs.ServiceGroup) {
+func (k *Kubernetes) setProjectServiceName(sg *apistructs.ServiceGroup) {
 	for index, service := range sg.Services {
-		service.Env[ProjectNamespaceServiceNameNameKey] = k.composeNewKey([]string{service.Name, "-", sg.ID})
-		service.Env[KeyServiceGroupID] = sg.ID
-		service.Env[ProjectNamespace] = "true"
+		service.ProjectServiceName = k.composeNewKey([]string{service.Name, "-", sg.ID})
 		sg.Services[index] = service
 	}
 }
@@ -1087,4 +1150,29 @@ func (k *Kubernetes) composeNewKey(keys []string) string {
 		newKey.WriteString(key)
 	}
 	return newKey.String()
+}
+
+// Scale implements update the replica and resources for one service
+func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, error) {
+	sg, err := ValidateRuntime(spec, "TaskScale")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !IsGroupStateful(sg) && sg.ProjectNamespace != "" {
+		k.setProjectServiceName(sg)
+	}
+
+	// only support scale one service resources
+	if len(sg.Services) != 1 {
+		return nil, fmt.Errorf("the scaling service count is not equal 1")
+	}
+
+	if err = k.scaleDeployment(sg); err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return sg, nil
 }

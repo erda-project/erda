@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -341,6 +341,26 @@ func TestFSMContinueCanceling(t *testing.T) {
 		logging := collectDLog(loggingC)
 		assert.Equal(t, []string{`deployment canceled`}, logging)
 	}
+}
+
+func TestPrecheck(t *testing.T) {
+	fsm := genFakeFSM()
+
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateErrorLog",
+		func(_ *bundle.Bundle, errorLog *apistructs.ErrorLogCreateRequest) error {
+			return nil
+		},
+	)
+
+	fsm.bdl = bdl
+	fsm.Spec = &diceyml.Object{
+		Services: map[string]*diceyml.Service{"fakesvC1-12": nil, "fakesvc2": nil},
+	}
+
+	// do invoke
+	err := fsm.precheck()
+	assert.Error(t, err)
 }
 
 func recordUpdateDeployment() chan dbclient.Deployment {

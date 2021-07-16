@@ -17,7 +17,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +26,7 @@ func TestBundleOption(t *testing.T) {
 	os.Setenv("CMDB_ADDR", "http://a.com")
 	os.Setenv("DICEHUB_ADDR", "http://a.com")
 	os.Setenv("EVENTBOX_ADDR", "http://a.com")
-	os.Setenv("OPS_ADDR", "http://a.com")
+	os.Setenv("CMP_ADDR", "http://a.com")
 	os.Setenv("ORCHESTRATOR_ADDR", "http://a.com")
 	os.Setenv("SCHEDULER_ADDR", "http://a.com")
 	os.Setenv("ADDON_PLATFORM_ADDR", "http://a.com")
@@ -35,7 +35,7 @@ func TestBundleOption(t *testing.T) {
 		os.Unsetenv("CMDB_ADDR")
 		os.Unsetenv("DICEHUB_ADDR")
 		os.Unsetenv("EVENTBOX_ADDR")
-		os.Unsetenv("OPS_ADDR")
+		os.Unsetenv("CMP_ADDR")
 		os.Unsetenv("ORCHESTRATOR_ADDR")
 		os.Unsetenv("SCHEDULER_ADDR")
 		os.Unsetenv("ADDON_PLATFORM_ADDR")
@@ -48,7 +48,7 @@ func TestBundleOption(t *testing.T) {
 		WithAddOnPlatform(),
 		WithDiceHub(),
 		WithEventBox(),
-		WithOps(),
+		WithCMP(),
 		WithOrchestrator(),
 		WithScheduler(),
 		WithHTTPClient(hc),
@@ -73,7 +73,7 @@ func TestBundleOption(t *testing.T) {
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 
-	v, err = b.urls.Ops()
+	v, err = b.urls.CMP()
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
 

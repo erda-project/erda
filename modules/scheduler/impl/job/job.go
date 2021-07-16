@@ -23,9 +23,9 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/scheduler/task"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/uuid"
 )
 
 const (
@@ -40,7 +40,7 @@ var jobFormater *regexp.Regexp = regexp.MustCompile(jobNameNamespaceFormat)
 type Job interface {
 	Create(apistructs.JobCreateRequest) (apistructs.Job, error)
 	Start(namespace, name string, env map[string]string) (apistructs.Job, error)
-	Stop(namespace, name string, retainNamespace bool) error
+	Stop(namespace, name string) error
 	Delete(job apistructs.Job) error
 	Inspect(namespace, name string) (apistructs.Job, error)
 	List(namespace string) ([]apistructs.Job, error)

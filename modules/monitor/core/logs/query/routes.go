@@ -16,14 +16,17 @@ package query
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-infra/modcom/api"
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -160,11 +163,11 @@ func (p *provider) downloadOrgLog(w http.ResponseWriter, r *RequestCtx) interfac
 
 func (p *provider) getTableNameWithFilters(filters map[string]interface{}) string {
 	table := schema.DefaultBaseLogTable
-	metas, err := p.queryBaseLogMetaWithFilters(filters)
-	if err != nil || len(metas) == 0 {
+	meta, err := p.queryBaseLogMetaWithFilters(filters)
+	if err != nil {
 		return table
 	}
-	if v, ok := metas[0].Tags["dice_org_name"]; ok {
+	if v, ok := meta.Tags["dice_org_name"]; ok {
 		table = schema.BaseLogWithOrgName(v)
 	}
 	return table
@@ -174,14 +177,17 @@ func (p *provider) checkLogMeta(source, id, key, value string) (bool, error) {
 	if source != "container" { // permission check only for container
 		return true, nil
 	}
-	metas, err := p.queryBaseLogMetaWithFilters(map[string]interface{}{
+	meta, err := p.queryBaseLogMetaWithFilters(map[string]interface{}{
 		"source": source,
 		"id":     id,
 	})
-	if err != nil || len(metas) == 0 {
+	if errors.Is(err, ErrEmptyLogMeta) {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
-	return metas[0].Tags[key] == value, nil
+	return meta.Tags[key] == value, nil
 }
 
 func (p *provider) queryLog(r *RequestCtx) interface{} {
@@ -230,7 +236,11 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *RequestCtx) interface{}
 		return api.Errors.InvalidParameter(err)
 	}
 
-	filename := strings.Replace(r.ID, ".", "_", -1) + "_" + r.Stream
+	meta, _ := p.queryBaseLogMetaWithFilters(map[string]interface{}{
+		"source": r.Source,
+		"id":     r.ID,
+	})
+	filename := getFilename(r, meta)
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
@@ -266,4 +276,22 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *RequestCtx) interface{}
 		return api.Errors.Internal(err)
 	}
 	return nil
+}
+
+func getFilename(r *RequestCtx, meta *LogMeta) string {
+	sep, filenamePrefix := "_", ""
+	if meta == nil {
+		filenamePrefix = strings.Replace(r.ID, ".", sep, -1)
+	} else {
+		if val, ok := meta.Tags["pod_name"]; ok {
+			filenamePrefix = val
+		}
+		if val, ok := meta.Tags["dice_application_name"]; ok {
+			filenamePrefix = val
+		}
+		if val, ok := meta.Tags["dice_service_name"]; ok {
+			filenamePrefix = val
+		}
+	}
+	return strings.Join([]string{filenamePrefix, r.Stream, strconv.Itoa(int(time.Now().Unix()))}, sep) + ".log"
 }

@@ -19,12 +19,12 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // CreateTestPlansV2Step 新建测试计划步骤
 func (b *Bundle) CreateTestPlansV2Step(req apistructs.TestPlanV2StepAddRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +46,7 @@ func (b *Bundle) CreateTestPlansV2Step(req apistructs.TestPlanV2StepAddRequest) 
 
 // DeleteTestPlansV2Step 删除测试计划步骤
 func (b *Bundle) DeleteTestPlansV2Step(req apistructs.TestPlanV2StepDeleteRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (b *Bundle) DeleteTestPlansV2Step(req apistructs.TestPlanV2StepDeleteReques
 
 // MoveTestPlansV2Step 移动测试计划步骤
 func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (b *Bundle) MoveTestPlansV2Step(req apistructs.TestPlanV2StepUpdateRequest)
 
 // PagingTestPlansV2 分页查询测试计划列表
 func (b *Bundle) PagingTestPlansV2(req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (b *Bundle) PagingTestPlansV2(req apistructs.TestPlanV2PagingRequest) (*api
 
 // CreateTestPlanV2 创建测试计划
 func (b *Bundle) CreateTestPlanV2(req apistructs.TestPlanV2CreateRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (b *Bundle) CreateTestPlanV2(req apistructs.TestPlanV2CreateRequest) error 
 
 // UpdateTestPlanV2 更新测试计划
 func (b *Bundle) UpdateTestPlanV2(req apistructs.TestPlanV2UpdateRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (b *Bundle) UpdateTestPlanV2(req apistructs.TestPlanV2UpdateRequest) error 
 
 // GetTestPlanV2 获取测试计划详情
 func (b *Bundle) GetTestPlanV2(testPlanID uint64) (*apistructs.TestPlanV2GetResponse, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (b *Bundle) GetTestPlanV2(testPlanID uint64) (*apistructs.TestPlanV2GetResp
 
 // GetTestPlanV2 获取测试计划步骤
 func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (b *Bundle) GetTestPlanV2Step(stepID uint64) (*apistructs.TestPlanV2Step, e
 
 // GetTestPlanV2 获取测试计划步骤
 func (b *Bundle) UpdateTestPlanV2Step(req apistructs.TestPlanV2StepUpdateRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (b *Bundle) UpdateTestPlanV2Step(req apistructs.TestPlanV2StepUpdateRequest
 }
 
 func (b *Bundle) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*apistructs.AutotestExecuteTestPlansResponse, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (b *Bundle) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestP
 }
 
 func (b *Bundle) CancelDiceAutotestTestPlan(req apistructs.AutotestCancelTestPlansRequest) (string, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return "", err
 	}
@@ -264,7 +264,7 @@ func (b *Bundle) CancelDiceAutotestTestPlan(req apistructs.AutotestCancelTestPla
 
 // ListAutoTestGlobalConfig 获取全局配置
 func (b *Bundle) ListAutoTestGlobalConfig(req apistructs.AutoTestGlobalConfigListRequest) ([]apistructs.AutoTestGlobalConfig, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}

@@ -49,7 +49,8 @@ func NewLoginServer() (*LoginServer, error) {
 		return nil, err
 	}
 	bdl := bundle.New(
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
+		bundle.WithDOP(),
 		bundle.WithPipeline(),
 		bundle.WithDiceHub(),
 		bundle.WithMonitor(),

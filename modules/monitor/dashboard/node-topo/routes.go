@@ -20,8 +20,8 @@ import (
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -178,7 +178,7 @@ func (p *provider) esRequest(indices []string, searchSource *elastic.SearchSourc
 				return nil, nil
 			}
 			if resp.Error != nil {
-				return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIntend(resp.Error))
+				return nil, fmt.Errorf("fail to request storage: %s", jsonx.MarshalAndIndent(resp.Error))
 			}
 		}
 		return nil, fmt.Errorf("fail to request storage: %s", err)

@@ -120,6 +120,8 @@ type PipelineTaskMachineSwapStat struct { // all byte
 	UsedPercent float64 `json:"usedPercent,omitempty"`
 }
 
+const TaskLoopTimeBegin = 1
+
 type PipelineTaskLoopOptions struct {
 	TaskLoop       *PipelineTaskLoop `json:"taskLoop,omitempty"`       // task 指定的 loop 配置
 	SpecYmlLoop    *PipelineTaskLoop `json:"specYmlLoop,omitempty"`    // action spec.yml 里指定的 loop 配置

@@ -42,6 +42,7 @@ func (s GlobalInnerKey) Normal() string {
 const (
 	GlobalInnerKeyCtxBundle GlobalInnerKey = "_ctxBundle_"
 	GlobalInnerKeyUserIDs   GlobalInnerKey = "_userIDs_"
+	GlobalInnerKeyError     GlobalInnerKey = "_error_"
 	// userID & orgID
 	GlobalInnerKeyIdentity GlobalInnerKey = "_identity_"
 
@@ -57,6 +58,8 @@ type ContextBundle struct {
 	I18nPrinter *message.Printer
 	Identity    apistructs.Identity
 	InParams    map[string]interface{}
+	// add language name for change language
+	Locale string
 }
 
 // scenario name: scenario default protocol

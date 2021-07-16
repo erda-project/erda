@@ -26,22 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-index-manager"} }
-func (d *define) Dependencies() []string { return []string{"elasticsearch@logs", "http-server"} }
-func (d *define) Summary() string        { return "logs index manager" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{
-			timeRanges: make(map[string]*timeRange),
-			reload:     make(chan struct{}),
-		}
-	}
-}
-
 type config struct {
 	IndexPrefix       string `file:"index_prefix" default:"rlogs-"`
 	IndexTemplateName string `file:"index_template_name"`
@@ -130,5 +114,16 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-index-manager", &define{})
+	servicehub.Register("logs-index-manager", &servicehub.Spec{
+		Services:     []string{"logs-index-manager"},
+		Dependencies: []string{"elasticsearch@logs", "http-server"},
+		Description:  "logs index manager",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{
+				timeRanges: make(map[string]*timeRange),
+				reload:     make(chan struct{}),
+			}
+		},
+	})
 }

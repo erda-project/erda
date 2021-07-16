@@ -134,6 +134,7 @@ const (
 	DragToAssigneeOperation OperationKey = "DragToAssignee"
 	MoveToPriorityOperation OperationKey = "MoveToPriority"
 	DragToPriorityOperation OperationKey = "DragToPriority"
+	ChangePageNoOperation   OperationKey = "changePageNo"
 	// filetree
 	FileTreeSubmitOperationKey      OperationKey = "submit"
 	FileTreeDeleteOperationKey      OperationKey = "delete"
@@ -213,6 +214,9 @@ const (
 	NotifyDelete OperationKey = "delete"
 	NotifySwitch OperationKey = "switch"
 	NotifyEdit   OperationKey = "edit"
+
+	// workbench
+	SubmitOrgOperationKey OperationKey = "submitOrg"
 )
 
 type ComponentProtocolParams interface{}

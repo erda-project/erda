@@ -26,8 +26,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pkg/user"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 
@@ -450,9 +450,8 @@ func (e *Endpoints) SyncAddons() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	addon.AddonInfos = make(map[string]apistructs.Extension, len(extensions))
 	for _, item := range extensions {
-		addon.AddonInfos[item.Name] = item
+		addon.AddonInfos.Store(item.Name, item)
 	}
 
 	return false, nil
@@ -530,6 +529,8 @@ func (e *Endpoints) AddonCreateCallback(ctx context.Context, r *http.Request, va
 		return apierrors.ErrCreateAddon.InvalidParameter(err).ToResp(), nil
 	}
 
+	logrus.Infof("received addon create callback: %+v", req)
+
 	if err := e.addon.AddonProvisionCallback(vars["addonID"], &req); err != nil {
 		return apierrors.ErrCreateAddon.InvalidParameter(err.Error()).ToResp(), nil
 	}
@@ -569,7 +570,7 @@ func (e *Endpoints) checkCustomAddonCreateParam(req *apistructs.CustomAddonCreat
 	if req.AddonName == "" {
 		return errors.Errorf("missing param addon name")
 	}
-	if _, ok := addon.AddonInfos[req.AddonName]; !ok {
+	if _, ok := addon.AddonInfos.Load(req.AddonName); !ok {
 		return errors.Errorf("not found addon: %s", req.AddonName)
 	}
 	switch strings.ToUpper(req.Workspace) {
@@ -734,9 +735,14 @@ func (e *Endpoints) SyncProjects() (bool, error) {
 		if projectResp == nil {
 			continue
 		}
-		addon.ProjectInfos[projectID] = *projectResp
+		addon.ProjectInfos.Store(projectID, *projectResp)
 	}
-	logrus.Infof("project sync body info: %+v", addon.ProjectInfos)
+
+	addon.ProjectInfos.Range(func(key, value interface{}) bool {
+		logrus.Infof("project sync body info key: %s value: %+v", key, value)
+		return true
+	})
+
 	return false, nil
 }
 

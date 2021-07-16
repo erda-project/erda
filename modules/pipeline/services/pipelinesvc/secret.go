@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclientutil"
+	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -73,7 +73,10 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 	if err != nil {
 		return nil, apierrors.ErrGetCluster.InternalError(err)
 	}
-	mountPoint := clusterInfo.MustGet(apistructs.DICE_STORAGE_MOUNTPOINT)
+	mountPoint := clusterInfo.Get(apistructs.DICE_STORAGE_MOUNTPOINT)
+	if mountPoint == "" {
+		return nil, errors.Errorf("failed to get necessary cluster info parameter: %s", apistructs.DICE_STORAGE_MOUNTPOINT)
+	}
 
 	// if url scheme is file, insert mount point
 	storageURL := conf.StorageURL()

@@ -28,19 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-metrics-analysis"} }
-func (d *define) Dependencies() []string { return []string{"kafka", "mysql"} }
-func (d *define) Summary() string        { return "parse logs to metrics" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Filters    map[string]string `file:"filters"`
 	Processors struct {
@@ -104,5 +91,13 @@ func (p *provider) Start() error {
 func (p *provider) Close() error { return nil }
 
 func init() {
-	servicehub.RegisterProvider("logs-metrics-analysis", &define{})
+	servicehub.Register("logs-metrics-analysis", &servicehub.Spec{
+		Services:     []string{"logs-metrics-analysis"},
+		Dependencies: []string{"kafka", "mysql"},
+		Description:  "parse logs to metrics",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

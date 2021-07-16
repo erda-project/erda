@@ -18,7 +18,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (b *Bundle) NotifyList(req apistructs.NotifyPageRequest) (*[]apistructs.DataItem, error) {
@@ -135,7 +135,7 @@ func (b *Bundle) GetAllGroups(scope, scopeId, orgId, userId string) ([]apistruct
 }
 
 func (b *Bundle) GetNotifyConfigMS(userId, orgId string) (bool, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return false, err
 	}

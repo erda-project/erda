@@ -24,7 +24,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -178,7 +179,7 @@ func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string) (*apistr
 	select {
 	case <-done:
 		return sg, err
-	case <-time.After(3 * time.Second):
+	case <-time.After(time.Duration(conf.InspectServiceGroupTimeout()) * time.Second):
 		return nil, apierrors.ErrInvoke.InternalError(fmt.Errorf("timeout for invoke getServiceGroup"))
 	}
 }
@@ -394,6 +395,7 @@ func (b *Bundle) ResourceInfo(clustername string, brief bool) (*apistructs.Clust
 	}
 	return &resp.Data, nil
 }
+
 func (b *Bundle) PrecheckServiceGroup(sg apistructs.ServiceGroupPrecheckRequest) (
 	*apistructs.ServiceGroupPrecheckData, error) {
 	var resp apistructs.ServiceGroupPrecheckResponse
@@ -404,6 +406,19 @@ func (b *Bundle) PrecheckServiceGroup(sg apistructs.ServiceGroupPrecheckRequest)
 		return nil, toAPIError(200, resp.Error)
 	}
 	return &resp.Data, nil
+}
+
+// ScaleServiceGroup scale service group
+func (b *Bundle) ScaleServiceGroup(sg apistructs.UpdateServiceGroupScaleRequst) error {
+	var resp apistructs.UpdateServiceGroupScaleResponse
+	if err := callScheduler(b, sg, &resp, "/api/servicegroup/actions/scale", b.hc.Put); err != nil {
+		return err
+	}
+	if !resp.Success {
+		return toAPIError(200, resp.Error)
+	}
+
+	return nil
 }
 
 func callScheduler(b *Bundle, req, resp interface{}, path string,

@@ -42,6 +42,14 @@ func (client *Client) GetLabel(id uint64) (label *spec.PipelineLabel, err error)
 	return label, nil
 }
 
+func (client *Client) BatchInsertLabels(labels []spec.PipelineLabel, ops ...SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	defer func() { err = errors.Wrap(err, "failed to create pipeline label") }()
+	_, err = session.Insert(labels)
+	return err
+}
+
 func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOption) (err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -61,6 +69,37 @@ func (client *Client) CreatePipelineLabels(p *spec.Pipeline, ops ...SessionOptio
 	}
 	_, err = session.InsertMulti(labels)
 	return err
+}
+
+func (client *Client) ListPipelineLabels(req *apistructs.PipelineLabelListRequest, ops ...SessionOption) ([]spec.PipelineLabel, int64, error) {
+	sqlSession := client.NewSession(ops...)
+	defer sqlSession.Close()
+
+	var labels []spec.PipelineLabel
+	sql := sqlSession.Table(spec.PipelineLabel{}.TableName())
+
+	if len(req.PipelineSource) > 0 {
+		sql = sql.Where("pipeline_source = ?", req.PipelineSource)
+	}
+
+	if len(req.PipelineYmlName) > 0 {
+		sql = sql.Where("pipeline_yml_name = ?", req.PipelineYmlName)
+	}
+
+	if len(req.TargetIDs) > 0 {
+		sql = sql.In("target_id", req.TargetIDs)
+	}
+
+	if len(req.MatchKeys) > 0 {
+		sql = sql.In("key", req.MatchKeys)
+	}
+
+	err := sql.Find(&labels)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return labels, 0, nil
 }
 
 // ListLabelsByPipelineID 根据 pipelineID 获取 labels

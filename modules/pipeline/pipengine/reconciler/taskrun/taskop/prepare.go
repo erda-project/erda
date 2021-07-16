@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
@@ -38,7 +40,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -419,20 +421,38 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			},
 		),
 		Metadata: map[string]string{
-			"pipelineID":            strconv.FormatUint(task.PipelineID, 10),
-			"taskID":                strconv.FormatUint(task.ID, 10),
-			httputil.UserHeader:     pre.P.GetRunUserID(),
-			httputil.InternalHeader: handleInternalClient(pre.P),
-			httputil.OrgHeader:      pre.P.Labels[apistructs.LabelOrgID],
+			"pipelineID":                  strconv.FormatUint(task.PipelineID, 10),
+			"taskID":                      strconv.FormatUint(task.ID, 10),
+			httputil.UserHeader:           pre.P.GetRunUserID(),
+			httputil.InternalHeader:       handleInternalClient(pre.P),
+			httputil.InternalActionHeader: handleInternalClient(pre.P),
+			httputil.OrgHeader:            pre.P.Labels[apistructs.LabelOrgID],
 		},
 	}
 
 	// task.Context.OutStorages
 	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+		// only k8sjob support create job volume
+		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
+		if !ok {
+			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
+		}
+		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
+		if err != nil {
+			return false, fmt.Errorf("failed to createJobVolume, err: can not get k8s executor")
+		}
+		if schedPlugin.Kind() != k8sjob.Kind {
+			goto makeOutStorages
+		}
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
+			var volumeID string
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
-			volumeID, err := pre.Bdl.CreateJobVolume(apistructs.JobVolume{
+			k8sjobExecutor, ok := schedPlugin.(*k8sjob.K8sJob)
+			if !ok {
+				return false, fmt.Errorf("faile to createJobVolume, err: can not convert to k8sjob executor")
+			}
+			volumeID, err = k8sjobExecutor.JobVolumeCreate(context.Background(), apistructs.JobVolume{
 				Namespace:   p.Extra.Namespace,
 				Name:        "local-pv-default",
 				Type:        "local",
@@ -480,6 +500,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		}
 
 	}
+
+makeOutStorages:
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
 		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
@@ -688,7 +710,7 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 		TaskLoop:       taskLoop,
 		SpecYmlLoop:    actionSpec.Loop,
 		CalculatedLoop: nil,
-		LoopedTimes:    1, // 当前这次运行即为 1
+		LoopedTimes:    apistructs.TaskLoopTimeBegin, // 当前这次运行即为 1
 	}
 	// calculate
 	//

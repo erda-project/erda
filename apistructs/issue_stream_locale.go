@@ -60,8 +60,9 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 
 // ISTParam issue stream template params, 字段名称须与模板内占位符匹配
 type ISTParam struct {
-	Comment  string `json:",omitempty"` // 评论内容
-	UserName string `json:",omitempty"` // 用户名
+	Comment     string `json:",omitempty"` // 评论内容
+	CommentTime string `json:",omitempty"` // comment time
+	UserName    string `json:",omitempty"` // 用户名
 
 	MRInfo MRCommentInfo `json:",omitempty"` // MR 类型评论内容
 

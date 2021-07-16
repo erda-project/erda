@@ -224,7 +224,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(c *gin.Context, reqDto
 		goto failed
 	}
 	if isK8S {
-		k8sAdapter, err = k8s.NewAdapter(azInfo.MasterAddr)
+		k8sAdapter, err = k8s.NewAdapter(reqDto.ClusterName)
 		if err != nil {
 			goto failed
 		}
@@ -449,6 +449,10 @@ func (impl GatewayRuntimeServiceServiceImpl) clearService(dao *orm.GatewayRuntim
 		return err
 	}
 	err = impl.packageBiz.TryClearRuntimePackage(dao, session)
+	if err != nil {
+		return err
+	}
+	err = impl.apiBiz.ClearRuntimeApi(dao)
 	if err != nil {
 		return err
 	}

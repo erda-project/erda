@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 var Bundle *bundle.Bundle
@@ -25,12 +25,12 @@ var Bundle *bundle.Bundle
 func init() {
 	bundleOpts := []bundle.Option{
 		bundle.WithOrchestrator(),
-		bundle.WithOps(),
+		bundle.WithCMP(),
 		bundle.WithScheduler(),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
 		bundle.WithHTTPClient(httpclient.New(
-			httpclient.WithTimeout(time.Second, time.Second*30),
+			httpclient.WithTimeout(time.Second*10, time.Second*60),
 		)),
 	}
 	Bundle = bundle.New(bundleOpts...)

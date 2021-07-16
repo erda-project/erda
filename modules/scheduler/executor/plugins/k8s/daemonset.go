@@ -25,8 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -39,21 +39,22 @@ func (k *Kubernetes) createDaemonSet(service *apistructs.Service, sg *apistructs
 	return k.ds.Create(daemonset)
 }
 
-func (k *Kubernetes) getDaemonSetStatus(service *apistructs.Service) (apistructs.StatusDesc, error) {
-	var statusDesc apistructs.StatusDesc
+func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daemonsets map[string]appsv1.DaemonSet) (apistructs.StatusDesc, error) {
+	var (
+		statusDesc apistructs.StatusDesc
+	)
 	dsName := getDeployName(service)
-	daemonSet, err := k.getDaemonSet(service.Namespace, dsName)
-	if err != nil {
-		return statusDesc, err
-	}
-	status := daemonSet.Status
 
-	statusDesc.Status = apistructs.StatusUnknown
+	if daemonSet, ok := daemonsets[dsName]; ok {
+		status := daemonSet.Status
 
-	if status.NumberAvailable == status.DesiredNumberScheduled {
-		statusDesc.Status = apistructs.StatusReady
-	} else {
-		statusDesc.Status = apistructs.StatusUnHealthy
+		statusDesc.Status = apistructs.StatusUnknown
+
+		if status.NumberAvailable == status.DesiredNumberScheduled {
+			statusDesc.Status = apistructs.StatusReady
+		} else {
+			statusDesc.Status = apistructs.StatusUnHealthy
+		}
 	}
 
 	return statusDesc, nil
@@ -171,9 +172,9 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		daemonset.Spec.Template.Spec.InitContainers = initcontainers
 	}
 
-	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-	daemonset.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+	daemonset.Spec.Selector.MatchLabels[LabelServiceGroupID] = sg.ID
+	daemonset.Spec.Template.Labels[LabelServiceGroupID] = sg.ID
+	daemonset.Labels[LabelServiceGroupID] = sg.ID
 	daemonset.Labels["app"] = service.Name
 	daemonset.Spec.Template.Labels["app"] = service.Name
 

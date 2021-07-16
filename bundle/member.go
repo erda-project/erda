@@ -21,13 +21,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // GetMemberByToken get member by token
 func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (*apistructs.Member, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (
 }
 
 func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Mem
 
 // UpdateMemberUserInfo 更新成员的用户信息
 func (b *Bundle) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (b *Bundle) UpdateMemberUserInfo(req apistructs.MemberUserInfoUpdateRequest
 
 // DeleteMember 移除成员
 func (b *Bundle) DeleteMember(req apistructs.MemberRemoveRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (b *Bundle) DeleteMember(req apistructs.MemberRemoveRequest) error {
 
 // DestroyUsers 删除用户一切成员信息
 func (b *Bundle) DestroyUsers(req apistructs.MemberDestroyRequest) error {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (b *Bundle) DestroyUsers(req apistructs.MemberDestroyRequest) error {
 // ListMemberRolesByUser 查看某个用户在一个scope下的权限
 func (b *Bundle) ListMemberRolesByUser(req apistructs.ListMemberRolesByUserRequest) (
 	*apistructs.UserRoleListResponseData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (b *Bundle) ListMemberRolesByUser(req apistructs.ListMemberRolesByUserReque
 
 // GetAllOrganizational 获取所有的组织架构
 func (b *Bundle) GetAllOrganizational() (*apistructs.GetAllOrganizationalData, error) {
-	host, err := b.urls.CMDB()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -207,4 +207,111 @@ func (b *Bundle) GetAllOrganizational() (*apistructs.GetAllOrganizationalData, e
 	}
 
 	return &organizationalResp.Data, nil
+}
+
+// ListScopeManagersByScopeID list manages by scopeID
+func (b *Bundle) ListScopeManagersByScopeID(req apistructs.ListScopeManagersByScopeIDRequest) (
+	[]apistructs.Member, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.ListScopeManagersByScopeIDResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/list-by-scopeID").
+		Header(httputil.InternalHeader, "bundle").
+		Param("scopeType", string(req.ScopeType)).
+		Param("scopeID", strconv.FormatInt(req.ScopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to ListScopeManagersByScopeID, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return memberResp.Data, nil
+}
+
+// ListMemberRoles list member roles
+func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDRequest, orgID int64) (*apistructs.RoleList, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.MemberRoleListResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/list-roles").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Param("scopeType", string(req.ScopeType)).
+		Param("scopeID", strconv.FormatInt(req.ScopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to ListMemberRoles, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return &memberResp.Data, nil
+}
+
+func (b *Bundle) AddMember(req apistructs.MemberAddRequest, userID string) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var respData apistructs.MemberAddResponse
+	resp, err := hc.Post(host).Path("/api/members").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+
+	return nil
+}
+
+// CountMembersWithoutExtraByScope count member
+func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint64) (int, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return 0, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.ListMembersWithoutExtraByScopeResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/count-by-only-scopeID").
+		Header(httputil.InternalHeader, "bundle").
+		Param("scopeType", scopeType).
+		Param("scopeID", strconv.FormatUint(scopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return 0, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return 0, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to ListMembersWithoutExtraByScope, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return memberResp.Data, nil
 }

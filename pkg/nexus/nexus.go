@@ -16,7 +16,7 @@ package nexus
 import (
 	"time"
 
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type Nexus struct {

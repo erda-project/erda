@@ -77,7 +77,7 @@ type MemberRoleListResponse struct {
 	Data RoleList `json:"data"`
 }
 
-// MemberList 成员列表
+// RoleList 成员列表
 type RoleList struct {
 	List  []RoleInfo `json:"list"`
 	Total int        `json:"total"`
@@ -270,4 +270,24 @@ func (od *GetAllOrganizationalData) IsInApp(scopeNames []string, scopeType, user
 	}
 
 	return false
+}
+
+type ListScopeManagersByScopeIDRequest struct {
+	ScopeType ScopeType `json:"scopeType"`
+	ScopeID   int64     `json:"scopeID"`
+}
+
+type ListScopeManagersByScopeIDResponse struct {
+	Header
+	Data []Member `json:"data"`
+}
+
+type ListMembersWithoutExtraByScopeRequest struct {
+	ScopeType ScopeType `json:"scopeType"`
+	ScopeID   int64     `json:"scopeID"`
+}
+
+type ListMembersWithoutExtraByScopeResponse struct {
+	Header
+	Data int `json:"data"`
 }

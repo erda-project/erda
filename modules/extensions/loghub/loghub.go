@@ -24,11 +24,11 @@ func Init() {
 	setEnvDefault("LOGS_ES_SECURITY_USERNAME", "ES_SECURITY_USERNAME")
 	setEnvDefault("LOGS_ES_SECURITY_PASSWORD", "ES_SECURITY_PASSWORD")
 
-	_, ok := os.LookupEnv("CONF_NAME")
+	_, ok := os.LookupEnv("CONFIG_NAME")
 	if !ok {
 		val, ok := os.LookupEnv("MONITOR_LOG_OUTPUT")
 		if ok {
-			os.Setenv("CONF_NAME", "output/"+val)
+			os.Setenv("CONFIG_NAME", "output/"+val)
 		}
 	}
 }

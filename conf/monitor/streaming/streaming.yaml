@@ -1,0 +1,200 @@
+http-server:
+  addr: ":7091"
+
+health:
+  path: "/api/health"
+
+cassandra:
+  host: "${CASSANDRA_ADDR:localhost:9042}"
+  security: ${CASSANDRA_SECURITY_ENABLE:false}
+  username: ${CASSANDRA_SECURITY_USERNAME}
+  password: ${CASSANDRA_SECURITY_PASSWORD}
+  timeout: "${CASSANDRA_TIMEOUT:3s}"
+
+elasticsearch:
+  urls: "${ES_URL:http://localhost:9200}"
+  security: ${ES_SECURITY_ENABLE:false}
+  username: "${ES_SECURITY_USERNAME}"
+  password: "${ES_SECURITY_PASSWORD}"
+
+kafka:
+  servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
+  comsumer:
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+  producer:
+    options:
+      go.produce.channel.size: ${KAFKA_PRODUCE_SIZE:200000}
+
+mysql:
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
+
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:http://127.0.0.1:2379}"
+  tls:
+    cert_file: "/certs/etcd-client.pem"
+    cert_key_file: "/certs/etcd-client-key.pem"
+    ca_file: "/certs/etcd-ca.pem"
+
+etcd-mutex:
+  root_path: "/erda/streaming"
+
+logs-store:
+  _enable: ${LOGS_STORE_ENABLE:true}
+  input:
+    topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
+    group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
+    parallelism: ${LOG_CONSUMERS:3}
+    options:
+      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
+  output:
+    id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
+    log_schema:
+      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: "10s"
+        retry: -1  # block forever. kafka will handle the issue of stream block
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: true # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+      default_ttl: "${LOG_TTL:168h}"
+      gc_grace_seconds: 86400
+
+
+browser-analytics:
+  _enable: ${BROWSER_ENABLE:true}
+  input:
+    topics: "${BROWSER_TOPICS:spot-analytics}"
+    group: "${BROWSER_GROUP_ID:spot-monitor-browser-dev}"
+    parallelism: ${BROWSER_CONSUMERS:3}
+  output:
+    topic: "${METRIC_TOPICS:spot-metrics}"
+    parallelism: ${KAFKA_PARALLELISM:3}
+    batch:
+      size:  ${KAFKA_BATCH_SIZE:50}
+      timeout: "10s"
+  ipdb: "${CONFIG_PATH}/ipdata.dat"
+
+metrics-storage:
+  _enable: ${METRIC_ENABLE:true}
+  inputs:
+    metric:
+      topics: "${METRIC_TOPICS:spot-metrics}"
+      group: "${METRIC_GROUP_ID:spot-monitor-metrics-dev}"
+      parallelism: ${METRIC_CONSUMERS:3}
+    creating_index_metric:
+      topics: "${CREATING_INDEX_METRIC_TOPIC:spot-metrics-creating}"
+      group: "${CREATING_INDEX_METRIC_GROUP_ID:spot-monitor-metrics-creating-dev}"
+      parallelism: ${CREATING_INDEX_METRIC_CONSUMERS:1}
+  output:
+    features:
+      generate_meta: true
+      counter: true
+      machine_summary: true
+    elasticsearch:
+      writer_config:
+        type: "spot"
+        parallelism: ${ES_PARALLELISM:3}
+        batch:
+          size: ${ES_BATCH_SIZE:50}
+          timeout: "30s"
+    kafka:
+      topic: "${CREATING_INDEX_METRIC_TOPIC:spot-metrics-creating}"
+      parallelism: ${CREATING_INDEX_METRIC_OUTPUT_PARALLELISM:2}
+      batch:
+        size: ${CREATING_INDEX_METRIC_OUTPUT_BATCH_SIZE:10}
+        timeout: "10s"
+
+erda.core.monitor.metric.index:
+  request_timeout: "20s"
+  default_namespace: "full_cluster"
+  # namespaces:
+  #     - name: "host_*"
+  #       tags:
+  #           - key: "org_name"
+  #             value: "terminus"
+  #       namespace: "terminus"
+  index_type: "spot"
+  index_prefix: "spot"
+  enable_index_init: ${METRIC_INDEX_INIT_ENABLE:true}
+  index_template_name: "spot_metric_template"
+  index_template_path: "${CONFIG_PATH}/index_template.json"
+  query_index_time_range: true
+  index_reload_interval: "2m"
+  enable_index_clean: ${METRIC_INDEX_CLEAN_ENABLE:true}
+  index_clean_interval: "1h"
+  index_ttl: "${METRIC_INDEX_TTL:192h}"
+  load_index_ttl_from_database: true
+  ttl_reload_interval: "3m"
+  enable_rollover: ${METRIC_INDEX_ROLLOVER_ENABLE:true}
+  rollover_body_file: "${CONFIG_PATH}/index.rollover.json"
+  rollover_interval: "30m"
+  disk_clean:
+    enable_index_clean_by_disk: true
+    check_interval: "5m"
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:85} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:75} # 触发磁盘清理时，尽量清理到的目标容量占比
+    min_indices_store: "10GB" # 磁盘使用率高时，保证 索引最少可以占用的容量
+    min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
+    rollover_body_file: "${CONFIG_PATH}/index.rollover.min.json" # 当没有索引可以删时，先滚动索引，再删除。滚动的条件。
+
+trace-storage:
+  _enable: ${TRACE_ENABLE:true}
+  input:
+    topics: "${TRACE_TOPICS:spot-trace}"
+    group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
+  output:
+    cassandra:
+      writer_config:
+        parallelism: ${CASSANDRA_PARALLELISM:3}
+        batch:
+          size: ${CASSANDRA_BATCH_SIZE:50}
+          timeout: "3s"
+        retry: 2
+      session_config:
+        keyspace:
+          name: "spot_prod"
+          auto: true # 自动创建 keyspace
+          replication:
+            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
+            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+      gc_grace_seconds: 86400
+      ttl: ${TRACE_TTL:168h}
+    kafka:
+      topic: "${METRIC_TOPICS:spot-metrics}"
+      parallelism: ${KAFKA_PARALLELISM:3}
+      batch:
+        size:  ${KAFKA_BATCH_SIZE:50}
+        timeout: "10s"
+
+i18n@metric:
+
+http-server@admin:
+  addr: ":7098"
+pprof:
+
+alert-storage:
+  input:
+    topics: "${TRACE_TOPICS:spot-alert-record}"
+    group: "${TRACE_GROUP_ID:spot-alert-record-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
+
+notify-storage:
+  input:
+    topics: "${TRACE_TOPICS:spot-notify-record}"
+    group: "${TRACE_GROUP_ID:spot-notify-record-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}

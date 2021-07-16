@@ -19,11 +19,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (b *Bundle) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteSceneStepRequest) (*apistructs.AutotestExecuteSceneStepResp, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteScen
 }
 
 func (b *Bundle) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteSceneRequest) (*apistructs.AutotestExecuteSceneResponse, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (b *Bundle) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteSceneReq
 }
 
 func (b *Bundle) CancelDiceAutotestScene(req apistructs.AutotestCancelSceneRequest) (string, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +86,7 @@ func (b *Bundle) CancelDiceAutotestScene(req apistructs.AutotestCancelSceneReque
 }
 
 func (b *Bundle) CreateAutoTestScene(req apistructs.AutotestSceneRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -107,7 +107,7 @@ func (b *Bundle) CreateAutoTestScene(req apistructs.AutotestSceneRequest) (uint6
 }
 
 func (b *Bundle) UpdateAutoTestScene(req apistructs.AutotestSceneSceneUpdateRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -128,7 +128,7 @@ func (b *Bundle) UpdateAutoTestScene(req apistructs.AutotestSceneSceneUpdateRequ
 }
 
 func (b *Bundle) MoveAutoTestScene(req apistructs.AutotestSceneRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -149,7 +149,7 @@ func (b *Bundle) MoveAutoTestScene(req apistructs.AutotestSceneRequest) (uint64,
 }
 
 func (b *Bundle) ListAutoTestScene(req apistructs.AutotestSceneRequest) (uint64, []apistructs.AutoTestScene, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, nil, err
 	}
@@ -170,7 +170,7 @@ func (b *Bundle) ListAutoTestScene(req apistructs.AutotestSceneRequest) (uint64,
 }
 
 func (b *Bundle) GetAutoTestScene(req apistructs.AutotestSceneRequest) (*apistructs.AutoTestScene, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (b *Bundle) GetAutoTestScene(req apistructs.AutotestSceneRequest) (*apistru
 }
 
 func (b *Bundle) DeleteAutoTestScene(req apistructs.AutotestSceneRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func (b *Bundle) DeleteAutoTestScene(req apistructs.AutotestSceneRequest) error 
 }
 
 func (b *Bundle) CopyAutoTestScene(req apistructs.AutotestSceneCopyRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}

@@ -28,11 +28,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
-	"github.com/erda-project/erda/pkg/clientgo"
-	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 const (
@@ -84,7 +84,7 @@ type K8SAdapter interface {
 	SetUpstreamHost(namespace, name, host string) error
 	SetRewritePath(namespace, name, target string) error
 	EnableRegex(namespace, name string) error
-	CheckIngressExist(namespace, name string) bool
+	CheckIngressExist(namespace, name string) (bool, error)
 	UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error
 	UpdateIngressConroller(options map[string]*string, mainSnippet, httpSnippet, serverSnippet *string) error
 }
@@ -272,11 +272,14 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 }
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
-	exist := impl.CheckIngressExist(namespace, name)
+	exist, err := impl.CheckIngressExist(namespace, name)
+	if err != nil {
+		return err
+	}
 	if !exist {
 		return nil
 	}
-	err := impl.client.ExtensionsV1beta1().Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
+	err = impl.client.ExtensionsV1beta1().Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
 	}
@@ -371,7 +374,10 @@ func (impl *K8SAdapterImpl) setOptionAnnotations(ingress *v1beta1.Ingress, optio
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
 	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
 	ingressName := strings.ToLower(name)
-	exist, _ := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return false, errors.WithStack(err)
+	}
 	var ingress *v1beta1.Ingress
 	routeOptions := RouteOptions{}
 	if len(options) > 0 {
@@ -409,7 +415,7 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 		}
 	}
 	ingress.Annotations = exist.Annotations
-	err := impl.setOptionAnnotations(ingress, routeOptions)
+	err = impl.setOptionAnnotations(ingress, routeOptions)
 	if err != nil {
 		return true, err
 	}
@@ -430,7 +436,7 @@ func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error 
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -452,7 +458,7 @@ func (impl *K8SAdapterImpl) SetRewritePath(namespace, name, target string) error
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -474,7 +480,7 @@ func (impl *K8SAdapterImpl) EnableRegex(namespace, name string) error {
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
 	}
 	if ingress.Annotations == nil {
@@ -517,13 +523,16 @@ func (impl *K8SAdapterImpl) replaceSnippet(source, replace string) (string, erro
 	return b.String(), nil
 }
 
-func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) bool {
+func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) (bool, error) {
 	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
-	ingress, _ := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
-	if ingress == nil || ingress.Name == "" {
-		return false
+	ingress, err := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return false, errors.WithStack(err)
 	}
-	return true
+	if ingress == nil || ingress.Name == "" {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error {
@@ -534,7 +543,7 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
 	}
-	if ingress == nil {
+	if ingress == nil || ingress.Name == "" {
 		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
 	}
@@ -627,14 +636,14 @@ func (impl *K8SAdapterImpl) UpdateIngressConroller(options map[string]*string, m
 	return nil
 }
 
-func NewAdapter(addr string) (K8SAdapter, error) {
-	cs, err := clientgo.New(addr)
+func NewAdapter(clusterKey string) (K8SAdapter, error) {
+	client, err := k8sclient.New(clusterKey)
 	if err != nil {
 		return nil, err
 	}
 	pool := util.NewGPool(1000)
 	return &K8SAdapterImpl{
-		client: cs.K8sClient,
+		client: client.ClientSet,
 		pool:   pool,
 	}, nil
 }

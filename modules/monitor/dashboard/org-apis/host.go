@@ -24,8 +24,8 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 type groupHostTypeData struct {
@@ -352,7 +352,7 @@ func wrapGroupHostFilter(filters []*resourceFilter, query *elastic.BoolQuery) []
 			var values []interface{}
 			vf := new(resourceValueFilter)
 			for _, value := range filter.Values {
-				if strings.HasPrefix(value, " >= ") {
+				if strings.HasPrefix(value, ">=") {
 					val := value[2:]
 					from, err := convertFilterPairValue(val)
 					if err != nil {
@@ -360,6 +360,24 @@ func wrapGroupHostFilter(filters []*resourceFilter, query *elastic.BoolQuery) []
 					}
 					pair := new(resourceValuePair)
 					pair.from = from
+					vf.ranges = append(vf.ranges, pair)
+				} else if strings.Contains(value, "-") {
+					vs := strings.Split(value, "-")
+					val := vs[0]
+					from, err := convertFilterPairValue(val)
+					if err != nil {
+						continue
+					}
+					pair := new(resourceValuePair)
+					pair.from = from
+					if len(vs) > 1 {
+						val = vs[1]
+						to, err := convertFilterPairValue(val)
+						if err != nil {
+							continue
+						}
+						pair.to = to
+					}
 					vf.ranges = append(vf.ranges, pair)
 				} else {
 					values = append(values, value)

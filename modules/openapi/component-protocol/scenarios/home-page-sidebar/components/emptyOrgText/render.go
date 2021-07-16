@@ -19,8 +19,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -74,6 +77,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	if err := this.SetCtxBundle(ctx); err != nil {
 		return err
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Type = DefaultType
 	this.Props.Align = "center"
 	var visible bool
@@ -85,18 +89,11 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	this.Props.Value = make([]interface{}, 0)
 	this.Props.Value = append(this.Props.Value, map[string]interface{}{
 		"props": map[string]interface{}{
-			"renderType": "text",
-			"visible":    visible,
-			"value":      "未加入任何组织",
-		},
-	})
-	this.Props.Value = append(this.Props.Value, map[string]interface{}{
-		"props": map[string]interface{}{
 			"renderType": "linkText",
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         "了解如何受邀加入到组织",
+					"text":         i18nLocale.Get(i18n.I18nKeyOrgHowAdded),
 					"operationKey": "toJoinOrgDoc",
 				}},
 			},
@@ -108,7 +105,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 			"visible":    visible,
 			"value": map[string]interface{}{
 				"text": []interface{}{map[string]interface{}{
-					"text":         "浏览公开组织信息",
+					"text":         i18nLocale.Get(i18n.I18nKeyOrgBrosePublic),
 					"operationKey": "toPublicOrgPage",
 				}},
 			},
@@ -118,7 +115,7 @@ func (this *EmptyOrgText) Render(ctx context.Context, c *apistructs.Component, s
 	this.Operations["toJoinOrgDoc"] = Operation{
 		Command: Command{
 			Key:     "goto",
-			Target:  "https://docs.erda.cloud/",
+			Target:  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E7%BB%84%E7%BB%87"),
 			JumpOut: true,
 			Visible: visible,
 		},

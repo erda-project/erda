@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -46,7 +46,7 @@ func New(options ...Option) *Bundle {
 	}
 	if b.hc == nil {
 		b.hc = httpclient.New(
-			httpclient.WithTimeout(time.Second, time.Second*3),
+			httpclient.WithTimeout(time.Second*10, time.Second*60),
 		)
 	}
 	if b.i18nLoader == nil {
@@ -98,6 +98,22 @@ func WithCMDB() Option {
 	}
 }
 
+func WithCoreServices() Option {
+	return func(b *Bundle) {
+		k := discover.EnvCoreServices
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
+func WithDOP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvDOP
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
 // WithDiceHub 根据环境变量配置创建 dicehub 客户端.
 func WithDiceHub() Option {
 	return func(b *Bundle) {
@@ -116,10 +132,10 @@ func WithOrchestrator() Option {
 	}
 }
 
-// WithOps 根据环境变量配置创建 ops 客户端.
-func WithOps() Option {
+// WithCMP 根据环境变量配置创建 cmp 客户端.
+func WithCMP() Option {
 	return func(b *Bundle) {
-		k := discover.EnvOps
+		k := discover.EnvCMP
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
 	}
@@ -210,6 +226,15 @@ func WithTMC() Option {
 	}
 }
 
+// WithMSP 根据环境变量创建 msp 客户端
+func WithMSP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvMSP
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
 func WithPipeline() Option {
 	return func(b *Bundle) {
 		k := discover.EnvPipeline
@@ -238,6 +263,24 @@ func WithKMS() Option {
 func WithAPIM() Option {
 	return func(b *Bundle) {
 		k := discover.EnvAPIM
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
+// WithClusterManager create cluster manager client with CLUSTER_MANAGER
+func WithClusterManager() Option {
+	return func(b *Bundle) {
+		k := discover.EnvClusterManager
+		v := os.Getenv(k)
+		b.urls.Put(k, v)
+	}
+}
+
+// WithECP create ecp client with CLUSTER_MANAGER
+func WithECP() Option {
+	return func(b *Bundle) {
+		k := discover.EnvECP
 		v := os.Getenv(k)
 		b.urls.Put(k, v)
 	}

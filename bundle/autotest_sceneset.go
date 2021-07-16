@@ -18,11 +18,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (b *Bundle) GetSceneSets(req apistructs.SceneSetRequest) ([]apistructs.SceneSet, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (b *Bundle) GetSceneSets(req apistructs.SceneSetRequest) ([]apistructs.Scen
 }
 
 func (b *Bundle) GetSceneSet(req apistructs.SceneSetRequest) (*apistructs.SceneSet, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (b *Bundle) GetSceneSet(req apistructs.SceneSetRequest) (*apistructs.SceneS
 }
 
 func (b *Bundle) CreateSceneSet(req apistructs.SceneSetRequest) (*uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (b *Bundle) CreateSceneSet(req apistructs.SceneSetRequest) (*uint64, error)
 }
 
 func (b *Bundle) UpdateSceneSet(req apistructs.SceneSetRequest) (*apistructs.SceneSet, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (b *Bundle) UpdateSceneSet(req apistructs.SceneSetRequest) (*apistructs.Sce
 }
 
 func (b *Bundle) DeleteSceneSet(req apistructs.SceneSetRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (b *Bundle) DeleteSceneSet(req apistructs.SceneSetRequest) error {
 }
 
 func (b *Bundle) DragSceneSet(req apistructs.SceneSetRequest) error {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}

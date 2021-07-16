@@ -29,10 +29,13 @@ type Sender = string
 
 // Event sender collections
 const (
-	SenderCMDB         Sender = "cmdb"
-	SenderDiceHub      Sender = "dicehub"
-	SenderScheduler    Sender = "scheduler"
-	SenderOrchestrator Sender = "orchestrator"
+	SenderCMDB           Sender = "cmdb"
+	SenderDiceHub        Sender = "dicehub"
+	SenderScheduler      Sender = "scheduler"
+	SenderOrchestrator   Sender = "orchestrator"
+	SenderCoreServices   Sender = "coreServices"
+	SenderClusterManager Sender = "clusterManager"
+	SenderDOP            Sender = "dop"
 )
 
 // Event types
@@ -92,6 +95,9 @@ func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string,
 		"type":     "markdown",
 		"params":   params,
 		"orgID":    int64(orgid),
+	}
+	if _, ok := params["mboxDeduplicateID"]; ok {
+		request["deduplicateId"] = params["mboxDeduplicateID"]
 	}
 	eventBoxRequest := &apistructs.EventBoxRequest{
 		Sender: "bundle",

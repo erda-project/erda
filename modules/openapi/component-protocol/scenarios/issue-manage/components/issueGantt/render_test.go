@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/i18n"
-	"github.com/erda-project/erda/pkg/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentProtocolRequest, err error) {
@@ -34,7 +34,7 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithCMDB(),
+		bundle.WithCoreServices(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

@@ -19,11 +19,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (b *Bundle) ListAutoTestSceneOutput(req apistructs.AutotestSceneRequest) ([]apistructs.AutoTestSceneOutput, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (b *Bundle) ListAutoTestSceneOutput(req apistructs.AutotestSceneRequest) ([
 }
 
 func (b *Bundle) ListAutoTestStepOutput(req apistructs.AutotestListStepOutPutRequest) (map[string]string, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (b *Bundle) ListAutoTestStepOutput(req apistructs.AutotestListStepOutPutReq
 }
 
 func (b *Bundle) UpdateAutoTestSceneOutput(req apistructs.AutotestSceneOutputUpdateRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}
@@ -86,7 +86,7 @@ func (b *Bundle) UpdateAutoTestSceneOutput(req apistructs.AutotestSceneOutputUpd
 }
 
 func (b *Bundle) CreateAutoTestSceneOutput(req apistructs.AutotestSceneRequest) (uint64, error) {
-	host, err := b.urls.QA()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return 0, err
 	}

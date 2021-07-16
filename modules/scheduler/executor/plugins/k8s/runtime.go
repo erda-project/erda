@@ -82,33 +82,28 @@ func (k *Kubernetes) destroyRuntime(ns string) error {
 
 func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.ServiceGroup) error {
 	for _, service := range sg.Services {
-		err := k.deleteRuntimeServiceWithProjectNamespace(service)
+		err := k.deleteProjectService(&service)
 		if err != nil {
-			return fmt.Errorf("delete service %s error: %v", service.Env[ProjectNamespaceServiceNameNameKey], err)
-		}
-
-		originServiceName := service.Name
-		if sg.ProjectNamespace != "" {
-			service.Name = service.Env[ProjectNamespaceServiceNameNameKey]
+			return fmt.Errorf("delete service %s error: %v", service.ProjectServiceName, err)
 		}
 
 		switch service.WorkLoad {
 		case ServicePerNode:
-			err = k.deleteDaemonSet(ns, service.Name)
+			err = k.deleteDaemonSet(ns, service.ProjectServiceName)
 		default:
-			err = k.deleteDeployment(ns, service.Name)
+			err = k.deleteDeployment(ns, service.ProjectServiceName)
 		}
-		if err != nil {
-			return fmt.Errorf("delete resource %s, %s error: %v", service.WorkLoad, service.Name, err)
+		if err != nil && !util.IsNotFound(err) {
+			return fmt.Errorf("delete resource %s, %s error: %v", service.WorkLoad, service.ProjectServiceName, err)
 		}
 
 		labelSelector := map[string]string{
-			"app": originServiceName,
+			"app": service.Name,
 		}
 
 		deploys, err := k.deploy.List(ns, labelSelector)
 		if err != nil {
-			return fmt.Errorf("list pod resource error: %v in the namespace %s", err, service.Name)
+			return fmt.Errorf("list pod resource error: %v in the namespace %s", err, ns)
 		}
 
 		remainCount := 0
@@ -119,7 +114,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		}
 
 		if remainCount < 1 {
-			err = k.service.Delete(ns, originServiceName)
+			err = k.service.Delete(ns, service.Name)
 			if err != nil {
 				return fmt.Errorf("delete service %s error: %v", service.Name, err)
 			}
@@ -140,7 +135,9 @@ func (k *Kubernetes) updateRuntime(sg *apistructs.ServiceGroup) error {
 		ns = sg.ProjectNamespace
 	}
 	if err := k.UpdateNamespace(ns, sg); err != nil {
-		return err
+		errMsg := fmt.Sprintf("update namespace err: %v", err)
+		logrus.Error(errMsg)
+		return fmt.Errorf(errMsg)
 	}
 	// Stateful apps don’t support updates yet
 	if IsGroupStateful(sg) {
@@ -315,16 +312,28 @@ func (k *Kubernetes) inspectStateless(sg *apistructs.ServiceGroup) (*apistructs.
 	var ns = MakeNamespace(sg)
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
-		k.setProjectNamespaceEnvs(sg)
+		k.setProjectServiceName(sg)
 	}
+	services, err := k.service.List(ns, map[string]string{
+		LabelServiceGroupID: sg.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list service in ns %s error %v", ns, err)
+	}
+	serviceMap := make(map[string]string, len(services.Items))
+
+	for _, svc := range services.Items {
+		serviceMap[svc.Name] = svc.Spec.ClusterIP
+	}
+
 	for i, svc := range sg.Services {
 		serviceName := getServiceName(&svc)
 		if len(svc.Ports) == 0 {
 			continue
 		}
-		clusterIP, err := k.getClusterIP(ns, serviceName)
-		if err != nil {
-			logrus.Errorf("failed to get service cluster ip, namespace: %s, name: %s, (%v)", ns, svc.Name, err)
+		clusterIP, ok := serviceMap[serviceName]
+		if ok {
+			logrus.Errorf("failed to get service cluster ip, namespace: %s, name: %s, not found", ns, svc.Name)
 		}
 		sg.Services[i].ProxyIp = clusterIP
 		sg.Services[i].Vip = strutil.Join([]string{serviceName, ns, "svc.cluster.local"}, ".")

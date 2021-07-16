@@ -28,9 +28,9 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders"
-	"github.com/erda-project/erda/modules/scheduler/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -51,50 +51,52 @@ func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistruct
 	return k.deploy.Create(deployment)
 }
 
-func (k *Kubernetes) getDeploymentStatus(service *apistructs.Service) (apistructs.StatusDesc, error) {
-	var statusDesc apistructs.StatusDesc
+func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
+	var (
+		statusDesc apistructs.StatusDesc
+	)
 	// in version 1.10.3, the following two apis are equal
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6/status
 	deploymentName := getDeployName(service)
 
-	deployment, err := k.getDeployment(service.Namespace, deploymentName)
-	if err != nil {
-		return statusDesc, err
-	}
-	status := deployment.Status
-	//You may get this status when you just start creating
-	if len(status.Conditions) == 0 {
+	if deployment, ok := deployments[deploymentName]; ok {
+
+		status := deployment.Status
+		//You may get this status when you just start creating
+		if len(status.Conditions) == 0 {
+			statusDesc.Status = apistructs.StatusUnknown
+			statusDesc.LastMessage = "cannot get statusDesc condition"
+			return statusDesc, nil
+		}
+
+		for _, c := range status.Conditions {
+			if c.Type == k8sapi.DeploymentReplicaFailure && c.Status == "True" {
+				statusDesc.Status = apistructs.StatusFailing
+				return statusDesc, nil
+			}
+			if c.Type == k8sapi.DeploymentAvailable && c.Status == "False" {
+				statusDesc.Status = apistructs.StatusFailing
+				return statusDesc, nil
+			}
+		}
+
 		statusDesc.Status = apistructs.StatusUnknown
-		statusDesc.LastMessage = "cannot get statusDesc condition"
-		return statusDesc, nil
-	}
 
-	for _, c := range status.Conditions {
-		if c.Type == k8sapi.DeploymentReplicaFailure && c.Status == "True" {
-			statusDesc.Status = apistructs.StatusFailing
-			return statusDesc, nil
-		}
-		if c.Type == k8sapi.DeploymentAvailable && c.Status == "False" {
-			statusDesc.Status = apistructs.StatusFailing
-			return statusDesc, nil
-		}
-	}
-
-	statusDesc.Status = apistructs.StatusUnknown
-
-	if status.Replicas == status.ReadyReplicas &&
-		status.Replicas == status.AvailableReplicas &&
-		status.Replicas == status.UpdatedReplicas {
-		if status.Replicas > 0 {
-			statusDesc.Status = apistructs.StatusReady
-			statusDesc.LastMessage = fmt.Sprintf("deployment(%s) is running", deployment.Name)
-		} else if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
-			statusDesc.Status = apistructs.StatusReady
-		} else {
-			statusDesc.LastMessage = fmt.Sprintf("deployment(%s) replica is 0, been deleting", deployment.Name)
+		if status.Replicas == status.ReadyReplicas &&
+			status.Replicas == status.AvailableReplicas &&
+			status.Replicas == status.UpdatedReplicas {
+			if status.Replicas > 0 {
+				statusDesc.Status = apistructs.StatusReady
+				statusDesc.LastMessage = fmt.Sprintf("deployment(%s) is running", deployment.Name)
+			} else if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
+				statusDesc.Status = apistructs.StatusReady
+			} else {
+				statusDesc.LastMessage = fmt.Sprintf("deployment(%s) replica is 0, been deleting", deployment.Name)
+			}
 		}
 	}
+
 	return statusDesc, nil
 }
 
@@ -117,7 +119,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	serviceName := service.Name
 	if sg.ProjectNamespace != "" {
 		ns = sg.ProjectNamespace
-		serviceName = service.Env[ProjectNamespaceServiceNameNameKey]
+		serviceName = service.ProjectServiceName
 	}
 
 	// User-injected environment variables
@@ -133,23 +135,27 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 	addEnv := func(svc *apistructs.Service, envs *[]apiv1.EnvVar, useClusterIP bool) error {
 		var err error
 		// use SHORT dns, service's name is equal to SHORT dns
-		host := strings.Join([]string{serviceName, svc.Namespace, DefaultServiceDNSSuffix}, ".")
+		svcName := svc.Name
+		if svc.ProjectServiceName != "" {
+			svcName = svc.ProjectServiceName
+		}
+		host := strings.Join([]string{svcName, svc.Namespace, DefaultServiceDNSSuffix}, ".")
 		if useClusterIP {
-			host, err = k.getClusterIP(svc.Namespace, serviceName)
+			host, err = k.getClusterIP(svc.Namespace, svc.Name)
 			if err != nil {
 				return err
 			}
 		}
 		// add {serviceName}_HOST
 		*envs = append(*envs, apiv1.EnvVar{
-			Name:  makeEnvVariableName(serviceName) + "_HOST",
+			Name:  makeEnvVariableName(svc.Name) + "_HOST",
 			Value: host,
 		})
 
 		// {serviceName}_PORT Refers to the first port
 		if len(svc.Ports) > 0 {
 			*envs = append(*envs, apiv1.EnvVar{
-				Name:  makeEnvVariableName(serviceName) + "_PORT",
+				Name:  makeEnvVariableName(svc.Name) + "_PORT",
 				Value: strconv.Itoa(svc.Ports[0].Port),
 			})
 		}
@@ -157,7 +163,7 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		//If there are multiple ports, use them in sequence: {serviceName}_PORT0,{serviceName}_PORT1,...
 		for i, port := range svc.Ports {
 			*envs = append(*envs, apiv1.EnvVar{
-				Name:  makeEnvVariableName(serviceName) + "_PORT" + strconv.Itoa(i),
+				Name:  makeEnvVariableName(svc.Name) + "_PORT" + strconv.Itoa(i),
 				Value: strconv.Itoa(port.Port),
 			})
 		}
@@ -411,43 +417,17 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	// inject hosts
 	deployment.Spec.Template.Spec.HostAliases = ConvertToHostAlias(service.Hosts)
 
-	cpu := fmt.Sprintf("%.fm", service.Resources.Cpu*1000)
-	memory := fmt.Sprintf("%.fMi", service.Resources.Mem)
-
 	container := apiv1.Container{
 		// TODO, container name e.g. redis-1528180634
 		Name:  service.Name,
 		Image: service.Image,
-		Resources: apiv1.ResourceRequirements{
-			Requests: apiv1.ResourceList{
-				apiv1.ResourceCPU:    resource.MustParse(cpu),
-				apiv1.ResourceMemory: resource.MustParse(memory),
-			},
-		},
 	}
 
-	//Set the over-score ratio according to the environment
-	cpuSubscribeRatio := k.cpuSubscribeRatio
-	memSubscribeRatio := k.memSubscribeRatio
-	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
-	case "DEV":
-		cpuSubscribeRatio = k.devCpuSubscribeRatio
-		memSubscribeRatio = k.devMemSubscribeRatio
-	case "TEST":
-		cpuSubscribeRatio = k.testCpuSubscribeRatio
-		memSubscribeRatio = k.testMemSubscribeRatio
-	case "STAGING":
-		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
-		memSubscribeRatio = k.stagingMemSubscribeRatio
-	}
-
-	// Set fine-grained CPU based on the oversold ratio
-	if err := k.SetFineGrainedCPU(&container, sg.Extra, cpuSubscribeRatio); err != nil {
-		return nil, err
-	}
-
-	if err := k.SetOverCommitMem(&container, memSubscribeRatio); err != nil {
-		return nil, err
+	err := k.setContainerResources(*service, &container)
+	if err != nil {
+		errMsg := fmt.Sprintf("set container resource err: %v", err)
+		logrus.Errorf(errMsg)
+		return nil, fmt.Errorf(errMsg)
 	}
 
 	// Generate sidecars container configuration
@@ -474,7 +454,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, sg *apistructs.S
 	deployment.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["app"] = service.Name
 
-	setDeploymentLabels(service, deployment)
+	setDeploymentLabels(service, deployment, sg.ID)
 
 	if deployment.Spec.Template.Annotations == nil {
 		deployment.Spec.Template.Annotations = make(map[string]string)
@@ -761,17 +741,17 @@ func (k *Kubernetes) AddSpotEmptyDir(podSpec *apiv1.PodSpec) {
 }
 
 func getDeployName(service *apistructs.Service) string {
-	if service.Env[ProjectNamespace] == "true" {
-		return service.Env[ProjectNamespaceServiceNameNameKey]
+	if service.ProjectServiceName != "" {
+		return service.ProjectServiceName
 	}
 	return service.Name
 }
 
-func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment) {
-	if v, ok := service.Env[ProjectNamespace]; ok && v == "true" {
-		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-		deployment.Spec.Template.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
-		deployment.Labels[LabelServiceGroupID] = service.Env[KeyServiceGroupID]
+func setDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment, sgID string) {
+	if service.ProjectServiceName != "" {
+		deployment.Spec.Selector.MatchLabels[LabelServiceGroupID] = sgID
+		deployment.Spec.Template.Labels[LabelServiceGroupID] = sgID
+		deployment.Labels[LabelServiceGroupID] = sgID
 	}
 }
 
@@ -788,4 +768,89 @@ func ConvertToHostAlias(hosts []string) []apiv1.HostAlias {
 		})
 	}
 	return r
+}
+
+func (k *Kubernetes) scaleDeployment(sg *apistructs.ServiceGroup) error {
+	// only support scale the first one service
+	ns := sg.ProjectNamespace
+	if ns == "" {
+		ns = MakeNamespace(sg)
+	}
+
+	scalingService := sg.Services[0]
+	deploymentName := getDeployName(&scalingService)
+	deploy, err := k.getDeployment(ns, deploymentName)
+	if err != nil {
+		getErr := fmt.Errorf("failed to get the deployment, err is: %s", err.Error())
+		return getErr
+	}
+
+	deploy.Spec.Replicas = func(i int32) *int32 { return &i }(int32(scalingService.Scale))
+
+	// only support one container on Erda currently
+	container := deploy.Spec.Template.Spec.Containers[0]
+
+	err = k.setContainerResources(scalingService, &container)
+	if err != nil {
+		setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
+		return setContainerErr
+	}
+
+	deploy.Spec.Template.Spec.Containers[0] = container
+	err = k.deploy.Put(deploy)
+	if err != nil {
+		updateErr := fmt.Errorf("failed to update the deployment, err is: %s", err.Error())
+		return updateErr
+	}
+	return nil
+}
+
+func (k *Kubernetes) setContainerResources(service apistructs.Service, container *apiv1.Container) error {
+	if service.Resources.Cpu < MIN_CPU_SIZE {
+		return errors.Errorf("invalid cpu, value: %v, (which is lower than min cpu(%v))",
+			service.Resources.Cpu, MIN_CPU_SIZE)
+	}
+
+	//Set the over-score ratio according to the environment
+	cpuSubscribeRatio := k.cpuSubscribeRatio
+	memSubscribeRatio := k.memSubscribeRatio
+	switch strutil.ToUpper(service.Env["DICE_WORKSPACE"]) {
+	case "DEV":
+		cpuSubscribeRatio = k.devCpuSubscribeRatio
+		memSubscribeRatio = k.devMemSubscribeRatio
+	case "TEST":
+		cpuSubscribeRatio = k.testCpuSubscribeRatio
+		memSubscribeRatio = k.testMemSubscribeRatio
+	case "STAGING":
+		cpuSubscribeRatio = k.stagingCpuSubscribeRatio
+		memSubscribeRatio = k.stagingMemSubscribeRatio
+	}
+	if cpuSubscribeRatio < 1.0 {
+		cpuSubscribeRatio = 1.0
+	}
+	if memSubscribeRatio < 1.0 {
+		memSubscribeRatio = 1.0
+	}
+	requestCPU := "10m"
+	if service.Resources.Cpu*1000/cpuSubscribeRatio > 10.0 {
+		requestCPU = fmt.Sprintf("%dm", int(service.Resources.Cpu*1000/cpuSubscribeRatio))
+	}
+
+	requestMem := fmt.Sprintf("%dMi", int(service.Resources.Mem/memSubscribeRatio))
+
+	cpu := fmt.Sprintf("%dm", int(service.Resources.Cpu*1000))
+	memory := fmt.Sprintf("%dMi", int(service.Resources.Mem))
+
+	container.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(requestCPU),
+			apiv1.ResourceMemory: resource.MustParse(requestMem),
+		},
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse(cpu),
+			apiv1.ResourceMemory: resource.MustParse(memory),
+		},
+	}
+
+	return nil
 }

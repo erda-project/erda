@@ -16,7 +16,7 @@ package dbclient
 import (
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda/pkg/dbengine"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
 // PublishItemBlackList 发布内容黑名单

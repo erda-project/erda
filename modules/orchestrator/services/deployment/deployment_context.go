@@ -39,8 +39,8 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
-	"github.com/erda-project/erda/pkg/encryption"
-	"github.com/erda-project/erda/pkg/httputil"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/sexp"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -152,6 +152,36 @@ func (fsm *DeployFSMContext) timeout() (bool, error) {
 		return true, fsm.failDeploy(errors.Errorf("deployment timeout (>1hr)"))
 	}
 	return false, nil
+}
+
+// precheck precheck dice.yml or other thing
+func (fsm *DeployFSMContext) precheck() error {
+	// check service name
+	var invalidSvcName []string
+	for name := range fsm.Spec.Services {
+		if !utils.IsValidK8sSvcName(name) {
+			invalidSvcName = append(invalidSvcName, name)
+		}
+	}
+	if len(invalidSvcName) != 0 {
+		svcNames := strings.Join(invalidSvcName, ",")
+		fsm.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
+			ErrorLog: apistructs.ErrorLog{
+				Level:          apistructs.ErrorLevel,
+				ResourceType:   apistructs.RuntimeError,
+				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
+				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
+				HumanLog:       fmt.Sprintf("不合法的服务名, %s", svcNames),
+				PrimevalLog: `The service name should conform to the following specifications:
+1. contain at most 63 characters 2. contain only lowercase alphanumeric characters or '-'
+3. start with an alphanumeric character 4. end with an alphanumeric character`,
+				DedupID: fmt.Sprintf("orch-%d", fsm.Runtime.ID),
+			},
+		})
+		return errors.Errorf("invalid service name: %s", svcNames)
+	}
+
+	return nil
 }
 
 func (fsm *DeployFSMContext) continueWaiting() error {
@@ -292,12 +322,10 @@ func (fsm *DeployFSMContext) continuePhaseAddon() error {
 
 	logrus.Info("start waiting for addon deploying")
 	status, err := fsm.addon.RuntimeAddonStatus(strconv.FormatUint(fsm.Deployment.RuntimeId, 10))
-	if err != nil {
-		return fsm.failDeploy(err)
-	}
 	switch status {
 	case 0:
-		return fsm.failDeploy(errors.Errorf("received addon request failed, status is 0(fail)"))
+		// the error will only occur when the status is 0
+		return fsm.failDeploy(errors.Errorf("received addon request failed, status is 0(fail), errMsg: %v", err))
 	case 1:
 		// success
 		fsm.d.Log(`addon is ready, now waiting for data migration...`)
@@ -1487,9 +1515,15 @@ func convertBinds(serviceName, volumePrefixDir string, volumes diceyml.Volumes) 
 func (fsm *DeployFSMContext) PutHepaService() error {
 	// 部署runtime之后，orchestrator需要将服务域名信息通过此接口提交给hepa
 	logrus.Info("start request hepa service.")
-	var sg *apistructs.ServiceGroup
+	var (
+		sg  *apistructs.ServiceGroup
+		err error
+	)
 	if fsm.Runtime.ScheduleName.Name != "" {
-		sg, _ = fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+		sg, err = fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+		if err != nil {
+			return err
+		}
 	}
 	if sg != nil {
 		logrus.Info("start request hepa service, sg is not null.")

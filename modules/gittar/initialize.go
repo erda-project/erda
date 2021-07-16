@@ -64,8 +64,8 @@ func Initialize() error {
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
 	diceBundle := bundle.New(
-		bundle.WithCMDB(),
 		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 	)
 
 	dbClient, err := models.OpenDB()
@@ -89,6 +89,12 @@ func Initialize() error {
 		systemGroup.POST("/migration/new_auth", webcontext.WrapHandler(api.MigrationNewAuth))
 	}
 
+	apiGroup := e.Group("/_api")
+	{
+		// implements the health check
+		apiGroup.GET("/health", webcontext.WrapHandler(api.Health))
+	}
+
 	debugGroup := e.Group("/_debug")
 	profiling.WrapGroup(debugGroup)
 
@@ -100,6 +106,9 @@ func Initialize() error {
 
 	gitApiGroupV2 := e.Group("/wb/:project/:app", webcontext.WrapMiddlewareHandler(auth.AuthenticateV2))
 	addApiRoutes(gitApiGroupV2)
+
+	gitApiGroupV3 := e.Group("/:org/dop/:project/:app", webcontext.WrapMiddlewareHandler(auth.AuthenticateV3))
+	addApiRoutes(gitApiGroupV3)
 
 	logger := middleware.Logger()
 	e.Use(logger)

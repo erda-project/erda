@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
 )
 
 const (
@@ -74,6 +75,7 @@ type Meta struct {
 type State struct {
 	//OrgID string `json:"orgID"`
 	Value string `json:"value"`
+	Label string `json:"label"`
 }
 
 type Operation struct {
@@ -118,11 +120,13 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 	if orgDTO == nil {
 		return fmt.Errorf("can not get org")
 	}
+	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.State.Value = strconv.FormatInt(int64(orgDTO.ID), 10)
+	this.State.Label = orgDTO.DisplayName
 	this.Props.QuickSelect = []interface{}{
 		map[string]interface{}{
 			"value": "orgList",
-			"label": "浏览公开组织",
+			"label": i18nLocale.Get(i18n.I18nKeyOrgBrowse),
 			"operations": map[string]interface{}{
 				"click": map[string]interface{}{
 					"key":    "click",
@@ -141,9 +145,9 @@ func (this *OrgSwitch) Render(ctx context.Context, c *apistructs.Component, scen
 }
 
 func RenItem(org apistructs.OrgDTO) MenuItem {
-	logo := "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQY0vUTJwftJ8WqXoLiLeB--2MJkpZLpYOA&usqp=CAU"
+	logo := "//terminus-paas.oss-cn-hangzhou.aliyuncs.com/paas-doc/2021/06/03/9b1a8af7-0111-4c14-9158-9804bb3ebafc.png"
 	if org.Logo != "" {
-		logo = fmt.Sprintf("https:%s", org.Logo)
+		logo = org.Logo
 	}
 	item := MenuItem{
 		Label:        org.DisplayName,
@@ -176,7 +180,7 @@ func (this *OrgSwitch) RenderList() error {
 		IdentityInfo: identity,
 		PageSize:     DefaultPageSize,
 	}
-	pagingOrgDTO, err := this.ctxBdl.Bdl.ListOrgs(req)
+	pagingOrgDTO, err := this.ctxBdl.Bdl.ListDopOrgs(req)
 	if err != nil {
 		return err
 	}

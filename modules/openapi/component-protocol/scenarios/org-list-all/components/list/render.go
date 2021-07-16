@@ -114,14 +114,14 @@ func (i *ComponentList) RenderPublicOrgs() error {
 		Q:        i.State.SearchEntry,
 	}
 	req.UserID = i.CtxBdl.Identity.UserID
-	orgs, err := i.CtxBdl.Bdl.ListPublicOrgs(&req)
+	orgs, err := i.CtxBdl.Bdl.ListDopPublicOrgs(&req)
 	if err != nil {
 		return err
 	}
 
 	req = apistructs.OrgSearchRequest{}
 	req.UserID = i.CtxBdl.Identity.UserID
-	myOrgs, err := i.CtxBdl.Bdl.ListOrgs(&req)
+	myOrgs, err := i.CtxBdl.Bdl.ListDopOrgs(&req)
 	if err != nil {
 		return err
 	}
@@ -149,28 +149,31 @@ func (i *ComponentList) RenderPublicOrgs() error {
 			item.PrefixImg = org.Logo
 		}
 
+		command := Command{
+			Key:     "goto",
+			Target:  "dopPublicProjects",
+			JumpOut: false,
+			State: CommandState{
+				Params{
+					OrgName: org.Name,
+				},
+			},
+		}
+
 		if _, ok := orgMap[org.ID]; ok {
 			item.ExtraInfos = append(item.ExtraInfos, ExtraInfo{
 				Icon: "user",
 				Text: "已加入",
 			})
+			command.Target = "dopRoot"
 		}
 
 		item.Operations = map[string]interface{}{
 			"click": ClickOperation{
-				Key:    "click",
-				Show:   false,
-				Reload: false,
-				Command: Command{
-					Key:     "goto",
-					Target:  "workBenchRoot",
-					JumpOut: false,
-					State: CommandState{
-						Params{
-							OrgName: org.Name,
-						},
-					},
-				},
+				Key:     "click",
+				Show:    false,
+				Reload:  false,
+				Command: command,
 			},
 		}
 

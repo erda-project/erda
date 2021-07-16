@@ -20,10 +20,10 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-infra/modcom/api"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
-	"github.com/erda-project/erda/pkg/uuid"
+	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (p *provider) createTemplate(query struct {

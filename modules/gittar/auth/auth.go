@@ -117,7 +117,7 @@ func AuthenticateByApp(c *webcontext.Context) {
 func AuthenticateV2(c *webcontext.Context) {
 	host := c.EchoContext.Request().Host
 	// 优先域名 第二优先读取ORG-ID头
-	dto, err := c.Bundle.GetOrgByDomain(host, "x")
+	dto, err := c.Bundle.GetDopOrgByDomain(host, "x")
 	var orgID int64
 	if err == nil {
 		orgID = int64(dto.ID)
@@ -153,6 +153,30 @@ func AuthenticateV2(c *webcontext.Context) {
 		}
 		redirectUrlPrefix := c.EchoContext.Scheme() + "://" + c.Host()
 		c.EchoContext.Redirect(301, redirectUrlPrefix+renderTemplate(conf.RepoPathTemplate(), params))
+		return
+	}
+
+	repoName := path.Join(strconv.FormatInt(orgID, 10), project, app)
+	doAuth(c, repo, repoName)
+}
+
+func AuthenticateV3(c *webcontext.Context) {
+	org := c.Param("org")
+	project := c.Param("project")
+	app := strings.TrimSuffix(c.Param("app"), ".git")
+
+	orgID, err := getOrgIDV3(c, org)
+	if err != nil {
+		c.EchoContext.String(404, "org not found")
+		return
+	}
+	repo, err := c.Service.GetRepoByNames(orgID, project, app)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.AbortWithStatus(http.StatusNotFound, errors.New("repo not found"))
+			return
+		}
+		c.EchoContext.String(500, err.Error())
 		return
 	}
 
@@ -424,4 +448,18 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository.IsExternal = repo.IsExternal
 
 	return gitRepository, nil
+}
+
+// getOrgIDV3 get orgID v3
+func getOrgIDV3(c *webcontext.Context, orgName string) (int64, error) {
+	orgDto, err := c.Bundle.GetOrg(orgName)
+	if err == nil {
+		return int64(orgDto.ID), nil
+	}
+	orgIdStr := c.HttpRequest().Header.Get("Org-ID")
+	orgID, err := strconv.ParseInt(orgIdStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return orgID, nil
 }

@@ -17,8 +17,13 @@ hierarchy:
       - orgSwitch
       - joinedBrief
       - emptyOrganization
+    createOrgBtnWrapper:
+      - createOrgBtn
     emptyOrganization:
+      - emptyOrgTitle
+      - createOrgBtnWrapper
       - emptyOrgText
+      - orgFormModal
     myProject:
       - myProjectTitle
       - myProjectFilter
@@ -29,6 +34,7 @@ hierarchy:
       - projectTipWithOrg
     projectTipWithOrg:
       - createProjectTip
+      - createProjectTipWithoutOrg
     myApplication:
       - myApplicationTitle
       - myApplicationFilter
@@ -45,6 +51,14 @@ components:
       fullHeight: true
   myOrganization:
     type: Container
+  createOrgBtnWrapper:
+    type: RowContainer
+  createOrgBtn:
+    type: Button
+  orgFormModal:
+    type: FormModal
+  emptyOrgTitle:
+    type: TextGroup
   emptyOrganization:
     type: Container
   emptyOrgText:
@@ -63,6 +77,8 @@ components:
     type: Container
   createProjectTip:
     type: Text
+  createProjectTipWithoutOrg:
+    type: Text
   myInfo:
     type: Container
     props:
@@ -80,12 +96,6 @@ components:
     type: Container
   myApplicationTitle:
     type: Title
-    props:
-      visible: true
-      title: "应用"
-      level: 1
-      noMarginBottom: true
-      showDivider: true
   myApplicationFilter:
     type: ContractiveFilter
   myApplicationList:
@@ -114,8 +124,13 @@ rendering:
     - name: myOrganization
     - name: myInfo
     - name: orgSwitch
+    - name: createOrgBtnWrapper
+    - name: createOrgBtn
+    - name: orgFormModal
     - name: emptyOrganization
+    - name: emptyOrgTitle
     - name: emptyOrgText
+    - name: createProjectTipWithoutOrg
     - name: myProject
     - name: myProjectTitle
       state:
@@ -179,77 +194,5 @@ rendering:
           value: "{{ myApplicationList.prosNum }}"
         - name: "appsNum"
           value: "{{ myApplicationList.appsNum }}"
-#    - name: orgSwitch
-#    - name: emptyImage
-#      state:
-#        - name: "orgID"
-#          value: "{{ orgSwitch.orgID }}"
-#    - name: emptyOrgText
-#      state:
-#        - name: "orgID"
-#          value: "{{ emptyImage.orgID }}"
-#    - name: orgImage
-#      state:
-#        - name: "orgID"
-#          value: "{{ orgSwitch.orgID }}"
-#        - name: "prefixImage"
-#          value: "{{ emptyOrgText.prefixImage }}"
-#    - name: brief
-#      state:
-#        - name: "orgID"
-#          value: "{{ orgImage.orgID }}"
-#    - name: emptyProject
-#      state:
-#        - name: "joinedOrg"
-#          value: "{{ brief.joinedOrg }}"
-#        - name: "havePros"
-#          value: "{{ brief.havePros }}"
-#        - name: "haveApps"
-#          value: "{{ brief.haveApps }}"
-#        - name: "orgID"
-#          value: "{{ brief.orgID }}"
-#    - name: myProjectFilter
-#      state:
-#        - name: "havePros"
-#          value: "{{ emptyProject.havePros }}"
-#        - name: "orgID"
-#          value: "{{ emptyProject.orgID }}"
-#        - name: "haveApps"
-#          value: "{{ emptyProject.haveApps }}"
-#    - name: myProjectList
-#      state:
-#        - name: "projectName"
-#          value: "{{ myProjectFilter.projectName }}"
-#        - name: "orgID"
-#          value: "{{ myProjectFilter.orgID }}"
-#        - name: "havePros"
-#          value: "{{ myProjectFilter.havePros }}"
-#        - name: "haveApps"
-#          value: "{{ myProjectFilter.haveApps }}"
-#    - name: moreProject
-#      state:
-#        - name: "orgID"
-#          value: "{{ myProjectList.orgID }}"
-#        - name: "havePros"
-#          value: "{{ myProjectList.havePros }}"
-#        - name: "haveApps"
-#          value: "{{ myProjectList.haveApps }}"
-#    - name: myApplicationFilter
-#      state:
-#        - name: "orgID"
-#          value: "{{ moreProject.orgID }}"
-#        - name: "haveApps"
-#          value: "{{ moreProject.haveApps }}"
-#    - name: myApplicationList
-#      state:
-#        - name: "orgID"
-#          value: "{{ myApplicationFilter.orgID }}"
-#        - name: "appName"
-#          value: "{{ myApplicationFilter.appName }}"
-#        - name: "haveApps"
-#          value: "{{ myApplicationFilter.haveApps }}"
-#    - name: moreApplication
-#      state:
-#        - name: "haveApps"
-#          value: "{{ myApplicationList.haveApps }}"
+    - name: myApplicationTitle
 

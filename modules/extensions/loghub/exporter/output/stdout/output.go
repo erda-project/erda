@@ -22,18 +22,6 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub/exporter"
 )
 
-type define struct{}
-
-func (d *define) Service() []string      { return []string{"logs-exporter-stdout"} }
-func (d *define) Dependencies() []string { return []string{"logs-exporter-base"} }
-func (d *define) Summary() string        { return "logs export to stdout" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type provider struct {
 	exp exporter.Interface
 }
@@ -59,5 +47,12 @@ func (p *provider) Write(key string, data []byte) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-exporter-stdout", &define{})
+	servicehub.Register("logs-exporter-stdout", &servicehub.Spec{
+		Services:     []string{"logs-exporter-stdout"},
+		Dependencies: []string{"logs-exporter-base"},
+		Description:  "logs export to stdout",
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

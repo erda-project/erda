@@ -32,9 +32,9 @@ import (
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/httpclient"
-	"github.com/erda-project/erda/pkg/httpserver"
-	"github.com/erda-project/erda/pkg/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -52,7 +52,7 @@ var UC_USER_UPDATE_USERINFO = apis.ApiSpec{
 	Doc:          "summary: 更新用户信息",
 }
 
-var bdl = bundle.New(bundle.WithCMDB())
+var bdl = bundle.New(bundle.WithCoreServices())
 
 func updateUserInfo(w http.ResponseWriter, r *http.Request) {
 	operatorID, err := user.GetUserID(r)

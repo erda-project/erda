@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Terminus, Inc.
-
+//
 // This program is free software: you can use, redistribute, and/or modify
 // it under the terms of the GNU Affero General Public License, version 3
-// or later (AGPL), as published by the Free Software Foundation.
-
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.
-
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -36,17 +36,17 @@ type (
 	}
 
 	Monitor struct {
-		Id          string `json:"id"`
-		MonitorId   string `json:"monitor_id"`
-		TerminusKey string `json:"terminus_key"`
-		Workspace   string `json:"workspace"`
-		ProjectId   string `json:"project_id"`
-		ProjectName string `json:"project_name"`
-		OrgId       string `json:"org_id"`
-		OrgName     string `json:"org_name"`
-		ClusterName string `json:"cluster_name"`
-		Created     string `json:"created"`
-		Updated     string `json:"updated"`
+		Id          string    `gorm:"column:id;primary_key"`
+		MonitorId   string    `gorm:"column:monitor_id"`
+		TerminusKey string    `gorm:"column:terminus_key"`
+		Workspace   string    `gorm:"column:workspace"`
+		ProjectId   string    `gorm:"column:project_id"`
+		ProjectName string    `gorm:"column:project_name"`
+		OrgId       string    `gorm:"column:org_id"`
+		OrgName     string    `gorm:"column:org_name"`
+		ClusterName string    `gorm:"column:cluster_name"`
+		Created     time.Time `gorm:"column:created;default:CURRENT_TIMESTAMP"`
+		Updated     time.Time `gorm:"column:updated;default:CURRENT_TIMESTAMP"`
 	}
 )
 

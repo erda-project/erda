@@ -28,8 +28,14 @@ jobs:
       image: letmein7788/letmein:golangci-lint
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Go generate files
         run: make prepare
+      - name: erda-cli
+        run: make cli
+      - name: Erda MySQL Lint
+        run: ./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
       - name: Set up Go mod
         run: go mod tidy
       - name: Run Lint
@@ -53,5 +59,5 @@ jobs:
         run: make GO_BUILD_OPTIONS="-tags=musl"
       - name: Run Test
         run: |
-          go test -tags=musl -work -cpu=2 -timeout 30s -race -coverprofile=coverage.txt -covermode=atomic ./...
+          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
           curl -s https://codecov.io/bash | bash

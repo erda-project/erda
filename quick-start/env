@@ -2,8 +2,8 @@ EVENTBOX_ADDR=eventbox:9528
 DEBUG=true
 SCHEDULER_ADDR=scheduler:9091
 UC_ADDR=uc:8080
-UC_PUBLIC_URL=http://uc.dice.local:8080
-UC_PUBLIC_ADDR=uc.dice.local:8080
+UC_PUBLIC_URL=http://uc.erda.local:8080
+UC_PUBLIC_ADDR=uc.erda.local:8080
 DICE_ON_DICE=xxxx
 UI_ADDR=ui:80
 QA_ADDR=qa:3033
@@ -38,16 +38,16 @@ GITTAR_PUBLIC_URL=http://host.docker.internal:5566
 NEXUS_PUBLIC_URL=http://nexus-sys.dev.terminus.io
 NEXUS_PASSWORD=e9FCb8h5cz1960rHLSPGq7H5k85eE9
 NEXUS_USERNAME=admin
-UI_PUBLIC_ADDR=one.dice.local:8000
-UI_PUBLIC_URL=http://one.dice.local:8000
-DICE_LOGIN_CALLBACK=http://one.dice.local:9529/logincb
+UI_PUBLIC_ADDR=one.erda.local
+UI_PUBLIC_URL=http://one.erda.local
+DICE_LOGIN_CALLBACK=http://one.erda.local:9529/logincb
 UC_CLIENT_ID=dice
 UC_CLIENT_SECRET=secret
 COLLECTOR_PUBLIC_URL=https://collector.dev.terminus.io
-DICE_ROOT_DOMAIN=dice.local
-COOKIE_DOMAIN=.dice.local
-CSRF_COOKIE_DOMAIN=.dice.local
-REDIRECT_URL_WHITE_LIST=http://uc.dice.local:8080/oauth/authorize
+DICE_ROOT_DOMAIN=erda.local
+COOKIE_DOMAIN=.erda.local
+CSRF_COOKIE_DOMAIN=.erda.local
+REDIRECT_URL_WHITE_LIST=http://uc.erda.local:8080/oauth/authorize
 
 # k8s
 KUBERNETES_VERSION=v1.16.4
@@ -59,7 +59,7 @@ MASTER_ADDR=10.0.7.5:6443,10.0.7.6:6443,10.0.7.7:6443
 MYSQL_HOST=mysql
 MYSQL_PORT=3306
 MYSQL_PASSWORD=123456
-MYSQL_DATABASE=dice
+MYSQL_DATABASE=erda
 MYSQL_USERNAME=root
 
 # redis
@@ -75,7 +75,7 @@ ES_SECURITY_USERNAME=undefined
 ES_URL=http://elasticsearch:9200
 ES_SECURITY_ENABLE=false
 
-SONAR_PUBLIC_URL=http://sonar-sys.dice.local
+SONAR_PUBLIC_URL=http://sonar-sys.erda.local
 SONAR_ADMIN_TOKEN=123456
 SONAR_ADMIN_PASSWORD=123456
 
@@ -114,7 +114,7 @@ DICE_CLUSTER_TYPE=kubernetes
 DICE_IS_EDGE=false
 DICE_CLUSTER_NAME=terminus-dev
 DICE_HTTPS_PORT=443
-DICE_HTTP_PORT=8000
+DICE_HTTP_PORT=80
 DICE_STORAGE_MOUNTPOINT=/netdata
 DICE_CPU_ORIGIN=0.300000
 DICE_MEM_ORIGIN=512
