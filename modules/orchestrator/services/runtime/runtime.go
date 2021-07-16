@@ -439,7 +439,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		logrus.Errorf(errstr)
 		return nil, err
 	}
-	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	createPipelineReq := &apistructs.PipelineCreateRequestV2{
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
 		PipelineYml:  string(b),
 		Labels: map[string]string{
@@ -456,7 +456,9 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		ClusterName:     runtime.ClusterName,
 		PipelineSource:  apistructs.PipelineSourceDice,
 		AutoRunAtOnce:   true,
-	})
+	}
+	createPipelineReq.NormalLabels = createPipelineReq.Labels
+	dto, err := r.bdl.CreatePipeline(createPipelineReq)
 	if err != nil {
 		return nil, err
 	}
@@ -851,7 +853,7 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
+	createPipelineReq := &apistructs.PipelineCreateRequestV2{
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
 		PipelineYml:  string(b),
 		Labels: map[string]string{
@@ -868,7 +870,9 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 		ClusterName:     runtime.ClusterName,
 		PipelineSource:  apistructs.PipelineSourceDice,
 		AutoRunAtOnce:   true,
-	})
+	}
+	createPipelineReq.NormalLabels = createPipelineReq.Labels
+	dto, err := r.bdl.CreatePipeline(createPipelineReq)
 	if err != nil {
 		return nil, err
 	}
