@@ -134,10 +134,8 @@ func do() (*httpserver.Server, error) {
 		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
 	}
 
-	// init cluster info before pipeline scheduler task executors init
-	if err := clusterinfo.Initialize(bdl); err != nil {
-		return nil, err
-	}
+	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
+	clusterinfo.Initialize(bdl)
 
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
@@ -197,7 +195,7 @@ func do() (*httpserver.Server, error) {
 	}
 
 	// register cluster hook after pipeline service start
-	if err := clusterinfo.RegisterClusterHook(bdl); err != nil {
+	if err := clusterinfo.RegisterClusterHook(); err != nil {
 		return nil, err
 	}
 

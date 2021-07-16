@@ -244,5 +244,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// executor info, only for internal check executor and cluster info
 		{Path: "/api/pipeline-executors", Method: http.MethodGet, Handler: e.executorInfos},
+		{Path: "/api/pipeline-executors/actions/refresh", Method: http.MethodPut, Handler: e.triggerRefreshExecutors},
 	}
 }

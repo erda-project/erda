@@ -106,6 +106,9 @@ type Conf struct {
 	// resource gc
 	SuccessPipelineDefaultResourceGCTTLSec uint64 `env:"SUCCESS_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"` // 60 * 30 success pipeline resources default retains 30 min
 	FailedPipelineDefaultResourceGCTTLSec  uint64 `env:"FAILED_PIPELINE_DEFAULT_RESOURCE_GC_TTL_SEC" default:"1800"`  // 60 * 30 failed pipeline resources default retains 30 min
+
+	// scheduler executor refresh interval
+	ExecutorRefreshIntervalHour uint64 `env:"EXECUTOR_REFRESH_INTERVAL_HOUR" default:"1"`
 }
 
 var cfg Conf
@@ -341,4 +344,9 @@ func SuccessPipelineDefaultResourceGCTTLSec() uint64 {
 // FailedPipelineDefaultResourceGCTTLSec return default resource gc for failed pipeline
 func FailedPipelineDefaultResourceGCTTLSec() uint64 {
 	return cfg.FailedPipelineDefaultResourceGCTTLSec
+}
+
+// ExecutorRefreshIntervalHour return default executor refresh interval
+func ExecutorRefreshIntervalHour() uint64 {
+	return cfg.ExecutorRefreshIntervalHour
 }

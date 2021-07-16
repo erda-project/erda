@@ -31,27 +31,20 @@ const (
 )
 
 var (
+	bdl               *bundle.Bundle
 	once              sync.Once
-	clusters          []apistructs.ClusterInfo
 	clusterEventChans []chan apistructs.ClusterEvent
+	manualTriggerChan = make(chan struct{})
 )
 
-func Initialize(bdl *bundle.Bundle) error {
-	var err error
+func Initialize(bundle *bundle.Bundle) {
 	once.Do(func() {
-		clusterEventChans = []chan apistructs.ClusterEvent{}
-		clusters, err = bdl.ListClusters("", 0)
-		if err != nil {
-			return
-		}
+		bdl = bundle
 	})
-	return err
 }
 
-// GetClusterInfosFirst return all clusters after initialize
-// clusters will not change, Just for initial use
-func GetClustersInitialize() []apistructs.ClusterInfo {
-	return clusters
+func ListAllClusters() ([]apistructs.ClusterInfo, error) {
+	return bdl.ListClusters("", 0)
 }
 
 // DispatchClusterEvent dispatch every cluster event to registered chan
@@ -70,8 +63,18 @@ func RegisterClusterEvent() (<-chan apistructs.ClusterEvent, error) {
 	return ch, nil
 }
 
+// RegisterRefreshChan return channel for manual trigger refresh executor
+// only for scheduler task manager
+func RegisterRefreshChan() <-chan struct{} {
+	return manualTriggerChan
+}
+
+func TriggerManualRefresh() {
+	manualTriggerChan <- struct{}{}
+}
+
 // RegisterClusterHook register cluster hook in eventbox
-func RegisterClusterHook(bdl *bundle.Bundle) error {
+func RegisterClusterHook() error {
 	ev := apistructs.CreateHookRequest{
 		Name:   "pipeline_watch_cluster_changed",
 		Events: []string{bundle.ClusterEvent},
