@@ -19,7 +19,7 @@ import (
 
 const (
 	AddNodesEssSource = "ess-autoscale"
-	ComClusterKey     = "DICE_CLUSTER_NAME"
+	MasterClusterKey  = "DICE_CLUSTER_NAME"
 )
 
 type AddNodesRequest struct {

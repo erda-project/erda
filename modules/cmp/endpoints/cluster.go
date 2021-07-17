@@ -497,9 +497,10 @@ func (e *Endpoints) InitClusterRetry(ctx context.Context, r *http.Request, vars 
 func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	clusterName := r.URL.Query().Get("clusterName")
 	accessKey := r.URL.Query().Get("accessKey")
+	orgName := r.URL.Query().Get("orgName")
 
 	if accessKey != "" {
-		content, err := e.clusters.RenderInitContent(clusterName, accessKey)
+		content, err := e.clusters.RenderInitContent(orgName, clusterName, accessKey)
 		if err != nil {
 			return err
 		}
@@ -509,7 +510,12 @@ func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *h
 		return nil
 	}
 
-	respInfo, err := e.clusters.RenderInitCmd(clusterName)
+	// TODO: orgName from front, need split init-command and render-command interface.
+	org := r.Header.Get("Org")
+	if org == "" {
+		return fmt.Errorf("org name is empty")
+	}
+	respInfo, err := e.clusters.RenderInitCmd(org, clusterName)
 	if err != nil {
 		return err
 	}
