@@ -43,12 +43,13 @@ import (
 )
 
 const (
-	KubeconfigType    = "KUBECONFIG"
-	SAType            = "SERVICEACCOUNT"
-	ProxyType         = "PROXY"
-	caKey             = "ca.crt"
-	tokenKey          = "token"
-	ModuleClusterInit = "cluster-init"
+	KubeconfigType     = "KUBECONFIG"
+	SAType             = "SERVICEACCOUNT"
+	ProxyType          = "PROXY"
+	caKey              = "ca.crt"
+	tokenKey           = "token"
+	ModuleClusterInit  = "cluster-init"
+	ModuleClusterAgent = "cluster-agent"
 )
 
 var (
@@ -57,11 +58,15 @@ var (
 
 type RenderDeploy struct {
 	ClusterName          string
-	RootDomain           string
+	MasterClusterDomain  string // Master cluster domain, collector or openapi public
 	PlateFormVersion     string
-	CustomDomain         string
+	CustomDomain         string // Target cluster custom domain
 	InitJobImage         string
+	ClusterAgentImage    string
 	ErdaHelmChartVersion string
+	DialerPublicAddr     string
+	ErdaSystem           string
+	OrgName              string
 }
 
 // importCluster import cluster
@@ -297,7 +302,7 @@ func ParseKubeconfig(kubeconfig []byte) (*apistructs.ManageConfig, error) {
 	return nil, fmt.Errorf("illegal kubeconfig")
 }
 
-func (c *Clusters) RenderInitCmd(clusterName string) (string, error) {
+func (c *Clusters) RenderInitCmd(orgName, clusterName string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -325,13 +330,14 @@ func (c *Clusters) RenderInitCmd(clusterName string) (string, error) {
 				return fmt.Sprintf("cluster %s already registered", clusterName), nil
 			}
 
-			cmd := fmt.Sprintf("kubectl apply -f '$REQUEST_PREFIX?clusterName=%s&accessKey=%s'", clusterName, cluster.ManageConfig.AccessKey)
+			cmd := fmt.Sprintf("kubectl apply -f '$REQUEST_PREFIX?orgName=%s&clusterName=%s&accessKey=%s'", orgName,
+				clusterName, cluster.ManageConfig.AccessKey)
 			return cmd, nil
 		}
 	}
 }
 
-func (c *Clusters) RenderInitContent(clusterName string, accessKey string) (string, error) {
+func (c *Clusters) RenderInitContent(orgName, clusterName string, accessKey string) (string, error) {
 	cluster, err := c.bdl.GetCluster(clusterName)
 	if err != nil {
 		return "", fmt.Errorf("get cluster error:%v", err)
@@ -344,26 +350,30 @@ func (c *Clusters) RenderInitContent(clusterName string, accessKey string) (stri
 		return "", fmt.Errorf("accesskey is error")
 	}
 
-	cCluster := os.Getenv(apistructs.ComClusterKey)
-	if cCluster == "" {
-		return "", fmt.Errorf("can't get platform info")
+	masterCluster := os.Getenv(apistructs.MasterClusterKey)
+	if masterCluster == "" {
+		return "", fmt.Errorf("can't get master cluster info")
 	}
 
-	ci, err := c.bdl.QueryClusterInfo(cCluster)
+	ci, err := c.bdl.QueryClusterInfo(masterCluster)
 	if err != nil {
 		return "", err
 	}
 
 	version := ci.Get("DICE_VERSION")
-	rootDomain := ci.Get("DICE_ROOT_DOMAIN")
+	masterClusterDomain := ci.Get("DICE_ROOT_DOMAIN")
 
 	rd := RenderDeploy{
 		ClusterName:          clusterName,
-		RootDomain:           rootDomain,
+		MasterClusterDomain:  masterClusterDomain,
 		PlateFormVersion:     version,
 		CustomDomain:         cluster.WildcardDomain,
 		InitJobImage:         renderReleaseImageAddr(ModuleClusterInit, version),
+		ClusterAgentImage:    renderReleaseImageAddr(ModuleClusterAgent, version),
 		ErdaHelmChartVersion: conf.ErdaHelmChartVersion(),
+		DialerPublicAddr:     conf.DialerPublicAddr(),
+		ErdaSystem:           conf.ErdaNamespace(),
+		OrgName:              orgName,
 	}
 
 	tmpl := template.Must(template.New("render").Parse(ProxyDeployTemplate))
@@ -445,7 +455,7 @@ func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reIn
 	jobName := generateInitJobName(orgID, clusterName)
 	var backOffLimit int32
 
-	compClusterName := os.Getenv(apistructs.ComClusterKey)
+	compClusterName := os.Getenv(apistructs.MasterClusterKey)
 	if compClusterName == "" {
 		return nil
 	}
@@ -482,17 +492,21 @@ func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reIn
 		},
 		{
 			Name:  "HELM_NAMESPACE",
-			Value: metav1.NamespaceDefault,
+			Value: conf.ErdaNamespace(),
 		},
 		{
-			Name: "ERDA_BASE_VALUES",
-			Value: fmt.Sprintf("configmap.clustername=%s,configmap.domain=%s,configmap.version=%s",
-				clusterName, eci.WildcardDomain, platformVersion),
+			Name: "CHART_ERDA_BASE_VALUES",
+			Value: fmt.Sprintf("configmap.clustername=%s,configmap.domain=%s",
+				clusterName, eci.WildcardDomain),
 		},
 		{
-			Name: "ERDA_VALUES",
-			Value: fmt.Sprintf("domain=%s,clusterName=%s,clusterDomain=%s",
-				platformDomain, clusterName, eci.WildcardDomain),
+			Name:  "CHART_ERDA_ADDONS_VALUES",
+			Value: "registry.networkMode=''",
+		},
+		{
+			Name: "CHART_ERDA_VALUES",
+			Value: fmt.Sprintf("domain=%s,clusterName=%s,masterClusterDomain=%s",
+				eci.WildcardDomain, clusterName, platformDomain),
 		},
 		{
 			Name:  "CLUSTER_MANAGER_ADDR",

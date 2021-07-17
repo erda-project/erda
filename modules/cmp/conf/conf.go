@@ -44,6 +44,7 @@ type Conf struct {
 	ErdaNamespace        string `default:"erda-system" env:"ERDA_NAMESPACE"`
 	ErdaHelmChartVersion string `default:"0.1.0" env:"ERDA_HELM_CHART_VERSION"`
 	ReleaseRepo          string `default:"registry.erda.cloud" env:"RELEASE_REPO"`
+	DialerPublicAddr     string `env:"CLUSTER_DIALER_PUBLIC_ADDR"`
 }
 
 var cfg Conf
@@ -145,4 +146,8 @@ func ErdaHelmChartVersion() string {
 
 func ReleaseRepo() string {
 	return cfg.ReleaseRepo
+}
+
+func DialerPublicAddr() string {
+	return cfg.DialerPublicAddr
 }

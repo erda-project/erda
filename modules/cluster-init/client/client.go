@@ -14,11 +14,15 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/repo"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cluster-init/config"
@@ -107,6 +111,41 @@ func (c *Client) Execute() error {
 		return err
 	}
 
+	// Label node only local mode
+	// TODO: support label remote with rest.config
+	if strings.ToUpper(c.config.RepoMode) != InstallModeRemote {
+		rc, err := rest.InClusterConfig()
+		if err != nil {
+			logrus.Errorf("get incluster rest config error: %v", err)
+			return err
+		}
+		cs, err := kubernetes.NewForConfig(rc)
+		if err != nil {
+			logrus.Errorf("create clientSet error: %v", err)
+			return err
+		}
+		nodes, err := cs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			logrus.Errorf("get kubernetes nodes error: %v", err)
+			return err
+		}
+		logrus.Infof("get nodes success, node count: %d", len(nodes.Items))
+
+		labels := c.parseLabels()
+
+		logrus.Infof("start to label nodes, labels: %+v", labels)
+
+		for _, node := range nodes.Items {
+			for k, v := range labels {
+				node.Labels[k] = v
+			}
+			if _, err = cs.CoreV1().Nodes().Update(context.Background(), &node, metav1.UpdateOptions{}); err != nil {
+				logrus.Errorf("label node: %s, error: %v", node.Name, err)
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -145,21 +184,39 @@ func (c *Client) getInitCharts() []*erdahelm.ChartSpec {
 			ChartName:   ErdaBaseCharts,
 			Version:     c.config.Version,
 			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ErdaBaseValues,
+			Values:      c.config.ChartErdaBaseValues,
 		},
 		{
 			ReleaseName: ErdaAddonsCharts,
 			ChartName:   ErdaAddonsCharts,
 			Version:     c.config.Version,
 			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ErdaAddonsValues,
+			Values:      c.config.ChartErdaAddonsValues,
 		},
 		{
 			ReleaseName: ErdaCharts,
 			ChartName:   ErdaCharts,
 			Version:     c.config.Version,
 			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ErdaValues,
+			Values:      c.config.ChartErdaValues,
 		},
 	}
+}
+
+func (c *Client) parseLabels() map[string]string {
+	res := make(map[string]string, 0)
+
+	labels := strings.Split(c.config.NodeLabels, ",")
+	for _, label := range labels {
+		keys := strings.Split(label, "=")
+		switch len(keys) {
+		case 1:
+			res[keys[0]] = ""
+		case 2:
+			res[keys[0]] = keys[1]
+		default:
+			continue
+		}
+	}
+	return res
 }

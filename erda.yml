@@ -189,6 +189,26 @@ services:
     health_check:
       http: {}
       exec: {}
+  cluster-agent:
+    cmd: "/app/cluster-agent"
+    ports: []
+    envs:
+      DEBUG: "false"
+    resources:
+      cpu: ${request_cpu:0.1}
+      max_cpu: 0.5
+      mem: ${request_mem:512}
+      max_mem: 512
+      network:
+        mode: "container"
+    deployments:
+      replicas: 1
+      labels:
+        GROUP: "dice"
+    health_check:
+      http: {}
+      exec:
+        cmd: "ls"
   collector:
     cmd: "/app/collector"
     ports:
@@ -466,6 +486,8 @@ services:
     envs:
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
+      ERDA_NAMESPACE: "default"
+      ERDA_HELM_CHART_VERSION: "1.1.0"
     ports:
       - port: 9027
         protocol: "TCP"
