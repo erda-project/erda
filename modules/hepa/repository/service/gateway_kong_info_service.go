@@ -18,8 +18,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/hepa/bundle"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
@@ -184,11 +182,7 @@ func (impl *GatewayKongInfoServiceImpl) acquireKongAddr(netportalUrl, selfAz str
 
 func (impl *GatewayKongInfoServiceImpl) adjustKongInfo(info *orm.GatewayKongInfo) error {
 	selfAz := os.Getenv("DICE_CLUSTER_NAME")
-	clusterInfo, err := bundle.Bundle.QueryClusterInfo(info.Az)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	netportalUrl := clusterInfo.Get(apistructs.NETPORTAL_URL)
+	netportalUrl := "inet://" + info.Az
 	kongAddr, err := impl.acquireKongAddr(netportalUrl, selfAz, info)
 	if err != nil {
 		return err
