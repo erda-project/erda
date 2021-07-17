@@ -461,14 +461,14 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, err
 	}
-	if request.AlertType == "" {
-		request.AlertType = "micro_service_customize"
+	if alertDetail.AlertType == "" {
+		alertDetail.AlertType = "micro_service_customize"
 	}
-	request.AlertScope = MicroServiceScope
-	request.AlertScopeId = request.TenantGroup
-	request.Attributes = nil
+	alertDetail.AlertScope = MicroServiceScope
+	alertDetail.AlertScopeId = request.TenantGroup
+	alertDetail.Attributes = nil
 
-	for _, rule := range request.Rules {
+	for _, rule := range alertDetail.Rules {
 		rule.Attributes = map[string]*structpb.Value{}
 		rule.Attributes[Scope] = structpb.NewStringValue(fmt.Sprintf("{{%s}}", tk))
 		if rule.Filters == nil {
@@ -481,7 +481,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		rule.Filters = append(rule.Filters, &scopeFilter)
 
 		scopeIDFilter := monitor.CustomizeAlertRuleFilter{}
-		scopeIDFilter.Tag = "_metric_scope"
+		scopeIDFilter.Tag = "_metric_scope_id"
 		scopeIDFilter.Operator = OperateEq
 		scopeIDFilter.Value = structpb.NewStringValue(tk)
 		rule.Filters = append(rule.Filters, &scopeIDFilter)
@@ -492,7 +492,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		scopeApplicationFilter.Value = structpb.NewStringValue("$" + "application_id")
 		rule.Filters = append(rule.Filters, &scopeApplicationFilter)
 	}
-	requestData, err := json.Marshal(request)
+	requestData, err := json.Marshal(alertDetail)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
