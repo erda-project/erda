@@ -15,6 +15,7 @@ package cluster_dialer
 
 import (
 	"context"
+	"os"
 
 	"github.com/sirupsen/logrus"
 
@@ -28,6 +29,8 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	logrus.SetOutput(os.Stdout)
+
 	if p.Cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
