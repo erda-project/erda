@@ -28,7 +28,7 @@ func (b *Bundle) UpdatePipelineCron(req apistructs.PipelineCronUpdateRequest) er
 	hc := b.hc
 
 	var updateResp apistructs.PipelineCronUpdateResponse
-	httpResp, err := hc.Post(host).Path("/api/pipeline-crons/update").
+	httpResp, err := hc.Put(host).Path("/api/pipeline-crons/update").
 		Header(httputil.InternalHeader, "bundle").
 		JSONBody(&req).
 		Do().JSON(&updateResp)

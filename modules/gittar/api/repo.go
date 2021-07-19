@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/erda-project/erda/pkg/strutil"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -685,6 +686,9 @@ func CreateCommit(context *webcontext.Context) {
 		}
 	}
 
+	// update pipeline cron
+	go updatePipelineCron(context, createCommitRequest, beforeCommit, commit)
+
 	pushEvent := &models.PayloadPushEvent{
 		Before: beforeCommitID,
 		After:  commit.ID,
@@ -697,6 +701,61 @@ func CreateCommit(context *webcontext.Context) {
 	context.Success(Map{
 		"commit": commit,
 	})
+}
+
+// updatePipelineCron if path like pipeline.yml or .dice/pipelines/*yml is updated, need to update pipeline cron
+func updatePipelineCron(ctx *webcontext.Context, req gitmodule.CreateCommit, commitFrom, commitTo *gitmodule.Commit) {
+	const pipelineSource = "dice"
+	project, err := ctx.Bundle.GetProject(uint64(ctx.Repository.ProjectId))
+	if err != nil {
+		logrus.Errorf("fail to GetProject,err: %v", err)
+		return
+	}
+	for _, v := range req.Actions {
+		if util.IsPipelineYmlPath(v.Path) {
+			var action apistructs.PipelineAction
+			pipelineYmlName := GetPipelineYmlName(ctx.Repository.ApplicationId, project.Name, req.Branch, v.Path)
+			if v.Action == gitmodule.EDIT_ACTION_DELETE {
+				action = apistructs.PipelineActionDelete
+			}
+			if v.Action == gitmodule.EDIT_ACTION_UPDATE {
+				diffFile, err := ctx.Repository.GetDiffFile(commitFrom, commitTo, v.Path, v.Path)
+				if err != nil {
+					logrus.Errorf("fail to GetDiffFile,err: %v", err)
+				}
+				if !IsFileModified(diffFile) {
+					continue
+				}
+				action = apistructs.PipelineActionUpdate
+			}
+			err = ctx.Bundle.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+				PipelineYml:        v.Content,
+				PipelineYmlNameNew: pipelineYmlName,
+				PipelineYmlNameOld: pipelineYmlName,
+				PipelineSource:     pipelineSource,
+				Action:             action,
+			})
+			if err != nil {
+				logrus.Errorf("fail to UpdatePipelineCron,err: %v", err)
+			}
+		}
+	}
+}
+
+// GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml
+func GetPipelineYmlName(appID int64, projectName, branch, path string) string {
+	return strutil.Concat(strconv.FormatInt(appID, 10), "/", projectName, "/", branch, "/", path)
+}
+
+// IsFileModified if file is update return true,else return false
+func IsFileModified(file *gitmodule.DiffFile) bool {
+	if file == nil {
+		return false
+	}
+	if file.Name == file.OldName && file.Addition == 0 && file.Deletion == 0 {
+		return false
+	}
+	return true
 }
 
 // GetRepoRaw function

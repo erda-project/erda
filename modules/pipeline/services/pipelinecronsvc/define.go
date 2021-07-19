@@ -141,6 +141,7 @@ func (s *PipelineCronSvc) Get(cronID uint64) (*spec.PipelineCron, error) {
 
 // PipelineCronUpdate pipeline cron update
 func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRequest) error {
+	// check pipelineCron is exist or not
 	exist, cron, err := s.dbClient.CheckExistPipelineCronBySourceAndYmlName(req.PipelineSource, req.PipelineYmlNameOld)
 	if err != nil {
 		return err
