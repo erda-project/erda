@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-- Kubernetes 1.16 +
+- Kubernetes 1.16 - 1.18
   - At least 4 Nodes (1 Master and 3 Workers)
   - Each node needs at least 4 core CPU, 16G memory
   - **Don't Install the ingress-controller-manager component**
