@@ -149,8 +149,8 @@ func (e *Endpoints) createEventBoxMessage(req *apistructs.CreateReviewRequest) (
 			"member":      sponsor.Name,
 			"projectname": req.ProjectName,
 			"appName":     req.ApplicationName,
-			"url": fmt.Sprintf("%s://%s-org.%s/%s/workBench/projects/%d/apps/%d/pipeline?pipelineID=%d",
-				utils.GetProtocol(), org.Name, conf.RootDomain(), org.Name, req.ProjectId, req.ApplicationId, req.BuildId),
+			"url": fmt.Sprintf("%s://%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%d",
+				utils.GetProtocol(), conf.UIDomain(), org.Name, req.ProjectId, req.ApplicationId, req.BuildId),
 		},
 		i18n.ZH, uint64(req.OrgId), []string{reviewers[0].Operator})
 	if err != nil {
@@ -276,8 +276,8 @@ func (e *Endpoints) createApproveDoneEventBoxMessage(id int64) (bool, error) {
 			"title":       fmt.Sprintf("【通知】%s项目%s应用部署审核完成", review.ProjectName, review.ApplicationName),
 			"projectName": review.ProjectName,
 			"appName":     review.ApplicationName,
-			"url": fmt.Sprintf("%s://%s-org.%s/%s/workBench/projects/%d/apps/%d/pipeline?pipelineID=%d",
-				utils.GetProtocol(), org.Name, conf.RootDomain(), org.Name, review.ProjectId, review.ApplicationId, review.BuildId),
+			"url": fmt.Sprintf("%s://%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%d",
+				utils.GetProtocol(), conf.UIDomain(), org.Name, review.ProjectId, review.ApplicationId, review.BuildId),
 		}, i18n.ZH, uint64(review.OrgId), []string{review.SponsorId})
 	if err != nil {
 		return false, err
