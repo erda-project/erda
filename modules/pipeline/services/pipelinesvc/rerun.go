@@ -36,6 +36,11 @@ func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipelin
 		originCron = cron
 	}
 
+	if origin.Labels == nil {
+		origin.Labels = map[string]string{}
+	}
+	origin.Labels[apistructs.LabelPipelineType] = apistructs.PipelineTypeRerun.String()
+
 	p, err := s.CreateV2(&apistructs.PipelineCreateRequestV2{
 		PipelineYml:            origin.PipelineYml,
 		ClusterName:            origin.ClusterName,

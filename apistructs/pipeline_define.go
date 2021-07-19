@@ -158,13 +158,14 @@ func (m PipelineTriggerMode) String() string {
 type PipelineType string
 
 var (
-	PipelineTypeNormal      PipelineType = "normal"       // 正常；重试全流程时 type = normal
-	PipelineTypeRerunFailed PipelineType = "rerun-failed" // 重试失败节点
+	PipelineTypeNormal      PipelineType = "normal"       // normal
+	PipelineTypeRerunFailed PipelineType = "rerun-failed" // retry failed action
+	PipelineTypeRerun       PipelineType = "rerun"        // retry the whole pipeline
 )
 
 // Valid 返回 PipelineType 是否有效
 func (t PipelineType) Valid() bool {
-	if t == PipelineTypeNormal || t == PipelineTypeRerunFailed {
+	if t == PipelineTypeNormal || t == PipelineTypeRerunFailed || t == PipelineTypeRerun {
 		return true
 	}
 	return false
