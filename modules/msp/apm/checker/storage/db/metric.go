@@ -85,9 +85,9 @@ func (db *MetricDB) Delete(id int64) error {
 	}).Error
 }
 
-func (db *MetricDB) ListByProjectID(projectID int64) ([]*Metric, error) {
+func (db *MetricDB) ListByProjectIDAndEnv(projectID int64, env string) ([]*Metric, error) {
 	var list []*Metric
-	if err := db.query().Where("`project_id`=?", projectID).Find(&list).Error; err != nil {
+	if err := db.query().Where("`project_id`=? AND `env`=?", projectID, env).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
