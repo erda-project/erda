@@ -87,30 +87,35 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 					return
 				}
 
-				if c.ManageConfig != nil && c.ManageConfig.Type == apistructs.ManageProxy {
+				if c.ManageConfig != nil {
+					if c.ManageConfig.Type != apistructs.ManageProxy {
+						logrus.Warnf("cluster is not proxy type [%s]", clusterKey)
+						return
+					}
 					if clusterInfo.Token == c.ManageConfig.Token && clusterInfo.Address == c.ManageConfig.Address &&
 						clusterInfo.CACert == c.ManageConfig.CaData {
-						logrus.Infof("cluster info doesn't change [%s]", clusterKey)
+						logrus.Infof("cluster info isn't change [%s]", clusterKey)
 						return
 					}
-
-					if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
-						Name: clusterKey,
-						ManageConfig: &apistructs.ManageConfig{
-							Type:    apistructs.ManageProxy,
-							Address: clusterInfo.Address,
-							CaData:  clusterInfo.CACert,
-							Token:   clusterInfo.Token,
-						},
-					}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
-						logrus.Errorf("failed to patch cluster [%s], err: %v", clusterKey, err)
-						remotedialer.DefaultErrorWriter(rw, req, 500, err)
-						return
-					}
-					logrus.Infof("patch cluster info success [%s]", clusterKey)
-				} else {
-					logrus.Infof("cluster is not proxy type [%s]", clusterKey)
 				}
+
+				if err = bdl.PatchCluster(&apistructs.ClusterPatchRequest{
+					Name: clusterKey,
+					ManageConfig: &apistructs.ManageConfig{
+						Type:             apistructs.ManageProxy,
+						Address:          clusterInfo.Address,
+						CaData:           clusterInfo.CACert,
+						Token:            clusterInfo.Token,
+						CredentialSource: apistructs.ManageProxy,
+					},
+				}, map[string][]string{httputil.InternalHeader: {"cluster-dialer"}}); err != nil {
+					logrus.Errorf("failed to patch cluster [%s], err: %v", clusterKey, err)
+					remotedialer.DefaultErrorWriter(rw, req, 500, err)
+					return
+				}
+
+				logrus.Infof("patch cluster info success [%s]", clusterKey)
+
 				return
 			}
 		}

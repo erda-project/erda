@@ -276,7 +276,9 @@ func (c *Cluster) PatchWithEvent(req *apistructs.ClusterPatchRequest) error {
 
 	cCluster := c.convert(cluster)
 
-	req.ManageConfig.CredentialSource = cCluster.ManageConfig.CredentialSource
+	if req.ManageConfig.CredentialSource == "" {
+		req.ManageConfig.CredentialSource = cCluster.ManageConfig.CredentialSource
+	}
 
 	manageConfig, err := json.MarshalIndent(req.ManageConfig, "", "\t")
 	if err != nil {
