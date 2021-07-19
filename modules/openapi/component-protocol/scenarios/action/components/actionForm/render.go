@@ -115,7 +115,7 @@ func GenResourceProps(actionExt *apistructs.ExtensionVersion) (props []apistruct
 
 	// resourceFormGroup
 	// fromGroup下会根据resource 构建一个资源列表框
-	GroupResource := "resource"
+	GroupResource := "resources"
 	resourceFormGroup := apistructs.FormPropItem{
 		Key:       GroupResource,
 		Component: "formGroup",
