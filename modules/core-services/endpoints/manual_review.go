@@ -247,7 +247,42 @@ func (e *Endpoints) UpdateApproval(ctx context.Context, r *http.Request, vars ma
 	if err := e.ManualReview.UpdateApproval(&reviewUpdateReq); err != nil {
 		return apierrors.ErrUpdateApproval.InternalError(err).ToResp(), nil
 	}
+	// creat eventBox message
+	go func() {
+		if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).
+			Do(func() (bool, error) {
+				return e.createApproveDoneEventBoxMessage(reviewUpdateReq.Id)
+			}); err != nil {
+			logrus.Errorf("fail to createApproveDoneEventBoxMessage, err: %s", err.Error())
+		}
+	}()
 	return httpserver.OkResp("update review succ")
+}
+
+// createApproveDoneEventBoxMessage create approve done eventBox message
+func (e *Endpoints) createApproveDoneEventBoxMessage(id int64) (bool, error) {
+	review, err := e.db.GetReviewByID(id)
+	if err != nil {
+		return false, err
+	}
+
+	org, err := e.db.GetOrg(review.OrgId)
+	if err != nil {
+		return false, err
+	}
+
+	err = e.bdl.CreateMboxNotify("notify.deployapproval.done.markdown_template",
+		map[string]string{
+			"title":       fmt.Sprintf("【通知】%s项目%s应用部署审核完成", review.ProjectName, review.ApplicationName),
+			"projectName": review.ProjectName,
+			"appName":     review.ApplicationName,
+			"url": fmt.Sprintf("%s://%s-org.%s/%s/workBench/projects/%d/apps/%d/pipeline?pipelineID=%d",
+				utils.GetProtocol(), org.Name, conf.RootDomain(), org.Name, review.ProjectId, review.ApplicationId, review.BuildId),
+		}, i18n.ZH, uint64(review.OrgId), []string{review.SponsorId})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (e *Endpoints) GetAuthorityByUserId(ctx context.Context, r *http.Request, vars map[string]string) (
