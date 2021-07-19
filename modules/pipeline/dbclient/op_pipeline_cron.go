@@ -131,6 +131,18 @@ func (client *Client) CheckExistPipelineCronByApplicationBranchYmlName(applicati
 	return exist, result, nil
 }
 
+func (client *Client) CheckExistPipelineCronBySourceAndYmlName(pipelineSource apistructs.PipelineSource, pipelineYmlName string) (bool, spec.PipelineCron, error) {
+	var result = spec.PipelineCron{
+		PipelineYmlName: pipelineYmlName,
+		PipelineSource:  pipelineSource,
+	}
+	exist, err := client.Get(&result)
+	if err != nil {
+		return false, spec.PipelineCron{}, err
+	}
+	return exist, result, nil
+}
+
 func (client *Client) CreatePipelineCron(cron *spec.PipelineCron) error {
 	_, err := client.InsertOne(cron)
 	return errors.Wrapf(err, "failed to create pipeline cron, applicationID [%d], branch [%s], expr [%s], enable [%v]", cron.ApplicationID, cron.Branch, cron.CronExpr, cron.Enable)

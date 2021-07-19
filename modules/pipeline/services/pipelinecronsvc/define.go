@@ -138,3 +138,58 @@ func (s *PipelineCronSvc) Get(cronID uint64) (*spec.PipelineCron, error) {
 	}
 	return &cron, nil
 }
+
+// PipelineCronUpdate pipeline cron update
+func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRequest) error {
+	exist, cron, err := s.dbClient.CheckExistPipelineCronBySourceAndYmlName(req.PipelineSource, req.PipelineYmlNameOld)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.New("the pipeline cron is not exist")
+	}
+
+	var cronExpr string
+	if req.PipelineYml != "" {
+		pipelineYml, err := pipelineyml.New([]byte(req.PipelineYml))
+		if err != nil {
+			return err
+		}
+		cronExpr = pipelineYml.Spec().Cron
+	}
+
+	switch req.Action {
+	case apistructs.PipelineActionReName:
+		cron.PipelineYmlName = req.PipelineYmlNameNew
+		cron.Extra.PipelineYml = req.PipelineYml
+		cron.CronExpr = cronExpr
+		if err := s.dbClient.UpdatePipelineCron(cron.ID, &cron); err != nil {
+			return err
+		}
+		if *cron.Enable && cronExpr == "" {
+			_, err = s.Stop(cron.ID)
+			return err
+		}
+	case apistructs.PipelineActionDelete:
+		if err := s.dbClient.DeletePipelineCron(cron.ID); err != nil {
+			return err
+		}
+		if *cron.Enable {
+			_, err = s.Stop(cron.ID)
+			return err
+		}
+	case apistructs.PipelineActionUpdate:
+		cron.Extra.PipelineYml = req.PipelineYml
+		cron.CronExpr = cronExpr
+		if err := s.dbClient.UpdatePipelineCron(cron.ID, &cron); err != nil {
+			return err
+		}
+		if *cron.Enable && cronExpr == "" {
+			_, err = s.Stop(cron.ID)
+			return err
+		}
+	default:
+		return errors.Errorf("unknow action")
+	}
+	return nil
+}

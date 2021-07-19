@@ -62,3 +62,23 @@ type PipelineCronCreateResponse struct {
 type PipelineCronDeleteResponse struct {
 	Header
 }
+
+type Action string
+
+const (
+	PipelineActionUpdate Action = "update"
+	PipelineActionDelete Action = "delete"
+	PipelineActionReName Action = "rename"
+)
+
+type PipelineCronUpdateRequest struct {
+	PipelineYml        string         `json:"pipelineYml"`
+	PipelineYmlNameNew string         `json:"pipelineYmlNameNew"`
+	PipelineYmlNameOld string         `json:"pipelineYmlNameOld"`
+	PipelineSource     PipelineSource `json:"pipelineSource"`
+	Action             Action         `json:"action"`
+}
+
+type PipelineCronUpdateResponse struct {
+	Header
+}
