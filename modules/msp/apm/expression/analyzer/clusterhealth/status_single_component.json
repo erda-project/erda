@@ -1,4 +1,5 @@
 {
+  "name": "status_single_component",
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -39,5 +40,6 @@
     "outputs": [
       "metric"
     ]
-  }
+  },
+  "enable": true
 }

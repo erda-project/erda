@@ -1,4 +1,5 @@
 {
+  "name": "application_http_service",
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -70,5 +71,6 @@
     "outputs": [
       "metric"
     ]
-  }
+  },
+  "enable": true
 }

@@ -1,4 +1,5 @@
 {
+  "name": "nodejs_service_node",
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -37,5 +38,6 @@
     "outputs": [
       "metric"
     ]
-  }
+  },
+  "enable": true
 }

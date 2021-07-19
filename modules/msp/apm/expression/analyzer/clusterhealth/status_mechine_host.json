@@ -1,4 +1,5 @@
 {
+  "name": "status_mechine_host",
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -40,5 +41,6 @@
     "outputs": [
       "metric"
     ]
-  }
+  },
+  "enable": true
 }

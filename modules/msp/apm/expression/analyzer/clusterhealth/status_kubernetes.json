@@ -1,4 +1,5 @@
 {
+  "name": "status_kubernetes",
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -8,7 +9,7 @@
     "filters": [
       {
         "tag": "alert_type",
-        "operator":"eq",
+        "operator": "eq",
         "value": "kubernetes"
       }
     ],
@@ -45,5 +46,6 @@
     "outputs": [
       "metric"
     ]
-  }
+  },
+  "enable": true
 }
