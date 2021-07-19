@@ -2,7 +2,7 @@
 
 ### 先决条件
 
-- Kuberentes 1.16 +
+- Kuberentes 1.16 - 1.18
   - 至少需要 4 个节点 (1 个 Master 和 3 个 Worker)
   - 每个节点 4 CPU 16 G 内存
   - **不要在集群上安装 ingress controller 组件**
