@@ -56,6 +56,7 @@ func (m *ManualReview) CreateReviewUser(param *apistructs.CreateReviewUser) (err
 func (m *ManualReview) GetReviewByTaskId(param *apistructs.GetReviewByTaskIdIdRequest) (apistructs.GetReviewByTaskIdIdResponse, error) {
 	return m.db.GetReviewByTaskId(param)
 }
+
 func (m *ManualReview) CreateReview(param *apistructs.CreateReviewRequest) (error, int64) {
 	var review = &model.ManualReview{
 		BuildId:         param.BuildId,
