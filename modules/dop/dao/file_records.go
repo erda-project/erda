@@ -84,6 +84,11 @@ func (client *DBClient) GetRecord(id uint64) (*TestFileRecord, error) {
 	return &res, nil
 }
 
+type stateCounter struct {
+	Type  string
+	Count int
+}
+
 // Get Records by projectId
 func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, map[string]int, error) {
 	var res []TestFileRecord
@@ -97,13 +102,14 @@ func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsR
 		}
 	}
 
-	var count int
+	var counterList []stateCounter
+	if err := client.Table("dice_test_file_records").Select("type, count(*) as count").Where("`type` IN (?) AND `state` = ?", req.Types, apistructs.FileRecordStatePending).Group("type").Find(&counterList).Error; err != nil {
+		return nil, nil, err
+	}
+
 	counter := make(map[string]int)
-	for _, t := range req.Types {
-		if err := client.Model(&TestFileRecord{}).Where("`type` = ? AND `state` = ?", t, apistructs.FileRecordStatePending).Count(&count).Error; err != nil {
-			return nil, nil, err
-		}
-		counter[string(t)] = count
+	for _, s := range counterList {
+		counter[s.Type] = s.Count
 	}
 
 	return res, counter, nil
