@@ -17,7 +17,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/pkg/strutil"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -38,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule/tool"
 	"github.com/erda-project/erda/modules/gittar/pkg/util"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func isTextType(contentType string) bool {
@@ -706,15 +706,15 @@ func CreateCommit(context *webcontext.Context) {
 // updatePipelineCron if path like pipeline.yml or .dice/pipelines/*yml is updated, need to update pipeline cron
 func updatePipelineCron(ctx *webcontext.Context, req gitmodule.CreateCommit, commitFrom, commitTo *gitmodule.Commit) {
 	const pipelineSource = "dice"
-	project, err := ctx.Bundle.GetProject(uint64(ctx.Repository.ProjectId))
+	workSpace, err := GetWorkSpace(ctx, req.Branch)
 	if err != nil {
-		logrus.Errorf("fail to GetProject,err: %v", err)
+		logrus.Errorf("fail to GetWorkSpace,err: %v", err)
 		return
 	}
 	for _, v := range req.Actions {
 		if util.IsPipelineYmlPath(v.Path) {
 			var action apistructs.PipelineAction
-			pipelineYmlName := GetPipelineYmlName(ctx.Repository.ApplicationId, project.Name, req.Branch, v.Path)
+			pipelineYmlName := GetPipelineYmlName(ctx.Repository.ApplicationId, workSpace, req.Branch, v.Path)
 			if v.Action == gitmodule.EDIT_ACTION_DELETE {
 				action = apistructs.PipelineActionDelete
 			}
@@ -742,9 +742,18 @@ func updatePipelineCron(ctx *webcontext.Context, req gitmodule.CreateCommit, com
 	}
 }
 
+// GetWorkSpace return workSpace of project's workspaceConfig by given branch
+func GetWorkSpace(ctx *webcontext.Context, branch string) (string, error) {
+	validBranch, err := ctx.Bundle.GetBranchWorkspaceConfigByProject(uint64(ctx.Repository.ProjectId), branch)
+	if err != nil {
+		return "", err
+	}
+	return validBranch.Workspace, nil
+}
+
 // GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml
-func GetPipelineYmlName(appID int64, projectName, branch, path string) string {
-	return strutil.Concat(strconv.FormatInt(appID, 10), "/", projectName, "/", branch, "/", path)
+func GetPipelineYmlName(appID int64, workspace, branch, path string) string {
+	return strutil.Concat(strconv.FormatInt(appID, 10), "/", workspace, "/", branch, "/", path)
 }
 
 // IsFileModified if file is update return true,else return false

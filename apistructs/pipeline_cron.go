@@ -76,7 +76,7 @@ type PipelineCronUpdateRequest struct {
 	PipelineYmlNameNew string         `json:"pipelineYmlNameNew"`
 	PipelineYmlNameOld string         `json:"pipelineYmlNameOld"`
 	PipelineSource     PipelineSource `json:"pipelineSource"`
-	Action             PipelineAction         `json:"action"`
+	Action             PipelineAction `json:"action"`
 }
 
 type PipelineCronUpdateResponse struct {

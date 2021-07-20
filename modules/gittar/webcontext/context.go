@@ -34,14 +34,14 @@ import (
 )
 
 type Context struct {
-	EchoContext   echo.Context
-	Repository    *gitmodule.Repository
-	User          *models.User
-	Service       *models.Service
-	DBClient      *models.DBClient
-	Bundle        *bundle.Bundle
-	UCAuth        *ucauth.UCUserAuth
-	next          bool
+	EchoContext echo.Context
+	Repository  *gitmodule.Repository
+	User        *models.User
+	Service     *models.Service
+	DBClient    *models.DBClient
+	Bundle      *bundle.Bundle
+	UCAuth      *ucauth.UCUserAuth
+	next        bool
 }
 
 type ContextHandlerFunc func(*Context)
