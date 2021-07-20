@@ -45,16 +45,19 @@ func (client *DBClient) CreateReview(review *model.ManualReview) error {
 	return client.Table("dice_manual_review").Create(review).Error
 }
 
+// GetReviewByID get review by id
+func (client *DBClient) GetReviewByID(id int64) (review model.ManualReview, err error) {
+	err = client.Table("dice_manual_review").Where("id = ?", id).First(&review).Error
+	return
+}
+
 func (client *DBClient) UpdateApproval(param *apistructs.UpdateApproval) error {
-	if param.Reject == false {
-		_ = client.Table("dice_manual_review").Where("org_id = ?", param.OrgId).Where("id = ?", param.Id).Update("approval_status", "Accept")
-		return client.Table("dice_manual_review").Where("org_id = ?", param.OrgId).Where("id = ?", param.Id).Update("approval_reason", param.Reason).Error
-
-	} else {
-		_ = client.Table("dice_manual_review").Where("org_id = ?", param.OrgId).Where("id = ?", param.Id).Update("approval_status", "Reject")
-		return client.Table("dice_manual_review").Where("org_id = ?", param.OrgId).Where("id = ?", param.Id).Update("approval_reason", param.Reason).Error
-
+	approvalStatus := "Accept"
+	if param.Reject {
+		approvalStatus = "Reject"
 	}
+
+	return client.Table("dice_manual_review").Where("org_id = ?", param.OrgId).Where("id = ?", param.Id).Updates(map[string]interface{}{"approval_status": approvalStatus, "approval_reason": param.Reason}).Error
 }
 
 func (client *DBClient) GetReviewsBySponsorId(param *apistructs.GetReviewsBySponsorIdRequest) (int, []model.ManualReview, error) {

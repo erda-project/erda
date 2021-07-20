@@ -39,6 +39,8 @@ type alertService struct {
 	p *provider
 }
 
+const MicroService = "micro_service"
+
 func (m *alertService) QueryOrgDashboardByAlert(ctx context.Context, request *pb.QueryOrgDashboardByAlertRequest) (*pb.QueryOrgDashboardByAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	if request.AlertType == "" {
@@ -416,8 +418,12 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	request.AlertScope = "org"
-	request.AlertScopeId = orgID
+	var isOrg bool
+	if request.AlertScope != MicroService {
+		request.AlertScope = "org"
+		request.AlertScopeId = orgID
+		isOrg = true
+	}
 	request.Attributes = make(map[string]*structpb.Value)
 	var metricNames []string
 	for _, rule := range request.Rules {
@@ -447,19 +453,25 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		if err := m.checkMetricMeta(rule, metricMap[rule.Metric]); err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
-
-		if scope != "" {
+		if isOrg {
+			if scope != "" {
+				rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+					Tag:      "_metric_scope",
+					Operator: "eq",
+					Value:    structpb.NewStringValue(scope),
+				})
+			}
+			if scopeId != "" {
+				rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+					Tag:      "_metric_scope_id",
+					Operator: "eq",
+					Value:    structpb.NewStringValue(scopeId),
+				})
+			}
 			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "_metric_scope",
-				Operator: "eq",
-				Value:    structpb.NewStringValue(scope),
-			})
-		}
-		if scopeId != "" {
-			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "_metric_scope_id",
-				Operator: "eq",
-				Value:    structpb.NewStringValue(scopeId),
+				Tag:      "cluster_name",
+				Operator: "in",
+				Value:    structpb.NewStringValue("$" + "cluster_name"),
 			})
 		}
 	}
