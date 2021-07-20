@@ -89,5 +89,10 @@ type GetTestFileRecordResponse struct {
 
 type ListTestFileRecordsResponse struct {
 	Header
-	Data []TestFileRecord
+	Data *ListTestFileRecordsResponseData
+}
+
+type ListTestFileRecordsResponseData struct {
+	Counter map[string]int   `json:"counter"`
+	List    []TestFileRecord `json:"list"`
 }

@@ -85,18 +85,28 @@ func (client *DBClient) GetRecord(id uint64) (*TestFileRecord, error) {
 }
 
 // Get Records by projectId
-func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, error) {
+func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, map[string]int, error) {
 	var res []TestFileRecord
 	if len(req.Types) > 0 {
 		if err := client.Where("`project_id` = ? AND `type` IN (?)", req.ProjectID, req.Types).Order("created_at desc").Find(&res).Error; err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		if err := client.Where("`project_id` = ?", req.ProjectID).Order("created_at desc").Find(&res).Error; err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return res, nil
+
+	var count int
+	counter := make(map[string]int)
+	for _, t := range req.Types {
+		if err := client.Model(&TestFileRecord{}).Where("`type` = ? AND `state` = ?", t, apistructs.FileRecordStatePending).Count(&count).Error; err != nil {
+			return nil, nil, err
+		}
+		counter[string(t)] = count
+	}
+
+	return res, counter, nil
 }
 
 // Update Record
