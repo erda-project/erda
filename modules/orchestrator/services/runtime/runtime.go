@@ -1257,6 +1257,8 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 			continue
 		}
 		env := strutil.ToLower(runtime.Workspace)
+		// If the user does not have the permission of this environment,
+		// the runtime data in this environment will not be returned
 		if _, exists := rtEnvPermBranchMark[env]; !exists {
 			continue
 		}

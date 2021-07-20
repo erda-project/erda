@@ -180,7 +180,7 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 			if err != nil {
 				return nil, err
 			}
-			if isUndoneDeployByReleaseTask(piplineDetail) {
+			if isUndoneTaskOFDeployByRelease(piplineDetail) {
 				result = append(result, apistructs.RuntimeSummaryDTO{
 					RuntimeInspectDTO: apistructs.RuntimeInspectDTO{
 						Name:         v.FilterLabels["branch"],
@@ -204,7 +204,8 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 	return result, nil
 }
 
-func isUndoneDeployByReleaseTask(piplineDetail *apistructs.PipelineDetailDTO) bool {
+// isUndoneTaskOFDeployByRelease determine if the 'deploy by release' task is unfinished
+func isUndoneTaskOFDeployByRelease(piplineDetail *apistructs.PipelineDetailDTO) bool {
 	if len(piplineDetail.PipelineStages) == 0 || len(piplineDetail.PipelineStages[0].PipelineTasks) == 0 {
 		return false
 	}

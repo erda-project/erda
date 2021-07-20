@@ -179,11 +179,11 @@ func TestIsUndoneDeployByReleaseTask(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, isUndoneDeployByReleaseTask(pipelineDetailDTO))
+	assert.True(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
 
 	pipelineDetailDTO.PipelineStages[0].PipelineTasks[0].Type = "fsdsasfs"
-	assert.False(t, isUndoneDeployByReleaseTask(pipelineDetailDTO))
+	assert.False(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
 
 	pipelineDetailDTO.PipelineStages[0].PipelineTasks[0].Status = "Failed"
-	assert.False(t, isUndoneDeployByReleaseTask(pipelineDetailDTO))
+	assert.False(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
 }
