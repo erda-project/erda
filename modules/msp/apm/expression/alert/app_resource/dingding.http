@@ -1,0 +1,106 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@addon_id = kafka
+@addon_type = kafka
+@allocation = 512MB
+@application_name = test-app
+@cluster_name = terminus-test
+@container_id = xxxxxx
+@display_url = www.baidu.com
+@host_ip = 192.168.0.1
+@instance_id = xxxxxx
+@limit = 1GB
+@max_usage = 900MB
+@max_value = 1GB
+@project_name = test-project
+@runtime_name = master
+@service_name = helloworld
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage = 500MB
+@usage_percent = 70
+@used_value = 900MB
+@window = 5
+
+
+### 中间件实例CPU异常
+# @ app_resource/app_resource_container_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件实例CPU告警**】\n\n中间件: **{{addon_type}} / {{addon_id}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\nCPU限制: **{{limit_value}}**\n\nCPU分配: **{{allocation}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【中间件实例CPU告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 中间件实例CPU异常
+# @ app_resource/app_resource_container_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件实例CPU恢复**】\n\n中间件: **{{addon_type}} / {{addon_id}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**",
+		"title": "【中间件实例CPU恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 中间件实例内存异常
+# @ app_resource/app_resource_container_mem/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件实例内存告警**】\n\n中间件: **{{addon_type}} / {{addon_id}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\n已使用: **{{usage_value}}**\n\n历史最大: **{{max_usage_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【中间件实例内存告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 中间件实例内存异常
+# @ app_resource/app_resource_container_mem/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件实例内存恢复**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**",
+		"title": "【中间件实例内存恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### JVM堆内存使用异常告警
+# @ app_resource/app_resource_jvm_heap/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**JVM堆内存使用异常告警**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n堆内存使用率: **{{usage_percent}}**\n\n已使用: **{{used_value}}**\n\n最大使用: **{{max_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【JVM堆内存使用异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### JVM堆内存使用异常恢复
+# @ app_resource/app_resource_jvm_heap/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**JVM堆内存使用异常恢复**】\n\n项目: **{{project_name}}**\n\n应用: **{{application_name}}**\n\n服务: **{{runtime_name}} / {{service_name}}**\n\n实例: **{{instance_id}}**\n\n堆内存使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【JVM堆内存使用异常恢复】"
+	},
+	"msgtype": "markdown"
+}

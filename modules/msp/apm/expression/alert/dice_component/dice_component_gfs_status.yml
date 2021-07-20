@@ -1,0 +1,17 @@
+- name: "平台组件网盘不可用告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  title: |
+    【平台组件网盘疑似不可用告警】
+  template: |
+    【平台组件网盘疑似不可用告警】
+
+    组件: {{component_name}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

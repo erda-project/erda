@@ -1,0 +1,268 @@
+@url = http://monitor.default.svc.cluster.local:7096
+@notify_group_id = 1
+@dingding = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@org_id = 1
+@user_id = 1
+@domain = http://terminus.app.terminus.io
+
+
+### 删除 alert
+DELETE {{url}}/api/alerts/<id>
+
+
+### 应用实例CPU使用异常
+# @ app_resource/app_resource_container_cpu
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用实例CPU使用异常",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_container_cpu",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gte",
+					"value": 90
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用实例内存使用率异常
+# @ app_resource/app_resource_container_mem
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用实例内存使用率异常",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_container_mem",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gte",
+					"value": 90
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用实例OOM
+# @ app_resource/app_resource_container_oom
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用实例OOM",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_container_oom",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "oomkilled",
+					"operator": "eq",
+					"value": true
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用JVM GC次数
+# @ app_resource/app_resource_jvm_gc_count
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用JVM GC次数",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_jvm_gc_count",
+			"functions": [
+				{
+					"aggregator": "sum",
+					"field": "count",
+					"operator": "gte",
+					"value": 5
+				}
+			],
+			"window": 3
+		}
+	]
+}
+
+
+
+### 应用JVM GC 耗时
+# @ app_resource/app_resource_jvm_gc_time
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用JVM GC 耗时",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_jvm_gc_time",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "time",
+					"operator": "gte",
+					"value": 400
+				},
+				{
+					"aggregator": "sum",
+					"field": "time",
+					"operator": "gte",
+					"value": 1000
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用JVM堆内存
+# @ app_resource/app_resource_jvm_heap
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用JVM堆内存",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_jvm_heap",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gte",
+					"value": 75
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### 应用NodeJS堆内存使用率
+# @ app_resource/app_resource_nodejs_heap
+POST {{url}}/api/alerts
+Content-Type: application/json
+
+{
+	"alertScope": "micro_service",
+	"alertScopeId": "xxxx",
+	"clusterName": "terminus-dev",
+	"enable": true,
+	"name": "应用NodeJS堆内存使用率",
+	"notifies": [
+		{
+			"groupId": 1,
+			"groupType": "dingding",
+			"type": "notify_group"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "app_resource_nodejs_heap",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gte",
+					"value": 75
+				}
+			],
+			"window": 1
+		}
+	]
+}
+

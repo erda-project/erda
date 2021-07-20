@@ -1,0 +1,336 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@CollectionCount_win = 20
+@CollectionTime_win = 200
+@addon_id = kafka
+@allocation = 512MB
+@cluster_name = terminus-test
+@consume_rate_per_sec = 90
+@container_id = xxxxxx
+@display_url = www.baidu.com
+@gc_collectors_old_collection_time_in_millis_win = 5
+@group = spot-metrics-group
+@host_ip = 192.168.0.1
+@lag = 100
+@limit = 1GB
+@max_usage = 900MB
+@node_host = 192.179.0.1
+@node_name = 192.179.0.1
+@not_ready = 2
+@produce_rate_per_sec = 100
+@ready = 10
+@restarts_total = 10
+@terminated_reason = oom killed
+@timestamp = 2020-01-01 12:12:12
+@topic = topic
+@trigger_duration_min = 10
+@usage = 500MB
+@usage_percent = 70
+@window = 5
+
+
+### dice中间件cassandra GC次数异常
+# @ dice_addon/dice_addon_cassandra_gc_count/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件cassandra GC次数告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}老年代GC次数: **{{CollectionCount_win}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件cassandra GC次数告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件cassandra GC次数异常
+# @ dice_addon/dice_addon_cassandra_gc_count/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件cassandra GC次数异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件cassandra GC次数异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件cassandra GC耗时异常
+# @ dice_addon/dice_addon_cassandra_gc_time/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件cassandra GC耗时告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}内老年代GC耗时: **{{CollectionTime_win}}毫秒**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件cassandra GC耗时告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件cassandra GC耗时异常
+# @ dice_addon/dice_addon_cassandra_gc_time/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件cassandra GC耗时异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件cassandra GC耗时异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例CPU异常
+# @ dice_addon/dice_addon_container_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件CPU告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\nCPU限制: **{{limit_value}}**\n\nCPU分配: **{{allocation}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件CPU告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例CPU异常
+# @ dice_addon/dice_addon_container_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件CPU恢复**】\n\n中间件: **{{addon_id}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件CPU恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件异常退出
+# @ dice_addon/dice_addon_container_exit/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件异常退出告警**】\n\n中间件: **{{addon_id}}**\n\nPod重启次数: **{{restarts_total}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n退出原因: **{{terminated_reason_value}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件异常退出告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件异常退出
+# @ dice_addon/dice_addon_container_exit/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件异常退出恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件异常退出恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例内存异常
+# @ dice_addon/dice_addon_container_mem/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件内存告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\n已使用: **{{usage_value}}**\n\n内存限制: **{{limit_value}}**\n\n历史最大: **{{max_usage_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件内存告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例内存异常
+# @ dice_addon/dice_addon_container_mem/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件内存恢复**】\n\n中间件: **{{addon_id}}**\n\n使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件内存恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例Ready状态异常
+# @ dice_addon/dice_addon_container_ready/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件Ready状态告警**】\n\n中间件: **{{addon_id}}**\n\n未就绪实例: **{{not_ready_value}}**\n\n已就绪实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件Ready状态告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件实例Ready状态异常
+# @ dice_addon/dice_addon_container_ready/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件Ready状态恢复**】\n\n中间件: **{{addon_id}}**\n\n已绪数实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件Ready状态恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件elasticsearch GC次数异常
+# @ dice_addon/dice_addon_elasticsearch_gc_count/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件elasticsearch GC次数告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}老年代GC次数: **{{CollectionCount_win}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件elasticsearch GC次数告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件elasticsearch GC次数异常
+# @ dice_addon/dice_addon_elasticsearch_gc_count/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件elasticsearch GC次数异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件elasticsearch GC次数异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件elasticsearch GC耗时异常
+# @ dice_addon/dice_addon_elasticsearch_gc_time/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件elasticsearch GC耗时告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}内老年代GC耗时: **{{gc_collectors_old_collection_time_in_millis_win}}毫秒**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件elasticsearch GC耗时告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件elasticsearch GC耗时异常
+# @ dice_addon/dice_addon_elasticsearch_gc_time/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件elasticsearch GC耗时异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件elasticsearch GC耗时异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件Kafka GC次数异常
+# @ dice_addon/dice_addon_kafka_gc_count/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件Kafka GC次数告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}老年代GC次数: **{{CollectionCount_win}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件Kafka GC次数告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件Kafka GC次数异常
+# @ dice_addon/dice_addon_kafka_gc_count/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件Kafka GC次数异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件Kafka GC次数异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件kafka GC耗时异常
+# @ dice_addon/dice_addon_kafka_gc_time/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件kafka GC耗时告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}内老年代GC耗时: **{{CollectionTime_win}}毫秒**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件kafka GC耗时告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件kafka GC耗时异常
+# @ dice_addon/dice_addon_kafka_gc_time/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件kafka GC耗时异常恢复**】\n\n中间件: **{{addon_id}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件kafka GC耗时异常】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件kafka消费堆积
+# @ dice_addon/dice_addon_kafka_lag/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件kafka消费堆积告警**】\n\n中间件: **{{addon_id}}**\n\n消费者组: **{{group}}**\n\n消费话题: **{{topic}}**\n\n当前消息堆积: **{{lag}}**\n\n消费速度: **{{consume_rate_per_sec}} /s**\n\n生产速度: **{{produce_rate_per_sec}} /s**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice中间件kafka消费堆积告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice中间件kafka消费堆积
+# @ dice_addon/dice_addon_kafka_lag/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice中间件kafka消费堆积恢复**】\n\n中间件: **{{addon_id}}**\n\n消费者组: **{{group}}**\n\n消费话题: **{{topic}}**\n\n当前消息堆积: **{{lag}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_host}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice中间件kafka消费堆积】\n"
+	},
+	"msgtype": "markdown"
+}

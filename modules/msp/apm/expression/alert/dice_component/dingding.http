@@ -1,0 +1,131 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@allocation = 512MB
+@cluster_name = terminus-test
+@componentonent_name = 
+@container_id = xxxxxx
+@display_url = www.baidu.com
+@host_ip = 192.168.0.1
+@limit = 1GB
+@max_usage = 900MB
+@node_name = 192.179.0.1
+@not_ready = 2
+@ready = 10
+@restarts_total = 10
+@terminated_reason = oom killed
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage = 500MB
+@usage_percent = 70
+@window = 5
+
+
+### dice组件实例CPU异常
+# @ dice_component/dice_component_container_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件CPU告警**】\n\n组件: **{{componentonent_name}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\nCPU限制: **{{limit_value}}**\n\nCPU分配: **{{allocation}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice组件CPU告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件实例CPU异常
+# @ dice_component/dice_component_container_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件CPU恢复**】\n\n组件: **{{componentonent_name}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice组件CPU恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件异常退出
+# @ dice_component/dice_component_container_exit/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件异常退出告警**】\n\n组件: **{{componentonent_name}}**\n\nPod重启次数: **{{restarts_total}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n退出原因: **{{terminated_reason_value}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice组件异常退出告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件异常退出
+# @ dice_component/dice_component_container_exit/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件异常退出恢复**】\n\n组件: **{{componentonent_name}}**\n\n集群 / 机器: **{{cluster_name}} / {{node_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice组件异常退出恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件实例内存异常
+# @ dice_component/dice_component_container_mem/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件内存告警**】\n\n组件: **{{componentonent_name}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\n已使用: **{{usage_value}}**\n\n内存限制: **{{limit_value}}**\n\n历史最大: **{{max_usage_value}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice组件内存告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件实例内存异常
+# @ dice_component/dice_component_container_mem/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件内存恢复**】\n\n组件: **{{componentonent_name}}**\n\n使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice组件内存恢复】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件实例Ready状态异常
+# @ dice_component/dice_component_instance_ready/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件Ready状态告警**】\n\n组件: **{{componentonent_name}}**\n\n未就绪实例: **{{not_ready_value}}**\n\n已就绪实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【dice组件Ready状态告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### dice组件实例Ready状态异常
+# @ dice_component/dice_component_instance_ready/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**dice组件Ready状态恢复**】\n\n组件: **{{componentonent_name}}**\n\n已绪数实例: **{{ready_value}}**\n\n集群: **{{cluster_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【dice组件Ready状态恢复】\n"
+	},
+	"msgtype": "markdown"
+}

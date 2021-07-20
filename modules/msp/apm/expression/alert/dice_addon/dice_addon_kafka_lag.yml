@@ -1,0 +1,54 @@
+- name: "平台中间件kafka消费堆积"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats: ""
+  title: |
+    【平台中间件kafka消费堆积告警】
+  template: |
+    【平台中间件kafka消费堆积告警】
+
+    中间件: {{addon_id}}
+
+    消费者组: {{group}}
+
+    Topic: {{topic}}
+
+    当前消息堆积: {{lag_avg}}
+
+    消费速度: {{consume_rate_per_sec_avg}} /s
+
+    生产速度: {{produce_rate_per_sec_avg}} /s
+
+    集群: {{cluster_name}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "平台中间件kafka消费堆积"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件kafka消费堆积恢复】
+  template: |
+    【平台中间件kafka消费堆积恢复】
+
+    中间件: {{addon_id}}
+
+    消费者组: {{group}}
+
+    Topic: {{topic}}
+
+    当前消息堆积: {{lag_avg}}
+
+    集群: {{cluster_name}}
+    
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

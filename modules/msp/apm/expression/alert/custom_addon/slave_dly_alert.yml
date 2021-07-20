@@ -1,0 +1,20 @@
+- name: "MySQL SLAVE DELAY ALERT"
+  trigger: "alert"
+  target: "dingding"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL {{window}}M 聚合时间内 SLAVE 延迟 {{slave_seconds_behind_master_max}}s】
+  template: |
+    【MySQL {{window}}M 聚合时间内 SLAVE 延迟 {{slave_seconds_behind_master_max}}s】
+
+    集群: {{cluster_name}}
+
+    mysql: {{server_id}}
+
+    延迟时间： {{slave_seconds_behind_master_max}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

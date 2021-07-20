@@ -1,0 +1,40 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@addon_id = kafka
+@allocation = 512MB
+@cluster_name = terminus-test
+@container_id = xxxxxx
+@display_url = www.baidu.com
+@host_ip = 192.168.0.1
+@limit = 1GB
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage_percent = 70
+@window = 5
+
+
+### 中间件实例CPU异常
+# @ addon/addon_container_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件CPU告警**】\n\n中间件: **{{addon_id}}**\n\n{{window}}平均使用率: **{{usage_percent}}**\n\nCPU限制: **{{limit_value}}**\n\nCPU分配: **{{allocation}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【中间件CPU告警】\n"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 中间件实例CPU异常
+# @ addon/addon_container_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**中间件CPU恢复**】\n\n中间件: **{{addon_id}}**\n\n平均使用率: **{{usage_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n容器ID: **{{container_id}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n",
+		"title": "【中间件CPU恢复】\n"
+	},
+	"msgtype": "markdown"
+}

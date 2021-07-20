@@ -38,7 +38,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
-	github.com/erda-project/erda-proto-go v0.0.0-20210715071257-863ac2744be1
+	github.com/erda-project/erda-proto-go v0.0.0-20210720040046-67b8d1df61fa
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -129,10 +129,10 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20210716203947-853a461950ff
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210714021259-044028024a4f
+	google.golang.org/genproto v0.0.0-20210719143636-1d5a45f8e492
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
@@ -164,7 +164,6 @@ require (
 )
 
 replace (
-    github.com/erda-project/erda-proto-go => /Users/innerpeacez/Code/terminus/gocode/src/terminus.io/erda-proto-go
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511

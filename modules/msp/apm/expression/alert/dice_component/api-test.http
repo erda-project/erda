@@ -1,0 +1,162 @@
+@url = http://monitor.default.svc.cluster.local:7096
+@notify_group_id = 1
+@dingding = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@org_id = 1
+@user_id = 1
+@domain = http://terminus.app.terminus.io
+
+
+### 删除 alert
+DELETE {{url}}/api/alerts/<id>
+
+
+### dice组件实例CPU状态
+# @ dice_component/dice_component_container_cpu
+POST {{url}}/api/orgs/alerts
+Content-Type: application/json
+Org-ID: {{org_id}}
+User-ID: {{user_id}}
+
+{
+	"alertScope": "org",
+	"alertScopeId": "1",
+	"clusterName": "terminus-dev",
+	"domain": "http://terminus.app.terminus.io",
+	"enable": true,
+	"name": "dice组件实例CPU状态",
+	"notifies": [
+		{
+			"dingdingUrl": "{{dingding}}",
+			"type": "dingding"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "dice_component_container_cpu",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gte",
+					"value": 95
+				}
+			],
+			"window": 2
+		}
+	]
+}
+
+
+
+### dice组件异常退出
+# @ dice_component/dice_component_container_exit
+POST {{url}}/api/orgs/alerts
+Content-Type: application/json
+Org-ID: {{org_id}}
+User-ID: {{user_id}}
+
+{
+	"alertScope": "org",
+	"alertScopeId": "1",
+	"clusterName": "terminus-dev",
+	"domain": "http://terminus.app.terminus.io",
+	"enable": true,
+	"name": "dice组件异常退出",
+	"notifies": [
+		{
+			"dingdingUrl": "{{dingding}}",
+			"type": "dingding"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "dice_component_container_exit",
+			"functions": [
+				{
+					"aggregator": "value",
+					"field": "state_code",
+					"operator": "neq",
+					"value": 0
+				}
+			],
+			"window": 1
+		}
+	]
+}
+
+
+
+### dice组件实例内存状态
+# @ dice_component/dice_component_container_mem
+POST {{url}}/api/orgs/alerts
+Content-Type: application/json
+Org-ID: {{org_id}}
+User-ID: {{user_id}}
+
+{
+	"alertScope": "org",
+	"alertScopeId": "1",
+	"clusterName": "terminus-dev",
+	"domain": "http://terminus.app.terminus.io",
+	"enable": true,
+	"name": "dice组件实例内存状态",
+	"notifies": [
+		{
+			"dingdingUrl": "{{dingding}}",
+			"type": "dingding"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "dice_component_container_mem",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "usage_percent",
+					"operator": "gt",
+					"value": 70
+				}
+			],
+			"window": 2
+		}
+	]
+}
+
+
+
+### dice组件实例Ready状态异常
+# @ dice_component/dice_component_container_ready
+POST {{url}}/api/orgs/alerts
+Content-Type: application/json
+Org-ID: {{org_id}}
+User-ID: {{user_id}}
+
+{
+	"alertScope": "org",
+	"alertScopeId": "1",
+	"clusterName": "terminus-dev",
+	"domain": "http://terminus.app.terminus.io",
+	"enable": true,
+	"name": "dice组件实例Ready状态异常",
+	"notifies": [
+		{
+			"dingdingUrl": "{{dingding}}",
+			"type": "dingding"
+		}
+	],
+	"rules": [
+		{
+			"alertIndex": "dice_component_container_ready",
+			"functions": [
+				{
+					"aggregator": "avg",
+					"field": "not_ready_avg",
+					"operator": "gt",
+					"value": 0
+				}
+			],
+			"window": 3
+		}
+	]
+}
+

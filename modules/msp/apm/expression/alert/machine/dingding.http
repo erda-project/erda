@@ -1,0 +1,180 @@
+@url = https://oapi.dingtalk.com/robot/send?access_token=6b41bccea053dff5362b15088485849a4d5e2c701d2f18c4e61e14b41ca0715b
+@cluster_name = terminus-test
+@display_url = www.baidu.com
+@host_ip = 192.168.0.1
+@last_timestamp = 2020-01-01 12:12:12
+@load5 = 10
+@pct_util_min = 123
+@timestamp = 2020-01-01 12:12:12
+@trigger_duration_min = 10
+@usage_active_avg = 98
+@used_percent = 90
+@window = 5
+
+
+### 机器CPU异常告警
+# @ machine/machine_cpu/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**机器CPU异常告警**】\n\nCPU平均使用率: **{{usage_active_avg}}** （过高）\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n时间: **{{timestamp}}**\n\n\n\n* *\n\n\n\n[查看详情]({{display_url}})\n",
+		"title": "【机器CPU异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 机器CPU异常恢复
+# @ machine/machine_cpu/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**机器CPU异常恢复**】\n\nCPU平均使用率: **{{usage_active_avg}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【机器CPU异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 磁盘容量异常告警
+# @ machine/machine_disk/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**磁盘容量异常告警**】\n\n磁盘使用率: **{{used_percent}}** (过高)\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【磁盘容量异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 磁盘容量异常恢复
+# @ machine/machine_disk/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**磁盘容量异常恢复**】\n\n磁盘使用率: **{{used_percent}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【磁盘容量异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 磁盘IO异常告警
+# @ machine/machine_disk_util/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**磁盘IO异常告警**】\n\nIO 操作百分比: **{{pct_util_min}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【磁盘IO异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 磁盘IO异常恢复
+# @ machine/machine_disk_util/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**磁盘IO异常恢复**】\n\nIO 操作百分比: **{{pct_util_min}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【磁盘IO异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 机器负载异常告警
+# @ machine/machine_load5/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**机器负载异常告警**】\n\nLoad5: **{{load5}}** （过高）\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【机器负载异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 机器负载异常恢复
+# @ machine/machine_load5/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**机器负载异常恢复**】\n\nLoad5: **{{load5}}**\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【机器负载异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 网盘容量异常告警
+# @ machine/machine_netdisk/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**网盘容量异常告警**】\n\n网盘使用率: **{{used_percent}}** (过高)\n\n集群: **{{cluster_name}}**\n\n时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【网盘容量异常告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 网盘容量异常恢复
+# @ machine/machine_netdisk/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**网盘容量异常恢复**】\n\n网盘使用率: **{{used_percent}}**\n\n集群: **{{cluster_name}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【网盘容量异常恢复】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 宕机告警
+# @ machine/machine_outage/alert
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**宕机告警**】\n\n机器 **{{window}}** 内无消息, 疑似发生宕机\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n最近活跃时间: **{{last_timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【宕机告警】"
+	},
+	"msgtype": "markdown"
+}
+
+
+### 宕机恢复
+# @ machine/machine_outage/recovery
+POST {{url}}
+Content-Type: application/json
+
+{
+	"markdown": {
+		"text": "【**宕机恢复**】\n\n集群 / 机器: **{{cluster_name}} / {{host_ip}}**\n\n持续时间: **{{trigger_duration_min}}**\n\n恢复时间: **{{timestamp}}**\n\n[查看详情]({{display_url}})\n",
+		"title": "【宕机恢复】"
+	},
+	"msgtype": "markdown"
+}

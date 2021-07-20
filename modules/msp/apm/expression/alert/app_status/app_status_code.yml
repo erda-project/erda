@@ -1,0 +1,46 @@
+- name: " 主动监控HTTP状态异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats: ""
+  title: |
+    【{{project_name}}项目{{status_metric_name}}指标HTTP状态异常告警】
+  template: |
+    【主动监控HTTP状态异常】
+
+    项目: {{project_name}}
+
+    环境: {{workspace}}
+
+    事件: [{{status_metric_name}}]({{url}}) 指标状态异常
+    
+    响应状态码: {{code_min}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "主动监控HTTP状态恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  formats: 
+    trigger_duration: "time:ms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}指标HTTP状态恢复】
+  template: |
+    【主动监控HTTP状态恢复】
+
+    项目: {{project_name}}
+
+    环境: {{workspace}}
+
+    事件: [{{status_metric_name}}]({{url}}) 指标状态恢复
+
+    响应状态码: {{code_min}}
+    
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})

@@ -1,0 +1,19 @@
+- name: "平台组件Flink吞吐量异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  title: |
+    【平台组件Flink吞吐量异常告警】
+  template: |
+    【平台组件Flink吞吐量异常告警】
+
+    operator每秒输出量: {{numRecordsOutPerSecond_count_value}}
+
+    任务ID： {{job_id}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
