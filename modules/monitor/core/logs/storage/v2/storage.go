@@ -44,8 +44,6 @@ type LogStatement struct {
 
 func (ls *LogStatement) GetStatement(data interface{}) (string, []interface{}, error) {
 	switch data.(type) {
-	// case *logs.Log:
-	// 	return ls.p.getLogStatement(data.(*logs.Log), ls.gzipWriter)
 	case *pb.Log:
 		return ls.p.getLogStatementV2(data.(*pb.Log), ls.gzipWriter)
 	case *logs.LogMeta:
@@ -77,39 +75,6 @@ func (p *provider) getLogStatementV2(log *pb.Log, reusedWriter *gzip.Writer) (st
 	return cql, []interface{}{
 		log.Source,
 		log.Id,
-		log.Stream,
-		trncateDate(log.Timestamp),
-		log.Timestamp,
-		log.Offset,
-		content,
-		log.Tags["level"],
-		requestID,
-		ttl,
-	}, nil
-}
-
-func (p *provider) getLogStatement(log *logs.Log, reusedWriter *gzip.Writer) (string, []interface{}, error) {
-	ttl := p.ttl.GetSecondByKey(log.Tags[diceOrgNameKey])
-
-	var requestID *string // request_id 字段不存在时为null，所以使用指针
-	if rid, ok := log.Tags["request-id"]; ok {
-		requestID = &rid
-	}
-
-	table := schema.DefaultBaseLogTable
-	if org, ok := log.Tags[diceOrgNameKey]; ok {
-		table = schema.BaseLogWithOrgName(org)
-	}
-
-	content, err := gzipContentV2(log.Content, reusedWriter)
-	if err != nil {
-		return "", nil, err
-	}
-	// nolint
-	cql := fmt.Sprintf(`INSERT INTO %s (source, id, stream, time_bucket, timestamp, offset, content, level, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) USING TTL ?;`, table)
-	return cql, []interface{}{
-		log.Source,
-		log.ID,
 		log.Stream,
 		trncateDate(log.Timestamp),
 		log.Timestamp,

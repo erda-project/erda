@@ -74,10 +74,6 @@ func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) 
 		op(cs)
 	}
 
-	// create default
-	if err := cs.createDefault(); err != nil {
-		return nil, errors.Wrap(err, "create default failed")
-	}
 	return cs, nil
 }
 
@@ -201,7 +197,7 @@ func (cs *CassandraSchema) createTableWithKC(item *cassandra.KeyspaceConfig) err
 	return nil
 }
 
-func (cs *CassandraSchema) createDefault() error {
+func (cs *CassandraSchema) CreateDefault() error {
 	for _, stmt := range []string{
 		fmt.Sprintf(BaseLogCreateTable, DefaultKeySpace, gcGraceSeconds),
 		fmt.Sprintf(BaseLogAlterTableGCGraceSeconds, DefaultKeySpace, gcGraceSeconds),

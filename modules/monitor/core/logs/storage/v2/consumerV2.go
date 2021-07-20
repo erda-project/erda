@@ -29,6 +29,8 @@ func (p *provider) invokeV2(key []byte, value []byte, topic *string, timestamp t
 	}
 
 	for _, log := range lb.Logs {
+		p.processLogV2(log)
+
 		cacheKey := log.Source + "_" + log.Id
 		if !p.cache.Has(cacheKey) {
 			// store meta
@@ -40,8 +42,6 @@ func (p *provider) invokeV2(key []byte, value []byte, topic *string, timestamp t
 			p.output.Write(meta)
 			p.cache.SetWithExpire(cacheKey, meta, time.Hour)
 		}
-		p.processLogV2(log)
-		countV2(log)
 
 		if err := p.output.Write(log); err != nil {
 			return err
@@ -74,25 +74,4 @@ func (p *provider) processLogV2(log *pb.Log) {
 	if log.Stream == "" {
 		log.Stream = "stdout" // default log stream
 	}
-}
-
-func countV2(log *pb.Log) {
-	componentName := log.Tags[diceComponentKey]
-	var componentType string
-	if componentName != "" {
-		componentType = platformKey
-	}
-	logBytesCounter.WithLabelValues(
-		log.Tags[levelKey],
-		log.Source,
-		componentType,
-		componentName,
-		log.Tags[diceClusterNameKey],
-		log.Tags[diceOrgNameKey],
-		log.Tags[diceProjectIDKey],
-		log.Tags[diceProjectNameKey],
-		log.Tags[diceApplicationIDKey],
-		log.Tags[diceApplicationNameKey],
-		log.Tags[diceWorkspaceKey],
-	).Add(float64(len(log.Content)))
 }

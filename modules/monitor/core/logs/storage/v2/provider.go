@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/bluele/gcache"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -73,7 +74,7 @@ type provider struct {
 	EtcdMutexInf mutex.Interface
 	output       writer.Writer
 	ttl          ttlStore
-	schema       schema.LogSchema
+	schema       *schema.CassandraSchema
 	cache        gcache.Cache
 }
 
@@ -104,6 +105,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	// create default
+	if err := p.schema.CreateDefault(); err != nil {
+		return fmt.Errorf("create default failed: %w", err)
+	}
+
 	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval, p.EtcdMutexInf)
 	go p.ttl.Run(ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
 	go p.startStoreMetaCache(ctx)
@@ -115,6 +121,27 @@ func (p *provider) Run(ctx context.Context) error {
 	case <-ctx.Done():
 	}
 	return nil
+}
+
+func (p *provider) startStoreMetaCache(ctx context.Context) {
+	ticker := time.NewTicker(p.Cfg.Output.Cassandra.CacheStoreInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			p.storeMetaCache()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (p *provider) storeMetaCache() {
+	for _, meta := range p.cache.GetALL(true) {
+		if err := p.output.Write(meta); err != nil {
+			logrus.Errorf("fail to write log meta: %s", err)
+		}
+	}
 }
 
 func init() {

@@ -25,6 +25,67 @@ var (
 		[]string{levelKey, srcKey, srcComponentTypeKey, srcComponentNameKey, srcClusterNameKey, srcOrgNameKey, srcProjectIDKey, srcProjectNameKey, srcApplicationIDKey, srcApplicationNameKey, srcWorkspaceKey})
 )
 
+const (
+	platformKey        = "platform"
+	componentKey       = "component"
+	componentNameKey   = "component_name"
+	componentTypeKey   = "component_type"
+	orgIDKey           = "org_id"
+	orgNameKey         = "org_name"
+	clusterNameKey     = "cluster_name"
+	projectIDKey       = "project_id"
+	projectNameKey     = "project_name"
+	applicationIDKey   = "application_id"
+	applicationNameKey = "application_name"
+	workspaceKey       = "workspace"
+	levelKey           = "level"
+
+	dicePrefix             = "dice_"
+	diceComponentKey       = dicePrefix + componentKey
+	diceOrgIDKey           = dicePrefix + orgIDKey
+	diceOrgNameKey         = dicePrefix + orgNameKey
+	diceClusterNameKey     = dicePrefix + clusterNameKey
+	diceProjectIDKey       = dicePrefix + projectIDKey
+	diceProjectNameKey     = dicePrefix + projectNameKey
+	diceApplicationIDKey   = dicePrefix + applicationIDKey
+	diceApplicationNameKey = dicePrefix + applicationNameKey
+	diceWorkspaceKey       = dicePrefix + workspaceKey
+
+	srcKey                = "src"
+	srcPrefix             = "src_"
+	srcComponentNameKey   = srcPrefix + componentNameKey
+	srcComponentTypeKey   = srcPrefix + componentTypeKey
+	srcOrgNameKey         = srcPrefix + orgNameKey
+	srcClusterNameKey     = srcPrefix + clusterNameKey
+	srcProjectIDKey       = srcPrefix + projectIDKey
+	srcProjectNameKey     = srcPrefix + projectNameKey
+	srcApplicationIDKey   = srcPrefix + applicationIDKey
+	srcApplicationNameKey = srcPrefix + applicationNameKey
+	srcWorkspaceKey       = srcPrefix + workspaceKey
+)
+
+// todo prometheus
+// func countV2(log *pb.Log) {
+// 	componentName := log.Tags[diceComponentKey]
+// 	var componentType string
+// 	if componentName != "" {
+// 		componentType = platformKey
+// 	}
+// 	logBytesCounter.WithLabelValues(
+// 		log.Tags[levelKey],
+// 		log.Source,
+// 		componentType,
+// 		componentName,
+// 		log.Tags[diceClusterNameKey],
+// 		log.Tags[diceOrgNameKey],
+// 		log.Tags[diceProjectIDKey],
+// 		log.Tags[diceProjectNameKey],
+// 		log.Tags[diceApplicationIDKey],
+// 		log.Tags[diceApplicationNameKey],
+// 		log.Tags[diceWorkspaceKey],
+// 	).Add(float64(len(log.Content)))
+// }
+
 func init() {
 	prometheus.MustRegister(logBytesCounter)
 }
