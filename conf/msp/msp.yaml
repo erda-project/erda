@@ -120,6 +120,8 @@ erda.msp.apm.exception:
       name: "spot_prod"
       auto: false # auto generate keyspace
 
+erda.msp.apm.expression:
+
 # apm metric
 erda.msp.apm.metric:
   monitor_url: "http://${MONITOR_ADDR:monitor:7096}"
