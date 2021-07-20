@@ -70,7 +70,7 @@ func (e *Endpoints) GetFileTreeNode(ctx context.Context, r *http.Request, vars m
 	}
 	inode, err := url.QueryUnescape(vars["inode"])
 	if err != nil {
-		logrus.Error(apierrors.ErrGetFileTreeNode.InvalidParameter("QueryUnescape inode"))
+		logrus.Errorf("QueryUnescape pipeline filetree inode %v failed", vars["inode"])
 		inode = vars["inode"]
 	}
 
