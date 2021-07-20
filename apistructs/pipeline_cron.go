@@ -18,12 +18,12 @@ import (
 )
 
 type PipelineCronPagingRequest struct {
-	AllSources bool
+	AllSources bool             `schema:"allSources"`
 	Sources    []PipelineSource `schema:"source"`  // ?source=cdp-dev&source=cdp-test
 	YmlNames   []string         `schema:"ymlName"` // ?ymlName=11&ymlName=22
 
-	PageSize int
-	PageNo   int
+	PageSize int `schema:"pageSize"`
+	PageNo   int `schema:"pageNo"`
 }
 
 type PipelineCronPagingResponse struct {
@@ -48,6 +48,7 @@ type PipelineCronDTO struct {
 	PipelineYmlName string     `json:"pipelineYmlName"` // 一个分支下可以有多个 pipeline 文件，每个分支可以有单独的 cron 逻辑
 	BasePipelineID  uint64     `json:"basePipelineID"`  // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	Enable          *bool      `json:"enable"`          // 1 true, 0 false
+	PipelineYml     string     `json:"pipelineYml"`
 }
 
 type PipelineCronCreateRequest struct {
@@ -66,17 +67,18 @@ type PipelineCronDeleteResponse struct {
 type PipelineAction string
 
 const (
+	PipelineActionCreate PipelineAction = "create"
 	PipelineActionUpdate PipelineAction = "update"
 	PipelineActionDelete PipelineAction = "delete"
 	PipelineActionReName PipelineAction = "rename"
 )
 
 type PipelineCronUpdateRequest struct {
-	PipelineYml        string         `json:"pipelineYml"`
-	PipelineYmlNameNew string         `json:"pipelineYmlNameNew"`
-	PipelineYmlNameOld string         `json:"pipelineYmlNameOld"`
-	PipelineSource     PipelineSource `json:"pipelineSource"`
-	Action             PipelineAction `json:"action"`
+	ID              uint64         `json:"id"`
+	PipelineYml     string         `json:"pipelineYml"`
+	PipelineYmlName string         `json:"pipelineYmlName"`
+	CronExpr        string         `json:"cronExpr"`
+	PipelineSource  PipelineSource `json:"pipelineSource"`
 }
 
 type PipelineCronUpdateResponse struct {

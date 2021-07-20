@@ -14,6 +14,7 @@
 package bundle
 
 import (
+	"fmt"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -28,7 +29,7 @@ func (b *Bundle) UpdatePipelineCron(req apistructs.PipelineCronUpdateRequest) er
 	hc := b.hc
 
 	var updateResp apistructs.PipelineCronUpdateResponse
-	httpResp, err := hc.Put(host).Path("/api/pipeline-crons/update").
+	httpResp, err := hc.Put(host).Path(fmt.Sprintf("/api/pipeline-crons/%d", req.ID)).
 		Header(httputil.InternalHeader, "bundle").
 		JSONBody(&req).
 		Do().JSON(&updateResp)

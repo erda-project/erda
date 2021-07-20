@@ -30,6 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/helper"
 	"github.com/erda-project/erda/modules/gittar/models"
@@ -37,7 +38,6 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule/tool"
 	"github.com/erda-project/erda/modules/gittar/pkg/util"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func isTextType(contentType string) bool {
@@ -686,8 +686,7 @@ func CreateCommit(context *webcontext.Context) {
 		}
 	}
 
-	// update pipeline cron
-	go updatePipelineCron(context, createCommitRequest, beforeCommit, commit)
+	go createPipelineYmlEvent(context, createCommitRequest, commit, beforeCommit)
 
 	pushEvent := &models.PayloadPushEvent{
 		Before: beforeCommitID,
@@ -703,57 +702,49 @@ func CreateCommit(context *webcontext.Context) {
 	})
 }
 
-// updatePipelineCron if path like pipeline.yml or .dice/pipelines/*yml is updated, need to update pipeline cron
-func updatePipelineCron(ctx *webcontext.Context, req gitmodule.CreateCommit, commitFrom, commitTo *gitmodule.Commit) {
-	const pipelineSource = "dice"
-	workSpace, err := GetWorkSpace(ctx, req.Branch)
-	if err != nil {
-		logrus.Errorf("fail to GetWorkSpace,err: %v", err)
-		return
-	}
+// createPipelineYmlEvent if path like pipeline.yml or .dice/pipelines/*yml is updated, need to update pipeline cron
+func createPipelineYmlEvent(ctx *webcontext.Context, req gitmodule.CreateCommit, commitFrom, commitTo *gitmodule.Commit) {
 	for _, v := range req.Actions {
 		if util.IsPipelineYmlPath(v.Path) {
-			var action apistructs.PipelineAction
-			pipelineYmlName := GetPipelineYmlName(ctx.Repository.ApplicationId, workSpace, req.Branch, v.Path)
+			var action string
 			if v.Action == gitmodule.EDIT_ACTION_DELETE {
-				action = apistructs.PipelineActionDelete
+				action = bundle.DeleteAction
 			}
 			if v.Action == gitmodule.EDIT_ACTION_UPDATE {
 				diffFile, err := ctx.Repository.GetDiffFile(commitFrom, commitTo, v.Path, v.Path)
 				if err != nil {
 					logrus.Errorf("fail to GetDiffFile,err: %v", err)
+					continue
 				}
 				if !IsFileModified(diffFile) {
 					continue
 				}
-				action = apistructs.PipelineActionUpdate
+				action = bundle.UpdateAction
 			}
-			err = ctx.Bundle.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
-				PipelineYml:        v.Content,
-				PipelineYmlNameNew: pipelineYmlName,
-				PipelineYmlNameOld: pipelineYmlName,
-				PipelineSource:     pipelineSource,
-				Action:             action,
+			// create eventBox message
+			err := ctx.Bundle.CreateEvent(&apistructs.EventCreateRequest{
+				EventHeader: apistructs.EventHeader{
+					Event:         bundle.PipelineYmlEvent,
+					Action:        action,
+					OrgID:         strconv.FormatInt(ctx.Repository.OrgId, 10),
+					ProjectID:     strconv.FormatInt(ctx.Repository.ProjectId, 10),
+					ApplicationID: strconv.FormatInt(ctx.Repository.ApplicationId, 10),
+					Env:           "",
+					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
+				},
+				Sender: bundle.SenderGittar,
+				Content: apistructs.PipelineYmlEventData{
+					Branch:             req.Branch,
+					PipelineYml:        v.Content,
+					PipelineYmlPathNew: v.Path,
+					PipelineYmlPathOld: v.Path,
+				},
 			})
 			if err != nil {
-				logrus.Errorf("fail to UpdatePipelineCron,err: %v", err)
+				logrus.Errorf("fail to CreateEvent,err: %v", err)
 			}
 		}
 	}
-}
-
-// GetWorkSpace return workSpace of project's workspaceConfig by given branch
-func GetWorkSpace(ctx *webcontext.Context, branch string) (string, error) {
-	validBranch, err := ctx.Bundle.GetBranchWorkspaceConfigByProject(uint64(ctx.Repository.ProjectId), branch)
-	if err != nil {
-		return "", err
-	}
-	return validBranch.Workspace, nil
-}
-
-// GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml
-func GetPipelineYmlName(appID int64, workspace, branch, path string) string {
-	return strutil.Concat(strconv.FormatInt(appID, 10), "/", workspace, "/", branch, "/", path)
 }
 
 // IsFileModified if file is update return true,else return false

@@ -36,6 +36,7 @@ const (
 	SenderCoreServices   Sender = "coreServices"
 	SenderClusterManager Sender = "clusterManager"
 	SenderDOP            Sender = "dop"
+	SenderGittar         Sender = "gittar"
 )
 
 // Event types
@@ -49,6 +50,7 @@ const (
 	ApproveEvent               = "approve"
 	ApprovalStatusChangedEvent = "approvalStatusChanged"
 	IssueEvent                 = "issue"
+	PipelineYmlEvent           = "pipelineYml"
 )
 
 // Event actions
@@ -56,6 +58,7 @@ const (
 	CreateAction = "create"
 	UpdateAction = "update"
 	DeleteAction = "delete"
+	RenameAction = "rename"
 )
 
 // CreateEvent 创建一个 event 发送到 eventbox 服务.

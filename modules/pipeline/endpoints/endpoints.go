@@ -209,7 +209,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
 		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
-		{Path: "/api/pipeline-crons/update", Method: http.MethodPut, Handler: e.pipelineCronUpdate},
+		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodPut, Handler: e.pipelineCronUpdate},
 
 		// pipeline queue management
 		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},

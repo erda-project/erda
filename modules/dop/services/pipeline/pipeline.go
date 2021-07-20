@@ -460,3 +460,110 @@ func DecodeV1UniquePipelineYmlName(p *apistructs.PagePipeline, name string) stri
 		p.FilterLabels[apistructs.LabelBranch])
 	return strutil.TrimPrefixes(name, prefix)
 }
+
+// PipelineCronUpdate pipeline cron update
+func (p *Pipeline) PipelineCronUpdate(req apistructs.PipelineYmlEvent) error {
+	cron, pipelineYmlNameNew, pipelineYmlNameOld, err := p.GetPipelineCron(req)
+	if err != nil {
+		return err
+	}
+
+	var cronExpr string
+	if req.Content.PipelineYml != "" {
+		pipelineYml, err := pipelineyml.New([]byte(req.Content.PipelineYml))
+		if err != nil {
+			return err
+		}
+		cronExpr = pipelineYml.Spec().Cron
+	}
+
+	switch req.Action {
+	case bundle.RenameAction:
+		if err := p.bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+			ID:              cron.ID,
+			PipelineYml:     req.Content.PipelineYml,
+			PipelineYmlName: pipelineYmlNameNew,
+			CronExpr:        cronExpr,
+			PipelineSource:  "dice",
+		}); err != nil {
+			return err
+		}
+		if *cron.Enable && cronExpr == "" {
+			_, err = p.bdl.StopPipelineCron(cron.ID)
+			return err
+		}
+	case bundle.DeleteAction:
+		if err := p.bdl.DeletePipelineCron(cron.ID); err != nil {
+			return err
+		}
+		if *cron.Enable {
+			_, err = p.bdl.StopPipelineCron(cron.ID)
+			return err
+		}
+	case bundle.UpdateAction:
+		if err := p.bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+			ID:              cron.ID,
+			PipelineYml:     req.Content.PipelineYml,
+			PipelineYmlName: pipelineYmlNameOld,
+			CronExpr:        cronExpr,
+			PipelineSource:  "dice",
+		}); err != nil {
+			return err
+		}
+		if *cron.Enable && cronExpr == "" {
+			_, err = p.bdl.StopPipelineCron(cron.ID)
+			return err
+		}
+	default:
+		return errors.Errorf("unknow action")
+	}
+	return nil
+}
+
+// GetPipelineCron get pipeline cron
+func (p *Pipeline) GetPipelineCron(req apistructs.PipelineYmlEvent) (*apistructs.PipelineCronDTO, string, string, error) {
+	projectID, err := strconv.ParseInt(req.ProjectID, 10, 64)
+	if err != nil {
+		return nil, "", "", err
+	}
+	appID, err := strconv.ParseInt(req.ApplicationID, 10, 64)
+	if err != nil {
+		return nil, "", "", err
+	}
+	workspace, err := p.GetWorkSpace(projectID, req.Content.Branch)
+	if err != nil {
+		return nil, "", "", err
+	}
+	pipelineYmlNameOld := GetPipelineYmlName(appID, workspace, req.Content.Branch, req.Content.PipelineYmlPathOld)
+	pipelineYmlNameNew := GetPipelineYmlName(appID, workspace, req.Content.Branch, req.Content.PipelineYmlPathNew)
+	pagingReq := apistructs.PipelineCronPagingRequest{
+		AllSources: false,
+		Sources:    []apistructs.PipelineSource{"dice"},
+		YmlNames:   []string{pipelineYmlNameOld},
+		PageSize:   1,
+		PageNo:     1,
+	}
+	crons, err := p.bdl.PageListPipelineCrons(pagingReq)
+	if err != nil {
+		return nil, "", "", err
+	}
+	if len(crons.Data) == 0 {
+		return nil, "", "", errors.New("the pipeline cron is not exist")
+	}
+	return crons.Data[0], pipelineYmlNameNew, pipelineYmlNameOld, nil
+}
+
+// GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml
+func GetPipelineYmlName(appID int64, workspace, branch, path string) string {
+	return strutil.Concat(strconv.FormatInt(appID, 10), "/", workspace, "/", branch, "/", path)
+}
+
+// GetWorkSpace return workSpace of project's workspaceConfig by given branch
+func (p *Pipeline) GetWorkSpace(project int64, branch string) (string, error) {
+	rules, err := p.branchRuleSvc.Query(apistructs.ProjectScope, project)
+	if err != nil {
+		return "", err
+	}
+	branchRule := diceworkspace.GetValidBranchByGitReference(branch, rules)
+	return branchRule.Workspace, nil
+}
