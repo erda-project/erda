@@ -1,21 +1,35 @@
 #### What type of this PR
 
-Add one of the following kinds:
-/kind feature
-/kind bug
-/kind polish
-/kind document
+- [ ] feature
+- [ ] bug
+- [ ] polish
+- [ ] document
+
 
 #### What this PR does / why we need it:
+
 
 #### Which issue(s) this PR fixes:
 
 - Fixes #your-issue_number
 - [Erda Cloud Issue Link](paste your link here)
 
+
 #### Specified Reviewers:
 
 /assign @your-reviewer
+
+
+#### ChangeLog
+<!--
+Describe the specific changes from the user's perspective, as well as possible Breaking Change and other risks.
+-->
+
+| Language | Changelog |
+| --------- | ------------ |
+| 🇺🇸 English |              |
+| 🇨🇳 中文    |              |
+
 
 #### Need cherry-pick to release versions?
 
