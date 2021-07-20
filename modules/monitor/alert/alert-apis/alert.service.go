@@ -96,6 +96,9 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 	}
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
 	id, err := m.p.a.CreateAlert(alert)
+	if err != nil {
+		return &pb.CreateAlertResponse{}, err
+	}
 	result := &pb.CreateAlertResponse{
 		Data: id,
 	}
