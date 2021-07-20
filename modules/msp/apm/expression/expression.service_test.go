@@ -15,10 +15,11 @@ package expression
 
 import (
 	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/expression/pb"
 	reflect "reflect"
 	testing "testing"
+
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/apm/expression/pb"
 )
 
 func Test_expressionService_GetExpression(t *testing.T) {
