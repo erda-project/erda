@@ -27,7 +27,7 @@ import (
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
-	pygrator2 "github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
+	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
 // Scripts is the set of Module
@@ -88,7 +88,7 @@ func NewScripts(parameters Parameters) (*Scripts, error) {
 			}
 
 			// read requirements.txt
-			if strings.EqualFold(fileInfo.Name(), pygrator2.RequirementsFilename) {
+			if strings.EqualFold(fileInfo.Name(), pygrator.RequirementsFilename) {
 				module.PythonRequirementsText, err = ioutil.ReadFile(filepath.Join(parameters.Workdir(), parameters.MigrationDir(), moduleInfo.Name(), fileInfo.Name()))
 				if err != nil {
 					return nil, err
@@ -181,12 +181,11 @@ func (s *Scripts) AlterPermissionLint() error {
 }
 
 func (s *Scripts) MarkPending(tx *gorm.DB) {
-	for moduleName, module := range s.Services {
+	for _, module := range s.Services {
 		for i := range module.Scripts {
 			var record HistoryModel
 			if tx := tx.Where(map[string]interface{}{
-				"service_name": moduleName,
-				"filename":     module.Scripts[i].GetName(),
+				"filename": module.Scripts[i].GetName(),
 			}).
 				First(&record); tx.Error != nil || tx.RowsAffected == 0 {
 				module.Scripts[i].Pending = true
