@@ -1,6 +1,6 @@
 ![Erda logo](./docs/assets/logo-small.jpg)
 
-## An enterprise-grade application building, deploying, monitoring platform
+## An enterprise-grade Cloud-Native application platform
 
 [![license](https://img.shields.io/github/license/erda-project/erda.svg)](https://github.com/erda-project/erda/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/erda-project/erda)](https://goreportcard.com/report/github.com/erda-project/erda)
@@ -16,7 +16,7 @@ Erda is an open-source platform created by [Terminus](https://www.terminus.io/) 
 
 **Functional Architecture**
 
-![](./docs/assets/functional_architecture.jpg)
+![](./docs/assets/functional_architecture.png)
 
 Erda is mainly composed of the following parts:
 - DevOps
