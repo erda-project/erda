@@ -204,10 +204,7 @@ func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 
 func isObjInvalid(obj interface{}) bool {
 	v := reflect.ValueOf(obj)
-	if v.Kind() == reflect.Ptr {
-		return !v.IsNil()
-	}
-	return false
+	return v.Kind() == reflect.Ptr && !v.IsNil()
 }
 
 func isSteveError(data []byte) error {
@@ -225,15 +222,16 @@ func isSteveError(data []byte) error {
 		return apierrors.ErrInvoke.InternalError(errors.New("type field is null"))
 	}
 
-	if typ == apistructs.SteveErrorType {
-		var steveErr apistructs.SteveError
-		if err = json.Unmarshal(data, &steveErr); err != nil {
-			return apierrors.ErrInvoke.InternalError(err)
-		}
-		return toAPIError(steveErr.Status, apistructs.ErrorResponse{
-			Code: steveErr.Code,
-			Msg:  steveErr.Message,
-		})
+	if typ != apistructs.SteveErrorType {
+		return nil
 	}
-	return nil
+
+	var steveErr apistructs.SteveError
+	if err = json.Unmarshal(data, &steveErr); err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	return toAPIError(steveErr.Status, apistructs.ErrorResponse{
+		Code: steveErr.Code,
+		Msg:  steveErr.Message,
+	})
 }
