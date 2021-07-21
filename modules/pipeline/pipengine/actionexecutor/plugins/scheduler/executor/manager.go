@@ -17,11 +17,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sflink"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
@@ -60,27 +62,24 @@ func GetExecutorInfo() interface{} {
 	return []interface{}{executors, clusters}
 }
 
-func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
+func (m *Manager) Initialize() error {
 	m.factory = types.Factory
 	m.executors = make(map[types.Name]types.TaskExecutor)
 	m.clusters = make(map[string]apistructs.ClusterInfo)
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
-	for i := range cfgs {
-		if cfgs[i].Type != apistructs.K8S && cfgs[i].Type != apistructs.EDAS {
-			continue
-		}
-		if err := m.updateClusterExecutor(cfgs[i]); err != nil {
-			continue
-		}
+	if err := m.batchUpdateExecutors(); err != nil {
+		return err
 	}
 
+	triggerChan := clusterinfo.RegisterRefreshChan()
 	eventChan, err := clusterinfo.RegisterClusterEvent()
+
 	if err != nil {
 		return err
 	}
-	go m.listenClusterEventSync(context.Background(), eventChan)
+	go m.listenAndPatchExecutor(context.Background(), eventChan, triggerChan)
 
 	logrus.Info("pipeline task executor manager Initialize Done .")
 
@@ -206,12 +205,39 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 	return nil
 }
 
-func (m *Manager) listenClusterEventSync(ctx context.Context, eventChan <-chan apistructs.ClusterEvent) {
+func (m *Manager) batchUpdateExecutors() error {
+	clusters, err := clusterinfo.ListAllClusters()
+	if err != nil {
+		return err
+	}
+
+	for i := range clusters {
+		if clusters[i].Type != apistructs.K8S && clusters[i].Type != apistructs.EDAS {
+			continue
+		}
+		if err := m.updateClusterExecutor(clusters[i]); err != nil {
+			continue
+		}
+	}
+	return nil
+}
+
+func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan apistructs.ClusterEvent, triggerChan <-chan struct{}) {
 	var err error
+	interval := time.Duration(conf.ExecutorRefreshIntervalHour())
+	ticker := time.NewTicker(time.Hour * interval)
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-triggerChan:
+			if err := m.batchUpdateExecutors(); err != nil {
+				logrus.Errorf("failed to refresh executors, err: %v", err)
+			}
+		case <-ticker.C:
+			if err := m.batchUpdateExecutors(); err != nil {
+				logrus.Errorf("failed to refresh executors, err: %v", err)
+			}
 		case event := <-eventChan:
 			switch event.Action {
 			case apistructs.ClusterActionCreate:

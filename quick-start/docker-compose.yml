@@ -372,7 +372,7 @@ services:
     platform: linux/amd64
 
   erda-migration:
-    image: erdaproject/erda-mysql-migration-action:20210701-f84c33b
+    image: erdaproject/erda-mysql-migration-action:20210721-02c4af4
     container_name: erda-migration
     depends_on:
       - mysql

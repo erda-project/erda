@@ -28,7 +28,6 @@ import (
 	tasktypes "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -60,9 +59,8 @@ func init() {
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 
-		clusterInfos := clusterinfo.GetClustersInitialize()
 		mgr := executor.GetManager()
-		if err := mgr.Initialize(clusterInfos); err != nil {
+		if err := mgr.Initialize(); err != nil {
 			return nil, err
 		}
 		return &Sched{

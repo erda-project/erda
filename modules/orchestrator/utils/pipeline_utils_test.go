@@ -62,7 +62,7 @@ func TestGenCreateByReleasePipelineYaml(t *testing.T) {
 	assert.Equal(t, yml.Stages[3][0].Params["deployment_id"], expectOutPut)
 }
 
-func TestFindCreatingRuntimesByRelease(t *testing.T) {
+func TestFindCRBRRunningPipeline(t *testing.T) {
 	var bdl *bundle.Bundle
 	now := time.Now()
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PageListPipeline",
@@ -100,7 +100,64 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 	)
 	defer monkey.UnpatchAll()
 
-	result, err := FindCreatingRuntimesByRelease(uint64(1), "test", "", bdl)
+	result, err := FindCRBRRunningPipeline(uint64(1), "test", "", bdl)
+	assert.NoError(t, err)
+	assert.Equal(t, len(result), 1)
+	assert.Equal(t, result[0].ID, uint64(12580))
+}
+
+func TestFindCreatingRuntimesByRelease(t *testing.T) {
+	var bdl *bundle.Bundle
+	now := time.Now()
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PageListPipeline",
+		func(_ *bundle.Bundle, req apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
+			resp := &apistructs.PipelinePageListData{
+				Pipelines: []apistructs.PagePipeline{
+					apistructs.PagePipeline{
+						ID:      12580,
+						YmlName: "dice-deploy-release-develop",
+						Extra: apistructs.PipelineExtra{
+							DiceWorkspace: "test",
+							RunUser: &apistructs.PipelineUser{
+								ID: "2",
+							},
+						},
+						FilterLabels: map[string]string{"appID": "1", "branch": "develop"},
+						TimeBegin:    &now,
+					},
+					apistructs.PagePipeline{
+						ID:      12581,
+						YmlName: "dice-deploy-release-feature/test",
+						Extra: apistructs.PipelineExtra{
+							DiceWorkspace: "DEV",
+							RunUser: &apistructs.PipelineUser{
+								ID: "2",
+							},
+						},
+						FilterLabels: map[string]string{"appID": "1", "branch": "feature/xxx"},
+						TimeBegin:    &now,
+					},
+				},
+			}
+			return resp, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetPipeline",
+		func(_ *bundle.Bundle, pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
+			resp := &apistructs.PipelineDetailDTO{
+				PipelineStages: []apistructs.PipelineStageDetailDTO{
+					apistructs.PipelineStageDetailDTO{
+						PipelineTasks: []apistructs.PipelineTaskDTO{apistructs.PipelineTaskDTO{Type: "dice-deploy-release",
+							Status: apistructs.PipelineStatusRunning}},
+					},
+				},
+			}
+			return resp, nil
+		},
+	)
+	defer monkey.UnpatchAll()
+
+	result, err := FindCreatingRuntimesByRelease(uint64(1), map[string][]string{"test": []string{"develop/fake"}}, "", bdl)
 	assert.NoError(t, err)
 	assert.Equal(t, len(result), 1)
 	assert.Equal(t, result[0].Name, "develop")
@@ -111,4 +168,22 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 	assert.Equal(t, result[0].Extra["fakeRuntime"], true)
 	assert.Equal(t, result[0].LastOperator, "2")
 	assert.Equal(t, result[0].LastOperateTime, now)
+}
+
+func TestIsUndoneDeployByReleaseTask(t *testing.T) {
+	pipelineDetailDTO := &apistructs.PipelineDetailDTO{
+		PipelineStages: []apistructs.PipelineStageDetailDTO{
+			apistructs.PipelineStageDetailDTO{
+				PipelineTasks: []apistructs.PipelineTaskDTO{apistructs.PipelineTaskDTO{Type: "dice-deploy-release",
+					Status: apistructs.PipelineStatusRunning}},
+			},
+		},
+	}
+	assert.True(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
+
+	pipelineDetailDTO.PipelineStages[0].PipelineTasks[0].Type = "fsdsasfs"
+	assert.False(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
+
+	pipelineDetailDTO.PipelineStages[0].PipelineTasks[0].Status = "Failed"
+	assert.False(t, isUndoneTaskOFDeployByRelease(pipelineDetailDTO))
 }
