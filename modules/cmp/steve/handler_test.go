@@ -65,7 +65,7 @@ func (f *factory) Schemas(user user.Info) (*types.APISchemas, error) {
 
 type responseWriter struct {
 	http.ResponseWriter
-	Header int
+	Head int
 	Body   string
 }
 
@@ -74,14 +74,13 @@ func (r *responseWriter) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (r *responseWriter) WriteHeader(h int) (int, error) {
-	r.Header = h
-	return 0, nil
+func (r *responseWriter) WriteHeader(h int) {
+	r.Head = h
 }
 
 func TestCommon(t *testing.T) {
 	api := apiServer{
-		sf:     factory{},
+		sf:     &factory{},
 		server: server.DefaultAPIServer(),
 	}
 
@@ -95,10 +94,10 @@ func TestCommon(t *testing.T) {
 		URL:    url,
 		Proto:  "https",
 	}
-	ctx := request.WithUser(context.Background(), userInfo{Name: "testUser"})
+	ctx := request.WithUser(context.Background(), &userInfo{Name: "testUser"})
 	req1 := req.WithContext(ctx)
 
-	rw := responseWriter{}
+	rw := &responseWriter{}
 	apiReq, ok := api.common(rw, req1, "test")
 	if !ok {
 		t.Errorf("test failed, expected result %t, actual %t", true, ok)
@@ -113,20 +112,17 @@ func TestCommon(t *testing.T) {
 		t.Errorf("test failed, expected schema id %s, actual %s", "test", schema.ID)
 	}
 
-	ctx2 := request.WithUser(context.Background(), userInfo{Name: "errorUser"})
+	ctx2 := request.WithUser(context.Background(), &userInfo{Name: "errorUser"})
 	req2 := req.WithContext(ctx2)
 
 	apiReq, ok = api.common(rw, req2, "test")
-	if ok {
-		t.Errorf("test failed, expected result %t, actual %t", false, ok)
-	}
 
 	if rw.Body != "testError" {
 		t.Errorf("test failed, expoected body %s, actual %s", "testError", rw.Body)
 	}
 
-	if rw.Header != http.StatusInternalServerError {
-		t.Errorf("test failed, expoected body %d, actual %d", http.StatusInternalServerError, rw.Header)
+	if rw.Head != http.StatusInternalServerError {
+		t.Errorf("test failed, expoected body %d, actual %d", http.StatusInternalServerError, rw.Head)
 	}
 }
 
