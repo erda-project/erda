@@ -1,5 +1,6 @@
 #### What type of this PR
 
+Add one of the following kinds:
 /kind feature
 /kind bug
 /kind polish
