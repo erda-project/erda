@@ -17,6 +17,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -34,6 +36,8 @@ type menuService struct {
 	bdl              *bundle.Bundle
 	version          string
 }
+
+var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
 // GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
@@ -100,7 +104,7 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		}
 
 		// setup exists
-		isK8s := clusterInfo.IsK8S()
+		isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
 		for _, child := range item.Children {
 			child.Params = item.Params
 			// 反转exists字段，隐藏引导页，显示功能子菜单
