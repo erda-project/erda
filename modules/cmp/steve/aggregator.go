@@ -26,11 +26,11 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 type Aggregator struct {
+	ctx     context.Context
 	bdl     *bundle.Bundle
 	servers sync.Map
 	cancels sync.Map
@@ -38,8 +38,11 @@ type Aggregator struct {
 
 // NewAggregator new an aggregator with steve servers for all current clusters
 func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
-	a := &Aggregator{bdl: bdl}
-	a.init(ctx, bdl)
+	a := &Aggregator{
+		ctx: ctx,
+		bdl: bdl,
+	}
+	a.init(bdl)
 	go a.watchClusters(ctx)
 	return a
 }
@@ -84,7 +87,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 	}
 }
 
-func (a *Aggregator) init(ctx context.Context, bdl *bundle.Bundle) {
+func (a *Aggregator) init(bdl *bundle.Bundle) {
 	clusters, err := bdl.ListClusters("k8s")
 	if err != nil {
 		logrus.Errorf("failed to list clusters, %v", err)
@@ -95,26 +98,9 @@ func (a *Aggregator) init(ctx context.Context, bdl *bundle.Bundle) {
 		if cluster.ManageConfig == nil {
 			continue
 		}
-		restConfig, err := k8sclient.GetRestConfig(cluster.Name)
-		if err != nil {
-			logrus.Errorf("failed to get rest config for cluster %s, %v", cluster.Name, err)
-			continue
+		if err = a.Add(&cluster); err != nil {
+			logrus.Errorf("failed to start steve for cluster %s when init aggragetor, %v", cluster.Name, err)
 		}
-
-		ctx, cancel := context.WithCancel(ctx)
-		prefix := GetURLPrefix(cluster.Name)
-		server, err := New(ctx, restConfig, &Options{
-			Router:    RoutesWrapper(prefix),
-			URLPrefix: prefix,
-		})
-
-		if err != nil {
-			cancel()
-			logrus.Errorf("failed to init steve server for cluster %s, %v", restConfig.Host, err)
-			continue
-		}
-		a.servers.Store(cluster.Name, server)
-		a.cancels.Store(cluster.Name, cancel)
 	}
 }
 
@@ -218,7 +204,7 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(a.ctx)
 	prefix := GetURLPrefix(clusterInfo.Name)
 	server, err := New(ctx, restConfig, &Options{
 		Router:    RoutesWrapper(prefix),
