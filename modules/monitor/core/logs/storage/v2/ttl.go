@@ -84,7 +84,7 @@ func (m *mysqlStore) loadLogsTTL() error {
 	m.mu.Lock()
 	m.ttlValue = ttlmap
 	m.mu.Unlock()
-	m.Log.Info("load logs ttl config")
+	m.Log.Info("load logs ttl config: %+v", ttlmap)
 	return nil
 }
 
