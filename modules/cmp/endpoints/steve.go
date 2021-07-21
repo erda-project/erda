@@ -39,7 +39,7 @@ func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars 
 	}
 	var req apistructs.ClusterEvent
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("decode clusterhook request fail: %v", err)
+		errstr := fmt.Sprintf("failed to decode clusterhook request: %v", err)
 		logrus.Error(errstr)
 		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errstr}, nil
 	}
