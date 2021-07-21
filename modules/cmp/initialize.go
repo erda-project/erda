@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/autoscanner"
@@ -44,7 +45,7 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-func initialize() error {
+func initialize(ctx context.Context) error {
 	conf.Load()
 
 	// set log formatter
@@ -65,7 +66,7 @@ func initialize() error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	server, err := do()
+	server, err := do(ctx)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func initialize() error {
 	return server.ListenAndServe()
 }
 
-func do() (*httpserver.Server, error) {
+func do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
@@ -136,7 +137,7 @@ func do() (*httpserver.Server, error) {
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	ep, err := initEndpoints(db, js, cachedJs, bdl, o)
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o)
 	if err != nil {
 		return nil, err
 	}
@@ -166,10 +167,11 @@ func do() (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
+func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
+		ctx,
 		db,
 		js,
 		cachedJS,

@@ -14,7 +14,10 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -32,7 +35,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -68,7 +70,7 @@ type Endpoints struct {
 
 type Option func(*Endpoints)
 
-func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonStore, options ...Option) *Endpoints {
+func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonStore, options ...Option) *Endpoints {
 	e := &Endpoints{}
 
 	for _, op := range options {
@@ -84,7 +86,7 @@ func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonS
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.CachedJS = cachedJS
-	e.SteveAggregator = steve.NewAggregator(e.bdl)
+	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
 
 	return e
 }

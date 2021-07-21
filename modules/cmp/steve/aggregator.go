@@ -18,14 +18,16 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 type Aggregator struct {
@@ -35,13 +37,54 @@ type Aggregator struct {
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
-func NewAggregator(bdl *bundle.Bundle) *Aggregator {
+func NewAggregator(ctx context.Context, bdl *bundle.Bundle) *Aggregator {
 	a := &Aggregator{bdl: bdl}
-	a.init(bdl)
+	a.init(ctx, bdl)
+	go a.watchClusters(ctx)
 	return a
 }
 
-func (a *Aggregator) init(bdl *bundle.Bundle) {
+func (a *Aggregator) watchClusters(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.Tick(time.Hour):
+			clusters, err := a.bdl.ListClusters("k8s")
+			if err != nil {
+				logrus.Errorf("failed to list clusters when watch: %v", err)
+				continue
+			}
+			exists := make(map[string]struct{})
+			for _, cluster := range clusters {
+				exists[cluster.Name] = struct{}{}
+				if _, ok := a.servers.Load(cluster.Name); ok {
+					continue
+				}
+				if err = a.Add(&cluster); err != nil {
+					logrus.Errorf("failed to add steve server for cluster %s when watch, %v", cluster.Name, err)
+					continue
+				}
+				logrus.Infof("start steve server for cluster %s when watch", cluster.Name)
+			}
+
+			checkDeleted := func(key interface{}, value interface{}) (res bool) {
+				res = true
+				if _, ok := exists[key.(string)]; ok {
+					return
+				}
+				if err = a.Delete(key.(string)); err != nil {
+					logrus.Errorf("failed to stop steve server for cluster %s when watch, %v", key.(string), err)
+					return
+				}
+				return
+			}
+			a.servers.Range(checkDeleted)
+		}
+	}
+}
+
+func (a *Aggregator) init(ctx context.Context, bdl *bundle.Bundle) {
 	clusters, err := bdl.ListClusters("k8s")
 	if err != nil {
 		logrus.Errorf("failed to list clusters, %v", err)
@@ -58,7 +101,7 @@ func (a *Aggregator) init(bdl *bundle.Bundle) {
 			continue
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(ctx)
 		prefix := GetURLPrefix(cluster.Name)
 		server, err := New(ctx, restConfig, &Options{
 			Router:    RoutesWrapper(prefix),
