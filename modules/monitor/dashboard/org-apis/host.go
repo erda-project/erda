@@ -366,6 +366,8 @@ func wrapGroupHostFilter(filters []*resourceFilter, query *elastic.BoolQuery) []
 					val := vs[0]
 					from, err := convertFilterPairValue(val)
 					if err != nil {
+						// when value is not a range, like xxx-prod
+						values = append(values, value)
 						continue
 					}
 					pair := new(resourceValuePair)
@@ -374,6 +376,8 @@ func wrapGroupHostFilter(filters []*resourceFilter, query *elastic.BoolQuery) []
 						val = vs[1]
 						to, err := convertFilterPairValue(val)
 						if err != nil {
+							// when value is not a range, like xxx-prod
+							values = append(values, value)
 							continue
 						}
 						pair.to = to
