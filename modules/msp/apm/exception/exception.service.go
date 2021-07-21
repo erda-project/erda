@@ -112,7 +112,7 @@ func (s *exceptionService) GetExceptionEvent(ctx context.Context, req *pb.GetExc
 		event.Metadata = row["meta_data"].(map[string]string)
 		event.RequestContext = row["request_context"].(map[string]string)
 		event.RequestHeaders = row["request_headers"].(map[string]string)
-		event.Timestamp = row["timestamp"].(int64) / 1e6
+		event.Timestamp = row["timestamp"].(int64) / int64(time.Millisecond)
 		var stacks []*pb.Stacks
 		for _, info := range row["stacks"].([]string) {
 			var stack pb.Stacks
