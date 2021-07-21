@@ -74,14 +74,14 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	return svc.db.UpdateRecord(r)
 }
 
-func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, error) {
+func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, map[string]int, error) {
 	if req.ProjectID == 0 {
-		return nil, nil, apierrors.ErrListFileRecord.MissingParameter("projectID")
+		return nil, nil, nil, apierrors.ErrListFileRecord.MissingParameter("projectID")
 	}
 
-	recordDtos, err := svc.db.ListRecordsByProject(req)
+	recordDtos, count, err := svc.db.ListRecordsByProject(req)
 	if err != nil {
-		return nil, nil, apierrors.ErrListFileRecord.InternalError(err)
+		return nil, nil, nil, apierrors.ErrListFileRecord.InternalError(err)
 	}
 
 	records := make([]apistructs.TestFileRecord, 0)
@@ -95,7 +95,7 @@ func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsR
 		records = append(records, *mapping(&i, project, testSet))
 		operators = append(operators, i.OperatorID)
 	}
-	return records, operators, nil
+	return records, operators, count, nil
 }
 
 func (svc *Service) GetFirstFileReady(actionType ...apistructs.FileActionType) (bool, *dao.TestFileRecord, error) {
