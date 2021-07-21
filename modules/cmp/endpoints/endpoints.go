@@ -17,9 +17,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/impl/addons"
@@ -31,25 +28,9 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
 	"github.com/erda-project/erda/modules/cmp/steve"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
-	"github.com/erda-project/erda/pkg/strutil"
 )
-
-const (
-	SteveClusterHookPath = "/api/steve-clusterhook/"
-)
-
-type EventCallback struct {
-	Name   string
-	Path   string
-	Events []string
-}
-
-var eventCallBacks = []EventCallback{
-	{Name: "steve-aggregator", Path: SteveClusterHookPath, Events: []string{bundle.ClusterEvent}},
-}
 
 type Endpoints struct {
 	bdl      *bundle.Bundle
@@ -233,29 +214,5 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// task list
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
 		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
-		// start steve when create cluster and delete steve when delete cluster
-		{Path: "/api/steve-clusterhook", Method: http.MethodPost, Handler: e.SteveClusterHook},
 	}
-}
-
-func (e *Endpoints) RegisterEvents() error {
-	for _, callback := range eventCallBacks {
-		request := apistructs.CreateHookRequest{
-			Name:   callback.Name,
-			Events: callback.Events,
-			URL:    strutil.Concat("http://", discover.CMP(), callback.Path),
-			Active: true,
-			HookLocation: apistructs.HookLocation{
-				Org:         "-1",
-				Project:     "-1",
-				Application: "-1",
-			},
-		}
-		if err := e.bdl.CreateWebhook(request); err != nil {
-			logrus.Errorf("failed to register %s event to eventbox, %s", request.Name, err)
-			return err
-		}
-		logrus.Infof("register %s event to event box", callback.Name)
-	}
-	return nil
 }

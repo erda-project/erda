@@ -142,11 +142,6 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 		return nil, err
 	}
 
-	err = ep.RegisterEvents()
-	if err != nil {
-		return nil, err
-	}
-
 	if conf.EnableEss() {
 		initServices(ep)
 	}
