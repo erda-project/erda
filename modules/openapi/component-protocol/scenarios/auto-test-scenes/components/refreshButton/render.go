@@ -17,17 +17,35 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 type ComponentAction struct{}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
 	switch event.Operation {
 	case apistructs.ClickOperation:
-		c.State = map[string]interface{}{
-			"reloadScenesInfo": true,
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
+		c.State["reloadScenesInfo"] = true
+	case "autoRefresh":
+		if c.State == nil {
+			c.State = map[string]interface{}{}
+		}
+		c.State["reloadScenesInfo"] = true
+		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
+			c.Operations["autoRefresh"] = map[string]interface{}{
+				"key":         "autoRefresh",
+				"reload":      true,
+				"showLoading": false,
+				"duration":    10000,
+			}
+		} else {
+			delete(c.Operations, "autoRefresh")
 		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
 		c.Type = "Button"
@@ -41,8 +59,45 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				"reload": true,
 			},
 		}
+		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
+			c.Operations["autoRefresh"] = map[string]interface{}{
+				"key":         "autoRefresh",
+				"reload":      true,
+				"showLoading": false,
+				"duration":    10000,
+			}
+		} else {
+			delete(c.Operations, "autoRefresh")
+		}
 	}
 	return nil
+}
+
+func pipelineShowRefresh(pipelineIDObject interface{}, bdl *bundle.Bundle) bool {
+
+	if pipelineIDObject == nil {
+		return false
+	}
+
+	pipelineID, ok := pipelineIDObject.(float64)
+	if !ok {
+		return false
+	}
+
+	var req apistructs.PipelineDetailRequest
+	req.PipelineID = uint64(pipelineID)
+	req.SimplePipelineBaseResult = true
+
+	dto, err := bdl.GetPipelineV2(req)
+	if err != nil {
+		return false
+	}
+
+	if dto == nil || dto.Status.IsEndStatus() {
+		return false
+	}
+	return true
+
 }
 
 func RenderCreator() protocol.CompRender {

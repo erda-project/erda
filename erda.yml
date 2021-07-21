@@ -68,7 +68,7 @@ services:
         port: 9527
         protocol: TCP
     resources:
-      cpu: ${request_cpu:0.5}
+      cpu: ${request_cpu:1}
       max_cpu: 1
       mem: ${request_mem:2048}
       max_mem: 2048
@@ -87,7 +87,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     resources:
-      cpu: ${request_cpu:0.1}
+      cpu: ${request_cpu:0.2}
       max_cpu: 0.2
       mem: ${request_mem:128}
       max_mem: 256
@@ -176,10 +176,10 @@ services:
     envs:
       DEBUG: "false"
     resources:
-      cpu: ${request_cpu:0.5}
-      max_cpu: 0.5
-      mem: ${request_mem:512}
-      max_mem: 512
+      cpu: ${request_cpu:2}
+      max_cpu: 2
+      mem: ${request_mem:2048}
+      max_mem: 2048
       network:
         mode: "container"
     deployments:
@@ -189,6 +189,26 @@ services:
     health_check:
       http: {}
       exec: {}
+  cluster-agent:
+    cmd: "/app/cluster-agent"
+    ports: []
+    envs:
+      DEBUG: "false"
+    resources:
+      cpu: ${request_cpu:1}
+      max_cpu: 1
+      mem: ${request_mem:1024}
+      max_mem: 1024
+      network:
+        mode: "container"
+    deployments:
+      replicas: 1
+      labels:
+        GROUP: "dice"
+    health_check:
+      http: {}
+      exec:
+        cmd: "ls"
   collector:
     cmd: "/app/collector"
     ports:
@@ -466,6 +486,8 @@ services:
     envs:
       UC_CLIENT_ID: "dice"
       UC_CLIENT_SECRET: "secret"
+      ERDA_NAMESPACE: "default"
+      ERDA_HELM_CHART_VERSION: "1.1.0"
     ports:
       - port: 9027
         protocol: "TCP"
@@ -561,7 +583,7 @@ services:
       CMDB_GROUP: "spot_cmdb_group2"
       DEBUG: "false"
     resources:
-      cpu: ${request_cpu:0.3}
+      cpu: ${request_cpu:1}
       max_cpu: 1
       mem: ${request_mem:2048}
       max_mem: 2048
@@ -621,45 +643,6 @@ services:
       http:
         port: 7091
         path: "/api/health"
-        duration: 120
-      exec: {}
-  soldier:
-    cmd: /app/soldier
-    ports:
-    - port: 9028
-      protocol: TCP
-      l4_protocol: TCP
-      expose: true
-      default: false
-    envs:
-      FPS_BACKEND_URL: http://fps:17621
-      NETDATA_AGENT_PATH: devops/ci/action-agent
-      NETDATA_CI_PATH: devops/ci/pipelines
-      NETDATA_REGISTRY_PATH: dice/registry
-      NETDATA_SQLDATA_PATH: devops/storage
-      PROXY_SERVICES: fps,territory,troy,zkproxy
-      TERRITORY_BACKEND_RE: ^territory
-      TROY_BACKEND_RE: ^troy
-      ZKPROXY_BACKEND_RE: ^terminus-zkproxy
-    resources:
-      cpu: ${request_cpu:0.3}
-      max_cpu: 0.3
-      mem: 64
-      network:
-        mode: container
-    binds:
-    - ${nfs_root:/netdata}:/netdata:rw
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: dice
-    expose:
-    - 9028
-    health_check:
-      http:
-        port: 9028
-        path: /_health_check
         duration: 120
       exec: {}
   uc-adaptor:

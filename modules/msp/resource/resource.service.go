@@ -93,6 +93,24 @@ func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateReso
 		TenantGroup: req.Options["tenantGroup"],
 	}
 
+	needDeployInstance, err := s.coordinator.CheckIfNeedRealDeploy(deployReq)
+	if err != nil {
+		return nil, err
+	}
+
+	// if need real deployment action, return with INIT status and deploy async
+	if needDeployInstance {
+		// use goroutine to async deploy
+		go s.coordinator.Deploy(deployReq)
+
+		return &pb.CreateResourceResponse{
+			Data: &pb.ResourceCreateResult{
+				Id:     req.Uuid,
+				Status: handlers.TmcInstanceStatusInit,
+			},
+		}, nil
+	}
+
 	result, err := s.coordinator.Deploy(deployReq)
 
 	if err != nil {

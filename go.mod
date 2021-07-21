@@ -38,7 +38,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
-	github.com/erda-project/erda-proto-go v0.0.0-20210713021328-fa5fcedfebc8
+	github.com/erda-project/erda-proto-go v0.0.0-20210715071257-863ac2744be1
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -102,11 +102,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rakyll/statik v0.1.7
-	github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
-	github.com/rancher/dynamiclistener v0.2.1-0.20200714201033-9c1939da3af9
-	github.com/rancher/remotedialer v0.2.6-0.20210318171128-d1ebd5202be4
-	github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
-	github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852
+	github.com/rancher/remotedialer v0.0.0
 	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
@@ -123,7 +119,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
-	github.com/tealeg/xlsx/v3 v3.2.3
+	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
@@ -133,11 +129,11 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/genproto v0.0.0-20210714021259-044028024a4f
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/igm/sockjs-go.v2 v2.0.0
@@ -155,7 +151,6 @@ require (
 	k8s.io/api v0.21.2
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.21.2
-	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
@@ -174,7 +169,7 @@ replace (
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
-	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210618084817-52c879aadbcb
+	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 

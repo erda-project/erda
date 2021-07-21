@@ -14,7 +14,11 @@
 package k8sflink
 
 import (
+	"encoding/base64"
+	"encoding/json"
+
 	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +29,57 @@ import (
 
 const (
 	FlinkIngressPrefix = "flinkcluster"
+)
+
+var (
+	defaultLogConfig = map[string]string{
+		"log4j-console.properties": `rootLogger.level = INFO
+      rootLogger.appenderRef.file.ref = LogFile
+      rootLogger.appenderRef.console.ref = LogConsole
+      appender.file.name = LogFile
+      appender.file.type = File
+      appender.file.append = false
+      appender.file.fileName = ${sys:log.file}
+      appender.file.layout.type = PatternLayout
+      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      appender.console.name = LogConsole
+      appender.console.type = CONSOLE
+      appender.console.layout.type = PatternLayout
+      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
+      logger.akka.name = akka
+      logger.akka.level = INFO
+      logger.kafka.name= org.apache.kafka
+      logger.kafka.level = INFO
+      logger.hadoop.name = org.apache.hadoop
+      logger.hadoop.level = INFO
+      logger.zookeeper.name = org.apache.zookeeper
+      logger.zookeeper.level = INFO
+      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
+      logger.netty.level = OFF`,
+		"logback-console.xml": `<configuration>
+        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <appender name="file" class="ch.qos.logback.core.FileAppender">
+          <file>${log.file}</file>
+          <append>false</append>
+          <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+          </encoder>
+        </appender>
+        <root level="INFO">
+          <appender-ref ref="console"/>
+          <appender-ref ref="file"/>
+        </root>
+        <logger name="akka" level="INFO" />
+        <logger name="org.apache.kafka" level="INFO" />
+        <logger name="org.apache.hadoop" level="INFO" />
+        <logger name="org.apache.zookeeper" level="INFO" />
+        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="INFO" />
+      </configuration>`,
+	}
 )
 
 func getInt32Points(numeric int32) *int32 {
@@ -111,7 +166,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 			},
 			EnvVars:         data.Spec.Envs,
 			FlinkProperties: data.Spec.Properties,
-			LogConfig:       composeLogConfig(),
+			LogConfig:       composeLogConfig(data.Spec.FlinkConf.LogConfig),
 		},
 	}
 
@@ -150,11 +205,14 @@ func getJobRestartPolicy(restartPolicy flinkoperatorv1beta1.JobRestartPolicy) *f
 
 func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistructs.StatusDesc {
 	statusDesc := apistructs.StatusDesc{}
+
+	// If query status immediately after create flinkCluster, will get empty status, but actually it`s running
 	switch status.State {
 	case flinkoperatorv1beta1.ClusterStateCreating,
 		flinkoperatorv1beta1.ClusterStateReconciling,
 		flinkoperatorv1beta1.ClusterStateUpdating,
-		flinkoperatorv1beta1.ClusterStateRunning:
+		flinkoperatorv1beta1.ClusterStateRunning,
+		"":
 		statusDesc.Status = apistructs.StatusRunning
 	case flinkoperatorv1beta1.ClusterStateStopping,
 		flinkoperatorv1beta1.ClusterStatePartiallyStopped,
@@ -190,54 +248,24 @@ func composeOwnerReferences(versionGroup, kind, name string, uid types.UID) meta
 	}
 }
 
-func composeLogConfig() map[string]string {
-	logConfig := map[string]string{
-		"log4j-console.properties": `rootLogger.level = INFO
-      rootLogger.appenderRef.file.ref = LogFile
-      rootLogger.appenderRef.console.ref = LogConsole
-      appender.file.name = LogFile
-      appender.file.type = File
-      appender.file.append = false
-      appender.file.fileName = ${sys:log.file}
-      appender.file.layout.type = PatternLayout
-      appender.file.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
-      appender.console.name = LogConsole
-      appender.console.type = CONSOLE
-      appender.console.layout.type = PatternLayout
-      appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p %-60c %x - %m%n
-      logger.akka.name = akka
-      logger.akka.level = INFO
-      logger.kafka.name= org.apache.kafka
-      logger.kafka.level = INFO
-      logger.hadoop.name = org.apache.hadoop
-      logger.hadoop.level = INFO
-      logger.zookeeper.name = org.apache.zookeeper
-      logger.zookeeper.level = INFO
-      logger.netty.name = org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline
-      logger.netty.level = OFF`,
-		"logback-console.xml": `<configuration>
-        <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-          <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
-          </encoder>
-        </appender>
-        <appender name="file" class="ch.qos.logback.core.FileAppender">
-          <file>${log.file}</file>
-          <append>false</append>
-          <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
-          </encoder>
-        </appender>
-        <root level="INFO">
-          <appender-ref ref="console"/>
-          <appender-ref ref="file"/>
-        </root>
-        <logger name="akka" level="INFO" />
-        <logger name="org.apache.kafka" level="INFO" />
-        <logger name="org.apache.hadoop" level="INFO" />
-        <logger name="org.apache.zookeeper" level="INFO" />
-        <logger name="org.apache.flink.shaded.akka.org.jboss.netty.channel.DefaultChannelPipeline" level="INFO" />
-      </configuration>`,
+// composeLogConfig try to convert flinkConf`s logConfig field to map[string]string
+// if convert failed or config is empty, return the default log config
+func composeLogConfig(config string) map[string]string {
+	if config == "" {
+		return defaultLogConfig
 	}
-	return logConfig
+
+	decodeConfig, err := base64.StdEncoding.DecodeString(config)
+	if err != nil {
+		logrus.Errorf("failed to base64 decode customize logConfig, err: %v", err)
+		return defaultLogConfig
+	}
+
+	customizeConfig := map[string]string{}
+	if err := json.Unmarshal(decodeConfig, &customizeConfig); err != nil {
+		logrus.Errorf("failed to unmarshal customize logConfig, err: %v", err)
+		return defaultLogConfig
+	}
+
+	return customizeConfig
 }

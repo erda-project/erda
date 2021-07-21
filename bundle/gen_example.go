@@ -15,6 +15,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -27,18 +28,38 @@ func GenExample(schema *openapi3.Schema) {
 
 func genExample(schema *openapi3.Schema, convStr bool) {
 	if schema.Example != nil {
+		switch schema.Example.(type) {
+		case string:
+			return
+		case []byte:
+			if convStr {
+				schema.Example = string(schema.Example.([]byte))
+			}
+			return
+		case json.RawMessage:
+			if convStr {
+				schema.Example = string(schema.Example.(json.RawMessage))
+			}
+			return
+		}
+
+		data, err := json.MarshalIndent(schema.Example, "", "  ")
+		if err != nil {
+			return
+		}
+		schema.Example = string(data)
 		return
 	}
 
-	switch schema.Type {
+	switch strings.ToLower(schema.Type) {
 	case "boolean":
 		schema.Example = true
 	case "string":
 		schema.Example = ""
-	case "number":
+	case "number", "int", "integer":
 		schema.Example = 0
 	case "object":
-		var m = make(map[string]interface{}, 0)
+		var m = make(map[string]interface{})
 		for key, property := range schema.Properties {
 			if property.Value == nil {
 				continue
@@ -46,21 +67,29 @@ func genExample(schema *openapi3.Schema, convStr bool) {
 			genExample(property.Value, false)
 			m[key] = property.Value.Example
 		}
-		data, _ := json.MarshalIndent(m, "", "  ")
+		data, err := json.MarshalIndent(m, "", "  ")
+		if err != nil {
+			return
+		}
+		schema.Example = json.RawMessage(data)
 		if convStr {
 			schema.Example = string(data)
-		} else {
-			schema.Example = json.RawMessage(data)
 		}
 	case "array":
 		var li []interface{}
 		if schema.Items == nil || schema.Items.Value == nil {
 			schema.Example = json.RawMessage("[]")
+			if convStr {
+				schema.Example = "[]"
+			}
 			return
 		}
 		genExample(schema.Items.Value, false)
 		li = append(li, schema.Items.Value.Example)
-		data, _ := json.MarshalIndent(li, "", "")
+		data, err := json.MarshalIndent(li, "", "")
+		if err != nil {
+			return
+		}
 		if convStr {
 			schema.Example = string(data)
 		} else {

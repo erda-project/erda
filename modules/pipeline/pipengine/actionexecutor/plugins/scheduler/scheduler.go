@@ -28,7 +28,6 @@ import (
 	tasktypes "github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -60,9 +59,8 @@ func init() {
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 
-		clusterInfos := clusterinfo.GetClustersInitialize()
 		mgr := executor.GetManager()
-		if err := mgr.Initialize(clusterInfos); err != nil {
+		if err := mgr.Initialize(); err != nil {
 			return nil, err
 		}
 		return &Sched{
@@ -89,35 +87,44 @@ func (s *Sched) Name() types.Name {
 	return s.name
 }
 
-func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *spec.PipelineTask) (tasktypes.TaskExecutor, error) {
+// GetTaskExecutor return bool, task exectuor, error, bool means should it be dispatch to scheduler
+func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *spec.PipelineTask) (bool, tasktypes.TaskExecutor, error) {
 	var executorName string
-	// TODO judge executor type and cluster name
-	switch executorType {
-	case "flink":
-		executorName = "flink"
-	case "spark":
-		executorName = "spark"
-	default:
-		executorName = "k8sjob"
-	}
-	if value, ok := task.Extra.Action.Params["bigDataConf"]; ok {
-		spec := apistructs.BigdataSpec{}
-		if err := json.Unmarshal([]byte(value.(string)), &spec); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task bigDataConf")
-		}
-		if spec.FlinkConf != nil {
-			executorName = "k8sflink"
-		}
-		if spec.SparkConf != nil {
-			executorName = "k8sspark"
-		}
-	}
-	name := fmt.Sprintf("%sfor%s", clusterName, executorName)
-	taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
+	cluster, err := s.taskManager.GetCluster(clusterName)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
-	return taskExecutor, nil
+	switch cluster.Type {
+	case apistructs.DCOS:
+		return true, nil, nil
+	//case apistructs.EDAS:
+	//	return true, nil, nil
+	case apistructs.K8S, apistructs.EDAS:
+		if executorType == "flink" || executorType == "spark" {
+			return false, nil, errors.Errorf("k8s cluster don`t support executor type: %s", executorType)
+		}
+		executorName = "k8sjob"
+		if value, ok := task.Extra.Action.Params["bigDataConf"]; ok {
+			spec := apistructs.BigdataSpec{}
+			if err := json.Unmarshal([]byte(value.(string)), &spec); err != nil {
+				return false, nil, fmt.Errorf("failed to unmarshal task bigDataConf")
+			}
+			if spec.FlinkConf != nil {
+				executorName = "k8sflink"
+			}
+			if spec.SparkConf != nil {
+				executorName = "k8sspark"
+			}
+		}
+		name := fmt.Sprintf("%sfor%s", clusterName, executorName)
+		taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
+		if err != nil {
+			return false, nil, err
+		}
+		return false, taskExecutor, nil
+	default:
+		return false, nil, errors.Errorf("invalid cluster type: %s", cluster.Type)
+	}
 }
 
 func validateAction(action *spec.PipelineTask) error {
@@ -187,8 +194,13 @@ func (s *Sched) Create(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute create", taskExecutor.Name())
 		return nil, nil
 	}
 
@@ -253,8 +265,13 @@ func (s *Sched) Start(ctx context.Context, action *spec.PipelineTask) (data inte
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute start", taskExecutor.Name())
 		return taskExecutor.Create(ctx, action)
 	}
 
@@ -302,8 +319,13 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 
 	var result apistructs.StatusDesc
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return apistructs.PipelineStatusDesc{}, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute status", taskExecutor.Name())
 		result, err = taskExecutor.Status(ctx, action)
 		if err != nil {
 			return apistructs.PipelineStatusDesc{}, err
@@ -348,8 +370,13 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute cancel", taskExecutor.Name())
 		return taskExecutor.Remove(ctx, action)
 	}
 	var body bytes.Buffer
@@ -381,8 +408,13 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute remove", taskExecutor.Name())
 		return taskExecutor.Remove(ctx, action)
 	}
 
@@ -423,8 +455,13 @@ func (s *Sched) BatchDelete(ctx context.Context, actions []*spec.PipelineTask) (
 	}
 
 	var taskExecutor tasktypes.TaskExecutor
-	taskExecutor, _ = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
-	if taskExecutor != nil {
+	var shouldDispatch bool
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute batch delete", taskExecutor.Name())
 		return taskExecutor.BatchDelete(ctx, actions)
 	}
 
@@ -527,8 +564,8 @@ func respBodyDecodeErr(statusCode int, respBody string, err error) error {
 }
 
 func printActionInfo(action *spec.PipelineTask) string {
-	return fmt.Sprintf("pipelineID: %d, id: %d, name: %s, namespace: %s, schedulerJobID: %s",
-		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, task_uuid.MakeJobID(action))
+	return fmt.Sprintf("pipelineID: %d, id: %d, name: %s, namespace: %s, schedulerJobID: %s, clusterName: %s",
+		action.PipelineID, action.ID, action.Name, action.Extra.Namespace, task_uuid.MakeJobID(action), action.Extra.ClusterName)
 }
 
 // isJobIdempotent

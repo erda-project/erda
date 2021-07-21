@@ -51,50 +51,52 @@ func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistruct
 	return k.deploy.Create(deployment)
 }
 
-func (k *Kubernetes) getDeploymentStatus(service *apistructs.Service) (apistructs.StatusDesc, error) {
-	var statusDesc apistructs.StatusDesc
+func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
+	var (
+		statusDesc apistructs.StatusDesc
+	)
 	// in version 1.10.3, the following two apis are equal
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6
 	// http://localhost:8080/apis/extensions/v1beta1/namespaces/default/deployments/myk8stest6/status
 	deploymentName := getDeployName(service)
 
-	deployment, err := k.getDeployment(service.Namespace, deploymentName)
-	if err != nil {
-		return statusDesc, err
-	}
-	status := deployment.Status
-	//You may get this status when you just start creating
-	if len(status.Conditions) == 0 {
+	if deployment, ok := deployments[deploymentName]; ok {
+
+		status := deployment.Status
+		//You may get this status when you just start creating
+		if len(status.Conditions) == 0 {
+			statusDesc.Status = apistructs.StatusUnknown
+			statusDesc.LastMessage = "cannot get statusDesc condition"
+			return statusDesc, nil
+		}
+
+		for _, c := range status.Conditions {
+			if c.Type == k8sapi.DeploymentReplicaFailure && c.Status == "True" {
+				statusDesc.Status = apistructs.StatusFailing
+				return statusDesc, nil
+			}
+			if c.Type == k8sapi.DeploymentAvailable && c.Status == "False" {
+				statusDesc.Status = apistructs.StatusFailing
+				return statusDesc, nil
+			}
+		}
+
 		statusDesc.Status = apistructs.StatusUnknown
-		statusDesc.LastMessage = "cannot get statusDesc condition"
-		return statusDesc, nil
-	}
 
-	for _, c := range status.Conditions {
-		if c.Type == k8sapi.DeploymentReplicaFailure && c.Status == "True" {
-			statusDesc.Status = apistructs.StatusFailing
-			return statusDesc, nil
-		}
-		if c.Type == k8sapi.DeploymentAvailable && c.Status == "False" {
-			statusDesc.Status = apistructs.StatusFailing
-			return statusDesc, nil
-		}
-	}
-
-	statusDesc.Status = apistructs.StatusUnknown
-
-	if status.Replicas == status.ReadyReplicas &&
-		status.Replicas == status.AvailableReplicas &&
-		status.Replicas == status.UpdatedReplicas {
-		if status.Replicas > 0 {
-			statusDesc.Status = apistructs.StatusReady
-			statusDesc.LastMessage = fmt.Sprintf("deployment(%s) is running", deployment.Name)
-		} else if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
-			statusDesc.Status = apistructs.StatusReady
-		} else {
-			statusDesc.LastMessage = fmt.Sprintf("deployment(%s) replica is 0, been deleting", deployment.Name)
+		if status.Replicas == status.ReadyReplicas &&
+			status.Replicas == status.AvailableReplicas &&
+			status.Replicas == status.UpdatedReplicas {
+			if status.Replicas > 0 {
+				statusDesc.Status = apistructs.StatusReady
+				statusDesc.LastMessage = fmt.Sprintf("deployment(%s) is running", deployment.Name)
+			} else if deployment.Spec.Replicas != nil && *deployment.Spec.Replicas == 0 {
+				statusDesc.Status = apistructs.StatusReady
+			} else {
+				statusDesc.LastMessage = fmt.Sprintf("deployment(%s) replica is 0, been deleting", deployment.Name)
+			}
 		}
 	}
+
 	return statusDesc, nil
 }
 

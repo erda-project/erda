@@ -185,6 +185,9 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 	if err != nil {
 		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
 	}
+	if pagingProjects == nil {
+		return httpserver.OkResp(&apistructs.PagingProjectDTO{})
+	}
 
 	// rich statistical data
 	if params.PageSize <= 15 {

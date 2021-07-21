@@ -20,26 +20,42 @@ var ProxyDeployTemplate = `
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: erda-system
+  name: {{.ErdaSystem}}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: erda
-  namespace: erda-system
+  name: cluster-agent
+  namespace: {{.ErdaSystem}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-agent-cr
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: erda-crb
+  name: cluster-agent-crb
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin
+  name: cluster-agent-cr
 subjects:
 - kind: ServiceAccount
-  name: erda
-  namespace: erda-system
+  name: cluster-agent
+  namespace: {{.ErdaSystem}}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -47,7 +63,7 @@ metadata:
   labels:
     job-name: erda-cluster-init
   name: erda-cluster-init
-  namespace: erda-system
+  namespace: {{.ErdaSystem}}
 spec:
   backoffLimit: 0
   selector:
@@ -58,7 +74,7 @@ spec:
       labels:
         job-name: erda-cluster-init
     spec:
-      serviceAccountName: erda
+      serviceAccountName: cluster-agent
       restartPolicy: Never
       containers:
         - name: init
@@ -72,11 +88,15 @@ spec:
             - name: "REPO_MODE"
               value: "local"
             - name: "HELM_NAMESPACE"
-              value: "default"
-            - name: "ERDA_BASE_VALUES"
-              value: "configmap.clustername={{.ClusterName}},configmap.domain={{.RootDomain}}"
-            - name: "ERDA_VALUES"
-              value: "domain={{.RootDomain}},clusterName={{.ClusterName}},clusterDomain={{.CustomDomain}}"
+              value: {{.ErdaSystem}}
+            - name: "NODE_LABELS"
+              value: "dice/org-{{.OrgName}}=true"
+            - name: "CHART_ERDA_BASE_VALUES"
+              value: "configmap.clustername={{.ClusterName}},configmap.domain={{.CustomDomain}}"
+            - name: "CHART_ERDA_ADDONS_VALUES"
+              value: "registry.networkMode=''"
+            - name: "CHART_ERDA_VALUES"
+              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},masterClusterDomain={{.MasterClusterDomain}}"
           command:
             - sh
             - -c

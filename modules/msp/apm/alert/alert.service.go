@@ -44,7 +44,7 @@ func (a *alertService) QueryAlertRule(ctx context.Context, request *alert.QueryA
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlertRule(context, req)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return &alert.QueryAlertRuleResponse{}, errors.NewInternalServerError(err)
 	}
 	result := &alert.QueryAlertRuleResponse{
 		Data: resp.Data,
@@ -69,12 +69,39 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &alert.QueryAlertResponse{
+	if resp == nil || resp.Data == nil || resp.Data.List == nil {
+		return nil, nil
+	}
+
+	result := &alert.QueryAlertResponse{
 		Data: &alert.QueryAlertData{
-			List:  resp.Data.List,
+			List:  make([]*alert.ApmAlertData, 0),
 			Total: resp.Data.Total,
 		},
-	}, nil
+	}
+
+	for _, v := range resp.Data.List {
+		appIdStr := v.Attributes["application_id"]
+		idData := appIdStr.GetListValue().AsSlice()
+		appIds := make([]string, 0)
+		if idData != nil {
+			for _, v := range idData {
+				appIds = append(appIds, v.(string))
+			}
+		}
+		apmAlert := &alert.ApmAlertData{}
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		err = json.Unmarshal(data, apmAlert)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		apmAlert.AppIds = appIds
+		result.Data.List = append(result.Data.List, apmAlert)
+	}
+	return result, nil
 }
 
 func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequest) (*alert.GetAlertResponse, error) {
@@ -85,12 +112,31 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp.Data.Attributes = nil
 	if resp.Data.AlertScope != MicroServiceScope || resp.Data.AlertScopeId != request.TenantGroup {
-		return nil, errors.NewInternalServerError(err)
+		return nil, errors.NewPermissionError("monitor_project_alert", "GET", "alertScope or alertScopeId is invalidate")
+	}
+	appIdStr := resp.Data.Attributes["application_id"]
+	idData := appIdStr.GetListValue().AsSlice()
+	appIds := make([]string, 0)
+	for _, v := range idData {
+		appIds = append(appIds, v.(string))
+	}
+	getAlertData := &alert.ApmAlertData{
+		Id:           int64(resp.Data.Id),
+		Name:         resp.Data.Name,
+		AlertScope:   resp.Data.AlertScope,
+		AlertScopeId: resp.Data.AlertScopeId,
+		Enable:       resp.Data.Enable,
+		Rules:        resp.Data.Rules,
+		Notifies:     resp.Data.Notifies,
+		AppIds:       appIds,
+		Domain:       resp.Data.Domain,
+		Attributes:   resp.Data.Attributes,
+		CreateTime:   resp.Data.CreateTime,
+		UpdateTime:   resp.Data.UpdateTime,
 	}
 	result := &alert.GetAlertResponse{
-		Data: resp.Data,
+		Data: getAlertData,
 	}
 	return result, nil
 }
@@ -329,21 +375,9 @@ func (a *alertService) QueryCustomizeMetric(ctx context.Context, request *alert.
 			i--
 		}
 	}
-	for _, v := range lang {
-		if v.Code == "en" {
-			resp.Data.NotifySample = adapt.OrgNotifyTemplateSampleEn
-			break
-		}
-	}
-	resp.Data.NotifySample = adapt.OrgNotifyTemplateSample
-	data, err := json.Marshal(resp)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	result := &alert.QueryCustomizeMetricResponse{
 		Data: resp.Data,
 	}
-	err = json.Unmarshal(data, result.Data)
 	return result, nil
 }
 
@@ -427,14 +461,14 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, err
 	}
-	if request.AlertType == "" {
-		request.AlertType = "micro_service_customize"
+	if alertDetail.AlertType == "" {
+		alertDetail.AlertType = "micro_service_customize"
 	}
-	request.AlertScope = MicroServiceScope
-	request.AlertScopeId = request.TenantGroup
-	request.Attributes = nil
+	alertDetail.AlertScope = MicroServiceScope
+	alertDetail.AlertScopeId = request.TenantGroup
+	alertDetail.Attributes = nil
 
-	for _, rule := range request.Rules {
+	for _, rule := range alertDetail.Rules {
 		rule.Attributes = map[string]*structpb.Value{}
 		rule.Attributes[Scope] = structpb.NewStringValue(fmt.Sprintf("{{%s}}", tk))
 		if rule.Filters == nil {
@@ -447,7 +481,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		rule.Filters = append(rule.Filters, &scopeFilter)
 
 		scopeIDFilter := monitor.CustomizeAlertRuleFilter{}
-		scopeIDFilter.Tag = "_metric_scope"
+		scopeIDFilter.Tag = "_metric_scope_id"
 		scopeIDFilter.Operator = OperateEq
 		scopeIDFilter.Value = structpb.NewStringValue(tk)
 		rule.Filters = append(rule.Filters, &scopeIDFilter)
@@ -458,7 +492,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		scopeApplicationFilter.Value = structpb.NewStringValue("$" + "application_id")
 		rule.Filters = append(rule.Filters, &scopeApplicationFilter)
 	}
-	requestData, err := json.Marshal(request)
+	requestData, err := json.Marshal(alertDetail)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

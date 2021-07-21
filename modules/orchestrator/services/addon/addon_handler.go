@@ -904,7 +904,8 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRo
 
 		return err
 	}
-	if statusCode == 202 {
+	// leave it to the callback if deploying
+	if statusCode == 202 || providerResponse != nil && providerResponse.Data.Status == "INIT" {
 		return nil
 	}
 	if len(providerResponse.Data.Config) > 0 {
@@ -1165,11 +1166,11 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 			providerDomain = discover.MSP()
 		}
 	}
+	req.Callback = "http://" + discover.Orchestrator()
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
 
 	var resp apistructs.AddonProviderResponse
 	hc := a.hc
-	req.Callback = "http://" + discover.Orchestrator()
 	r, err := hc.Post(providerDomain).
 		Path("/"+addonName+apistructs.AddonGetResourcePath).
 		Header("USER-ID", userId).

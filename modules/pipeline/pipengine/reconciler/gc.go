@@ -35,6 +35,7 @@ import (
 const (
 	etcdReconcilerGCWatchPrefix            = "/devops/pipeline/gc/reconciler/"
 	etcdReconcilerGCNamespaceLockKeyPrefix = "/devops/pipeline/gc/dlock/"
+	defaultGCTime                          = 3600 * 24 * 2
 )
 
 // ListenGC 监听需要 GC 的 pipeline.
@@ -143,7 +144,7 @@ func (r *Reconciler) delayGC(namespace string, pipelineID uint64) {
 		return
 	}
 	logrus.Errorf("reconciler: delay gc begin, namespace: %s, cause pipelineID: %d", namespace, pipelineID)
-	r.waitGC(namespace, pipelineID, 3600*24*2)
+	r.waitGC(namespace, pipelineID, defaultGCTime)
 }
 
 // waitGC 等待 GC，在 TTL 后执行
@@ -235,7 +236,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	}
 
 	// group tasks by executorName
-	groupedTasks := make(map[string][]*spec.PipelineTask) // key: executorName
+	groupedTasks := make(map[spec.PipelineTaskExecutorName][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
 		dbTasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
 		if err != nil {

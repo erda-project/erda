@@ -15,6 +15,7 @@ package apistructs
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -152,12 +153,13 @@ func (info ClusterInfoData) GetIstioInfo() IstioInfo {
 }
 
 func (info ClusterInfoData) GetApiServerUrl() string {
-	netportalUrl := info.Get(NETPORTAL_URL)
+	currentCluster := os.Getenv("DICE_CLUSTER_NAME")
 	masterAddr := info.Get(MASTER_VIP_ADDR)
-	if netportalUrl == "" {
+	cluster := info.Get(DICE_CLUSTER_NAME)
+	if cluster == currentCluster {
 		return masterAddr
 	} else {
-		return netportalUrl + "/" + masterAddr
+		return fmt.Sprintf("inet://%s/%s", cluster, masterAddr)
 	}
 }
 

@@ -68,8 +68,28 @@ func (tr *TaskRun) handleTaskLoop() error {
 	}
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "loop break expr %s evaluate result is false, continue loop", expr)
 
+	// reportTaskForLoop report task before resetTaskForLoop to avoid missing task info
+	if err := tr.reportTaskForLoop(); err != nil {
+		rlog.Errorf("failed to report task-loop, pipelineID: %d, taskID: %d, err: %v", tr.P.ID, tr.Task.ID, err)
+	}
+
 	tr.resetTaskForLoop()
 	return nil
+}
+
+// reportTaskForLoop record looped task info
+func (tr *TaskRun) reportTaskForLoop() error {
+	if tr.Task.Extra.LoopOptions == nil {
+		return nil
+	}
+	meta := map[string]interface{}{
+		fmt.Sprintf("task-%d-loop-%d", tr.Task.ID, tr.Task.Extra.LoopOptions.LoopedTimes): *tr.Task,
+	}
+	return tr.DBClient.CreatePipelineReport(&spec.PipelineReport{
+		PipelineID: tr.P.ID,
+		Type:       apistructs.PipelineReportLoopMetaKey,
+		Meta:       meta,
+	})
 }
 
 func (tr *TaskRun) resetTaskForLoop() {

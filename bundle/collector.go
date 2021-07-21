@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -48,8 +49,7 @@ func (b *Bundle) CollectMetrics(metrics *apistructs.Metrics) error {
 	if err != nil {
 		return err
 	}
-	hc := b.hc
-	resp, err := hc.Post(host).Path("/collect/metrics").
+	resp, err := httpclient.New().Post(host).Path("/collect/metrics").
 		Header("Internal-Client", "bundle").JSONBody(&metrics).Do().DiscardBody()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)

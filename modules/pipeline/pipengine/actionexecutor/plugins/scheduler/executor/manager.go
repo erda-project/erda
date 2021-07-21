@@ -17,11 +17,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sflink"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
@@ -35,6 +37,7 @@ type Manager struct {
 
 	factory   map[types.Kind]types.CreateFn
 	executors map[types.Name]types.TaskExecutor
+	clusters  map[string]apistructs.ClusterInfo
 }
 
 var mgr Manager
@@ -43,26 +46,40 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func (m *Manager) Initialize(cfgs []apistructs.ClusterInfo) error {
+func GetExecutorInfo() interface{} {
+	executors := map[string]interface{}{}
+	clusters := map[string]apistructs.ClusterInfo{}
+	mgr.RLock()
+	defer mgr.RUnlock()
+	for name, exe := range mgr.executors {
+		executors[name.String()] = map[string]string{
+			"kind": exe.Kind().String(),
+		}
+	}
+	for name, cluster := range mgr.clusters {
+		clusters[name] = cluster
+	}
+	return []interface{}{executors, clusters}
+}
+
+func (m *Manager) Initialize() error {
 	m.factory = types.Factory
 	m.executors = make(map[types.Name]types.TaskExecutor)
+	m.clusters = make(map[string]apistructs.ClusterInfo)
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
-	for i := range cfgs {
-		if cfgs[i].Type != apistructs.K8S {
-			continue
-		}
-		if err := m.updateExecutor(cfgs[i]); err != nil {
-			continue
-		}
+	if err := m.batchUpdateExecutors(); err != nil {
+		return err
 	}
 
+	triggerChan := clusterinfo.RegisterRefreshChan()
 	eventChan, err := clusterinfo.RegisterClusterEvent()
+
 	if err != nil {
 		return err
 	}
-	go m.listenClusterEventSync(context.Background(), eventChan)
+	go m.listenAndPatchExecutor(context.Background(), eventChan, triggerChan)
 
 	logrus.Info("pipeline task executor manager Initialize Done .")
 
@@ -82,44 +99,69 @@ func (m *Manager) Get(name types.Name) (types.TaskExecutor, error) {
 	return e, nil
 }
 
+func (m *Manager) GetCluster(clusterName string) (apistructs.ClusterInfo, error) {
+	m.RLock()
+	defer m.RUnlock()
+	if len(clusterName) == 0 {
+		return apistructs.ClusterInfo{}, errors.Errorf("clusterName is empty")
+	}
+	cluster, ok := m.clusters[clusterName]
+	if !ok {
+		return apistructs.ClusterInfo{}, errors.Errorf("failed to get cluster info by clusterName: %s", clusterName)
+	}
+	return cluster, nil
+}
+
 func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
 	m.Lock()
 	defer m.Unlock()
 
 	switch cluster.Type {
-	case apistructs.K8S:
+	case apistructs.K8S, apistructs.EDAS:
 		name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
 		if _, exist := m.executors[name]; exist {
 			delete(m.executors, name)
+			logrus.Infof("task executor kind [%s], name [%s], deleted", k8sjob.Kind, name)
 		}
 
 		name = types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
 		if _, exist := m.executors[name]; exist {
 			delete(m.executors, name)
+			logrus.Infof("task executor kind [%s], name [%s], deleted", k8sjob.Kind, name)
 		}
 
 		name = types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
 		if _, exist := m.executors[name]; exist {
 			delete(m.executors, name)
+			logrus.Infof("task executor kind [%s], name [%s], deleted", k8sjob.Kind, name)
 		}
 	default:
 
 	}
+	delete(m.clusters, cluster.Name)
 }
 
-func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
+func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
+	var err error
+	var k8sjobExecutor types.TaskExecutor
+	var k8sflinkExecutor types.TaskExecutor
+	var k8ssparkExecutor types.TaskExecutor
 	m.Lock()
-	defer m.Unlock()
+	defer func() {
+		m.Unlock()
+	}()
+
+	m.clusters[cluster.Name] = cluster
 
 	switch cluster.Type {
-	case apistructs.K8S:
+	case apistructs.K8S, apistructs.EDAS:
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
 			if _, exist := m.executors[name]; exist {
 				delete(m.executors, name)
 			}
-			k8sjobExecutor, err := k8sjobCreate(name, cluster.Name, cluster)
+			k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
@@ -134,12 +176,13 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 			if _, exist := m.executors[name]; exist {
 				delete(m.executors, name)
 			}
-			k8sflinkExecutor, err := k8sflinkCreate(name, cluster.Name, cluster)
+			k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
 				return err
 			}
 			m.executors[name] = k8sflinkExecutor
+			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 
 		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
@@ -148,12 +191,13 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 			if _, exist := m.executors[name]; exist {
 				delete(m.executors, name)
 			}
-			k8ssparkExecutor, err := k8ssparkCreate(name, cluster.Name, cluster)
+			k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
 				return err
 			}
 			m.executors[name] = k8ssparkExecutor
+			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 	default:
 
@@ -161,21 +205,48 @@ func (m *Manager) updateExecutor(cluster apistructs.ClusterInfo) error {
 	return nil
 }
 
-func (m *Manager) listenClusterEventSync(ctx context.Context, eventChan <-chan apistructs.ClusterEvent) {
+func (m *Manager) batchUpdateExecutors() error {
+	clusters, err := clusterinfo.ListAllClusters()
+	if err != nil {
+		return err
+	}
+
+	for i := range clusters {
+		if clusters[i].Type != apistructs.K8S && clusters[i].Type != apistructs.EDAS {
+			continue
+		}
+		if err := m.updateClusterExecutor(clusters[i]); err != nil {
+			continue
+		}
+	}
+	return nil
+}
+
+func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan apistructs.ClusterEvent, triggerChan <-chan struct{}) {
 	var err error
+	interval := time.Duration(conf.ExecutorRefreshIntervalHour())
+	ticker := time.NewTicker(time.Hour * interval)
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-triggerChan:
+			if err := m.batchUpdateExecutors(); err != nil {
+				logrus.Errorf("failed to refresh executors, err: %v", err)
+			}
+		case <-ticker.C:
+			if err := m.batchUpdateExecutors(); err != nil {
+				logrus.Errorf("failed to refresh executors, err: %v", err)
+			}
 		case event := <-eventChan:
 			switch event.Action {
 			case apistructs.ClusterActionCreate:
-				err = m.updateExecutor(event.Content)
+				err = m.updateClusterExecutor(event.Content)
 				if err != nil {
 					logrus.Errorf("failed to add task executor, err: %v", err)
 				}
 			case apistructs.ClusterActionUpdate:
-				err = m.updateExecutor(event.Content)
+				err = m.updateClusterExecutor(event.Content)
 				if err != nil {
 					logrus.Errorf("failed to update task executor, err: %v", err)
 				}

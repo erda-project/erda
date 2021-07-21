@@ -122,7 +122,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if err != nil {
 		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
-	pre.Ctx = context.WithValue(pre.Ctx, apistructs.NETPORTAL_URL, clusterInfo.Get(apistructs.NETPORTAL_URL))
+	pre.Ctx = context.WithValue(pre.Ctx, apistructs.NETPORTAL_URL, "inet://"+p.ClusterName)
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解
 	mountPoint := clusterInfo.MustGet(apistructs.DICE_STORAGE_MOUNTPOINT)
@@ -437,21 +437,22 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		if !ok {
 			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
 		}
-		schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
+		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
 		if err != nil {
 			return false, fmt.Errorf("failed to createJobVolume, err: can not get k8s executor")
 		}
 		if schedPlugin.Kind() != k8sjob.Kind {
-			return false, fmt.Errorf("can not createJobVolume, err: only k8sjob support")
-		}
-		k8sjobExecutor, ok := schedPlugin.(*k8sjob.K8sJob)
-		if !ok {
-			return false, fmt.Errorf("faile to createJobVolume, err: can not convert to k8sjob executor")
+			goto makeOutStorages
 		}
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
+			var volumeID string
 			// 重复创建同namespace和name的pv是幂等的,不需要加锁
-			volumeID, err := k8sjobExecutor.JobVolumeCreate(context.Background(), apistructs.JobVolume{
+			k8sjobExecutor, ok := schedPlugin.(*k8sjob.K8sJob)
+			if !ok {
+				return false, fmt.Errorf("faile to createJobVolume, err: can not convert to k8sjob executor")
+			}
+			volumeID, err = k8sjobExecutor.JobVolumeCreate(context.Background(), apistructs.JobVolume{
 				Namespace:   p.Extra.Namespace,
 				Name:        "local-pv-default",
 				Type:        "local",
@@ -499,6 +500,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		}
 
 	}
+
+makeOutStorages:
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
 		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {

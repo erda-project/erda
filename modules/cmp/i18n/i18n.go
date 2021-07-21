@@ -45,7 +45,7 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "createAliCloudOnsTopic", "添加阿里云消息队列Topic")
 
 	message.SetString(language.SimplifiedChinese, "DCOS-compatible label", "DCOS 兼容性的 label")
-	message.SetString(language.SimplifiedChinese, "cluster name", "集群名称")
+	message.SetString(language.SimplifiedChinese, "cluster name", "集群标识")
 	message.SetString(language.SimplifiedChinese, "cluster type", "集群类型")
 	message.SetString(language.SimplifiedChinese, "cluster version", "集群版本")
 	message.SetString(language.SimplifiedChinese, "root domain", "泛域名")
@@ -58,6 +58,13 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "diceInstall", "安装dice")
 	message.SetString(language.SimplifiedChinese, "completed", "完成")
 	message.SetString(language.SimplifiedChinese, "https enabled", "开启https")
+	message.SetString(language.SimplifiedChinese, "cluster status", "集群状态")
+	message.SetString(language.SimplifiedChinese, "init job cluster name", "初始化任务集群")
+	message.SetString(language.SimplifiedChinese, "manage type", "管理方式")
+	message.SetString(language.SimplifiedChinese, "node count", "节点数")
+	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
+	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
+	message.SetString(language.SimplifiedChinese, "cluster init container id", "集群初始化任务容器ID")
 	// cloud resource type
 	message.SetString(language.SimplifiedChinese, "Compute", "计算")
 	message.SetString(language.SimplifiedChinese, "Network", "网络")

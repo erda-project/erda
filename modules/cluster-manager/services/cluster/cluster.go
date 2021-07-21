@@ -276,7 +276,9 @@ func (c *Cluster) PatchWithEvent(req *apistructs.ClusterPatchRequest) error {
 
 	cCluster := c.convert(cluster)
 
-	req.ManageConfig.CredentialSource = cCluster.ManageConfig.CredentialSource
+	if req.ManageConfig.CredentialSource == "" {
+		req.ManageConfig.CredentialSource = cCluster.ManageConfig.CredentialSource
+	}
 
 	manageConfig, err := json.MarshalIndent(req.ManageConfig, "", "\t")
 	if err != nil {
@@ -471,6 +473,8 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		opsConfig       *apistructs.OpsConfig
 		manageConfig    *apistructs.ManageConfig
 		sysConfig       *apistructs.Sysconf
+		// Deprecated at 1.2
+		urls = make(map[string]string)
 	)
 
 	if cluster.SysConfig != "" {
@@ -495,6 +499,12 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 			logrus.Warnf("failed to unmarshal, (%v)", err)
 		}
 	}
+	// TODO: Deprecated at 1.2, use for edas soldier 1.1 version
+	if cluster.URLs != "" {
+		if err := json.Unmarshal([]byte(cluster.URLs), &urls); err != nil {
+			logrus.Warnf("failed to unmarshal, (%v)", err)
+		}
+	}
 
 	return &apistructs.ClusterInfo{
 		ID:             int(cluster.ID),
@@ -509,6 +519,7 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		System:         sysConfig,
 		OpsConfig:      opsConfig,
 		ManageConfig:   manageConfig,
+		URLs:           urls,
 		CreatedAt:      cluster.CreatedAt,
 		UpdatedAt:      cluster.UpdatedAt,
 	}

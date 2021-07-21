@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -30,7 +31,10 @@ import (
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, actionJobDefine *diceyml.Job) (*spec.PipelineTask, error) {
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedData passedDataWhenCreate) (*spec.PipelineTask, error) {
+	var actionJobDefine = passedData.getActionJobDefine(extmarketsvc.MakeActionTypeVersion(action))
+	var actionJobSpec = passedData.getActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action))
+
 	task := &spec.PipelineTask{}
 	task.PipelineID = p.ID
 	task.StageID = ps.ID
@@ -51,7 +55,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.Extra.Image
 
 	// set executor
-	executorKind, executorName, err := s.judgeTaskExecutor(action)
+	executorKind, executorName, err := s.judgeTaskExecutor(action, actionJobSpec)
 	if err != nil {
 		return nil, apierrors.ErrCreatePipelineTask.InvalidParameter(err)
 	}
@@ -175,11 +179,17 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 }
 
 // judgeTaskExecutor judge task executor by action info
-func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action) (spec.PipelineTaskExecutorKind, string, error) {
-	if action.Type == apistructs.ActionTypeAPITest {
-		return spec.PipelineTaskExecutorKindAPITest, spec.PipelineTaskExecutorNameAPITestDefault, nil
+func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName, error) {
+	if actionSpec == nil ||
+		actionSpec.Executor == nil ||
+		len(actionSpec.Executor.Kind) <= 0 ||
+		len(actionSpec.Executor.Name) <= 0 ||
+		!spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind).Check() ||
+		!spec.PipelineTaskExecutorName(actionSpec.Executor.Name).Check() {
+		return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
 	}
-	return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
+
+	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name), nil
 }
 
 func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {

@@ -53,3 +53,75 @@ func TestTaskContextDedup(t *testing.T) {
 	assert.Equal(t, len(ctx.InStorages), 2)
 	assert.Equal(t, len(ctx.OutStorages), 2)
 }
+
+func TestPipelineTaskExecutorName_Check(t *testing.T) {
+	tests := []struct {
+		name string
+		that PipelineTaskExecutorName
+		want bool
+	}{
+		{
+			name: "PipelineTaskExecutorNameEmpty",
+			that: PipelineTaskExecutorNameEmpty,
+			want: true,
+		},
+		{
+			name: "PipelineTaskExecutorNameSchedulerDefault",
+			that: PipelineTaskExecutorNameSchedulerDefault,
+			want: true,
+		},
+		{
+			name: "PipelineTaskExecutorNameAPITestDefault",
+			that: PipelineTaskExecutorNameAPITestDefault,
+			want: true,
+		},
+		{
+			name: "other",
+			that: "other",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.that.Check(); got != tt.want {
+				t.Errorf("Check() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPipelineTaskExecutorKind_Check(t *testing.T) {
+	tests := []struct {
+		name string
+		that PipelineTaskExecutorKind
+		want bool
+	}{
+		{
+			name: "PipelineTaskExecutorKindScheduler",
+			that: PipelineTaskExecutorKindScheduler,
+			want: true,
+		},
+		{
+			name: "PipelineTaskExecutorKindMemory",
+			that: PipelineTaskExecutorKindMemory,
+			want: true,
+		},
+		{
+			name: "PipelineTaskExecutorKindAPITest",
+			that: PipelineTaskExecutorKindAPITest,
+			want: true,
+		},
+		{
+			name: "other",
+			that: "other",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.that.Check(); got != tt.want {
+				t.Errorf("Check() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
