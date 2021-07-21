@@ -47,6 +47,8 @@ type Agent struct {
 	Ctx      context.Context
 	Cancel   context.CancelFunc // cancel when logic done
 	ExitCode int
+
+	StdErrRegexpList []string
 }
 
 type AgentArg struct {

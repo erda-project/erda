@@ -15,6 +15,7 @@ package actionagent
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/filehelper"
+)
+
+const (
+	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -87,6 +92,10 @@ func (agent *Agent) prepare() {
 	} else {
 		agent.EasyUse.RunMultiStderr = f
 	}
+
+	// 5. set stderr regexp list
+	envStdErrRegexpStr := os.Getenv(EnvStdErrRegexpList)
+	_ = json.Unmarshal([]byte(envStdErrRegexpStr), &agent.StdErrRegexpList)
 }
 
 func (agent *Agent) setupScript() error {
