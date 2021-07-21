@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -93,7 +94,9 @@ func GenerateParamsFromTask(pipelineID uint64, taskID uint64, taskStatus apistru
 
 // outputs: outputs.preTaskName.key
 func generateOutputs(tasks []*spec.PipelineTask) map[string]string {
-	makePhKeyFunc := func(taskName, metaKey string) string { return fmt.Sprintf("outputs.%s.%s", taskName, metaKey) }
+	makePhKeyFunc := func(taskName, metaKey string) string {
+		return fmt.Sprintf(expression.Outputs+".%s.%s", taskName, metaKey)
+	}
 	outputs := make(map[string]string)
 	for _, task := range tasks {
 		for _, meta := range task.Result.Metadata {
@@ -105,7 +108,7 @@ func generateOutputs(tasks []*spec.PipelineTask) map[string]string {
 
 // configs: configs.key
 func generateConfigs(p *spec.Pipeline) map[string]string {
-	makePhKeyFunc := func(key string) string { return fmt.Sprintf("configs.%s", key) }
+	makePhKeyFunc := func(key string) string { return fmt.Sprintf(expression.Configs+".%s", key) }
 	configs := make(map[string]string)
 	for k, v := range p.Snapshot.Secrets {
 		configs[makePhKeyFunc(k)] = v

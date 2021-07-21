@@ -26,6 +26,50 @@ import (
 )
 
 const props1 string = `{
+	 "loopFormField":[
+		{
+			"component":"formGroup",
+			"key":"loop",
+			"componentProps":{
+				"defaultExpand":false,
+				"expandable":true,
+				"title":"循环策略"
+			},
+			"group":"loop"
+		},
+		{
+			"label":"循环结束条件",
+			"component":"input",
+			"key":"loop.break",
+			"group":"loop"
+		},
+		{
+			"label":"最大循环次数",
+			"component":"inputNumber",
+			"key":"loop.strategy.max_times",
+			"group":"loop"
+		},
+		{
+			"label":"衰退比例",
+			"component":"inputNumber",
+			"key":"loop.strategy.decline_ratio",
+			"group":"loop",
+			"labelTip":"每次循环叠加间隔比例"
+		},
+		{
+			"label":"衰退最大值(秒)",
+			"component":"inputNumber",
+			"key":"loop.strategy.decline_limit_sec",
+			"group":"loop",
+			"labelTip":"循环最大间隔时间"
+		},
+		{
+			"label":"起始间隔(秒)",
+			"component":"inputNumber",
+			"key":"loop.strategy.interval_sec",
+			"group":"loop"
+		}
+   ],
   "methodList": [
     "GET",
     "POST",
@@ -290,11 +334,11 @@ const props3 string = `}
 //  ],
 //}
 //}
-const prop4 string = `}`
+const props4 string = `}`
 
 func genProps(input, execute string) interface{} {
 	var propsI interface{}
-	if err := json.Unmarshal([]byte(props1+input+props2+input+props3+execute+prop4), &propsI); err != nil {
+	if err := json.Unmarshal([]byte(props1+input+props2+input+props3+execute+props4), &propsI); err != nil {
 		logrus.Errorf("init props name=testplan component=formModal propsType=CreateTestPlan err: errMsg: %v", err)
 	}
 
@@ -332,7 +376,8 @@ func genMockInput(bdl protocol.ContextBundle) Input {
 
 // APISpec step.value 的json解析
 type APISpec struct {
-	APIInfo apistructs.APIInfoV2 `json:"apiSpec"`
+	APIInfo apistructs.APIInfoV2         `json:"apiSpec"`
+	Loop    *apistructs.PipelineTaskLoop `json:"loop"`
 }
 
 func genEmptyAPISpecStr() (APISpec, string) {

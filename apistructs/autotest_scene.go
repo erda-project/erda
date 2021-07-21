@@ -30,6 +30,7 @@ type AutoTestRunScene struct {
 
 type AutoTestRunStep struct {
 	ApiSpec map[string]interface{} `json:"apiSpec"`
+	Loop    *PipelineTaskLoop      `json:"loop"`
 }
 
 type AutoTestRunWait struct {
