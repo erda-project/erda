@@ -34,7 +34,10 @@ const (
 
 // SteveClusterHook starts steve server when create cluster and stop steve server when delete cluster
 func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
-	req := apistructs.ClusterEvent{}
+	if r.Body == nil {
+		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: "nil body"}, nil
+	}
+	var req apistructs.ClusterEvent
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errstr := fmt.Sprintf("decode clusterhook request fail: %v", err)
 		logrus.Error(errstr)
