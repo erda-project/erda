@@ -41,10 +41,8 @@ type Store struct {
 
 func NewProxyStore(clientGetter proxy.ClientGetter) types.Store {
 	return &errorStore{
-		Store: &WatchRefresh{
-			Store: &Store{
-				clientGetter: clientGetter,
-			},
+		Store: &Store{
+			clientGetter: clientGetter,
 		},
 	}
 }
