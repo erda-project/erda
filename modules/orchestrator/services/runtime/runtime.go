@@ -1683,14 +1683,11 @@ func checkRuntimeCreateReq(req *apistructs.RuntimeCreateRequest) error {
 // FullGC 定时全量 GC 过期的部署单
 func (r *Runtime) FullGC() {
 	defer func() {
-		logrus.Infof("gc release end")
 		if err := recover(); err != nil {
 			debug.PrintStack()
 			logrus.Errorf("[alert] failed to fullGC, panic: %v", err)
 		}
 	}()
-
-	logrus.Infof("starting gc release")
 
 	rollbackCfg, err := r.getRollbackConfig()
 	if err != nil {
