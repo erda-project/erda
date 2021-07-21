@@ -58,10 +58,13 @@ func (e *Endpoints) GetFileRecordsByProjectId(ctx context.Context, r *http.Reque
 	}
 
 	req.Locale = e.bdl.GetLocaleByRequest(r).Name()
-	rsp, operators, err := e.testcase.ListFileRecordsByProject(req)
+	list, operators, count, err := e.testcase.ListFileRecordsByProject(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(rsp, operators)
+	return httpserver.OkResp(&apistructs.ListTestFileRecordsResponseData{
+		List:    list,
+		Counter: count,
+	}, operators)
 }
