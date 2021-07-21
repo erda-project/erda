@@ -164,42 +164,52 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 	}
 
 	for _, v := range resp.Pipelines {
-		if strings.Contains(v.YmlName, "dice-deploy-release") {
-			branchSlice := strings.SplitN(v.YmlName, "-", -1)
-			if len(branchSlice) != 4 {
-				return nil, errors.Errorf("Invalid yaml name %s", v.YmlName)
-			}
-			branch := branchSlice[3]
-			runtimeBranchs, ok := envs[strings.ToLower(v.Extra.DiceWorkspace)]
+		if !strings.Contains(v.YmlName, "dice-deploy-release") {
+			// not the target pipeline
+			continue
+		}
+
+		branchSlice := strings.SplitN(v.YmlName, "-", -1)
+		if len(branchSlice) != 4 {
+			return nil, errors.Errorf("Invalid yaml name %s", v.YmlName)
+		}
+		branch := branchSlice[3]
+		runtimeBranchs, ok := envs[strings.ToLower(v.Extra.DiceWorkspace)]
+
+		if !ok || strutil.Exist(runtimeBranchs, branch) {
 			// first condition means user have permission
 			// second condition means that the runtime data of db has higher priority
 			// And one branch corresponds to only one rutime
-			if ok && !strutil.Exist(runtimeBranchs, branch) {
-				// get pipeline detail to confirm whether the runtime has been created
-				piplineDetail, err := bdl.GetPipeline(v.ID)
-				if err != nil {
-					return nil, err
-				}
-				if isUndoneTaskOFDeployByRelease(piplineDetail) {
-					result = append(result, apistructs.RuntimeSummaryDTO{
-						RuntimeInspectDTO: apistructs.RuntimeInspectDTO{
-							Name:         v.FilterLabels["branch"],
-							Source:       apistructs.RELEASE,
-							Status:       "Init",
-							DeployStatus: apistructs.DeploymentStatusDeploying,
-							ClusterName:  v.ClusterName,
-							Extra: map[string]interface{}{"applicationId": v.FilterLabels["appID"], "buildId": v.ID,
-								"workspace": v.Extra.DiceWorkspace, "commitId": v.Commit, "fakeRuntime": true},
-							TimeCreated: *v.TimeBegin,
-							CreatedAt:   *v.TimeBegin,
-							UpdatedAt:   *v.TimeBegin,
-						},
-						LastOperateTime: *v.TimeBegin,
-						LastOperator:    fmt.Sprintf("%v", v.Extra.RunUser.ID),
-					})
-				}
-			}
+			continue
 		}
+
+		// get pipeline detail to confirm whether the runtime has been created
+		piplineDetail, err := bdl.GetPipeline(v.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isUndoneTaskOFDeployByRelease(piplineDetail) {
+			// Task has been completed
+			continue
+		}
+
+		result = append(result, apistructs.RuntimeSummaryDTO{
+			RuntimeInspectDTO: apistructs.RuntimeInspectDTO{
+				Name:         v.FilterLabels["branch"],
+				Source:       apistructs.RELEASE,
+				Status:       "Init",
+				DeployStatus: apistructs.DeploymentStatusDeploying,
+				ClusterName:  v.ClusterName,
+				Extra: map[string]interface{}{"applicationId": v.FilterLabels["appID"], "buildId": v.ID,
+					"workspace": v.Extra.DiceWorkspace, "commitId": v.Commit, "fakeRuntime": true},
+				TimeCreated: *v.TimeBegin,
+				CreatedAt:   *v.TimeBegin,
+				UpdatedAt:   *v.TimeBegin,
+			},
+			LastOperateTime: *v.TimeBegin,
+			LastOperator:    fmt.Sprintf("%v", v.Extra.RunUser.ID),
+		})
 	}
 
 	return result, nil
