@@ -66,7 +66,7 @@ func (f *factory) Schemas(user user.Info) (*types.APISchemas, error) {
 type responseWriter struct {
 	http.ResponseWriter
 	Header int
-	Body string
+	Body   string
 }
 
 func (r *responseWriter) Write(b []byte) (int, error) {

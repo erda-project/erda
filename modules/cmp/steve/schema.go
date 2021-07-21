@@ -17,7 +17,6 @@ import (
 	"context"
 	"strings"
 
-	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 	"github.com/rancher/apiserver/pkg/store/apiroot"
 	"github.com/rancher/apiserver/pkg/subscribe"
 	"github.com/rancher/apiserver/pkg/types"
@@ -35,6 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+
+	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
 
 func DefaultSchemas(ctx context.Context, baseSchema *types.APISchemas, cg proxy.ClientGetter,
@@ -73,7 +74,7 @@ func DefaultSchemaTemplates(cf *client.Factory,
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter, ) schema.Template {
+func DefaultTemplate(clientGetter proxy.ClientGetter) schema.Template {
 	return schema.Template{
 		Store:     cmpproxy.NewProxyStore(clientGetter),
 		Formatter: formatter(),
