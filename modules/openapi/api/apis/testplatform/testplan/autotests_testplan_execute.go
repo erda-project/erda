@@ -27,5 +27,7 @@ var AUTOTESTS_TESTPLAN_EXECUTE = apis.ApiSpec{
 	Method:         http.MethodPost,
 	CheckLogin:     true,
 	CheckBasicAuth: true,
+	CheckToken:     true,
+	IsOpenAPI:      true,
 	Doc:            "自动化测试计划执行",
 }

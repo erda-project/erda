@@ -26,5 +26,7 @@ var AUTOTESTS_SCENES_EXECUTE = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      http.MethodPost,
 	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
 	Doc:         "自动化测试场景执行",
 }

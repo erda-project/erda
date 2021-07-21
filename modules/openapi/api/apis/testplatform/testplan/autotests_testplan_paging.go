@@ -24,8 +24,10 @@ var AUTOTESTS_TESTPLAN_PAGING = apis.ApiSpec{
 	BackendPath:    "/api/autotests/testplans",
 	Host:           "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:         "http",
-	Method:         http.MethodPost,
+	Method:         http.MethodGet,
 	CheckLogin:     true,
 	CheckBasicAuth: true,
+	CheckToken:     true,
+	IsOpenAPI:      true,
 	Doc:            "自动化测试计划列表",
 }

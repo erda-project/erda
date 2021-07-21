@@ -16,20 +16,17 @@ package autotest
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var GLOBAL_CONFIG_LIST = apis.ApiSpec{
-	Path:         "/api/autotests/global-configs",
-	BackendPath:  "/api/autotests/global-configs",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.AutoTestGlobalConfigListRequest{},
-	ResponseType: apistructs.AutoTestGlobalConfigListResponse{},
-	Doc:          "查询自动化测试全局配置列表",
+var AUTOTESTS_SCENES_LIST = apis.ApiSpec{
+	Path:        "/api/autotests/scenes",
+	BackendPath: "/api/autotests/scenes",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:      "http",
+	Method:      http.MethodGet,
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	Doc:         "自动化测试场景列表",
 }

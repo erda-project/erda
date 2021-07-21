@@ -11,25 +11,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package autotest
+package testplan
 
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var GLOBAL_CONFIG_LIST = apis.ApiSpec{
-	Path:         "/api/autotests/global-configs",
-	BackendPath:  "/api/autotests/global-configs",
-	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	RequestType:  apistructs.AutoTestGlobalConfigListRequest{},
-	ResponseType: apistructs.AutoTestGlobalConfigListResponse{},
-	Doc:          "查询自动化测试全局配置列表",
+var AUTOTESTS_TESTPLAN_CREATE = apis.ApiSpec{
+	Path:           "/api/autotests/testplans",
+	BackendPath:    "/api/autotests/testplans",
+	Host:           "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:         "http",
+	Method:         http.MethodPost,
+	CheckLogin:     true,
+	CheckBasicAuth: true,
+	Doc:            "创建自动化测试计划",
 }
