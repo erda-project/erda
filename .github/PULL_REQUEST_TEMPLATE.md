@@ -1,9 +1,9 @@
 #### What type of this PR
 
-- [ ] feature
-- [ ] bug
-- [ ] polish
-- [ ] document
+/kind feature
+/kind bug
+/kind polish
+/kind document
 
 
 #### What this PR does / why we need it:
