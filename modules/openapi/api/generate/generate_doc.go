@@ -130,7 +130,7 @@ func generateDoc(onlyOpenapi bool, resultfile string) {
 			} else {
 				p = new(openapi3.PathItem)
 
-				re := regexp.MustCompile(`\{([^)]+)\}`)
+				re := regexp.MustCompile(`{[^/]*}`)
 				params := re.FindAllString(api.Path, -1)
 				for _, param := range params {
 					param := strings.TrimSuffix(strings.TrimPrefix(param, "{"), "}")
