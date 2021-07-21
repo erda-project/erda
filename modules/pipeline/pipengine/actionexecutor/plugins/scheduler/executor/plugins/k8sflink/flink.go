@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	flinkoperatorv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -198,6 +199,11 @@ func (k *K8sFlink) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) 
 		}
 	}
 	return nil, nil
+}
+
+// Inspect k8sflink doesn`t support inspect, flinkcluster`s logs are too long
+func (k *K8sFlink) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	return apistructs.TaskInspect{}, errors.New("k8sflink doesn`t support inspect")
 }
 
 func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.BigdataConf) (*flinkoperatorv1beta1.FlinkCluster, error) {
