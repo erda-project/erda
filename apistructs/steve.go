@@ -23,7 +23,7 @@ const (
 	SteveErrorType = "error"
 )
 
-// SteveCollection 用于接收steve server返回的集合类型的数据（一次返回多条数据）
+// SteveCollection is a resource collection returned from steve server.
 type SteveCollection struct {
 	Type         string            `json:"type,omitempty"`
 	Links        map[string]string `json:"links"`
@@ -33,11 +33,11 @@ type SteveCollection struct {
 	Revision     string            `json:"revision"`
 	Pagination   *Pagination       `json:"pagination,omitempty"`
 	Continue     string            `json:"continue,omitempty"`
-	// steve资源列表
+	// steve resources
 	Data []SteveResource `json:"data"`
 }
 
-// SteveError 用于接收steve server返回的错误
+// SteveError is an error returned from steve server.
 type SteveError struct {
 	Type    string `json:"type,omitempty"`
 	Code    string `json:"code,omitempty"`
@@ -45,7 +45,7 @@ type SteveError struct {
 	Status  int    `json:"status,omitempty"`
 }
 
-// SteveResource 用于接收steve server返回的实例类型的数据（一次返回一条数据）
+// SteveResource is a steve resource returned from steve server.
 type SteveResource struct {
 	K8SResource
 	ID    string            `json:"id,omitempty"`
@@ -53,7 +53,7 @@ type SteveResource struct {
 	Links map[string]string `json:"links"`
 }
 
-// K8SResource 为k8s原生资源
+// K8SResource is a original k8s resource.
 type K8SResource struct {
 	metav1.TypeMeta
 	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -61,12 +61,12 @@ type K8SResource struct {
 	Status   interface{}       `json:"status,omitempty"`
 }
 
-// Pagination 用于分页查询
+// Pagination used to paging query.
 type Pagination struct {
-	Limit   int    `json:"limit,omitempty"`   // 每页数据条数
-	First   string `json:"first,omitempty"`   // 第一页数据链接
-	Next    string `json:"next,omitempty"`    // 下一页数据链接
-	Partial bool   `json:"partial,omitempty"` // 是否为部分数据
+	Limit   int    `json:"limit,omitempty"`   // maximum number of each page
+	First   string `json:"first,omitempty"`   // first page link
+	Next    string `json:"next,omitempty"`    // next page link
+	Partial bool   `json:"partial,omitempty"` // whether partial
 }
 
 type K8SResType string
@@ -81,19 +81,20 @@ const (
 	K8SEvent       K8SResType = "events"
 )
 
-// SteveRequest 用于向steve发送get或list请求
+// SteveRequest used to query steve server by bundle.
 type SteveRequest struct {
-	Type        K8SResType // 资源类型，必填
-	ClusterName string     // 集群名，必填
-	Name        string     // 资源名，Get, Delete, Update请求时必填
-	Namespace   string     // 命名空间
-	// 标签匹配，list时可选
-	// 格式"key=value"，或"key in (value1, value2)"，或"key notin (value1, value2)"
+	Type        K8SResType // type of resource, required
+	ClusterName string     // cluster name, required
+	Name        string     // name of resource，required when Get, Delete, Update
+	Namespace   string     // namespace of resource
+	// label selector, optional when list
+	// format: "key=value"，or "key in (value1, value2)"，or "key notin (value1, value2)"
 	LabelSelector []string
-
-	Obj interface{} // Update, Create请求时使用，obj为k8s原生资源的指针，如*v1.pod, *v1.node
+	// required in  Update, Create，obj is a pointer of original k8s resource，like *v1.pod, *v1.node
+	Obj interface{}
 }
 
+// URLQueryString converts label selectors to url query params.
 func (k *SteveRequest) URLQueryString() map[string][]string {
 	query := make(map[string][]string)
 
