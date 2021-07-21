@@ -116,7 +116,7 @@ func do() (*httpserver.Server, error) {
 	bundleOpts := []bundle.Option{
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(30*time.Second, time.Second*60),
+				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
 		bundle.WithPipeline(),
 		bundle.WithScheduler(),
