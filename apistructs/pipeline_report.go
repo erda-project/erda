@@ -50,6 +50,7 @@ var (
 	PipelineReportTypeBasic   PipelineReportType = "basic"
 	PipelineReportTypeAPITest PipelineReportType = "api-test"
 	PipelineReportTypeEvent   PipelineReportType = "event"
+	PipelineReportTypeInspect PipelineReportType = "inspect"
 )
 
 // PipelineReportMeta 流水线报告元数据，前端根据该数据拼装报告详情界面

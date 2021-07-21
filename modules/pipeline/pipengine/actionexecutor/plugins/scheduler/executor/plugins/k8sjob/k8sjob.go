@@ -305,6 +305,21 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 	return nil, nil
 }
 
+func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	jobName := strutil.Concat(task.Extra.Namespace, ".", task_uuid.MakeJobID(task))
+	job, err := k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	if err != nil {
+		return apistructs.TaskInspect{}, err
+	}
+
+	var events *corev1.EventList
+	events, _ = logic.SearchEvents(k.client.ClientSet.CoreV1(), job)
+	return apistructs.TaskInspect{
+		Object: job,
+		Events: events,
+	}, nil
+}
+
 func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
 	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
 	if namespace == "" {

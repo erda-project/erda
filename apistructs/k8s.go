@@ -13,6 +13,16 @@
 
 package apistructs
 
+import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
 const (
 	AliyunRegistry = "aliyun-registry"
 )
+
+type TaskInspect struct {
+	Object runtime.Object    `json:"object"`
+	Events *corev1.EventList `json:"events"`
+}
