@@ -15,7 +15,6 @@ package bundle
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"reflect"
 
@@ -32,7 +31,7 @@ import (
 // Required fields: ClusterName, Name, Type.
 func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return nil, errors.Errorf("clusterName, name and type fields are required")
+		return nil, errors.New("clusterName, name and type fields are required")
 	}
 
 	host, err := b.urls.CMP()
@@ -68,7 +67,7 @@ func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (*apistructs.Ste
 // Required fields: ClusterName, Type.
 func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveCollection, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return nil, errors.Errorf("clusterName and type fields are required")
+		return nil, errors.New("clusterName and type fields are required")
 	}
 
 	host, err := b.urls.CMP()
@@ -104,10 +103,10 @@ func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (*apistructs.St
 // Required fields: ClusterName, Type, Name, Obj
 func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return nil, errors.Errorf("clusterName, name and type fields are required")
+		return nil, errors.New("clusterName, name and type fields are required")
 	}
 	if !isObjInvalid(req.Obj) {
-		return nil, errors.Errorf("obj in req is invalid")
+		return nil, errors.New("obj in req is invalid")
 	}
 
 	host, err := b.urls.CMP()
@@ -142,10 +141,10 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 // Required fields: ClusterName, Type, Obj
 func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (*apistructs.SteveResource, error) {
 	if req.Type == "" || req.ClusterName == "" {
-		return nil, errors.Errorf("clusterName and type fields are required")
+		return nil, errors.New("clusterName and type fields are required")
 	}
 	if !isObjInvalid(req.Obj) {
-		return nil, errors.Errorf("obj in req is invalid")
+		return nil, errors.New("obj in req is invalid")
 	}
 
 	host, err := b.urls.CMP()
@@ -180,7 +179,7 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 // Required fields: ClusterName, Type, Name
 func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 	if req.Type == "" || req.ClusterName == "" || req.Name == "" {
-		return errors.Errorf("clusterName, name and type fields are required")
+		return errors.New("clusterName, name and type fields are required")
 	}
 
 	host, err := b.urls.CMP()
@@ -223,7 +222,7 @@ func isSteveError(data []byte) error {
 
 	typ, ok := obj["type"].(string)
 	if !ok {
-		return apierrors.ErrInvoke.InternalError(fmt.Errorf("type field is null"))
+		return apierrors.ErrInvoke.InternalError(errors.New("type field is null"))
 	}
 
 	if typ == apistructs.SteveErrorType {
