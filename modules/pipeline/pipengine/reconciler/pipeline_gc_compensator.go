@@ -60,7 +60,7 @@ func (r *Reconciler) doWaitGCCompensate(isSnippetPipeline bool) {
 	}
 }
 
-func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int64, error) {
+func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
 	var pipelineResults []spec.Pipeline
 
 	var req apistructs.PipelinePageListRequest
@@ -72,7 +72,7 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 	}
 	req.AllSources = true
 	req.IncludeSnippet = isSnippet
-	pipelines, _, total, _, err := r.dbClient.PageListPipelines(req)
+	pipelines, _, _, _, err := r.dbClient.PageListPipelines(req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compensate pipeline req %v err: %v", req, err)
 	} else {
@@ -106,5 +106,5 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 			pipelineResults = append(pipelineResults, p)
 		}
 	}
-	return pipelineResults, total, nil
+	return pipelineResults, len(pipelines), nil
 }
