@@ -169,7 +169,7 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 			continue
 		}
 
-		branchSlice := strings.SplitN(v.YmlName, "-", -1)
+		branchSlice := strings.SplitN(v.YmlName, "-", 4)
 		if len(branchSlice) != 4 {
 			return nil, errors.Errorf("Invalid yaml name %s", v.YmlName)
 		}
