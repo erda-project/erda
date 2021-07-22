@@ -404,6 +404,7 @@ func (e *Endpoints) GetLatestReleases(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrListRelease.InvalidParameter(err).ToResp(), nil
 	}
 
+
 	// 检查version合法性
 	version := r.URL.Query().Get("version")
 	if version == "" {

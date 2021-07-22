@@ -11,42 +11,32 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dbclient
+package db
 
-import (
-	"github.com/erda-project/erda/pkg/database/dbengine"
-)
+import "github.com/jinzhu/gorm"
 
-type Image struct {
-	dbengine.BaseModel
-	ReleaseID string `json:"releaseId" gorm:"index:idx_release_id"`       // 关联release
-	ImageName string `json:"imageName" gorm:"type:varchar(128);not null"` // 镜像名称
-	ImageTag  string `json:"imageTag" gorm:"type:varchar(64)"`            // 镜像Tag
-	Image     string `json:"image" gorm:"not null"`                       // 镜像地址
+// ImageConfig .
+type ImageConfigDB struct {
+	*gorm.DB
 }
 
-// Set table name
-func (Image) TableName() string {
-	return "ps_images"
-}
-
-// CreateImage 创建镜像
-func (client *DBClient) CreateImage(image *Image) error {
+// CreateImage
+func (client *ImageConfigDB) CreateImage(image *Image) error {
 	return client.Create(image).Error
 }
 
-// UpdateImage 更新镜像
-func (client *DBClient) UpdateImage(image *Image) error {
+// UpdateImage
+func (client *ImageConfigDB) UpdateImage(image *Image) error {
 	return client.Save(image).Error
 }
 
-// DeleteImage 删除镜像
-func (client *DBClient) DeleteImage(imageID int64) error {
+// DeleteImage
+func (client *ImageConfigDB) DeleteImage(imageID int64) error {
 	return client.Where("id = ?", imageID).Delete(&Image{}).Error
 }
 
-// GetImagesByRelease 根据 releaseID 获取镜像列表
-func (client *DBClient) GetImagesByRelease(releaseID string) ([]Image, error) {
+// GetImagesByRelease Get image list by releaseID
+func (client *ImageConfigDB) GetImagesByRelease(releaseID string) ([]Image, error) {
 	var images []Image
 	if err := client.Where("release_id = ?", releaseID).Find(&images).Error; err != nil {
 		return nil, err
@@ -54,8 +44,8 @@ func (client *DBClient) GetImagesByRelease(releaseID string) ([]Image, error) {
 	return images, nil
 }
 
-// GetImagesByID 根据 imageID 获取镜像
-func (client *DBClient) GetImageByID(imageID int64) (*Image, error) {
+// GetImagesByID Get image by imageID
+func (client *ImageConfigDB) GetImageByID(imageID int64) (*Image, error) {
 	var image Image
 	if err := client.Where("id = ?", imageID).Find(&image).Error; err != nil {
 		return nil, err
@@ -63,8 +53,8 @@ func (client *DBClient) GetImageByID(imageID int64) (*Image, error) {
 	return &image, nil
 }
 
-// GetImageByImage 根据 image 获取镜像
-func (client *DBClient) GetImageByImage(image string) (*Image, error) {
+// GetImageByImage Get image by image string
+func (client *ImageConfigDB) GetImageByImage(image string) (*Image, error) {
 	var img Image
 	if err := client.Where("image = ?", image).First(&img).Error; err != nil {
 		return nil, err
@@ -72,13 +62,13 @@ func (client *DBClient) GetImageByImage(image string) (*Image, error) {
 	return &img, nil
 }
 
-// ListImages 获取镜像列表
-func (client *DBClient) ListImages(orgID, pageNo, pageSize int64) (int64, []Image, error) {
+// ListImages Get image list
+func (client *ImageConfigDB) ListImages(orgID, pageNo, pageSize int64) (int64, []Image, error) {
 	var (
 		total  int64
 		images []Image
 	)
-	if orgID == 0 { // Token认证方式
+	if orgID == 0 { // verification method Token
 		if err := client.Order("updated_at DESC").Offset((pageNo - 1) * pageSize).Limit(pageSize).
 			Find(&images).Error; err != nil {
 			return 0, nil, err
@@ -98,8 +88,8 @@ func (client *DBClient) ListImages(orgID, pageNo, pageSize int64) (int64, []Imag
 	return total, images, nil
 }
 
-// GetImageCount 获取不在给定 releaseID 下的image数目
-func (client *DBClient) GetImageCount(releaseID, image string) (int64, error) {
+// GetImageCount Get the quantity not equal releaseID
+func (client *ImageConfigDB) GetImageCount(releaseID, image string) (int64, error) {
 	var count int64
 	if err := client.Where("image = ?", image).Not("release_id", releaseID).
 		Model(&Image{}).Count(&count).Error; err != nil {
