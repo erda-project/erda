@@ -1705,7 +1705,7 @@ func (r *Runtime) FullGC() {
 		}
 		for i := range runtimes {
 			keep, ok := rollbackCfg[runtimes[i].ProjectID][strings.ToUpper(runtimes[i].Workspace)]
-			if !ok {
+			if !ok || keep < 0 || keep > 100 {
 				keep = 5
 			}
 			r.fullGCForSingleRuntime(runtimes[i].ID, keep)

@@ -437,7 +437,7 @@ func (p *Project) FillQuota(orgResources map[uint64]apistructs.OrgResourceInfo) 
 	return nil
 }
 
-// ListProjects
+// GetAllProjects list all project
 func (p *Project) GetAllProjects() ([]apistructs.ProjectDTO, error) {
 	projects, err := p.db.GetAllProjects()
 	if err != nil {
