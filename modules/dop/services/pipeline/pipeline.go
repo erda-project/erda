@@ -509,7 +509,8 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.PayloadPushEvent) error {
 			}
 
 			// if type is delete,need to delete cron and stop it if cron enable
-			if v.Type == "delete" {
+			// if type is rename,need to delete cron and stop it if cron enable
+			if v.Type == "delete" || v.Type == "rename" {
 				if err := p.bdl.DeletePipelineCron(cron.ID); err != nil {
 					logrus.Errorf("fail to DeletePipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					continue
@@ -523,7 +524,7 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.PayloadPushEvent) error {
 				continue
 			}
 
-			// if type is rename or modified, need to update cron and stop it if cron enable and cronExpr is empty
+			// if type modified, need to update cron and stop it if cron enable and cronExpr is empty
 			if v.Type == "rename" || v.Type == "modified" {
 				// get pipeline yml file content
 				searchINode := appDto.ProjectName + "/" + appDto.Name + "/blob/" + branch + "/" + v.Name
