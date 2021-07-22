@@ -11,25 +11,41 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package util
+package pipeline
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestIsPipelineYml(t *testing.T) {
+func TestGetBranch(t *testing.T) {
 	ss := []struct {
-		s    string
+		ref  string
+		Want string
+	}{
+		{"", ""},
+		{"refs/heads/", ""},
+		{"refs/heads/master", "master"},
+		{"refs/heads/feature/test", "feature/test"},
+	}
+	for _, v := range ss {
+		assert.Equal(t, v.Want, getBranch(v.ref))
+	}
+}
+
+func TestIsPipelineYmlPath(t *testing.T) {
+	ss := []struct {
+		path string
 		want bool
 	}{
 		{"pipeline.yml", true},
 		{".dice/pipelines/a.yml", true},
-		//{"", false},
+		{"", false},
 		{"dice/pipeline.yml", false},
 	}
 	for _, v := range ss {
-		assert.Equal(t, v.want, IsPipelineYml(v.s))
+		assert.Equal(t, v.want, isPipelineYmlPath(v.path))
 	}
 
 }

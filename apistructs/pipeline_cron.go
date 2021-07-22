@@ -48,7 +48,6 @@ type PipelineCronDTO struct {
 	PipelineYmlName string     `json:"pipelineYmlName"` // 一个分支下可以有多个 pipeline 文件，每个分支可以有单独的 cron 逻辑
 	BasePipelineID  uint64     `json:"basePipelineID"`  // 用于记录最开始创建出这条 cron 记录的 pipeline id
 	Enable          *bool      `json:"enable"`          // 1 true, 0 false
-	PipelineYml     string     `json:"pipelineYml"`
 }
 
 type PipelineCronCreateRequest struct {
@@ -63,15 +62,6 @@ type PipelineCronCreateResponse struct {
 type PipelineCronDeleteResponse struct {
 	Header
 }
-
-type PipelineAction string
-
-const (
-	PipelineActionCreate PipelineAction = "create"
-	PipelineActionUpdate PipelineAction = "update"
-	PipelineActionDelete PipelineAction = "delete"
-	PipelineActionReName PipelineAction = "rename"
-)
 
 type PipelineCronUpdateRequest struct {
 	ID              uint64         `json:"id"`

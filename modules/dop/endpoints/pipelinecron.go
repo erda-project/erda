@@ -162,7 +162,7 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 
 // pipelineUpdate pipeline cron update
 func (e *Endpoints) pipelineCronUpdate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	var req apistructs.PipelineYmlEvent
+	var req apistructs.PayloadPushEvent
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdatePipeline.InvalidParameter(err).ToResp(), nil
 	}

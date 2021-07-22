@@ -30,7 +30,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/helper"
 	"github.com/erda-project/erda/modules/gittar/models"
@@ -686,8 +685,6 @@ func CreateCommit(context *webcontext.Context) {
 		}
 	}
 
-	go createPipelineYmlEvent(context, createCommitRequest, commit, beforeCommit)
-
 	pushEvent := &models.PayloadPushEvent{
 		Before: beforeCommitID,
 		After:  commit.ID,
@@ -700,62 +697,6 @@ func CreateCommit(context *webcontext.Context) {
 	context.Success(Map{
 		"commit": commit,
 	})
-}
-
-// createPipelineYmlEvent if path like pipeline.yml or .dice/pipelines/*yml is updated, need to update pipeline cron
-func createPipelineYmlEvent(ctx *webcontext.Context, req gitmodule.CreateCommit, commitFrom, commitTo *gitmodule.Commit) {
-	for _, v := range req.Actions {
-		if util.IsPipelineYmlPath(v.Path) {
-			var action string
-			if v.Action == gitmodule.EDIT_ACTION_DELETE {
-				action = bundle.DeleteAction
-			}
-			if v.Action == gitmodule.EDIT_ACTION_UPDATE {
-				diffFile, err := ctx.Repository.GetDiffFile(commitFrom, commitTo, v.Path, v.Path)
-				if err != nil {
-					logrus.Errorf("fail to GetDiffFile,err: %v", err)
-					continue
-				}
-				if !IsFileModified(diffFile) {
-					continue
-				}
-				action = bundle.UpdateAction
-			}
-			// create eventBox message
-			err := ctx.Bundle.CreateEvent(&apistructs.EventCreateRequest{
-				EventHeader: apistructs.EventHeader{
-					Event:         bundle.PipelineYmlEvent,
-					Action:        action,
-					OrgID:         strconv.FormatInt(ctx.Repository.OrgId, 10),
-					ProjectID:     strconv.FormatInt(ctx.Repository.ProjectId, 10),
-					ApplicationID: strconv.FormatInt(ctx.Repository.ApplicationId, 10),
-					Env:           "",
-					TimeStamp:     time.Now().Format("2006-01-02 15:04:05"),
-				},
-				Sender: bundle.SenderGittar,
-				Content: apistructs.PipelineYmlEventData{
-					Branch:             req.Branch,
-					PipelineYml:        v.Content,
-					PipelineYmlPathNew: v.Path,
-					PipelineYmlPathOld: v.Path,
-				},
-			})
-			if err != nil {
-				logrus.Errorf("fail to CreateEvent,err: %v", err)
-			}
-		}
-	}
-}
-
-// IsFileModified if file is update return true,else return false
-func IsFileModified(file *gitmodule.DiffFile) bool {
-	if file == nil {
-		return false
-	}
-	if file.Name == file.OldName && file.Addition == 0 && file.Deletion == 0 {
-		return false
-	}
-	return true
 }
 
 // GetRepoRaw function

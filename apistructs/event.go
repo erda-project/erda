@@ -227,15 +227,11 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 	return params
 }
 
-// PipelineYmlEvent .
-type PipelineYmlEvent struct {
+type PayloadPushEvent struct {
 	EventHeader
-	Content PipelineYmlEventData `json:"content"`
-}
-
-type PipelineYmlEventData struct {
-	Branch             string `json:"branch"`
-	PipelineYml        string `json:"pipelineYml"`
-	PipelineYmlPathNew string `json:"pipelineYmlPathNew"`
-	PipelineYmlPathOld string `json:"pipelineYmlPathOld"`
+	Content struct {
+		Ref    string `json:"ref"`
+		After  string `json:"after"`
+		Before string `json:"before"`
+	} `json:"content"`
 }

@@ -502,7 +502,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 	ev = apistructs.CreateHookRequest{
 		Name:   "pipeline_yml_update",
-		Events: []string{bundle.PipelineYmlEvent},
+		Events: []string{bundle.GitPushEvent},
 		URL:    strutil.Concat("http://", discover.DOP(), "/api/cicd-crons/update"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{

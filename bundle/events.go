@@ -51,6 +51,7 @@ const (
 	ApprovalStatusChangedEvent = "approvalStatusChanged"
 	IssueEvent                 = "issue"
 	PipelineYmlEvent           = "pipelineYml"
+	GitPushEvent               = "git_push"
 )
 
 // Event actions
@@ -58,7 +59,6 @@ const (
 	CreateAction = "create"
 	UpdateAction = "update"
 	DeleteAction = "delete"
-	RenameAction = "rename"
 )
 
 // CreateEvent 创建一个 event 发送到 eventbox 服务.
