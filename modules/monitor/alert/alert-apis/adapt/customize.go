@@ -280,6 +280,8 @@ const (
 	customizeAlertTypeMicroService = "micro_service_customize"
 	applicationIdTag               = "application_id"
 	applicationIdValue             = "$application_id"
+	clusterNameTag                 = "cluster_name"
+	clusterNameValue               = "$cluster_name"
 )
 
 // CustomizeAlerts .
@@ -504,6 +506,10 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error
 				continue
 			}
 
+			if filter.Tag == clusterNameTag && filter.Value.GetStringValue() == clusterNameValue {
+				continue
+			}
+
 			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] {
 				continue
 			}
@@ -579,6 +585,9 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 	alertRule := alertDetail.Rules[0]
 	if alertRule.Name == "" {
 		alertRule.Name = alertDetail.Name
+	}
+	if len(alertRule.Group) == 0 {
+		alertRule.Group = make([]string, 0)
 	}
 	rule := a.ToModel(alertRule, alertDetail, index)
 	if err := tx.CustomizeAlertRule.Insert(rule); err != nil {
