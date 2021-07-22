@@ -18,6 +18,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // TestPlanCaseRel
@@ -161,7 +162,11 @@ func (client *DBClient) ListTestPlanCaseRels(req apistructs.TestPlanCaseRelListR
 		sql = sql.Where("`updater_id` IN (?)", req.UpdaterIDs)
 	}
 	if len(req.ExecutorIDs) > 0 {
-		sql = sql.Where("`executor_id` IN (?)", req.ExecutorIDs)
+		if strutil.Exist(req.ExecutorIDs, "unassigned") {
+			sql = sql.Where("`executor_id` IN (?) OR `executor_id` = ''", req.ExecutorIDs)
+		} else {
+			sql = sql.Where("`executor_id` IN (?)", req.ExecutorIDs)
+		}
 	}
 	if len(req.ExecStatuses) > 0 {
 		sql = sql.Where("`exec_status` IN (?)", req.ExecStatuses)
