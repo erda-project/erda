@@ -88,7 +88,7 @@ var NoChineseValidator Validator = func(s string) error {
 		}
 	}
 	if len(chineseCharacters) > 0 {
-		return fmt.Errorf("found %d chinese charactors: %s", len(chineseCharacters),
+		return fmt.Errorf("found %d chinese characters: %s", len(chineseCharacters),
 			Join(chineseCharacters, " ", true))
 	}
 	return nil
