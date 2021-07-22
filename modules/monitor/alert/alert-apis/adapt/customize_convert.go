@@ -254,7 +254,7 @@ func (a *Adapt) newCustomizeAlertOverview(
 	metricName := rules[0].Metric
 	if rules[0].Attributes != nil {
 		if v, ok := rules[0].Attributes["metric_name"]; ok {
-			metricName = v.String()
+			metricName = v.GetStringValue()
 		}
 	}
 	return &pb.CustomizeAlertOverview{

@@ -225,6 +225,16 @@ func (a *alertService) AlertToMonitor(alertData *monitor.Alert) (*monitor.Alert,
 }
 
 func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAlertRequest) (*alert.UpdateAlertResponse, error) {
+	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
 	getAlertRequest := &monitor.GetAlertRequest{
 		Id: int64(request.Id),
 	}
@@ -245,8 +255,14 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	alertData.CreateTime = request.CreateTime
 	alertData.UpdateTime = request.UpdateTime
 	alertData.Attributes = request.Attributes
+	alertData.Domain = request.Domain
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
+	}
+	if request.Attributes != nil {
+		for k, v := range request.Attributes {
+			alertData.Attributes[k] = v
+		}
 	}
 	if request.AppIds != nil && len(request.AppIds) > 0 {
 		alertData.Attributes["application_id"], err = a.p.StringSliceToValue(request.AppIds)
@@ -261,6 +277,10 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if request.Domain != "" && len(request.Domain) > 0 {
 		alertData.Attributes["alert_domain"] = structpb.NewStringValue(request.Domain)
 	}
+	dashboardPath := fmt.Sprintf(DashboardPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk)
+	recordPath := fmt.Sprintf(RecordPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk)
+	alertData.Attributes[DashboardPath] = structpb.NewStringValue(dashboardPath)
+	alertData.Attributes[RecordPath] = structpb.NewStringValue(recordPath)
 	data, err := json.Marshal(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -448,6 +468,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, errors.NewInternalServerError(fmt.Errorf("get metric meta failed"))
 	}
+
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -618,12 +639,18 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	if customAlertResp == nil {
+		return nil, errors.NewNotFoundError("monitor_project_alert")
+	}
 	if customAlertResp.Data.AlertScope != MicroServiceScope || customAlertResp.Data.AlertScopeId != request.TenantGroup {
 		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scope or scopeId is invalidate")
 	}
 	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(fmt.Errorf("get tk failed"))
+	}
+	if tk == "" {
+		return nil, fmt.Errorf("no monitor")
 	}
 	customizeMetricsReq := &monitor.QueryCustomizeMetricRequest{
 		Scope:   MicroServiceScope,
