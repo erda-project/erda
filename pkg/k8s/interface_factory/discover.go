@@ -11,15 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package ierror
+package interface_factory
 
 import (
-	"github.com/erda-project/erda/pkg/i18n"
+	"strings"
+
+	"k8s.io/client-go/kubernetes"
 )
 
-type IAPIError interface {
-	Render(locale *i18n.LocaleResource) string
-	Code() string
-	HttpCode() int
-	Ctx() interface{}
+func IsResourceExist(client *kubernetes.Clientset, resourceKind, groupVersion string) (bool, error) {
+	groups, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion)
+	if err != nil {
+		return false, err
+	}
+	for _, resource := range groups.APIResources {
+		if strings.EqualFold(resourceKind, resource.Kind) {
+			return true, nil
+		}
+	}
+	return false, nil
 }

@@ -31,6 +31,7 @@ type APIError struct {
 	code               string
 	msg                string
 	localeMetaMessages []MetaMessage
+	ctx                interface{}
 }
 
 // Error 错误信息
@@ -51,7 +52,12 @@ func (e *APIError) HttpCode() int {
 	return e.httpCode
 }
 
-// Option 可选参数
+// Ctx Context information
+func (e *APIError) Ctx() interface{} {
+	return e.ctx
+}
+
+// Option Optional parameters
 type Option func(*APIError)
 
 // New 新建接口错误
@@ -80,6 +86,12 @@ func WithTemplateMessage(template, defaultValue string, args ...interface{}) Opt
 func WithCode(httpCode int, code string) Option {
 	return func(a *APIError) {
 		_ = a.appendCode(httpCode, code)
+	}
+}
+
+func WithCtx(ctx interface{}) Option {
+	return func(a *APIError) {
+		a.ctx = ctx
 	}
 }
 
@@ -117,6 +129,11 @@ func (e *APIError) appendLocaleTemplate(template *i18n.Template, args ...interfa
 	return e
 }
 
+func (e *APIError) setCtx(ctx interface{}) *APIError {
+	e.ctx = ctx
+	return e
+}
+
 func (e *APIError) Render(localeResource *i18n.LocaleResource) string {
 	for _, metaMessage := range e.localeMetaMessages {
 		var template *i18n.Template
@@ -142,5 +159,11 @@ func (e *APIError) dup() *APIError {
 		code:               e.code,
 		msg:                e.msg,
 		localeMetaMessages: e.localeMetaMessages,
+		ctx:                e.ctx,
 	}
+}
+
+// SetCtx Set ctx
+func (e *APIError) SetCtx(ctx interface{}) *APIError {
+	return e.dup().setCtx(ctx)
 }

@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pingcap/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -346,6 +345,6 @@ LABEL:
 		return err
 	}
 	apiInfo.APIInfo.Name = step.Name
-	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": step.APISpecID}
+	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": step.APISpecID, "loop": apiInfo.Loop}
 	return nil
 }
