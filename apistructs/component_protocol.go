@@ -206,7 +206,7 @@ const (
 	// list-project
 	ListProjectToManageOperationKey   OperationKey = "toManage"
 	ListProjectExistOperationKey      OperationKey = "exist"
-	ListProjectFilterOperation        OperationKey = "filter"
+	ListProjectFilterOperation        OperationKey = "clusterFilter"
 	ApplyDeployProjectFilterOperation OperationKey = "applyDeploy"
 
 	//notify_list
@@ -217,6 +217,25 @@ const (
 
 	// workbench
 	SubmitOrgOperationKey OperationKey = "submitOrg"
+
+	// cmp bashboard table
+	CMPDashboardChangePageNoOperationKey   OperationKey = "changePageNo"
+	CMPDashboardChangePageSizeOperationKey OperationKey = "changePageSize"
+	CMPDashboardSortByColumnOperationKey OperationKey = "sort"
+
+	// cmp bashboard clusterFilter
+	CMPDashboardFilterOperationKey OperationKey = "filter"
+
+	// Freeze Button
+	CMPDashboardFreezeNode   OperationKey = "click"
+	CMPDashboardUnfreezeNode OperationKey = "click"
+
+	// Node Detail
+	CMPDashboardNodeDetail OperationKey ="show"
+
+	// Cpu and mem chart
+	CMPDashboardChart OperationKey = "updateTime"
+
 )
 
 type ComponentProtocolParams interface{}

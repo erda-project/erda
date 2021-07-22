@@ -22,7 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
 
 // GenComponentState 获取state
