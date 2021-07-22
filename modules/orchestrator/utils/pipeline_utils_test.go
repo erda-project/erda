@@ -127,6 +127,18 @@ func TestFindCreatingRuntimesByRelease(t *testing.T) {
 					},
 					apistructs.PagePipeline{
 						ID:      12581,
+						YmlName: "dice-deploy-release-feature/test-ttt",
+						Extra: apistructs.PipelineExtra{
+							DiceWorkspace: "DEV",
+							RunUser: &apistructs.PipelineUser{
+								ID: "2",
+							},
+						},
+						FilterLabels: map[string]string{"appID": "1", "branch": "feature/xxx"},
+						TimeBegin:    &now,
+					},
+					apistructs.PagePipeline{
+						ID:      12581,
 						YmlName: "dice-deploy-release-feature/test",
 						Extra: apistructs.PipelineExtra{
 							DiceWorkspace: "DEV",
