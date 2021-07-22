@@ -712,6 +712,9 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		action.Type = "api-test"
 		action.Version = "2.0"
 		action.Params = value.ApiSpec
+		if value.Loop != nil && value.Loop.Strategy != nil && value.Loop.Strategy.MaxTimes > 0 {
+			action.Loop = value.Loop
+		}
 	case apistructs.StepTypeWait:
 		var value apistructs.AutoTestRunWait
 		err := json.Unmarshal([]byte(step.Value), &value)

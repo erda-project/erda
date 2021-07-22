@@ -184,7 +184,7 @@ func (b *Bundle) RunPipeline(req apistructs.PipelineRunRequest) error {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
 	if !httpResp.IsOK() || !runResp.Success {
-		return toAPIError(httpResp.StatusCode(), runResp.Error)
+		return toAPIError(httpResp.StatusCode(), runResp.Error).SetCtx(runResp.Error.Ctx)
 	}
 	return nil
 }
