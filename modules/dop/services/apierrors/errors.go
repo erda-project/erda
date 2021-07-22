@@ -472,6 +472,8 @@ var (
 	ErrDeletePublisher = err("ErrDeletePublisher", "删除Publisher失败")
 	ErrGetPublisher    = err("ErrGetPublisher", "获取Publisher失败")
 	ErrListPublisher   = err("ErrListPublisher", "获取Publisher列表失败")
+
+	ErrParallelRunPipeline = err("ErrParallelRunPipeline", "已有流水线正在运行中")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

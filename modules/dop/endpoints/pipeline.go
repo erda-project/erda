@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -353,7 +354,26 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		IdentityInfo:      identityInfo,
 		PipelineRunParams: runRequest.PipelineRunParams,
 	}); err != nil {
-		return errorresp.ErrResp(err)
+		var apiError, ok = err.(*errorresp.APIError)
+		if !ok {
+			// Failed to convert to apiError type, return the error passed by the pipeline component
+			return errorresp.ErrResp(err)
+		}
+
+		ctxMap, ok := apiError.Ctx().(map[string]interface{})
+		if !ok {
+			// Interface converted to map[string]interface{} fails and returns the error passed by the pipeline component
+			return errorresp.ErrResp(err)
+		}
+
+		// Get the link to the running pipeline
+		link, ok := GetPipelineLink(p.PipelineDTO, ctxMap)
+		if !ok {
+			// Failed to get the pipeline information and return an error
+			return errorresp.ErrResp(fmt.Errorf("failed to get the running pipeline"))
+		}
+
+		return errorresp.ErrResp(apierrors.ErrParallelRunPipeline.InvalidState(fmt.Sprintf("failed to run pipeline, there is already running: %s", link)))
 	}
 
 	return httpserver.OkResp(nil)
@@ -698,4 +718,23 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrCreateCheckRun.NotFound().ToResp(), nil
 	}
 	return httpserver.OkResp(nil)
+}
+
+// GetPipelineLink Get the link to the running pipeline
+func GetPipelineLink(p apistructs.PipelineDTO, ctxMap map[string]interface{}) (string, bool) {
+	var runningPipelineID string
+	ok := true
+	for key, value := range ctxMap {
+		if key == apierrors.ErrParallelRunPipeline.Error() {
+			runningPipelineID, ok = value.(string)
+			logrus.Infof("value== %s", value)
+			if !ok {
+				return "", false
+			}
+		}
+	}
+
+	// running pipeline link
+	link := fmt.Sprintf("%s/%s/dop/projects/%d/apps/%d/pipeline?pipelineID=%s", conf.UIPublicURL(), p.OrgName, p.ProjectID, p.ApplicationID, runningPipelineID)
+	return link, true
 }

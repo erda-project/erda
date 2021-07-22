@@ -18,10 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/pipeline/commonutil/linkutil"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
@@ -218,20 +219,11 @@ func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
 		return apierrors.ErrParallelRunPipeline.InternalError(err)
 	}
 	if len(runningPipelineIDs) > 0 {
-		pipelines, err := s.dbClient.ListPipelinesByIDs(runningPipelineIDs)
-		if err != nil {
-			return apierrors.ErrParallelRunPipeline.InternalError(err)
+		ctxMap := map[string]interface{}{
+			apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", runningPipelineIDs[0]),
 		}
-		var links []string
-		for _, p := range pipelines {
-			valid, link := linkutil.GetPipelineLink(s.bdl, p)
-			if valid {
-				links = append(links, fmt.Sprintf("URL: %s", link))
-			} else {
-				links = append(links, fmt.Sprintf("runningPipelineID: %d", p.ID))
-			}
-		}
-		return apierrors.ErrParallelRunPipeline.InvalidState(strutil.Join(links, "\n"))
+		logrus.Infof("start run pipeline %d", runningPipelineIDs[0])
+		return apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(ctxMap)
 	}
 	return nil
 }

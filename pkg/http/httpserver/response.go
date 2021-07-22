@@ -60,6 +60,7 @@ func (r HTTPResponse) GetLocaledResp(locale *i18n.LocaleResource) HTTPResponse {
 				Err: apistructs.ErrorResponse{
 					Code: r.Error.Code(),
 					Msg:  r.Error.Render(locale),
+					Ctx:  r.Error.Ctx(),
 				},
 			},
 		}
