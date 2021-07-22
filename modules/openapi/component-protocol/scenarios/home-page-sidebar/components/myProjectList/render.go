@@ -146,7 +146,7 @@ func RenItem(pro apistructs.ProjectDTO, orgName string) ProItem {
 		ProjectId:   strconv.Itoa(int(pro.ID)),
 		Title:       pro.DisplayName,
 		Description: "",
-		PrefixImg:   "/images/default-project-icon.png",
+		PrefixImg:   "/frontImg_default_project_icon",
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
