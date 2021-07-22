@@ -5,13 +5,8 @@ go 1.16
 require (
 	bou.ke/monkey v1.0.2
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
-	github.com/Chronokeeper/anyxml v0.0.0-20160530174208-54457d8e98c6 // indirect
-	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
-	github.com/CloudyKit/jet v2.1.2+incompatible // indirect
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
-	github.com/agrison/go-tablib v0.0.0-20160310143025-4930582c22ee // indirect
-	github.com/agrison/mxj v0.0.0-20160310142625-1269f8afb3b4 // indirect
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
@@ -24,11 +19,9 @@ require (
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bluele/gcache v0.0.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
-	github.com/bndr/gotabulate v1.1.2 // indirect
 	github.com/buger/jsonparser v1.1.1
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
-	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -37,7 +30,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210709120204-7091e4656382
+	github.com/erda-project/erda-infra v0.0.0-20210722074049-8551350e70b9
 	github.com/erda-project/erda-proto-go v0.0.0-20210715071257-863ac2744be1
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
@@ -53,7 +46,6 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/go-xorm/sqlfiddle v0.0.0-20180821085327-62ce714f951a // indirect
 	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
@@ -69,7 +61,6 @@ require (
 	github.com/hpcloud/tail v1.0.0
 	github.com/igm/sockjs-go v3.0.0+incompatible // indirect
 	github.com/influxdata/influxql v0.0.0-00010101000000-000000000000
-	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.2
@@ -123,9 +114,9 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/varstr/uaparser v0.0.0-20170929040706-6aabb7c4e98c
-	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
-	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
-	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
+	github.com/xormplus/builder v0.0.0-20200331055651-240ff40009be
+	github.com/xormplus/core v0.0.0-20200308074340-f3bce19d5f31
+	github.com/xormplus/xorm v0.0.0-20210512135344-8123d584d5f5
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0

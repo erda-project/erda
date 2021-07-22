@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/xormplus/xorm/caches"
+
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/config"
 
@@ -29,7 +31,6 @@ import (
 
 type OrmEngineInterface interface {
 	xorm.EngineInterface
-	SetTableMapper(core.IMapper)
 	RegisterSqlMap(xorm.SqlM, ...xorm.Cipher) error
 	SqlMapClient(string, ...interface{}) *xorm.Session
 }
@@ -85,7 +86,7 @@ func (wrapper SqlLogWrapper) SetLevel(l core.LogLevel) {
 var SqlLog SqlLogWrapper
 
 func SetGlobalCacher(engine OrmEngineInterface, expired time.Duration, size int) {
-	cacher := xorm.NewLRUCacher2(xorm.NewMemoryStore(), expired, size)
+	cacher := caches.NewLRUCacher2(caches.NewMemoryStore(), expired, size)
 	engine.SetDefaultCacher(cacher)
 }
 

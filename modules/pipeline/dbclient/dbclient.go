@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
+	"github.com/xormplus/xorm/log"
 )
 
 type Client struct {
@@ -102,11 +103,10 @@ func New() (*Client, error) {
 	engine.SetMapper(core.GonicMapper{})
 
 	engine.ShowSQL(cfg.ShowSQL)
-	engine.ShowExecTime(cfg.ShowSQL)
 
-	logLevel := core.LOG_INFO
+	logLevel := log.LOG_INFO
 	if strings.ToUpper(cfg.LogLevel) == "DEBUG" {
-		logLevel = core.LOG_DEBUG
+		logLevel = log.LOG_DEBUG
 	}
 	engine.SetLogLevel(logLevel)
 
