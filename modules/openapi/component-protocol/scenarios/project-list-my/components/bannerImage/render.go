@@ -48,7 +48,7 @@ func (i *ComponentImage) Render(ctx context.Context, c *apistructs.Component, sc
 	}
 	i.Props = Props{
 		Size:    "large",
-		Src:     "/static/empty-project.png",
+		Src:     "frontImg_empty_project",
 		Visible: false,
 	}
 	if i.State.IsEmpty {

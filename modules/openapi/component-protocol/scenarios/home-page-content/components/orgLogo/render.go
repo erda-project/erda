@@ -58,7 +58,7 @@ func (e *OrgLogo) Render(ctx context.Context, c *apistructs.Component, scenario 
 		return err
 	}
 	e.Type = "Image"
-	e.Props.Src = "/images/resources/org.png"
+	e.Props.Src = "frontImg_default_org_img"
 	e.Props.IsCircle = true
 	e.Props.Size = "small"
 	if e.ctxBdl.Identity.OrgID != "" {

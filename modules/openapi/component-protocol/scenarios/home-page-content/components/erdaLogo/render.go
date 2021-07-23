@@ -60,7 +60,7 @@ func (e *ErdaLogo) Render(ctx context.Context, c *apistructs.Component, scenario
 	if e.ctxBdl.Identity.OrgID == "" {
 		e.Props.Visible = true
 	}
-	e.Props.Src = "/images/favicon.ico"
+	e.Props.Src = "frontImg_erda_favicon"
 	e.Props.IsCircle = true
 	e.Props.Size = "small"
 	return nil

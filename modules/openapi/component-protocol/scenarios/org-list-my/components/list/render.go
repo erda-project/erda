@@ -26,7 +26,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
-const defaultOrgImage = "/images/default-org-icon.svg"
+const defaultOrgImage = "frontImg_default_org_icon"
 
 func (i *ComponentList) unmarshal(c *apistructs.Component) error {
 	stateValue, err := json.Marshal(c.State)

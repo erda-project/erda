@@ -146,7 +146,7 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 		AppId:       strconv.Itoa(int(app.ID)),
 		Title:       fmt.Sprintf("%s/%s", app.ProjectDisplayName, app.DisplayName),
 		Description: "",
-		PrefixImg:   "/images/default-app-icon.svg",
+		PrefixImg:   "frontImg_default_app_icon",
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
