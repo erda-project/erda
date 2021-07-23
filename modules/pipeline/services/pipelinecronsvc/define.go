@@ -147,6 +147,6 @@ func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRe
 	}
 	cron.CronExpr = req.CronExpr
 	cron.Extra.PipelineYml = req.PipelineYml
-	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{"corn_expr", "extra"})
+	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{spec.PipelineCronCronExpr, spec.Extra})
 	return err
 }

@@ -64,11 +64,9 @@ type PipelineCronDeleteResponse struct {
 }
 
 type PipelineCronUpdateRequest struct {
-	ID              uint64         `json:"id"`
-	PipelineYml     string         `json:"pipelineYml"`
-	PipelineYmlName string         `json:"pipelineYmlName"`
-	CronExpr        string         `json:"cronExpr"`
-	PipelineSource  PipelineSource `json:"pipelineSource"`
+	ID          uint64 `json:"id"`
+	PipelineYml string `json:"pipelineYml"`
+	CronExpr    string `json:"cronExpr"`
 }
 
 type PipelineCronUpdateResponse struct {
