@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -34,6 +35,94 @@ const (
 	etcdDBGCWatchPrefix    = "/devops/pipeline/dbgc/pipeline/"
 	etcdDBGCDLockKeyPrefix = "/devops/pipeline/dbgc/dlock/"
 )
+
+// remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
+// these two methods will create a lot of etcd ttl, will cause high load on etcd
+// use fixed gc time, traverse the data in the database every day
+func (r *Reconciler) PipelineDatabaseGC() {
+
+	r.doAnalyzedPipelineDatabaseGC(true)
+	r.doAnalyzedPipelineDatabaseGC(false)
+
+	r.doNotAnalyzedPipelineDatabaseGC(true)
+	r.doNotAnalyzedPipelineDatabaseGC(false)
+
+	time.AfterFunc(24*time.Hour, func() {
+		r.PipelineDatabaseGC()
+	})
+}
+
+// query the data in the database according to req paging to perform gc
+func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
+	var pageNum = req.PageNum
+
+	for {
+		req.PageNum = pageNum
+
+		pipelineResults, _, _, _, err := r.dbClient.PageListPipelines(req)
+
+		if err != nil {
+			logrus.Errorf("doPipelineDatabaseGC failed to compensate pipeline req %v err: %v", req, err)
+			return
+		}
+
+		if len(pipelineResults) <= 0 {
+			return
+		}
+
+		for _, p := range pipelineResults {
+			var needArchive = false
+			if p.Status == apistructs.PipelineStatusAnalyzed {
+				if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
+					needArchive = *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
+				}
+			} else {
+				if p.Extra.GC.DatabaseGC.Finished.NeedArchive != nil {
+					needArchive = *p.Extra.GC.DatabaseGC.Finished.NeedArchive
+				}
+			}
+
+			// gc logic
+			if err := r.DoDBGC(p.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive}); err != nil {
+				logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", p.PipelineID, err)
+				return
+			}
+		}
+
+		pageNum += 1
+		time.Sleep(time.Second * 10)
+	}
+}
+
+// gc Analyzed status pipeline
+func (r *Reconciler) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+	var req apistructs.PipelinePageListRequest
+	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	req.IncludeSnippet = isSnippetPipeline
+	req.DescCols = []string{"id"}
+	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()))
+	req.PageSize = 1000
+	req.LargePageSize = true
+	req.PageNum = 1
+	req.AllSources = true
+
+	r.doPipelineDatabaseGC(req)
+}
+
+// gc other status pipeline
+func (r *Reconciler) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+	var req apistructs.PipelinePageListRequest
+	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	req.IncludeSnippet = isSnippetPipeline
+	req.DescCols = []string{"id"}
+	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec()))
+	req.PageSize = 1000
+	req.LargePageSize = true
+	req.PageNum = 1
+	req.AllSources = true
+
+	r.doPipelineDatabaseGC(req)
+}
 
 // ListenDatabaseGC 监听需要 GC 的 pipeline database record.
 func (r *Reconciler) ListenDatabaseGC() {
@@ -82,7 +171,7 @@ func (r *Reconciler) ListenDatabaseGC() {
 					}
 
 					// gc logic
-					if err := r.doDBGC(pipelineID, gcOption); err != nil {
+					if err := r.DoDBGC(pipelineID, gcOption); err != nil {
 						logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
 						return
 					}
@@ -131,7 +220,7 @@ func (r *Reconciler) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	}
 }
 
-func (r *Reconciler) doDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+func (r *Reconciler) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 	p, exist, err := r.dbClient.GetPipelineWithExistInfo(pipelineID)
 	if err != nil {
 		return err

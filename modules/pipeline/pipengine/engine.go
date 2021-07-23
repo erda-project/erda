@@ -72,8 +72,9 @@ func (engine *Engine) OnceDo(
 func (engine *Engine) Start() {
 	go engine.reconciler.Listen()
 	go engine.reconciler.ListenGC()
-	go engine.reconciler.ListenDatabaseGC()
-	go engine.reconciler.EnsureDatabaseGC()
+	go engine.reconciler.PipelineDatabaseGC()
+	//go engine.reconciler.ListenDatabaseGC()
+	//go engine.reconciler.EnsureDatabaseGC()
 	go engine.reconciler.ContinueBackupThrottler()
 	go engine.reconciler.CompensateGCNamespaces()
 

@@ -38,7 +38,7 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)
 	defer r.teardownPipelines.Delete(p.Pipeline.ID)
 	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
-	defer r.WaitDBGC(p.Pipeline.ID, *p.Pipeline.Extra.GC.DatabaseGC.Finished.TTLSecond, *p.Pipeline.Extra.GC.DatabaseGC.Finished.NeedArchive)
+	//defer r.WaitDBGC(p.Pipeline.ID, *p.Pipeline.Extra.GC.DatabaseGC.Finished.TTLSecond, *p.Pipeline.Extra.GC.DatabaseGC.Finished.NeedArchive)
 	logrus.Infof("reconciler: begin teardown pipeline, pipelineID: %d", p.Pipeline.ID)
 	defer func() {
 		// // metrics

@@ -301,7 +301,7 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 
 	// put into db gc
 	p.EnsureGC()
-	s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
+	//s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
