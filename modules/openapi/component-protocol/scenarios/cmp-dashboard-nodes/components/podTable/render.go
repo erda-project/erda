@@ -349,7 +349,7 @@ func getItemStatus(pod *v1.Pod) (*common.SteveStatus, error) {
 
 func getRole(labels map[string]string) string {
 	res := make([]string, 0)
-	for k, _ := range labels {
+	for k := range labels {
 		if strings.HasPrefix(k, "pod-role") {
 			splits := strings.Split(k, "\\")
 			res = append(res, splits[len(splits)-1])

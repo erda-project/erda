@@ -355,7 +355,7 @@ func (t *Table) RenderChangePageNo(ops interface{}) error {
 }
 func (t *Table) GetRole(labels map[string]string) string {
 	res := make([]string, 0)
-	for k, _ := range labels {
+	for k := range labels {
 		if strings.HasPrefix(k, "node-role") {
 			splits := strings.Split(k, "\\")
 			res = append(res, splits[len(splits)-1])
