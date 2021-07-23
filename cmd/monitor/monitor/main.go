@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query-example"
