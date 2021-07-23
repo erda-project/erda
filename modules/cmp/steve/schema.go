@@ -76,7 +76,7 @@ func DefaultSchemaTemplates(cf *client.Factory,
 
 func DefaultTemplate(clientGetter proxy.ClientGetter) schema.Template {
 	return schema.Template{
-		//Store:     cmpproxy.NewProxyStore(clientGetter),
+		Store:     cmpproxy.NewProxyStore(clientGetter),
 		Formatter: formatter(),
 	}
 }
