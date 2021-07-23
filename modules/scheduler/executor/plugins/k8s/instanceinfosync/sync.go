@@ -164,7 +164,7 @@ func (s *Syncer) listSyncPod(ctx context.Context) {
 		initUpdateTime = time.Now()
 		logrus.Infof("start listpods for: %s", s.addr)
 		podlist, err = s.pod.ListAllNamespace([]string{
-			"metadata.namespace!=default",
+			//"metadata.namespace!=default",
 			"metadata.namespace!=kube-system"})
 		if err != nil {
 			logrus.Errorf("failed to list pod: %v", err)

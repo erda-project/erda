@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	eventapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -121,18 +122,15 @@ func init() {
 			DisableCompression: true,
 		}
 
-		kubeAddr, ok := options["KUBEADDR"]
-		if !ok {
-			return nil, errors.Errorf("not found edas k8s addr in env variables")
+		bdl := bundle.New(bundle.WithClusterManager())
+		clusterInfo, err := bdl.GetCluster(clustername)
+		if err != nil {
+			return nil, errors.Errorf("get clustername %s cluster info err %v", clustername, err)
 		}
 
-		kubeClient := httpclient.New()
-		kubeBasicAuth, ok := options["KUBEBASICAUTH"]
-		if !ok {
-			userPasswd := strings.Split(kubeBasicAuth, ":")
-			if len(userPasswd) == 2 {
-				kubeClient.BasicAuth(userPasswd[0], userPasswd[1])
-			}
+		kubeAddr, kubeClient, err := util.GetClient(clustername, clusterInfo.ManageConfig)
+		if err != nil {
+			return nil, errors.Errorf("get http client err %v", err)
 		}
 
 		regAddr, ok := options["REGADDR"]
@@ -636,12 +634,6 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 	} else {
-		// Query the latest release order, and terminate if it is running
-		orderList, _ := e.listRecentChangeOrderInfo(appID)
-		if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
-			e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
-		}
-
 		svcSpec, err := e.fillServiceSpec(s, runtime, true)
 		if err != nil {
 			return errors.Wrap(err, "fill service spec")
@@ -730,7 +722,6 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 
 				svcName := newSvc.Name
 				appName := group + "-" + svcName
-
 				// add service
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
@@ -742,7 +733,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				}
 				if e.isServiceToScale(newSvc, oldRuntime) {
 					// scale services
-					logrus.Errorf("[EDAS] Begin to scale service: %s", appName)
+					logrus.Infof("[EDAS] Begin to scale service: %s", appName)
 					if err = e.scaleApp(appName, newSvc.Scale); err != nil {
 						logrus.Errorf("[EDAS] Failed to scale service: %s, error: %v", appName, err)
 						errChan <- err
@@ -2165,26 +2156,20 @@ func (e *EDAS) CapacityInfo() apistructs.CapacityInfoData {
 }
 
 func (e *EDAS) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	return apistructs.ClusterResourceInfoData{
-		CPUOverCommit:        1.0,
-		ProdCPUOverCommit:    1.0,
-		DevCPUOverCommit:     1.0,
-		TestCPUOverCommit:    1.0,
-		StagingCPUOverCommit: 1.0,
-		ProdMEMOverCommit:    1.0,
-		DevMEMOverCommit:     1.0,
-		TestMEMOverCommit:    1.0,
-		StagingMEMOverCommit: 1.0,
-		Nodes: map[string]*apistructs.NodeResourceInfo{
-			"1.1.1.1": {
-				Labels:         []string{},
-				IgnoreLabels:   true,
-				Ready:          true,
-				CPUAllocatable: 999999999999999.0,
-				MemAllocatable: 999999999999999,
-			},
-		},
-	}, nil
+	r, err := e.resourceInfo.Get(brief)
+	if err != nil {
+		return r, err
+	}
+	r.ProdCPUOverCommit = 1.0
+	r.DevCPUOverCommit = 1.0
+	r.TestCPUOverCommit = 1.0
+	r.StagingCPUOverCommit = 1.0
+	r.ProdMEMOverCommit = 1.0
+	r.DevMEMOverCommit = 1.0
+	r.TestMEMOverCommit = 1.0
+	r.StagingMEMOverCommit = 1.0
+
+	return r, nil
 }
 
 func (*EDAS) CleanUpBeforeDelete() {}
