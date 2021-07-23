@@ -20,13 +20,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

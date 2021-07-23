@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gocql/gocql"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -26,7 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	"github.com/gocql/gocql"
 )
 
 type config struct {

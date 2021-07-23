@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package storage
+package storagev2
 
 import (
 	"bytes"
@@ -21,8 +21,9 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
-	"github.com/erda-project/erda/modules/monitor/core/logs"
-	"github.com/erda-project/erda/modules/monitor/core/logs/pb"
+
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/log/pb"
 )
 
 func BenchmarkGzipContentV1(b *testing.B) {
@@ -74,7 +75,7 @@ func TestLogStatement_GetStatement(t *testing.T) {
 		{
 			name:   "logs.LogMeta",
 			fields: fields{p: mockProvider()},
-			args: args{data: &logs.LogMeta{
+			args: args{data: &logmodule.LogMeta{
 				ID:     "aaa",
 				Source: "container",
 				Tags:   map[string]string{"level": "INFO"},

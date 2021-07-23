@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package storage
+package storagev2
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/bluele/gcache"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -27,12 +28,14 @@ import (
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
+	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 )
+
+const selector = "log-store-v2"
 
 type define struct{}
 
-func (d *define) Services() []string { return []string{"logs-store"} }
+func (d *define) Services() []string { return []string{selector} }
 func (d *define) Dependencies() []string {
 	return []string{"kafka", "cassandra", "mysql", "etcd-mutex"}
 }
@@ -71,7 +74,7 @@ type provider struct {
 	EtcdMutexInf mutex.Interface
 	output       writer.Writer
 	ttl          ttlStore
-	schema       schema.LogSchema
+	schema       *schema.CassandraSchema
 	cache        gcache.Cache
 }
 
@@ -91,7 +94,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		Log:           p.Log.Sub("ttlStore"),
 	}
 
-	p.schema, err = schema.NewCassandraSchema(cass, p.Log.Sub("logSchema"))
+	p.schema, err = schema.NewCassandraSchema(cass, p.Log.Sub("logSchema"), schema.WithMutexKey(selector))
 	if err != nil {
 		return err
 	}
@@ -102,10 +105,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	// create default
+	if err := p.schema.CreateDefault(); err != nil {
+		return fmt.Errorf("create default failed: %w", err)
+	}
+
 	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval, p.EtcdMutexInf)
 	go p.ttl.Run(ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
 	go p.startStoreMetaCache(ctx)
-	if err := p.Kafka.NewConsumer(&p.Cfg.Input, p.invoke); err != nil {
+	if err := p.Kafka.NewConsumer(&p.Cfg.Input, p.invokeV2); err != nil {
 		return err
 	}
 
@@ -115,6 +123,27 @@ func (p *provider) Run(ctx context.Context) error {
 	return nil
 }
 
+func (p *provider) startStoreMetaCache(ctx context.Context) {
+	ticker := time.NewTicker(p.Cfg.Output.Cassandra.CacheStoreInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			p.storeMetaCache()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (p *provider) storeMetaCache() {
+	for _, meta := range p.cache.GetALL(true) {
+		if err := p.output.Write(meta); err != nil {
+			logrus.Errorf("fail to write log meta: %s", err)
+		}
+	}
+}
+
 func init() {
-	servicehub.RegisterProvider("logs-store", &define{})
+	servicehub.RegisterProvider(selector, &define{})
 }

@@ -21,13 +21,13 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp time.Time) error {
-	log := &logs.Log{}
+	log := &logmodule.Log{}
 	if err := json.Unmarshal(value, log); err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	cacheKey := log.Source + "_" + log.ID
 	if !p.cache.Has(cacheKey) {
 		// store meta
-		meta := &logs.LogMeta{
+		meta := &logmodule.LogMeta{
 			ID:     log.ID,
 			Source: log.Source,
 			Tags:   log.Tags,
@@ -49,7 +49,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	return p.output.Write(log)
 }
 
-func (p *provider) processLog(log *logs.Log) {
+func (p *provider) processLog(log *logmodule.Log) {
 	if log.Tags == nil {
 		log.Tags = make(map[string]string)
 	}
@@ -134,7 +134,7 @@ const (
 	srcWorkspaceKey       = srcPrefix + workspaceKey
 )
 
-func count(log *logs.Log) {
+func count(log *logmodule.Log) {
 	componentName := log.Tags[diceComponentKey]
 	var componentType string
 	if componentName != "" {

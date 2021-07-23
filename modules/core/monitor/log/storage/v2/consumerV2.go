@@ -11,15 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package storage
+package storagev2
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
-	"github.com/erda-project/erda/modules/monitor/core/logs/pb"
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/log/pb"
 )
 
 func (p *provider) invokeV2(key []byte, value []byte, topic *string, timestamp time.Time) error {
@@ -34,7 +34,7 @@ func (p *provider) invokeV2(key []byte, value []byte, topic *string, timestamp t
 		cacheKey := log.Source + "_" + log.Id
 		if !p.cache.Has(cacheKey) {
 			// store meta
-			meta := &logs.LogMeta{
+			meta := &logmodule.LogMeta{
 				ID:     log.Id,
 				Source: log.Source,
 				Tags:   log.Tags,

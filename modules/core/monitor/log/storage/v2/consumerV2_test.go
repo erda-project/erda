@@ -1,12 +1,13 @@
-package storage
+package storagev2
 
 import (
 	"testing"
 	"time"
 
 	"github.com/alecthomas/assert"
-	"github.com/erda-project/erda/modules/monitor/core/logs"
-	"github.com/erda-project/erda/modules/monitor/core/logs/pb"
+
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/log/pb"
 )
 
 func Test_provider_processLogV2(t *testing.T) {
@@ -82,7 +83,7 @@ func Test_provider_invokeV2(t *testing.T) {
 	ass.Nil(err)
 	err = mp.invokeV2(nil, value, nil, time.Now())
 	ass.Nil(err)
-	ass.Equal(&logs.LogMeta{
+	ass.Equal(&logmodule.LogMeta{
 		ID:     log.Id,
 		Source: log.Source,
 		Tags:   log.Tags,

@@ -11,28 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package query
+package log
 
-import (
-	"github.com/erda-project/erda-infra/providers/httpserver"
-)
-
-func (p *provider) checkApplicationID(ctx httpserver.Context) (string, error) {
-	appID, err := p.getApplicationID(ctx)
-	if err != nil {
-		return "", err
-	}
-	return appID, nil
+// Log .
+type Log struct {
+	Source    string            `json:"source"`
+	ID        string            `json:"id"`
+	Stream    string            `json:"stream"`
+	Content   string            `json:"content"`
+	Offset    int64             `json:"offset"`
+	Timestamp int64             `json:"timestamp"`
+	Tags      map[string]string `json:"tags"`
 }
 
-func (p *provider) checkContainerLog(ctx httpserver.Context) (string, error) {
-	orgID, err := p.checkOrgCluster(ctx)
-	if err != nil {
-		return "", err
-	}
-	return orgID, nil
-}
-
-func (p *provider) provider() {
-
+// LogMeta .
+type LogMeta struct {
+	Source string            `json:"source"`
+	ID     string            `json:"id"`
+	Tags   map[string]string `json:"tags"`
 }

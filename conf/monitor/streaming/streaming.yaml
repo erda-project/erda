@@ -44,8 +44,9 @@ etcd:
 etcd-mutex:
   root_path: "/erda/streaming"
 
-logs-store:
-  _enable: ${LOGS_STORE_ENABLE:true}
+# desperate
+log-store:
+  _enable: ${LOG_STORE_ENABLE:true}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
@@ -73,8 +74,8 @@ logs-store:
       default_ttl: "${LOG_TTL:168h}"
       gc_grace_seconds: 86400
 
-logs-store-v2:
-  _enable: ${LOGS_STORE_V2_ENABLE:true}
+log-store-v2:
+  _enable: ${LOG_STORE_V2_ENABLE:true}
   input:
     topics: "${LOG_V2_TOPICS:spot-v2-container-log,spot-v2-job-log}"
     group: "${LOG_V2_GROUP_ID:spot-v2-monitor-log}"

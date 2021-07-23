@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package storage
+package storagev2
 
 import (
 	"context"
@@ -84,7 +84,7 @@ func (m *mysqlStore) loadLogsTTL() error {
 	m.mu.Lock()
 	m.ttlValue = ttlmap
 	m.mu.Unlock()
-	m.Log.Info("load logs ttl config: %+v", ttlmap)
+	m.Log.Infof("load logs ttl config: %+v", ttlmap)
 	return nil
 }
 

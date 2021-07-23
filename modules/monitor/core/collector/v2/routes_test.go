@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
+	"github.com/erda-project/erda/modules/core/monitor/log/pb"
 	"github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/console"
-	"github.com/erda-project/erda/modules/monitor/core/logs/pb"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
 )
