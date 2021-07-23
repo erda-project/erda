@@ -1705,7 +1705,7 @@ func (r *Runtime) FullGC() {
 		}
 		for i := range runtimes {
 			keep, ok := rollbackCfg[runtimes[i].ProjectID][strings.ToUpper(runtimes[i].Workspace)]
-			if !ok || keep < 0 || keep > 100 {
+			if !ok || keep <= 0 || keep > 100 {
 				keep = 5
 			}
 			r.fullGCForSingleRuntime(runtimes[i].ID, keep)
@@ -1722,6 +1722,7 @@ func (r *Runtime) FullGC() {
 // key1: project_id, key2: workspace, value: the limit of rollback record
 func (r *Runtime) getRollbackConfig() (map[uint64]map[string]int, error) {
 	result := make(map[uint64]map[string]int, 0)
+	// TODO: use cache to get project info
 	projects, err := r.bdl.GetAllProjects()
 	if err != nil {
 		return nil, err
