@@ -21,7 +21,28 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
 
+var addModelOps = map[string][]Fields{
+	"fields": {
+		{
+			Component:      "select",
+			Key:            "labelGroup",
+			Label:          "分组",
+			Required:       true,
+			ComponentProps: map[string][]Options{},
+		}, {
+			Component: "input",
+			Key:       "name",
+			Label:     "标签",
+			Required:  true,
+			Rules: []map[string]string{
+				{"msg": "格式：ss", "pattern": "/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/"},
+			},
+		},
+	},
+}
+
 func (a *AddLabelModel) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+
 	return a.SetComponentValue(c)
 }
 
@@ -40,34 +61,7 @@ func (a *AddLabelModel) SetComponentValue(c *apistructs.Component) error {
 }
 
 func getProps() map[string][]Fields {
-	return map[string][]Fields{
-		"fields": {
-			{
-				Component: "select",
-				Key:       "labelGroup",
-				Label:     "分组",
-				Required:  true,
-				ComponentProps: map[string][]Options{
-					"Options": {{
-						Name:  "",
-						Value: "",
-					}, {
-						Name:  "",
-						Value: "",
-					},
-					},
-				},
-			}, {
-				Component: "input",
-				Key:       "name",
-				Label:     "标签",
-				Required:  true,
-				Rules: []map[string]string{
-					{"msg": "格式：ss", "pattern": "/^[.a-z\\u4e00-\\u9fa5A-Z0-9_-\\s]*$/"},
-				},
-			},
-		},
-	}
+	return addModelOps
 }
 func getOperations() map[string]interface{} {
 	return nil

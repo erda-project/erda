@@ -15,7 +15,7 @@ package cpuTable
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"reflect"
 	"strings"
 
@@ -37,7 +37,7 @@ const (
 
 var tableProperties = map[string]interface{}{
 	"rowKey": "id",
-	"columns": []common.Columns{
+	"columns": []table.Columns{
 		{DataIndex: "status", Title: "状态"},
 		{DataIndex: "node", Title: "节点"},
 		{DataIndex: "role", Title: "角色"},
@@ -51,57 +51,14 @@ var tableProperties = map[string]interface{}{
 	"pageSizeOptions": []string{"10", "20", "50", "100"},
 }
 
-func (mt *MemInfoTable) Import(c *apistructs.Component) error {
-	var (
-		b   []byte
-		err error
-	)
-	if b, err = json.Marshal(c); err != nil {
-		return err
-	}
-	if err = json.Unmarshal(b, mt); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (mt *MemInfoTable) Export(c *apistructs.Component, gs *apistructs.GlobalStateData) error {
-	// set components data
-	b, err := json.Marshal(c)
+func (mt *MemInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	var state table.State
+	mt.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	err := common.Transfer(c.State, &state)
 	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(b, mt); err != nil {
-		return err
-	}
-	return nil
-}
-
-// GenComponentState 获取state
-func (mt *MemInfoTable) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state common.State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
 		return err
 	}
 	mt.State = state
-	return nil
-}
-func (mt *MemInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	mt.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	err := mt.GenComponentState(c)
-	if err != nil {
-		return err
-	}
 	if event.Operation != apistructs.InitializeOperation {
 		// Tab name not equal this component name
 		if c.State["activeKey"].(string) != tab.MEM_TAB {
@@ -195,13 +152,13 @@ func (mt *MemInfoTable) RenderList(component *apistructs.Component, event apistr
 	}
 
 	if sortColumn != "" {
-		refCol := reflect.ValueOf(common.RowItem{}).FieldByName(sortColumn)
+		refCol := reflect.ValueOf(table.RowItem{}).FieldByName(sortColumn)
 		switch refCol.Type() {
 		case reflect.TypeOf(""):
 			common.SortByString([]interface{}{mt.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Node{}):
+		case reflect.TypeOf(table.Node{}):
 			common.SortByNode([]interface{}{mt.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Distribution{}):
+		case reflect.TypeOf(table.Distribution{}):
 			common.SortByDistribution([]interface{}{mt.Data}, sortColumn, asc)
 		default:
 			logrus.Errorf("sort by column %s not found", sortColumn)
@@ -216,8 +173,8 @@ func (mt *MemInfoTable) RenderList(component *apistructs.Component, event apistr
 // SetData assemble rowItem of table
 func (mt *MemInfoTable) SetData(nodes []apistructs.SteveResource, resName v1.ResourceName) error {
 	var (
-		lists []common.RowItem
-		ri    *common.RowItem
+		lists []table.RowItem
+		ri    *table.RowItem
 		err   error
 	)
 	mt.State.Total = len(nodes)
@@ -232,18 +189,14 @@ func (mt *MemInfoTable) SetData(nodes []apistructs.SteveResource, resName v1.Res
 	}
 	return nil
 }
-func (mt *MemInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.ResourceName) (*common.RowItem, error) {
+func (mt *MemInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.ResourceName) (*table.RowItem, error) {
 	var (
 		err                     error
 		status                  *common.SteveStatus
-		distribution, dr, usage *common.DistributionValue
-		nodeBytes               []byte
+		distribution, dr, usage *table.DistributionValue
 		node                    v1.Node
 	)
-	if nodeBytes, err = json.Marshal(c); err != nil {
-		return nil, err
-	}
-	if err = json.Unmarshal(nodeBytes, &node); err != nil {
+	if err = common.Transfer(c, &node); err != nil {
 		return nil, err
 	}
 	nodeLabels := c.Metadata.Labels
@@ -259,31 +212,31 @@ func (mt *MemInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.Resour
 	if dr, err = mt.GetDistributionRate(&node, resName); err != nil {
 		return nil, err
 	}
-	ri := &common.RowItem{
+	ri := &table.RowItem{
 		ID:      node.Name,
 		Version: node.Status.NodeInfo.KubeletVersion,
 		Role:    mt.GetRole(nodeLabels),
-		Labels: common.Labels{
+		Labels: table.Labels{
 			RenderType: "tagsColumn",
 			Value:      mt.GetPodLabels(node.GetLabels()),
 			Operation:  mt.GetLabelOperation(string(node.UID)),
 		},
-		Node: common.Node{
+		Node: table.Node{
 			RenderType: "linkText",
 			Value:      mt.GetNodeAddress(node.Status.Addresses),
 			Operation:  mt.GetNodeOperation(),
 			Reload:     false,
 		},
 		Status: *status,
-		Distribution: common.Distribution{
+		Distribution: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *distribution,
 		},
-		Usage: common.Distribution{
+		Usage: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *usage,
 		},
-		DistributionRate: common.Distribution{
+		DistributionRate: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *dr,
 		},
@@ -309,7 +262,7 @@ func getProps() map[string]interface{} {
 	return tableProperties
 }
 func getTableOperation() map[string]interface{} {
-	ops := map[string]common.Operation{
+	ops := map[string]table.Operation{
 		"changePageNo": {
 			Key:    "changePageNo",
 			Reload: true,
@@ -355,6 +308,6 @@ func RenderCreator() protocol.CompRender {
 	mt.Type = "Table"
 	mt.Props = getProps()
 	mt.Operations = getTableOperation()
-	mt.State = common.State{}
+	mt.State = table.State{}
 	return &mt
 }

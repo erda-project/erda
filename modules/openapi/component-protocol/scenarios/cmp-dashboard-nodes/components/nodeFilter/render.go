@@ -11,24 +11,64 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package clusterFilter
+package nodeFilter
 
 import (
 	"context"
 	"encoding/json"
-
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
 
-// GenComponentState 获取state
-func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return nil
+var (
+	inputSc = filter.StateCondition{
+		Key:         "q",
+		Label:       "标题",
+		Placeholder: "请输入关键字查询",
+		Type:        "input",
+		Fixed:       true,
 	}
-	var state State
+	selectSc = filter.StateCondition{
+		Key:   "labels",
+		Label: "标签",
+		Type:  "select",
+		Fixed: true,
+	}
+	props = filter.Props{
+		Delay: 1000,
+	}
+	ops = map[string]interface{}{
+		apistructs.CMPDashboardFilterOperationKey.String(): filter.Operation{
+			Reload: true,
+			Key:    "clusterFilter",
+		},
+	}
+	state = filter.State{
+		Conditions:    []filter.StateCondition{inputSc, selectSc},
+		IsFirstFilter: false,
+	}
+)
+
+// SetCtxBundle 设置bundle
+func (i *NodeFilter) SetCtxBundle(b protocol.ContextBundle) error {
+	if b.Bdl == nil || b.I18nPrinter == nil {
+		return common.BundleEmptyErr
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", b.InParams, b.Identity)
+	i.ctxBdl = b
+	return nil
+}
+
+// GenComponentState mapping c.State to i.State
+func (i *NodeFilter) GenComponentState(c *apistructs.Component) error {
+	if c == nil || c.State == nil {
+		return common.ProtocolComponentEmptyErr
+	}
+	var state filter.State
 	cont, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("marshal components state failed, content:%v, err:%v", c.State, err)
@@ -43,31 +83,15 @@ func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
-func (i *ComponentFilter) SetComponentValue() {
-	i.Props = Props{
-		Delay: 1000,
-	}
-	i.Operations = map[string]interface{}{
-		apistructs.CMPDashboardFilterOperationKey.String(): Operation{
-			Reload: true,
-			Key:    "clusterFilter",
-		},
-	}
-	i.State.Conditions = []StateCondition{
-		{
-			Key:         "title",
-			Label:       "标题",
-			EmptyText:   "全部",
-			Fixed:       true,
-			ShowIndex:   2,
-			Placeholder: "搜索",
-			Type:        "input",
-		},
-	}
+func (i *NodeFilter) SetComponentValue() {
+	i.Props = props
+	i.Operations = ops
+	i.State = state
+	i.Type = "ContractiveFilter"
 }
 
 // RenderProtocol 渲染组件
-func (i *ComponentFilter) RenderProtocol(c *apistructs.Component, g *apistructs.GlobalStateData) error {
+func (i *NodeFilter) RenderProtocol(c *apistructs.Component) error {
 	stateValue, err := json.Marshal(i.State)
 	if err != nil {
 		return err
@@ -78,81 +102,55 @@ func (i *ComponentFilter) RenderProtocol(c *apistructs.Component, g *apistructs.
 		return err
 	}
 	c.State = state
-	c.Data["list"] = i.Options
 	c.Props = i.Props
 	c.Operations = i.Operations
 	return nil
 }
 
-func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
-	i.ctxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if err = i.GenComponentState(c); err != nil {
-		return
+func (i *NodeFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	var (
+		state filter.State
+		ops   []filter.Options
+		err   error
+	)
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if err = i.SetCtxBundle(bdl); err != nil {
+		return err
 	}
+	if err = common.Transfer(c.State, &state); err != nil {
+		return err
+	}
+	i.State = state
 	switch event.Operation {
 	case apistructs.InitializeOperation:
-		err := i.getFilterOptions()
+		ops, err = i.getFilterOptions()
 		if err != nil {
 			return err
 		}
-	case apistructs.CMPDashboardFilterOperationKey:
-		i.State.IsFirstFilter = true
+		i.State.Conditions[1].Options = ops
 	default:
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
-
 	i.SetComponentValue()
-
-	return i.RenderProtocol(c, gs)
+	return i.RenderProtocol(c)
 }
-func (i *ComponentFilter) getFilterOptions() error {
-	//var (
-	//	clusterList []apistructs.ClusterInfo
-	//	ops         []Options
-	//	err         error
-	//)
-	//
-	//if clusterList, err = i.ctxBdl.Bdl.ListClusters(""); err != nil{
-	//	return nil
-	//}
-	//for _, cluster := range clusterList {
 
-	//req := apistructs.K8SResourceRequest{
-	//	ClusterName:   cluster.Name,
-	//	Namespace:     "",
-	//	LabelSelector: nil,
-	//}
-	//if nodes, err := i.ctxBdl.Bdl.ListNodes(&req); err != nil {
-	//	return nil
-	//} else {
-	//for _, node := range nodes {
-	//ops = append(ops, node.)
-	//}
-	//}
-
-	//}
-	return nil
-}
-func getFilterState() State {
-	sc := StateCondition{
-		Key:         "q",
-		Label:       "标题",
-		Placeholder: "请输入关键字查询",
-		Type:        "input",
-		Fixed:       true,
+func (i *NodeFilter) getFilterOptions() ([]filter.Options, error) {
+	clusters, err := i.ctxBdl.Bdl.ListClusters("")
+	if err != nil {
+		return nil, err
 	}
-	state := State{
-		Conditions:    []StateCondition{sc},
-		IsFirstFilter: false,
+	var ops []filter.Options
+	for _, cluster := range clusters {
+		ops = append(ops, filter.Options{
+			Label: "",
+			Value: cluster.Name,
+		})
 	}
-	return state
+
+	return ops, nil
 }
+
 func RenderCreator() protocol.CompRender {
-	return &ComponentFilter{
-		CommonFilter: CommonFilter{
-			Type:       "ContractiveFilter",
-			State:      getFilterState(),
-			Operations: nil,
-		},
-	}
+	return &NodeFilter{}
 }

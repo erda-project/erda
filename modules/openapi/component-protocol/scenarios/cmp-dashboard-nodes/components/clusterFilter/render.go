@@ -16,8 +16,6 @@ package clusterFilter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -25,11 +23,39 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
 
+var (
+	inputSc = StateCondition{
+		Key:         "q",
+		Label:       "标题",
+		Placeholder: "请输入关键字查询",
+		Type:        "input",
+		Fixed:       true,
+	}
+	selectSc = StateCondition{
+		Key:   "labels",
+		Label: "标签",
+		Type:  "select",
+		Fixed: true,
+	}
+	props = Props{
+		Delay: 1000,
+	}
+	ops = map[string]interface{}{
+		apistructs.CMPDashboardFilterOperationKey.String(): Operation{
+			Reload: true,
+			Key:    "clusterFilter",
+		},
+	}
+	state = State{
+		Conditions:    []StateCondition{inputSc, selectSc},
+		IsFirstFilter: false,
+	}
+)
+
 // SetCtxBundle 设置bundle
 func (i *ComponentFilter) SetCtxBundle(b protocol.ContextBundle) error {
 	if b.Bdl == nil || b.I18nPrinter == nil {
-		err := fmt.Errorf("invalie context bundle")
-		return err
+		return common.BundleEmptyErr
 	}
 	logrus.Infof("inParams:%+v, identity:%+v", b.InParams, b.Identity)
 	i.ctxBdl = b
@@ -57,19 +83,14 @@ func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
 }
 
 func (i *ComponentFilter) SetComponentValue() {
-	i.Props = Props{
-		Delay: 1000,
-	}
-	i.Operations = map[string]interface{}{
-		apistructs.CMPDashboardFilterOperationKey.String(): Operation{
-			Reload: true,
-			Key:    "clusterFilter",
-		},
-	}
+	i.Props = props
+	i.Operations = ops
+	i.State = state
+	i.Type = "ContractiveFilter"
 }
 
 // RenderProtocol 渲染组件
-func (i *ComponentFilter) RenderProtocol(c *apistructs.Component, g *apistructs.GlobalStateData) error {
+func (i *ComponentFilter) RenderProtocol(c *apistructs.Component) error {
 	stateValue, err := json.Marshal(i.State)
 	if err != nil {
 		return err
@@ -80,35 +101,39 @@ func (i *ComponentFilter) RenderProtocol(c *apistructs.Component, g *apistructs.
 		return err
 	}
 	c.State = state
-	c.Data["list"] = i.Options
 	c.Props = i.Props
 	c.Operations = i.Operations
 	return nil
 }
 
-func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	var (
+		state State
+		ops   []Options
+		err   error
+	)
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	if err = i.SetCtxBundle(bdl); err != nil {
-		return
-	}
-	if err = i.GenComponentState(c); err != nil {
 		return err
 	}
+	if err = common.Transfer(c.State, &state); err != nil {
+		return err
+	}
+	i.State = state
 	switch event.Operation {
 	case apistructs.InitializeOperation:
-		ops, err := i.getFilterOptions()
+		ops, err = i.getFilterOptions()
 		if err != nil {
 			return err
 		}
-		i.Options = ops
+		i.State.Conditions[1].Options = ops
 	default:
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
-
 	i.SetComponentValue()
-
-	return i.RenderProtocol(c, gs)
+	return i.RenderProtocol(c)
 }
+
 func (i *ComponentFilter) getFilterOptions() ([]Options, error) {
 	clusters, err := i.ctxBdl.Bdl.ListClusters("")
 	if err != nil {
@@ -124,26 +149,11 @@ func (i *ComponentFilter) getFilterOptions() ([]Options, error) {
 
 	return ops, nil
 }
-func getFilterState() State {
-	sc := StateCondition{
-		Key:         "filter",
-		Label:       "标题",
-		Placeholder: "请输入关键字查询",
-		Type:        "input",
-		Fixed:       true,
-	}
-	state := State{
-		Conditions:    []StateCondition{sc},
-		IsFirstFilter: false,
-	}
-	return state
-}
+
 func RenderCreator() protocol.CompRender {
 	return &ComponentFilter{
 		CommonFilter: CommonFilter{
-			Type:       "ContractiveFilter",
-			State:      getFilterState(),
-			Operations: nil,
+			Type: "ContractiveFilter",
 		},
 	}
 }

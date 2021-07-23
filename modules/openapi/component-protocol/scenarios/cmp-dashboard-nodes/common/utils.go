@@ -19,13 +19,16 @@ import (
 	"sort"
 )
 
-// Transfer transfer a to b with json
+// Transfer transfer a to b with json, kind of b must be pointer
 func Transfer(a, b interface{}) error {
+	if reflect.ValueOf(b).Kind() != reflect.Ptr {
+		return PtrRequiredErr
+	}
 	aBytes, err := json.Marshal(a)
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(aBytes, &b); err != nil {
+	if err := json.Unmarshal(aBytes, b); err != nil {
 		return err
 	}
 	return nil

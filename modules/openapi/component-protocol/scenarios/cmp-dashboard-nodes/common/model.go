@@ -15,8 +15,6 @@ package common
 
 import (
 	"errors"
-	"time"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -108,9 +106,13 @@ var (
 	OperationsEmptyErr        = errors.New("operation is empty")
 	ResourceEmptyErr          = errors.New("node resource is empty")
 	ProtocolComponentEmptyErr = errors.New("component is nil or property empty")
+	BundleEmptyErr            = errors.New("bundle is empty")
 
 	TypeNotAvailableErr = errors.New("type not available")
 	ResourceNotFoundErr = errors.New("resource type not available")
+
+	//util error
+	PtrRequiredErr = errors.New("ptr is required")
 )
 var nodeStatusMap = map[int][]SteveStatusEnum{
 	NodeStatusReady:  {NodeSuccess, NodeSuccessCN},
@@ -124,22 +126,6 @@ var podStatusMap = map[SteveStatusEnum][]SteveStatusEnum{
 	PodSuccessed: {PodSuccessed, PodSuccessedCN},
 	PodFailed:    {PodFailed, PodFailedCN},
 	PodUnknown:   {PodUnknown, PodUnknownCN},
-}
-
-type State struct {
-	IsFirstFilter   bool                   `json:"is_first_filter"`
-	PageNo          int                    `json:"page_no"`
-	PageSize        int                    `json:"page_size"`
-	Total           int                    `json:"total"`
-	Query           map[string]interface{} `json:"query"`
-	SelectedRowKeys []string               `json:"selected_row_keys"`
-	Start           time.Time              `json:"start"`
-	End             time.Time              `json:"end"`
-	Name            string                 `json:"name"`
-	ClusterName     string                 `json:"cluster_name"`
-	Namespace       string                 `json:"namespace"`
-	SortColumnName  string                 `json:"sorter"`
-	Asc             bool                   `json:"asc"`
 }
 
 type ChartDataItem struct {

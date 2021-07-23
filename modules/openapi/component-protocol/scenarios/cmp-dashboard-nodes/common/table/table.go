@@ -11,12 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package common
+package table
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"strconv"
 	"strings"
 	"time"
@@ -54,7 +55,6 @@ type Table struct {
 
 type TableInterface interface {
 	SetData(resources apistructs.SteveResource, resName v1.ResourceName) error
-	GenComponentState(c *apistructs.Component) error
 }
 
 type Columns struct {
@@ -72,11 +72,11 @@ type Meta struct {
 }
 
 type RowItem struct {
-	ID      string      `json:"id"`
-	Status  SteveStatus `json:"status"`
-	Node    Node        `json:"node"`
-	Role    string      `json:"role"`
-	Version string      `json:"version"`
+	ID      string             `json:"id"`
+	Status  common.SteveStatus `json:"status"`
+	Node    Node               `json:"node"`
+	Role    string             `json:"role"`
+	Version string             `json:"version"`
 	//
 	Distribution     Distribution         `json:"distribution"`
 	Usage            Distribution         `json:"use"`
@@ -126,7 +126,7 @@ type Labels struct {
 type Distribution struct {
 	RenderType string            `json:"render_type"`
 	Value      DistributionValue `json:"value"`
-	Status     UsageStatusEnum
+	Status     common.UsageStatusEnum
 }
 
 type DistributionValue struct {
@@ -137,26 +137,6 @@ type DistributionValue struct {
 type LabelsValue struct {
 	Label string `json:"label"`
 	Group string `json:"group"`
-}
-
-// GenComponentState 获取state
-func (t *Table) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	t.State = state
-	return nil
 }
 
 func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*DistributionValue, error) {
@@ -181,7 +161,7 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 	case v1.ResourceMemory:
 		req.Statement = MemoryUsageSelectStatement
 	default:
-		return nil, ResourceNotFoundErr
+		return nil, common.ResourceNotFoundErr
 	}
 	if resp, err = metricsServer.QueryWithInfluxFormat(context.Background(), req); err != nil {
 		return nil, err
@@ -190,37 +170,37 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 		serie := resp.Results[0].Series[0]
 		usageDecimal := serie.Rows[0].Values[0].GetNumberValue()
 		totalDecimal := serie.Rows[0].Values[1].GetNumberValue()
-		usageDecimal, totalDecimal = ResetNumberBase(usageDecimal, totalDecimal)
+		usageDecimal, totalDecimal = common.ResetNumberBase(usageDecimal, totalDecimal)
 		usageRate := serie.Rows[0].Values[2].GetNumberValue()
 		return &DistributionValue{
 			Text:    fmt.Sprintf("%.1f/%.1f", usageRate, totalDecimal),
 			Percent: int(usageRate),
 		}, nil
 	}
-	return nil, ResourceEmptyErr
+	return nil, common.ResourceEmptyErr
 }
 
-func (t *Table) GetItemStatus(node *v1.Node) (*SteveStatus, error) {
+func (t *Table) GetItemStatus(node *v1.Node) (*common.SteveStatus, error) {
 	if node == nil {
-		return nil, NodeNotFoundErr
+		return nil, common.NodeNotFoundErr
 	}
-	ss := &SteveStatus{
+	ss := &common.SteveStatus{
 		RenderType: "textWithBadge",
 	}
-	status := NodeStatusReady
+	status := common.NodeStatusReady
 	if node.Spec.Unschedulable {
-		status = NodeStatusFreeze
+		status = common.NodeStatusFreeze
 	} else {
 		for _, cond := range node.Status.Conditions {
 			if cond.Status == v1.ConditionTrue && cond.Type == v1.NodeReady {
-				status = NodeStatusError
+				status = common.NodeStatusError
 				break
 			}
 		}
 	}
 	// 0:English 1:ZH
-	ss.Status = GetNodeStatus(status)[0]
-	ss.Value = GetNodeStatus(status)[1]
+	ss.Status = common.GetNodeStatus(status)[0]
+	ss.Value = common.GetNodeStatus(status)[1]
 	return ss, nil
 }
 
@@ -243,7 +223,7 @@ func (t *Table) GetDistributionValue(node *v1.Node, resName v1.ResourceName) (*D
 	}
 	for _, stevePod := range pods.Data {
 		pod := v1.Pod{}
-		if err = Transfer(stevePod, pod); err != nil {
+		if err = common.Transfer(stevePod, &pod); err != nil {
 			return nil, err
 		}
 		for _, container := range pod.Spec.Containers {
@@ -262,7 +242,7 @@ func (t *Table) GetDistributionValue(node *v1.Node, resName v1.ResourceName) (*D
 		}
 		allocValue = node.Status.Allocatable.Memory().Value()
 	default:
-		return nil, ResourceNotFoundErr
+		return nil, common.ResourceNotFoundErr
 	}
 	allocDecimal := float64(allocValue)
 	usageDecimal := float64(resValue.Value())
@@ -279,17 +259,17 @@ func (t *Table) GetDistributionRate(node *v1.Node, resName v1.ResourceName) (*Di
 		cpuCapacity := node.Status.Capacity.Cpu().Value()
 		return &DistributionValue{
 			Text:    fmt.Sprintf("%d/%d", cpuAllocatable, cpuCapacity),
-			Percent: GetPercent(float64(cpuAllocatable), float64(cpuCapacity)),
+			Percent: common.GetPercent(float64(cpuAllocatable), float64(cpuCapacity)),
 		}, nil
 	case v1.ResourceMemory:
 		cpuAllocatable := node.Status.Allocatable.Memory().Value()
 		cpuCapacity := node.Status.Capacity.Memory().Value()
 		return &DistributionValue{
 			Text:    fmt.Sprintf("%d/%d", cpuAllocatable, cpuCapacity),
-			Percent: GetPercent(float64(cpuAllocatable), float64(cpuCapacity)),
+			Percent: common.GetPercent(float64(cpuAllocatable), float64(cpuCapacity)),
 		}, nil
 	default:
-		return nil, ResourceNotFoundErr
+		return nil, common.ResourceNotFoundErr
 	}
 }
 
@@ -299,7 +279,7 @@ func (t *Table) SetComponentValue(c *apistructs.Component) error {
 		err   error
 		state map[string]interface{}
 	)
-	if state, err = ConvertToMap(t.State); err != nil {
+	if state, err = common.ConvertToMap(t.State); err != nil {
 		return err
 	}
 	c.State = state
@@ -309,7 +289,7 @@ func (t *Table) SetComponentValue(c *apistructs.Component) error {
 // GetOpsInfo return request meta
 func (t *Table) GetOpsInfo(opsData interface{}) (*Meta, error) {
 	if opsData == nil {
-		return nil, OperationsEmptyErr
+		return nil, common.OperationsEmptyErr
 	}
 	var op Operation
 	cont, err := json.Marshal(opsData)
@@ -406,4 +386,20 @@ func (t *Table) GetNodeOperation() map[string]Operation {
 	return map[string]Operation{
 		"click": {Key: "goto", Target: "orgRoot"},
 	}
+}
+
+type State struct {
+	IsFirstFilter   bool                   `json:"is_first_filter,omitempty"`
+	PageNo          int                    `json:"page_no,omitempty"`
+	PageSize        int                    `json:"page_size,omitempty"`
+	Total           int                    `json:"total,omitempty"`
+	Query           map[string]interface{} `json:"query,omitempty"`
+	SelectedRowKeys []string               `json:"selected_row_keys,omitempty"`
+	Start           time.Time              `json:"start,omitempty"`
+	End             time.Time              `json:"end,omitempty"`
+	Name            string                 `json:"name,omitempty"`
+	ClusterName     string                 `json:"cluster_name,omitempty"`
+	Namespace       string                 `json:"namespace,omitempty"`
+	SortColumnName  string                 `json:"sorter,omitempty"`
+	Asc             bool                   `json:"asc,omitempty"`
 }

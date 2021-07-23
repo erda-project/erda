@@ -187,7 +187,7 @@ func (c *ComponentFormModal) OperateSubmit(configSetID int64, identity apistruct
 		if isPublic {
 			err = json.Unmarshal(formDataJson, &createPublicObject)
 			if err != nil {
-				return fmt.Errorf("unmarshal common scope type json error: %v", err)
+				return fmt.Errorf("unmarshal filter scope type json error: %v", err)
 			}
 			itemKey = createPublicObject.Key
 			itemValue = createPublicObject.Value

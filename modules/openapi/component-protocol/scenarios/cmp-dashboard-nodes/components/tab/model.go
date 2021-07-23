@@ -25,18 +25,32 @@ const (
 )
 
 type SteveTab struct {
-	Type       string     `json:"type"`
-	Props      Props      `json:"props,omitempty"`
-	State      PropsState `json:"state,omitempty"`
-	Operations map[string]interface{}
+	Type       string                 `json:"type"`
+	Props      Props                  `json:"props"`
+	State      State                  `json:"state"`
+	Operations map[string]interface{} `json:"operations"`
 }
+
 type Props struct {
-	TabMenu []MenuPair `json:"tab_menu,omitempty"`
+	TabMenu []MenuPair `json:"tab_menu"`
 }
+
 type MenuPair struct {
-	key  string
-	name string
+	key  string `json:"key"`
+	name string `json:"name"`
 }
-type PropsState struct {
+
+type State struct {
 	ActiveKey string `json:"active_key"`
+}
+
+type Meta struct {
+	ActiveKey string `json:"active_key"`
+}
+
+type Operation struct {
+	Key      string `json:"key"`
+	Reload   bool   `json:"reload"`
+	FillMeta string `json:"fillMeta"`
+	Meta     Meta   `json:"meta"`
 }

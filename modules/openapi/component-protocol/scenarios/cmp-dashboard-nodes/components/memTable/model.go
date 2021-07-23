@@ -14,10 +14,10 @@
 package cpuTable
 
 import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 )
 
 type MemInfoTable struct {
-	common.Table
-	Data []common.RowItem
+	table.Table
+	Data []table.RowItem
 }

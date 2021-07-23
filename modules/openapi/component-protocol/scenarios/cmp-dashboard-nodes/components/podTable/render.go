@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"reflect"
 	"strings"
 
@@ -42,7 +43,7 @@ const (
 
 var tableProperties = map[string]interface{}{
 	"rowKey": "name",
-	"columns": []common.Columns{
+	"columns": []table.Columns{
 		{DataIndex: "status", Title: "状态"},
 		{DataIndex: "pod", Title: "名称"},
 		{DataIndex: "role", Title: "命名空间"},
@@ -63,28 +64,9 @@ var tableProperties = map[string]interface{}{
 }
 var metricsServer = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
 
-// GenComponentState 获取state
-func (pt *PodInfoTable) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state common.State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	pt.State = state
-	return nil
-}
 func (pt *PodInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	pt.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	err := pt.GenComponentState(c)
+	err := common.Transfer(c.State, &pt.State)
 	if err != nil {
 		return err
 	}
@@ -178,13 +160,13 @@ func (pt *PodInfoTable) RenderList(component *apistructs.Component, event apistr
 	}
 
 	if sortColumn != "" {
-		refCol := reflect.ValueOf(common.RowItem{}).FieldByName(sortColumn)
+		refCol := reflect.ValueOf(table.RowItem{}).FieldByName(sortColumn)
 		switch refCol.Type() {
 		case reflect.TypeOf(""):
 			common.SortByString([]interface{}{pt.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Node{}):
+		case reflect.TypeOf(table.Node{}):
 			common.SortByNode([]interface{}{pt.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Distribution{}):
+		case reflect.TypeOf(table.Distribution{}):
 			common.SortByDistribution([]interface{}{pt.Data}, sortColumn, asc)
 		default:
 			logrus.Errorf("sort by column %s not found", sortColumn)
@@ -207,7 +189,6 @@ func (pt *PodInfoTable) SetComponentValue(c *apistructs.Component) error {
 	}
 	c.State = state
 	c.Operations = pt.Operations
-	c.Data["list"] = pt.Data
 	return nil
 }
 
@@ -215,7 +196,7 @@ func getProps() map[string]interface{} {
 	return tableProperties
 }
 func getTableOperation() map[string]interface{} {
-	ops := map[string]common.Operation{
+	ops := map[string]table.Operation{
 		"changePageNo": {
 			Key:    "changePageNo",
 			Reload: true,
@@ -357,10 +338,10 @@ func getRole(labels map[string]string) string {
 	}
 	return strutil.Join(res, ",", true)
 }
-func getPodLabels(labels map[string]string) []common.LabelsValue {
-	labelValues := make([]common.LabelsValue, 0)
+func getPodLabels(labels map[string]string) []table.LabelsValue {
+	labelValues := make([]table.LabelsValue, 0)
 	for key, value := range labels {
-		lv := common.LabelsValue{
+		lv := table.LabelsValue{
 			Label: fmt.Sprintf("%s=%s", key, value),
 			// todo group
 			Group: "",
@@ -370,16 +351,16 @@ func getPodLabels(labels map[string]string) []common.LabelsValue {
 	return labelValues
 }
 
-func getLabelOperation(rowId string) map[string]common.Operation {
-	return map[string]common.Operation{
+func getLabelOperation(rowId string) map[string]table.Operation {
+	return map[string]table.Operation{
 		"add": {
 			Key:    "addLabel",
 			Reload: false,
-			Command: common.Command{
+			Command: table.Command{
 				Key: "set",
-				Command: common.CommandState{
+				Command: table.CommandState{
 					Visible:  true,
-					FromData: common.FromData{RecordId: rowId},
+					FromData: table.FromData{RecordId: rowId},
 				},
 				Target: "addLabelModel",
 			},
@@ -395,8 +376,8 @@ func getLabelOperation(rowId string) map[string]common.Operation {
 	}
 }
 
-func getNodeOperation() map[string]common.Operation {
-	return map[string]common.Operation{
+func getNodeOperation() map[string]table.Operation {
+	return map[string]table.Operation{
 		"click": {Key: "goto", Target: "orgRoot"},
 	}
 }
@@ -439,15 +420,15 @@ func RenderCreator() protocol.CompRender {
 	pi.Type = "Table"
 	pi.Props = getProps()
 	pi.Operations = getTableOperation()
-	pi.State = common.State{}
+	pi.State = table.State{}
 	return &pi
 }
 
-func GetOpsInfo(opsData interface{}) (*common.Meta, error) {
+func GetOpsInfo(opsData interface{}) (*table.Meta, error) {
 	if opsData == nil {
 		return nil, common.OperationsEmptyErr
 	}
-	var op common.Operation
+	var op table.Operation
 	cont, err := json.Marshal(opsData)
 	if err != nil {
 		logrus.Errorf("marshal inParams failed, content:%v, err:%v", opsData, err)
@@ -458,7 +439,7 @@ func GetOpsInfo(opsData interface{}) (*common.Meta, error) {
 		logrus.Errorf("unmarshal move out request failed, content:%v, err:%v", cont, err)
 		return nil, err
 	}
-	meta := op.Meta.(common.Meta)
+	meta := op.Meta.(table.Meta)
 	return &meta, nil
 }
 func (pt *PodInfoTable) RenderChangePageSize(ops interface{}) error {

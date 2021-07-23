@@ -15,7 +15,7 @@ package cpuTable
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"reflect"
 	"strings"
 
@@ -37,7 +37,7 @@ const (
 
 var tableProperties = map[string]interface{}{
 	"rowKey": "id",
-	"columns": []common.Columns{
+	"columns": []table.Columns{
 		{DataIndex: "status", Title: "状态"},
 		{DataIndex: "node", Title: "节点"},
 		{DataIndex: "role", Title: "角色"},
@@ -52,13 +52,16 @@ var tableProperties = map[string]interface{}{
 }
 
 func (ct *CpuInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	var err error
+	var (
+		err   error
+		state table.State
+	)
 	ct.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-
-	err = ct.GenComponentState(c)
+	err = common.Transfer(c.State, &state)
 	if err != nil {
 		return err
 	}
+	ct.State = state
 	if event.Operation != apistructs.InitializeOperation {
 		// Tab name not equal this component name
 		if c.State["activeKey"].(string) != tab.CPU_TAB {
@@ -154,13 +157,13 @@ func (ct *CpuInfoTable) RenderList(component *apistructs.Component, event apistr
 		return err
 	}
 	if sortColumn != "" {
-		refCol := reflect.ValueOf(common.RowItem{}).FieldByName(sortColumn)
+		refCol := reflect.ValueOf(table.RowItem{}).FieldByName(sortColumn)
 		switch refCol.Type() {
 		case reflect.TypeOf(""):
 			common.SortByString([]interface{}{ct.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Node{}):
+		case reflect.TypeOf(table.Node{}):
 			common.SortByNode([]interface{}{ct.Data}, sortColumn, asc)
-		case reflect.TypeOf(common.Distribution{}):
+		case reflect.TypeOf(table.Distribution{}):
 			common.SortByDistribution([]interface{}{ct.Data}, sortColumn, asc)
 		default:
 			logrus.Errorf("sort by column %s not found", sortColumn)
@@ -176,8 +179,8 @@ func (ct *CpuInfoTable) RenderList(component *apistructs.Component, event apistr
 // SetData assemble rowItem of table
 func (ct *CpuInfoTable) SetData(nodes []apistructs.SteveResource, resName v1.ResourceName) error {
 	var (
-		lists []common.RowItem
-		ri    *common.RowItem
+		lists []table.RowItem
+		ri    *table.RowItem
 		err   error
 	)
 	ct.State.Total = len(nodes)
@@ -196,7 +199,7 @@ func getProps() map[string]interface{} {
 	return tableProperties
 }
 func getTableOperation() map[string]interface{} {
-	ops := map[string]common.Operation{
+	ops := map[string]table.Operation{
 		"changePageNo": {
 			Key:    "changePageNo",
 			Reload: true,
@@ -213,18 +216,14 @@ func getTableOperation() map[string]interface{} {
 	return res
 }
 
-func (ct *CpuInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.ResourceName) (*common.RowItem, error) {
+func (ct *CpuInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.ResourceName) (*table.RowItem, error) {
 	var (
 		err                     error
 		status                  *common.SteveStatus
-		distribution, dr, usage *common.DistributionValue
-		nodeBytes               []byte
+		distribution, dr, usage *table.DistributionValue
 		node                    v1.Node
 	)
-	if nodeBytes, err = json.Marshal(c); err != nil {
-		return nil, err
-	}
-	if err = json.Unmarshal(nodeBytes, &node); err != nil {
+	if err = common.Transfer(c, &node); err != nil {
 		return nil, err
 	}
 	nodeLabels := c.Metadata.Labels
@@ -240,31 +239,31 @@ func (ct *CpuInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.Resour
 	if dr, err = ct.GetDistributionRate(&node, resName); err != nil {
 		return nil, err
 	}
-	ri := &common.RowItem{
+	ri := &table.RowItem{
 		ID:      node.Name,
 		Version: node.Status.NodeInfo.KubeletVersion,
 		Role:    ct.GetRole(nodeLabels),
-		Labels: common.Labels{
+		Labels: table.Labels{
 			RenderType: "tagsColumn",
 			Value:      ct.GetPodLabels(node.GetLabels()),
 			Operation:  ct.GetLabelOperation(string(node.UID)),
 		},
-		Node: common.Node{
+		Node: table.Node{
 			RenderType: "linkText",
 			Value:      ct.GetNodeAddress(node.Status.Addresses),
 			Operation:  ct.GetNodeOperation(),
 			Reload:     false,
 		},
 		Status: *status,
-		Distribution: common.Distribution{
+		Distribution: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *distribution,
 		},
-		Usage: common.Distribution{
+		Usage: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *usage,
 		},
-		DistributionRate: common.Distribution{
+		DistributionRate: table.Distribution{
 			RenderType: "bgProgress",
 			Value:      *dr,
 		},
@@ -277,6 +276,6 @@ func RenderCreator() protocol.CompRender {
 	ci.Type = "Table"
 	ci.Props = getProps()
 	ci.Operations = getTableOperation()
-	ci.State = common.State{}
+	ci.State = table.State{}
 	return &ci
 }

@@ -11,15 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package clusterFilter
-
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-
-type ComponentFilter struct {
-	ctxBdl protocol.ContextBundle
-
-	CommonFilter
-}
+package filter
 
 type CommonFilter struct {
 	Version    string                 `json:"version,omitempty"`

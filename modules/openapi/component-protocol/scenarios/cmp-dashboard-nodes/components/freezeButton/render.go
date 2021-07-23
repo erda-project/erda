@@ -42,12 +42,12 @@ var props = Props{
 func (fb *FreezeButton) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	var (
 		err  error
-		meta *Meta
+		meta Meta
 		resp *apistructs.SteveResource
 		node = v1.Node{}
 	)
 	fb.ctxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if meta, err = GetOpsInfo(event.OperationData); err != nil {
+	if err = common.Transfer(event.OperationData, &meta); err != nil {
 		return err
 	}
 	switch event.Operation {
@@ -60,7 +60,7 @@ func (fb *FreezeButton) Render(ctx context.Context, c *apistructs.Component, s a
 		if resp, err = fb.ctxBdl.Bdl.GetSteveResource(&req); err != nil {
 			return err
 		}
-		err = common.Transfer(resp, node)
+		err = common.Transfer(resp, &node)
 		if err != nil {
 			return err
 		}

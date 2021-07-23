@@ -15,7 +15,7 @@ package memChart
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -33,32 +33,14 @@ var (
 	defaultDuration = 24 * time.Hour
 )
 
-// GenComponentState 获取state
-func (chart *MemChart) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return nil
-	}
-	var state common.State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	chart.State = state
-	return nil
-}
 func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	var state table.State
 	chart.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	var (
 		resp *pb.QueryWithInfluxFormatResponse
 		err  error
 	)
-	if err = chart.GenComponentState(c); err != nil {
+	if err = common.Transfer(c.State, state); err != nil {
 		return err
 	}
 	switch event.Operation {

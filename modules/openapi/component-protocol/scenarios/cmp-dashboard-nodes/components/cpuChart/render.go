@@ -16,6 +16,7 @@ package cpuChart
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -41,7 +42,7 @@ func (chart *CpuChart) GenComponentState(c *apistructs.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
-	var state common.State
+	var state table.State
 	cont, err := json.Marshal(c.State)
 	if err != nil {
 		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)

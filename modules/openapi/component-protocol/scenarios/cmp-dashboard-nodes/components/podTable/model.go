@@ -15,10 +15,11 @@ package podTable
 
 import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 )
 
 type PodInfoTable struct {
-	common.Table
+	table.Table
 	Data []RowItem `json:"data"`
 }
 
