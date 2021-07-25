@@ -11,20 +11,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package db
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "github.com/erda-project/erda/pkg/database/dbengine"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/dicehub"
-	_ "github.com/erda-project/erda/modules/dicehub/image"
-)
+type Image struct {
+	dbengine.BaseModel
+	ReleaseID string `json:"releaseId" gorm:"index:idx_release_id"`       // release
+	ImageName string `json:"imageName" gorm:"type:varchar(128);not null"` // image name
+	ImageTag  string `json:"imageTag" gorm:"type:varchar(64)"`            // image tag
+	Image     string `json:"image" gorm:"not null"`                       // image addr
+}
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dicehub/dicehub.yaml",
-	})
+// Set table name
+func (Image) TableName() string {
+	return "ps_images"
 }
