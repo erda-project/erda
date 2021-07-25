@@ -16,8 +16,11 @@ package dicehub
 import (
 	"context"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	image "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/metrics"
 	"github.com/erda-project/erda/providers/metrics/query"
 )
@@ -25,10 +28,13 @@ import (
 type provider struct {
 	Log         logs.Logger
 	QueryClient query.MetricQuery `autowired:"metricq-client"`
+	DB          *gorm.DB          `autowired:"mysql-client"`
+	ImageDB     *image.ImageConfigDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	metrics.Client = p.QueryClient
+	p.ImageDB = &image.ImageConfigDB{DB: p.DB}
 	return nil
 }
 
