@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package cms
 
 import (
@@ -23,23 +36,23 @@ func Test_cmsService_CreateNs(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.core.pipeline.cms.CmsService",
-			`
-erda.core.pipeline.cms:
-`,
-			args{
-				context.TODO(),
-				&pb.CmsCreateNsRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.CmsCreateNsResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.core.pipeline.cms.CmsService",
+		//			`
+		//erda.core.pipeline.cms:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CmsCreateNsRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CmsCreateNsResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,23 +93,23 @@ func Test_cmsService_ListCmsNs(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.core.pipeline.cms.CmsService",
-			`
-erda.core.pipeline.cms:
-`,
-			args{
-				context.TODO(),
-				&pb.CmsListNsRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.CmsListNsResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.core.pipeline.cms.CmsService",
+		//			`
+		//erda.core.pipeline.cms:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CmsListNsRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CmsListNsResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -137,23 +150,23 @@ func Test_cmsService_UpdateCmsNsConfigs(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.core.pipeline.cms.CmsService",
-			`
-erda.core.pipeline.cms:
-`,
-			args{
-				context.TODO(),
-				&pb.CmsNsConfigsUpdateRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.CmsNsConfigsUpdateResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.core.pipeline.cms.CmsService",
+		//			`
+		//erda.core.pipeline.cms:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CmsNsConfigsUpdateRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CmsNsConfigsUpdateResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,23 +207,23 @@ func Test_cmsService_DeleteCmsNsConfigs(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.core.pipeline.cms.CmsService",
-			`
-erda.core.pipeline.cms:
-`,
-			args{
-				context.TODO(),
-				&pb.CmsNsConfigsDeleteRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.CmsNsConfigsDeleteResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.core.pipeline.cms.CmsService",
+		//			`
+		//erda.core.pipeline.cms:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CmsNsConfigsDeleteRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CmsNsConfigsDeleteResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -251,23 +264,23 @@ func Test_cmsService_GetCmsNsConfigs(t *testing.T) {
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
-		{
-			"case 1",
-			"erda.core.pipeline.cms.CmsService",
-			`
-erda.core.pipeline.cms:
-`,
-			args{
-				context.TODO(),
-				&pb.CmsNsConfigsGetRequest{
-					// TODO: setup fields
-				},
-			},
-			&pb.CmsNsConfigsGetResponse{
-				// TODO: setup fields.
-			},
-			false,
-		},
+		//		{
+		//			"case 1",
+		//			"erda.core.pipeline.cms.CmsService",
+		//			`
+		//erda.core.pipeline.cms:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.CmsNsConfigsGetRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.CmsNsConfigsGetResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

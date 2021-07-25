@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
-type provider struct{
+type provider struct {
 	CmsService pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
 }
 

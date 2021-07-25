@@ -11,24 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cms
+package apis
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/erda-project/erda/modules/pkg/gitflowutil"
+	"github.com/erda-project/erda-infra/pkg/transport"
 )
 
-const PipelineAppConfigNameSpacePrefix = "pipeline-secrets-app"
-
-func MakeAppDefaultSecretNamespace(appID string) string {
-	return fmt.Sprintf("%s-%s-default", PipelineAppConfigNameSpacePrefix, appID)
-}
-
-func MakeAppBranchPrefixSecretNamespace(appID, branch string) (string, error) {
-	branchPrefix, err := gitflowutil.GetReferencePrefix(branch)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s-%s-%s", PipelineAppConfigNameSpacePrefix, appID, branchPrefix), nil
+func WithInternalClientContext(ctx context.Context, internalClient string) context.Context {
+	header := transport.Header{}
+	header.Set(headerInternalClient, internalClient)
+	return transport.WithHeader(ctx, header)
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
@@ -209,11 +210,12 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 	}
 
 	for _, ns := range namespaces {
-		configs, err := s.cmsService.GetCmsNsConfigs(context.Background(), &pb.CmsNsConfigsGetRequest{
-			Ns:             ns,
-			PipelineSource: p.PipelineSource.String(),
-			GlobalDecrypt:  true,
-		})
+		configs, err := s.cmsService.GetCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "pipeline"),
+			&pb.CmsNsConfigsGetRequest{
+				Ns:             ns,
+				PipelineSource: p.PipelineSource.String(),
+				GlobalDecrypt:  true,
+			})
 		if err != nil {
 			return nil, nil, nil, err
 		}

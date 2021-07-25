@@ -154,8 +154,8 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	}
 
 	// --- extra ---
-	p.Extra.ConfigManageNamespaceOfSecretsDefault = cms.MakeDefaultSecretNamespace(strconv.FormatUint(req.AppID, 10))
-	ns, err := cms.MakeBranchPrefixSecretNamespace(strconv.FormatUint(req.AppID, 10), req.Branch)
+	p.Extra.ConfigManageNamespaceOfSecretsDefault = cms.MakeAppDefaultSecretNamespace(strconv.FormatUint(req.AppID, 10))
+	ns, err := cms.MakeAppBranchPrefixSecretNamespace(strconv.FormatUint(req.AppID, 10), req.Branch)
 	if err != nil {
 		return nil, apierrors.ErrMakeConfigNamespace.InvalidParameter(err)
 	}

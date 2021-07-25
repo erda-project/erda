@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package cms
 
 import (
@@ -28,7 +41,7 @@ func (s *cmsService) CreateNs(ctx context.Context, req *pb.CmsCreateNsRequest) (
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
-	if err := s.cm.IdempotentCreateNS(ctx, req.Ns); err != nil {
+	if err := s.cm.IdempotentCreateNs(ctx, req.Ns); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +55,7 @@ func (s *cmsService) ListCmsNs(ctx context.Context, req *pb.CmsListNsRequest) (*
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
-	namespaces, err := s.cm.PrefixListNS(ctx, req.NsPrefix)
+	namespaces, err := s.cm.PrefixListNs(ctx, req.NsPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +80,7 @@ func (s *cmsService) UpdateCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfig
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
-	err := s.cm.UpdateConfigs(ctx, req.Ns, req.Kvs)
+	err := s.cm.UpdateConfigs(ctx, req.Ns, req.KVs)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +98,7 @@ func (s *cmsService) DeleteCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfig
 	var opErr error
 	// 删除 ns
 	if req.DeleteNs {
-		opErr = s.cm.IdempotentDeleteNS(ctx, req.Ns)
+		opErr = s.cm.IdempotentDeleteNs(ctx, req.Ns)
 	} else {
 		ctx = context.WithValue(ctx, CtxKeyForceDelete, req.DeleteForce)
 		opErr = s.cm.DeleteConfigs(ctx, req.Ns, req.DeleteKeys...)
@@ -114,7 +127,7 @@ func (s *cmsService) GetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsGe
 		results = append(results, &pb.PipelineCmsConfig{
 			Key:         key,
 			Value:       value.Value,
-			EncryptInDb: value.EncryptInDb,
+			EncryptInDB: value.EncryptInDB,
 			Type:        value.Type,
 			Operations:  value.Operations,
 			Comment:     value.Comment,

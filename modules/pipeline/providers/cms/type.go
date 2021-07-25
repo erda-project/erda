@@ -20,17 +20,17 @@ import (
 )
 
 type ConfigManager interface {
-	// IdempotentCreateNS 幂等创建 ns
-	IdempotentCreateNS(ctx context.Context, ns string) error
-	// IdempotentDeleteNS 幂等删除 ns，ns 下的所有配置一并删除
-	IdempotentDeleteNS(ctx context.Context, ns string) error
-	// PrefixListNS 获取 ns 列表，支持前缀过滤
-	PrefixListNS(ctx context.Context, nsPrefix string) ([]*pb.PipelineCmsNs, error)
-	// UpdateConfigs 不存在，则创建；已存在，则更新
+	// IdempotentCreateNs create ns idempontently
+	IdempotentCreateNs(ctx context.Context, ns string) error
+	// IdempotentDeleteNs delete ns and its configs idempotently
+	IdempotentDeleteNs(ctx context.Context, ns string) error
+	// PrefixListNs list ns by prefix
+	PrefixListNs(ctx context.Context, nsPrefix string) ([]*pb.PipelineCmsNs, error)
+	// UpdateConfigs create if not exists; update if already exist
 	UpdateConfigs(ctx context.Context, ns string, kvs map[string]*pb.PipelineCmsConfigValue) error
-	// DeleteConfigs 根据 keys 删除配置。若 ns 不存在，返回空
+	// DeleteConfigs delete configs by keys; if ns not exists, return nil
 	DeleteConfigs(ctx context.Context, ns string, keys ...string) error
-	// GetConfigs 获取 ns 下配置。若 ns 不存在，则返回空。若指定 keys，则只获取指定 key 的配置
+	// GetConfigs get configs: if ns is empty, return nil; if keys is not empty, return specified configs
 	GetConfigs(ctx context.Context, ns string, globalDecrypt bool, keys ...*pb.PipelineCmsConfigKey) (map[string]*pb.PipelineCmsConfigValue, error)
 }
 

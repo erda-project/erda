@@ -77,7 +77,7 @@ import (
 )
 
 // Initialize 初始化应用启动服务.
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -93,7 +93,7 @@ func Initialize() error {
 	}
 	defer dbclient.Close()
 
-	ep, err := initEndpoints((*dao.DBClient)(dbclient.DB))
+	ep, err := p.initEndpoints((*dao.DBClient)(dbclient.DB))
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func Initialize() error {
 	return server.ListenAndServe()
 }
 
-func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
+func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	var (
 		etcdStore *etcd.Store
 		ossClient *oss.Client
@@ -248,7 +248,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	)
 	testCaseSvc.CreateTestSetFn = testSetSvc.Create
 
-	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl))
+	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl), autotest.WithPipelineCms(p.PipelineCms))
 
 	sceneset := sceneset.New(
 		sceneset.WithDBClient(db),
@@ -260,6 +260,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		atv2.WithBundle(bdl.Bdl),
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
+		atv2.WithPipelineCms(p.PipelineCms),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
@@ -381,6 +382,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		nexussvc.WithDBClient(db),
 		nexussvc.WithBundle(bdl.Bdl),
 		nexussvc.WithRsaCrypt(rsaCrypt),
+		nexussvc.WithPipelineCms(p.PipelineCms),
 	)
 
 	// init publisher service
@@ -402,6 +404,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		appcertificate.WithDBClient(db),
 		appcertificate.WithBundle(bdl.Bdl),
 		appcertificate.WithCertificate(cer),
+		appcertificate.WithPipelineCms(p.PipelineCms),
 	)
 
 	libReference := libreference.New(
@@ -421,7 +424,13 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule), pipeline.WithPublisherSvc(pub))),
+		endpoints.WithPipeline(pipeline.New(
+			pipeline.WithBundle(bdl.Bdl),
+			pipeline.WithBranchRuleSvc(branchRule),
+			pipeline.WithPublisherSvc(pub),
+			pipeline.WithPipelineCms(p.PipelineCms),
+		)),
+		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),

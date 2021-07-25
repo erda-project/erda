@@ -16,6 +16,7 @@ package cms
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -49,7 +50,7 @@ func NewPipelineCms(dbClient *db.Client, rsaCrypt *encryption.RsaCrypt) *pipelin
 	return &cm
 }
 
-func (c *pipelineCm) IdempotentCreateNS(ctx context.Context, ns string) error {
+func (c *pipelineCm) IdempotentCreateNs(ctx context.Context, ns string) error {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return err
@@ -58,7 +59,7 @@ func (c *pipelineCm) IdempotentCreateNS(ctx context.Context, ns string) error {
 	return err
 }
 
-func (c *pipelineCm) IdempotentDeleteNS(ctx context.Context, ns string) error {
+func (c *pipelineCm) IdempotentDeleteNs(ctx context.Context, ns string) error {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return err
@@ -66,7 +67,7 @@ func (c *pipelineCm) IdempotentDeleteNS(ctx context.Context, ns string) error {
 	return c.dbClient.IdempotentDeleteCmsNs(pipelineSource, ns)
 }
 
-func (c *pipelineCm) PrefixListNS(ctx context.Context, nsPrefix string) ([]*pb.PipelineCmsNs, error) {
+func (c *pipelineCm) PrefixListNs(ctx context.Context, nsPrefix string) ([]*pb.PipelineCmsNs, error) {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 
 	var cmsNsID = cmsNs.ID
 	if !exist {
-		if err := c.IdempotentCreateNS(ctx, ns); err != nil {
+		if err := c.IdempotentCreateNs(ctx, ns); err != nil {
 			return err
 		}
 		// 获取 ns
@@ -114,7 +115,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 	}
 	var configs []db.PipelineCmsConfig
 	for k, v := range kvs {
-		vv, err := c.encryptValueIfNeeded(v.EncryptInDb, v.Value)
+		vv, err := c.encryptValueIfNeeded(v.EncryptInDB, v.Value)
 		if err != nil {
 			return err
 		}
@@ -126,7 +127,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 			NsID:    cmsNsID,
 			Key:     k,
 			Value:   vv,
-			Encrypt: &[]bool{v.EncryptInDb}[0],
+			Encrypt: &[]bool{v.EncryptInDB}[0],
 			Type:    v.Type,
 			Extra: db.PipelineCmsConfigExtra{
 				Operations: v.Operations,
@@ -256,7 +257,7 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 		// 配置项级别的展示配置
 		result[config.Key] = &pb.PipelineCmsConfigValue{
 			Value:       vv,
-			EncryptInDb: *config.Encrypt,
+			EncryptInDB: *config.Encrypt,
 			Type:        config.Type,
 			Operations:  config.Extra.Operations,
 			Comment:     config.Extra.Comment,
@@ -282,6 +283,8 @@ func getPipelineSourceFromContext(ctx context.Context) (apistructs.PipelineSourc
 		source = ctx.Value(CtxKeyPipelineSource).(apistructs.PipelineSource)
 	case string:
 		source = apistructs.PipelineSource(ctx.Value(CtxKeyPipelineSource).(string))
+	default:
+		return "", fmt.Errorf("invalid type of %q, type: %v", CtxKeyPipelineSource, reflect.TypeOf(ctx.Value(CtxKeyPipelineSource)).Name())
 	}
 	if source == "" {
 		return "", errors.Errorf("missing %s", CtxKeyPipelineSource)
