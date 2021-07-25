@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -153,8 +154,8 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	}
 
 	// --- extra ---
-	p.Extra.ConfigManageNamespaceOfSecretsDefault = s.cmSvc.MakeDefaultSecretNamespace(strconv.FormatUint(req.AppID, 10))
-	ns, err := s.cmSvc.MakeBranchPrefixSecretNamespace(strconv.FormatUint(req.AppID, 10), req.Branch)
+	p.Extra.ConfigManageNamespaceOfSecretsDefault = cms.MakeDefaultSecretNamespace(strconv.FormatUint(req.AppID, 10))
+	ns, err := cms.MakeBranchPrefixSecretNamespace(strconv.FormatUint(req.AppID, 10), req.Branch)
 	if err != nil {
 		return nil, apierrors.ErrMakeConfigNamespace.InvalidParameter(err)
 	}
