@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/errors"
