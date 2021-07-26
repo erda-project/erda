@@ -35,7 +35,7 @@ import (
 
 // GetURLPrefix get steve API prefix with cluster name
 func GetURLPrefix(clusterName string) string {
-	return strutil.Concat("/k8s/clusters/", clusterName)
+	return strutil.Concat("/api/k8s/clusters/", clusterName)
 }
 
 // NewHandler return an rancher api server and a steve server handler

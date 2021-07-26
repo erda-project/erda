@@ -16,6 +16,7 @@ package bundle
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -39,10 +40,15 @@ func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (*apistructs.Ste
 		return nil, err
 	}
 
-	// path format: /k8s/clusters/{clusterName}/v1/{type}/{namespace}/{name}
-	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	// path format: /api/k8s/clusters/{clusterName}/v1/{type}/{namespace}/{name}
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	headers := http.Header{
+		"User-ID": []string{req.UserID},
+		"Org-ID":  []string{req.OrgID},
+	}
 	hc := b.hc
-	resp, err := hc.Get(host).Path(path).Do().RAW()
+
+	resp, err := hc.Get(host).Path(path).Headers(headers).Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -76,9 +82,14 @@ func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (*apistructs.St
 	}
 
 	// path format: /k8s/clusters/{clusterName}/v1/{type}/{namespace}?{label selectors}
-	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
+	headers := http.Header{
+		"User-ID": []string{req.UserID},
+		"Org-ID":  []string{req.OrgID},
+	}
 	hc := b.hc
-	resp, err := hc.Get(host).Path(path).Params(req.URLQueryString()).Do().RAW()
+
+	resp, err := hc.Get(host).Path(path).Headers(headers).Params(req.URLQueryString()).Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -114,9 +125,14 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 		return nil, err
 	}
 
-	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	headers := http.Header{
+		"User-ID": []string{req.UserID},
+		"Org-ID":  []string{req.OrgID},
+	}
 	hc := b.hc
-	resp, err := hc.Put(host).Path(path).JSONBody(req.Obj).Do().RAW()
+
+	resp, err := hc.Put(host).Path(path).Headers(headers).JSONBody(req.Obj).Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -152,9 +168,14 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 		return nil, err
 	}
 
-	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type))
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type))
+	headers := http.Header{
+		"User-ID": []string{req.UserID},
+		"Org-ID":  []string{req.OrgID},
+	}
 	hc := b.hc
-	resp, err := hc.Post(host).Path(path).JSONBody(req.Obj).Do().RAW()
+
+	resp, err := hc.Post(host).Path(path).Headers(headers).JSONBody(req.Obj).Do().RAW()
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -187,9 +208,14 @@ func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 		return err
 	}
 
-	path := strutil.JoinPath("/k8s", "clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
+	headers := http.Header{
+		"User-ID": []string{req.UserID},
+		"Org-ID":  []string{req.OrgID},
+	}
 	hc := b.hc
-	resp, err := hc.Delete(host).Path(path).Do().RAW()
+
+	resp, err := hc.Delete(host).Path(path).Headers(headers).Do().RAW()
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}

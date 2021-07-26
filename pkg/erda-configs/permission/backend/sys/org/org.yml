@@ -365,3 +365,30 @@
   resource: notify-config
   action: UPDATE
 ## 企业通知配置 end
+
+## Steve Server 配置 start
+- role: Manager,Ops,Support
+  scope: org
+  resource: steve-api
+  action: GET
+- role: Manager,Ops,Support
+  scope: org
+  resource: steve-api
+  action: LIST
+- role: Manager,Ops,Support
+  scope: org
+  resource: steve-api
+  action: DELETE
+- role: Manager,Ops,Support
+  scope: org
+  resource: steve-api
+  action: CREATE
+- role: Manager,Ops,Support
+  scope: org
+  resource: steve-api
+  action: UPDATE
+- role: Manager,Ops
+  scope: org
+  resource: steve-shell
+  action: GET
+## Steve Server 配置 end

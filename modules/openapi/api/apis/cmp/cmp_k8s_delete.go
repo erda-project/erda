@@ -17,12 +17,15 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMP_K8S_CONFIG_MAP_LIST = apis.ApiSpec{
-	Path:        "/apis/clusters/<clusterName>/namespaces/<namespaceName>/configmaps",
-	BackendPath: "/apis/clusters/<clusterName>/namespaces/<namespaceName>/configmaps",
+var CMP_STEVE_DELETE = apis.ApiSpec{
+	Path:        "/api/k8s/clusters/<*>",
+	BackendPath: "/api/k8s/clusters/<*>",
+	Method:      "DELETE",
 	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
+	K8SHost:     "cmp:9027",
 	Scheme:      "http",
-	Method:      "GET",
+	Audit:       nil,
 	CheckLogin:  true,
-	Doc:         "获取 k8s configmap 列表",
+	Doc:         "删除某个k8s资源",
+	IsOpenAPI:   true,
 }

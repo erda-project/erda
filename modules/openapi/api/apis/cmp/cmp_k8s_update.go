@@ -14,17 +14,21 @@
 package cmp
 
 import (
-	"net/http"
-
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMP_K8S_NAMESPACE_CREATE = apis.ApiSpec{
-	Path:        "/apis/clusters/<clusterName>/namespaces",
-	BackendPath: "/apis/clusters/<clusterName>/namespaces",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	CheckLogin:  true,
-	Doc:         "创建 k8s namespace",
+var CMP_STEVE_UPDATE = apis.ApiSpec{
+	Path:         "/api/k8s/clusters/<*>",
+	BackendPath:  "/api/k8s/clusters/<*>",
+	Method:       "PUT",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	K8SHost:      "cmp:9027",
+	Scheme:       "http",
+	Audit:        nil,
+	CheckLogin:   true,
+	Doc:          "对某个k8s资源进行更新",
+	RequestType:  apistructs.K8SResource{},
+	ResponseType: apistructs.SteveResource{},
+	IsOpenAPI:    true,
 }

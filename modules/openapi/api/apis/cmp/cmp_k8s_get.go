@@ -14,15 +14,20 @@
 package cmp
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMP_K8S_CONFIG_MAP_CREATE = apis.ApiSpec{
-	Path:        "/apis/clusters/<clusterName>/namespaces/<namespaceName>/configmaps",
-	BackendPath: "/apis/clusters/<clusterName>/namespaces/<namespaceName>/configmaps",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	Doc:         "创建 k8s configmap",
+var CMP_STEVE_GET = apis.ApiSpec{
+	Path:         "/api/k8s/clusters/<*>",
+	BackendPath:  "/api/k8s/clusters/<*>",
+	Method:       "GET",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	K8SHost:      "cmp:9027",
+	Scheme:       "http",
+	Audit:        nil,
+	CheckLogin:   true,
+	Doc:          "获取单个k8s资源",
+	ResponseType: apistructs.SteveResource{},
+	IsOpenAPI:    true,
 }

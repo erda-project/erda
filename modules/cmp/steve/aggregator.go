@@ -69,11 +69,7 @@ func (a *Aggregator) watchClusters(ctx context.Context) {
 				if _, ok := a.servers.Load(cluster.Name); ok {
 					continue
 				}
-				if err = a.Add(&cluster); err != nil {
-					logrus.Errorf("failed to add steve server for cluster %s when watch, %v", cluster.Name, err)
-					continue
-				}
-				logrus.Infof("start steve server for cluster %s when watch", cluster.Name)
+				a.Add(&cluster)
 			}
 
 			checkDeleted := func(key interface{}, value interface{}) (res bool) {
@@ -99,32 +95,31 @@ func (a *Aggregator) init(bdl *bundle.Bundle) {
 		return
 	}
 
-	for _, cluster := range clusters {
-		if cluster.ManageConfig == nil {
+	for i := range clusters {
+		if clusters[i].ManageConfig == nil {
 			continue
 		}
-		if err = a.Add(&cluster); err != nil {
-			logrus.Errorf("failed to start steve for cluster %s when init aggragetor, %v", cluster.Name, err)
-		}
+		a.Add(&clusters[i])
 	}
 }
 
 // Add starts a steve server for k8s cluster with clusterName and add it into aggregator
-func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) error {
+func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) {
 	if clusterInfo.Type != "k8s" {
-		return nil
+		return
 	}
 
 	if _, ok := a.servers.Load(clusterInfo.Name); ok {
-		return nil
+		return
 	}
 
 	g := &group{ready: false}
 	a.servers.Store(clusterInfo.Name, g)
 	go func() {
+		logrus.Infof("starting steve server for cluster %s", clusterInfo.Name)
 		server, cancel, err := a.createSteve(clusterInfo)
 		if err != nil {
-			logrus.Errorf("failed to create steve server for cluster %s", clusterInfo.Name)
+			logrus.Errorf("failed to create steve server for cluster %s, %v", clusterInfo.Name, err)
 			a.servers.Delete(clusterInfo.Name)
 			return
 		}
@@ -135,8 +130,8 @@ func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) error {
 			cancel: cancel,
 		}
 		a.servers.Store(clusterInfo.Name, g)
+		logrus.Infof("steve server for cluster %s started", clusterInfo.Name)
 	}()
-	return nil
 }
 
 // Delete closes a steve server for k8s cluster with clusterName and delete it from aggregator
@@ -161,7 +156,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	if clusterName == "" {
 		rw.WriteHeader(http.StatusNotFound)
-		rw.Write([]byte("cluster name is required"))
+		rw.Write([]byte("cluster name is required\n"))
 		return
 	}
 
@@ -177,32 +172,30 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				return
 			}
 			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte(fmt.Sprintf("cluster %s not found", clusterName)))
+			rw.Write([]byte(fmt.Sprintf("cluster %s not found\n", clusterName)))
 			return
 		}
 
 		if cluster.Type != "k8s" {
 			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write([]byte(fmt.Sprintf("cluster %s is not a k8s cluster", clusterName)))
+			rw.Write([]byte(fmt.Sprintf("cluster %s is not a k8s cluster\n", clusterName)))
 			return
 		}
 
 		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		if err = a.Add(cluster); err != nil {
-			logrus.Errorf("failed to start steve server for cluster %s, %v", cluster.Name, err)
+		a.Add(cluster)
+		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte("Internal server error"))
 		}
-		s, _ = a.servers.Load(cluster.Name)
 	}
 
 	group, _ := s.(*group)
 	if !group.ready {
 		rw.WriteHeader(http.StatusAccepted)
-		rw.Write([]byte(fmt.Sprintf("k8s API for cluster %s is not ready, please wait", clusterName)))
+		rw.Write([]byte(fmt.Sprintf("k8s API for cluster %s is not ready, please wait\n", clusterName)))
 		return
 	}
-
 	group.server.ServeHTTP(rw, req)
 }
 

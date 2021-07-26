@@ -128,7 +128,7 @@ func TestCommon(t *testing.T) {
 
 func TestGetURLPrefix(t *testing.T) {
 	res := GetURLPrefix("c-test")
-	if res != "/k8s/clusters/c-test" {
+	if res != "/api/k8s/clusters/c-test" {
 		t.Errorf("test failed, expected result %s, actual %s", "/k8s/clusters/c-test", res)
 	}
 }

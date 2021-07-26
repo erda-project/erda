@@ -14,17 +14,20 @@
 package cmp
 
 import (
-	"net/http"
-
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var CMP_K8S_STATEFULSET_GET = apis.ApiSpec{
-	Path:        "/apis/clusters/<clusterName>/namespaces/<namespaceName>/statefulsets/<statefulsetName>",
-	BackendPath: "/apis/clusters/<clusterName>/namespaces/<namespaceName>/statefulsets/<statefulsetName>",
-	Host:        "cmp.marathon.l4lb.thisdcos.directory:9027",
-	Scheme:      "http",
-	Method:      http.MethodGet,
-	CheckLogin:  true,
-	Doc:         "获取 k8s statefulset 详情",
+var CMP_STEVE_LIST = apis.ApiSpec{
+	Path:         "/api/k8s/clusters/<*>",
+	BackendPath:  "/api/k8s/clusters/<*>",
+	Method:       "GET",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	K8SHost:      "cmp:9027",
+	Scheme:       "http",
+	Audit:        nil,
+	CheckLogin:   true,
+	Doc:          "获取某种类型k8s资源集合",
+	ResponseType: apistructs.SteveCollection{},
+	IsOpenAPI:    true,
 }

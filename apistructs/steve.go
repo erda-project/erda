@@ -83,6 +83,8 @@ const (
 
 // SteveRequest used to query steve server by bundle.
 type SteveRequest struct {
+	UserID      string     // used to authentication, required
+	OrgID       string     // used to authentication, required
 	Type        K8SResType // type of resource, required
 	ClusterName string     // cluster name, required
 	Name        string     // name of resource，required when Get, Delete, Update
