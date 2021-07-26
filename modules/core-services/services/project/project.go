@@ -437,9 +437,17 @@ func (p *Project) FillQuota(orgResources map[uint64]apistructs.OrgResourceInfo) 
 	return nil
 }
 
-// ListProjects
-func (p *Project) GetAllProjects() ([]model.Project, error) {
-	return p.db.GetAllProjects()
+// GetAllProjects list all project
+func (p *Project) GetAllProjects() ([]apistructs.ProjectDTO, error) {
+	projects, err := p.db.GetAllProjects()
+	if err != nil {
+		return nil, err
+	}
+	projectsDTO := make([]apistructs.ProjectDTO, 0, len(projects))
+	for _, v := range projects {
+		projectsDTO = append(projectsDTO, p.convertToProjectDTO(true, &v))
+	}
+	return projectsDTO, nil
 }
 
 // ListAllProjects 企业管理员可查看当前企业下所有项目，包括未加入的项目

@@ -32,6 +32,7 @@ func (e *APIError) ToResp() httpserver.Responser {
 			Err: apistructs.ErrorResponse{
 				Code: e.code,
 				Msg:  e.msg,
+				Ctx:  e.ctx,
 			},
 		},
 	}

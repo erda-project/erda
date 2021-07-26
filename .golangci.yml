@@ -56,10 +56,16 @@ issues:
       text: "G306:" # G306: Expect WriteFile permissions to be 0600 or less
     - linters:
         - gosec
+      text: "G401:" # G401: Use of weak cryptographic primitive (gosec)
+    - linters:
+        - gosec
       text: "G402:" # G402: TLS InsecureSkipVerify may be true. (gosec)
     - linters:
         - gosec
       text: "G404:" # G404: Use of weak random number generator (math/rand instead of crypto/rand) (gosec)
+    - linters:
+        - gosec
+      text: "G501:" # G501: Blacklisted import `crypto/md5`: weak cryptographic primitive (gosec)
     - linters:
         - gosec
       text: "G601:" # G601: Implicit memory aliasing in for loop. (gosec)
