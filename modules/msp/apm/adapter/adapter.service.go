@@ -15,57 +15,63 @@ package adapter
 
 import (
 	context "context"
+
 	pb "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type adapterService struct {
 	p *provider
 }
 
-var JAVAAdapterStrategies = []*pb.AdapterStrategy{
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAVA_AGENT), Strategy: pb.AdapterStrategyKey_JAVA_AGENT.String(), Enable: true},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
-}
+var (
+	javaAdapterStrategies = []*pb.AdapterStrategy{
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAVA_AGENT), Strategy: pb.AdapterStrategyKey_JAVA_AGENT.String(), Enable: true},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
+	}
 
-var GOAdapterStrategies = []*pb.AdapterStrategy{
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
-}
+	goAdapterStrategies = []*pb.AdapterStrategy{
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
+	}
 
-var PHPAdapterStrategies = []*pb.AdapterStrategy{
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
-}
+	phpAdapterStrategies = []*pb.AdapterStrategy{
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
+	}
 
-var DOTNETAdapterStrategies = []*pb.AdapterStrategy{
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
-}
+	dotnetAdapterStrategies = []*pb.AdapterStrategy{
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
+	}
 
-var NODEJSAdapterStrategies = []*pb.AdapterStrategy{
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_NODEJS_AGENT), Strategy: pb.AdapterStrategyKey_NODEJS_AGENT.String(), Enable: true},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
-	{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
-}
+	nodejsAdapterStrategies = []*pb.AdapterStrategy{
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_NODEJS_AGENT), Strategy: pb.AdapterStrategyKey_NODEJS_AGENT.String(), Enable: true},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_APACHE_SKYWALKING), Strategy: pb.AdapterStrategyKey_APACHE_SKYWALKING.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_JAEGER), Strategy: pb.AdapterStrategyKey_JAEGER.String(), Enable: false},
+		{DisplayName: getStrategyDisplayName(pb.AdapterStrategyKey_OPEN_TELEMETRY), Strategy: pb.AdapterStrategyKey_OPEN_TELEMETRY.String(), Enable: false},
+	}
+)
 
-var JAVAAdapterList = pb.Adapters{Language: pb.AdapterLanguage_JAVA.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_JAVA), Strategies: JAVAAdapterStrategies}
-var GOAdapterList = pb.Adapters{Language: pb.AdapterLanguage_GO.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_GO), Strategies: GOAdapterStrategies}
-var PHPAdapterList = pb.Adapters{Language: pb.AdapterLanguage_PHP.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_PHP), Strategies: PHPAdapterStrategies}
-var DOTNETAdapterList = pb.Adapters{Language: pb.AdapterLanguage_DOT_NET.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_DOT_NET), Strategies: DOTNETAdapterStrategies}
-var NODEJSAdapterList = pb.Adapters{Language: pb.AdapterLanguage_NODEJS.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_NODEJS), Strategies: NODEJSAdapterStrategies}
+var (
+	javaAdapterList   = pb.Adapters{Language: pb.AdapterLanguage_JAVA.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_JAVA), Strategies: javaAdapterStrategies}
+	goAdapterList     = pb.Adapters{Language: pb.AdapterLanguage_GO.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_GO), Strategies: goAdapterStrategies}
+	phpAdapterList    = pb.Adapters{Language: pb.AdapterLanguage_PHP.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_PHP), Strategies: phpAdapterStrategies}
+	dotnetAdapterList = pb.Adapters{Language: pb.AdapterLanguage_DOT_NET.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_DOT_NET), Strategies: dotnetAdapterStrategies}
+	nodejsAdapterList = pb.Adapters{Language: pb.AdapterLanguage_NODEJS.String(), DisplayName: getLanguageDisplayName(pb.AdapterLanguage_NODEJS), Strategies: nodejsAdapterStrategies}
+)
 
-var Adapters = []*pb.Adapters{
-	&JAVAAdapterList,
-	&GOAdapterList,
-	&PHPAdapterList,
-	&DOTNETAdapterList,
-	&NODEJSAdapterList,
+var adapters = []*pb.Adapters{
+	&javaAdapterList,
+	&goAdapterList,
+	&phpAdapterList,
+	&dotnetAdapterList,
+	&nodejsAdapterList,
 }
 
 func getLanguageDisplayName(language pb.AdapterLanguage) string {
@@ -103,9 +109,9 @@ func getStrategyDisplayName(strategyKey pb.AdapterStrategyKey) string {
 }
 
 func (s *adapterService) GetAdapters(ctx context.Context, req *pb.GetAdaptersRequest) (*pb.GetAdaptersResponse, error) {
-	return &pb.GetAdaptersResponse{Data: Adapters}, nil
+	return &pb.GetAdaptersResponse{Data: adapters}, nil
 }
 
 func (s *adapterService) GetAdapterDocs(ctx context.Context, request *pb.GetAdapterDocsRequest) (*pb.GetAdapterDocsResponse, error) {
-	panic("implement me")
+	return nil, errors.NewUnimplementedError("GetAdapterDocs")
 }
