@@ -11,21 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package cms
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"fmt"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
-	_ "github.com/erda-project/erda-infra/providers/serviceregister"
-	_ "github.com/erda-project/erda/modules/pipeline"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
+	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/pipeline/pipeline.yaml",
-	})
+const PipelineAppConfigNameSpacePrefix = "pipeline-secrets-app"
+
+func MakeAppDefaultSecretNamespace(appID string) string {
+	return fmt.Sprintf("%s-%s-default", PipelineAppConfigNameSpacePrefix, appID)
+}
+
+func MakeAppBranchPrefixSecretNamespace(appID, branch string) (string, error) {
+	branchPrefix, err := gitflowutil.GetReferencePrefix(branch)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s-%s-%s", PipelineAppConfigNameSpacePrefix, appID, branchPrefix), nil
 }

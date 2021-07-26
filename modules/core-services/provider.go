@@ -17,11 +17,14 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 )
 
-type provider struct{}
+type provider struct {
+	Cms cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms"`
+}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
 
 func init() {
 	servicehub.Register("core-services", &servicehub.Spec{

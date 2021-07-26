@@ -21,10 +21,13 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
-type provider struct{}
+type provider struct {
+	CmsService pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+}
 
 func (p *provider) Run(ctx context.Context) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
@@ -37,7 +40,7 @@ func (p *provider) Run(ctx context.Context) error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	return Initialize()
+	return p.Initialize()
 }
 
 func init() {

@@ -11,23 +11,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cmsvc
+package utils
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pkg/gitflowutil"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func (s *CMSvc) MakeDefaultSecretNamespace(appID string) string {
-	return fmt.Sprintf("%s-%s-default", apistructs.PipelineAppConfigNameSpacePreFix, appID)
-}
-
-func (s *CMSvc) MakeBranchPrefixSecretNamespace(appID, branch string) (string, error) {
-	branchPrefix, err := gitflowutil.GetReferencePrefix(branch)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s-%s-%s", apistructs.PipelineAppConfigNameSpacePreFix, appID, branchPrefix), nil
+// WithInternalClientContext TODO bad hard-coded "dop", you should get it in a-native-way, quite like get module name by erda-infra's ability.
+func WithInternalClientContext(ctx context.Context) context.Context {
+	return apis.WithInternalClientContext(ctx, "dop")
 }

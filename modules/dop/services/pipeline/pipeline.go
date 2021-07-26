@@ -15,6 +15,7 @@
 package pipeline
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -23,11 +24,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
+	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
@@ -44,6 +48,7 @@ type Pipeline struct {
 	bdl           *bundle.Bundle
 	branchRuleSvc *branchrule.BranchRule
 	publisherSvc  *publisher.Publisher
+	cms           cmspb.CmsServiceServer
 }
 
 // Option Pipeline 配置选项
@@ -74,6 +79,12 @@ func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 func WithPublisherSvc(svc *publisher.Publisher) Option {
 	return func(f *Pipeline) {
 		f.publisherSvc = svc
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(f *Pipeline) {
+		f.cms = cms
 	}
 }
 
@@ -397,18 +408,20 @@ func generatorWorkspaceNS(appID uint64, workspace string) ([]string, error) {
 func (p *Pipeline) generatorPipelineNS(appID uint64, branch string, workspace string) ([]string, error) {
 	var cmNamespaces []string
 	// 创建 default namespace
-	cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-default", apistructs.PipelineAppConfigNameSpacePreFix, appID))
+	cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-default", cms.PipelineAppConfigNameSpacePrefix, appID))
 
 	// TODO 直接使用workspace，不用映射 support hotfix
 	// hotfix support 兼容判断,如果有历史遗留参数,使用历史分支级配置 不用workspace
 	if gitflowutil.IsHotfix(branch) || gitflowutil.IsSupport(branch) {
 		branchPrefix, _ := gitflowutil.GetReferencePrefix(branch)
-		ns := fmt.Sprintf("%s-%d-%s", apistructs.PipelineAppConfigNameSpacePreFix, appID, branchPrefix)
-		configs, err := p.bdl.GetPipelineCmsNsConfigs(ns, apistructs.PipelineCmsGetConfigsRequest{
-			PipelineSource: "dice",
-		})
+		ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
+		configs, err := p.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
+			&cmspb.CmsNsConfigsGetRequest{
+				Ns:             ns,
+				PipelineSource: apistructs.PipelineSourceDice.String(),
+			})
 		if err == nil {
-			if len(configs) > 0 {
+			if len(configs.Data) > 0 {
 				cmNamespaces = append(cmNamespaces, ns)
 			}
 		}
@@ -422,7 +435,7 @@ func (p *Pipeline) generatorPipelineNS(appID uint64, branch string, workspace st
 		// 创建 branch namespace
 		pipelineNs, ok := workspaceConfig[workspace]
 		if ok {
-			cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-%s", apistructs.PipelineAppConfigNameSpacePreFix, appID, pipelineNs))
+			cmNamespaces = append(cmNamespaces, fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, pipelineNs))
 		}
 	}
 	return cmNamespaces, nil

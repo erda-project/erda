@@ -1,1 +1,6 @@
 dop:
+
+# pipeline cms
+grpc-client@erda.core.pipeline.cms:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cms-client:

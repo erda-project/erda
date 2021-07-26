@@ -14,6 +14,7 @@
 package autotestv2
 
 import (
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -27,6 +28,7 @@ type Service struct {
 	bdl         *bundle.Bundle
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
+	cms         cmspb.CmsServiceServer
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -66,5 +68,11 @@ func WithSceneSet(svc *sceneset.Service) Option {
 func WithAutotestSvc(svc *autotest.Service) Option {
 	return func(e *Service) {
 		e.autotestSvc = svc
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(e *Service) {
+		e.cms = cms
 	}
 }

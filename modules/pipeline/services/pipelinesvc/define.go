@@ -14,12 +14,12 @@
 package pipelinesvc
 
 import (
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/cmsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
@@ -32,7 +32,6 @@ import (
 
 type PipelineSvc struct {
 	appSvc          *appsvc.AppSvc
-	cmSvc           *cmsvc.CMSvc
 	crondSvc        *crondsvc.CrondSvc
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
@@ -48,9 +47,12 @@ type PipelineSvc struct {
 
 	js      jsonstore.JsonStore
 	etcdctl *etcd.Store
+
+	// providers
+	cmsService pb.CmsServiceServer
 }
 
-func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
+func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineCronSvc *pipelinecronsvc.PipelineCronSvc, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
@@ -59,7 +61,6 @@ func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
-	s.cmSvc = cmSvc
 	s.crondSvc = crondSvc
 	s.actionAgentSvc = actionAgentSvc
 	s.extMarketSvc = extMarketSvc
@@ -73,4 +74,8 @@ func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
 	s.js = js
 	s.etcdctl = etcd
 	return &s
+}
+
+func (s *PipelineSvc) WithCmsService(cmsService pb.CmsServiceServer) {
+	s.cmsService = cmsService
 }

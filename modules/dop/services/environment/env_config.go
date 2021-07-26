@@ -18,6 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -258,13 +259,13 @@ func (e *EnvConfig) GetMultiNamespaceConfigs(permission *permission.Permission, 
 		for i := range mapEnvConfigs[k] {
 			mapEnvConfigs[k][i].Type = map[string]string{"ENV": "kv", "FILE": "dice-file"}[mapEnvConfigs[k][i].ConfigType]
 			if mapEnvConfigs[k][i].Type == "dice-file" {
-				mapEnvConfigs[k][i].Operations = &apistructs.PipelineCmsConfigOperations{
+				mapEnvConfigs[k][i].Operations = &cmspb.PipelineCmsConfigOperations{
 					CanDownload: true,
 					CanEdit:     true,
 					CanDelete:   true,
 				}
 			} else if mapEnvConfigs[k][i].Operations == nil {
-				mapEnvConfigs[k][i].Operations = &apistructs.PipelineCmsConfigOperations{
+				mapEnvConfigs[k][i].Operations = &cmspb.PipelineCmsConfigOperations{
 					CanDownload: false,
 					CanEdit:     true,
 					CanDelete:   true,

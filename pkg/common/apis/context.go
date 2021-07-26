@@ -11,21 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package apis
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"context"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
-	_ "github.com/erda-project/erda-infra/providers/serviceregister"
-	_ "github.com/erda-project/erda/modules/pipeline"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
+	"github.com/erda-project/erda-infra/pkg/transport"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/pipeline/pipeline.yaml",
-	})
+func WithInternalClientContext(ctx context.Context, internalClient string) context.Context {
+	header := transport.Header{}
+	header.Set(headerInternalClient, internalClient)
+	return transport.WithHeader(ctx, header)
 }

@@ -57,14 +57,14 @@ import (
 )
 
 // Initialize 初始化应用启动服务.
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	// init endpoints
-	ep, err := initEndpoints()
+	ep, err := p.initEndpoints()
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func Initialize() error {
 }
 
 // 初始化 Endpoints
-func initEndpoints() (*endpoints.Endpoints, error) {
+func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	var (
 		etcdStore *etcd.Store
 		store     jsonstore.JsonStore
@@ -176,7 +176,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 	)
 
 	// init project service
-	p := project.New(
+	proj := project.New(
 		project.WithDBClient(db),
 		project.WithUCClient(uc),
 		project.WithBundle(bdl),
@@ -187,6 +187,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		application.WithDBClient(db),
 		application.WithUCClient(uc),
 		application.WithBundle(bdl),
+		application.WithPipelineCms(p.Cms),
 	)
 
 	// init member service
@@ -271,7 +272,7 @@ func initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithBundle(bdl),
 		endpoints.WithOrg(o),
 		endpoints.WithManualReview(mr),
-		endpoints.WithProject(p),
+		endpoints.WithProject(proj),
 		endpoints.WithApp(app),
 		endpoints.WithMember(m),
 		endpoints.WithActivity(a),

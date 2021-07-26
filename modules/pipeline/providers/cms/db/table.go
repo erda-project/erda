@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package spec
+package db
 
 import (
 	"encoding/json"
@@ -20,6 +20,7 @@ import (
 
 	"github.com/xormplus/xorm"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -50,7 +51,7 @@ type PipelineCmsConfig struct {
 
 	Encrypt *bool `json:"encrypt"`
 
-	Type apistructs.PipelineCmsConfigType `json:"type"`
+	Type string `json:"type"`
 
 	Extra PipelineCmsConfigExtra `json:"extra" xorm:"json"`
 
@@ -65,7 +66,7 @@ func (c PipelineCmsConfig) BeforeSet(fieldName string, cell xorm.Cell) {
 	case "type":
 		// NULL -> kv
 		if reflect.Indirect(reflect.ValueOf(cell)).IsNil() {
-			*cell = apistructs.PipelineCmsConfigTypeKV
+			*cell = ConfigTypeKV
 		}
 	case "extra":
 		// NULL -> ""
@@ -78,7 +79,7 @@ func (c PipelineCmsConfig) BeforeSet(fieldName string, cell xorm.Cell) {
 
 type PipelineCmsConfigExtra struct {
 	// Operations 从数据库取出时保证不为 nil
-	Operations *apistructs.PipelineCmsConfigOperations `json:"operations"`
+	Operations *pb.PipelineCmsConfigOperations `json:"operations"`
 	// Comment 注释
 	Comment string `json:"comment"`
 	// From 配置项来源，可为空。例如：证书管理同步
@@ -93,7 +94,7 @@ func (extra *PipelineCmsConfigExtra) FromDB(b []byte) error {
 		}
 	}
 	if extra.Operations == nil {
-		extra.Operations = &apistructs.PipelineCmsConfigDefaultOperationsForKV
+		extra.Operations = &DefaultOperationsForKV
 	}
 	return nil
 }
@@ -101,7 +102,7 @@ func (extra *PipelineCmsConfigExtra) FromDB(b []byte) error {
 // ToDB 为 operations 赋默认值
 func (extra *PipelineCmsConfigExtra) ToDB() ([]byte, error) {
 	if extra.Operations == nil {
-		extra.Operations = &apistructs.PipelineCmsConfigDefaultOperationsForKV
+		extra.Operations = &DefaultOperationsForKV
 	}
 	return json.Marshal(extra)
 }
