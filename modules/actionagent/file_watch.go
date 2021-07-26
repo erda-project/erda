@@ -17,9 +17,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -110,6 +112,10 @@ func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 			tailHandlerForPushCollectorLog(line, apistructs.CollectorLogPushStreamStderr, stderrLogs, agent.EasyUse.TaskLogID, &stderrLock)
 		}
 
+		if matchStdErrLine(agent.StdErrRegexpList, line) {
+			agent.Errs = append(agent.Errs, errors.New(line))
+		}
+
 		return nil
 	}
 }
@@ -145,4 +151,16 @@ func getMetaFromLogLine(line string) (bool, string, string) {
 		v = strings.TrimSpace(kv[1])
 	}
 	return true, k, v
+}
+
+func matchStdErrLine(regexpList []*regexp.Regexp, line string) bool {
+	var matched bool
+
+	for _, reg := range regexpList {
+		if reg.MatchString(line) {
+			matched = true
+			break
+		}
+	}
+	return matched
 }
