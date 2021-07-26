@@ -15,15 +15,21 @@ package actionagent
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/filehelper"
+)
+
+const (
+	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -86,6 +92,22 @@ func (agent *Agent) prepare() {
 		logrus.Printf("failed to create multi stderr, err: %v\n", err)
 	} else {
 		agent.EasyUse.RunMultiStderr = f
+	}
+
+	// 5. set stderr regexp list
+	envStdErrRegexpStr := os.Getenv(EnvStdErrRegexpList)
+	regexpStrList := []string{}
+	if err := json.Unmarshal([]byte(envStdErrRegexpStr), &regexpStrList); err != nil {
+		agent.AppendError(err)
+		return
+	}
+	for i := range regexpStrList {
+		reg, err := regexp.Compile(regexpStrList[i])
+		if err != nil {
+			agent.AppendError(err)
+		} else {
+			agent.StdErrRegexpList = append(agent.StdErrRegexpList, reg)
+		}
 	}
 }
 

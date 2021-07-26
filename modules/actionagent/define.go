@@ -16,6 +16,7 @@ package actionagent
 import (
 	"context"
 	"os"
+	"regexp"
 	"sync"
 
 	"github.com/erda-project/erda/apistructs"
@@ -47,6 +48,8 @@ type Agent struct {
 	Ctx      context.Context
 	Cancel   context.CancelFunc // cancel when logic done
 	ExitCode int
+
+	StdErrRegexpList []*regexp.Regexp
 }
 
 type AgentArg struct {
