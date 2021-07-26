@@ -46,7 +46,7 @@ func IsErrUnsupportedVersion(err error) bool {
 }
 
 func (err ErrUnsupportedVersion) Error() string {
-	return fmt.Sprintf("Operation requires higher version [required: %s]", err.Required)
+	return fmt.Sprintf("GenerateOperation requires higher version [required: %s]", err.Required)
 }
 
 type ErrNoMergeBase struct{}
