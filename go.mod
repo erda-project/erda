@@ -1,4 +1,4 @@
-module github.com/dspo/erda
+module github.com/erda-project/erda
 
 go 1.16
 

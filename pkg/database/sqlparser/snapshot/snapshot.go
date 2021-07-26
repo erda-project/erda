@@ -145,6 +145,7 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 		)
 		TrimCollateOptionFromCreateTable(create)
 		TrimCollateOptionFromCols(create)
+		TrimConstraintCheckFromCreateTable(create)
 
 		if err := create.Restore(&format.RestoreCtx{
 			Flags:     format.DefaultRestoreFlags,
@@ -196,4 +197,17 @@ func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
 		}
 	}
 	create.Options = options
+}
+
+func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	var cons []*ast.Constraint
+	for _, con := range create.Constraints {
+		if con.Tp != ast.ConstraintCheck {
+			cons = append(cons, con)
+		}
+	}
+	create.Constraints = cons
 }
