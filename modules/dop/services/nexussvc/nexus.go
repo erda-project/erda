@@ -14,6 +14,7 @@
 package nexussvc
 
 import (
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
@@ -25,6 +26,8 @@ type NexusSvc struct {
 	bdl *bundle.Bundle
 
 	rsaCrypt *encryption.RsaCrypt
+
+	cms pb.CmsServiceServer
 }
 
 type Option func(*NexusSvc)
@@ -53,5 +56,11 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithRsaCrypt(rsaCrypt *encryption.RsaCrypt) Option {
 	return func(svc *NexusSvc) {
 		svc.rsaCrypt = rsaCrypt
+	}
+}
+
+func WithPipelineCms(cms pb.CmsServiceServer) Option {
+	return func(svc *NexusSvc) {
+		svc.cms = cms
 	}
 }
