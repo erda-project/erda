@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -1688,7 +1689,12 @@ func (r *Runtime) FullGC() {
 		}
 	}()
 
-	keep := 5
+	rollbackCfg, err := r.getRollbackConfig()
+	if err != nil {
+		logrus.Errorf("[alert] failed to get all rollback config: %v", err)
+		return
+	}
+
 	bulk := 100
 	lastRuntimeID := uint64(0)
 	for {
@@ -1698,11 +1704,11 @@ func (r *Runtime) FullGC() {
 			break
 		}
 		for i := range runtimes {
-			if runtimes[i].Workspace == string(apistructs.ProdWorkspace) {
-				r.fullGCForSingleRuntime(runtimes[i].ID, keep)
-			} else {
-				r.fullGCForSingleRuntime(runtimes[i].ID, 1)
+			keep, ok := rollbackCfg[runtimes[i].ProjectID][strings.ToUpper(runtimes[i].Workspace)]
+			if !ok || keep <= 0 || keep > 100 {
+				keep = 5
 			}
+			r.fullGCForSingleRuntime(runtimes[i].ID, keep)
 		}
 		if len(runtimes) < bulk {
 			// ended
@@ -1710,6 +1716,21 @@ func (r *Runtime) FullGC() {
 		}
 		lastRuntimeID = runtimes[len(runtimes)-1].ID
 	}
+}
+
+// getRollbackConfig return the number of rollback record for each project and workspace
+// key1: project_id, key2: workspace, value: the limit of rollback record
+func (r *Runtime) getRollbackConfig() (map[uint64]map[string]int, error) {
+	result := make(map[uint64]map[string]int, 0)
+	// TODO: use cache to get project info
+	projects, err := r.bdl.GetAllProjects()
+	if err != nil {
+		return nil, err
+	}
+	for _, prj := range projects {
+		result[prj.ID] = prj.RollbackConfig
+	}
+	return result, nil
 }
 
 func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {

@@ -305,16 +305,7 @@ func (d *Deployment) List(userID user.ID, orgID uint64, runtimeID uint64, status
 	if !perm.Access {
 		return nil, apierrors.ErrListDeployment.AccessDenied()
 	}
-	project, err := d.bdl.GetProject(runtime.ProjectID)
-	if err != nil {
-		return nil, apierrors.ErrListDeployment.InternalError(err)
-	}
-	page.PageNO = 1
-	if n, ok := project.RollbackConfig[strutil.ToUpper(runtime.Workspace)]; !ok || n <= 0 {
-		page.PageSize = 10
-	} else {
-		page.PageSize = n
-	}
+
 	filter := dbclient.DeploymentFilter{StatusIn: statuses}
 	deployments, _, err := d.db.FindDeployments(runtimeID, filter, page.GetOffset(), page.GetLimit())
 	if err != nil {

@@ -16,11 +16,14 @@ package runtime
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -76,4 +79,26 @@ func TestFillRuntimeDataWithServiceGroup(t *testing.T) {
 	assert.Equal(t, 0, data.Services["fake-service"].Resources.Disk)
 	assert.Equal(t, "Healthy", data.Services["fake-service"].Status)
 	assert.Equal(t, 2, data.Services["fake-service"].Deployments.Replicas)
+}
+
+func TestGetRollbackConfig(t *testing.T) {
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAllProjects",
+		func(*bundle.Bundle) ([]apistructs.ProjectDTO, error) {
+			return []apistructs.ProjectDTO{
+				apistructs.ProjectDTO{ID: 1, RollbackConfig: map[string]int{"DEV": 3, "TEST": 5, "STAGING": 4, "PROD": 6}},
+				apistructs.ProjectDTO{ID: 2, RollbackConfig: map[string]int{"DEV": 4, "TEST": 6, "STAGING": 5, "PROD": 7}},
+				apistructs.ProjectDTO{ID: 3, RollbackConfig: map[string]int{"DEV": 5, "TEST": 7, "STAGING": 6, "PROD": 8}},
+			}, nil
+		},
+	)
+	defer monkey.UnpatchAll()
+
+	r := New(WithBundle(bdl))
+	cfg, err := r.getRollbackConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, cfg[1]["DEV"])
+	assert.Equal(t, 6, cfg[2]["TEST"])
+	assert.Equal(t, 6, cfg[3]["STAGING"])
+	assert.Equal(t, 8, cfg[3]["PROD"])
 }
