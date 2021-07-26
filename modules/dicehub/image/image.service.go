@@ -19,7 +19,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/dicehub/image/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/image/pb"
 	"github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
