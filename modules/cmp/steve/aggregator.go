@@ -29,11 +29,16 @@ import (
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
+type group struct {
+	ready  bool
+	server *Server
+	cancel context.CancelFunc
+}
+
 type Aggregator struct {
 	ctx     context.Context
 	bdl     *bundle.Bundle
 	servers sync.Map
-	cancels sync.Map
 }
 
 // NewAggregator new an aggregator with steve servers for all current clusters
@@ -114,31 +119,38 @@ func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) error {
 		return nil
 	}
 
-	server, cancel, err := a.createSteve(clusterInfo)
-	if err != nil {
-		return err
-	}
+	g := &group{ready: false}
+	a.servers.Store(clusterInfo.Name, g)
+	go func() {
+		server, cancel, err := a.createSteve(clusterInfo)
+		if err != nil {
+			logrus.Errorf("failed to create steve server for cluster %s", clusterInfo.Name)
+			a.servers.Delete(clusterInfo.Name)
+			return
+		}
 
-	a.servers.Store(clusterInfo.Name, server)
-	a.cancels.Store(clusterInfo.Name, cancel)
+		g := &group{
+			ready:  true,
+			server: server,
+			cancel: cancel,
+		}
+		a.servers.Store(clusterInfo.Name, g)
+	}()
 	return nil
 }
 
 // Delete closes a steve server for k8s cluster with clusterName and delete it from aggregator
 func (a *Aggregator) Delete(clusterName string) error {
-	if _, ok := a.servers.Load(clusterName); !ok {
-		return nil
-	}
-	a.servers.Delete(clusterName)
-
-	c, ok := a.cancels.Load(clusterName)
+	g, ok := a.servers.Load(clusterName)
 	if !ok {
 		return nil
 	}
-	cancel, _ := c.(context.CancelFunc)
-	cancel()
-	a.cancels.Delete(clusterName)
 
+	group, _ := g.(*group)
+	if group.ready {
+		group.cancel()
+	}
+	a.servers.Delete(clusterName)
 	return nil
 }
 
@@ -176,22 +188,22 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		logrus.Infof("steve for cluster %s not exist, starting a new server", cluster.Name)
-		server, cancel, err := a.createSteve(cluster)
-		if err != nil {
-			logrus.Errorf("failed to create steve for cluster %s", cluster.Name)
+		if err = a.Add(cluster); err != nil {
+			logrus.Errorf("failed to start steve server for cluster %s, %v", cluster.Name, err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte("Internal server error"))
-			return
 		}
-		a.servers.Store(cluster.Name, server)
-		a.cancels.Store(cluster.Name, cancel)
+		s, _ = a.servers.Load(cluster.Name)
+	}
 
-		server.ServeHTTP(rw, req)
+	group, _ := s.(*group)
+	if !group.ready {
+		rw.WriteHeader(http.StatusAccepted)
+		rw.Write([]byte(fmt.Sprintf("k8s API for cluster %s is not ready, please wait", clusterName)))
 		return
 	}
 
-	server := s.(*Server)
-	server.ServeHTTP(rw, req)
+	group.server.ServeHTTP(rw, req)
 }
 
 func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, context.CancelFunc, error) {
