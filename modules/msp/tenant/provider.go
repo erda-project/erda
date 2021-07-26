@@ -14,7 +14,6 @@
 package tenant
 
 import (
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/jinzhu/gorm"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
@@ -22,6 +21,7 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
