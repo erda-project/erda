@@ -19,7 +19,7 @@ import (
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/dicehub/image/pb"
+	pb "github.com/erda-project/erda-proto-go/core/dicehub/image/pb"
 	db "github.com/erda-project/erda/modules/dicehub/image/db"
 )
 

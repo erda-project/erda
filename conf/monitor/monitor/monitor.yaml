@@ -133,7 +133,7 @@ org-apis:
   offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
 runtime-apis:
 project-apis:
-global-settings:
+erda.core.monitor.settings:
 chart-block:
   preset_dashboards: "${CONFIG_PATH}/preset-dashboards"
 template:
