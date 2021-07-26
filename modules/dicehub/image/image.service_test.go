@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/dicehub/image/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/image/pb"
 )
 
 func Test_imageService_GetImage(t *testing.T) {
