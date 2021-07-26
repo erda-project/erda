@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/endpoints"
 	"github.com/erda-project/erda/modules/dicehub/recycle"
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
-	"github.com/erda-project/erda/modules/dicehub/service/image"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
@@ -102,11 +101,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 	rl := release.New(
 		release.WithDBClient(db),
 		release.WithBundle(bdl),
-	)
-
-	img := image.New(
-		image.WithDBClient(db),
-		image.WithBundle(bdl),
+		release.WithImageDBClient(p.ImageDB),
 	)
 
 	ext := extension.New(
@@ -135,7 +130,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithDBClient(db),
 		endpoints.WithBundle(bdl),
 		endpoints.WithRelease(rl),
-		endpoints.WithImage(img),
 		endpoints.WithExtension(ext),
 		endpoints.WithPublishItem(publishItem),
 		endpoints.WithPipelineTemplate(pipelineTemplate),
