@@ -11,14 +11,14 @@ import (
 func Test_adapterService_GetAdapters(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *pb.GetAdapterRequest
+		req *pb.GetAdaptersRequest
 	}
 	tests := []struct {
 		name     string
 		service  string
 		config   string
 		args     args
-		wantResp *pb.GetAdapterResponse
+		wantResp *pb.GetAdaptersResponse
 		wantErr  bool
 	}{
 		// TODO: Add test cases.

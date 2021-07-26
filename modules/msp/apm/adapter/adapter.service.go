@@ -89,6 +89,10 @@ func getStrategyDisplayName(strategyKey pb.AdapterStrategyKey) string {
 	}
 }
 
-func (s *adapterService) GetAdapters(ctx context.Context, req *pb.GetAdapterRequest) (*pb.GetAdapterResponse, error) {
-	return &pb.GetAdapterResponse{Data: Adapters}, nil
+func (s *adapterService) GetAdapters(ctx context.Context, req *pb.GetAdaptersRequest) (*pb.GetAdaptersResponse, error) {
+	return &pb.GetAdaptersResponse{Data: Adapters}, nil
+}
+
+func (s *adapterService) GetAdapterDocs(ctx context.Context, request *pb.GetAdapterDocsRequest) (*pb.GetAdapterDocsResponse, error) {
+	panic("implement me")
 }
