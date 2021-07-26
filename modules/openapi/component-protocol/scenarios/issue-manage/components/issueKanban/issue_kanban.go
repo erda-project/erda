@@ -824,14 +824,14 @@ func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePaging
 	} else {
 		for _, v := range is {
 			for _, v2 := range v.States {
-				if v2.Name == kanbanKey {
+				if strconv.FormatInt(v2.ID, 10) == kanbanKey {
 					states = append(states, v2)
-					break
+					goto loop
 				}
 			}
 		}
 	}
-
+loop:
 	// filter by status is not avialble in status board
 	if len(req.StateBelongs) > 0 {
 		req.StateBelongs = nil
