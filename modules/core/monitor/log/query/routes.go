@@ -30,24 +30,20 @@ import (
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
-func (p *provider) intRoutes(routes httpserver.Router) error {
+func (p *provider) intRoutes(routes httpserver.Router) {
 	routes.GET("/api/logs/actions/download", p.downloadLog)
 
 	// runtime
-	permission.QueryValue()
-	p.getApplicationID = permission.QueryValue("applicationId")
 	routes.GET("/api/runtime/logs/actions/download", p.downloadRuntimeLog, permission.Intercepter(
-		permission.ScopeApp, p.getApplicationID,
+		permission.ScopeApp, permission.QueryValue("applicationId"),
 		common.ResourceRuntime, permission.ActionGet,
 	))
 
 	// org
-	p.checkOrgCluster = permission.OrgIDByCluster("clusterName")
 	routes.GET("/api/orgCenter/logs/actions/download", p.downloadOrgLog, permission.Intercepter(
-		permission.ScopeOrg, p.checkContainerLog,
+		permission.ScopeOrg, permission.OrgIDByCluster("clusterName"),
 		common.ResourceOrgCenter, permission.ActionGet,
 	))
-	return nil
 }
 
 // Request .
@@ -258,6 +254,8 @@ func getFilename(r *RequestCtx, meta *LogMeta) string {
 	if meta == nil {
 		filenamePrefix = strings.Replace(r.ID, ".", sep, -1)
 	} else {
+		filenamePrefix = strings.Replace(meta.ID, ".", sep, -1)
+
 		if val, ok := meta.Tags["pod_name"]; ok {
 			filenamePrefix = val
 		}

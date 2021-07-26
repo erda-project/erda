@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"github.com/scylladb/gocqlx"
 	"github.com/scylladb/gocqlx/qb"
@@ -31,6 +32,21 @@ import (
 )
 
 var ErrEmptyLogMeta = errors.New("empty log meta record")
+
+type CQLQueryInf interface {
+	Query(builder *qb.SelectBuilder, binding qb.M, dest interface{}) error
+	// Update(builder *qb.UpdateBuilder)
+}
+
+type cassandraQuery struct {
+	session *gocql.Session
+}
+
+func (c *cassandraQuery) Query(builder *qb.SelectBuilder, binding qb.M, dest interface{}) error {
+	stmt, names := builder.ToCql()
+	cql := gocqlx.Query(c.session.Query(stmt), names).BindMap(binding)
+	return cql.SelectRelease(dest)
+}
 
 func (p *provider) getLogItems(r *RequestCtx) ([]*pb.LogItem, error) {
 	// 请求ID关联的日志
@@ -71,11 +87,8 @@ func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (
 	for key := range filters {
 		cqlBuilder = cqlBuilder.Where(qb.Eq(key))
 	}
-	stmt, names := cqlBuilder.ToCql()
-	cql := gocqlx.Query(p.session.Query(stmt), names).BindMap(filters)
-	p.Logger.Debugf("cql=%+v", cql)
-	if err := cql.SelectRelease(&res); err != nil {
-		return nil, fmt.Errorf("query cassandra failed. err=%s", err)
+	if err := p.cqlQuery.Query(cqlBuilder, filters, &res); err != nil {
+		return nil, fmt.Errorf("retrive %s fialed: %w", LogMetaTableName, err)
 	}
 	if len(res) == 0 {
 		return nil, ErrEmptyLogMeta
@@ -84,14 +97,15 @@ func (p *provider) queryBaseLogMetaWithFilters(filters map[string]interface{}) (
 }
 
 func (p *provider) queryRequestLog(table, requestID string) ([]*pb.LogItem, error) {
-	stmt, names := qb.Select(table).
-		Where(qb.Eq("request_id")).ToCql()
 	var list []*SavedLog
-	if err := gocqlx.Query(p.session.Query(stmt), names).
-		BindMap(qb.M{"request_id": requestID}).
-		SelectRelease(&list); err != nil {
-		return nil, err
+	if err := p.cqlQuery.Query(
+		qb.Select(table).Where(qb.Eq("request_id")),
+		qb.M{"request_id": requestID},
+		&list,
+	); err != nil {
+		return nil, fmt.Errorf("retrive %s failed: %w", table, err)
 	}
+
 	logs, err := convertToLogList(list)
 	if err != nil {
 		return nil, err
@@ -112,9 +126,6 @@ func (p *provider) queryRequestLog(table, requestID string) ([]*pb.LogItem, erro
 }
 
 func (p *provider) queryBaseLog(table, source, id, stream string, start, end, count int64) ([]*pb.LogItem, error) {
-	if count == 0 {
-		return nil, nil
-	}
 	orderBy, limit := qb.ASC, uint(count)
 	if count < 0 {
 		limit = uint(-1 * count)
@@ -182,29 +193,34 @@ func (p *provider) walkSavedLogs(table, source, id, stream string, start, end in
 	return nil
 }
 
-func (p *provider) queryBaseLogInBucket(table, source, id, stream string, bucket, start, end int64, order qb.Order, limit uint) ([]*SavedLog, error) {
-	stmt, names := qb.Select(table).
-		Where(
-			qb.Eq("source"),
-			qb.Eq("id"),
-			qb.Eq("stream"),
-			qb.Eq("time_bucket"),
-			qb.GtOrEqNamed("timestamp", "start"),
-			qb.LtNamed("timestamp", "end")).
-		OrderBy("timestamp", order).OrderBy("offset", order).
-		Limit(limit).ToCql()
+func (p *provider) queryBaseLogInBucket(
+	table, source, id, stream string,
+	bucket, start, end int64,
+	order qb.Order, limit uint,
+) ([]*SavedLog, error) {
 	var logs []*SavedLog
-	cql := gocqlx.Query(p.session.Query(stmt), names).BindMap(qb.M{
-		"source":      source,
-		"id":          id,
-		"stream":      stream,
-		"time_bucket": bucket,
-		"start":       start,
-		"end":         end,
-	})
-	p.Logger.Debugf("log query. cql=%+v", cql.String())
-	if err := cql.SelectRelease(&logs); err != nil {
-		return nil, err
+	if err := p.cqlQuery.Query(
+		qb.Select(table).
+			Where(
+				qb.Eq("source"),
+				qb.Eq("id"),
+				qb.Eq("stream"),
+				qb.Eq("time_bucket"),
+				qb.GtOrEqNamed("timestamp", "start"),
+				qb.LtNamed("timestamp", "end")).
+			OrderBy("timestamp", order).OrderBy("offset", order).
+			Limit(limit),
+		qb.M{
+			"source":      source,
+			"id":          id,
+			"stream":      stream,
+			"time_bucket": bucket,
+			"start":       start,
+			"end":         end,
+		},
+		&logs,
+	); err != nil {
+		return nil, fmt.Errorf("retrive %s failed: %w", table, err)
 	}
 
 	// todo. for back forward compatibility, prepare remove in version 3.21

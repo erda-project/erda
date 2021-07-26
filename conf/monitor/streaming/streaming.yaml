@@ -44,7 +44,7 @@ etcd:
 etcd-mutex:
   root_path: "/erda/streaming"
 
-# desperate
+# todo desperate
 log-store:
   _enable: ${LOG_STORE_ENABLE:true}
   input:

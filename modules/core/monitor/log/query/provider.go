@@ -17,8 +17,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gocql/gocql"
-
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -47,9 +45,7 @@ type provider struct {
 	HttpServer      httpserver.Router `autowired:"http-server"`
 	Perm            perm.Interface    `autowired:"permission"`
 
-	session          *gocql.Session
-	checkOrgCluster  func(ctx httpserver.Context) (string, error)
-	getApplicationID func(ctx httpserver.Context) (string, error)
+	cqlQuery CQLQueryInf
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -57,12 +53,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
-	p.session = session
-
-	err = p.intRoutes(p.HttpServer)
-	if err != nil {
-		return fmt.Errorf("fail to init routes: %s", err)
+	p.cqlQuery = &cassandraQuery{
+		session: session,
 	}
+
+	p.intRoutes(p.HttpServer)
 
 	p.logQueryService = &logQueryService{p}
 	if p.Register != nil {

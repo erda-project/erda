@@ -14,180 +14,338 @@
 package query
 
 import (
-	context "context"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
 
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 )
 
 func Test_logQueryService_GetLog(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
 	type args struct {
 		ctx context.Context
 		req *pb.GetLogRequest
 	}
 	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetLogResponse
-		wantErr  bool
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetLogResponse
+		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
-			"case 1",
-			"erda.core.monitor.log.query.LogQueryService",
-			`
-erda.core.monitor.log.query:
-`,
-			args{
-				context.TODO(),
-				&pb.GetLogRequest{
-					// TODO: setup fields
+			name: "normal",
+			fields: fields{
+				p: mockProvider(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogRequest{
+					Id:        "aaa",
+					Source:    "container",
+					Stream:    "stdout",
+					RequestId: "",
+					Start:     1604880001000000000,
+					End:       1604880002000000000,
+					Count:     -200,
 				},
 			},
-			&pb.GetLogResponse{
-				// TODO: setup fields.
-			},
-			false,
+			want: &pb.GetLogResponse{Lines: []*pb.LogItem{
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880001000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880002000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+			}},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
+			s := &logQueryService{
+				p: tt.fields.p,
 			}
-			srv := hub.Service(tt.service).(pb.LogQueryServiceServer)
-			got, err := srv.GetLog(tt.args.ctx, tt.args.req)
+			got, err := s.GetLog(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("logQueryService.GetLog() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("logQueryService.GetLog() = %v, want %v", got, tt.wantResp)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLog() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func Test_logQueryService_GetLogByRuntime(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
 	type args struct {
 		ctx context.Context
 		req *pb.GetLogByRuntimeRequest
 	}
 	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetLogByRuntimeResponse
-		wantErr  bool
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetLogByRuntimeResponse
+		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
-			"case 1",
-			"erda.core.monitor.log.query.LogQueryService",
-			`
-erda.core.monitor.log.query:
-`,
-			args{
-				context.TODO(),
-				&pb.GetLogByRuntimeRequest{
-					// TODO: setup fields
+			name: "normal",
+			fields: fields{
+				p: mockProvider(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByRuntimeRequest{
+					Id:            "aaa",
+					Source:        "container",
+					Stream:        "stdout",
+					RequestId:     "",
+					Start:         1604880001000000000,
+					End:           1604880002000000000,
+					Count:         -200,
+					ApplicationId: "app-1",
 				},
 			},
-			&pb.GetLogByRuntimeResponse{
-				// TODO: setup fields.
+			want: &pb.GetLogByRuntimeResponse{Lines: []*pb.LogItem{
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880001000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880002000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "normal but error",
+			fields: fields{
+				p: &provider{
+					cqlQuery: &mockCqlQuery{
+						errorTrigger: true,
+					},
+				},
 			},
-			false,
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByRuntimeRequest{
+					Id:            "aaa",
+					Source:        "container",
+					Stream:        "stdout",
+					RequestId:     "",
+					Start:         1604880001000000000,
+					End:           1604880002000000000,
+					Count:         -200,
+					ApplicationId: "app-1",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "normal but empty",
+			fields: fields{
+				p: &provider{
+					cqlQuery: &mockCqlQuery{
+						emptyResult: true,
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByRuntimeRequest{
+					Id:            "aaa",
+					Source:        "container",
+					Stream:        "stdout",
+					RequestId:     "",
+					Start:         1604880001000000000,
+					End:           1604880002000000000,
+					Count:         -200,
+					ApplicationId: "app-1",
+				},
+			},
+			want:    &pb.GetLogByRuntimeResponse{},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
+			s := &logQueryService{
+				p: tt.fields.p,
 			}
-			srv := hub.Service(tt.service).(pb.LogQueryServiceServer)
-			got, err := srv.GetLogByRuntime(tt.args.ctx, tt.args.req)
+			got, err := s.GetLogByRuntime(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("logQueryService.GetLogByRuntime() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetLogByRuntime() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("logQueryService.GetLogByRuntime() = %v, want %v", got, tt.wantResp)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLogByRuntime() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func Test_logQueryService_GetLogByOrganization(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
 	type args struct {
 		ctx context.Context
 		req *pb.GetLogByOrganizationRequest
 	}
 	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetLogByOrganizationResponse
-		wantErr  bool
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetLogByOrganizationResponse
+		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
-			"case 1",
-			"erda.core.monitor.log.query.LogQueryService",
-			`
-erda.core.monitor.log.query:
-`,
-			args{
-				context.TODO(),
-				&pb.GetLogByOrganizationRequest{
-					// TODO: setup fields
+			name: "normal",
+			fields: fields{
+				p: mockProvider(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByOrganizationRequest{
+					Id:          "aaa",
+					Source:      "container",
+					Stream:      "stdout",
+					RequestId:   "",
+					Start:       1604880001000000000,
+					End:         1604880002000000000,
+					Count:       -200,
+					ClusterName: "cluster-1",
 				},
 			},
-			&pb.GetLogByOrganizationResponse{
-				// TODO: setup fields.
+			want: &pb.GetLogByOrganizationResponse{Lines: []*pb.LogItem{
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880001000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+				{
+					Id:         "aaa",
+					Source:     "container",
+					Stream:     "stdout",
+					TimeBucket: "1604880000000000000",
+					Timestamp:  "1604880002000000000",
+					Offset:     "11",
+					Content:    "hello world",
+					Level:      "INFO",
+					RequestId:  "",
+				},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "normal but error",
+			fields: fields{
+				p: &provider{
+					cqlQuery: &mockCqlQuery{
+						errorTrigger: true,
+					},
+				},
 			},
-			false,
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByOrganizationRequest{
+					Id:          "aaa",
+					Source:      "container",
+					Stream:      "stdout",
+					RequestId:   "",
+					Start:       1604880001000000000,
+					End:         1604880002000000000,
+					Count:       -200,
+					ClusterName: "cluster-1",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "normal but empty",
+			fields: fields{
+				p: &provider{
+					cqlQuery: &mockCqlQuery{
+						emptyResult: true,
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				req: &pb.GetLogByOrganizationRequest{
+					Id:          "aaa",
+					Source:      "container",
+					Stream:      "stdout",
+					RequestId:   "",
+					Start:       1604880001000000000,
+					End:         1604880002000000000,
+					Count:       -200,
+					ClusterName: "cluster-1",
+				},
+			},
+			want:    &pb.GetLogByOrganizationResponse{},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
+			s := &logQueryService{
+				p: tt.fields.p,
 			}
-			srv := hub.Service(tt.service).(pb.LogQueryServiceServer)
-			got, err := srv.GetLogByOrganization(tt.args.ctx, tt.args.req)
+			got, err := s.GetLogByOrganization(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("logQueryService.GetLogByOrganization() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetLogByOrganization() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("logQueryService.GetLogByOrganization() = %v, want %v", got, tt.wantResp)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLogByOrganization() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -82,7 +82,7 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 	if err != nil {
 		return nil, err
 	} else if !result {
-		return nil, err
+		return &pb.GetLogByOrganizationResponse{}, nil
 	}
 
 	logs, err := p.getLogItems(r)
