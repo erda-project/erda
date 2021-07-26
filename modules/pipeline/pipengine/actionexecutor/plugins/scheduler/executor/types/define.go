@@ -45,6 +45,7 @@ type TaskExecutor interface {
 	Create(ctx context.Context, task *spec.PipelineTask) (interface{}, error)
 	Remove(ctx context.Context, task *spec.PipelineTask) (interface{}, error)
 	BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (interface{}, error)
+	Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error)
 }
 
 type CreateFn func(name Name, clusterName string, cluster apistructs.ClusterInfo) (TaskExecutor, error)

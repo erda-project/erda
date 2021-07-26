@@ -116,6 +116,10 @@ func WhichStorageClass(tp string) string {
 	}
 }
 
+func MakeJobName(task *spec.PipelineTask) string {
+	return strutil.Concat(task.Extra.Namespace, ".", task_uuid.MakeJobID(task))
+}
+
 func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
 	defer func() {
 		if r := recover(); r != nil {

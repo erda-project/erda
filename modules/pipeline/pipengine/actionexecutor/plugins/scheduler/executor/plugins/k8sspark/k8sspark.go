@@ -197,6 +197,11 @@ func (k *K8sSpark) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) 
 	return nil, nil
 }
 
+// Inspect k8sspark doesn`t support inspect, sparkapp`s logs are too long
+func (k *K8sSpark) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	return apistructs.TaskInspect{}, errors.New("k8sspark don`t support inspect")
+}
+
 func (k *K8sSpark) getSparkApp(ctx context.Context, task *spec.PipelineTask) (*sparkv1beta2.SparkApplication, error) {
 	var sparkApp sparkv1beta2.SparkApplication
 	if err := k.client.CRClient.Get(ctx, client.ObjectKey{Name: task.Extra.UUID, Namespace: task.Extra.Namespace}, &sparkApp); err != nil {

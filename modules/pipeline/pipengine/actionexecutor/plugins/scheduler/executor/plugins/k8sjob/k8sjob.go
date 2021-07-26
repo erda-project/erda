@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
-	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -108,7 +107,7 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		job     *batchv1.Job
 		jobPods *corev1.PodList
 	)
-	jobName := strutil.Concat(action.Extra.Namespace, ".", task_uuid.MakeJobID(action))
+	jobName := logic.MakeJobName(action)
 	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -303,6 +302,22 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 		}
 	}
 	return nil, nil
+}
+
+// Inspect similar to kubectl describe, return job information and event list
+func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	jobName := logic.MakeJobName(task)
+	job, err := k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	if err != nil {
+		return apistructs.TaskInspect{}, err
+	}
+
+	var events *corev1.EventList
+	events, _ = logic.SearchEvents(k.client.ClientSet.CoreV1(), job)
+	return apistructs.TaskInspect{
+		Object: job,
+		Events: events,
+	}, nil
 }
 
 func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
