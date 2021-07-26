@@ -93,6 +93,7 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 			}
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
+			equal.reason += fmt.Sprintf("%s.%s", d.CreateStmt.Table.Name.String(), name)
 			return equal
 		}
 	}

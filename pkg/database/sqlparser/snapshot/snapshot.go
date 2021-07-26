@@ -141,17 +141,11 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 
 		// install
 		var (
-			options []*ast.TableOption
-			buf     = bytes.NewBuffer(nil)
+			buf = bytes.NewBuffer(nil)
 		)
-		for _, opt := range create.Options {
-			switch opt.Tp {
-			case ast.TableOptionCollate:
-			default:
-				options = append(options, opt)
-			}
-		}
-		create.Options = options
+		TrimCollateOptionFromCreateTable(create)
+		TrimCollateOptionFromCols(create)
+
 		if err := create.Restore(&format.RestoreCtx{
 			Flags:     format.DefaultRestoreFlags,
 			In:        buf,
@@ -174,4 +168,32 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	for i := range create.Cols {
+		var options []*ast.ColumnOption
+		for j := range create.Cols[i].Options {
+			if create.Cols[i].Options[j].Tp != ast.ColumnOptionCollate {
+				options = append(options, create.Cols[i].Options[j])
+			}
+		}
+		create.Cols[i].Options = options
+	}
+}
+
+func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	var options []*ast.TableOption
+	for _, opt := range create.Options {
+		if opt.Tp != ast.TableOptionCollate {
+			options = append(options, opt)
+		}
+	}
+	create.Options = options
 }
