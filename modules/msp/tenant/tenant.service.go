@@ -15,7 +15,7 @@ package tenant
 
 import (
 	context "context"
-	"crypto/sha1"
+	"crypto/md5"
 	"fmt"
 	"time"
 
@@ -29,14 +29,11 @@ type tenantService struct {
 	MSPTenantDB *db.MSPTenantDB
 }
 
-const BlockSize = 64
-
 func generateTenantID(projectID int64, tenantType, workspace string) string {
-	hashSha1 := sha1.New()
+	md5H := md5.New()
 	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
-	sum := hashSha1.Sum([]byte(hStr))
-	sprintf := fmt.Sprintf("%x", sum)
-	return sprintf
+	sum := md5H.Sum([]byte(hStr))
+	return fmt.Sprintf("%x", sum)
 }
 
 func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.CreateTenantResponse, error) {
