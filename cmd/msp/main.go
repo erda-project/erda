@@ -62,6 +62,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/servicemesh"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/zkproxy"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/zookeeper"
+	_ "github.com/erda-project/erda/modules/msp/tenant"
 	_ "github.com/erda-project/erda/pkg/common/permission"
 
 	// providers
