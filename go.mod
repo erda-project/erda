@@ -156,7 +156,6 @@ require (
 )
 
 replace (
-    github.com/erda-project/erda-proto-go => /Users/innerpeacez/Code/terminus/gocode/src/terminus.io/erda-proto-go
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
