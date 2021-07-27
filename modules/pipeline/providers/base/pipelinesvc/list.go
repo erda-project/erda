@@ -16,18 +16,19 @@ package pipelinesvc
 import (
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (s *PipelineSvc) List(condition apistructs.PipelinePageListRequest) (*apistructs.PipelinePageListData, error) {
+func (s *PipelineSvc) List(condition apistructs.PipelinePageListRequest) (*basepb.PipelineListResponseData, error) {
 	pipelines, _, total, currentPageSize, err := s.dbClient.PageListPipelines(condition)
 	if err != nil {
 		return nil, apierrors.ErrListPipeline.InternalError(err)
 	}
 
-	var result apistructs.PipelinePageListData
+	var result basepb.PipelineListResponseData
 	result.Pipelines = s.BatchConvert2PagePipeline(pipelines)
 	result.Total = total
 	result.CurrentPageSize = currentPageSize

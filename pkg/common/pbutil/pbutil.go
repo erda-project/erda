@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 func GetBool(v *bool) (vv bool, set bool) {
@@ -50,4 +52,31 @@ func GetTimestamp(t *time.Time) *timestamppb.Timestamp {
 		return nil
 	}
 	return timestamppb.New(*t)
+}
+func GetTime(timestamp *timestamppb.Timestamp) *time.Time {
+	if timestamp == nil {
+		return nil
+	}
+	t := timestamp.AsTime()
+	return &t
+}
+func MustGetTime(timestamp *timestamppb.Timestamp) time.Time {
+	t := GetTime(timestamp)
+	if t != nil {
+		return *t
+	}
+	return time.Time{}
+}
+
+func GetIdentityUser(identityInfo *commonpb.IdentityInfo) string {
+	if identityInfo == nil {
+		return ""
+	}
+	return identityInfo.UserID
+}
+func GetIdentityInternalClient(identityInfo *commonpb.IdentityInfo) string {
+	if identityInfo == nil {
+		return ""
+	}
+	return identityInfo.InternalClient
 }

@@ -62,7 +62,7 @@ func TestMap2MetadataFields(t *testing.T) {
 }
 
 func TestMetadataFields2Map(t *testing.T) {
-	metas := []apistructs.MetadataField{
+	metas := []*commonpb.MetadataField{
 		{Name: "oss.access.key", Value: "1"},
 		{Name: "OSS_ACCESS_KEY", Value: "2"},
 	}

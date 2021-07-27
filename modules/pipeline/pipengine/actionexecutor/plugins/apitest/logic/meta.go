@@ -101,9 +101,9 @@ func writeMetaFile(ctx context.Context, task *spec.PipelineTask, meta *Meta) {
 		}
 	}
 
-	var fields []*apistructs.MetadataField
+	var fields []*[]*commonpb.MetadataFieldField
 	for _, kv := range *kvs {
-		fields = append(fields, &apistructs.MetadataField{Name: kv.k, Value: kv.v})
+		fields = append(fields, &[]*commonpb.MetadataFieldField{Name: kv.k, Value: kv.v})
 	}
 
 	var cb actionagent.Callback

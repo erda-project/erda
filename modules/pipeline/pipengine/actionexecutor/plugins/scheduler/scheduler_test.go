@@ -213,7 +213,7 @@ func Test_GetTaskExecutor(t *testing.T) {
 //				FileFromHost:  "/netdata/devops/ci/action-agent",
 //				ContainerPath: "/opt/emptydir",
 //			},
-//			Volumes: []apistructs.MetadataField{
+//			Volumes: []*commonpb.MetadataField{
 //				{
 //					Name:  "custom-script",
 //					Value: "/.pipeline/context/custom-script",

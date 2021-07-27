@@ -15,9 +15,8 @@ package apistructs
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -40,26 +39,26 @@ func (m PipelineQueueMode) IsValid() bool {
 	}
 }
 
-type PipelineQueue struct {
-	ID uint64 `json:"id"`
-
-	Name             string                              `json:"name"`
-	PipelineSource   PipelineSource                      `json:"pipelineSource"`
-	ClusterName      string                              `json:"clusterName"`
-	ScheduleStrategy ScheduleStrategyInsidePipelineQueue `json:"scheduleStrategy"`
-	Mode             PipelineQueueMode                   `json:"mode,omitempty"`
-	Priority         int64                               `json:"priority"`
-	Concurrency      int64                               `json:"concurrency"`
-	MaxCPU           float64                             `json:"maxCPU"`
-	MaxMemoryMB      float64                             `json:"maxMemoryMB"`
-
-	Labels map[string]string `json:"labels,omitempty"`
-
-	TimeCreated *time.Time `json:"timeCreated,omitempty"`
-	TimeUpdated *time.Time `json:"timeUpdated,omitempty"`
-
-	Usage *pb.QueueUsage `json:"usage"`
-}
+//type PipelineQueue struct {
+//	ID uint64 `json:"id"`
+//
+//	Name             string                              `json:"name"`
+//	PipelineSource   PipelineSource                      `json:"pipelineSource"`
+//	ClusterName      string                              `json:"clusterName"`
+//	ScheduleStrategy ScheduleStrategyInsidePipelineQueue `json:"scheduleStrategy"`
+//	Mode             PipelineQueueMode                   `json:"mode,omitempty"`
+//	Priority         int64                               `json:"priority"`
+//	Concurrency      int64                               `json:"concurrency"`
+//	MaxCPU           float64                             `json:"maxCPU"`
+//	MaxMemoryMB      float64                             `json:"maxMemoryMB"`
+//
+//	Labels map[string]string `json:"labels,omitempty"`
+//
+//	TimeCreated *time.Time `json:"timeCreated,omitempty"`
+//	TimeUpdated *time.Time `json:"timeUpdated,omitempty"`
+//
+//	Usage *queuepb.QueueUsage `json:"usage"`
+//}
 
 // ScheduleStrategyInsidePipelineQueue represents the schedule strategy of workflows inside a queue.
 type ScheduleStrategyInsidePipelineQueue string
@@ -229,7 +228,7 @@ type PipelineQueuePagingRequest struct {
 
 // PipelineQueuePagingData .
 type PipelineQueuePagingData struct {
-	Queues []*PipelineQueue `json:"queues"`
+	Queues []*queuepb.Queue `json:"queues"`
 	Total  int64            `json:"total"`
 }
 

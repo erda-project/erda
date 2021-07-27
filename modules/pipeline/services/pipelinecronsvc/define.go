@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -72,7 +73,7 @@ func (s *PipelineCronSvc) operate(cronID uint64, enable bool) (*spec.PipelineCro
 
 func (s *PipelineCronSvc) Create(req apistructs.PipelineCronCreateRequest) (*spec.PipelineCron, error) {
 	// param validate
-	if !req.PipelineCreateRequest.PipelineSource.Valid() {
+	if !apistructs.PipelineSource(req.PipelineCreateRequest.PipelineSource).Valid() {
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("invalid pipelineSource: %s", req.PipelineCreateRequest.PipelineSource))
 	}
 	if req.PipelineCreateRequest.PipelineYmlName == "" {
@@ -91,7 +92,7 @@ func (s *PipelineCronSvc) Create(req apistructs.PipelineCronCreateRequest) (*spe
 
 	// store to db
 	cron := spec.PipelineCron{
-		PipelineSource:  req.PipelineCreateRequest.PipelineSource,
+		PipelineSource:  apistructs.PipelineSource(req.PipelineCreateRequest.PipelineSource),
 		PipelineYmlName: req.PipelineCreateRequest.PipelineYmlName,
 		CronExpr:        pipelineYml.Spec().Cron,
 		Enable:          &[]bool{req.PipelineCreateRequest.AutoStartCron}[0],
@@ -101,7 +102,7 @@ func (s *PipelineCronSvc) Create(req apistructs.PipelineCronCreateRequest) (*spe
 			FilterLabels:  req.PipelineCreateRequest.Labels,
 			NormalLabels:  req.PipelineCreateRequest.NormalLabels,
 			Envs:          req.PipelineCreateRequest.Envs,
-			CronStartFrom: req.PipelineCreateRequest.CronStartFrom,
+			CronStartFrom: pbutil.GetTime(req.PipelineCreateRequest.CronStartFrom),
 			Version:       "v2",
 		},
 	}

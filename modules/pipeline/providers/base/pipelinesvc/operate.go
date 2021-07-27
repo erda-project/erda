@@ -16,6 +16,7 @@ package pipelinesvc
 import (
 	"github.com/pkg/errors"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
@@ -29,7 +30,7 @@ var (
 	OpUnpauseTask OperateAction = "UNPAUSE-TASK"
 )
 
-func (s *PipelineSvc) Operate(pipelineID uint64, req *apistructs.PipelineOperateRequest) error {
+func (s *PipelineSvc) Operate(pipelineID uint64, req *basepb.PipelineOperateRequest) error {
 	p, err := s.dbClient.GetPipeline(pipelineID)
 	if err != nil {
 		return apierrors.ErrOperatePipeline.InternalError(err)
@@ -55,7 +56,7 @@ func (s *PipelineSvc) Operate(pipelineID uint64, req *apistructs.PipelineOperate
 			if !p.Status.CanEnableDisable() {
 				return wrapError(errors.New("pipeline is already started"))
 			}
-			if *taskOp.Disable {
+			if taskOp.Disable.GetBoolValue() {
 				opAction = OpDisableTask
 				if !(task.Status == apistructs.PipelineStatusAnalyzed || task.Status == apistructs.PipelineStatusPaused) {
 					return wrapError(errors.Errorf("invalid status [%v]", task.Status))
@@ -70,7 +71,7 @@ func (s *PipelineSvc) Operate(pipelineID uint64, req *apistructs.PipelineOperate
 
 		// pause: task 开始执行后无法修改
 		if taskOp.Pause != nil {
-			if *taskOp.Pause {
+			if taskOp.Pause.GetBoolValue() {
 				opAction = OpPauseTask
 				if !task.Status.CanPause() {
 					return wrapError(errors.Errorf("status [%s]", task.Status))
@@ -94,7 +95,7 @@ func (s *PipelineSvc) Operate(pipelineID uint64, req *apistructs.PipelineOperate
 					task.Status = apistructs.PipelineStatusMark
 				}
 			}
-			task.Extra.Pause = *taskOp.Pause
+			task.Extra.Pause = taskOp.Pause.GetBoolValue()
 		}
 
 		if err = s.dbClient.UpdatePipelineTask(task.ID, &task); err != nil {

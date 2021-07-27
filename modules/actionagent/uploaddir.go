@@ -126,12 +126,12 @@ func (agent *Agent) uploadDir() {
 		uploadedFiles = append(uploadedFiles, diceFile)
 	}
 	// put into metafile
-	var metadata apistructs.Metadata
+	var metadata []*commonpb.MetadataField
 	for _, f := range uploadedFiles {
-		metadata = append(metadata, apistructs.MetadataField{
+		metadata = append(metadata, []*commonpb.MetadataFieldField{
 			Name:  f.DisplayName,
 			Value: f.UUID,
-			Type:  apistructs.MetadataTypeDiceFile,
+			Type:  []*commonpb.MetadataFieldTypeDiceFile,
 		})
 	}
 	err = agent.callbackToPipelinePlatform(&Callback{Metadata: metadata})

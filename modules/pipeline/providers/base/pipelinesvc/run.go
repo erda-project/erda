@@ -19,29 +19,34 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) RunPipeline(req *basepb.PipelineRunRequest) (*spec.Pipeline, error) {
 
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipeline.InvalidParameter(err)
 	}
 
-	if req.UserID != "" {
-		p.Extra.RunUser = s.tryGetUser(req.UserID)
+	if pbutil.GetIdentityUser(req.IdentityInfo) != "" {
+		p.Extra.RunUser = s.tryGetUser(req.IdentityInfo.UserID)
 	}
-	if req.InternalClient != "" {
-		p.Extra.InternalClient = req.InternalClient
+	if pbutil.GetIdentityInternalClient(req.IdentityInfo) != "" {
+		p.Extra.InternalClient = req.IdentityInfo.InternalClient
 	}
 
 	reason, canManualRun := s.canManualRun(p)
@@ -102,7 +107,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	if err != nil {
 		return nil, err
 	}
-	p.Snapshot.RunPipelineParams = runParams.ToPipelineRunParamsWithValue()
+	p.Snapshot.RunPipelineParams = converter.ToPipelineRunParamsWithValue(runParams)
 
 	now := time.Now()
 	p.TimeBegin = &now
@@ -126,14 +131,14 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	return &p, nil
 }
 
-func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (result apistructs.PipelineRunParams, err error) {
+func getRealRunParams(runParams []*basepb.PipelineRunParam, yml string) (result []*basepb.PipelineRunParam, err error) {
 
 	pipeline, err := pipelineyml.New([]byte(yml))
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
-	var runParamsMap = make(map[string]apistructs.PipelineRunParam)
+	var runParamsMap = make(map[string]*basepb.PipelineRunParam)
 	if runParams != nil {
 		for _, runParam := range runParams {
 			runParamsMap[runParam.Name] = runParam
@@ -168,16 +173,20 @@ func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (resu
 	}
 
 	for key, v := range realParamsMap {
-		result = append(result, apistructs.PipelineRunParam{
+		vv, err := structpb.NewValue(v)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &basepb.PipelineRunParam{
 			Name:  key,
-			Value: v,
+			Value: vv,
 		})
 	}
 
 	return result, nil
 }
 
-func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo apistructs.IdentityInfo) error {
+func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo *commonpb.IdentityInfo) error {
 	var runningPipelineIDs []uint64
 	err := s.dbClient.Table(&spec.PipelineBase{}).
 		Select("id").In("status", apistructs.ReconcilerRunningStatuses()).
@@ -190,7 +199,7 @@ func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo apistr
 		return apierrors.ErrParallelRunPipeline.InternalError(err)
 	}
 	for _, runningPipelineID := range runningPipelineIDs {
-		if err := s.Cancel(&apistructs.PipelineCancelRequest{
+		if err := s.Cancel(&basepb.PipelineCancelRequest{
 			PipelineID:   runningPipelineID,
 			IdentityInfo: identityInfo,
 		}); err != nil {

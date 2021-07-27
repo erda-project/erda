@@ -20,6 +20,9 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -39,7 +42,7 @@ const (
 )
 
 // CreatePipelineQueue
-func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest, ops ...SessionOption) (*queuepb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -72,7 +75,7 @@ func (client *Client) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequ
 }
 
 // createPipelineQueueFields create queue's other fields after queue id label created.
-func (client *Client) createPipelineQueueFields(req apistructs.PipelineQueueCreateRequest, queueIDLabel spec.PipelineLabel, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) createPipelineQueueFields(req apistructs.PipelineQueueCreateRequest, queueIDLabel spec.PipelineLabel, ops ...SessionOption) (*queuepb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -117,8 +120,8 @@ var genMetaLabelFunc = func(queueID uint64, source apistructs.PipelineSource, ke
 	}
 }
 
-func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQueue, error) {
-	var q apistructs.PipelineQueue
+func constructQueueByLabels(labels []spec.PipelineLabel) (*queuepb.Queue, error) {
+	var q queuepb.Queue
 
 	// parse id first
 	for _, label := range labels {
@@ -126,8 +129,8 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 			continue
 		}
 		q.ID = label.ID
-		q.PipelineSource = label.PipelineSource
-		q.TimeCreated = &label.TimeCreated
+		q.PipelineSource = label.PipelineSource.String()
+		q.TimeCreated = timestamppb.New(label.TimeCreated)
 	}
 	if q.ID == 0 {
 		return nil, fmt.Errorf("failed to construct queue, not found key id")
@@ -143,9 +146,9 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 		case queueLabelKeyClusterName:
 			q.ClusterName = label.Value
 		case queueLabelKeyScheduleStrategy:
-			q.ScheduleStrategy = apistructs.ScheduleStrategyInsidePipelineQueue(label.Value)
+			q.ScheduleStrategy = label.Value
 		case queueLabelKeyMode:
-			q.Mode = apistructs.PipelineQueueMode(label.Value)
+			q.Mode = label.Value
 		case queueLabelKeyPriority:
 			priority, err := strconv.ParseInt(label.Value, 10, 64)
 			if err != nil {
@@ -191,13 +194,13 @@ func constructQueueByLabels(labels []spec.PipelineLabel) (*apistructs.PipelineQu
 			timeUpdated = label.TimeUpdated
 		}
 	}
-	q.TimeUpdated = &timeUpdated
+	q.TimeUpdated = timestamppb.New(timeUpdated)
 
 	return &q, nil
 }
 
 // GetPipelineQueue
-func (client *Client) GetPipelineQueue(queueID uint64, ops ...SessionOption) (*apistructs.PipelineQueue, bool, error) {
+func (client *Client) GetPipelineQueue(queueID uint64, ops ...SessionOption) (*queuepb.Queue, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -352,7 +355,7 @@ func (client *Client) PagingPipelineQueues(req apistructs.PipelineQueuePagingReq
 	if err != nil {
 		return nil, apierrors.ErrPagingPipelineQueues.InternalError(fmt.Errorf("failed to list queue details by ids, err: %v", err))
 	}
-	var queues []*apistructs.PipelineQueue
+	var queues []*queuepb.Queue
 	for _, queueID := range pagingQueueIDs {
 		queue, err := constructQueueByLabels(labelMap[queueID])
 		if err != nil {
@@ -382,7 +385,7 @@ func transferMustMatchLabelsToMap(ss []string) (map[string][]string, error) {
 }
 
 // UpdatePipelineQueue
-func (client *Client) UpdatePipelineQueue(req apistructs.PipelineQueueUpdateRequest, ops ...SessionOption) (*apistructs.PipelineQueue, error) {
+func (client *Client) UpdatePipelineQueue(req apistructs.PipelineQueueUpdateRequest, ops ...SessionOption) (*queuepb.Queue, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

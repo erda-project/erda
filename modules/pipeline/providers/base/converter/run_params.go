@@ -11,18 +11,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dbclient
+package converter
 
 import (
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-// UpdatePipelineTaskSnippetDetail 更新 snippet task 的 snippet 信息
-func (client *Client) UpdatePipelineTaskSnippetDetail(id uint64, snippetDetail *basepb.PipelineTaskSnippetDetail, ops ...SessionOption) error {
-	session := client.NewSession(ops...)
-	defer session.Close()
+func ToPipelineRunParamsWithValue(runParams []*basepb.PipelineRunParam) []*basepb.PipelineRunParamWithValue {
+	var result []*basepb.PipelineRunParamWithValue
+	for _, p := range runParams {
+		result = append(result, &basepb.PipelineRunParamWithValue{
+			Name:      p.Name,
+			Value:     p.Value,
+			TrueValue: nil,
+		})
+	}
+	return result
+}
 
-	_, err := session.ID(id).Cols("snippet_pipeline_detail").Update(&spec.PipelineTask{SnippetPipelineDetail: snippetDetail})
-	return err
+func ToPipelineRunParams(runParamsWithValue []*basepb.PipelineRunParamWithValue) []*basepb.PipelineRunParam {
+	var result []*basepb.PipelineRunParam
+	for _, p := range runParamsWithValue {
+		result = append(result, &basepb.PipelineRunParam{Name: p.Name, Value: p.Value})
+	}
+	return result
 }

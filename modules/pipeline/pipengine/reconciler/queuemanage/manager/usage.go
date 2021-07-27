@@ -14,12 +14,11 @@
 package manager
 
 import (
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
-	"github.com/erda-project/erda/apistructs"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 )
 
-func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
+func (mgr *defaultManager) QueryQueueUsage(pq *queuepb.Queue) *queuepb.QueueUsage {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 	q, ok := mgr.queueByID[queue.New(pq).ID()]
@@ -28,5 +27,5 @@ func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.Que
 	}
 
 	usage := q.Usage()
-	return &usage
+	return usage
 }

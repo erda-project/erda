@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/precheck"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/release"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -82,7 +83,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
 		}
 	}
 
-	if p.Extra.StorageConfig.EnableShareVolume() {
+	if converter.EnableShareVolume(p.Extra.StorageConfig) {
 		for _, task := range tasks {
 			typeVersion := task.Extra.Action.GetActionTypeVersion()
 			value, exist := actionSpecs[typeVersion].Labels["new_workspace"]

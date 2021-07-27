@@ -18,23 +18,28 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // tryGetUser try to get user info from cmdb. If failed, return a basic user just with id.
 // TODO later add cache here if need.
-func (s *PipelineSvc) tryGetUser(userID string) *apistructs.PipelineUser {
+func (s *PipelineSvc) tryGetUser(userID string) *basepb.PipelineUser {
 	user, err := s.bdl.GetCurrentUser(userID)
 	if err != nil {
 		logrus.Warnf("failed to get user info, userID: %s, err: %v", userID, err)
 		// return basic user just with id
-		return &apistructs.PipelineUser{ID: userID}
+		return &basepb.PipelineUser{ID: userID}
 	}
 	if user == nil {
 		logrus.Warnf("failed to get user info, userID: %s, err: %v", userID, fmt.Errorf("get empty user info"))
 		// return basic user just with id
-		return &apistructs.PipelineUser{ID: userID}
+		return &basepb.PipelineUser{ID: userID}
 	}
 	// return queried user
-	return user.ConvertToPipelineUser()
+	return &basepb.PipelineUser{
+		ID:     user.ID,
+		Name:   strutil.FirstNotEmpty(user.Nick, user.Name),
+		Avatar: user.Avatar,
+	}
 }

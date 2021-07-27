@@ -14,12 +14,13 @@
 package queuemanage
 
 import (
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
 // CreatePipelineQueue create a pipeline queue.
-func (qm *QueueManage) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest) (*apistructs.PipelineQueue, error) {
+func (qm *QueueManage) CreatePipelineQueue(req apistructs.PipelineQueueCreateRequest) (*queuepb.Queue, error) {
 	// validate
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrCreatePipelineQueue.InvalidParameter(err)

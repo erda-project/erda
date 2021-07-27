@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -145,7 +146,7 @@ func (client *Client) ListPipelineTasksByPipelineID(pipelineID uint64, ops ...Se
 	return tasks, nil
 }
 
-func (client *Client) UpdatePipelineTaskResult(id uint64, result apistructs.PipelineTaskResult) error {
+func (client *Client) UpdatePipelineTaskResult(id uint64, result *basepb.PipelineTaskResult) error {
 	_, err := client.ID(id).Cols("result").Update(&spec.PipelineTask{Result: result})
 	if err != nil {
 		b, _ := json.Marshal(&result)

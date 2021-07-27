@@ -20,16 +20,16 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/erda-project/erda/apistructs"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
 type ParamsVisitor struct {
 	Data              []byte
-	RunPipelineParams []apistructs.PipelineRunParam
+	RunPipelineParams []*basepb.PipelineRunParam
 }
 
-func NewParamsVisitor(data []byte, runPipelineParam []apistructs.PipelineRunParam) *ParamsVisitor {
+func NewParamsVisitor(data []byte, runPipelineParam []*basepb.PipelineRunParam) *ParamsVisitor {
 	v := ParamsVisitor{}
 	v.Data = data
 	v.RunPipelineParams = runPipelineParam

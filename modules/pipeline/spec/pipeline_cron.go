@@ -17,7 +17,11 @@ import (
 	"strconv"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 const (
@@ -70,21 +74,18 @@ func (PipelineCron) TableName() string {
 	return "pipeline_crons"
 }
 
-func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
+func (pc *PipelineCron) Convert2DTO() *cronpb.Cron {
 	if pc == nil {
 		return nil
 	}
-	return &apistructs.PipelineCronDTO{
+	return &cronpb.Cron{
 		ID:              pc.ID,
-		TimeCreated:     pc.TimeCreated,
-		TimeUpdated:     pc.TimeUpdated,
-		ApplicationID:   pc.ApplicationID,
-		Branch:          pc.Branch,
+		TimeCreated:     timestamppb.New(pc.TimeCreated),
+		TimeUpdated:     timestamppb.New(pc.TimeUpdated),
 		CronExpr:        pc.CronExpr,
-		CronStartTime:   pc.Extra.CronStartFrom,
+		CronStartTime:   pbutil.GetTimestamp(pc.Extra.CronStartFrom),
 		PipelineYmlName: pc.PipelineYmlName,
-		BasePipelineID:  pc.BasePipelineID,
-		Enable:          pc.Enable,
+		Enable:          pbutil.MustGetBool(pc.Enable),
 	}
 }
 

@@ -21,12 +21,14 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
 type provider struct {
-	CmsService pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	CmsService  cmspb.CmsServiceServer   `autowired:"erda.core.pipeline.cms.CmsService"`
+	BaseService basepb.BaseServiceServer `autowired:"erda.core.pipeline.base.BaseService"`
 }
 
 func (p *provider) Run(ctx context.Context) error {

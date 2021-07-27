@@ -13,7 +13,11 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+)
 
 type PipelineBasicReport struct {
 	PipelineSource   PipelineSource `json:"pipelineSource"`
@@ -28,17 +32,17 @@ type PipelineBasicReport struct {
 }
 
 type TaskReportInfo struct {
-	Name             string                   `json:"name"`
-	ActionType       string                   `json:"actionType"`
-	ActionVersion    string                   `json:"actionVersion"`
-	ExecutorType     string                   `json:"executorType"`
-	ClusterName      string                   `json:"clusterName"`
-	TimeBegin        *time.Time               `json:"timeBegin,omitempty"`
-	TimeEnd          *time.Time               `json:"timeEnd,omitempty"`
-	TimeBeginQueue   *time.Time               `json:"timeBeginQueue,omitempty"`
-	TimeEndQueue     *time.Time               `json:"timeEndQueue,omitempty"`
-	QueueCostTimeSec int64                    `json:"queueCostTimeSec"`
-	RunCostTimeSec   int64                    `json:"runCostTimeSec"`
-	MachineStat      *PipelineTaskMachineStat `json:"machineStat,omitempty"`
-	Meta             map[string]string        `json:"meta"`
+	Name             string                          `json:"name"`
+	ActionType       string                          `json:"actionType"`
+	ActionVersion    string                          `json:"actionVersion"`
+	ExecutorType     string                          `json:"executorType"`
+	ClusterName      string                          `json:"clusterName"`
+	TimeBegin        *time.Time                      `json:"timeBegin,omitempty"`
+	TimeEnd          *time.Time                      `json:"timeEnd,omitempty"`
+	TimeBeginQueue   *time.Time                      `json:"timeBeginQueue,omitempty"`
+	TimeEndQueue     *time.Time                      `json:"timeEndQueue,omitempty"`
+	QueueCostTimeSec int64                           `json:"queueCostTimeSec"`
+	RunCostTimeSec   int64                           `json:"runCostTimeSec"`
+	MachineStat      *basepb.PipelineTaskMachineStat `json:"machineStat,omitempty"`
+	Meta             map[string]string               `json:"meta"`
 }

@@ -14,7 +14,8 @@
 package apistructs
 
 import (
-	"time"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 )
 
 type PipelineCronPagingRequest struct {
@@ -32,26 +33,26 @@ type PipelineCronPagingResponse struct {
 }
 
 type PipelineCronPagingResponseData struct {
-	Total int64              `json:"total"`
-	Data  []*PipelineCronDTO `json:"data,omitempty"`
+	Total int64                  `json:"total"`
+	Data  []*cronpb.Cron `json:"data,omitempty"`
 }
 
-type PipelineCronDTO struct {
-	ID          uint64    `json:"id"`
-	TimeCreated time.Time `json:"timeCreated"` // 记录创建时间
-	TimeUpdated time.Time `json:"timeUpdated"` // 记录更新时间
-
-	ApplicationID   uint64     `json:"applicationID"`
-	Branch          string     `json:"branch"`
-	CronExpr        string     `json:"cronExpr"`
-	CronStartTime   *time.Time `json:"cronStartTime"`
-	PipelineYmlName string     `json:"pipelineYmlName"` // 一个分支下可以有多个 pipeline 文件，每个分支可以有单独的 cron 逻辑
-	BasePipelineID  uint64     `json:"basePipelineID"`  // 用于记录最开始创建出这条 cron 记录的 pipeline id
-	Enable          *bool      `json:"enable"`          // 1 true, 0 false
-}
+//type PipelineCronDTO struct {
+//	ID          uint64    `json:"id"`
+//	TimeCreated time.Time `json:"timeCreated"` // 记录创建时间
+//	TimeUpdated time.Time `json:"timeUpdated"` // 记录更新时间
+//
+//	ApplicationID   uint64     `json:"applicationID"`
+//	Branch          string     `json:"branch"`
+//	CronExpr        string     `json:"cronExpr"`
+//	CronStartTime   *time.Time `json:"cronStartTime"`
+//	PipelineYmlName string     `json:"pipelineYmlName"` // 一个分支下可以有多个 pipeline 文件，每个分支可以有单独的 cron 逻辑
+//	BasePipelineID  uint64     `json:"basePipelineID"`  // 用于记录最开始创建出这条 cron 记录的 pipeline id
+//	Enable          *bool      `json:"enable"`          // 1 true, 0 false
+//}
 
 type PipelineCronCreateRequest struct {
-	PipelineCreateRequest PipelineCreateRequestV2 `json:"pipelineCreateRequest"`
+	PipelineCreateRequest *basepb.PipelineCreateRequest `json:"pipelineCreateRequest"`
 }
 
 type PipelineCronCreateResponse struct {

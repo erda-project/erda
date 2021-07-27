@@ -14,12 +14,14 @@
 package pipelinesvc
 
 import (
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
 func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateRequest) (
-	map[string]*apistructs.PipelineDTO, error) {
+	map[string]*basepb.PipelineInstance, error) {
 
 	// convert pipelineBatchCreateRequest to []pipelineCreateRequest
 	var reqs []*apistructs.PipelineCreateRequest
@@ -36,7 +38,7 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		})
 	}
 
-	result := make(map[string]*apistructs.PipelineDTO)
+	result := make(map[string]*basepb.PipelineInstance)
 
 	for _, req := range reqs {
 		p, err := s.makePipelineFromRequest(req)
@@ -47,13 +49,13 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
 
-		identityInfo := apistructs.IdentityInfo{UserID: req.UserID}
+		identityInfo := commonpb.IdentityInfo{UserID: req.UserID}
 
 		// 是否自动执行
 		if batchReq.AutoRun {
-			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
+			if p, err = s.RunPipeline(&basepb.PipelineRunRequest{
 				PipelineID:   p.ID,
-				IdentityInfo: identityInfo},
+				IdentityInfo: &identityInfo},
 			); err != nil {
 				return nil, apierrors.ErrRunPipeline.InternalError(err)
 			}

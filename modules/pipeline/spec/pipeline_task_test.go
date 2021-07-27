@@ -35,12 +35,12 @@ func TestRuntimeID(t *testing.T) {
 
 func TestTaskContextDedup(t *testing.T) {
 	ctx := PipelineTaskContext{
-		InStorages: apistructs.Metadata{
+		InStorages: []*commonpb.MetadataField{
 			{Name: "in1", Value: "v1"},
 			{Name: "in2", Value: "v2"},
 			{Name: "in1", Value: "v1_2"},
 		},
-		OutStorages: apistructs.Metadata{
+		OutStorages: []*commonpb.MetadataField{
 			{Name: "out1", Value: "v1"},
 			{Name: "out2", Value: "v2"},
 			{Name: "out1", Value: "v1_2"},

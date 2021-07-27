@@ -15,6 +15,8 @@ package apistructs
 
 import (
 	"time"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 // TestPlan 测试计划
@@ -223,7 +225,7 @@ type AutotestExecuteTestPlansRequest struct {
 
 type AutotestExecuteTestPlansResponse struct {
 	Header
-	Data *PipelineDTO `json:"data"`
+	Data *basepb.PipelineInstance `json:"data"`
 }
 
 type AutotestCancelTestPlansRequest struct {

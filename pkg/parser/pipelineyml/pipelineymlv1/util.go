@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 func (y *PipelineYml) FindDockerImageByResourceName(name string) (repository, tag string, err error) {
@@ -310,7 +310,7 @@ func ApplyKVsWithPriority(kvs ...map[string]string) map[string]string {
 	return result
 }
 
-func MetadataFields2Map(metas []apistructs.MetadataField) map[string]string {
+func MetadataFields2Map(metas []*commonpb.MetadataField) map[string]string {
 	m := make(map[string]string, len(metas))
 	for _, meta := range metas {
 		m[meta.Name] = meta.Value
@@ -318,10 +318,10 @@ func MetadataFields2Map(metas []apistructs.MetadataField) map[string]string {
 	return m
 }
 
-func Map2MetadataFields(m map[string]string) []apistructs.MetadataField {
-	var metas []apistructs.MetadataField
+func Map2MetadataFields(m map[string]string) []*commonpb.MetadataField {
+	var metas []*commonpb.MetadataField
 	for k, v := range m {
-		metas = append(metas, apistructs.MetadataField{Name: k, Value: v})
+		metas = append(metas, &commonpb.MetadataField{Name: k, Value: v})
 	}
 	return metas
 }

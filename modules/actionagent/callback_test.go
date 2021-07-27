@@ -66,9 +66,9 @@ bbb`,
 		},
 	}
 
-	var fields []*apistructs.MetadataField
+	var fields []*[]*commonpb.MetadataFieldField
 	for _, value := range kvs {
-		fields = append(fields, &apistructs.MetadataField{Name: value.key, Value: value.value})
+		fields = append(fields, &[]*commonpb.MetadataFieldField{Name: value.key, Value: value.value})
 	}
 
 	cb := Callback{}

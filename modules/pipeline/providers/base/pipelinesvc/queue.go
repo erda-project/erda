@@ -17,10 +17,12 @@ import (
 	"fmt"
 	"strconv"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequestV2) (*apistructs.PipelineQueue, error) {
+func (s *PipelineSvc) validateQueueFromLabels(req *basepb.PipelineCreateRequest) (*queuepb.Queue, error) {
 	var foundBindQueueID bool
 	var bindQueueIDStr string
 	for k, v := range req.Labels {
@@ -52,7 +54,7 @@ func (s *PipelineSvc) validateQueueFromLabels(req *apistructs.PipelineCreateRequ
 	return queue, nil
 }
 
-func checkQueueValidateWithPipelineCreateReq(req *apistructs.PipelineCreateRequestV2, queue *apistructs.PipelineQueue) error {
+func checkQueueValidateWithPipelineCreateReq(req *basepb.PipelineCreateRequest, queue *queuepb.Queue) error {
 	// pipeline source
 	if queue.PipelineSource != req.PipelineSource {
 		return fmt.Errorf("invalid queue: pipeline source not match: %s(req) vs %s(queue)", req.PipelineSource, queue.PipelineSource)

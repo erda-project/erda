@@ -27,6 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
@@ -74,7 +75,7 @@ func (pre *prepare) WhenDone(data interface{}) error {
 	// no need retry
 	if err != nil {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		pre.Task.Result.Errors = append(pre.Task.Result.Errors, apistructs.ErrorResponse{Msg: err.Error()})
+		pre.Task.Result.Errors = append(pre.Task.Result.Errors, &basepb.ErrorResponse{Msg: err.Error()})
 		return nil
 	}
 
@@ -362,8 +363,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, nil
 	}
 
-	if p.Extra.StorageConfig.EnableNFSVolume() &&
-		!p.Extra.StorageConfig.EnableShareVolume() &&
+	if scutil.EnableNFSVolume(p.Extra.StorageConfig) &&
+		!scutil.EnableShareVolume(p.Extra.StorageConfig) &&
 		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// --- cmd ---
 		// task.Context.InStorages
@@ -431,7 +432,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if scutil.EnableShareVolume(p.Extra.StorageConfig) && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// only k8sjob support create job volume
 		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
 		if !ok {
@@ -502,8 +503,8 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 makeOutStorages:
-	if p.Extra.StorageConfig.EnableNFSVolume() &&
-		!p.Extra.StorageConfig.EnableShareVolume() &&
+	if scutil.EnableNFSVolume(p.Extra.StorageConfig) &&
+		!scutil.EnableShareVolume(p.Extra.StorageConfig) &&
 		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
@@ -530,7 +531,7 @@ makeOutStorages:
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if (scutil.EnableNFSVolume(p.Extra.StorageConfig) || scutil.EnableShareVolume(p.Extra.StorageConfig)) && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 		// --- binds ---
@@ -648,8 +649,8 @@ func getActionAgentTypeVersion() string {
 	return "agent@1.0"
 }
 
-func contextVolumes(context spec.PipelineTaskContext) []apistructs.MetadataField {
-	vos := make([]apistructs.MetadataField, 0)
+func contextVolumes(context spec.PipelineTaskContext) []*commonpb.MetadataField {
+	vos := make([]*commonpb.MetadataField, 0)
 	for _, vo := range append(context.InStorages, context.OutStorages...) {
 		vos = append(vos, vo)
 	}

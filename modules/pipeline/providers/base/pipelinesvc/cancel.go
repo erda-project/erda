@@ -19,14 +19,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 )
 
-func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
+func (s *PipelineSvc) Cancel(req *basepb.PipelineCancelRequest) error {
 
 	p, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -39,8 +39,8 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 	}
 
 	// 设置 cancel user
-	if req.UserID != "" {
-		p.Extra.CancelUser = s.tryGetUser(req.UserID)
+	if req.IdentityInfo != nil && req.IdentityInfo.UserID != "" {
+		p.Extra.CancelUser = s.tryGetUser(req.IdentityInfo.UserID)
 		if err := s.dbClient.UpdatePipelineExtraExtraInfoByPipelineID(p.ID, p.Extra); err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 		for _, task := range tasks {
 			// 嵌套任务删除流水线
 			if task.IsSnippet {
-				if err := s.Cancel(&apistructs.PipelineCancelRequest{
+				if err := s.Cancel(&basepb.PipelineCancelRequest{
 					PipelineID:   *task.SnippetPipelineID,
 					IdentityInfo: req.IdentityInfo,
 				}); err != nil {
@@ -89,7 +89,7 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 	}
 
 	// event
-	events.EmitPipelineInstanceEvent(&p, req.UserID)
+	events.EmitPipelineInstanceEvent(&p, req.IdentityInfo.UserID)
 
 	return nil
 

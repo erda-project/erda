@@ -14,13 +14,13 @@
 package manager
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 )
 
 // IdempotentAddQueue add to to manager idempotent.
-func (mgr *defaultManager) IdempotentAddQueue(pq *apistructs.PipelineQueue) types.Queue {
+func (mgr *defaultManager) IdempotentAddQueue(pq *queuepb.Queue) types.Queue {
 	mgr.qLock.Lock()
 	defer mgr.qLock.Unlock()
 

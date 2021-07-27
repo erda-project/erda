@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -30,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -123,12 +123,6 @@ func WithPipelineCronSvc(svc *pipelinecronsvc.PipelineCronSvc) Option {
 	}
 }
 
-func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
-	return func(e *Endpoints) {
-		e.pipelineSvc = svc
-	}
-}
-
 func WithReportSvc(svc *reportsvc.ReportSvc) Option {
 	return func(e *Endpoints) {
 		e.reportSvc = svc
@@ -162,55 +156,55 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/version", Method: http.MethodGet, Handler: e.version},
 
 		// pipelines
-		{Path: "/api/v2/pipelines", Method: http.MethodPost, Handler: e.pipelineCreateV2},
-		{Path: "/api/pipelines", Method: http.MethodPost, Handler: e.pipelineCreate}, // TODO qa 和 adaptor 通过 bundle 调用 v1 create，需要调整后再下线
-		{Path: "/api/pipelines", Method: http.MethodGet, Handler: e.pipelineList},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodGet, Handler: e.pipelineDetail},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodPut, Handler: e.pipelineOperate},
-		{Path: "/api/pipelines/{pipelineID}", Method: http.MethodDelete, Handler: e.pipelineDelete},
-		{Path: "/api/pipelines/{pipelineID}/actions/run", Method: http.MethodPost, Handler: e.pipelineRun},
-		{Path: "/api/pipelines/{pipelineID}/actions/cancel", Method: http.MethodPost, Handler: e.pipelineCancel},
-		{Path: "/api/pipelines/{pipelineID}/actions/rerun", Method: http.MethodPost, Handler: e.pipelineRerun},
-		{Path: "/api/pipelines/{pipelineID}/actions/rerun-failed", Method: http.MethodPost, Handler: e.pipelineRerunFailed},
+		////{Path: "/api/v2/pipelines", Method: http.MethodPost, Handler: e.pipelineCreateV2},
+		////{Path: "/api/pipelines", Method: http.MethodPost, Handler: e.pipelineCreate}, // TODO qa 和 adaptor 通过 bundle 调用 v1 create，需要调整后再下线
+		//{Path: "/api/pipelines", Method: http.MethodGet, Handler: e.pipelineList},
+		//{Path: "/api/pipelines/{pipelineID}", Method: http.MethodGet, Handler: e.pipelineDetail},
+		//{Path: "/api/pipelines/{pipelineID}", Method: http.MethodPut, Handler: e.pipelineOperate},
+		//{Path: "/api/pipelines/{pipelineID}", Method: http.MethodDelete, Handler: e.pipelineDelete},
+		//{Path: "/api/pipelines/{pipelineID}/actions/run", Method: http.MethodPost, Handler: e.pipelineRun},
+		//{Path: "/api/pipelines/{pipelineID}/actions/cancel", Method: http.MethodPost, Handler: e.pipelineCancel},
+		//{Path: "/api/pipelines/{pipelineID}/actions/rerun", Method: http.MethodPost, Handler: e.pipelineRerun},
+		//{Path: "/api/pipelines/{pipelineID}/actions/rerun-failed", Method: http.MethodPost, Handler: e.pipelineRerunFailed},
 
-		// labels
-		{Path: "/api/pipelines-labels/actions/batch-insert-labels", Method: http.MethodPost, Handler: e.batchInsertLabels},
-		{Path: "/api/pipelines-labels", Method: http.MethodGet, Handler: e.pipelineLabelList},
+		//// labels
+		//{Path: "/api/pipelines-labels/actions/batch-insert-labels", Method: http.MethodPost, Handler: e.batchInsertLabels},
+		//{Path: "/api/pipelines-labels", Method: http.MethodGet, Handler: e.pipelineLabelList},
 
-		// tasks
-		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
-		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info", Method: http.MethodGet, Handler: e.taskBootstrapInfo},
+		//// tasks
+		//{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
+		//{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info", Method: http.MethodGet, Handler: e.taskBootstrapInfo},
 
 		// pipeline related actions
-		{Path: "/api/pipelines/actions/batch-create", Method: http.MethodPost, Handler: e.pipelineBatchCreate},
-		{Path: "/api/pipelines/actions/pipeline-yml-graph", Method: http.MethodPost, Handler: e.pipelineYmlGraph},
-		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
-		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
+		//{Path: "/api/pipelines/actions/batch-create", Method: http.MethodPost, Handler: e.pipelineBatchCreate},
+		//{Path: "/api/pipelines/actions/pipeline-yml-graph", Method: http.MethodPost, Handler: e.pipelineYmlGraph},
+		//{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
+		//{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
 
 		// pipeline cron
-		{Path: "/api/pipeline-crons", Method: http.MethodGet, Handler: e.pipelineCronPaging},
-		{Path: "/api/pipeline-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
-		{Path: "/api/pipeline-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
-		{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
+		//{Path: "/api/pipeline-crons", Method: http.MethodGet, Handler: e.pipelineCronPaging},
+		//{Path: "/api/pipeline-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
+		//{Path: "/api/pipeline-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
+		//{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
+		//{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
+		//{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
 
 		// pipeline queue management
-		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
-		{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
-		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
+		//{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
+		//{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
+		//{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
+		//{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
+		//{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
 
 		// build artifact
-		{Path: "/api/build-artifacts/{sha}", Method: http.MethodGet, Handler: e.queryBuildArtifact},
-		{Path: "/api/build-artifacts", Method: http.MethodPost, Handler: e.registerBuildArtifact},
+		//{Path: "/api/build-artifacts/{sha}", Method: http.MethodGet, Handler: e.queryBuildArtifact},
+		//{Path: "/api/build-artifacts", Method: http.MethodPost, Handler: e.registerBuildArtifact},
 
 		// build cache
-		{Path: "/api/build-caches", Method: http.MethodPost, Handler: e.reportBuildCache},
+		//{Path: "/api/build-caches", Method: http.MethodPost, Handler: e.reportBuildCache},
 
 		// platform callback
-		{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},
+		//{Path: "/api/pipelines/actions/callback", Method: http.MethodPost, Handler: e.pipelineCallback},
 
 		// daemon
 		{Path: "/_daemon/reload-action-executor-config", Method: http.MethodGet, Handler: e.reloadActionExecutorConfig},

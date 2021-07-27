@@ -24,6 +24,7 @@ import (
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/sirupsen/logrus"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -73,13 +74,9 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 		for _, p := range pipelineResults {
 			var needArchive = false
 			if p.Status == apistructs.PipelineStatusAnalyzed {
-				if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
-					needArchive = *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
-				}
+				needArchive = p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
 			} else {
-				if p.Extra.GC.DatabaseGC.Finished.NeedArchive != nil {
-					needArchive = *p.Extra.GC.DatabaseGC.Finished.NeedArchive
-				}
+				needArchive = p.Extra.GC.DatabaseGC.Finished.NeedArchive
 			}
 
 			// gc logic
@@ -385,7 +382,7 @@ func (r *Reconciler) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 			PipelineBase: oldBase,
 			PipelineExtra: spec.PipelineExtra{
 				Extra: spec.PipelineExtraInfo{
-					GC: apistructs.PipelineGC{},
+					GC: &basepb.PipelineGC{},
 				},
 			},
 		})

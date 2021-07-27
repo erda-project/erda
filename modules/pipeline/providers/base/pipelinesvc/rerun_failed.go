@@ -16,12 +16,15 @@ package pipelinesvc
 import (
 	"fmt"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
-func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) RerunFailed(req *basepb.PipelineRerunFailedRequest) (*spec.Pipeline, error) {
 	// base pipeline
 	origin, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -54,8 +57,8 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 	}
 
 	p.Extra.RerunFailedDetail = &rerunFailedDetail
-	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+	if pbutil.GetIdentityUser(req.IdentityInfo) != "" {
+		p.Extra.SubmitUser = s.tryGetUser(req.IdentityInfo.UserID)
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
@@ -65,10 +68,10 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {
-		if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
+		if p, err = s.RunPipeline(&basepb.PipelineRunRequest{
 			PipelineID:        p.ID,
 			IdentityInfo:      req.IdentityInfo,
-			PipelineRunParams: origin.Snapshot.RunPipelineParams.ToPipelineRunParams(),
+			PipelineRunParams: converter.ToPipelineRunParams(origin.Snapshot.RunPipelineParams),
 		},
 		); err != nil {
 			return nil, err

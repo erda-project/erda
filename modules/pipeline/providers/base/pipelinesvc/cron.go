@@ -21,7 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
@@ -92,18 +95,18 @@ func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
 
 	// 使用 v2 方式创建定时流水线
-	_, err = s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	_, err = s.CreateV2(&basepb.PipelineCreateRequest{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
-		PipelineSource:         pc.PipelineSource,
+		PipelineSource:         pc.PipelineSource.String(),
 		Labels:                 pc.Extra.FilterLabels,
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
 		AutoRunAtOnce:          true,
 		AutoStartCron:          false,
-		IdentityInfo: apistructs.IdentityInfo{
+		IdentityInfo: &commonpb.IdentityInfo{
 			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
 			InternalClient: "system-cron",
 		},
@@ -148,17 +151,17 @@ func (s *PipelineSvc) UpgradePipelineCron(pc *spec.PipelineCron) error {
 			return apierrors.ErrGetGittarRepo.InternalError(err)
 		}
 		pc.Extra.NormalLabels[apistructs.LabelCommit] = commit.ID
-		commitDetail := apistructs.CommitDetail{
+		commitDetail := &commonpb.CommitDetail{
 			Repo:     app.GitRepo,
 			RepoAbbr: app.GitRepoAbbrev,
 			Author:   commit.Committer.Name,
 			Email:    commit.Committer.Email,
-			Time: func() *time.Time {
+			Time: func() *timestamppb.Timestamp {
 				commitTime, err := time.Parse("2006-01-02T15:04:05-07:00", commit.Committer.When)
 				if err != nil {
 					return nil
 				}
-				return &commitTime
+				return timestamppb.New(commitTime)
 			}(),
 			Comment: commit.CommitMessage,
 		}

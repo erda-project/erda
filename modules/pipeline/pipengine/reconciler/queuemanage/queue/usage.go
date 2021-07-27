@@ -18,12 +18,12 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/priorityqueue"
 	"github.com/erda-project/erda/pkg/numeral"
 )
 
-func (q *defaultQueue) Usage() pb.QueueUsage {
+func (q *defaultQueue) Usage() *queuepb.QueueUsage {
 	q.lock.RLock()
 	defer q.lock.RUnlock()
 
@@ -31,7 +31,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 	var (
 		inUseCPU          float64
 		inUseMemoryMB     float64
-		processingDetails = make([]*pb.QueueUsageItem, 0)
+		processingDetails = make([]*queuepb.QueueUsageItem, 0)
 	)
 	q.eq.ProcessingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
@@ -42,7 +42,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 		resources := existP.GetPipelineAppliedResources()
 		inUseCPU += resources.Requests.CPU
 		inUseMemoryMB += resources.Requests.MemoryMB
-		processingDetails = append(processingDetails, &pb.QueueUsageItem{
+		processingDetails = append(processingDetails, &queuepb.QueueUsageItem{
 			PipelineID:       pipelineID,
 			RequestsCPU:      resources.Requests.CPU,
 			RequestsMemoryMB: resources.Requests.MemoryMB,
@@ -54,7 +54,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 	})
 
 	// pending
-	var pendingDetails = make([]*pb.QueueUsageItem, 0)
+	var pendingDetails = make([]*queuepb.QueueUsageItem, 0)
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		pipelineID := parsePipelineIDFromQueueItem(item)
 		existP := q.pipelineCaches[pipelineID]
@@ -62,7 +62,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 			return false
 		}
 		resources := existP.GetPipelineAppliedResources()
-		pendingDetails = append(pendingDetails, &pb.QueueUsageItem{
+		pendingDetails = append(pendingDetails, &queuepb.QueueUsageItem{
 			PipelineID:       pipelineID,
 			RequestsCPU:      resources.Requests.CPU,
 			RequestsMemoryMB: resources.Requests.MemoryMB,
@@ -73,7 +73,7 @@ func (q *defaultQueue) Usage() pb.QueueUsage {
 		return false
 	})
 
-	return pb.QueueUsage{
+	return &queuepb.QueueUsage{
 		InUseCPU:          inUseCPU,
 		InUseMemoryMB:     inUseMemoryMB,
 		RemainingCPU:      numeral.SubFloat64(q.pq.MaxCPU, inUseCPU),

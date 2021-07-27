@@ -19,6 +19,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
@@ -95,7 +96,7 @@ func (mgr *defaultManager) ensureQueryPipelineDetail(pipelineID uint64) *spec.Pi
 
 // ensureQueryPipelineQueueDetail
 // return: queue or nil
-func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *apistructs.PipelineQueue {
+func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *queuepb.Queue {
 	// get queue id
 	queueID, exist := p.GetPipelineQueueID()
 	if !exist {
@@ -103,7 +104,7 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	}
 
 	// query from db
-	var pq *apistructs.PipelineQueue
+	var pq *queuepb.Queue
 	_ = loop.New(loop.WithDeclineLimit(time.Second*10), loop.WithDeclineRatio(2)).Do(func() (abort bool, err error) {
 		_pq, exist, err := mgr.dbClient.GetPipelineQueue(queueID)
 		if err != nil {

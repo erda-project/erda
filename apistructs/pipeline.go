@@ -21,6 +21,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -33,133 +35,48 @@ const (
 
 // pipeline create
 
-type PipelineCreateRequest struct {
-	AppID              uint64            `json:"appID"`
-	Branch             string            `json:"branch"`
-	Source             PipelineSource    `json:"source"`
-	PipelineYmlSource  PipelineYmlSource `json:"pipelineYmlSource"`
-	PipelineYmlName    string            `json:"pipelineYmlName"` // 与 pipelineYmlContent 匹配，如果为空，则为 pipeline.yml
-	PipelineYmlContent string            `json:"pipelineYmlContent"`
-	AutoRun            bool              `json:"autoRun"`
-	CallbackURLs       []string          `json:"callbackURLs"`
+//type PipelineCreateRequest struct {
+//	AppID              uint64            `json:"appID"`
+//	Branch             string            `json:"branch"`
+//	Source             PipelineSource    `json:"source"`
+//	PipelineYmlSource  PipelineYmlSource `json:"pipelineYmlSource"`
+//	PipelineYmlName    string            `json:"pipelineYmlName"` // 与 pipelineYmlContent 匹配，如果为空，则为 pipeline.yml
+//	PipelineYmlContent string            `json:"pipelineYmlContent"`
+//	AutoRun            bool              `json:"autoRun"`
+//	CallbackURLs       []string          `json:"callbackURLs"`
+//
+//	UserID          string `json:"userID"`
+//	IsCronTriggered bool   `json:"isCronTriggered"`
+//}
 
-	UserID          string `json:"userID"`
-	IsCronTriggered bool   `json:"isCronTriggered"`
-}
+//type PipelineRunParam struct {
+//	Name  string      `json:"name"`
+//	Value interface{} `json:"value"`
+//}
+//
+//type PipelineRunParamWithValue struct {
+//	PipelineRunParam             // 从 pipeline.yml 中解析出来的值
+//	TrueValue        interface{} `json:"trueValue,omitempty"` // 真正的值，如果是占位符则会被替换，否则为原值
+//}
+//type PipelineRunParamsWithValue []PipelineRunParamWithValue
+//
+//func (rps PipelineRunParamsWithValue) ToPipelineRunParams() PipelineRunParams {
+//	var result PipelineRunParams
+//	for _, rp := range rps {
+//		result = append(result, PipelineRunParam{Name: rp.Name, Value: rp.Value})
+//	}
+//	return result
+//}
 
-type PipelineRunParam struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-}
-
-type PipelineRunParamWithValue struct {
-	PipelineRunParam             // 从 pipeline.yml 中解析出来的值
-	TrueValue        interface{} `json:"trueValue,omitempty"` // 真正的值，如果是占位符则会被替换，否则为原值
-}
-type PipelineRunParamsWithValue []PipelineRunParamWithValue
-
-func (rps PipelineRunParamsWithValue) ToPipelineRunParams() PipelineRunParams {
-	var result PipelineRunParams
-	for _, rp := range rps {
-		result = append(result, PipelineRunParam{Name: rp.Name, Value: rp.Value})
-	}
-	return result
-}
-
-// PipelineCreateRequestV2 used to create pipeline via pipeline V2 API.
-type PipelineCreateRequestV2 struct {
-	// PipelineYml is pipeline yaml content.
-	// +required
-	PipelineYml string `json:"pipelineYml"`
-
-	// ClusterName represents the cluster the pipeline will be executed.
-	// +required
-	ClusterName string `json:"clusterName"`
-
-	// PipelineYmlName
-	// Equal to `Name`.
-	// Default is `pipeline.yml`.
-	// +optional
-	PipelineYmlName string `json:"pipelineYmlName"`
-
-	// PipelineSource represents the source where pipeline created from.
-	// Equal to `Namespace`.
-	// +required
-	PipelineSource PipelineSource `json:"pipelineSource"`
-
-	// Labels is Map of string keys and values, can be used to filter pipeline.
-	// If label key or value is too long, it will be moved to NormalLabels automatically and overwrite value if key already exists in NormalLabels.
-	// +optional
-	Labels map[string]string `json:"labels"`
-
-	// NormalLabels is Map of string keys and values, cannot be used to filter pipeline.
-	// +optional
-	NormalLabels map[string]string `json:"normalLabels"`
-
-	// Envs is Map of string keys and values.
-	// +optional
-	Envs map[string]string `json:"envs"`
-
-	// ConfigManageNamespaces pipeline fetch configs from cms by namespaces in order.
-	// Pipeline won't generate default ns.
-	// +optional
-	ConfigManageNamespaces []string `json:"configManageNamespaces"`
-
-	// AutoRun represents whether auto run the created pipeline.
-	// Default is false.
-	// +optional
-	// Deprecated, please use `AutoRunAtOnce` or `AutoStartCron`.
-	// Alias for AutoRunAtOnce.
-	AutoRun bool `json:"autoRun"`
-
-	// ForceRun represents stop other running pipelines to run.
-	// Default is false.
-	// +optional
-	ForceRun bool `json:"forceRun"`
-
-	// AutoRunAtOnce alias for `AutoRun`.
-	// AutoRunAtOnce represents whether auto run the created pipeline.
-	// Default is false.
-	// +optional
-	AutoRunAtOnce bool `json:"autoRunAtOnce"`
-
-	// AutoStartCron represents whether auto start cron.
-	// If a pipeline doesn't have `cron` field, ignore.
-	// Default is false.
-	// +optional
-	AutoStartCron bool `json:"autoStartCron"`
-
-	// CronStartFrom specify time when to start
-	// +optional
-	CronStartFrom *time.Time `json:"cronStartFrom"`
-
-	// GC represents pipeline gc configs.
-	// If config is empty, will use default config.
-	// +optional
-	GC PipelineGC `json:"gc,omitempty"`
-
-	// RunPipelineParams represents pipeline params runtime input
-	// if pipeline have params runPipelineParams can not be empty
-	// +optional
-	RunParams PipelineRunParams `json:"runParams"`
-
-	// Internal-Use below
-
-	// BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
-	BindQueue *PipelineQueue `json:"-"`
-
-	IdentityInfo
-}
-
-type PipelineRunParams []PipelineRunParam
-
-func (rps PipelineRunParams) ToPipelineRunParamsWithValue() []PipelineRunParamWithValue {
-	var result []PipelineRunParamWithValue
-	for _, rp := range rps {
-		result = append(result, PipelineRunParamWithValue{PipelineRunParam: PipelineRunParam{Name: rp.Name, Value: rp.Value}})
-	}
-	return result
-}
+//type PipelineRunParams []PipelineRunParam
+//
+//func (rps PipelineRunParams) ToPipelineRunParamsWithValue() []PipelineRunParamWithValue {
+//	var result []PipelineRunParamWithValue
+//	for _, rp := range rps {
+//		result = append(result, PipelineRunParamWithValue{PipelineRunParam: PipelineRunParam{Name: rp.Name, Value: rp.Value}})
+//	}
+//	return result
+//}
 
 // PipelineGC
 type PipelineGC struct {
@@ -201,10 +118,10 @@ type PipelineDBGCItem struct {
 	TTLSecond *uint64 `json:"ttlSecond,omitempty"`
 }
 
-type PipelineCreateResponse struct {
-	Header
-	Data *PipelineDTO `json:"data"`
-}
+//type PipelineCreateResponse struct {
+//	Header
+//	Data *PipelineDTO `json:"data"`
+//}
 
 // pipeline batch create
 
@@ -221,20 +138,20 @@ type PipelineBatchCreateRequest struct {
 
 type PipelineBatchCreateResponse struct {
 	Header
-	Data map[string]PipelineDTO `json:"data"`
+	Data map[string]*basepb.PipelineInstance `json:"data"`
 }
 
-// pipeline detail
-type PipelineDetailRequest struct {
-	SimplePipelineBaseResult bool   `json:"simplePipelineBaseResult"`
-	PipelineID               uint64 `json:"pipelineID"`
-}
-
-// pipeline detail
-type PipelineDetailResponse struct {
-	Header
-	Data *PipelineDetailDTO `json:"data"`
-}
+//// pipeline detail
+//type PipelineDetailRequest struct {
+//	SimplePipelineBaseResult bool   `json:"simplePipelineBaseResult"`
+//	PipelineID               uint64 `json:"pipelineID"`
+//}
+//
+//// pipeline detail
+//type PipelineDetailResponse struct {
+//	Header
+//	Data *PipelineDetailDTO `json:"data"`
+//}
 
 // pipeline page list
 type PipelinePageListRequest struct {
@@ -450,80 +367,80 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 	return query
 }
 
-type PipelinePageListResponse struct {
-	Header
-	Data *PipelinePageListData `json:"data"`
-}
-
-type PipelinePageListData struct {
-	Pipelines       []PagePipeline `json:"pipelines,omitempty"`
-	Total           int64          `json:"total"`
-	CurrentPageSize int64          `json:"currentPageSize"`
-}
+//type PipelinePageListResponse struct {
+//	Header
+//	Data *PipelinePageListData `json:"data"`
+//}
+//
+//type PipelinePageListData struct {
+//	Pipelines       []PagePipeline `json:"pipelines,omitempty"`
+//	Total           int64          `json:"total"`
+//	CurrentPageSize int64          `json:"currentPageSize"`
+//}
 
 // pipeline run
 
-type PipelineRunRequest struct {
-	PipelineID        uint64            `json:"pipelineID"`
-	ForceRun          bool              `json:"forceRun"`
-	PipelineRunParams PipelineRunParams `json:"runParams"`
-	IdentityInfo
-}
+//type PipelineRunRequest struct {
+//	PipelineID        uint64            `json:"pipelineID"`
+//	ForceRun          bool              `json:"forceRun"`
+//	PipelineRunParams PipelineRunParams `json:"runParams"`
+//	IdentityInfo      *commonpb.IdentityInfo
+//}
+//
+//type PipelineRunResponse struct {
+//	Header
+//}
+//
+//// pipeline cancel
+//type PipelineCancelRequest struct {
+//	PipelineID uint64 `json:"pipelineID"`
+//	*commonpb.IdentityInfo
+//}
+//
+//type PipelineCancelResponse struct {
+//	Header
+//}
 
-type PipelineRunResponse struct {
-	Header
-}
-
-// pipeline cancel
-type PipelineCancelRequest struct {
-	PipelineID uint64 `json:"pipelineID"`
-	IdentityInfo
-}
-
-type PipelineCancelResponse struct {
-	Header
-}
-
-// pipeline rerun
-type PipelineRerunRequest struct {
-	PipelineID    uint64 `json:"pipelineID"`
-	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
-	IdentityInfo
-}
-
-type PipelineRerunResponse struct {
-	Header
-	Data *PipelineDTO `json:"data"`
-}
-
-// pipeline rerun failed
-
-type PipelineRerunFailedRequest struct {
-	PipelineID    uint64 `json:"pipelineID"`
-	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
-	IdentityInfo
-}
-
-type PipelineRerunFailedResponse struct {
-	Header
-	Data *PipelineDTO `json:"data"`
-}
+//// pipeline rerun
+//type PipelineRerunRequest struct {
+//	PipelineID    uint64 `json:"pipelineID"`
+//	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
+//	IdentityInfo
+//}
+//
+//type PipelineRerunResponse struct {
+//	Header
+//	Data *PipelineDTO `json:"data"`
+//}
+//
+//// pipeline rerun failed
+//
+//type PipelineRerunFailedRequest struct {
+//	PipelineID    uint64 `json:"pipelineID"`
+//	AutoRunAtOnce bool   `json:"autoRunAtOnce"`
+//	IdentityInfo
+//}
+//
+//type PipelineRerunFailedResponse struct {
+//	Header
+//	Data *PipelineDTO `json:"data"`
+//}
 
 // cron
 
 type PipelineCronListResponse struct {
 	Header
-	Data []PipelineCronDTO `json:"data"`
+	Data []*cronpb.Cron `json:"data"`
 }
 
 type PipelineCronStartResponse struct {
 	Header
-	Data *PipelineCronDTO `json:"data"`
+	Data *cronpb.Cron `json:"data"`
 }
 
 type PipelineCronStopResponse struct {
 	Header
-	Data *PipelineCronDTO `json:"data"`
+	Data *cronpb.Cron `json:"data"`
 }
 
 // pipeline operate
@@ -533,19 +450,19 @@ type PipelineGetBranchRuleResponse struct {
 	Data *ValidBranch `json:"data"`
 }
 
-type PipelineOperateRequest struct {
-	TaskOperates []PipelineTaskOperateRequest `json:"taskOperates,omitempty"`
-}
-
-type PipelineTaskOperateRequest struct {
-	TaskID  uint64 `json:"taskID"`
-	Disable *bool  `json:"disable,omitempty"`
-	Pause   *bool  `json:"pause,omitempty"`
-}
-
-type PipelineOperateResponse struct {
-	Header
-}
+//type PipelineOperateRequest struct {
+//	TaskOperates []PipelineTaskOperateRequest `json:"taskOperates,omitempty"`
+//}
+//
+//type PipelineTaskOperateRequest struct {
+//	TaskID  uint64 `json:"taskID"`
+//	Disable *bool  `json:"disable,omitempty"`
+//	Pause   *bool  `json:"pause,omitempty"`
+//}
+//
+//type PipelineOperateResponse struct {
+//	Header
+//}
 
 type PipelineConfigNamespacesFetchResponse struct {
 	Header
@@ -638,13 +555,13 @@ type PipelineInvokedCombo struct {
 	PagingYmlNames []string `json:"pagingYmlNames"` // 拿到 combo 后，调用分页接口时，ymlNames 可指定多个
 
 	// 其他前端展示需要的字段
-	PipelineID  uint64        `json:"pipelineID"`
-	Commit      string        `json:"commit"`
-	Status      string        `json:"status"`
-	TimeCreated *time.Time    `json:"timeCreated"`
-	CancelUser  *PipelineUser `json:"cancelUser,omitempty"` // TODO 需要前端重构后，再只返回 UserID
-	TriggerMode string        `json:"triggerMode"`
-	Workspace   string        `json:"workspace"`
+	PipelineID  uint64               `json:"pipelineID"`
+	Commit      string               `json:"commit"`
+	Status      string               `json:"status"`
+	TimeCreated *time.Time           `json:"timeCreated"`
+	CancelUser  *basepb.PipelineUser `json:"cancelUser,omitempty"` // TODO 需要前端重构后，再只返回 UserID
+	TriggerMode string               `json:"triggerMode"`
+	Workspace   string               `json:"workspace"`
 }
 
 // PipelineStatisticRequest pipeline 执行统计请求
@@ -672,5 +589,5 @@ type PipelineDeleteResponse struct {
 
 type PipelineCronGetResponse struct {
 	Header
-	Data *PipelineCronDTO `json:"data"`
+	Data *cronpb.Cron `json:"data"`
 }

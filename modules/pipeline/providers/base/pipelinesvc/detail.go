@@ -14,12 +14,17 @@
 package pipelinesvc
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
@@ -37,7 +42,7 @@ func (s *PipelineSvc) Get(pipelineID uint64) (*spec.Pipeline, error) {
 	return &p, nil
 }
 
-func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
+func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*basepb.PipelineInstanceDetail, error) {
 	base, find, err := s.dbClient.GetPipelineBase(pipelineID)
 	if err != nil {
 		return nil, err
@@ -46,13 +51,20 @@ func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*apistructs.P
 		return nil, fmt.Errorf("not find this pipeline id %v", pipelineID)
 	}
 
-	var detail apistructs.PipelineDetailDTO
-	detail.PipelineDTO = s.convertPipelineBase(base)
+	converted := s.convertPipelineBase(base)
+	b, err := json.Marshal(converted)
+	if err != nil {
+		return nil, err
+	}
+	var detail basepb.PipelineInstanceDetail
+	if err = json.Unmarshal(b, &detail); err != nil {
+		return nil, err
+	}
 
 	return &detail, nil
 }
 
-func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, error) {
+func (s *PipelineSvc) Detail(pipelineID uint64) (*basepb.PipelineInstanceDetail, error) {
 	p, err := s.dbClient.GetPipeline(pipelineID)
 
 	if err != nil {
@@ -80,10 +92,10 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	}
 
 	var needApproval bool
-	var stageDetailDTO []apistructs.PipelineStageDetailDTO
+	var stageDetailDTO []*basepb.PipelineStageDetail
 
 	for _, stage := range stages {
-		var taskDTOs []apistructs.PipelineTaskDTO
+		var taskDTOs []*basepb.PipelineTask
 		for _, task := range tasks {
 			if task.StageID != stage.ID {
 				continue
@@ -92,10 +104,21 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 				needApproval = true
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
-			taskDTOs = append(taskDTOs, *task.Convert2DTO())
+			taskDTOs = append(taskDTOs, task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,
-			apistructs.PipelineStageDetailDTO{PipelineStageDTO: *stage.Convert2DTO(), PipelineTasks: taskDTOs})
+			&basepb.PipelineStageDetail{
+				ID:            stage.ID,
+				PipelineID:    stage.PipelineID,
+				Name:          stage.Name,
+				Status:        stage.Status.String(),
+				CostTimeSec:   stage.CostTimeSec,
+				TimeBegin:     timestamppb.New(stage.TimeBegin),
+				TimeEnd:       timestamppb.New(stage.TimeEnd),
+				TimeCreated:   timestamppb.New(stage.TimeCreated),
+				TimeUpdated:   timestamppb.New(stage.TimeUpdated),
+				PipelineTasks: taskDTOs,
+			})
 	}
 
 	var pc *spec.PipelineCron
@@ -126,9 +149,15 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 		}
 	}
 
-	var detail apistructs.PipelineDetailDTO
+	var detail basepb.PipelineInstanceDetail
+	b, err := json.Marshal(s.ConvertPipeline(&p))
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(b, &detail); err != nil {
+		return nil, err
+	}
 	detail.NeedApproval = needApproval
-	detail.PipelineDTO = *s.ConvertPipeline(&p)
 
 	// 插入 label
 	pipelineLabels, _ := s.dbClient.ListLabelsByPipelineID(p.ID)
@@ -136,12 +165,12 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	for _, v := range pipelineLabels {
 		labels[v.Key] = v.Value
 	}
-	detail.PipelineDTO.Labels = labels
+	detail.Labels = labels
 	detail.PipelineStages = stageDetailDTO
 	detail.PipelineCron = pc.Convert2DTO()
 	// 前端需要 cron 对象不为空
 	if detail.PipelineCron == nil {
-		detail.PipelineCron = &apistructs.PipelineCronDTO{}
+		detail.PipelineCron = &cronpb.Cron{}
 	}
 
 	buttons, err := s.setPipelineButtons(p, pc)
@@ -165,7 +194,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 	return &detail, nil
 }
 
-func getPipelineParams(pipelineYml string, runParams []apistructs.PipelineRunParamWithValue) ([]apistructs.PipelineParamDTO, error) {
+func getPipelineParams(pipelineYml string, runParams []apistructs.PipelineRunParamWithValue) ([]*basepb.PipelineParamWithValue, error) {
 
 	pipeline, err := pipelineyml.New([]byte(pipelineYml))
 	if err != nil {
@@ -185,30 +214,36 @@ func getPipelineParams(pipelineYml string, runParams []apistructs.PipelineRunPar
 		return nil, nil
 	}
 
-	runParamsMap := make(map[string]interface{})
+	runParamsMap := make(map[string]*structpb.Value)
 	if runParams != nil {
 		for _, v := range runParams {
-			runParamsMap[v.Name] = v.Value
+			vv, err := structpb.NewValue(v.Value)
+			if err != nil {
+				return nil, err
+			}
+			runParamsMap[v.Name] = vv
 		}
 	}
 
-	var pipelineParamDTOs []apistructs.PipelineParamDTO
+	var pipelineParamDTOs []*basepb.PipelineParamWithValue
 	for _, param := range params {
-		pipelineParamDTOs = append(pipelineParamDTOs, apistructs.PipelineParamDTO{
-			PipelineParam: apistructs.PipelineParam{
-				Name:     param.Name,
-				Desc:     param.Desc,
-				Default:  param.Default,
-				Required: param.Required,
-				Type:     param.Type,
-			},
-			Value: runParamsMap[param.Name],
+		newDefault, err := structpb.NewValue(param.Default)
+		if err != nil {
+			return nil, err
+		}
+		pipelineParamDTOs = append(pipelineParamDTOs, &basepb.PipelineParamWithValue{
+			Name:     param.Name,
+			Desc:     param.Desc,
+			Default:  newDefault,
+			Required: param.Required,
+			Type:     param.Type,
+			Value:    runParamsMap[param.Name],
 		})
 	}
 	return pipelineParamDTOs, nil
 }
 
-func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*apistructs.PipelineEvent {
+func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*basepb.PipelineEvent {
 	_, events, err := s.dbClient.GetPipelineEvents(pipelineID)
 	if err != nil {
 		logrus.Errorf("failed to get pipeline events, pipelineID: %d, err: %v", pipelineID, err)
@@ -218,13 +253,13 @@ func (s *PipelineSvc) getPipelineEvents(pipelineID uint64) []*apistructs.Pipelin
 }
 
 // 给 pipelineTask 设置 action 的 logo 和 displayName 给前端展示
-func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDetailDTO) {
+func (s *PipelineSvc) setPipelineTaskActionDetail(detail *basepb.PipelineInstanceDetail) {
 	stageDetails := detail.PipelineStages
 
 	var extensionSearchRequest = apistructs.ExtensionSearchRequest{}
 	extensionSearchRequest.YamlFormat = true
 	// 循环 stageDetails 数组，获取里面的 task 并设置到 Extensions 中
-	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
+	loopStageDetails(stageDetails, func(task *basepb.PipelineTask) {
 		extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, task.Type)
 	})
 	if extensionSearchRequest.Extensions != nil {
@@ -238,11 +273,11 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 		return
 	}
 	// 遍历 stageDetails 数组，根据 task 的 name 获取其 extension 详情
-	var actionDetails = make(map[string]apistructs.PipelineTaskActionDetail)
-	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
+	var actionDetails = make(map[string]*basepb.PipelineTaskActionDetail)
+	loopStageDetails(stageDetails, func(task *basepb.PipelineTask) {
 
 		if task.Type == pipelineyml.Snippet {
-			actionDetails[task.Type] = apistructs.PipelineTaskActionDetail{
+			actionDetails[task.Type] = &basepb.PipelineTaskActionDetail{
 				LogoUrl:     pipelineyml.SnippetLogo,
 				DisplayName: pipelineyml.SnippetDisplayName,
 				Description: pipelineyml.SnippetDesc,
@@ -265,7 +300,7 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 			return
 		}
 
-		actionDetails[task.Type] = apistructs.PipelineTaskActionDetail{
+		actionDetails[task.Type] = &basepb.PipelineTaskActionDetail{
 			LogoUrl:     actionSpec.LogoUrl,
 			DisplayName: actionSpec.DisplayName,
 			Description: actionSpec.Desc,
@@ -275,7 +310,7 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 }
 
 // 遍历 stageDetails 数组，内部的每个 task 都执行一遍 doing 函数
-func loopStageDetails(stageDetails []apistructs.PipelineStageDetailDTO, doing func(dto apistructs.PipelineTaskDTO)) {
+func loopStageDetails(stageDetails []*basepb.PipelineStageDetail, doing func(dto *basepb.PipelineTask)) {
 	if stageDetails != nil {
 		for _, stage := range stageDetails {
 			tasks := stage.PipelineTasks
@@ -296,12 +331,12 @@ func (s *PipelineSvc) Statistic(source, clusterName string) (*apistructs.Pipelin
 }
 
 // 设置按钮状态
-func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *spec.PipelineCron) (button apistructs.PipelineButton, err error) {
+func (s *PipelineSvc) setPipelineButtons(p spec.Pipeline, pc *spec.PipelineCron) (button *basepb.PipelineButton, err error) {
 	defer func() {
 		err = errors.Wrap(err, "failed to set pipeline button")
 	}()
 
-	button = apistructs.PipelineButton{
+	button = &basepb.PipelineButton{
 		CanManualRun:   func() bool { _, can := s.canManualRun(p); return can }(),
 		CanCancel:      canCancel(p),
 		CanForceCancel: canForceCancel(p),

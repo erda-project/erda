@@ -20,8 +20,10 @@ import (
 
 	"github.com/appscode/go/strings"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -269,16 +271,20 @@ func (s *PipelineSvc) batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs []ap
 func (s *PipelineSvc) makeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error) {
 	snippetConfig := snippetTask.Extra.Action.SnippetConfig
 	// runParams
-	var runParams []apistructs.PipelineRunParam
+	var runParams []*basepb.PipelineRunParam
 	for k, v := range snippetTask.Extra.Action.Params {
-		runParams = append(runParams, apistructs.PipelineRunParam{Name: k, Value: v})
+		newValue, err := structpb.NewValue(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid runParam, k: %s, v: %v, err: %v", k, v, err)
+		}
+		runParams = append(runParams, &basepb.PipelineRunParam{Name: k, Value: newValue})
 	}
 	// transfer snippetTask to pipeline create request
-	snippetPipelineCreateReq := apistructs.PipelineCreateRequestV2{
+	snippetPipelineCreateReq := basepb.PipelineCreateRequest{
 		PipelineYml:            yamlContent,
 		ClusterName:            snippetTask.Extra.ClusterName,
 		PipelineYmlName:        snippetConfig.Name,
-		PipelineSource:         apistructs.PipelineSource(snippetConfig.Source),
+		PipelineSource:         snippetConfig.Source,
 		Labels:                 p.Labels,
 		NormalLabels:           p.NormalLabels,
 		Envs:                   p.Snapshot.Envs,

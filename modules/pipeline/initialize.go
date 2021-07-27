@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -42,7 +43,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
@@ -125,12 +125,9 @@ func (p *provider) do() (*httpserver.Server, error) {
 	engine := pipengine.New(dbClient)
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
-	pipelineSvc.WithCmsService(p.CmsService)
-
 	pipelineFun := &reconciler.PipelineSvcFunc{
-		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
+		// TODO proto
+		//CronNotExecuteCompensate: p.BaseService.PipelineCreate().CronNotExecuteCompensateById,
 	}
 
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
@@ -166,7 +163,6 @@ func (p *provider) do() (*httpserver.Server, error) {
 		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineCronSvc(pipelineCronSvc),
-		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithReconciler(r),
@@ -179,18 +175,16 @@ func (p *provider) do() (*httpserver.Server, error) {
 	// 加载 event manager
 	events.Initialize(bdl, publisher, dbClient)
 
-	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
-	go pipelineSvc.SyncAfterSplitTable()
-
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
 	// engine start after all dependencies done
 	engine.Start()
 	// handle cron related after engine started
-	if err := doCrondAbout(crondSvc, pipelineSvc); err != nil {
-		return nil, err
-	}
+	// TODO proto
+	//if err := doCrondAbout(crondSvc, pipelineSvc); err != nil {
+	//	return nil, err
+	//}
 
 	// register cluster hook after pipeline service start
 	if err := clusterinfo.RegisterClusterHook(); err != nil {

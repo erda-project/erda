@@ -16,8 +16,14 @@ package spec
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -26,18 +32,18 @@ type PipelineTask struct {
 	PipelineID uint64 `json:"pipelineID"`
 	StageID    uint64 `json:"stageID"`
 
-	Name         string                        `json:"name"`
-	OpType       PipelineTaskOpType            `json:"opType"`         // Deprecated: get, put, task
-	Type         string                        `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
-	ExecutorKind PipelineTaskExecutorKind      `json:"executorKind"`   // scheduler, memory
-	Status       apistructs.PipelineStatus     `json:"status"`
-	Extra        PipelineTaskExtra             `json:"extra" xorm:"json"`
-	Context      PipelineTaskContext           `json:"context" xorm:"json"`
-	Result       apistructs.PipelineTaskResult `json:"result" xorm:"json"`
+	Name         string                     `json:"name"`
+	OpType       PipelineTaskOpType         `json:"opType"`         // Deprecated: get, put, task
+	Type         string                     `json:"type,omitempty"` // git, buildpack, release, dice ... 当 OpType 为自定义任务时为空
+	ExecutorKind PipelineTaskExecutorKind   `json:"executorKind"`   // scheduler, memory
+	Status       apistructs.PipelineStatus  `json:"status"`
+	Extra        PipelineTaskExtra          `json:"extra" xorm:"json"`
+	Context      PipelineTaskContext        `json:"context" xorm:"json"`
+	Result       *basepb.PipelineTaskResult `json:"result" xorm:"json"`
 
-	IsSnippet             bool                                  `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
-	SnippetPipelineID     *uint64                               `json:"snippetPipelineID"`                 // 嵌套的流水线 id
-	SnippetPipelineDetail *apistructs.PipelineTaskSnippetDetail `json:"snippetPipelineDetail" xorm:"json"` // 嵌套的流水线详情
+	IsSnippet             bool                              `json:"isSnippet"`                         // 该节点是否是嵌套流水线节点
+	SnippetPipelineID     *uint64                           `json:"snippetPipelineID"`                 // 嵌套的流水线 id
+	SnippetPipelineDetail *basepb.PipelineTaskSnippetDetail `json:"snippetPipelineDetail" xorm:"json"` // 嵌套的流水线详情
 
 	CostTimeSec  int64     `json:"costTimeSec"`                // -1 表示暂无耗时信息, 0 表示确实是0s结束
 	QueueTimeSec int64     `json:"queueTimeSec"`               // 等待调度的耗时, -1 暂无耗时信息, 0 表示确实是0s结束 TODO 赋值
@@ -75,13 +81,13 @@ type PipelineTaskExtra struct {
 	Binds        []apistructs.Bind        `json:"binds,omitempty"`
 	// Volumes 创建 task 时的 volumes 快照
 	// 若一开始 volume 无 volumeID，启动 task 后返回的 volumeID 不会在这里更新，只会更新到 task.Context.OutStorages 里
-	Volumes         []apistructs.MetadataField `json:"volumes,omitempty"` //
-	PreFetcher      *apistructs.PreFetcher     `json:"preFetcher,omitempty"`
-	RuntimeResource RuntimeResource            `json:"runtimeResource,omitempty"`
-	UUID            string                     `json:"uuid"` // 用于查询日志等，pipeline 开始执行时才会赋值 // 对接多个 executor，不一定每个 executor 都能自定义 UUID，所以这个 uuid 实际上是目标系统的 uuid
-	TimeBeginQueue  time.Time                  `json:"timeBeginQueue"`
-	TimeEndQueue    time.Time                  `json:"timeEndQueue"`
-	StageOrder      int                        `json:"stageOrder"` // 0,1,2,...
+	Volumes         []*commonpb.MetadataField `json:"volumes,omitempty"` //
+	PreFetcher      *apistructs.PreFetcher `json:"preFetcher,omitempty"`
+	RuntimeResource RuntimeResource        `json:"runtimeResource,omitempty"`
+	UUID            string                 `json:"uuid"` // 用于查询日志等，pipeline 开始执行时才会赋值 // 对接多个 executor，不一定每个 executor 都能自定义 UUID，所以这个 uuid 实际上是目标系统的 uuid
+	TimeBeginQueue  time.Time              `json:"timeBeginQueue"`
+	TimeEndQueue    time.Time              `json:"timeEndQueue"`
+	StageOrder      int                    `json:"stageOrder"` // 0,1,2,...
 
 	// RunAfter indicates the tasks this task depends.
 	RunAfter []string `json:"runAfter"`
@@ -109,15 +115,15 @@ type FlinkSparkConf struct {
 }
 
 type PipelineTaskContext struct {
-	InStorages  apistructs.Metadata `json:"inStorages,omitempty"`
-	OutStorages apistructs.Metadata `json:"outStorages,omitempty"`
+	InStorages  []*commonpb.MetadataField `json:"inStorages,omitempty"`
+	OutStorages []*commonpb.MetadataField `json:"outStorages,omitempty"`
 
-	CmsDiceFiles apistructs.Metadata `json:"cmsDiceFiles,omitempty"`
+	CmsDiceFiles []*commonpb.MetadataField `json:"cmsDiceFiles,omitempty"`
 }
 
 func (c *PipelineTaskContext) Dedup() {
-	c.InStorages = c.InStorages.DedupByName()
-	c.OutStorages = c.OutStorages.DedupByName()
+	c.InStorages = converter.MetadataDedupByName(c.InStorages)
+	c.OutStorages = converter.MetadataDedupByName(c.OutStorages)
 }
 
 // Operation
@@ -181,19 +187,18 @@ type Volume struct {
 	ReadOnly      bool   `json:"readOnly"`
 }
 
-func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
+func (pt *PipelineTask) Convert2DTO() *basepb.PipelineTask {
 	if pt == nil {
 		return nil
 	}
-	task := apistructs.PipelineTaskDTO{
+	task := basepb.PipelineTask{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,
 		StageID:    pt.StageID,
 		Name:       pt.Name,
-		OpType:     string(pt.OpType),
-		Type:       string(pt.Type),
-		Status:     pt.Status,
-		Extra: apistructs.PipelineTaskExtra{
+		Type:       pt.Type,
+		Status:     pt.Status.String(),
+		Extra: &basepb.PipelineTaskExtra{
 			UUID:         pt.Extra.UUID,
 			AllowFailure: pt.Extra.AllowFailure,
 		},
@@ -201,13 +206,13 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		Result:       pt.Result,
 		CostTimeSec:  pt.CostTimeSec,
 		QueueTimeSec: pt.QueueTimeSec,
-		TimeBegin:    pt.TimeBegin,
-		TimeEnd:      pt.TimeEnd,
-		TimeCreated:  pt.TimeCreated,
-		TimeUpdated:  pt.TimeUpdated,
+		TimeBegin:    timestamppb.New(pt.TimeBegin),
+		TimeEnd:      timestamppb.New(pt.TimeEnd),
+		TimeCreated:  timestamppb.New(pt.TimeCreated),
+		TimeUpdated:  timestamppb.New(pt.TimeUpdated),
 
 		IsSnippet:             pt.IsSnippet,
-		SnippetPipelineID:     pt.SnippetPipelineID,
+		SnippetPipelineID:     pbutil.MustGetUint64(pt.SnippetPipelineID),
 		SnippetPipelineDetail: pt.SnippetPipelineDetail,
 	}
 	// handle metadata
@@ -215,14 +220,14 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		field.Level = field.GetLevel()
 	}
 
-	if task.Status.IsSuccessStatus() {
+	if apistructs.PipelineStatus(task.Status).IsSuccessStatus() {
 		task.Result.Errors = nil
-		notErrorMeta, _ := task.Result.Metadata.FilterNoErrorLevel()
+		notErrorMeta, _ := converter.MetadataFilterNoErrorLevel(task.Result.Metadata)
 		task.Result.Metadata = notErrorMeta
 	}
 
 	if task.Type == "manual-review" {
-		task.Status = task.Status.ChangeStateForManualReview()
+		task.Status = apistructs.PipelineStatus(task.Status).ChangeStateForManualReview().String()
 	}
 
 	return &task

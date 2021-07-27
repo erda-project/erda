@@ -14,6 +14,7 @@
 package pipelinesvc
 
 import (
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
@@ -49,6 +50,7 @@ type PipelineSvc struct {
 	etcdctl *etcd.Store
 
 	// providers
+	mysql      mysqlxorm.Interface
 	cmsService pb.CmsServiceServer
 }
 
@@ -56,7 +58,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineCronSvc *pipelinecronsvc.PipelineCronSvc, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
-	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
+	mysql mysqlxorm.Interface, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine *pipengine.Engine, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
 
 	s := PipelineSvc{}
@@ -67,7 +69,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	s.pipelineCronSvc = pipelineCronSvc
 	s.permissionSvc = permissionSvc
 	s.queueManage = queueManage
-	s.dbClient = dbClient
+	s.mysql = mysql
 	s.bdl = bdl
 	s.publisher = publisher
 	s.engine = engine

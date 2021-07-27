@@ -82,7 +82,7 @@ func (r *Reconciler) handleParentSnippetTaskOutputs(snippetPipeline *spec.Pipeli
 
 	// update result.metadata for value-context reference
 	for _, outputValue := range snippetPipeline.Snapshot.OutputValues {
-		parentTask.Result.Metadata = append(parentTask.Result.Metadata, apistructs.MetadataField{
+		parentTask.Result.Metadata = append(parentTask.Result.Metadata, []*commonpb.MetadataFieldField{
 			Name:  outputValue.Name,
 			Value: strutil.String(outputValue.Value),
 		})

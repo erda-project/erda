@@ -13,18 +13,22 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+)
 
 // PagePipeline 用于 流水线分页查询结果，相比 PipelineDTO 删除了许多大字段
 type PagePipeline struct {
-	ID           uint64            `json:"id"`
-	CronID       *uint64           `json:"cronID,omitempty"`
-	Commit       string            `json:"commit,omitempty"`
-	Source       PipelineSource    `json:"source,omitempty"`
-	YmlName      string            `json:"ymlName,omitempty"`
-	Extra        PipelineExtra     `json:"extra,omitempty"`
-	FilterLabels map[string]string `json:"filterLabels"`
-	NormalLabels map[string]string `json:"normalLabels"`
+	ID           uint64                `json:"id"`
+	CronID       *uint64               `json:"cronID,omitempty"`
+	Commit       string                `json:"commit,omitempty"`
+	Source       PipelineSource        `json:"source,omitempty"`
+	YmlName      string                `json:"ymlName,omitempty"`
+	Extra        *basepb.PipelineExtra `json:"extra,omitempty"`
+	FilterLabels map[string]string     `json:"filterLabels"`
+	NormalLabels map[string]string     `json:"normalLabels"`
 
 	// 运行时相关信息
 	Type        string         `json:"type,omitempty"`

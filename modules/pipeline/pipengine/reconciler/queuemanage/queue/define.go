@@ -17,9 +17,9 @@ import (
 	"strconv"
 	"sync"
 
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/enhancedqueue"
 )
@@ -27,7 +27,7 @@ import (
 // defaultQueue is used to implement Queue.
 type defaultQueue struct {
 	// pq is original pipeline queue.
-	pq *apistructs.PipelineQueue
+	pq *queuepb.Queue
 
 	// eq is enhanced priority queue, transfer from pq.
 	eq *enhancedqueue.EnhancedQueue
@@ -53,7 +53,7 @@ type defaultQueue struct {
 	rangeAtOnceCh               chan bool
 }
 
-func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
+func New(pq *queuepb.Queue, ops ...Option) *defaultQueue {
 	newQueue := defaultQueue{
 		pq:                   pq,
 		eq:                   enhancedqueue.NewEnhancedQueue(pq.Concurrency),

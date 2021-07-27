@@ -17,15 +17,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 // GetPipelineEvents get pipeline events from reports.
 // return: report, events, error
-func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption) (*spec.PipelineReport, []*apistructs.PipelineEvent, error) {
+func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption) (*spec.PipelineReport, []*basepb.PipelineEvent, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -50,14 +53,14 @@ func (client *Client) GetPipelineEvents(pipelineID uint64, ops ...SessionOption)
 	if err != nil {
 		return &report, nil, nil
 	}
-	var events []*apistructs.PipelineEvent
+	var events []*basepb.PipelineEvent
 	if err := json.Unmarshal(b, &events); err != nil {
 		return &report, nil, nil
 	}
 	return &report, events, nil
 }
 
-func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistructs.PipelineEvent, ops ...SessionOption) error {
+func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*basepb.PipelineEvent, ops ...SessionOption) error {
 	if len(newEvents) == 0 {
 		return nil
 	}
@@ -73,36 +76,36 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 	// merge all events
 	events = append(events, newEvents...)
 	// group events by event detail
-	group := make(map[string][]*apistructs.PipelineEvent)
+	group := make(map[string][]*basepb.PipelineEvent)
 	for _, event := range events {
 		key := makeEventGroupKey(event)
 		group[key] = append(group[key], event)
 	}
-	mergedGroup := make(map[string]*apistructs.PipelineEvent)
+	mergedGroup := make(map[string]*basepb.PipelineEvent)
 	for key, ses := range group {
-		newSe := *ses[0]
+		newSe := ses[0]
 		for i, se := range ses {
 			if i == 0 {
 				continue
 			}
-			if !se.FirstTimestamp.IsZero() && se.FirstTimestamp.Before(newSe.FirstTimestamp) {
+			if !pbutil.MustGetTime(se.FirstTimestamp).IsZero() && pbutil.MustGetTime(se.FirstTimestamp).Before(pbutil.MustGetTime(newSe.FirstTimestamp)) {
 				newSe.FirstTimestamp = se.FirstTimestamp
 			}
-			if se.LastTimestamp.After(newSe.LastTimestamp) {
+			if pbutil.MustGetTime(se.LastTimestamp).After(pbutil.MustGetTime(newSe.LastTimestamp)) {
 				newSe.LastTimestamp = se.LastTimestamp
 			}
 			newSe.Count++
 		}
 		// set default
-		now := time.Now()
-		if newSe.FirstTimestamp.IsZero() {
+		now := timestamppb.Now()
+		if pbutil.MustGetTime(newSe.FirstTimestamp).IsZero() {
 			newSe.FirstTimestamp = now
 		}
-		if newSe.LastTimestamp.IsZero() {
+		if pbutil.MustGetTime(newSe.LastTimestamp).IsZero() {
 			newSe.FirstTimestamp = now
 		}
 		// add to merged group
-		mergedGroup[key] = &newSe
+		mergedGroup[key] = newSe
 	}
 	// order message by firstTimestamp
 	var ordered orderedEvents
@@ -129,16 +132,16 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 	return client.UpdatePipelineReport(report, ops...)
 }
 
-type orderedEvents []*apistructs.PipelineEvent
+type orderedEvents []*basepb.PipelineEvent
 
 func (o orderedEvents) Len() int           { return len(o) }
-func (o orderedEvents) Less(i, j int) bool { return o[i].FirstTimestamp.Before(o[j].FirstTimestamp) }
+func (o orderedEvents) Less(i, j int) bool { return pbutil.MustGetTime(o[i].FirstTimestamp).Before(pbutil.MustGetTime(o[j].FirstTimestamp)) }
 func (o orderedEvents) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
 
-func makeEventGroupKey(se *apistructs.PipelineEvent) string {
+func makeEventGroupKey(se *basepb.PipelineEvent) string {
 	return fmt.Sprintf("%s:%s:%s", se.Source.Component, se.Reason, se.Message)
 }
 
-func makeEventReportMeta(events []*apistructs.PipelineEvent) apistructs.PipelineReportMeta {
+func makeEventReportMeta(events []*basepb.PipelineEvent) apistructs.PipelineReportMeta {
 	return apistructs.PipelineReportMeta{apistructs.PipelineReportEventMetaKey: events}
 }

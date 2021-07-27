@@ -14,8 +14,7 @@
 package types
 
 import (
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
-	"github.com/erda-project/erda/apistructs"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -24,8 +23,8 @@ type Queue interface {
 	Start(stopCh chan struct{})
 	ID() string
 	IsStrictMode() bool
-	Usage() pb.QueueUsage
-	Update(pq *apistructs.PipelineQueue)
+	Usage() *queuepb.QueueUsage
+	Update(pq *queuepb.Queue)
 	RangePendingQueue()
 	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
 	PopOutPipeline(p *spec.Pipeline)

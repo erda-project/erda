@@ -16,6 +16,7 @@ package spec
 import (
 	"time"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -70,7 +71,7 @@ type PipelineOld struct {
 	PipelineYmlSource apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"` // yml 文件来源
 	Branch            string                       `json:"branch,omitempty"`
 	Commit            string                       `json:"commit,omitempty"`
-	CommitDetail      apistructs.CommitDetail      `json:"commitDetail,omitempty" xorm:"json"`
+	CommitDetail      *commonpb.CommitDetail       `json:"commitDetail,omitempty" xorm:"json"`
 }
 
 func (*PipelineOld) TableName() string {

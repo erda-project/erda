@@ -619,3 +619,13 @@ func FlatErrors(errs []error, sep string) error {
 	}
 	return fmt.Errorf("%s", Join(errMsgs, sep, true))
 }
+
+// FirstNotEmpty return first non-empty-item.
+func FirstNotEmpty(ss ...string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}

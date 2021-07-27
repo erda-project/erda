@@ -17,6 +17,9 @@ import (
 	"encoding/json"
 	"time"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	queuepb "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -39,7 +42,7 @@ type PipelineExtra struct {
 	Snapshot Snapshot `json:"snapshot" xorm:"json"`
 
 	// CommitDetail 提交详情
-	CommitDetail apistructs.CommitDetail `json:"commitDetail" xorm:"json"`
+	CommitDetail *commonpb.CommitDetail `json:"commitDetail" xorm:"json"`
 
 	// Progress 流水线整体执行进度，0-100
 	// -1 表示未设置
@@ -65,13 +68,13 @@ type PipelineExtraInfo struct {
 	Namespace         string                       `json:"namespace"`
 	DiceWorkspace     apistructs.DiceWorkspace     `json:"diceWorkspace,omitempty"`
 	PipelineYmlSource apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"`
-	SubmitUser        *apistructs.PipelineUser     `json:"submitUser,omitempty"`
-	RunUser           *apistructs.PipelineUser     `json:"runUser,omitempty"`
-	CancelUser        *apistructs.PipelineUser     `json:"cancelUser,omitempty"`
+	SubmitUser        *basepb.PipelineUser         `json:"submitUser,omitempty"`
+	RunUser           *basepb.PipelineUser         `json:"runUser,omitempty"`
+	CancelUser        *basepb.PipelineUser         `json:"cancelUser,omitempty"`
 	InternalClient    string                       `json:"internalClient,omitempty"`
 	CronExpr          string                       `json:"cronExpr,omitempty"`
 	CronTriggerTime   *time.Time                   `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级
-	ShowMessage       *apistructs.ShowMessage      `json:"showMessage,omitempty"`
+	ShowMessage       *basepb.ShowMessage          `json:"showMessage,omitempty"`
 	Messages          []string                     `json:"errors,omitempty"` // TODO ShowMessage 和 Message
 	// Deprecated
 	ConfigManageNamespaceOfSecretsDefault string `json:"configManageNamespaceOfSecretsDefault,omitempty"`
@@ -82,10 +85,10 @@ type PipelineExtraInfo struct {
 	CopyFromPipelineID *uint64            `json:"copyFromPipelineID,omitempty"` // 是否是从其他节点拷贝过来
 	RerunFailedDetail  *RerunFailedDetail `json:"rerunFailedDetail,omitempty"`
 
-	IsAutoRun      bool                     `json:"isAutoRun,omitempty"` // 创建后是否自动开始执行
-	ShareVolumeID  string                   `json:"shareVolumeId,omitempty"`
-	TaskWorkspaces []string                 `json:"taskWorkspaces,omitempty"` //工作目录,例如git
-	StorageConfig  apistructs.StorageConfig `json:"storageConfig,omitempty"`  // 挂载设置
+	IsAutoRun      bool                  `json:"isAutoRun,omitempty"` // 创建后是否自动开始执行
+	ShareVolumeID  string                `json:"shareVolumeId,omitempty"`
+	TaskWorkspaces []string              `json:"taskWorkspaces,omitempty"` //工作目录,例如git
+	StorageConfig  *basepb.StorageConfig `json:"storageConfig,omitempty"`  // 挂载设置
 
 	CallbackURLs []string `json:"callbackURLs,omitempty"`
 
@@ -101,10 +104,10 @@ type PipelineExtraInfo struct {
 	PipelineYmlNameV1 string `json:"pipelineYmlNameV1,omitempty"`
 
 	// pipeline 运行时的输入参数
-	RunPipelineParams []apistructs.PipelineRunParam `json:"runPipelineParams,omitempty"`
+	RunPipelineParams []*basepb.PipelineRunParam `json:"runPipelineParams,omitempty"`
 
 	// GC
-	GC apistructs.PipelineGC `json:"gc,omitempty"`
+	GC *basepb.PipelineGC `json:"gc,omitempty"`
 
 	// OutputDefines
 	DefinedOutputs []apistructs.PipelineOutput `json:"definedOutputs,omitempty"`
@@ -128,10 +131,10 @@ type Snapshot struct {
 
 	AnalyzedCrossCluster *bool `json:"analyzedCrossCluster,omitempty"`
 
-	RunPipelineParams apistructs.PipelineRunParamsWithValue `json:"runPipelineParams,omitempty"` // 流水线运行时参数
+	RunPipelineParams []*basepb.PipelineRunParamWithValue `json:"runPipelineParams,omitempty"` // 流水线运行时参数
 
 	// IdentityInfo 身份信息
-	IdentityInfo apistructs.IdentityInfo `json:"identityInfo" xorm:"json"`
+	IdentityInfo *commonpb.IdentityInfo `json:"identityInfo" xorm:"json"`
 
 	// OutputValues output 定义和从 task 里采集上来的值
 	OutputValues []apistructs.PipelineOutputWithValue `json:"outputValues,omitempty"`
@@ -140,10 +143,10 @@ type Snapshot struct {
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
 
 	// BindQueue stores the binding queue info if have.
-	BindQueue *apistructs.PipelineQueue `json:"bindQueue,omitempty"`
+	BindQueue *queuepb.Queue `json:"bindQueue,omitempty"`
 
 	// Events stores pipeline level k8s-like events
-	Events []*apistructs.PipelineEvent `json:"events,omitempty"`
+	Events []*basepb.PipelineEvent `json:"events,omitempty"`
 }
 
 // FromDB 兼容 Snapshot 老数据
@@ -154,10 +157,10 @@ func (s *Snapshot) FromDB(b []byte) error {
 		return nil
 	}
 
-	// 用老数据结构 []apistructs.MetadataField 进行解析，并赋值回 s
+	// 用老数据结构 []*commonpb.MetadataField 进行解析，并赋值回 s
 	so := struct {
-		PipelineYml string                     `json:"pipeline_yml,omitempty"`
-		Secrets     []apistructs.MetadataField `json:"secrets,omitempty"`
+		PipelineYml string                  `json:"pipeline_yml,omitempty"`
+		Secrets     []*commonpb.MetadataField `json:"secrets,omitempty"`
 	}{}
 	if err := json.Unmarshal(b, &so); err == nil {
 		s.PipelineYml = so.PipelineYml

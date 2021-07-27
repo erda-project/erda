@@ -158,7 +158,7 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 type Callback apistructs.ActionCallback
 
 // append fields to metadata and limit metadataField
-func (c *Callback) AppendMetadataFields(fields []*apistructs.MetadataField) {
+func (c *Callback) AppendMetadataFields(fields []*[]*commonpb.MetadataFieldField) {
 
 	if fields == nil {
 		return
@@ -175,13 +175,13 @@ func (c *Callback) AppendMetadataFields(fields []*apistructs.MetadataField) {
 		name = strings.TrimSpace(name)
 		value = strings.TrimSpace(value)
 
-		c.Metadata = append(c.Metadata, apistructs.MetadataField{Name: name, Value: value})
+		c.Metadata = append(c.Metadata, []*commonpb.MetadataFieldField{Name: name, Value: value})
 	}
 
 	c.limitMetadataField()
 }
 
-// 1) decode as: apistructs.Metadata
+// 1) decode as: []*commonpb.MetadataField
 // 2) decode as: line(k=v)
 func (c *Callback) HandleMetaFile(b []byte) error {
 	// 1)
@@ -202,7 +202,7 @@ func (c *Callback) HandleMetaFile(b []byte) error {
 		if len(kv) > 1 {
 			v = strings.TrimSpace(kv[1])
 		}
-		c.Metadata = append(c.Metadata, apistructs.MetadataField{Name: k, Value: v})
+		c.Metadata = append(c.Metadata, []*commonpb.MetadataFieldField{Name: k, Value: v})
 	}
 
 	c.limitMetadataField()
@@ -215,7 +215,7 @@ func (c *Callback) HandleMetaFile(b []byte) error {
 // value length <= 1024000
 // metadata length <= 100
 func (c *Callback) limitMetadataField() {
-	var result apistructs.Metadata
+	var result []*commonpb.MetadataField
 	for i, meta := range c.Metadata {
 		if i >= 100 {
 			logrus.Warnf("skip meta (too many metadata, max size 100), index: %d, name: %s", i+1, meta.Name)
@@ -229,14 +229,14 @@ func (c *Callback) limitMetadataField() {
 			logrus.Warnf("skip meta (meta value is too long, max length 1024000), name: %s", meta.Name)
 			continue
 		}
-		result = append(result, apistructs.MetadataField{Name: meta.Name, Value: meta.Value})
+		result = append(result, []*commonpb.MetadataFieldField{Name: meta.Name, Value: meta.Value})
 	}
 	c.Metadata = result
 }
 
 func filterMetadata(cb *Callback, agent *Agent) {
 	// 不推送已经推送过的
-	var filteredMetadata apistructs.Metadata
+	var filteredMetadata []*commonpb.MetadataField
 	for _, wait := range cb.Metadata {
 		pushedV, ok := agent.PushedMetaFileMap[wait.Name]
 		if ok && pushedV == wait.Value {

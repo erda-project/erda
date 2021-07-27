@@ -52,15 +52,5 @@ func (ps *PipelineStage) Convert2DTO() *apistructs.PipelineStageDTO {
 	if ps == nil {
 		return nil
 	}
-	return &apistructs.PipelineStageDTO{
-		ID:          ps.ID,
-		PipelineID:  ps.PipelineID,
-		Name:        ps.Name,
-		Status:      ps.Status,
-		CostTimeSec: ps.CostTimeSec,
-		TimeBegin:   ps.TimeBegin,
-		TimeEnd:     ps.TimeEnd,
-		TimeCreated: ps.TimeCreated,
-		TimeUpdated: ps.TimeUpdated,
-	}
+	return &apistructs.PipelineStageDTO{}
 }

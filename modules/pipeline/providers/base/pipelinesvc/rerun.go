@@ -14,13 +14,16 @@
 package pipelinesvc
 
 import (
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 )
 
 // Rerun commit 不变
-func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipeline, error) {
+func (s *PipelineSvc) Rerun(req *basepb.PipelineRerunRequest) (*spec.Pipeline, error) {
 
 	origin, err := s.dbClient.GetPipeline(req.PipelineID)
 	if err != nil {
@@ -41,19 +44,19 @@ func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipelin
 	}
 	origin.Labels[apistructs.LabelPipelineType] = apistructs.PipelineTypeRerun.String()
 
-	p, err := s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	p, err := s.CreateV2(&basepb.PipelineCreateRequest{
 		PipelineYml:            origin.PipelineYml,
 		ClusterName:            origin.ClusterName,
 		PipelineYmlName:        origin.PipelineYmlName,
-		RunParams:              origin.Snapshot.RunPipelineParams.ToPipelineRunParams(),
-		PipelineSource:         origin.PipelineSource,
+		RunParams:              converter.ToPipelineRunParams(origin.Snapshot.RunPipelineParams),
+		PipelineSource:         origin.PipelineSource.String(),
 		Labels:                 origin.Labels,
 		NormalLabels:           origin.GenerateNormalLabelsForCreateV2(),
 		Envs:                   origin.Snapshot.Envs,
 		ConfigManageNamespaces: origin.GetConfigManageNamespaces(),
 		AutoRunAtOnce:          req.AutoRunAtOnce,
 		AutoStartCron:          false,
-		CronStartFrom:          originCron.Extra.CronStartFrom,
+		CronStartFrom:          pbutil.GetTimestamp(originCron.Extra.CronStartFrom),
 		IdentityInfo:           req.IdentityInfo,
 	})
 	if err != nil {

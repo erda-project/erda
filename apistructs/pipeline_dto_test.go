@@ -17,26 +17,29 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 )
 
 func Test_EnablePipelineVolume(t *testing.T) {
 	var tables = []struct {
-		StorageConfig StorageConfig
+		StorageConfig *basepb.StorageConfig
 	}{
 		{
-			StorageConfig: StorageConfig{
+			StorageConfig: &basepb.StorageConfig{
 				EnableNFS:   false,
 				EnableLocal: true,
 			},
 		},
 		{
-			StorageConfig: StorageConfig{
+			StorageConfig: &basepb.StorageConfig{
 				EnableNFS:   true,
 				EnableLocal: false,
 			},
 		},
 		{
-			StorageConfig: StorageConfig{
+			StorageConfig: &basepb.StorageConfig{
 				EnableNFS:   true,
 				EnableLocal: false,
 			},
@@ -44,14 +47,14 @@ func Test_EnablePipelineVolume(t *testing.T) {
 	}
 	for _, data := range tables {
 		if data.StorageConfig.EnableNFS {
-			assert.True(t, data.StorageConfig.EnableNFSVolume(), "not true")
+			assert.True(t, converter.EnableNFSVolume(data.StorageConfig), "not true")
 		} else {
-			assert.True(t, !data.StorageConfig.EnableNFSVolume(), "not true")
+			assert.True(t, !converter.EnableNFSVolume(data.StorageConfig), "not true")
 		}
 		if data.StorageConfig.EnableLocal {
-			assert.True(t, data.StorageConfig.EnableShareVolume(), "not true")
+			assert.True(t, converter.EnableShareVolume(data.StorageConfig), "not true")
 		} else {
-			assert.True(t, !data.StorageConfig.EnableShareVolume(), "not true")
+			assert.True(t, !converter.EnableShareVolume(data.StorageConfig), "not true")
 		}
 	}
 }

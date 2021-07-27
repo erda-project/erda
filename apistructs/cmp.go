@@ -15,6 +15,8 @@ package apistructs
 
 import (
 	"time"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 const (
@@ -273,7 +275,7 @@ type RecordData struct {
 	Status        string    `json:"status"`
 	Detail        string    `json:"detail"`
 
-	PipelineDetail *PipelineDetailDTO `json:"pipelineDetail"`
+	PipelineDetail *basepb.PipelineInstance `json:"pipelineDetail"`
 }
 
 type RecordRequest struct {

@@ -19,10 +19,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
-func (y *PipelineYml) evaluate(variables []apistructs.MetadataField) error {
+func (y *PipelineYml) evaluate(variables []*commonpb.MetadataField) error {
 	rendered, err := RenderPlaceholders(string(y.byteData), variables)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func removeComment(line string) (string, string) {
 	return line[:i], line[i:]
 }
 
-func RenderPlaceholders(input string, placeholders []apistructs.MetadataField) (string, error) {
+func RenderPlaceholders(input string, placeholders []*commonpb.MetadataField) (string, error) {
 	lines := strings.Split(input, "\n")
 
 	m := make(map[string]string, len(placeholders))

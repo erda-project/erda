@@ -16,30 +16,33 @@ package pipelinesvc
 import (
 	"strconv"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/numeral"
 )
 
-func (s *PipelineSvc) convertPipelineBase(p spec.PipelineBase) apistructs.PipelineDTO {
-	var result apistructs.PipelineDTO
+func (s *PipelineSvc) convertPipelineBase(p spec.PipelineBase) *pb.PipelineInstance {
+	var result pb.PipelineInstance
 	result.ID = p.ID
-	result.CronID = p.CronID
-	result.Source = p.PipelineSource
+	result.CronID = pbutil.MustGetUint64(p.CronID)
+	result.Source = p.PipelineSource.String()
 	result.YmlName = p.PipelineYmlName
 	result.Type = p.Type.String()
 	result.TriggerMode = p.TriggerMode.String()
 	result.ClusterName = p.ClusterName
-	result.Status = p.Status
+	result.Status = p.Status.String()
 	result.CostTimeSec = p.CostTimeSec
-	result.TimeBegin = p.TimeBegin
-	result.TimeEnd = p.TimeEnd
-	result.TimeCreated = p.TimeCreated
-	result.TimeUpdated = p.TimeUpdated
-	return result
+	result.TimeBegin = pbutil.GetTimestamp(p.TimeBegin)
+	result.TimeEnd = pbutil.GetTimestamp(p.TimeEnd)
+	result.TimeCreated = pbutil.GetTimestamp(p.TimeCreated)
+	result.TimeUpdated = pbutil.GetTimestamp(p.TimeUpdated)
+	return &result
 }
 
-func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO {
+func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *pb.PipelineInstance {
 	if p == nil {
 		return nil
 	}
@@ -48,24 +51,31 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 
 	// from extra
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron && p.Extra.CronTriggerTime != nil {
-		result.TimeCreated = p.Extra.CronTriggerTime
-		result.TimeBegin = p.Extra.CronTriggerTime
+		result.TimeCreated = pbutil.GetTimestamp(p.Extra.CronTriggerTime)
+		result.TimeBegin = pbutil.GetTimestamp(p.Extra.CronTriggerTime)
 	}
 	result.Namespace = p.Extra.Namespace
 	result.OrgName = p.GetOrgName()
 	result.ProjectName = p.NormalLabels[apistructs.LabelProjectName]
 	result.ApplicationName = p.NormalLabels[apistructs.LabelAppName]
 	result.Commit = p.GetCommitID()
-	result.CommitDetail = p.CommitDetail
+	result.CommitDetail = &commonpb.CommitDetail{
+		CommitID: p.CommitDetail.CommitID,
+		Repo:     p.CommitDetail.Repo,
+		RepoAbbr: p.CommitDetail.RepoAbbr,
+		Author:   p.CommitDetail.Author,
+		Email:    p.CommitDetail.Email,
+		Time:     p.CommitDetail.Time,
+		Comment:  p.CommitDetail.Comment,
+	}
 	result.YmlSource = p.NormalLabels[apistructs.LabelPipelineYmlSource]
-	result.YmlNameV1 = p.Extra.PipelineYmlNameV1
 	result.YmlContent = p.PipelineYml
 	result.Extra.DiceWorkspace = p.Extra.DiceWorkspace.String()
 	result.Extra.SubmitUser = p.Extra.SubmitUser
 	result.Extra.RunUser = p.Extra.RunUser
 	result.Extra.CancelUser = p.Extra.CancelUser
 	result.Extra.CronExpr = p.Extra.CronExpr
-	result.Extra.CronTriggerTime = p.Extra.CronTriggerTime
+	result.Extra.CronTriggerTime = pbutil.GetTimestamp(p.Extra.CronTriggerTime)
 	result.Extra.ShowMessage = p.Extra.ShowMessage
 	result.Extra.ConfigManageNamespaces = p.GetConfigManageNamespaces()
 	result.Extra.IsAutoRun = p.Extra.IsAutoRun
@@ -81,56 +91,55 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 	result.ApplicationID = appID
 	result.Branch = p.Labels[apistructs.LabelBranch]
 
-	return &result
+	return result
 }
 
-func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePipeline {
-	result := apistructs.PagePipeline{
+func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *pb.PagePipeline {
+	result := &pb.PagePipeline{
 		ID:      p.ID,
-		CronID:  p.CronID,
+		CronID:  pbutil.MustGetUint64(p.CronID),
 		Commit:  p.GetCommitID(),
-		Source:  p.PipelineSource,
+		Source:  p.PipelineSource.String(),
 		YmlName: p.PipelineYmlName,
-		Extra: apistructs.PipelineExtra{
+		Extra: &pb.PipelineExtra{
 			DiceWorkspace:          p.Extra.DiceWorkspace.String(),
 			SubmitUser:             p.Extra.SubmitUser,
 			RunUser:                p.Extra.RunUser,
 			CancelUser:             p.Extra.CancelUser,
 			CronExpr:               p.Extra.CronExpr,
-			CronTriggerTime:        p.Extra.CronTriggerTime,
+			CronTriggerTime:        pbutil.GetTimestamp(p.Extra.CronTriggerTime),
 			ShowMessage:            p.Extra.ShowMessage,
 			ConfigManageNamespaces: p.GetConfigManageNamespaces(),
 			IsAutoRun:              p.Extra.IsAutoRun,
 			CallbackURLs:           p.Extra.CallbackURLs,
-			PipelineYmlNameV1:      p.Extra.PipelineYmlNameV1,
 		},
 		FilterLabels:     p.Labels,
 		NormalLabels:     p.NormalLabels,
 		Type:             p.Type.String(),
 		TriggerMode:      p.TriggerMode.String(),
 		ClusterName:      p.ClusterName,
-		Status:           p.Status,
+		Status:           p.Status.String(),
 		Progress:         s.convertProgress(*p),
 		IsSnippet:        p.IsSnippet,
-		ParentPipelineID: p.ParentPipelineID,
-		ParentTaskID:     p.ParentTaskID,
+		ParentPipelineID: pbutil.MustGetUint64(p.ParentPipelineID),
+		ParentTaskID:     pbutil.MustGetUint64(p.ParentTaskID),
 		CostTimeSec:      p.CostTimeSec,
-		TimeBegin:        p.TimeBegin,
-		TimeEnd:          p.TimeEnd,
-		TimeCreated:      p.TimeCreated,
-		TimeUpdated:      p.TimeUpdated,
+		TimeBegin:        pbutil.GetTimestamp(p.TimeBegin),
+		TimeEnd:          pbutil.GetTimestamp(p.TimeEnd),
+		TimeCreated:      pbutil.GetTimestamp(p.TimeCreated),
+		TimeUpdated:      pbutil.GetTimestamp(p.TimeUpdated),
 	}
 	if p.TriggerMode == apistructs.PipelineTriggerModeCron && p.Extra.CronTriggerTime != nil {
-		result.TimeCreated = p.Extra.CronTriggerTime
-		result.TimeBegin = p.Extra.CronTriggerTime
+		result.TimeCreated = pbutil.GetTimestamp(p.Extra.CronTriggerTime)
+		result.TimeBegin = pbutil.GetTimestamp(p.Extra.CronTriggerTime)
 	}
-	return &result
+	return result
 }
 
-func (s *PipelineSvc) BatchConvert2PagePipeline(pipelines []spec.Pipeline) []apistructs.PagePipeline {
-	result := make([]apistructs.PagePipeline, 0, len(pipelines))
+func (s *PipelineSvc) BatchConvert2PagePipeline(pipelines []spec.Pipeline) []*pb.PagePipeline {
+	result := make([]*pb.PagePipeline, 0, len(pipelines))
 	for _, p := range pipelines {
-		result = append(result, *s.Convert2PagePipeline(&p))
+		result = append(result, s.Convert2PagePipeline(&p))
 	}
 	return result
 }

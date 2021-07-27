@@ -44,7 +44,7 @@ func HandleTaskCacheVolumes(p *spec.Pipeline, task *spec.PipelineTask, diceYmlJo
 	projectID := p.GetLabel(apistructs.LabelProjectID)
 	appID := p.GetLabel(apistructs.LabelAppID)
 
-	var volumes []apistructs.MetadataField
+	var volumes []*commonpb.MetadataField
 	var binds diceyml.Binds
 	for _, cache := range caches {
 		// 根据指定的绝对目录名生成一个 hash 的文件名
@@ -74,7 +74,7 @@ func HandleTaskCacheVolumes(p *spec.Pipeline, task *spec.PipelineTask, diceYmlJo
 		labels[VoLabelKeyContextPath] = key
 		labels[TaskCacheHashName] = hash
 		labels[TaskCachePath] = cache.Path
-		var storage = apistructs.MetadataField{
+		var storage = []*commonpb.MetadataFieldField{
 			Name:   TaskCacheMame + "_" + hash,
 			Type:   string(spec.StoreTypeDiceCacheNFS),
 			Value:  key,

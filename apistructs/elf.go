@@ -17,6 +17,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 type ElfMetadata struct {
@@ -36,8 +38,10 @@ type ListMetadata struct {
 	Total int `json:"total"`
 }
 
+type NotebookMetadata []*commonpb.MetadataField
+
 type Notebook struct {
-	Metadata
+	NotebookMetadata
 	NotebookSpec
 	NotebookStatus
 }

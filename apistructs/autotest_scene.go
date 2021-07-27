@@ -16,6 +16,8 @@ package apistructs
 import (
 	"strconv"
 	"time"
+
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 )
 
 type AutoTestRunCustom struct {
@@ -386,7 +388,7 @@ type AutotestExecuteSceneStepRespData struct {
 
 type AutotestExecuteSceneResponse struct {
 	Header
-	Data *PipelineDTO `json:"data"`
+	Data *basepb.PipelineInstance `json:"data"`
 }
 
 type AutotestCancelSceneRequest struct {

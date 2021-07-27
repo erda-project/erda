@@ -23,6 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
@@ -340,9 +342,10 @@ func (s *PipelineSvc) doCronCompensate(compensator apistructs.CronCompensator, n
 		}
 	}
 
-	_, err := s.RunPipeline(&apistructs.PipelineRunRequest{
-		PipelineID:   firstOrLastPipeline.ID,
-		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient},
+	_, err := s.RunPipeline(&basepb.PipelineRunRequest{
+		PipelineID: firstOrLastPipeline.ID,
+		// TODO proto
+		//IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient},
 	})
 
 	//执行成功打印一行记录
@@ -448,18 +451,18 @@ func (s *PipelineSvc) createCronCompensatePipeline(pc spec.PipelineCron, trigger
 
 	pc.Extra.FilterLabels[apistructs.LabelPipelineCronCompensated] = "true"
 
-	return s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	return s.CreateV2(&basepb.PipelineCreateRequest{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
-		PipelineSource:         pc.PipelineSource,
+		PipelineSource:         pc.PipelineSource.String(),
 		Labels:                 pc.Extra.FilterLabels,
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
 		AutoRunAtOnce:          false,
 		AutoStartCron:          false,
-		IdentityInfo: apistructs.IdentityInfo{
+		IdentityInfo: &commonpb.IdentityInfo{
 			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
 			InternalClient: "system-cron-compensator",
 		},

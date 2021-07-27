@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -61,17 +63,17 @@ func (p *PipelineWithTasks) DoneTasks() []string {
 	return dones
 }
 
-func (p *Pipeline) GenIdentityInfo() apistructs.IdentityInfo {
+func (p *Pipeline) GenIdentityInfo() *commonpb.IdentityInfo {
 	// 默认从快照获取
-	if !p.Snapshot.IdentityInfo.Empty() {
+	if p.Snapshot.IdentityInfo != nil {
 		return p.Snapshot.IdentityInfo
 	}
 	// 老数据从 extra 里获取
 	var userID string
-	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != "" {
+		userID = p.Extra.SubmitUser.ID
 	}
-	return apistructs.IdentityInfo{
+	return &commonpb.IdentityInfo{
 		UserID:         userID,
 		InternalClient: p.Extra.InternalClient,
 	}
@@ -79,24 +81,24 @@ func (p *Pipeline) GenIdentityInfo() apistructs.IdentityInfo {
 
 func (p *Pipeline) GetSubmitUserID() string {
 	var userID string
-	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != "" {
+		userID = p.Extra.SubmitUser.ID
 	}
 	return mustUserID(userID)
 }
 
 func (p *Pipeline) GetRunUserID() string {
 	var userID string
-	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != "" {
+		userID = p.Extra.RunUser.ID
 	}
 	return mustUserID(userID)
 }
 
 func (p *Pipeline) GetCancelUserID() string {
 	var userID string
-	if p.Extra.CancelUser != nil && p.Extra.CancelUser.ID != nil {
-		userID = fmt.Sprintf("%v", p.Extra.CancelUser.ID)
+	if p.Extra.CancelUser != nil && p.Extra.CancelUser.ID != "" {
+		userID = p.Extra.CancelUser.ID
 	}
 	return mustUserID(userID)
 }
@@ -202,34 +204,36 @@ func (p *Pipeline) GetConfigManageNamespaces() []string {
 
 // EnsureGC without nil field
 func (p *Pipeline) EnsureGC() {
-	gc := &p.Extra.GC
+	gc := p.Extra.GC
 	// resource
-	if gc.ResourceGC.SuccessTTLSecond == nil {
-		gc.ResourceGC.SuccessTTLSecond = &[]uint64{conf.SuccessPipelineDefaultResourceGCTTLSec()}[0]
+	if gc.ResourceGC == nil {
+		gc.ResourceGC = &basepb.PipelineResourceGC{}
 	}
-	if gc.ResourceGC.FailedTTLSecond == nil {
-		gc.ResourceGC.FailedTTLSecond = &[]uint64{conf.FailedPipelineDefaultResourceGCTTLSec()}[0]
+	if gc.ResourceGC.SuccessTTLSecond == 0 {
+		gc.ResourceGC.SuccessTTLSecond = conf.SuccessPipelineDefaultResourceGCTTLSec()
+	}
+	if gc.ResourceGC.FailedTTLSecond == 0 {
+		gc.ResourceGC.FailedTTLSecond = conf.FailedPipelineDefaultResourceGCTTLSec()
 	}
 	// database
-	if gc.DatabaseGC.Analyzed.NeedArchive == nil {
-		gc.DatabaseGC.Analyzed.NeedArchive = &[]bool{false}[0]
+	if gc.DatabaseGC == nil {
+		gc.DatabaseGC = &basepb.PipelineDatabaseGC{}
 	}
-	if gc.DatabaseGC.Analyzed.TTLSecond == nil {
-		gc.DatabaseGC.Analyzed.TTLSecond = &[]uint64{conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()}[0]
+	if gc.DatabaseGC.Analyzed.TTLSecond == 0 {
+		gc.DatabaseGC.Analyzed.TTLSecond = conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()
 	}
-	if gc.DatabaseGC.Finished.NeedArchive == nil {
-		gc.DatabaseGC.Finished.NeedArchive = &[]bool{true}[0]
-	}
-	if gc.DatabaseGC.Finished.TTLSecond == nil {
-		gc.DatabaseGC.Finished.TTLSecond = &[]uint64{conf.FinishedPipelineDefaultDatabaseGCTTLSec()}[0]
+	if gc.DatabaseGC.Finished.NeedArchive == false && gc.DatabaseGC.Finished.TTLSecond == 0 {
+		// needArchive=true if all not set
+		gc.DatabaseGC.Finished.NeedArchive = true
+		gc.DatabaseGC.Finished.TTLSecond = conf.FinishedPipelineDefaultDatabaseGCTTLSec()
 	}
 }
 
 func (p *Pipeline) GetResourceGCTTL() uint64 {
 	p.EnsureGC()
-	resourceGCTTL := *p.Extra.GC.ResourceGC.FailedTTLSecond
+	resourceGCTTL := p.Extra.GC.ResourceGC.FailedTTLSecond
 	if p.Status.IsSuccessStatus() {
-		resourceGCTTL = *p.Extra.GC.ResourceGC.SuccessTTLSecond
+		resourceGCTTL = p.Extra.GC.ResourceGC.SuccessTTLSecond
 	}
 	return resourceGCTTL
 }

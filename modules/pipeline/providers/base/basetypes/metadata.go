@@ -11,14 +11,4 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package apistructs
-
-type BuildCacheImageReportRequest struct {
-	Action      string `json:"action"`
-	Name        string `json:"name"`
-	ClusterName string `json:"clusterName"`
-}
-
-type BuildCacheImageReportResponse struct {
-	Header
-}
+package basetypes

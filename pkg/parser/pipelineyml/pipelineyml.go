@@ -16,7 +16,7 @@ package pipelineyml
 import (
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -47,7 +47,7 @@ type PipelineYml struct {
 	needUpgrade        bool   // 是否需要升级
 	upgradedYmlContent []byte // 升级后的 yml content
 
-	runParams []apistructs.PipelineRunParam // 运行时的输入参数
+	runParams []*basepb.PipelineRunParam // 运行时的输入参数
 }
 
 func New(b []byte, ops ...Option) (_ *PipelineYml, err error) {
@@ -179,15 +179,15 @@ func WithRefOpOutputs(outputs Outputs) Option {
 	}
 }
 
-func WithRunParams(runParams []apistructs.PipelineRunParamWithValue) Option {
+func WithRunParams(runParams []*basepb.PipelineRunParamWithValue) Option {
 	return func(y *PipelineYml) {
-		var polished []apistructs.PipelineRunParam
+		var polished []*basepb.PipelineRunParam
 		for _, rp := range runParams {
 			value := rp.Value
 			if rp.TrueValue != nil {
 				value = rp.TrueValue
 			}
-			polished = append(polished, apistructs.PipelineRunParam{Name: rp.Name, Value: value})
+			polished = append(polished, &basepb.PipelineRunParam{Name: rp.Name, Value: value})
 		}
 		y.runParams = polished
 	}

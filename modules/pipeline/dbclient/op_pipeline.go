@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -105,7 +106,7 @@ func (client *Client) GetPipelineWithExistInfo(id interface{}, ops ...SessionOpt
 }
 
 // UpdatePipelineShowMessage 更新 extra.ExtraInfo.ShowMessage
-func (client *Client) UpdatePipelineShowMessage(pipelineID uint64, showMessage apistructs.ShowMessage, ops ...SessionOption) error {
+func (client *Client) UpdatePipelineShowMessage(pipelineID uint64, showMessage *basepb.ShowMessage, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -119,7 +120,7 @@ func (client *Client) UpdatePipelineShowMessage(pipelineID uint64, showMessage a
 	}
 
 	// update
-	extra.Extra.ShowMessage = &showMessage
+	extra.Extra.ShowMessage = showMessage
 	_, err = session.ID(extra.PipelineID).Cols("extra").Update(&extra)
 	return err
 }

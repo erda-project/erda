@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -55,8 +56,8 @@ var (
 type AutoTestCaseSavePipelineRequest struct {
 	Inode string `json:"inode"`
 
-	PipelineYml string             `json:"pipelineYml"`
-	RunParams   []PipelineRunParam `json:"runParams"`
+	PipelineYml string                     `json:"pipelineYml"`
+	RunParams   []*basepb.PipelineRunParam `json:"runParams"`
 
 	IdentityInfo
 }

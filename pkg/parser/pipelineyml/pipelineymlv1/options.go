@@ -14,7 +14,7 @@
 package pipelineymlv1
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 const (
@@ -36,7 +36,7 @@ type Option struct {
 
 	renderPlaceholder bool // 是否渲染占位符
 
-	placeholders []apistructs.MetadataField // render pipeline.yml placeholder
+	placeholders []*commonpb.MetadataField // render pipeline.yml placeholder
 
 	alreadyTransformed bool // 是否已经 transformed, 如果是, 则禁止自动插入某些节点
 
@@ -88,7 +88,7 @@ func WithRenderPlaceholder(render bool) OpOption {
 	}
 }
 
-func WithPlaceholders(placeholders []apistructs.MetadataField) OpOption {
+func WithPlaceholders(placeholders []*commonpb.MetadataField) OpOption {
 	return func(op *Option) {
 		op.placeholders = placeholders
 	}

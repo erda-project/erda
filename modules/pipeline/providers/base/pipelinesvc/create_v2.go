@@ -21,14 +21,19 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/base/converter"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/pbutil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
+func (s *PipelineSvc) CreateV2(req *basepb.PipelineCreateRequest) (*spec.Pipeline, error) {
 	// validate
 	if err := s.validateCreateRequest(req); err != nil {
 		return nil, err
@@ -48,7 +53,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 
 	// 立即执行一次
 	if req.AutoRunAtOnce {
-		_p, err := s.RunPipeline(&apistructs.PipelineRunRequest{
+		_p, err := s.RunPipeline(&basepb.PipelineRunRequest{
 			PipelineID:        p.ID,
 			ForceRun:          req.ForceRun,
 			IdentityInfo:      req.IdentityInfo,
@@ -79,7 +84,7 @@ const (
 )
 
 // validateCreateRequest validate pipelineCreateRequestV2
-func (s *PipelineSvc) validateCreateRequest(req *apistructs.PipelineCreateRequestV2) error {
+func (s *PipelineSvc) validateCreateRequest(req *pb.PipelineCreateRequest) error {
 	if req == nil {
 		return apierrors.ErrCreatePipeline.MissingParameter("request")
 	}
@@ -99,11 +104,11 @@ func (s *PipelineSvc) validateCreateRequest(req *apistructs.PipelineCreateReques
 	if req.PipelineSource == "" {
 		return apierrors.ErrCreatePipeline.MissingParameter("pipelineSource")
 	}
-	if !req.PipelineSource.Valid() {
+	if !apistructs.PipelineSource(req.PipelineSource).Valid() {
 		return apierrors.ErrCreatePipeline.InvalidParameter(errors.Errorf("source: %s", req.PipelineSource))
 	}
 	// identity
-	if req.UserID == "" && req.InternalClient == "" {
+	if req.IdentityInfo == nil {
 		return apierrors.ErrCreatePipeline.MissingParameter("identity")
 	}
 	// filterLabels
@@ -126,8 +131,8 @@ func (s *PipelineSvc) validateCreateRequest(req *apistructs.PipelineCreateReques
 	return nil
 }
 
-// setDefault set default value for PipelineCreateRequestV2
-func setDefault(req *apistructs.PipelineCreateRequestV2) {
+// setDefault set default value for PipelineCreateRequest
+func setDefault(req *pb.PipelineCreateRequest) {
 	if req.PipelineYmlName == "" {
 		req.PipelineYmlName = apistructs.DefaultPipelineYmlName
 	}
@@ -137,7 +142,7 @@ func logCompatibleFailed(key, value string, err error) {
 	logrus.Errorf("compatible from labels failed, key: %s, value: %s, err: %v", key, value, err)
 }
 
-func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {
+func (s *PipelineSvc) makePipelineFromRequestV2(req *pb.PipelineCreateRequest) (*spec.Pipeline, error) {
 	p := &spec.Pipeline{}
 
 	// 解析 pipeline yml 文件，生成最终 pipeline yml 文件
@@ -149,7 +154,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	p.PipelineYml = req.PipelineYml
 	p.PipelineYmlName = req.PipelineYmlName
-	p.PipelineSource = req.PipelineSource
+	p.PipelineSource = apistructs.PipelineSource(req.PipelineSource)
 	p.ClusterName = req.ClusterName
 
 	// labels
@@ -164,16 +169,16 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	// envs
 	p.Snapshot.Envs = req.Envs
-	p.Snapshot.RunPipelineParams = req.RunParams.ToPipelineRunParamsWithValue()
+	p.Snapshot.RunPipelineParams = converter.ConvertPbRunParams(req.RunParams).ToPipelineRunParamsWithValue()
 
 	// status
 	p.Status = apistructs.PipelineStatusAnalyzed
 
 	// identity
-	if req.UserID != "" {
-		p.Extra.SubmitUser = s.tryGetUser(req.UserID)
+	if req.IdentityInfo.UserID != "" {
+		p.Extra.SubmitUser = s.tryGetUser(req.IdentityInfo.UserID)
 	}
-	p.Extra.InternalClient = req.InternalClient
+	p.Extra.InternalClient = req.IdentityInfo.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
 
 	// 挂载配置
@@ -207,7 +212,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 
 	// vcs
 	if v, ok := labels[apistructs.LabelCommitDetail]; ok {
-		var detail apistructs.CommitDetail
+		var detail *commonpb.CommitDetail
 		if err := json.Unmarshal([]byte(v), &detail); err != nil {
 			logCompatibleFailed(apistructs.LabelCommitDetail, v, err)
 		}
@@ -276,7 +281,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	// gc
 	p.Extra.GC = req.GC
 
-	if err := s.UpdatePipelineCron(p, req.CronStartFrom, req.ConfigManageNamespaces, pipelineYml.Spec().CronCompensator); err != nil {
+	if err := s.UpdatePipelineCron(p, pbutil.GetTime(req.CronStartFrom), req.ConfigManageNamespaces, pipelineYml.Spec().CronCompensator); err != nil {
 		return nil, apierrors.ErrCreatePipeline.InternalError(err)
 	}
 

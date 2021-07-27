@@ -65,8 +65,8 @@ func GetAvailableTaskContainerPaths(tasks []spec.PipelineTask, currentTask spec.
 	return containerPaths
 }
 
-func GetAvailableTaskOutStorages(tasks []spec.PipelineTask) []apistructs.MetadataField {
-	var volumes []apistructs.MetadataField
+func GetAvailableTaskOutStorages(tasks []spec.PipelineTask) []*commonpb.MetadataField {
+	var volumes []*commonpb.MetadataField
 	for _, task := range tasks {
 		for _, out := range task.Context.OutStorages {
 			volumes = append(volumes, out)

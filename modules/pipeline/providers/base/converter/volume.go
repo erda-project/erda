@@ -11,18 +11,28 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dbclient
+package converter
 
 import (
 	basepb "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-// UpdatePipelineTaskSnippetDetail 更新 snippet task 的 snippet 信息
-func (client *Client) UpdatePipelineTaskSnippetDetail(id uint64, snippetDetail *basepb.PipelineTaskSnippetDetail, ops ...SessionOption) error {
-	session := client.NewSession(ops...)
-	defer session.Close()
+// EnableNFSVolume
+// whether to close the mounting of the network storage
+// after closing, some special pipeline syntax ( ${{ dirs.xxx }} or old ${xxx} ) will not be available
+func EnableNFSVolume(cfg *basepb.StorageConfig) bool {
+	if cfg == nil {
+		return false
+	}
+	return cfg.EnableNFS
+}
 
-	_, err := session.ID(id).Cols("snippet_pipeline_detail").Update(&spec.PipelineTask{SnippetPipelineDetail: snippetDetail})
-	return err
+// EnableShareVolume
+// whether to open shared storage
+// after open, the context directory in the pipeline will be shared
+func EnableShareVolume(cfg *basepb.StorageConfig) bool {
+	if cfg == nil {
+		return false
+	}
+	return cfg.EnableLocal
 }

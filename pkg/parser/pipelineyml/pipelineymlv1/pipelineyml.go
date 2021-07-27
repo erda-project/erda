@@ -25,7 +25,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/apistructs"
+	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/pipelineymlvars"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/steptasktype"
 )
@@ -83,7 +83,7 @@ func (y *PipelineYml) GetInstanceID() string {
 	return y.metadata.instanceID
 }
 
-func (y *PipelineYml) GetPlaceholders() []apistructs.MetadataField {
+func (y *PipelineYml) GetPlaceholders() []*commonpb.MetadataField {
 	return y.option.placeholders
 }
 
@@ -91,7 +91,7 @@ func (y *PipelineYml) GetPlaceHolderTransformedEnvs() map[string]string {
 	return y.metadata.PlaceHolderEnvs
 }
 
-func (y *PipelineYml) transformPlaceholdersToEnvs(placeholder []apistructs.MetadataField) {
+func (y *PipelineYml) transformPlaceholdersToEnvs(placeholder []*commonpb.MetadataField) {
 	if y.metadata.PlaceHolderEnvs == nil {
 		y.metadata.PlaceHolderEnvs = make(map[string]string)
 	}
