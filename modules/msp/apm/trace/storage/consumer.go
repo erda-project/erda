@@ -24,7 +24,6 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/monitor/trace"
 )
 
 func (p *provider) initCassandra(session *gocql.Session) error {
@@ -75,7 +74,7 @@ func (ts *TraceStatement) GetStatement(data interface{}) (string, []interface{},
 }
 
 func (p *provider) getStatement(data interface{}) (string, []interface{}, error) {
-	span, ok := data.(*trace.Span)
+	span, ok := data.(*Span)
 	if !ok {
 		return "", nil, fmt.Errorf("value %#v must be Span", data)
 	}
@@ -111,8 +110,8 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 }
 
 // metricToSpan .
-func metricToSpan(metric *metrics.Metric) (*trace.Span, error) {
-	var span trace.Span
+func metricToSpan(metric *metrics.Metric) (*Span, error) {
+	var span Span
 	span.Tags = metric.Tags
 
 	traceID, ok := metric.Tags["trace_id"]
@@ -196,7 +195,7 @@ func toInt64(obj interface{}) (int64, error) {
 }
 
 // toSpan . Span data is generated from various language agents.
-func toSpan(span *trace.Span) *metrics.Metric {
+func toSpan(span *Span) *metrics.Metric {
 	metric := &metrics.Metric{
 		Name: "span",
 		Tags: map[string]string{

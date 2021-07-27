@@ -14,10 +14,10 @@
 package settings
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -27,19 +27,21 @@ import (
 	"github.com/recallsong/go-utils/conv"
 	"github.com/recallsong/go-utils/encoding/md5x"
 	"github.com/recallsong/go-utils/reflectx"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda-proto-go/core/monitor/settings/pb"
+	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/router"
 )
 
-func (p *provider) monitorConfigMap(ns string) *configDefine {
+func (s *settingsService) monitorConfigMap(ns string) *configDefine {
 	metricDays, logDays := 8, 7
 	ttl := os.Getenv("METRIC_INDEX_TTL")
 	if len(ttl) > 0 {
 		d, err := time.ParseDuration(ttl)
 		if err != nil {
-			p.L.Errorf("fail to parse metric ttl: %s", err)
+			s.p.Log.Errorf("fail to parse metric ttl: %s", err)
 		} else {
 			metricDays = int(math.Ceil(d.Hours() / 24))
 		}
@@ -48,65 +50,66 @@ func (p *provider) monitorConfigMap(ns string) *configDefine {
 	if len(ttl) > 0 {
 		sed, err := strconv.ParseInt(ttl, 10, 64)
 		if err != nil {
-			p.L.Errorf("fail to parse log ttl: %s", err)
+			s.p.Log.Errorf("fail to parse log ttl: %s", err)
 		} else {
 			const daySec = float64(24 * 60 * 60)
 			logDays = int(math.Ceil(float64(sed) / daySec))
 		}
 	}
 	cd := &configDefine{
-		handler: p.updateMonitorConfig,
+		handler: s.updateMonitorConfig,
 	}
+
 	if ns == "general" {
-		cd.defaults = map[string]func(lang i18n.LanguageCodes) *configItem{
-			"metrics_ttl": func(lang i18n.LanguageCodes) *configItem {
-				return &configItem{
+		cd.defaults = map[string]func(langs i18n.LanguageCodes) *pb.ConfigItem{
+			"metrics_ttl": func(langs i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
 					Key:   "metrics_ttl",
-					Name:  p.t.Text(lang, "base") + " " + p.t.Text(lang, "metrics_ttl"),
+					Name:  s.t.Text(langs, "base") + " " + s.t.Text(langs, "metrics_ttl"),
 					Type:  "number",
-					Value: metricDays,
-					Unit:  p.t.Text(lang, "days"),
+					Value: structpb.NewNumberValue(float64(metricDays)),
+					Unit:  s.t.Text(langs, "days"),
 				}
 			},
 		}
-		cd.convert = func(lang i18n.LanguageCodes, ns string, cg *configGroup) *configGroup {
-			cg.Name = p.t.Text(lang, cg.Key)
+		cd.convert = func(langs i18n.LanguageCodes, ns string, cg *pb.ConfigGroup) *pb.ConfigGroup {
+			cg.Name = s.t.Text(langs, cg.Key)
 			for _, item := range cg.Items {
-				item.Name = p.t.Text(lang, item.Key)
+				item.Name = s.t.Text(langs, item.Key)
 				if item.Key == "metrics_ttl" {
-					item.Name = p.t.Text(lang, "base") + " " + item.Name
+					item.Name = s.t.Text(langs, "base") + " " + item.Name
 				}
 				item.Value = getValue(item.Type, item.Value)
 			}
 			return cg
 		}
 	} else {
-		cd.defaults = map[string]func(lang i18n.LanguageCodes) *configItem{
-			"logs_ttl": func(lang i18n.LanguageCodes) *configItem {
-				return &configItem{
+		cd.defaults = map[string]func(lang i18n.LanguageCodes) *pb.ConfigItem{
+			"logs_ttl": func(lang i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
 					Key:   "logs_ttl",
-					Name:  p.t.Text(lang, "logs_ttl"),
+					Name:  s.t.Text(lang, "logs_ttl"),
 					Type:  "number",
-					Value: logDays,
-					Unit:  p.t.Text(lang, "days"),
+					Value: structpb.NewNumberValue(float64(logDays)),
+					Unit:  s.t.Text(lang, "days"),
 				}
 			},
-			"metrics_ttl": func(lang i18n.LanguageCodes) *configItem {
-				return &configItem{
+			"metrics_ttl": func(lang i18n.LanguageCodes) *pb.ConfigItem {
+				return &pb.ConfigItem{
 					Key:   "metrics_ttl",
-					Name:  p.t.Text(lang, "metrics_ttl"),
+					Name:  s.t.Text(lang, "metrics_ttl"),
 					Type:  "number",
-					Value: metricDays,
-					Unit:  p.t.Text(lang, "days"),
+					Value: structpb.NewNumberValue(float64(metricDays)),
+					Unit:  s.t.Text(lang, "days"),
 				}
 			},
 		}
-		cd.convert = func(lang i18n.LanguageCodes, ns string, cg *configGroup) *configGroup {
-			cg.Name = p.t.Text(lang, cg.Key)
+		cd.convert = func(lang i18n.LanguageCodes, ns string, cg *pb.ConfigGroup) *pb.ConfigGroup {
+			cg.Name = s.t.Text(lang, cg.Key)
 			for _, item := range cg.Items {
-				item.Name = p.t.Text(lang, item.Key)
+				item.Name = s.t.Text(lang, item.Key)
 				if item.Key == "metrics_ttl" {
-					item.Name = p.t.Text(lang, "app") + " " + item.Name
+					item.Name = s.t.Text(lang, "app") + " " + item.Name
 				}
 				item.Value = getValue(item.Type, item.Value)
 			}
@@ -140,25 +143,11 @@ type monitorConfigRegister struct {
 	Hash       string    `json:"hash" gorm:"column:hash"`
 }
 
-// monitorConfig .
-type monitorConfig struct {
-	OrgID      int       `json:"org_id" gorm:"column:org_id"`
-	OrgName    string    `json:"org_name" gorm:"column:org_name"`
-	Type       string    `json:"type" gorm:"column:type"`
-	Names      string    `json:"names" gorm:"column:names"`
-	Filters    string    `json:"filters" gorm:"column:filters"`
-	Config     string    `json:"config" gorm:"column:config"`
-	CreateTime time.Time `json:"create_time" gorm:"column:create_time"`
-	UpdateTime time.Time `json:"update_time" gorm:"column:update_time"`
-	Enable     bool      `json:"enable" gorm:"column:enable"`
-	Key        string    `json:"key" gorm:"column:key"`
-}
-
-func (p *provider) updateMonitorConfig(tx *gorm.DB, orgid int, orgName, ns, group string, keys map[string]interface{}) error {
+func (s *settingsService) updateMonitorConfig(tx *gorm.DB, orgid int64, orgName, ns, group string, keys map[string]interface{}) error {
 	if ns == "general" {
 		ns = ""
 	}
-	orgID := strconv.Itoa(orgid)
+	orgID := strconv.FormatInt(orgid, 10)
 	key := md5x.SumString(orgID + "/" + ns).String16()
 	for k, v := range keys {
 		var typ string
@@ -180,7 +169,7 @@ func (p *provider) updateMonitorConfig(tx *gorm.DB, orgid int, orgName, ns, grou
 		if err != nil {
 			return fmt.Errorf("fail to get register monitor config: %s", err)
 		}
-		err = p.syncMonitorConfig(tx, orgid, orgID, orgName, ns, typ, key, list, days)
+		err = s.syncMonitorConfig(tx, orgid, orgID, orgName, ns, typ, key, list, days)
 		if err != nil {
 			return fmt.Errorf("fail to get sync monitor config: %s", err)
 		}
@@ -188,14 +177,14 @@ func (p *provider) updateMonitorConfig(tx *gorm.DB, orgid int, orgName, ns, grou
 	return nil
 }
 
-func (p *provider) syncMonitorConfig(tx *gorm.DB, orgid int, orgID, orgName, env, typ, key string, list []*monitorConfigRegister, days int64) (err error) {
+func (s *settingsService) syncMonitorConfig(tx *gorm.DB, orgid int64, orgID, orgName, env, typ, key string, list []*monitorConfigRegister, days int64) (err error) {
 	cfg := getConfigFromDays(days)
 	now := time.Now()
 	for _, item := range list {
 		if len(item.ScopeID) <= 0 {
 			item.Filters, err = insertOrgFilter(typ, orgID, orgName, item.Filters)
 			if err != nil {
-				p.L.Error(err)
+				s.p.Log.Error(err)
 				return err
 			}
 		}
@@ -203,7 +192,7 @@ func (p *provider) syncMonitorConfig(tx *gorm.DB, orgid int, orgID, orgName, env
 		// Update the actual configuration table
 		err = tx.Exec(monitorConfigInsertUpdate, orgid, orgName, typ, item.Names, item.Filters, cfg, now, now, 1, key, hash).Error
 		if err != nil {
-			p.L.Error(err)
+			s.p.Log.Error(err)
 			return err
 		}
 	}
@@ -245,48 +234,56 @@ func getConfigFromDays(days int64) string {
 	return string(byts)
 }
 
-func (p *provider) registerMonitorConfig(r *http.Request, list []*monitorConfigRegister) interface{} {
-	desc := r.FormValue("desc")
+func (s *settingsService) RegisterMonitorConfig(ctx context.Context, req *pb.RegisterMonitorConfigRequest) (*pb.RegisterMonitorConfigResponse, error) {
 	now := time.Now()
-	tx := p.db.Begin()
-
+	tx := s.db.Begin()
 	orgIDs := make(map[string]map[string]map[string][]*monitorConfigRegister)
-	for _, item := range list {
+	for _, item := range req.Data {
 		if item == nil {
 			continue
 		}
-		if len(item.Desc) <= 0 {
-			item.Desc = desc
-		}
 		if len(item.Scope) <= 0 || len(item.Type) <= 0 {
 			tx.Rollback()
-			return api.Errors.InvalidParameter("invalid scope or type")
+			return nil, errors.NewMissingParameterError("scope or type")
 		}
-		item.Namespace = strings.ToLower(item.Namespace)
-		item.Hash = md5x.SumString(item.Scope + "," + item.ScopeID + "," + item.Type + "," + item.Namespace + "," + item.Names + item.Filters).String()
-		item.UpdateTime = now
-		err := tx.Exec(monitorConfigRegisterInsertUpdate, item.Scope, item.ScopeID, item.Namespace, item.Type, item.Names, item.Filters,
-			item.Enable, item.UpdateTime, item.Desc, item.Hash).Error
+		mc := &monitorConfigRegister{
+			Scope:     item.Scope,
+			ScopeID:   item.ScopeID,
+			Namespace: item.Namespace,
+			Type:      item.Type,
+			Names:     item.Names,
+			Filters:   item.Filters,
+			Enable:    item.Enable,
+			Desc:      item.Desc,
+		}
+		if len(mc.Desc) <= 0 {
+			mc.Desc = req.Desc
+		}
+		mc.Namespace = strings.ToLower(mc.Namespace)
+		mc.Hash = md5x.SumString(mc.Scope + "," + mc.ScopeID + "," + mc.Type + "," + mc.Namespace + "," + mc.Names + mc.Filters).String()
+		mc.UpdateTime = now
+		err := tx.Exec(monitorConfigRegisterInsertUpdate, mc.Scope, mc.ScopeID, mc.Namespace, mc.Type, mc.Names, mc.Filters,
+			mc.Enable, mc.UpdateTime, mc.Desc, mc.Hash).Error
 		if err != nil {
 			tx.Rollback()
-			return api.Errors.Internal(err)
+			return nil, errors.NewDatabaseError(err)
 		}
-		if item.Scope == "org" {
-			envs, ok := orgIDs[item.ScopeID]
+		if mc.Scope == "org" {
+			envs, ok := orgIDs[mc.ScopeID]
 			if !ok {
 				envs = make(map[string]map[string][]*monitorConfigRegister)
-				orgIDs[item.ScopeID] = envs
+				orgIDs[mc.ScopeID] = envs
 			}
 			typs, ok := envs[item.Namespace]
 			if !ok {
 				typs = make(map[string][]*monitorConfigRegister)
-				envs[item.Namespace] = typs
+				envs[mc.Namespace] = typs
 			}
-			typs[item.Type] = append(typs[item.Type], item)
+			typs[mc.Type] = append(typs[mc.Type], mc)
 		}
 	}
 	for orgID, envs := range orgIDs {
-		orgid, err := strconv.Atoi(orgID)
+		orgid, err := strconv.ParseInt(orgID, 10, 64)
 		if err != nil {
 			continue
 		}
@@ -313,23 +310,23 @@ func (p *provider) registerMonitorConfig(r *http.Request, list []*monitorConfigR
 						continue
 					}
 					tx.Rollback()
-					return api.Errors.Internal(err)
+					return nil, errors.NewDatabaseError(err)
 				}
 				days, err := strconv.ParseInt(gs.Value, 10, 64)
 				if err != nil {
-					p.L.Errorf("fail to parse metric ttl to int: %s", err)
+					s.p.Log.Errorf("fail to parse metric ttl to int: %s", err)
 					continue
 				}
-				err = p.syncMonitorConfig(tx, orgid, orgID, gs.OrgName, env, typ, key, list, days)
+				err = s.syncMonitorConfig(tx, orgid, orgID, gs.OrgName, env, typ, key, list, days)
 				if err != nil {
 					tx.Rollback()
-					return fmt.Errorf("fail to get sync monitor config: %s", err)
+					return nil, errors.NewDatabaseError(fmt.Errorf("fail to get sync monitor config: %s", err))
 				}
 			}
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		return api.Errors.Internal(err)
+		return nil, errors.NewDatabaseError(err)
 	}
-	return api.Success("OK")
+	return &pb.RegisterMonitorConfigResponse{Data: "OK"}, nil
 }

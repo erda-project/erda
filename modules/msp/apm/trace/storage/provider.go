@@ -26,19 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/kafka"
 )
 
-type define struct{}
-
-func (d *define) Services() []string     { return []string{"trace-storage"} }
-func (d *define) Dependencies() []string { return []string{"kafka", "cassandra"} }
-func (d *define) Summary() string        { return "trace storage" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Input  kafka.ConsumerConfig `file:"input"`
 	Output struct {
@@ -98,5 +85,13 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider("trace-storage", &define{})
+	servicehub.Register("trace-storage", &servicehub.Spec{
+		Services:     []string{"trace-storage"},
+		Dependencies: []string{"kafka", "cassandra"},
+		Description:  "trace storage",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

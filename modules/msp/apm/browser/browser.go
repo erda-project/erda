@@ -25,19 +25,6 @@ import (
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
-type define struct{}
-
-func (d *define) Services() []string     { return []string{"browser-analytics"} }
-func (d *define) Dependencies() []string { return []string{"kafka"} }
-func (d *define) Summary() string        { return "browser-analytics" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	Ipdb   string               `file:"ipdb"`
 	Output kafka.ProducerConfig `file:"output"`
@@ -81,5 +68,13 @@ func (p *provider) Close() error {
 }
 
 func init() {
-	servicehub.RegisterProvider("browser-analytics", &define{})
+	servicehub.Register("browser-analytics", &servicehub.Spec{
+		Services:     []string{"browser-analytics"},
+		Dependencies: []string{"kafka"},
+		Description:  "browser-analytics",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
