@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -53,7 +54,7 @@ func (e *Endpoints) AddConfigs(ctx context.Context, r *http.Request, vars map[st
 			req.Configs[i].ConfigType = map[string]string{"kv": "ENV", "dice-file": "FILE"}[req.Configs[i].Type]
 		}
 		if req.Configs[i].Operations == nil {
-			req.Configs[i].Operations = &apistructs.PipelineCmsConfigOperations{
+			req.Configs[i].Operations = &cmspb.PipelineCmsConfigOperations{
 				CanDownload: false,
 				CanEdit:     true,
 				CanDelete:   true,
@@ -150,7 +151,7 @@ func (e *Endpoints) GetConfigs(ctx context.Context, r *http.Request, vars map[st
 			envConfigs[i].Type = map[string]string{"FILE": "dice-file", "ENV": "kv"}[envConfigs[i].Type]
 		}
 		if envConfigs[i].Operations == nil {
-			envConfigs[i].Operations = &apistructs.PipelineCmsConfigOperations{
+			envConfigs[i].Operations = &cmspb.PipelineCmsConfigOperations{
 				CanDownload: false,
 				CanEdit:     true,
 				CanDelete:   true,

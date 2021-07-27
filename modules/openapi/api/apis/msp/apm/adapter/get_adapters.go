@@ -11,21 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package alert
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
-	_ "github.com/erda-project/erda-infra/providers/serviceregister"
-	_ "github.com/erda-project/erda/modules/pipeline"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
-)
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/pipeline/pipeline.yaml",
-	})
+var GET_MSP_ADAPTERS = apis.ApiSpec{
+	Path:        "/api/msp/apm/adapters",
+	BackendPath: "/api/msp/apm/adapters",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "Get msp supported adapters",
 }

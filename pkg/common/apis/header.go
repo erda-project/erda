@@ -22,6 +22,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
+const (
+	headerInternalClient = "Internal-Client"
+)
+
 var langKeys = []string{"lang", "accept-language"}
 
 // Language .
@@ -82,4 +86,12 @@ func GetHeader(ctx context.Context, key string) string {
 		}
 	}
 	return ""
+}
+
+func GetInternalClient(ctx context.Context) string {
+	return GetHeader(ctx, "internal-client")
+}
+
+func IsInternalClient(ctx context.Context) bool {
+	return GetInternalClient(ctx) != ""
 }
