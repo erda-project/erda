@@ -655,15 +655,15 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
-		severityCol = `{ "title": "严重程度", "dataIndex": "severity", "width": 120 },`
-		closedAtCol = `,{ "title": "关闭日期", "dataIndex": "closedAt", "width": 160 }`
+		severityCol = `{ "title": "严重程度", "dataIndex": "severity", "width": 100 },`
+		closedAtCol = `,{ "title": "关闭日期", "dataIndex": "closedAt", "width": 100 }`
 	}
 	props := `{
     "columns": [
 		{
 			"dataIndex": "id",
 			"title": "ID",
-			"width": 100
+			"width": 90
         },
         {
             "dataIndex": "title",
@@ -672,12 +672,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		progressCol +
 		severityCol +
 		`{
-            "width": 120,
+            "width": 100,
             "dataIndex": "priority",
             "title": "优先级"
         },
         {
-            "width": 120,
+            "width": 110,
             "dataIndex": "state",
             "title": "状态"
         },
@@ -687,7 +687,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
             "title": "处理人"
         },
         {
-            "width": 160,
+            "width": 100,
             "dataIndex": "deadline",
             "title": "截止日期"
         }` +
