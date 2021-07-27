@@ -178,7 +178,7 @@ func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
 		return
 	}
 	for i := range create.Cols {
-		for j := range create.Cols[i].Options {
+		for j := len(create.Cols[i].Options) - 1; i >= 0; i-- {
 			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
 				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
 			}
@@ -190,7 +190,7 @@ func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
 	if create == nil {
 		return
 	}
-	for i := range create.Options {
+	for i := len(create.Options) - 1; i >= 0; i-- {
 		if create.Options[i].Tp == ast.TableOptionCollate {
 			create.Options = append(create.Options[:i], create.Options[i+1:]...)
 		}
@@ -201,7 +201,7 @@ func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
 	if create == nil {
 		return
 	}
-	for i := range create.Options {
+	for i := len(create.Constraints) - 1; i >= 0; i-- {
 		if create.Constraints[i].Tp == ast.ConstraintCheck {
 			create.Constraints = append(create.Constraints[:i], create.Constraints[i+1:]...)
 		}
