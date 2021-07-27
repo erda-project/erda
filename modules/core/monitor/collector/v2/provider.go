@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/console"
-	kafka2 "github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/kafka"
+	"github.com/erda-project/erda/modules/core/monitor/collector/v2/outputs/console"
+	kafka2 "github.com/erda-project/erda/modules/core/monitor/collector/v2/outputs/kafka"
 )
 
 type config struct {

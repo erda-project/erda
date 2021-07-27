@@ -20,7 +20,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/erda-project/erda/modules/core/monitor/log/pb"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/storage/pb"
+	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -29,7 +30,7 @@ const (
 
 func DefaultDecoderFunc(data []byte) ([]byte, error) {
 	lb := &pb.LogBatch{}
-	err := lb.Unmarshal(data)
+	err := proto.Unmarshal(data, lb)
 	if err != nil {
 		return nil, err
 	}

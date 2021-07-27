@@ -24,8 +24,9 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
-	"github.com/erda-project/erda/modules/core/monitor/log/pb"
-	"github.com/erda-project/erda/modules/monitor/core/collector/v2/outputs/console"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/storage/pb"
+	"github.com/erda-project/erda/modules/core/monitor/collector/v2/outputs/console"
+	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
 )
@@ -121,7 +122,7 @@ func mockLogBatch(count int) *pb.LogBatch {
 
 func mockProtobufBody(count int) []byte {
 	lb := mockLogBatch(count)
-	buf, err := lb.Marshal()
+	buf, err := proto.Marshal(lb)
 	if err != nil {
 		log.Fatal(err)
 	}

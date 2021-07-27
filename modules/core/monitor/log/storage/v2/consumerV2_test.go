@@ -1,3 +1,16 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package storagev2
 
 import (
@@ -6,8 +19,9 @@ import (
 
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/log/storage/pb"
 	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
-	"github.com/erda-project/erda/modules/core/monitor/log/pb"
+	"github.com/golang/protobuf/proto"
 )
 
 func Test_provider_processLogV2(t *testing.T) {
@@ -76,10 +90,11 @@ func Test_provider_invokeV2(t *testing.T) {
 		Tags:      map[string]string{"level": "INFO"},
 		Labels:    nil,
 	}
+
 	lb := &pb.LogBatch{
 		Logs: []*pb.Log{log},
 	}
-	value, err := lb.Marshal()
+	value, err := proto.Marshal(lb)
 	ass.Nil(err)
 	err = mp.invokeV2(nil, value, nil, time.Now())
 	ass.Nil(err)
@@ -88,7 +103,7 @@ func Test_provider_invokeV2(t *testing.T) {
 		Source: log.Source,
 		Tags:   log.Tags,
 	}, mw.datas[0])
-	ass.Equal(log, mw.datas[1])
+	proto.Equal(log, mw.datas[1].(*pb.Log))
 
 	// bad value
 	err = mp.invokeV2(nil, []byte(`bad value`), nil, time.Now())

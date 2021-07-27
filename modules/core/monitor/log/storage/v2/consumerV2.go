@@ -18,13 +18,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/log/storage/pb"
 	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
-	"github.com/erda-project/erda/modules/core/monitor/log/pb"
+	"github.com/golang/protobuf/proto"
 )
 
 func (p *provider) invokeV2(key []byte, value []byte, topic *string, timestamp time.Time) error {
 	lb := &pb.LogBatch{}
-	if err := lb.Unmarshal(value); err != nil {
+	if err := proto.Unmarshal(value, lb); err != nil {
 		return fmt.Errorf("unmarshal failed: %w", err)
 	}
 

@@ -22,8 +22,8 @@ import (
 
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-proto-go/core/monitor/log/storage/pb"
 	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
-	"github.com/erda-project/erda/modules/core/monitor/log/pb"
 )
 
 func BenchmarkGzipContentV1(b *testing.B) {
