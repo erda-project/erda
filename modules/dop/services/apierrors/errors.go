@@ -474,6 +474,8 @@ var (
 	ErrListPublisher   = err("ErrListPublisher", "获取Publisher列表失败")
 
 	ErrParallelRunPipeline = err("ErrParallelRunPipeline", "已有流水线正在运行中")
+
+	ErrListFileRecords = err("ErrListFileRecords", "failed to list file records")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
