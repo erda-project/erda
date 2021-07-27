@@ -139,6 +139,9 @@ func TestTrimCharacterSetFromRawCreateTableSQL(t *testing.T) {
 		if strings.Contains(strings.ToLower(sql), "utf32") {
 			t.Fatal("failed to trim character from sql")
 		}
+		if _, err := parser.New().ParseOneStmt(sql, "", ""); err != nil {
+			t.Fatal(err)
+		}
 		t.Log(sql)
 	}
 }
