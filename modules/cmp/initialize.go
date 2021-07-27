@@ -126,6 +126,7 @@ func do() (*httpserver.Server, error) {
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
 		bundle.WithEventBox(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 
