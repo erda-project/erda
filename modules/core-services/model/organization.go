@@ -50,6 +50,7 @@ type BlockoutConfig struct {
 }
 
 type OrgConfig struct {
+	EnablePersonalMessageEmail bool   `json:"enablePersonalMessageEmail"`
 	EnableMS                   bool   `json:"enableMs"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`

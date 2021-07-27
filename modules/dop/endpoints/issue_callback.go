@@ -142,8 +142,11 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	logrus.Debugf("params of issue event is: %v", params)
 	logrus.Debugf("email addr is: %v", emailAddrs)
 
-	if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
-		logrus.Errorf("send personal issue %s event email err: %v", params["issueID"], err)
+	// if allowd send email for personal message
+	if org.Config.EnablePersonalMessageEmail {
+		if err := e.bdl.CreateEmailNotify(emailTemplateName, params, org.Locale, org.ID, emailAddrs); err != nil {
+			logrus.Errorf("send personal issue %s event email err: %v", params["issueID"], err)
+		}
 	}
 	if err := e.bdl.CreateMboxNotify(mboxTemplateName, params, org.Locale, org.ID, req.Content.Receivers); err != nil {
 		logrus.Errorf("send personal issue %s event mbox err: %v", params["issueID"], err)

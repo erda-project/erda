@@ -195,6 +195,7 @@ func (org *OrgDTO) HidePassword() {
 }
 
 type OrgConfig struct {
+	EnablePersonalMessageEmail bool   `json:"enablePersonalMessageEmail"`
 	EnableMS                   bool   `json:"enableMS"`
 	SMTPHost                   string `json:"smtpHost"`
 	SMTPUser                   string `json:"smtpUser"`
