@@ -2,13 +2,13 @@
 
 ### GET settings
 GET {{url}}/global/settings?workspace=dev&org_id=1
-Org-ID: 2
+Org-ID: 1
 User-ID: 1100
-Lang: en
+Lang: zh
 
 ### PUT settings
 PUT {{url}}/global/settings?org_id=1
-Org-ID: 2
+Org-ID: 1
 User-ID: 1100
 Content-Type: application/json
 
@@ -18,12 +18,8 @@ Content-Type: application/json
             "key": "monitor",
             "items": [
                 {
-                    "key": "logs_ttl",
-                    "value": 10
-                },
-                {
                     "key": "metrics_ttl",
-                    "value": 3
+                    "value": 10
                 }
             ]
         }
