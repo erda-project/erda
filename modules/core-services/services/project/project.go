@@ -165,7 +165,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		Functions:      string(functions),
 		ActiveTime:     time.Now(),
 		EnableNS:       conf.EnableNS(),
-		TYPE:           string(createReq.Template),
+		Type:           string(createReq.Template),
 	}
 	if err = p.db.CreateProject(project); err != nil {
 		logrus.Warnf("failed to insert project to db, (%v)", err)
@@ -904,7 +904,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		ActiveTime:     project.ActiveTime.Format("2006-01-02 15:04:05"),
 		Owners:         []string{},
 		IsPublic:       project.IsPublic,
-		TYPE:           project.TYPE,
+		Type:           project.Type,
 	}
 	if projectDto.DisplayName == "" {
 		projectDto.DisplayName = projectDto.Name

@@ -35,7 +35,7 @@ type Project struct {
 	ActiveTime     time.Time `gorm:"column:active_time"`
 	EnableNS       bool      `gorm:"column:enable_ns"` // Whether to open the project-level namespace
 	IsPublic       bool      `gorm:"column:is_public"` // Is it a public project
-	TYPE           string    `gorm:"column:type"`      // project type
+	Type           string    `gorm:"column:type"`      // project type
 }
 
 // TableName 设置模型对应数据库表名称
