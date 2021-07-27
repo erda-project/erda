@@ -165,6 +165,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		Functions:      string(functions),
 		ActiveTime:     time.Now(),
 		EnableNS:       conf.EnableNS(),
+		TYPE:           string(createReq.Template),
 	}
 	if err = p.db.CreateProject(project); err != nil {
 		logrus.Warnf("failed to insert project to db, (%v)", err)
