@@ -39,9 +39,9 @@
 /.env
 /.env.*
 /conf/**/*.local.yaml
-modules/tools/playground/
-cmd/playground
-conf/playground
+modules/local/
+cmd/local
+conf/local
 
 # generated files
 # openapi
