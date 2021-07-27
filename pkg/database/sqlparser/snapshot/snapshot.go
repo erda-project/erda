@@ -15,6 +15,7 @@ package snapshot
 
 import (
 	"bytes"
+	"regexp"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -74,6 +75,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
 			return nil, err
 		}
+		TrimCharacterSetFromRawCreateTableSQL(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
 			return nil, err
@@ -176,13 +178,11 @@ func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
 		return
 	}
 	for i := range create.Cols {
-		var options []*ast.ColumnOption
 		for j := range create.Cols[i].Options {
-			if create.Cols[i].Options[j].Tp != ast.ColumnOptionCollate {
-				options = append(options, create.Cols[i].Options[j])
+			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
+				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
 			}
 		}
-		create.Cols[i].Options = options
 	}
 }
 
@@ -190,24 +190,24 @@ func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
 	if create == nil {
 		return
 	}
-	var options []*ast.TableOption
-	for _, opt := range create.Options {
-		if opt.Tp != ast.TableOptionCollate {
-			options = append(options, opt)
+	for i := range create.Options {
+		if create.Options[i].Tp == ast.TableOptionCollate {
+			create.Options = append(create.Options[:i], create.Options[i+1:]...)
 		}
 	}
-	create.Options = options
 }
 
 func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
 	if create == nil {
 		return
 	}
-	var cons []*ast.Constraint
-	for _, con := range create.Constraints {
-		if con.Tp != ast.ConstraintCheck {
-			cons = append(cons, con)
+	for i := range create.Options {
+		if create.Constraints[i].Tp == ast.ConstraintCheck {
+			create.Constraints = append(create.Constraints[:i], create.Constraints[i+1:]...)
 		}
 	}
-	create.Constraints = cons
+}
+
+func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
+	return regexp.MustCompile(`(?mi)(?:DEFAULT)* CHARACTER SET = \w+`).ReplaceAllString(sql, "")
 }
