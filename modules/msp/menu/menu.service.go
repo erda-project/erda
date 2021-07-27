@@ -204,7 +204,7 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 			config := make(map[string]string)
 			if len(instance.Config) > 0 {
 				instanceConfig := make(map[string]interface{})
-				err = json.Unmarshal([]byte(instance.Config), &config)
+				err = json.Unmarshal([]byte(instance.Config), &instanceConfig)
 				if err != nil {
 					return nil, errors.NewDatabaseError(fmt.Errorf("fail to unmarshal instance config: %w", err))
 				}
@@ -214,7 +214,7 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 			}
 			if len(tenant.Config) > 0 {
 				tenantConfig := make(map[string]interface{})
-				err = json.Unmarshal([]byte(tenant.Config), &config)
+				err = json.Unmarshal([]byte(tenant.Config), &tenantConfig)
 				if err != nil {
 					return nil, errors.NewDatabaseError(fmt.Errorf("fail to unmarshal tenant config: %w", err))
 				}

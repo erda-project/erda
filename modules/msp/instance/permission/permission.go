@@ -61,8 +61,11 @@ func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 	if tenant == nil {
 		return "", fmt.Errorf("fail to find tenant by id %q", id)
 	}
-
-	return p.getProjectIDByTenant(tenant)
+	projectId := p.getProjectIDByTenant(tenant)
+	if len(projectId) <= 0 {
+		return "", fmt.Errorf("fail to find project id by tenant %q", tenant.ID)
+	}
+	return projectId, nil
 }
 
 func (p *provider) getProjectIDByGroupID(group string) (string, error) {
@@ -82,23 +85,26 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 			continue
 		}
 		if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
-			return p.getProjectIDByTenant(tenant)
+			id := p.getProjectIDByTenant(tenant)
+			if len(id) > 0 {
+				return id, nil
+			}
 		}
 	}
-	return "", fmt.Errorf("tenant not found from group %q", group)
+	return "", fmt.Errorf("projectId not found from group %q", group)
 }
 
-func (p *provider) getProjectIDByTenant(tenant *instancedb.InstanceTenant) (string, error) {
+func (p *provider) getProjectIDByTenant(tenant *instancedb.InstanceTenant) string {
 	if len(tenant.Options) <= 0 {
-		return "", fmt.Errorf("fail to find project id by tenant %q", tenant.ID)
+		return ""
 	}
 	options := make(map[string]interface{})
 	json.Unmarshal([]byte(tenant.Options), &options)
 	pid := options["projectId"]
 	if pid == nil {
-		return "", fmt.Errorf("fail to find project id by tenant %q", tenant.ID)
+		return ""
 	}
-	return fmt.Sprint(pid), nil
+	return fmt.Sprint(pid)
 }
 
 func (p *provider) TerminusKeyToProjectID(terminusKey string) permission.ValueGetter {
