@@ -1,2 +1,15 @@
 admin:
   debug: ${DEBUG:false}
+
+http-server:
+  addr: ":9096"
+
+
+grpc-server:
+  addr: ":8096"
+
+health:
+service-register:
+
+erda.admin.dingtalk-test:
+  proxy: ${DICE_PROXY:}

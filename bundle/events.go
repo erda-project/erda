@@ -84,6 +84,31 @@ func (b *Bundle) CreateEvent(ev *apistructs.EventCreateRequest) error {
 	return nil
 }
 
+func (b *Bundle) CreateEventNotify(ev *apistructs.EventBoxRequest) error {
+	host, err := b.urls.EventBox()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var buf bytes.Buffer
+	resp, err := hc.Post(host).Path("/api/dice/eventbox/message/create").
+		Header("Accept", "application/json").
+		JSONBody(&ev).
+		Do().Body(&buf)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return apierrors.ErrInvoke.InternalError(
+			errors.Errorf("failed to create event notify, status-code: %d, body: %v",
+				resp.StatusCode(),
+				buf.String(),
+			))
+	}
+	return nil
+}
+
 func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string, locale string, orgid uint64, users []string) error {
 	host, err := b.urls.EventBox()
 	if err != nil {
