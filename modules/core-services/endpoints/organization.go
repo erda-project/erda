@@ -494,6 +494,7 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 		DisplayName: org.DisplayName,
 		Type:        org.Type,
 		Config: &apistructs.OrgConfig{
+			EnablePersonalMessageEmail: org.Config.EnablePersonalMessageEmail,
 			EnableMS:                   org.Config.EnableMS,
 			SMTPHost:                   org.Config.SMTPHost,
 			SMTPUser:                   org.Config.SMTPUser,
