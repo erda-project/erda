@@ -178,7 +178,7 @@ func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
 		return
 	}
 	for i := range create.Cols {
-		for j := len(create.Cols[i].Options) - 1; i >= 0; i-- {
+		for j := len(create.Cols[i].Options) - 1; j >= 0; j-- {
 			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
 				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
 			}
