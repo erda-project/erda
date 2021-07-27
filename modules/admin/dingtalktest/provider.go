@@ -14,15 +14,12 @@
 package dingtalktest
 
 import (
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/admin/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
-)
-
-import (
-	"github.com/erda-project/erda-infra/base/logs"
 )
 
 type config struct {
@@ -39,7 +36,7 @@ type provider struct {
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.dingTalkTestService = &dingTalkTestService{
-		Log:        p.Log,
+		Log: p.Log,
 		bdl: bundle.New(bundle.WithEventBox()),
 	}
 	if p.Register != nil {
