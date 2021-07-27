@@ -936,7 +936,12 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 }
 
 func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
-	var resultStatus apistructs.StatusDesc
+	var (
+		resultStatus apistructs.StatusDesc
+		deploys      []appsv1.Deployment
+		dsMap        map[string]appsv1.DaemonSet
+		err          error
+	)
 	// init "unknown" status for each service
 	for i := range sg.Services {
 		sg.Services[i].Status = apistructs.StatusUnknown
@@ -950,38 +955,52 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 	}
 	isReady := true
 
-	deploys, err := k.deploy.List(ns, map[string]string{
-		LabelServiceGroupID: sg.ID,
-	})
-	if err != nil {
-		return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
-	}
-	deployMap := make(map[string]appsv1.Deployment, len(deploys.Items))
-	for _, deploy := range deploys.Items {
-		deployMap[deploy.Name] = deploy
-	}
-
-	daemonsetExist := false
-
-	for _, svc := range sg.Services {
-		if svc.WorkLoad == ServicePerNode {
-			daemonsetExist = true
-			break
-		}
-	}
-	var dsMap map[string]appsv1.DaemonSet
-	if daemonsetExist {
-		daemonsets, err := k.ds.List(ns, map[string]string{
+	if sg.ProjectNamespace != "" {
+		deployList, err := k.deploy.List(ns, map[string]string{
 			LabelServiceGroupID: sg.ID,
 		})
 		if err != nil {
-			return apistructs.StatusDesc{}, fmt.Errorf("list daemonset in ns %s err: %v", ns, err)
+			return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
+		}
+		deploys = deployList.Items
+
+		daemonsetExist := false
+
+		for _, svc := range sg.Services {
+			if svc.WorkLoad == ServicePerNode {
+				daemonsetExist = true
+				break
+			}
+		}
+		if daemonsetExist {
+			daemonsets, err := k.ds.List(ns, map[string]string{
+				LabelServiceGroupID: sg.ID,
+			})
+			if err != nil {
+				return apistructs.StatusDesc{}, fmt.Errorf("list daemonset in ns %s err: %v", ns, err)
+			}
+
+			dsMap = make(map[string]appsv1.DaemonSet, len(daemonsets.Items))
+			for _, ds := range daemonsets.Items {
+				dsMap[ds.Name] = ds
+			}
 		}
 
-		dsMap = make(map[string]appsv1.DaemonSet, len(daemonsets.Items))
-		for _, ds := range daemonsets.Items {
-			dsMap[ds.Name] = ds
+	} else {
+		for _, svc := range sg.Services {
+			deployList, err := k.deploy.List(ns, map[string]string{
+				"app": svc.Name,
+			})
+			if err != nil {
+				return apistructs.StatusDesc{}, fmt.Errorf("list deploy in ns %s err: %v", ns, err)
+			}
+			deploys = append(deploys, deployList.Items...)
 		}
+	}
+
+	deployMap := make(map[string]appsv1.Deployment, len(deploys))
+	for _, deploy := range deploys {
+		deployMap[deploy.Name] = deploy
 	}
 
 	pods, err := k.pod.ListNamespacePods(ns)
