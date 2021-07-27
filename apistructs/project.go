@@ -211,6 +211,9 @@ type ProjectDTO struct {
 
 	// 项目更新时间
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	// Project type
+	TYPE string `json:"type"`
 }
 
 // ProjectResourceUsage 项目资源使用

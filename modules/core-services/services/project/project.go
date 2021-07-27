@@ -904,6 +904,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		ActiveTime:     project.ActiveTime.Format("2006-01-02 15:04:05"),
 		Owners:         []string{},
 		IsPublic:       project.IsPublic,
+		TYPE:           project.TYPE,
 	}
 	if projectDto.DisplayName == "" {
 		projectDto.DisplayName = projectDto.Name
