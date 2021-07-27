@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/cmsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
@@ -44,7 +43,6 @@ type Endpoints struct {
 	pipelineCronSvc  *pipelinecronsvc.PipelineCronSvc
 	pipelineSvc      *pipelinesvc.PipelineSvc
 	crondSvc         *crondsvc.CrondSvc
-	cmSvc            *cmsvc.CMSvc
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
@@ -80,12 +78,6 @@ func WithDBClient(dbClient *dbclient.Client) Option {
 func WithAppSvc(svc *appsvc.AppSvc) Option {
 	return func(e *Endpoints) {
 		e.appSvc = svc
-	}
-}
-
-func WithCMSvc(svc *cmsvc.CMSvc) Option {
-	return func(e *Endpoints) {
-		e.cmSvc = svc
 	}
 }
 
@@ -188,13 +180,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// tasks
 		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}", Method: http.MethodGet, Handler: e.pipelineTaskDetail},
 		{Path: "/api/pipelines/{pipelineID}/tasks/{taskID}/actions/get-bootstrap-info", Method: http.MethodGet, Handler: e.taskBootstrapInfo},
-
-		// cms
-		{Path: "/api/pipelines/cms/ns", Method: http.MethodPost, Handler: e.createCmsNs},
-		{Path: "/api/pipelines/cms/ns", Method: http.MethodGet, Handler: e.listCmsNs},
-		{Path: "/api/pipelines/cms/ns/{ns}", Method: http.MethodPost, Handler: e.updateCmsNsConfigs},
-		{Path: "/api/pipelines/cms/ns/{ns}", Method: http.MethodDelete, Handler: e.deleteCmsNsConfigs},
-		{Path: "/api/pipelines/cms/ns/{ns}", Method: http.MethodGet, Handler: e.getCmsNsConfigs},
 
 		// pipeline related actions
 		{Path: "/api/pipelines/actions/batch-create", Method: http.MethodPost, Handler: e.pipelineBatchCreate},

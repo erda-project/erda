@@ -15,7 +15,6 @@ package dbclient
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/caarlos0/env"
@@ -101,13 +100,6 @@ func New() (*Client, error) {
 	engine.SetMapper(core.GonicMapper{})
 
 	engine.ShowSQL(cfg.ShowSQL)
-	engine.ShowExecTime(cfg.ShowSQL)
-
-	logLevel := core.LOG_INFO
-	if strings.ToUpper(cfg.LogLevel) == "DEBUG" {
-		logLevel = core.LOG_DEBUG
-	}
-	engine.SetLogLevel(logLevel)
 
 	engine.SetMaxOpenConns(cfg.MaxConn)
 	engine.SetMaxIdleConns(cfg.MaxIdle)

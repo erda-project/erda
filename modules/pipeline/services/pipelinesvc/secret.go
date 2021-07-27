@@ -14,6 +14,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -24,10 +25,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
 	"github.com/erda-project/erda/pkg/nexus"
@@ -206,15 +210,20 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 	}
 
 	for _, ns := range namespaces {
-		configs, err := s.cmSvc.GetConfigs(p.PipelineSource, ns, true)
+		configs, err := s.cmsService.GetCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "pipeline"),
+			&pb.CmsNsConfigsGetRequest{
+				Ns:             ns,
+				PipelineSource: p.PipelineSource.String(),
+				GlobalDecrypt:  true,
+			})
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		for _, c := range configs {
+		for _, c := range configs.Data {
 			secrets[c.Key] = c.Value
 
 			// DiceFile 类型，value 为 diceFileUUID
-			if c.Type == apistructs.PipelineCmsConfigTypeDiceFile {
+			if c.Type == cms.ConfigTypeDiceFile {
 				cmsDiceFiles[c.Key] = c.Value
 			}
 		}

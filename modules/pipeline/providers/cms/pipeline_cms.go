@@ -16,15 +16,19 @@ package cms
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms/db"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -35,18 +39,18 @@ const (
 )
 
 type pipelineCm struct {
-	dbClient *dbclient.Client
+	dbClient *db.Client
 	rsaCrypt *encryption.RsaCrypt
 }
 
-func NewPipelineCms(dbClient *dbclient.Client, rsaCrypt *encryption.RsaCrypt) *pipelineCm {
+func NewPipelineCms(dbClient *db.Client, rsaCrypt *encryption.RsaCrypt) *pipelineCm {
 	var cm pipelineCm
 	cm.dbClient = dbClient
 	cm.rsaCrypt = rsaCrypt
 	return &cm
 }
 
-func (c *pipelineCm) IdempotentCreateNS(ctx context.Context, ns string) error {
+func (c *pipelineCm) IdempotentCreateNs(ctx context.Context, ns string) error {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return err
@@ -55,7 +59,7 @@ func (c *pipelineCm) IdempotentCreateNS(ctx context.Context, ns string) error {
 	return err
 }
 
-func (c *pipelineCm) IdempotentDeleteNS(ctx context.Context, ns string) error {
+func (c *pipelineCm) IdempotentDeleteNs(ctx context.Context, ns string) error {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return err
@@ -63,7 +67,7 @@ func (c *pipelineCm) IdempotentDeleteNS(ctx context.Context, ns string) error {
 	return c.dbClient.IdempotentDeleteCmsNs(pipelineSource, ns)
 }
 
-func (c *pipelineCm) PrefixListNS(ctx context.Context, nsPrefix string) ([]apistructs.PipelineCmsNs, error) {
+func (c *pipelineCm) PrefixListNs(ctx context.Context, nsPrefix string) ([]*pb.PipelineCmsNs, error) {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -72,19 +76,19 @@ func (c *pipelineCm) PrefixListNS(ctx context.Context, nsPrefix string) ([]apist
 	if err != nil {
 		return nil, err
 	}
-	var result []apistructs.PipelineCmsNs
+	var result []*pb.PipelineCmsNs
 	for _, ns := range namespaces {
-		result = append(result, apistructs.PipelineCmsNs{
-			PipelineSource: ns.PipelineSource,
-			NS:             ns.Ns,
-			TimeCreated:    ns.TimeCreated,
-			TimeUpdated:    ns.TimeUpdated,
+		result = append(result, &pb.PipelineCmsNs{
+			PipelineSource: ns.PipelineSource.String(),
+			Ns:             ns.Ns,
+			TimeCreated:    timestamppb.New(*ns.TimeCreated),
+			TimeUpdated:    timestamppb.New(*ns.TimeUpdated),
 		})
 	}
 	return result, nil
 }
 
-func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[string]apistructs.PipelineCmsConfigValue) error {
+func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[string]*pb.PipelineCmsConfigValue) error {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return err
@@ -96,7 +100,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 
 	var cmsNsID = cmsNs.ID
 	if !exist {
-		if err := c.IdempotentCreateNS(ctx, ns); err != nil {
+		if err := c.IdempotentCreateNs(ctx, ns); err != nil {
 			return err
 		}
 		// 获取 ns
@@ -109,23 +113,23 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 		}
 		cmsNsID = newCmsNs.ID
 	}
-	var configs []spec.PipelineCmsConfig
+	var configs []db.PipelineCmsConfig
 	for k, v := range kvs {
 		vv, err := c.encryptValueIfNeeded(v.EncryptInDB, v.Value)
 		if err != nil {
 			return err
 		}
-		setDefault(&v)
+		setDefault(v)
 		if err := validateConfigWhenUpdate(k, v); err != nil {
 			return errors.Errorf("config key: %s, err: %v", k, err)
 		}
-		configs = append(configs, spec.PipelineCmsConfig{
+		configs = append(configs, db.PipelineCmsConfig{
 			NsID:    cmsNsID,
 			Key:     k,
 			Value:   vv,
 			Encrypt: &[]bool{v.EncryptInDB}[0],
 			Type:    v.Type,
-			Extra: spec.PipelineCmsConfigExtra{
+			Extra: db.PipelineCmsConfigExtra{
 				Operations: v.Operations,
 				Comment:    v.Comment,
 				From:       v.From,
@@ -138,7 +142,7 @@ func (c *pipelineCm) UpdateConfigs(ctx context.Context, ns string, kvs map[strin
 	if err := txSession.Begin(); err != nil {
 		return err
 	}
-	err = c.dbClient.UpdateCmsNsConfigs(cmsNs, configs, dbclient.WithTxSession(txSession.Session))
+	err = c.dbClient.UpdateCmsNsConfigs(cmsNs, configs, mysqlxorm.WithSession(txSession))
 	if err != nil {
 		if rbErr := txSession.Rollback(); rbErr != nil {
 			logrus.Errorf("[alert] failed to rollback tx session when update pipeline cms ns configs failed, pipelineSource: %s, ns: %s, rbErr: %v, err: %v",
@@ -169,10 +173,10 @@ func (c *pipelineCm) DeleteConfigs(ctx context.Context, ns string, keys ...strin
 	}
 
 	// validate keys before delete
-	configs, err := c.GetConfigs(ctx, ns, false, func() []apistructs.PipelineCmsConfigKey {
-		var getKeys []apistructs.PipelineCmsConfigKey
+	configs, err := c.GetConfigs(ctx, ns, false, func() []*pb.PipelineCmsConfigKey {
+		var getKeys []*pb.PipelineCmsConfigKey
 		for _, key := range keys {
-			getKeys = append(getKeys, apistructs.PipelineCmsConfigKey{
+			getKeys = append(getKeys, &pb.PipelineCmsConfigKey{
 				Key:     key,
 				Decrypt: false,
 			})
@@ -201,12 +205,12 @@ func (c *pipelineCm) DeleteConfigs(ctx context.Context, ns string, keys ...strin
 	return c.dbClient.DeleteCmsNsConfigs(cmsNs, keys)
 }
 
-func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bool, keys ...apistructs.PipelineCmsConfigKey) (map[string]apistructs.PipelineCmsConfigValue, error) {
+func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bool, keys ...*pb.PipelineCmsConfigKey) (map[string]*pb.PipelineCmsConfigValue, error) {
 	pipelineSource, err := getPipelineSourceFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	reqConfigKeyMap := make(map[string]apistructs.PipelineCmsConfigKey, len(keys))
+	reqConfigKeyMap := make(map[string]*pb.PipelineCmsConfigKey, len(keys))
 	for _, key := range keys {
 		reqConfigKeyMap[key.Key] = key
 	}
@@ -221,7 +225,7 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[string]apistructs.PipelineCmsConfigValue, len(configs))
+	result := make(map[string]*pb.PipelineCmsConfigValue, len(configs))
 	for _, config := range configs {
 		// 默认使用 全局解密设置
 		needDecrypt := globalDecrypt
@@ -251,26 +255,41 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 		}
 
 		// 配置项级别的展示配置
-		result[config.Key] = apistructs.PipelineCmsConfigValue{
+		result[config.Key] = &pb.PipelineCmsConfigValue{
 			Value:       vv,
 			EncryptInDB: *config.Encrypt,
 			Type:        config.Type,
 			Operations:  config.Extra.Operations,
 			Comment:     config.Extra.Comment,
 			From:        config.Extra.From,
-			TimeCreated: config.TimeCreated,
-			TimeUpdated: config.TimeUpdated,
+			TimeCreated: getPbTimestamp(config.TimeCreated),
+			TimeUpdated: getPbTimestamp(config.TimeUpdated),
 		}
 	}
 	return result, nil
 }
 
+func getPbTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
+}
+
 func getPipelineSourceFromContext(ctx context.Context) (apistructs.PipelineSource, error) {
-	pipelineSource, ok := ctx.Value(CtxKeyPipelineSource).(apistructs.PipelineSource)
-	if !ok || pipelineSource == "" {
+	var source apistructs.PipelineSource
+	switch ctx.Value(CtxKeyPipelineSource).(type) {
+	case apistructs.PipelineSource:
+		source = ctx.Value(CtxKeyPipelineSource).(apistructs.PipelineSource)
+	case string:
+		source = apistructs.PipelineSource(ctx.Value(CtxKeyPipelineSource).(string))
+	default:
+		return "", fmt.Errorf("invalid type of %q, type: %v", CtxKeyPipelineSource, reflect.TypeOf(ctx.Value(CtxKeyPipelineSource)).Name())
+	}
+	if source == "" {
 		return "", errors.Errorf("missing %s", CtxKeyPipelineSource)
 	}
-	return pipelineSource, nil
+	return source, nil
 }
 
 func (c *pipelineCm) encryptValueIfNeeded(needEncrypt bool, origValue string) (string, error) {
@@ -295,19 +314,19 @@ func (c *pipelineCm) decryptValueIfNeeded(needDecrypt bool, origValue string) (s
 	return decryptedV, nil
 }
 
-func setDefault(v *apistructs.PipelineCmsConfigValue) {
+func setDefault(v *pb.PipelineCmsConfigValue) {
 	if v.Type == "" {
-		v.Type = apistructs.PipelineCmsConfigTypeKV
+		v.Type = ConfigTypeKV
 	}
 	if v.Operations == nil {
-		v.Operations = &apistructs.PipelineCmsConfigDefaultOperationsForKV
-		if v.Type == apistructs.PipelineCmsConfigTypeDiceFile {
+		v.Operations = &DefaultOperationsForKV
+		if v.Type == ConfigTypeDiceFile {
 			v.Operations.CanDownload = true
 		}
 	}
 }
 
-func validateConfigWhenUpdate(key string, v apistructs.PipelineCmsConfigValue) error {
+func validateConfigWhenUpdate(key string, v *pb.PipelineCmsConfigValue) error {
 	// key
 	if err := strutil.Validate(key, strutil.NoChineseValidator, KeyValidator, EnvTransferValidator, strutil.MaxLenValidator(191)); err != nil {
 		return err
@@ -316,7 +335,7 @@ func validateConfigWhenUpdate(key string, v apistructs.PipelineCmsConfigValue) e
 	if v.Type == "" {
 		return errors.New("missing config type")
 	}
-	if !v.Type.Valid() {
+	if !configType(v.Type).IsValid() {
 		return errors.Errorf("invalid config type: %s", v.Type)
 	}
 	if err := strutil.Validate(key, strutil.EnvValueLenValidator); err != nil {
