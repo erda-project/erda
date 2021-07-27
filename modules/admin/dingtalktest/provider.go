@@ -26,7 +26,6 @@ import (
 )
 
 type config struct {
-	//Proxy string `file:"proxy"`
 }
 
 // +provider

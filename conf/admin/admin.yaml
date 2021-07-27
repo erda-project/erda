@@ -12,4 +12,3 @@ health:
 service-register:
 
 erda.admin.dingtalk-test:
-  proxy: ${DICE_PROXY:}
