@@ -21,6 +21,7 @@ import (
 
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
+
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
