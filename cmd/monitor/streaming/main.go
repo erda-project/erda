@@ -18,8 +18,8 @@ import (
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/pkg/common"
 
-	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/storage"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
