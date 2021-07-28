@@ -49,6 +49,7 @@ type ClickRowOperationCommandState struct {
 }
 
 type dataOperation struct {
+	ShowIndex   int                    `json:"showIndex"`
 	Key         string                 `json:"key"`
 	Reload      bool                   `json:"reload"`
 	Text        string                 `json:"text"`
@@ -57,6 +58,7 @@ type dataOperation struct {
 	Confirm     string                 `json:"confirm,omitempty"`
 	Meta        map[string]interface{} `json:"meta,omitempty"`
 	Command     map[string]interface{} `json:"command,omitempty"`
+	SuccessMsg  string                 `json:"successMsg"`
 }
 
 type operationsCommand struct {
@@ -75,19 +77,31 @@ type operationData struct {
 
 var (
 	edit = dataOperation{
-		Key:      "edit",
-		Reload:   false,
-		Text:     "编辑",
-		Command:  map[string]interface{}{},
-		Disabled: false,
+		Key:       "edit",
+		Reload:    false,
+		Text:      "编辑",
+		Command:   map[string]interface{}{},
+		Disabled:  false,
+		ShowIndex: 1,
 	}
 	copy = dataOperation{
-		Key:      "copy",
-		Reload:   true,
-		Text:     "复制",
-		Confirm:  "是否确认复制",
-		Meta:     map[string]interface{}{},
-		Disabled: true,
+		Key:       "copy",
+		Reload:    true,
+		Text:      "复制",
+		Confirm:   "是否确认复制",
+		Meta:      map[string]interface{}{},
+		Disabled:  true,
+		ShowIndex: 2,
+	}
+	export = dataOperation{
+		Key:        "export",
+		Reload:     true,
+		Text:       "导出",
+		Confirm:    "是否确认导出",
+		Meta:       map[string]interface{}{},
+		Disabled:   false,
+		SuccessMsg: "导出任务已创建, 请在导入导出记录表中查看进度",
+		ShowIndex:  3,
 	}
 	delete = dataOperation{
 		Key:         "delete",
@@ -97,13 +111,15 @@ var (
 		Meta:        map[string]interface{}{},
 		DisabledTip: "无法删除",
 		Disabled:    true,
+		ShowIndex:   4,
 	}
 	retry = dataOperation{
-		Key:      "retry",
-		Reload:   true,
-		Text:     "重试",
-		Meta:     map[string]interface{}{},
-		Disabled: false,
+		Key:       "retry",
+		Reload:    true,
+		Text:      "重试",
+		Meta:      map[string]interface{}{},
+		Disabled:  false,
+		ShowIndex: 5,
 	}
 )
 
@@ -203,6 +219,28 @@ func (a *ComponentSpaceList) handlerCopyOperation(bdl protocol.ContextBundle, c 
 		return err
 	}
 	if err := a.handlerListOperation(bdl, c, inParams, event); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *ComponentSpaceList) handlerExportOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+	cond := operationData{}
+	b, err := json.Marshal(event.OperationData)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &cond); err != nil {
+		return err
+	}
+	if cond.Meta.ID == 0 {
+		return fmt.Errorf("invalid spaceID")
+	}
+	if err = bdl.Bdl.ExportTestSpace(bdl.Identity.UserID, apistructs.AutoTestSpaceExportRequest{
+		ID:       cond.Meta.ID,
+		FileType: apistructs.TestSpaceFileTypeExcel,
+		Locale:   bdl.Locale,
+	}); err != nil {
 		return err
 	}
 	return nil

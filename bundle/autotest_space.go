@@ -172,3 +172,22 @@ func (b *Bundle) CopyTestSpace(spaceID uint64, userID string) error {
 
 	return nil
 }
+
+// ExportTestSpace export autotest space
+func (b *Bundle) ExportTestSpace(userID string, req apistructs.AutoTestSpaceExportRequest) error {
+	host, err := b.urls.DOP()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+	var exportID uint64
+	_, err = hc.Post(host).Path("/api/autotests/spaces/actions/export").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, req.UserID).
+		JSONBody(req).Do().JSON(&exportID)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return nil
+}
