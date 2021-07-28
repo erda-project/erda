@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
-	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
 func (p *provider) intRoutes(routes httpserver.Router) error {
@@ -35,29 +34,11 @@ func (p *provider) intRoutes(routes httpserver.Router) error {
 	))
 
 	// metrics for system
-	routes.GET("/api/system/pod/status", p.getPodsInfo, permission.Intercepter(
-		permission.ScopeOrg, permission.OrgIDByCluster("clusterName"),
-		common.ResourceOrgCenter, permission.ActionGet,
-	))
 	routes.GET("/api/system/addon/metrics/:scope/:aggregate", p.systemAddonMetrics, permission.Intercepter(
 		permission.ScopeOrg, permission.OrgIDByCluster("filter_cluster_name"),
 		common.ResourceOrgCenter, permission.ActionGet,
 	))
 	return nil
-}
-
-func (p *provider) getPodsInfo(params struct {
-	Name        string `query:"name" validate:"required"`
-	ClusterName string `query:"clusterName" validate:"required"`
-	Timestamp   int64  `query:"timestamp" validate:"gt=1800000"`
-}) interface{} {
-	start := params.Timestamp - 30*60*1000
-	end := params.Timestamp + 30*60*1000
-	pod, err := p.getPodInfo(params.ClusterName, params.Name, start, end)
-	if err != nil {
-		return api.Errors.Internal(err)
-	}
-	return api.Success(pod)
 }
 
 func (p *provider) systemAddonMetrics(r *http.Request, params *struct {

@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )

@@ -115,7 +115,8 @@ erda.core.monitor.alert:
       keyspace:
         name: "spot_prod"
     gc_grace_seconds: 86400
-alert-details-apis:
+#alert-details-apis:
+erda.core.monitor.alertDetail:
 
 report-apis:
   pipeline:

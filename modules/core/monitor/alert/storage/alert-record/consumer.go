@@ -17,8 +17,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/adapt"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 
 	"github.com/jinzhu/gorm"
 )
