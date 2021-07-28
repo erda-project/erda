@@ -145,6 +145,7 @@ const (
 	AutoTestSpaceDeleteOperationKey         OperationKey = "delete"
 	AutoTestSpaceCopyOperationKey           OperationKey = "copy"
 	AutoTestSpaceRetryOperationKey          OperationKey = "retry"
+	AutoTestSpaceExportOperationKey         OperationKey = "export"
 	AutoTestSpaceChangePageNoOperationKey   OperationKey = "changePageNo"
 	AutoTestSpaceChangePageSizeOperationKey OperationKey = "changePageSize"
 	AutoTestSpaceSubmitOperationKey         OperationKey = "submit"

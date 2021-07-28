@@ -138,13 +138,16 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 			}
 			return 0
 		}(),
-		Type:       s.Type,
-		State:      s.State,
-		CreatedAt:  s.CreatedAt,
-		UpdatedAt:  s.UpdatedAt,
-		OperatorID: s.OperatorID,
+		Description: s.Description,
+		Type:        s.Type,
+		State:       s.State,
+		CreatedAt:   s.CreatedAt,
+		UpdatedAt:   s.UpdatedAt,
+		OperatorID:  s.OperatorID,
 	}
 
-	record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	if record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport {
+		record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	}
 	return record
 }

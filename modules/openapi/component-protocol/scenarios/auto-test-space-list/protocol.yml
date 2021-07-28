@@ -7,13 +7,38 @@ hierarchy:
   root: spaceManage
   structure:
     spaceManage:
+      - head
       - spaceList
       - topHead
       - spaceFormModal
+      - recordDrawer
     topHead:
       - spaceAddButton
+    head:
+      - importButton
+      - recordButton
+    recordDrawer:
+      content: recordContent
+    recordContent:
+      - refreshButton
+      - recordTable
+
 
 components:
+  head:
+    type: RowContainer
+  importButton:
+    type: Button
+  recordButton:
+    type: Button
+  recordContent:
+    type: Container
+  refreshButton:
+    type: Button
+  recordDrawer:
+    type: Drawer
+  recordTable:
+    type: Table
   spaceManage:
     type: Container
   topHead:
@@ -30,3 +55,17 @@ components:
 rendering:
   spaceFormModal:
     - name: spaceList
+  recordButton:
+    - name: recordDrawer
+      state:
+        - name: "visible"
+          value: "{{ recordButton.visible }}"
+    - name: recordTable
+      state:
+        - name: "visible"
+          value: "{{ recordButton.visible }}"
+  refreshButton:
+    - name: recordTable
+      state:
+        - name: "autoRefresh"
+          value: "{{ refreshButton.autoRefresh }}"
