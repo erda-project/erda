@@ -85,14 +85,14 @@ func (api *ApiSpec) AddOperationTo(v3 *openapi3.Swagger) error {
 		return errors.New("invalid swagger v3 object")
 	}
 	api.v3 = v3
-	if _, err := api.GenerateOperation(); err != nil {
+	if _, err := api.generateOperation(); err != nil {
 		return errors.Wrap(err, "failed to get operation from api spec")
 	}
 	api.v3.AddOperation(api.Parameters.path, strings.ToUpper(api.Method), api.operation)
 	return nil
 }
 
-func (api *ApiSpec) GenerateOperation() (*openapi3.Operation, error) {
+func (api *ApiSpec) generateOperation() (*openapi3.Operation, error) {
 	if api.Scheme == "" {
 		api.Scheme = "http"
 	}
@@ -208,7 +208,7 @@ func (api *ApiSpec) standardizeAPIPathPlaceholder() {
 		return
 	}
 	api.Parameters.path = strings.ReplaceAll(api.Path, "<", "{")
-	api.Parameters.path = strings.ReplaceAll(api.Path, ">", "}")
+	api.Parameters.path = strings.ReplaceAll(api.Parameters.path, ">", "}")
 }
 
 func (api *ApiSpec) IsValidForOperation() bool {
@@ -300,54 +300,23 @@ func (api *ApiSpec) requestBodyToOperation() {
 		return
 	}
 
-	name, schema, err := Struct2OpenapiSchema(api.Parameters.Body)
+	schemaRef, err := api.Struct2OpenapiSchema(api.Parameters.Body)
 	if err != nil {
 		api.operation.RequestBody = nil
 		return
 	}
 
-	if name == "" {
-		api.operation.RequestBody.Value.Content["application/json"].Schema.Value = schema
-		return
-	}
-
-	if api.v3.Components.Schemas[name] == nil {
-		schemaRef := &openapi3.SchemaRef{Value: schema}
-		api.v3.Components.Schemas[name] = schemaRef
-		api.operation.RequestBody.Value.Content["application/json"].Schema.Ref = refPrefix + name
-		return
-	}
-
-	api.operation.RequestBody.Value.Content["application/json"].Schema.Ref = refPrefix + name
+	api.operation.RequestBody.Value.Content["application/json"].Schema = schemaRef
 }
 
 func (api *ApiSpec) responseToOperation() {
-	name, schema, err := Struct2OpenapiSchema(api.Parameters.Response)
+	schemaRef, err := api.Struct2OpenapiSchema(api.Parameters.Response)
 	if err != nil {
 		api.operation.Responses["200"].Value.Content["application/json"].Schema.Value = &openapi3.Schema{Type: "object"}
 		return
 	}
 
-	if name == "" {
-		api.operation.Responses["200"].Value.Content["application/json"].Schema.Value = schema
-		return
-	}
-
-	if api.v3.Components.Schemas[name] == nil {
-		schemaRef := &openapi3.SchemaRef{Value: schema}
-		api.v3.Components.Schemas[name] = schemaRef
-		api.operation.Responses["200"].Value.Content = openapi3.Content{
-			"application/json": &openapi3.MediaType{
-				Schema:         &openapi3.SchemaRef{
-					Ref:   refPrefix + name,
-					Value: nil,
-				},
-			},
-		}
-		return
-	}
-
-	api.operation.Responses["200"].Value.Content["application/json"].Schema.Ref = refPrefix + name
+	api.operation.Responses["200"].Value.Content["application/json"].Schema = schemaRef
 }
 
 type Parameters struct {
@@ -361,84 +330,106 @@ type Parameters struct {
 	path   string
 }
 
-func Struct2OpenapiSchema(i interface{}) (name string, schema *openapi3.Schema, err error) {
+func (api *ApiSpec) Struct2OpenapiSchema(i interface{}) (schemaRef *openapi3.SchemaRef, err error) {
 	if i == nil {
-		return "", nil, errors.New("the input is nil")
+		ref := refPrefix + "EmptyObject"
+		api.v3.Components.Schemas[ref] = openapi3.NewSchemaRef("", openapi3.NewObjectSchema())
+		return openapi3.NewSchemaRef(ref, nil), nil
 	}
 
 	switch i.(type) {
 	case time.Time, *time.Time:
-		return reflect.TypeOf(i).Name(), openapi3.NewDateTimeSchema(), nil
+		return openapi3.NewSchemaRef("", openapi3.NewDateTimeSchema()), nil
 	}
 
 	switch reflect.ValueOf(i).Type().Kind() {
 	case reflect.Bool:
-		return reflect.TypeOf(i).Name(), openapi3.NewBoolSchema(), nil
+		return openapi3.NewSchemaRef("", openapi3.NewBoolSchema()), nil
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return reflect.TypeOf(i).Name(), openapi3.NewIntegerSchema(), nil
+		return openapi3.NewSchemaRef("", openapi3.NewIntegerSchema()), nil
 
 	case reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
-		return reflect.TypeOf(i).Name(), openapi3.NewFloat64Schema(), nil
+		return openapi3.NewSchemaRef("", openapi3.NewFloat64Schema()), nil
 
 	case reflect.Array, reflect.Slice:
-		schema = openapi3.NewArraySchema()
-		schema.Items = openapi3.NewSchemaRef("", openapi3.NewStringSchema())
-		return reflect.TypeOf(i).Name(), schema, nil
+		schema := openapi3.NewArraySchema()
+		eleSchemaRef, err := api.Struct2OpenapiSchema(reflect.New(reflect.ValueOf(i).Type().Elem()).Elem().Interface())
+		if err != nil {
+			return nil, err
+		}
+		schema.Items = eleSchemaRef
+		return openapi3.NewSchemaRef("", schema), nil
 
 	case reflect.Ptr:
-		return Struct2OpenapiSchema(reflect.ValueOf(i).Elem().Interface())
+		return api.Struct2OpenapiSchema(reflect.ValueOf(i).Elem().Interface())
 
 	case reflect.String:
-		return reflect.TypeOf(i).Name(), openapi3.NewStringSchema(), nil
+		return openapi3.NewSchemaRef("", openapi3.NewStringSchema()), nil
 
 	case reflect.Struct:
 		typeOf := reflect.TypeOf(i)
 		valueOf := reflect.ValueOf(i)
-		name = typeOf.Name()
-		schema = openapi3.NewObjectSchema()
+		schema := openapi3.NewObjectSchema()
+		typeName := typeOf.Name()
+		ref := refPrefix + typeName
+
+		schemeRef, ok := api.v3.Components.Schemas[ref]
+		if ok {
+			return schemeRef, nil
+		}
 
 		for j := 0; j < typeOf.NumField(); j++ {
-			if n := typeOf.Field(j).Name[0]; 'a' <= n && n <= 'z' {
+			if n := typeOf.Field(j).Name[0]; ('a' <= n && n <= 'z') || n == '_' {
 				continue
 			}
 			field := valueOf.Field(j)
+			tag := typeOf.Field(j).Tag.Get("json")
+			tag = strings.Split(tag, ",")[0]
+			if tag == "-" {
+				continue
+			}
+			if tag == "" {
+				tag = typeOf.Field(j).Name
+			}
 			if !field.IsValid() || field.IsZero() {
-				var v = openapi3.NewObjectSchema()
-				switch field.Kind() {
-				case reflect.Bool:
-					v = openapi3.NewBoolSchema()
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint,
-					reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-					v = openapi3.NewIntegerSchema()
-				case reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
-					v = openapi3.NewFloat64Schema()
-				case reflect.Array, reflect.Slice:
-					v = openapi3.NewArraySchema()
-					v.Items = &openapi3.SchemaRef{Value: openapi3.NewStringSchema()}
-				case reflect.String:
-					v = openapi3.NewStringSchema()
-				}
-				schema.Properties[typeOf.Field(j).Name] = &openapi3.SchemaRef{Value: v}
+				field = reflect.New(field.Type())
+			}
+			//if !field.IsValid() || field.IsZero() {
+			//	var v = openapi3.NewObjectSchema()
+			//	switch field.Kind() {
+			//	case reflect.Bool:
+			//		v = openapi3.NewBoolSchema()
+			//	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint,
+			//		reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			//		v = openapi3.NewIntegerSchema()
+			//	case reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
+			//		v = openapi3.NewFloat64Schema()
+			//	case reflect.Array, reflect.Slice:
+			//		v = openapi3.NewArraySchema()
+			//		v.Items = &openapi3.SchemaRef{Value: openapi3.NewStringSchema()}
+			//	case reflect.String:
+			//		v = openapi3.NewStringSchema()
+			//	}
+			//	schema.Properties[typeOf.Field(j).Name] = &openapi3.SchemaRef{Value: v}
+			//	continue
+			//}
+			propertySchemaRef, err := api.Struct2OpenapiSchema(field.Interface())
+			if err != nil {
+				fmt.Printf("Struct2OpenapiSchema error: %v", err)
 				continue
 			}
-			if jName, jSchema, err := Struct2OpenapiSchema(field.Interface()); err != nil {
-				fmt.Println("Struct2OpenapiSchema error:", err)
-				continue
-			} else {
-				schema.Properties[jName] = &openapi3.SchemaRef{Value: jSchema}
-			}
-
+			schema.Properties[tag] = propertySchemaRef
 		}
-		return name, schema, nil
+
+		api.v3.Components.Schemas[ref] = openapi3.NewSchemaRef("", schema)
+		return openapi3.NewSchemaRef(ref, nil), nil
 
 	default:
-		typeOf := reflect.TypeOf(i)
-		name = typeOf.Name()
-		schema = new(openapi3.Schema)
-		schema.Type = "object"
-		return name, schema, nil
+		ref := refPrefix + "EmptyObject"
+		api.v3.Components.Schemas[ref] = openapi3.NewSchemaRef("", openapi3.NewObjectSchema())
+		return openapi3.NewSchemaRef(ref, nil), nil
 	}
 }
 
