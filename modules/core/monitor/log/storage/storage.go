@@ -24,8 +24,8 @@ import (
 	"unsafe"
 
 	"github.com/erda-project/erda-infra/providers/cassandra"
-	"github.com/erda-project/erda/modules/monitor/core/logs"
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
+	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 )
 
 func (p *provider) createLogStatementBuilder() cassandra.StatementBuilder {
@@ -43,16 +43,16 @@ type LogStatement struct {
 
 func (ls *LogStatement) GetStatement(data interface{}) (string, []interface{}, error) {
 	switch data.(type) {
-	case *logs.Log:
-		return ls.p.getLogStatement(data.(*logs.Log), ls.gzipWriter)
-	case *logs.LogMeta:
-		return ls.p.getMetaStatement(data.(*logs.LogMeta))
+	case *logmodule.Log:
+		return ls.p.getLogStatement(data.(*logmodule.Log), ls.gzipWriter)
+	case *logmodule.LogMeta:
+		return ls.p.getMetaStatement(data.(*logmodule.LogMeta))
 	default:
 		return "", nil, fmt.Errorf("value %#v must be Log or LogMeta", data)
 	}
 }
 
-func (p *provider) getLogStatement(log *logs.Log, reusedWriter *gzip.Writer) (string, []interface{}, error) {
+func (p *provider) getLogStatement(log *logmodule.Log, reusedWriter *gzip.Writer) (string, []interface{}, error) {
 	ttl := p.ttl.GetSecondByKey(log.Tags[diceOrgNameKey])
 
 	var requestID *string // request_id 字段不存在时为null，所以使用指针
@@ -85,7 +85,7 @@ func (p *provider) getLogStatement(log *logs.Log, reusedWriter *gzip.Writer) (st
 	}, nil
 }
 
-func (p *provider) getMetaStatement(meta *logs.LogMeta) (string, []interface{}, error) {
+func (p *provider) getMetaStatement(meta *logmodule.LogMeta) (string, []interface{}, error) {
 	ttl := p.ttl.GetSecondByKey(meta.Tags[diceOrgNameKey])
 	cql := `INSERT INTO spot_prod.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{

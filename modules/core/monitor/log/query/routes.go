@@ -23,37 +23,27 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 	"github.com/erda-project/erda/modules/monitor/common"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 
-func (p *provider) intRoutes(routes httpserver.Router) error {
-	routes.GET("/api/logs", p.queryLog)
+func (p *provider) intRoutes(routes httpserver.Router) {
 	routes.GET("/api/logs/actions/download", p.downloadLog)
 
 	// runtime
-	p.getApplicationID = permission.QueryValue("applicationId")
-	routes.GET("/api/runtime/logs", p.queryRuntimeLog, permission.Intercepter(
-		permission.ScopeApp, p.getApplicationID,
-		common.ResourceRuntime, permission.ActionGet,
-	))
 	routes.GET("/api/runtime/logs/actions/download", p.downloadRuntimeLog, permission.Intercepter(
-		permission.ScopeApp, p.getApplicationID,
+		permission.ScopeApp, permission.QueryValue("applicationId"),
 		common.ResourceRuntime, permission.ActionGet,
 	))
+
 	// org
-	p.checkOrgCluster = permission.OrgIDByCluster("clusterName")
-	routes.GET("/api/orgCenter/logs", p.queryOrgLog, permission.Intercepter(
-		permission.ScopeOrg, p.checkContainerLog,
-		common.ResourceOrgCenter, permission.ActionGet,
-	))
 	routes.GET("/api/orgCenter/logs/actions/download", p.downloadOrgLog, permission.Intercepter(
-		permission.ScopeOrg, p.checkContainerLog,
+		permission.ScopeOrg, permission.OrgIDByCluster("clusterName"),
 		common.ResourceOrgCenter, permission.ActionGet,
 	))
-	return nil
 }
 
 // Request .
@@ -70,18 +60,60 @@ type RequestCtx struct {
 	ClusterName   string `from:"clusterName"`
 }
 
-// Response .
-type Response struct {
-	Lines []*Log `json:"lines"`
-}
-
 const (
 	defaultStream      = "stdout"
 	defaultCount       = 50
 	maxCount, minCount = 200, -200
 	maxTimeRange       = 7 * 24 * int64(time.Hour)
-	// day                = 24 * int64(time.Hour)
 )
+
+func convertToRequestCtx(req interface{}) (*RequestCtx, error) {
+	switch req.(type) {
+	case *pb.GetLogRequest:
+		v := req.(*pb.GetLogRequest)
+		return &RequestCtx{
+			RequestID:     v.RequestId,
+			LogID:         v.RequestId,
+			Source:        v.Source,
+			ID:            v.Id,
+			Stream:        v.Stream,
+			Start:         v.Start,
+			End:           v.End,
+			Count:         v.Count,
+			ApplicationID: "",
+			ClusterName:   "",
+		}, nil
+	case *pb.GetLogByRuntimeRequest:
+		v := req.(*pb.GetLogByRuntimeRequest)
+		return &RequestCtx{
+			RequestID:     v.RequestId,
+			LogID:         v.RequestId,
+			Source:        v.Source,
+			ID:            v.Id,
+			Stream:        v.Stream,
+			Start:         v.Start,
+			End:           v.End,
+			Count:         v.Count,
+			ApplicationID: v.ApplicationId,
+			ClusterName:   "",
+		}, nil
+	case *pb.GetLogByOrganizationRequest:
+		v := req.(*pb.GetLogByOrganizationRequest)
+		return &RequestCtx{
+			RequestID:     v.RequestId,
+			LogID:         v.RequestId,
+			Source:        v.Source,
+			ID:            v.Id,
+			Stream:        v.Stream,
+			Start:         v.Start,
+			End:           v.End,
+			Count:         v.Count,
+			ApplicationID: "",
+			ClusterName:   v.ClusterName,
+		}, nil
+	}
+	return &RequestCtx{}, errors.New("invalid request type")
+}
 
 func normalizeRequest(r *RequestCtx) error {
 	if len(r.RequestID) <= 0 {
@@ -119,26 +151,6 @@ func normalizeRequest(r *RequestCtx) error {
 		r.Count = defaultCount
 	}
 	return nil
-}
-
-func (p *provider) queryRuntimeLog(r *RequestCtx) interface{} {
-	result, err := p.checkLogMeta(r.Source, r.ID, "dice_application_id", r.ApplicationID)
-	if err != nil {
-		return api.Errors.Internal(err)
-	} else if !result {
-		return api.Success(&Response{[]*Log{}})
-	}
-	return p.queryLog(r)
-}
-
-func (p *provider) queryOrgLog(r *RequestCtx) interface{} {
-	result, err := p.checkLogMeta(r.Source, r.ID, "dice_cluster_name", r.ClusterName)
-	if err != nil {
-		return api.Errors.Internal(err)
-	} else if !result {
-		return api.Success(&Response{[]*Log{}})
-	}
-	return p.queryLog(r)
 }
 
 func (p *provider) downloadRuntimeLog(w http.ResponseWriter, r *RequestCtx) interface{} {
@@ -188,47 +200,6 @@ func (p *provider) checkLogMeta(source, id, key, value string) (bool, error) {
 		return false, err
 	}
 	return meta.Tags[key] == value, nil
-}
-
-func (p *provider) queryLog(r *RequestCtx) interface{} {
-	if err := normalizeRequest(r); err != nil {
-		return api.Errors.InvalidParameter(err)
-	}
-
-	// 请求ID关联的日志
-	if len(r.RequestID) > 0 {
-		logs, err := p.queryRequestLog(
-			p.getTableNameWithFilters(map[string]interface{}{
-				"tags['dice_application_id']": r.ApplicationID,
-			}),
-			r.RequestID,
-		)
-		if err != nil {
-			return api.Errors.Internal(err)
-		}
-		return api.Success(&Response{logs})
-	}
-
-	// 基础日志
-	if r.Count == 0 {
-		return api.Success(&Response{})
-	}
-	logs, err := p.queryBaseLog(
-		p.getTableNameWithFilters(map[string]interface{}{
-			"source": r.Source,
-			"id":     r.ID,
-		}),
-		r.Source,
-		r.ID,
-		r.Stream,
-		r.Start,
-		r.End,
-		r.Count,
-	)
-	if err != nil {
-		return api.Errors.Internal(err)
-	}
-	return api.Success(&Response{logs})
 }
 
 func (p *provider) downloadLog(w http.ResponseWriter, r *RequestCtx) interface{} {
@@ -283,6 +254,8 @@ func getFilename(r *RequestCtx, meta *LogMeta) string {
 	if meta == nil {
 		filenamePrefix = strings.Replace(r.ID, ".", sep, -1)
 	} else {
+		filenamePrefix = strings.Replace(meta.ID, ".", sep, -1)
+
 		if val, ok := meta.Tags["pod_name"]; ok {
 			filenamePrefix = val
 		}

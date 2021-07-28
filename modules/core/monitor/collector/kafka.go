@@ -41,18 +41,18 @@ const (
 	topicPrefix = "spot-"
 )
 
-func (c *collector) send(name string, data []byte) error {
-	topic, err := c.getTopic(name)
+func (p *provider) send(name string, data []byte) error {
+	topic, err := p.getTopic(name)
 	if err != nil {
 		return err
 	}
-	return c.writer.Write(&kafka.Message{
+	return p.writer.Write(&kafka.Message{
 		Topic: &topic,
 		Data:  data,
 	})
 }
 
-func (c *collector) getTopic(typ string) (string, error) {
+func (p *provider) getTopic(typ string) (string, error) {
 	if topic, ok := topics[typ]; ok {
 		return topic, nil
 	}

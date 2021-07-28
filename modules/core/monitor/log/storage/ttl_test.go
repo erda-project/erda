@@ -32,13 +32,47 @@ func mockMysqlStore() *mysqlStore {
 
 func TestPopulateTTLValue(t *testing.T) {
 	ms := mockMysqlStore()
+	ass := assert.New(t)
+	// normal
+	ttlmap := ms.populateTTLValue([]*MonitorConfig{
+		{OrgName: "erda", Names: "*", Filters: "", Config: []byte(`{"ttl":"1h0m0s"}`)},
+	})
+	val, ok := ttlmap["erda"]
+
+	ass.True(ok)
+	ass.Equal(3600, val)
+
+	// zero ttl
+	ttlmap = ms.populateTTLValue([]*MonitorConfig{
+		{OrgName: "erda", Names: "*", Filters: "", Config: []byte(`{"ttl":""}`)},
+	})
+	_, ok = ttlmap["erda"]
+	ass.False(ok)
+
+	// invalid ttl
+	ttlmap = ms.populateTTLValue([]*MonitorConfig{
+		{OrgName: "erda", Names: "*", Filters: "", Config: []byte(`{"ttl":"abc"}`)},
+	})
+	_, ok = ttlmap["erda"]
+	ass.False(ok)
+}
+
+func Test_mysqlStore_GetSecondByKey(t *testing.T) {
+	ms := mockMysqlStore()
 	list := []*MonitorConfig{
 		{OrgName: "erda", Names: "*", Filters: "", Config: []byte(`{"ttl":"1h0m0s"}`)},
 	}
-
 	ttlmap := ms.populateTTLValue(list)
-	val, ok := ttlmap["erda"]
+	ms.ttlValue = ttlmap
 
-	assert.True(t, ok)
-	assert.Equal(t, 3600, val)
+	assert.Equal(t, 3600, ms.GetSecondByKey("erda"))
+}
+
+func Test_mysqlStore_loadLogsTTL(t *testing.T) {
+	ms := mockMysqlStore()
+	m := newMockMysql()
+	ms.mysql = m.DB()
+
+	err := ms.loadLogsTTL()
+	assert.Nil(t, err)
 }

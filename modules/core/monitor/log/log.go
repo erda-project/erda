@@ -11,12 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package collector
+package log
 
-import (
-	"context"
-)
+// Log .
+type Log struct {
+	Source    string            `json:"source"`
+	ID        string            `json:"id"`
+	Stream    string            `json:"stream"`
+	Content   string            `json:"content"`
+	Offset    int64             `json:"offset"`
+	Timestamp int64             `json:"timestamp"`
+	Tags      map[string]string `json:"tags"`
+}
 
-type Output interface {
-	Send(ctx context.Context, data []byte) error
+// LogMeta .
+type LogMeta struct {
+	Source string            `json:"source"`
+	ID     string            `json:"id"`
+	Tags   map[string]string `json:"tags"`
 }

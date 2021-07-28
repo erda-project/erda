@@ -5,6 +5,7 @@ go 1.16
 require (
 	bou.ke/monkey v1.0.2
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
@@ -156,7 +157,6 @@ require (
 )
 
 replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex

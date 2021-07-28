@@ -13,36 +13,27 @@
 
 package query
 
-// Log 接口返回的结构
-type Log struct {
-	Source     string `json:"source"`
-	ID         string `json:"id"`
-	Stream     string `json:"stream"`
-	TimeBucket string `json:"timeBucket"`
-	Timestamp  string `json:"timestamp"`
-	Offset     string `json:"offset"`
-	Content    string `json:"content"`
-	Level      string `json:"level"`
-	RequestID  string `json:"requestId"`
-}
+import (
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+)
+
+// LogTableName .
+const (
+	LogMetaTableName = "spot_prod.base_log_meta"
+)
+
+// Logs .
+type Logs []*pb.LogItem
+
+func (l Logs) Len() int           { return len(l) }
+func (l Logs) Less(i, j int) bool { return l[i].Timestamp < l[j].Timestamp }
+func (l Logs) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 type LogMeta struct {
 	Source string            `json:"source"`
 	ID     string            `json:"id"`
 	Tags   map[string]string `json:"tags"`
 }
-
-// Logs .
-type Logs []*Log
-
-func (l Logs) Len() int           { return len(l) }
-func (l Logs) Less(i, j int) bool { return l[i].Timestamp < l[j].Timestamp }
-func (l Logs) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
-
-// LogTableName .
-const (
-	LogMetaTableName = "spot_prod.base_log_meta"
-)
 
 // SavedLog Cassandra查询的结构
 type SavedLog struct {
