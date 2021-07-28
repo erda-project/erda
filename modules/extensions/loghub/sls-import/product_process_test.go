@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
-	"github.com/erda-project/erda/modules/monitor/core/logs"
+	logs "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
 func TestRDSProcess_withFilter1(t *testing.T) {

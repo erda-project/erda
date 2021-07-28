@@ -27,12 +27,14 @@ import (
 	mutex "github.com/erda-project/erda-infra/providers/etcd-mutex"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/monitor/core/logs/schema"
+	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 )
+
+const selector = "log-store"
 
 type define struct{}
 
-func (d *define) Services() []string { return []string{"logs-store"} }
+func (d *define) Services() []string { return []string{selector} }
 func (d *define) Dependencies() []string {
 	return []string{"kafka", "cassandra", "mysql", "etcd-mutex"}
 }
@@ -116,5 +118,5 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("logs-store", &define{})
+	servicehub.RegisterProvider(selector, &define{})
 }
