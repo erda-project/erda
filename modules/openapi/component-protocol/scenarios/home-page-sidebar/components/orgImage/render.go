@@ -61,7 +61,7 @@ func (this *OrgImage) Render(ctx context.Context, c *apistructs.Component, scena
 		return err
 	}
 
-	this.Props.Src = "/images/resources/org.png"
+	this.Props.Src = "frontImg_default_org_img"
 	if this.ctxBdl.Identity.OrgID != "" {
 		orgDTO, err := this.ctxBdl.Bdl.GetOrg(this.ctxBdl.Identity.OrgID)
 		if err != nil {

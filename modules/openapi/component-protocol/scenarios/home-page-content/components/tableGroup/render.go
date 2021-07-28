@@ -156,7 +156,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
 	for _, v := range datas.Data.List {
 		pro := ProItem{}
-		image := "/images/default-project-icon.png"
+		image := "frontImg_default_project_icon"
 		if v.ProjectDTO.Logo != "" {
 			image = v.ProjectDTO.Logo
 		}
