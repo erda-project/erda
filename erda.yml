@@ -12,6 +12,7 @@ envs:
   ETCDCTL_API: "3"
   MONITOR_ADDR: monitor:7096
   COLLECTOR_ADDR: collector:7076
+  PIPELINE_ADDR: pipeline:3081
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
