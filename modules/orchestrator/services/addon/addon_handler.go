@@ -16,6 +16,7 @@ package addon
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/recallsong/go-utils/conv"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -430,7 +431,11 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 	} else {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
-	params.Options["tenantGroup"] = md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
+	tenantID, err := a.tenant.GetTenant(conv.ToInt64(params.ProjectID, 0), params.Workspace, md5V(params.ProjectID+"_"+params.Workspace+"_"+params.ClusterName+conf.TenantGroupKey()), params.OperatorID)
+	if err != nil {
+		return err
+	}
+	params.Options["tenantGroup"] = tenantID
 	return nil
 }
 

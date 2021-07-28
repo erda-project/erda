@@ -40,7 +40,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 	utils.JsonConvertObjToType(tenant.Options, &tenantOptions)
 	utils.AppendMap(options, tenantOptions)
 
-	return p.createMonitor(tmcInstance.Engine, tenant.ID, tenant.TenantGroup, options)
+	return p.createMonitor(tmcInstance.Engine, tenant.TenantGroup, tenant.TenantGroup, options)
 }
 
 func (p *provider) DeleteTenant(tenant *db.InstanceTenant, tmcInstance *db.Instance, clusterConfig map[string]string) error {

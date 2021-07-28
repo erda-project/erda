@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
+	"github.com/erda-project/erda/modules/orchestrator/services/tenant"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -127,11 +128,20 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 		resource.WithBundle(bdl),
 	)
 
+	tenant := tenant.New(
+		tenant.WithDBClient(db),
+		tenant.WithHTTPClient(
+			httpclient.New(
+				httpclient.WithTimeout(time.Second, time.Second*60),
+			)),
+	)
+
 	// init addon service
 	a := addon.New(
 		addon.WithDBClient(db),
 		addon.WithBundle(bdl),
 		addon.WithResource(resource),
+		addon.WithTenant(tenant),
 		addon.WithEnvEncrypt(encrypt),
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),

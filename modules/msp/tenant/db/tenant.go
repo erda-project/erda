@@ -41,6 +41,9 @@ func (db *MSPTenantDB) InsertTenant(tenant *MSPTenant) (*MSPTenant, *errors.Data
 func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 	tenant := MSPTenant{}
 	err := db.db().Where("`id` = ?", tenantID).Find(&tenant).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
