@@ -18,7 +18,10 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/pipeline"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 )
 
 func main() {

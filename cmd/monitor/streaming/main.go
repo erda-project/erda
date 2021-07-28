@@ -22,9 +22,9 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/log/storage"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/storage"
 	_ "github.com/erda-project/erda/modules/monitor/alert/storage/alert-record"
-	_ "github.com/erda-project/erda/modules/monitor/apm/browser"
 	_ "github.com/erda-project/erda/modules/monitor/notify/storage/notify-record"
-	_ "github.com/erda-project/erda/modules/monitor/trace/storage"
+	_ "github.com/erda-project/erda/modules/msp/apm/browser"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/storage"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers/cassandra"

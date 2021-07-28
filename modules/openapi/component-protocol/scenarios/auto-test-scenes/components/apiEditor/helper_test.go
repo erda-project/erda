@@ -40,6 +40,6 @@ func TestGetStepOutPut(t *testing.T) {
 func TestGenEmptyAPISpecStr(t *testing.T) {
 	testEmptyAPISpec, testEmptyAPISpecStr := genEmptyAPISpecStr()
 	assert.Equal(t, "GET", testEmptyAPISpec.APIInfo.Method)
-	assert.Equal(t, `{"apiSpec":{"id":"","name":"","url":"","method":"GET","headers":null,"params":null,"body":{"type":"","content":null},"out_params":null,"asserts":null}}`,
+	assert.Equal(t, `{"apiSpec":{"id":"","name":"","url":"","method":"GET","headers":null,"params":null,"body":{"type":"","content":null},"out_params":null,"asserts":null},"loop":null}`,
 		testEmptyAPISpecStr)
 }

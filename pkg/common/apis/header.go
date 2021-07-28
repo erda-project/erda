@@ -20,6 +20,11 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/common/pb"
+)
+
+const (
+	headerInternalClient = "Internal-Client"
 )
 
 var langKeys = []string{"lang", "accept-language"}
@@ -82,4 +87,24 @@ func GetHeader(ctx context.Context, key string) string {
 		}
 	}
 	return ""
+}
+
+func GetInternalClient(ctx context.Context) string {
+	return GetHeader(ctx, "internal-client")
+}
+
+func IsInternalClient(ctx context.Context) bool {
+	return GetInternalClient(ctx) != ""
+}
+
+// GetIdentityInfo get User-ID and Internal-Client from header.
+// return nil if no identity info found.
+func GetIdentityInfo(ctx context.Context) *pb.IdentityInfo {
+	// try to get User-ID
+	userID := GetUserID(ctx)
+	internalClient := GetInternalClient(ctx)
+	if userID == "" && internalClient == "" {
+		return nil
+	}
+	return &pb.IdentityInfo{UserID: userID, InternalClient: internalClient}
 }

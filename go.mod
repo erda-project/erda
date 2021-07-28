@@ -9,7 +9,7 @@ require (
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
-	github.com/alecthomas/colour v0.1.0 // indirect
+	github.com/alecthomas/colour v0.1.0 // indirect; indirectp
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
@@ -27,12 +27,11 @@ require (
 	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210722100357-dfb1489a28d3
-	github.com/erda-project/erda-proto-go v0.0.0-20210723044709-d6082dd1bce3
+	github.com/erda-project/erda-infra v0.0.0-20210727055933-be7518b10590
+	github.com/erda-project/erda-proto-go v0.0.0-20210727101457-c8e2cf5f8687
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -41,7 +40,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/gin-gonic/gin v1.5.0
+	github.com/gin-gonic/gin v1.7.0
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-playground/validator v9.31.0+incompatible
@@ -53,6 +52,7 @@ require (
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
+	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -121,10 +121,10 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff
+	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210722135532-667f2b7c528f
+	google.golang.org/genproto v0.0.0-20210726200206-e7812ac95cc0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
@@ -144,6 +144,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d

@@ -31,7 +31,6 @@ import (
 func TestReconciler_getNeedGCPipeline(t *testing.T) {
 	type args struct {
 		pipelines []spec.Pipeline
-		total     int64
 		err       error
 	}
 
@@ -50,7 +49,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			name: "test_empty",
 			args: args{
 				pipelines: nil,
-				total:     0,
 				err:       nil,
 			},
 			wantLen: 0,
@@ -60,7 +58,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			name: "test_return_error",
 			args: args{
 				pipelines: nil,
-				total:     0,
 				err:       fmt.Errorf("have error"),
 			},
 			wantLen: 0,
@@ -92,7 +89,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -123,7 +119,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -154,7 +149,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 1,
@@ -185,7 +179,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -216,7 +209,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 1,
@@ -247,7 +239,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -272,7 +263,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -286,24 +276,20 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 
 		var db *dbclient.Client
 		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
-			return tt.args.pipelines, nil, tt.args.total, 0, tt.args.err
+			return tt.args.pipelines, nil, 1, 0, tt.args.err
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Reconciler{
 				dbClient: db,
 			}
-			got, got1, err := r.getNeedGCPipelines(0, true)
+			got, _, err := r.getNeedGCPipelines(0, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNeedGCPipeline() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			assert.Equal(t, tt.wantLen, len(got))
-
-			if got1 != tt.args.total {
-				t.Errorf("getNeedGCPipeline() got1 = %v, want %v", got1, tt.args.total)
-			}
 		})
 
 	}

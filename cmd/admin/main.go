@@ -19,6 +19,7 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/admin"
+	_ "github.com/erda-project/erda/modules/admin/dingtalktest"
 )
 
 func main() {

@@ -15,7 +15,6 @@ package dbclient
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/caarlos0/env"
@@ -93,8 +92,7 @@ func New() (*Client, error) {
 		return nil, errors.Wrap(err, "failed to get mysql configuration from env")
 	}
 
-	engine, err := xorm.NewEngine("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
-		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database))
+	engine, err := xorm.NewEngine("mysql", cfg.url())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to mysql server")
 	}
@@ -102,13 +100,6 @@ func New() (*Client, error) {
 	engine.SetMapper(core.GonicMapper{})
 
 	engine.ShowSQL(cfg.ShowSQL)
-	engine.ShowExecTime(cfg.ShowSQL)
-
-	logLevel := core.LOG_INFO
-	if strings.ToUpper(cfg.LogLevel) == "DEBUG" {
-		logLevel = core.LOG_DEBUG
-	}
-	engine.SetLogLevel(logLevel)
 
 	engine.SetMaxOpenConns(cfg.MaxConn)
 	engine.SetMaxIdleConns(cfg.MaxIdle)
@@ -119,6 +110,7 @@ func New() (*Client, error) {
 }
 
 type clientConfig struct {
+	URL             string        `env:"MYSQL_URL" envDefault:""`
 	Host            string        `env:"MYSQL_HOST" envDefault:"127.0.0.1"`
 	Port            int           `env:"MYSQL_PORT" envDefault:"3306"`
 	Username        string        `env:"MYSQL_USERNAME" envDefault:"root"`
@@ -129,4 +121,14 @@ type clientConfig struct {
 	ConnMaxLifetime time.Duration `env:"MYSQL_CONNMAXLIFETIME" envDefault:"10s"`
 	LogLevel        string        `env:"MYSQL_LOG_LEVEL" envDefault:"INFO"`
 	ShowSQL         bool          `env:"MYSQL_SHOW_SQL" envDefault:"false"`
+	PROPERTIES      string        `env:"MYSQL_PROPERTIES" envDefault:"charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=True&loc=Local"`
+}
+
+// url judge env mysql_url whether is null
+func (cfg *clientConfig) url() string {
+	if cfg.URL != "" {
+		return cfg.URL
+	}
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
+		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.PROPERTIES)
 }

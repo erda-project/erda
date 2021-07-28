@@ -13,7 +13,11 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+)
 
 // EnvConfig 环境变量配置
 type EnvConfig struct {
@@ -27,9 +31,9 @@ type EnvConfig struct {
 	Type       string `json:"type"` // dice-file/kv
 	Encrypt    bool   `json:"encrypt"`
 	// Operations 配置项操作，若为 nil，则使用默认配置: canDownload=false, canEdit=true, canDelete=true
-	Operations *PipelineCmsConfigOperations `json:"operations"`
-	CreateTime time.Time                    `json:"createTime,omitempty"`
-	UpdateTime time.Time                    `json:"updateTime,omitempty"`
+	Operations *pb.PipelineCmsConfigOperations `json:"operations"`
+	CreateTime time.Time                       `json:"createTime,omitempty"`
+	UpdateTime time.Time                       `json:"updateTime,omitempty"`
 }
 
 // EnvConfigAddOrUpdateRequest 配置新增/更新请求 POST /api/config

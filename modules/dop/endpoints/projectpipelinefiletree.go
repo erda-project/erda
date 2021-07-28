@@ -159,8 +159,14 @@ func (e *Endpoints) DeleteFileTreeNode(ctx context.Context, r *http.Request, var
 		return apierrors.ErrDeleteFileTreeNode.NotLogin().ToResp(), nil
 	}
 
+	inode, err := url.QueryUnescape(vars["inode"])
+	if err != nil {
+		logrus.Errorf("QueryUnescape pipeline filetree inode %v failed", vars["inode"])
+		inode = vars["inode"]
+	}
+
 	req := apistructs.UnifiedFileTreeNodeDeleteRequest{
-		Inode:        vars["inode"],
+		Inode:        inode,
 		IdentityInfo: identityInfo,
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -189,6 +195,12 @@ func (e *Endpoints) FindFileTreeNodeAncestors(ctx context.Context, r *http.Reque
 		return apierrors.ErrFindFileTreeNodeAncestors.NotLogin().ToResp(), nil
 	}
 
+	inode, err := url.QueryUnescape(vars["inode"])
+	if err != nil {
+		logrus.Errorf("QueryUnescape pipeline filetree inode %v failed", vars["inode"])
+		inode = vars["inode"]
+	}
+
 	// 获取企业id
 	orgID, err := getPOrgId(r)
 	if err != nil {
@@ -198,7 +210,7 @@ func (e *Endpoints) FindFileTreeNodeAncestors(ctx context.Context, r *http.Reque
 	// TODO: 鉴权
 
 	req := apistructs.UnifiedFileTreeNodeFindAncestorsRequest{
-		Inode:        vars["inode"],
+		Inode:        inode,
 		IdentityInfo: identityInfo,
 	}
 

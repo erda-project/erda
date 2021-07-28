@@ -14,6 +14,7 @@
 package autotestv2
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -28,10 +29,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -450,14 +453,15 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		return nil, fmt.Errorf("no api is referenced")
 	}
 
-	var pipelineCmsGetConfigsRequest apistructs.PipelineCmsGetConfigsRequest
-	pipelineCmsGetConfigsRequest.PipelineSource = apistructs.PipelineSourceAutoTest
+	var pipelineCmsGetConfigsRequest cmspb.CmsNsConfigsGetRequest
+	pipelineCmsGetConfigsRequest.PipelineSource = apistructs.PipelineSourceAutoTest.String()
 	pipelineCmsGetConfigsRequest.GlobalDecrypt = true
-	configs, _ := svc.bdl.GetPipelineCmsNsConfigs(req.ConfigManageNamespaces, pipelineCmsGetConfigsRequest)
+	pipelineCmsGetConfigsRequest.Ns = req.ConfigManageNamespaces
+	configs, _ := svc.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &pipelineCmsGetConfigsRequest)
 
 	caseParams := make(map[string]*apistructs.CaseParams)
 	apiTestEnvData := &apistructs.APITestEnvData{}
-	for _, conf := range configs {
+	for _, conf := range configs.Data {
 		switch conf.Key {
 		case autotest.CmsCfgKeyAPIGlobalConfig:
 			var apiConfig apistructs.AutoTestAPIConfig
@@ -507,7 +511,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
 
-	for _, conf := range configs {
+	for _, conf := range configs.Data {
 		switch conf.Key {
 		case autotest.CmsCfgKeyAPIGlobalConfig:
 			var apiConfig apistructs.AutoTestAPIConfig
@@ -712,6 +716,9 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		action.Type = "api-test"
 		action.Version = "2.0"
 		action.Params = value.ApiSpec
+		if value.Loop != nil && value.Loop.Strategy != nil && value.Loop.Strategy.MaxTimes > 0 {
+			action.Loop = value.Loop
+		}
 	case apistructs.StepTypeWait:
 		var value apistructs.AutoTestRunWait
 		err := json.Unmarshal([]byte(step.Value), &value)

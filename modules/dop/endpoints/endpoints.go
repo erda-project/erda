@@ -23,6 +23,7 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -608,6 +609,7 @@ type Endpoints struct {
 	permission         *permission.Permission
 	fileTree           *filetree.GittarFileTree
 	pFileTree          *projectpipelinefiletree.FileTree
+	pipelineCms        cmspb.CmsServiceServer
 
 	db              *dao.DBClient
 	testcase        *testcase.Service
@@ -694,6 +696,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithPipeline(p *pipeline.Pipeline) Option {
 	return func(e *Endpoints) {
 		e.pipeline = p
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(e *Endpoints) {
+		e.pipelineCms = cms
 	}
 }
 

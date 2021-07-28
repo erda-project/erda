@@ -60,7 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterCheckerServiceImp(p.Register, p.checkerService, apis.Options())
 
-		type CheckerServiceV1 pb.CheckerV1ServiceServer
+		type CheckerServiceV1 = pb.CheckerV1ServiceServer
 		pb.RegisterCheckerV1ServiceImp(p.Register, p.checkerV1Service, apis.Options(),
 			p.Perm.Check(
 				perm.Method(CheckerServiceV1.CreateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionCreate, perm.FieldValue("Data.ProjectID")),
