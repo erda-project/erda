@@ -9,6 +9,7 @@ kafka:
         options:
             go.produce.channel.size: ${COLLECTOR_KAFKA_PRODUCE_CHANNEL_SIZE:100}
             queue.buffering.max.kbytes: ${COLLECTOR_KAFKA_QUEUE_SIZE_KB:524288} # 500MB
+
 monitor-collector:
     _enable: ${COLLECTOR_ENABLE:true}
     ta_sampling_rate: ${COLLECTOR_BROWSER_SAMPLING_RATE:100}
@@ -22,6 +23,8 @@ monitor-collector:
         password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
         force: ${COLLECTOR_AUTH_FORCE:false}
     sign_auth:
+        sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
+        expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
 
 pprof:
 http-server@admin:

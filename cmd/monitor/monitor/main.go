@@ -22,17 +22,17 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query-example"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+	_ "github.com/erda-project/erda/modules/core/monitor/settings"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
-	_ "github.com/erda-project/erda/modules/monitor/apm/trace"
-	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
@@ -41,7 +41,6 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
-	_ "github.com/erda-project/erda/modules/monitor/settings"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
