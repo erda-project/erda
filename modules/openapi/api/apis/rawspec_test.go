@@ -14,6 +14,7 @@
 package apis_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/erda-project/erda/modules/openapi/api/apis"
@@ -21,17 +22,27 @@ import (
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
-type StructA struct {
-}
-
-func TestStruct2OpenapiSchema(t *testing.T) {
+func TestApiSpec_AddOperationTo(t *testing.T) {
+	var testAPIs = []*apis.ApiSpec{
+		&dop.CreateAPIAssetVersion,
+		&dop.GetAccess,
+	}
 	v3 := apis.NewSwagger("test")
-	if err := dop.CreateAPIAssetVersion.AddOperationTo(v3); err != nil {
-		t.Fatal(err)
+	for _, api := range testAPIs {
+		if err := api.AddOperationTo(v3); err != nil {
+			t.Fatal(err)
+		}
 	}
 	data, err := oas3.MarshalYaml(v3)
 	if err != nil {
-		t.Fatalf("failed to MarshalYaml: %v", err)
+		t.Fatal(err)
+	}
+	newV3, err := oas3.LoadFromData(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = oas3.ValidateOAS3(context.Background(), *newV3); err != nil {
+		t.Fatal(err)
 	}
 	t.Log(string(data))
 }
