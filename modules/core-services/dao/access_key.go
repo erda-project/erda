@@ -55,6 +55,25 @@ func (client *DBClient) GetByAccessKeyID(ak string) (model.AccessKey, error) {
 	return obj, nil
 }
 
+func (client *DBClient) ListAccessKey(req apistructs.AccessKeyListQueryRequest) ([]model.AccessKey, error) {
+	var objs []model.AccessKey
+	query := client.Where(&model.AccessKey{
+		Status:      req.Status,
+		Subject:     req.Subject,
+		SubjectType: req.SubjectType,
+	})
+	if req.IsSystem != nil {
+		query = query.Where(map[string]interface{}{
+			"is_system": req.IsSystem,
+		})
+	}
+	res := query.Find(&objs)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	return objs, nil
+}
+
 func (client *DBClient) DeleteByAccessKeyID(ak string) error {
 	return client.Where(&model.AccessKey{AccessKeyID: ak}).Delete(&model.AccessKey{}).Error
 }

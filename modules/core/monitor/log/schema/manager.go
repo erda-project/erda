@@ -47,9 +47,18 @@ type CassandraSchema struct {
 	cass           cassandra.Interface
 	defaultSession *gocql.Session
 	lastOrgList    []string
+	mutexKey       string
 }
 
-func NewCassandraSchema(cass cassandra.Interface, l logs.Logger) (*CassandraSchema, error) {
+type Option func(cs *CassandraSchema)
+
+func WithMutexKey(key string) Option {
+	return func(cs *CassandraSchema) {
+		cs.mutexKey = key
+	}
+}
+
+func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) (*CassandraSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
 	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
@@ -59,11 +68,12 @@ func NewCassandraSchema(cass cassandra.Interface, l logs.Logger) (*CassandraSche
 	cs.defaultSession = sysSession
 	cs.lastOrgList = []string{}
 	cs.Logger = l
+	cs.mutexKey = "logs_store"
 
-	// create default
-	if err := cs.createDefault(); err != nil {
-		return nil, errors.Wrap(err, "create default failed")
+	for _, op := range ops {
+		op(cs)
 	}
+
 	return cs, nil
 }
 
@@ -74,7 +84,7 @@ func (cs *CassandraSchema) Name() string {
 func (cs *CassandraSchema) RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	mu, err := muInf.New(ctx, "/logs_store")
+	mu, err := muInf.New(ctx, cs.mutexKey)
 	if err != nil {
 		if err != context.Canceled {
 			cs.Logger.Errorf("create mu failed, err: %s", err)
@@ -187,7 +197,7 @@ func (cs *CassandraSchema) createTableWithKC(item *cassandra.KeyspaceConfig) err
 	return nil
 }
 
-func (cs *CassandraSchema) createDefault() error {
+func (cs *CassandraSchema) CreateDefault() error {
 	for _, stmt := range []string{
 		fmt.Sprintf(BaseLogCreateTable, DefaultKeySpace, gcGraceSeconds),
 		fmt.Sprintf(BaseLogAlterTableGCGraceSeconds, DefaultKeySpace, gcGraceSeconds),

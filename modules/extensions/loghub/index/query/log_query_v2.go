@@ -19,7 +19,7 @@ import (
 
 	"github.com/olivere/elastic"
 
-	"github.com/erda-project/erda/modules/monitor/core/logs"
+	logs "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
 func (c *ESClient) getBoolQueryV2(req *LogRequest) *elastic.BoolQuery {

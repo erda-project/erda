@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query-example"
@@ -32,7 +33,6 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
-	_ "github.com/erda-project/erda/modules/monitor/core/logs/query"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"

@@ -67,8 +67,8 @@ metrics-query-compatibility:
     path: ${CONFIG_PATH}/charts
     reload_interval: "30s"
 
-logs-query:
-  _enable: ${LOGS_QUERY_ENABLE:true}
+erda.core.monitor.log.query:
+  _enable: ${LOG_QUERY_ENABLE:true}
   cassandra:
     keyspace:
       name: "spot_prod"
