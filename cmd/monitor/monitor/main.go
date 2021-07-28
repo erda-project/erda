@@ -19,6 +19,9 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
+
 	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
@@ -28,8 +31,6 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/settings"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
-	_ "github.com/erda-project/erda/modules/monitor/alert/alert-apis"
-	_ "github.com/erda-project/erda/modules/monitor/alert/details-apis"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
