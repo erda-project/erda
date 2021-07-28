@@ -11,23 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package testplan
+package admin
 
 import (
 	"net/http"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var AUTOTESTS_TESTPLAN_EXECUTE = apis.ApiSpec{
-	Path:           "/api/autotests/testplans/<testPlanID>/actions/execute",
-	BackendPath:    "/api/autotests/testplans/<testPlanID>/actions/execute",
-	Host:           "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:         "http",
-	Method:         http.MethodPost,
-	CheckLogin:     true,
-	CheckBasicAuth: true,
-	CheckToken:     true,
-	IsOpenAPI:      true,
-	Doc:            "自动化测试计划执行",
+var ADMIN_DINGTALK_TEST = apis.ApiSpec{
+	Path:         "/api/admin/notify/dingtalk-test",
+	BackendPath:  "/api/admin/notify/dingtalk-test",
+	Host:         "admin.marathon.l4lb.thisdcos.directory:9096",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	CheckLogin:   true,
+	CheckToken:   true,
+	RequestType:  apistructs.NoticeListRequest{},
+	ResponseType: apistructs.NoticeListResponse{},
+	IsOpenAPI:    true,
+	Doc:          "summary: 测试通知组钉钉发送",
 }
