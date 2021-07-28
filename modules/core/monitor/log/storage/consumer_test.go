@@ -17,8 +17,9 @@ import (
 	"testing"
 	"time"
 
-	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
 	"github.com/stretchr/testify/assert"
+
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
 func Test_provider_processLog(t *testing.T) {

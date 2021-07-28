@@ -20,8 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
 	"github.com/stretchr/testify/assert"
+
+	logmodule "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
 func BenchmarkGzipContentV1(b *testing.B) {

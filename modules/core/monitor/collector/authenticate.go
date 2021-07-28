@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/apistructs"
@@ -27,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/validator"
-	"github.com/labstack/echo"
 )
 
 var bdl = bundle.New(bundle.WithCoreServices())
