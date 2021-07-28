@@ -22,6 +22,9 @@ erda.core.dicehub.release:
   max_time_reserved: "${RELEASE_MAX_TIME_RESERVED:72}"
   gc_switch: "${RELEASE_GC_SWITCH:true}"
 
+erda.core.dicehub.extension:
+  extension_menu: ${EXTENSION_MENU:{"":""}}
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: "${MYSQL_PORT:3306}"

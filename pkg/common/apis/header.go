@@ -56,6 +56,11 @@ func HTTPLanguage(r *http.Request) i18n.LanguageCodes {
 	return langs
 }
 
+// GetLang .
+func GetLang(ctx context.Context) string {
+	return GetHeader(ctx, "lang")
+}
+
 // GetOrgID .
 func GetOrgID(ctx context.Context) string {
 	return GetHeader(ctx, "org-id")
