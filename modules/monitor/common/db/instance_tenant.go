@@ -30,6 +30,7 @@ func (db *InstanceTenantDb) QueryTkByTenantGroup(tenantGroup string) (string, er
 		Select("*").
 		Where("tenant_group = ?", tenantGroup).
 		Where("engine = ?", "monitor").
+		Where("is_deleted = ?", "N").
 		Find(&tenantInfo).
 		Order("create_time", false).
 		Limit(1).
