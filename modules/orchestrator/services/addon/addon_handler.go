@@ -16,13 +16,13 @@ package addon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/recallsong/go-utils/conv"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/recallsong/go-utils/conv"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
