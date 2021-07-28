@@ -26,23 +26,6 @@ monitor-collector:
         sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
         expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
 
-monitor-collector-v2:
-    _enable: ${COLLECTORV2_ENABLE:true}
-    output:
-        name: ${COLLECTOR_OUTPUT_NAME:kafka}
-        # topicPrefix: spot-v2-  # TODO
-        # kafka config
-        parallelism: ${KAFKA_PARALLELISM:3}
-        batch:
-            size: ${KAFKA_BATCH_SIZE:50}
-            timeout: "30s"
-    sign_auth:
-        sync_interval: ${COLLECTOR_AK_SYNC_INTERVAL:3m}
-        expired_duration: ${COLLECTOR_AK_EXPIRED_DURATION:10m}
-    limiter:
-        # `4x` or `4xB`, where x is one of the multiple from K, M, G, T or P.
-        request_body_size: ${COLLECTOR_LIMIT_REQUEST_BODY_SIZE:2M}
-
 pprof:
 http-server@admin:
     addr: ":7078"

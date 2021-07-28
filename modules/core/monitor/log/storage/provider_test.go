@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package storagev2
+package storage
 
 import (
 	"testing"
@@ -19,16 +19,15 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
-	"github.com/gocql/gocql"
-	"github.com/jinzhu/gorm"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/gocql/gocql"
+	"github.com/jinzhu/gorm"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_provider_Init(t *testing.T) {

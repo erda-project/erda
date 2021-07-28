@@ -44,7 +44,6 @@ etcd:
 etcd-mutex:
   root_path: "/erda/streaming"
 
-# todo desperate
 log-store:
   _enable: ${LOG_STORE_ENABLE:true}
   input:
@@ -73,36 +72,6 @@ log-store:
             factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
       default_ttl: "${LOG_TTL:168h}"
       gc_grace_seconds: 86400
-
-log-store-v2:
-  _enable: ${LOG_STORE_V2_ENABLE:true}
-  input:
-    topics: "${LOG_V2_TOPICS:spot-v2-container-log,spot-v2-job-log}"
-    group: "${LOG_V2_GROUP_ID:spot-v2-monitor-log}"
-    parallelism: ${LOG_CONSUMERS:1}
-    options:
-      queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
-  output:
-    id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
-    log_schema:
-      org_refresh_interval: "${LOG_SCHEMA_ORG_REFRESH_INTERVAL:3m}"
-    cassandra:
-      writer_config:
-        parallelism: ${CASSANDRA_PARALLELISM:3}
-        batch:
-          size: ${CASSANDRA_BATCH_SIZE:50}
-          timeout: "10s"
-        retry: -1  # block forever. kafka will handle the issue of stream block
-      session_config:
-        keyspace:
-          name: "spot_prod"
-          auto: true # 自动创建 keyspace
-          replication:
-            class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-            factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
-      default_ttl: "${LOG_TTL:168h}"
-      gc_grace_seconds: 86400
-
 
 browser-analytics:
   _enable: ${BROWSER_ENABLE:true}
