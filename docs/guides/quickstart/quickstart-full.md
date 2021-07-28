@@ -16,7 +16,7 @@ Ensure successful execution of db-migration.
 
 ```shell
 docker-compose up -d mysql
-docker-compose up dbmigration-4
+docker-compose up erda-migration
 ```
 
 Then, run the rest of erda
