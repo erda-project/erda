@@ -16,7 +16,6 @@ package admin
 import (
 	"net/http"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,8 +27,6 @@ var ADMIN_DINGTALK_TEST = apis.ApiSpec{
 	Method:       http.MethodPost,
 	CheckLogin:   true,
 	CheckToken:   true,
-	RequestType:  apistructs.NoticeListRequest{},
-	ResponseType: apistructs.NoticeListResponse{},
 	IsOpenAPI:    true,
 	Doc:          "summary: 测试通知组钉钉发送",
 }
