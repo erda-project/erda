@@ -11,23 +11,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package types
+package queue
 
 import (
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type Queue interface {
-	QueueValidator
-	Start(stopCh chan struct{})
-	ID() string
-	IsStrictMode() bool
-	Usage() pb.QueueUsage
-	Update(pq *apistructs.PipelineQueue)
-	RangePendingQueue()
-	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
-	PopOutPipeline(p *spec.Pipeline)
-	UpdatePipelinePriority(p *spec.Pipeline, priority int64)
+func (q *defaultQueue) UpdatePipelinePriority(p *spec.Pipeline, priority int64) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	itemKey := makeItemKey(p)
+	q.eq.Add(itemKey, priority, *p.TimeCreated)
 }

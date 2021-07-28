@@ -15,6 +15,7 @@ package priorityqueue
 
 import (
 	"container/heap"
+	"sort"
 )
 
 // PriorityQueue 优先队列
@@ -69,6 +70,7 @@ func (pq *PriorityQueue) Add(item Item) {
 	} else {
 		heap.Push(pq.data, convertItem(item))
 	}
+	sort.Sort(pq.data)
 }
 
 // Remove 删除 BaseItem

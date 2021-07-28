@@ -15,6 +15,7 @@ package manager
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -145,4 +146,37 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	}
 
 	return pq
+}
+
+func (mgr *defaultManager) UpdatePipelinePriorityInQueue(queueID uint64, pipelineIDs []uint64, maxPriority int64) error {
+	mgr.qLock.RLock()
+	defer mgr.qLock.RUnlock()
+
+	q, ok := mgr.queueByID[strconv.FormatUint(queueID, 10)]
+	if !ok {
+		return fmt.Errorf("Queue %v is not valid", queueID)
+	}
+
+	priority := maxPriority
+	for i := len(pipelineIDs) - 1; i >= 0; i-- {
+		pipelineID := pipelineIDs[i]
+		priority += 1
+		p := mgr.ensureQueryPipelineDetail(pipelineID)
+		if p == nil {
+			return fmt.Errorf("failed to query pipeline: %d", pipelineID)
+		}
+
+		if p.Extra.QueueInfo.PriorityChangeHistory == nil {
+			p.Extra.QueueInfo.PriorityChangeHistory = make([]int64, 0)
+		}
+		p.Extra.QueueInfo.PriorityChangeHistory = append(p.Extra.QueueInfo.PriorityChangeHistory, p.Extra.QueueInfo.CustomPriority)
+		p.Extra.QueueInfo.CustomPriority = priority
+		if err := mgr.dbClient.UpdatePipelineExtraByPipelineID(pipelineID, &p.PipelineExtra); err != nil {
+			return err
+		}
+
+		q.UpdatePipelinePriority(p, priority)
+	}
+
+	return nil
 }
