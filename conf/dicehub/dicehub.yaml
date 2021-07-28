@@ -9,7 +9,7 @@ grpc-server:
 
 service-register:
 
-erda.dicehub.image:
+erda.core.dicehub.image:
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
