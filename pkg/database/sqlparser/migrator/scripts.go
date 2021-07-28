@@ -175,7 +175,7 @@ func (s *Scripts) AlterPermissionLint() error {
 				case *ast.AlterTableStmt:
 					tableName := ddl.(*ast.AlterTableStmt).Table.Name.String()
 					if _, ok := tableNames[tableName]; !ok {
-						return errors.Errorf("the table your tried to alter is not exists, may it not created in this module directory. filename: %s, text:\n%s",
+						return errors.Errorf("the table you tried to alter is not exists, may it not created in this module directory. filename: %s, text:\n%s",
 							filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
 					}
 				default:
