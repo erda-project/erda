@@ -20,13 +20,13 @@ import (
 )
 
 var ADMIN_DINGTALK_TEST = apis.ApiSpec{
-	Path:         "/api/admin/notify/dingtalk-test",
-	BackendPath:  "/api/admin/notify/dingtalk-test",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9096",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	Doc:          "summary: 测试通知组钉钉发送",
+	Path:        "/api/admin/notify/dingtalk-test",
+	BackendPath: "/api/admin/notify/dingtalk-test",
+	Host:        "admin.marathon.l4lb.thisdcos.directory:9096",
+	Scheme:      "http",
+	Method:      http.MethodPost,
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	Doc:         "summary: 测试通知组钉钉发送",
 }
