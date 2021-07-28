@@ -168,6 +168,7 @@ const (
 	DeleteAddonTemplate       TemplateName = "deleteAddon"
 	// ========================Runtime================================
 	DeleteRuntimeTemplate TemplateName = "deleteRuntime"
+	ScaleRuntimeTemplate  TemplateName = "scaleRuntime"
 
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"

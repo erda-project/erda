@@ -121,7 +121,12 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 	if overlay.Envs != nil {
 		oldOverlay.Envs = overlay.Envs
 	}
-	var needUpdateServices []string
+	var (
+		needUpdateServices     []string
+		oldOverlayDataForAudit = apistructs.PreDiceDTO{
+			Services: make(map[string]*apistructs.RuntimeInspectServiceDTO, 0),
+		}
+	)
 	for k, v := range overlay.Services {
 		oldService, exists := oldOverlay.Services[k]
 		if !exists || oldService == nil {
@@ -139,6 +144,8 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		if oldService.Resources.CPU != v.Resources.CPU || oldService.Resources.Mem != v.Resources.Mem ||
 			oldService.Resources.Disk != v.Resources.Disk || oldService.Deployments.Replicas != v.Deployments.Replicas {
 			needUpdateServices = append(needUpdateServices, k)
+			// record old service's scale for audit
+			oldOverlayDataForAudit.Services[k] = genOverlayDataForAudit(oldService)
 		}
 		// Replicas
 		oldService.Deployments.Replicas = v.Deployments.Replicas
@@ -195,5 +202,18 @@ func (s *Endpoints) epUpdateOverlay(ctx context.Context, r *http.Request, vars m
 		return utils.ErrResp0101(err, funcErrMsg)
 	}
 
-	return httpserver.OkResp(nil)
+	return httpserver.OkResp(oldOverlayDataForAudit)
+}
+
+func genOverlayDataForAudit(oldService *diceyml.Service) *apistructs.RuntimeInspectServiceDTO {
+	return &apistructs.RuntimeInspectServiceDTO{
+		Resources: apistructs.RuntimeServiceResourceDTO{
+			CPU:  oldService.Resources.CPU,
+			Mem:  oldService.Resources.Mem,
+			Disk: oldService.Resources.Disk,
+		},
+		Deployments: apistructs.RuntimeServiceDeploymentsDTO{
+			Replicas: oldService.Deployments.Replicas,
+		},
+	}
 }
