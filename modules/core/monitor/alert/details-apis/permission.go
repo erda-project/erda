@@ -14,11 +14,14 @@
 package details_apis
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/common/permission"
 )
 
 func (p *provider) getOrgIDByClusters(ctx httpserver.Context) (string, error) {
@@ -49,4 +52,40 @@ func (p *provider) getOrgIDByClusters(ctx httpserver.Context) (string, error) {
 		}
 	}
 	return idStr, nil
+}
+
+func (p *provider) OrgIDByCluster(key string) permission.ValueGetter {
+	return func(ctx context.Context, req interface{}) (string, error) {
+		orgIdValue := permission.OrgIDValue()
+		orgIdStr, err := orgIdValue(ctx, req)
+		orgID, err := strconv.ParseUint(orgIdStr, 10, 64)
+		if err != nil {
+			return "", fmt.Errorf("Org-ID is not number")
+		}
+		request := http.ContextRequest(ctx)
+		cluster := request.URL.Query().Get(key)
+		if len(cluster) <= 0 {
+			return "", fmt.Errorf("cluster must not be empty")
+		}
+		err = p.checkOrgIDsByCluster(orgID, cluster)
+		if err != nil {
+			return "", err
+		}
+		return orgIdStr, nil
+	}
+}
+
+func (p *provider) checkOrgIDsByCluster(orgID uint64, clusterName string) error {
+	resp, err := p.cmdb.QueryAllOrgClusterRelation()
+	if err != nil {
+		return err
+	}
+	for _, item := range resp {
+		if item.ClusterName == clusterName {
+			if orgID == item.OrgID {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("not found cluster '%s'", clusterName)
 }
