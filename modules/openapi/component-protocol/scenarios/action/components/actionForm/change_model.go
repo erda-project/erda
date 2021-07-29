@@ -11,22 +11,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package autotest
+package action
 
-import (
-	"net/http"
-
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
-
-var AUTOTESTS_SCENES_EXECUTE = apis.ApiSpec{
-	Path:        "/api/autotests/scenes/<sceneID>/actions/execute",
-	BackendPath: "/api/autotests/scenes/<sceneID>/actions/execute",
-	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	Doc:         "自动化测试场景执行",
+type changeStruct struct {
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
 }

@@ -275,7 +275,7 @@ func (svc *Service) createOrUpdatePipelineCmsGlobalConfigs(cfg *apistructs.AutoT
 	if _, err := svc.cms.UpdateCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &cmspb.CmsNsConfigsUpdateRequest{
 		Ns:             cfg.Ns,
 		PipelineSource: apistructs.PipelineSourceAutoTest.String(),
-		KVs:            nil,
+		KVs:            kvs,
 	}); err != nil {
 		return err
 	}
