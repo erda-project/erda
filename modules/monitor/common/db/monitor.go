@@ -36,9 +36,9 @@ func (db *MonitorDb) GetInstanceByTk(tk string) (Monitor, error) {
 	err := db.Table("sp_monitor").
 		Select("*").
 		Where("terminus_key = ?", tk).
-		Find(&monitor).
 		Order("created DESC").
 		Limit(1).
+		Find(&monitor).
 		Error
 	return monitor, err
 }
