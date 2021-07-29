@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/conf"
 )
 
 // CDP pipeline 结构体
@@ -165,9 +166,13 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 			params := map[string]string{
 				"pipelineID":     strconv.FormatUint(pipelineData.PipelineID, 10),
 				"notifyItemName": notifyItem.DisplayName,
+				"appID":          strconv.FormatUint(pipelineDetail.ApplicationID, 10),
 				"appName":        pipelineDetail.ApplicationName,
+				"projectID":      strconv.FormatUint(pipelineDetail.ProjectID, 10),
 				"projectName":    pipelineDetail.ProjectName,
+				"orgName":        pipelineDetail.OrgName,
 				"branch":         pipelineDetail.Branch,
+				"uiPublicURL":    conf.UIPublicURL(),
 			}
 			//失败情况尝输出错误日志
 			if notifyItem.Name == "pipeline_failed" {

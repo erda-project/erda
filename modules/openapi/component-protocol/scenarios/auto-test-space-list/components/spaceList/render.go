@@ -75,7 +75,7 @@ type dataTask struct {
 
 func (a *ComponentSpaceList) SetBundle(b protocol.ContextBundle) error {
 	if b.Bdl == nil {
-		err := fmt.Errorf("invalie bundle")
+		err := fmt.Errorf("invalid bundle")
 		return err
 	}
 	a.CtxBdl = b
@@ -119,6 +119,10 @@ func (a *ComponentSpaceList) Render(ctx context.Context, c *apistructs.Component
 		if err := a.handlerRetryOperation(bdl, c, inParams, event); err != nil {
 			return err
 		}
+	case apistructs.AutoTestSpaceExportOperationKey:
+		if err := a.handlerExportOperation(bdl, c, inParams, event); err != nil {
+			return err
+		}
 	}
 	c.Operations = getOperations()
 	a.Props = getProps()
@@ -160,6 +164,9 @@ func (a *ComponentSpaceList) setData(spaces apistructs.AutoTestSpaceList) error 
 			delete.Disabled = false
 			list.Operate.Operations["delete"] = delete
 			retry.Meta = setMeta(list)
+			export.Meta = setMeta(list)
+			export.Disabled = true
+			list.Operate.Operations["export"] = export
 			list.Operate.Operations["retry"] = retry
 		} else {
 			edit.Command = setCommand(list)
@@ -174,6 +181,8 @@ func (a *ComponentSpaceList) setData(spaces apistructs.AutoTestSpaceList) error 
 			}
 			list.Operate.Operations["a-edit"] = edit
 			list.Operate.Operations["copy"] = copy
+			export.Meta = setMeta(list)
+			list.Operate.Operations["export"] = export
 			list.Operate.Operations["delete"] = delete
 		}
 		lists = append(lists, list)
@@ -226,7 +235,7 @@ func getProps() spec.Props {
 			{
 				Title:     "操作",
 				DataIndex: "operate",
-				Width:     150,
+				Width:     180,
 			},
 		},
 		Visible: true,

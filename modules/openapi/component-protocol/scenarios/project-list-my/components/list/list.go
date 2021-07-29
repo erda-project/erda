@@ -58,7 +58,7 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 			Target: "project",
 		},
 	}
-	//opManage := Operation{
+	//opManage := GenerateOperation{
 	//	Key:    apistructs.ListProjectToManageOperationKey.String(),
 	//	Reload: false,
 	//	Text:   "管理",

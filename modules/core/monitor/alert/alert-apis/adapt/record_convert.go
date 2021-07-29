@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/cql"
-	"github.com/erda-project/erda/modules/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 

@@ -48,14 +48,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.dicehub.image.ImageService" || ctx.Type() == pb.ImageServiceServerType() || ctx.Type() == pb.ImageServiceHandlerType():
+	case ctx.Service() == "erda.core.dicehub.image.ImageService" || ctx.Type() == pb.ImageServiceServerType() || ctx.Type() == pb.ImageServiceHandlerType():
 		return p.imageService
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.dicehub.image", &servicehub.Spec{
+	servicehub.Register("erda.core.dicehub.image", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},

@@ -11,25 +11,31 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package admin
+package endpoints
 
 import (
-	"net/http"
+	"testing"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/stretchr/testify/assert"
 )
 
-var ADMIN_DINGTALK_TEST = apis.ApiSpec{
-	Path:         "/api/admin/notify/dingtalk-test",
-	BackendPath:  "/api/admin/notify/dingtalk-test",
-	Host:         "admin.marathon.l4lb.thisdcos.directory:9096",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.NoticeListRequest{},
-	ResponseType: apistructs.NoticeListResponse{},
-	IsOpenAPI:    true,
-	Doc:          "summary: 测试通知组钉钉发送",
+func Test_GenOverlayDataForAudit(t *testing.T) {
+	oldServiceData := &diceyml.Service{
+		Resources: diceyml.Resources{
+			CPU:  1,
+			Mem:  1024,
+			Disk: 0,
+		},
+		Deployments: diceyml.Deployments{
+			Replicas: 1,
+		},
+	}
+
+	auditData := genOverlayDataForAudit(oldServiceData)
+
+	assert.Equal(t, float64(1), auditData.Resources.CPU)
+	assert.Equal(t, 1024, auditData.Resources.Mem)
+	assert.Equal(t, 0, auditData.Resources.Disk)
+	assert.Equal(t, 1, auditData.Deployments.Replicas)
 }

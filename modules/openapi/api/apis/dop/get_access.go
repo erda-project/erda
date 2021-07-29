@@ -15,7 +15,9 @@ package dop
 
 import (
 	"net/http"
+	"net/url"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -30,4 +32,13 @@ var GetAccess = apis.ApiSpec{
 	RequestType:  nil,
 	ResponseType: nil,
 	Doc:          "get access",
+	Parameters: &apis.Parameters{
+		Tag:    "apim",
+		Header: nil,
+		QueryValues: url.Values{
+			"accessID": nil,
+		},
+		Body:     nil,
+		Response: &apistructs.GetAccessRspAccess{},
+	},
 }
