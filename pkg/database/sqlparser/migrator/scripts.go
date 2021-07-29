@@ -30,6 +30,13 @@ import (
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
+type ScriptsParameters interface {
+	Workdir() string
+	MigrationDir() string
+	Modules() []string
+	Rules() []rules.Ruler
+}
+
 // Scripts is the set of Module
 type Scripts struct {
 	Workdir       string
@@ -44,7 +51,7 @@ type Scripts struct {
 }
 
 // NewScripts range the directory
-func NewScripts(parameters Parameters) (*Scripts, error) {
+func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 	var (
 		modulesNames []string
 		services     = make(map[string]*Module, 0)
@@ -168,7 +175,7 @@ func (s *Scripts) AlterPermissionLint() error {
 				case *ast.AlterTableStmt:
 					tableName := ddl.(*ast.AlterTableStmt).Table.Name.String()
 					if _, ok := tableNames[tableName]; !ok {
-						return errors.Errorf("the table tried to alter not exists, may it not created in this module directory. filename: %s, text:\n%s",
+						return errors.Errorf("the table you tried to alter is not exists, may it not created in this module directory. filename: %s, text:\n%s",
 							filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
 					}
 				default:
@@ -196,6 +203,10 @@ func (s *Scripts) MarkPending(tx *gorm.DB) {
 		}
 	}
 
+	s.markPending = true
+}
+
+func (s *Scripts) IgnoreMarkPending() {
 	s.markPending = true
 }
 
