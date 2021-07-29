@@ -120,7 +120,7 @@ func (c *PipelineTaskContext) Dedup() {
 	c.OutStorages = c.OutStorages.DedupByName()
 }
 
-// Operation
+// GenerateOperation
 type PipelineTaskOpType string
 
 var (

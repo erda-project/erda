@@ -108,6 +108,11 @@ type AutoTestSpaceExportRequest struct {
 	IdentityInfo
 }
 
+type AutoTestSpaceExportResponse struct {
+	Header
+	Data uint64 `json:"data"`
+}
+
 type TestSpaceFileType string
 
 var (
@@ -132,9 +137,5 @@ type AutoTestSpaceImportRequest struct {
 
 type AutoTestSpaceImportResponse struct {
 	Header
-	Data *AutoTestSpaceImportResult `json:"data"`
-}
-
-type AutoTestSpaceImportResult struct {
-	Success bool `json:"success"`
+	Data uint64 `json:"data"`
 }
