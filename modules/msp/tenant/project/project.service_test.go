@@ -11,44 +11,43 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package tenant
+package project
 
 import (
 	context "context"
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	reflect "reflect"
 	testing "testing"
-
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 )
 
-func Test_tenantService_CreateTenant(t *testing.T) {
+func Test_projectService_GetProjects(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *pb.CreateTenantRequest
+		req *pb.GetProjectsRequest
 	}
 	tests := []struct {
 		name     string
 		service  string
 		config   string
 		args     args
-		wantResp *pb.CreateTenantResponse
+		wantResp *pb.GetProjectsResponse
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
 		//		{
 		//			"case 1",
-		//			"erda.msp.tenant.TenantService",
+		//			"erda.msp.tenant.project.ProjectService",
 		//			`
-		//erda.msp.tenant:
+		//erda.msp.tenant.project:
 		//`,
 		//			args{
 		//				context.TODO(),
-		//				&pb.CreateTenantRequest{
+		//				&pb.GetProjectsRequest{
 		//					// TODO: setup fields
 		//				},
 		//			},
-		//			&pb.CreateTenantResponse{
+		//			&pb.GetProjectsResponse{
 		//				// TODO: setup fields.
 		//			},
 		//			false,
@@ -66,46 +65,46 @@ func Test_tenantService_CreateTenant(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			srv := hub.Service(tt.service).(pb.TenantServiceServer)
-			got, err := srv.CreateTenant(tt.args.ctx, tt.args.req)
+			srv := hub.Service(tt.service).(pb.ProjectServiceServer)
+			got, err := srv.GetProjects(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("tenantService.CreateTenant() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("projectService.GetProjects() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("tenantService.CreateTenant() = %v, want %v", got, tt.wantResp)
+				t.Errorf("projectService.GetProjects() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
 }
 
-func Test_tenantService_GetTenant(t *testing.T) {
+func Test_projectService_CreateProject(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *pb.GetTenantRequest
+		req *pb.CreateProjectRequest
 	}
 	tests := []struct {
 		name     string
 		service  string
 		config   string
 		args     args
-		wantResp *pb.GetTenantResponse
+		wantResp *pb.CreateProjectResponse
 		wantErr  bool
 	}{
 		// TODO: Add test cases.
 		//		{
 		//			"case 1",
-		//			"erda.msp.tenant.TenantService",
+		//			"erda.msp.tenant.project.ProjectService",
 		//			`
-		//erda.msp.tenant:
+		//erda.msp.tenant.project:
 		//`,
 		//			args{
 		//				context.TODO(),
-		//				&pb.GetTenantRequest{
+		//				&pb.CreateProjectRequest{
 		//					// TODO: setup fields
 		//				},
 		//			},
-		//			&pb.GetTenantResponse{
+		//			&pb.CreateProjectResponse{
 		//				// TODO: setup fields.
 		//			},
 		//			false,
@@ -123,36 +122,14 @@ func Test_tenantService_GetTenant(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			srv := hub.Service(tt.service).(pb.TenantServiceServer)
-			got, err := srv.GetTenant(tt.args.ctx, tt.args.req)
+			srv := hub.Service(tt.service).(pb.ProjectServiceServer)
+			got, err := srv.CreateProject(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("tenantService.GetTenant() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("projectService.CreateProject() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("tenantService.GetTenant() = %v, want %v", got, tt.wantResp)
-			}
-		})
-	}
-}
-
-func Test_generateTenantID(t *testing.T) {
-	type args struct {
-		projectID  int64
-		tenantType string
-		workspace  string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{"case1", args{1, "msp", "DEFAULT"}, GenerateTenantID(1, "msp", "DEFAULT")},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GenerateTenantID(tt.args.projectID, tt.args.tenantType, tt.args.workspace); got != tt.want {
-				t.Errorf("GenerateTenantID() = %v, want %v", got, tt.want)
+				t.Errorf("projectService.CreateProject() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}

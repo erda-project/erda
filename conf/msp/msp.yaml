@@ -125,6 +125,7 @@ erda.msp.apm.metric:
   monitor_url: "http://${MONITOR_ADDR:monitor:7096}"
 
 erda.msp.tenant:
+erda.msp.tenant.project:
 
 #resource deploy related
 erda.msp.resource:

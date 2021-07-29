@@ -31,7 +31,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210729035209-8d1b436456f0
-	github.com/erda-project/erda-proto-go v0.0.0-20210728101536-42e74f28ce7c
+	github.com/erda-project/erda-proto-go v0.0.0-20210729115152-17925356138d // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -124,7 +124,7 @@ require (
 	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210726200206-e7812ac95cc0
+	google.golang.org/genproto v0.0.0-20210728212813-7823e685a01f
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

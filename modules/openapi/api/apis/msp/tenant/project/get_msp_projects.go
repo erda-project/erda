@@ -15,7 +15,6 @@ package project
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -66,12 +65,6 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 		Header("User-ID", userID).
 		Header("Org-ID", orgID).
 		Path(r.URL.Path).Params(params)
-
-	fmt.Println("*********************" + discover.MSP())
-	fmt.Println("*********************" + r.URL.Path)
-	for K, _ := range params {
-		fmt.Println("*********************" + K)
-	}
 
 	if err := utils.DoJson(cr, &data); err != nil {
 		ErrFromError(w, err)

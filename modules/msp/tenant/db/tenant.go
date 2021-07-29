@@ -49,3 +49,27 @@ func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 	}
 	return &tenant, nil
 }
+
+func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID int64, workspace string) (*MSPTenant, error) {
+	tenant := MSPTenant{}
+	err := db.db().Where("`related_project_id` = ?", projectID).Where("`related_workspace` = ?", workspace).Find(&tenant).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &tenant, nil
+}
+
+func (db *MSPTenantDB) QueryTenantByProjectID(projectID int64) ([]*MSPTenant, error) {
+	var tenants []*MSPTenant
+	err := db.db().Where("`related_project_id` = ?", projectID).Find(&tenants).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return tenants, nil
+}

@@ -440,6 +440,10 @@ github.com/erda-project/erda-infra v0.0.0-20210729035209-8d1b436456f0 h1:ro6Hk0V
 github.com/erda-project/erda-infra v0.0.0-20210729035209-8d1b436456f0/go.mod h1:L+fFQghY2po2P3H9pzwEOufDLAhL+mRRhPGdZ7vFnAw=
 github.com/erda-project/erda-proto-go v0.0.0-20210728101536-42e74f28ce7c h1:2pTXn1Lp7Td/qokddLOcj++45nFBPUZDUiWDahr0aOs=
 github.com/erda-project/erda-proto-go v0.0.0-20210728101536-42e74f28ce7c/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
+github.com/erda-project/erda-proto-go v0.0.0-20210729073510-ba27a03f3b78 h1:HWcn5PDIBiknxtkdKh1IsREaHI6WVLWmMS5ismZ1rSI=
+github.com/erda-project/erda-proto-go v0.0.0-20210729073510-ba27a03f3b78/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
+github.com/erda-project/erda-proto-go v0.0.0-20210729115152-17925356138d h1:5YOus9iU7RyRPYfZ2DZOYdD2d9p0Gk6CHpkM0tLv1So=
+github.com/erda-project/erda-proto-go v0.0.0-20210729115152-17925356138d/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
@@ -2217,6 +2221,8 @@ google.golang.org/genproto v0.0.0-20210317182105-75c7a8546eb9/go.mod h1:FWY/as6D
 google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c/go.mod h1:UODoCrxHCcBojKKwX1terBiRUaqAsFqJiF615XL43r0=
 google.golang.org/genproto v0.0.0-20210726200206-e7812ac95cc0 h1:VpRFBmFg/ol+rqJnkKLPjVebPNFbSxuj17B7bH1xMc8=
 google.golang.org/genproto v0.0.0-20210726200206-e7812ac95cc0/go.mod h1:ob2IJxKrgPT52GcgX759i1sleT07tiKowYBGbczaW48=
+google.golang.org/genproto v0.0.0-20210728212813-7823e685a01f h1:4m1jFN3fHeKo0UvpraW2ipO2O0rgp5w2ugXeggtecAk=
+google.golang.org/genproto v0.0.0-20210728212813-7823e685a01f/go.mod h1:ob2IJxKrgPT52GcgX759i1sleT07tiKowYBGbczaW48=
 google.golang.org/grpc v1.26.0 h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=
 google.golang.org/grpc v1.26.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
