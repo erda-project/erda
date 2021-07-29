@@ -14,6 +14,7 @@
 package permission
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,6 +29,7 @@ import (
 	table "github.com/erda-project/erda/modules/monitor/common/db"
 	bundlecmdb "github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -290,6 +292,31 @@ func OrgIDByCluster(key string) func(ctx httpserver.Context) (string, error) {
 		cluster := req.URL.Query().Get(key)
 		if len(cluster) <= 0 {
 			return "", fmt.Errorf("cluster must not be empty")
+		}
+		err = checkOrgIDsByCluster(orgID, cluster)
+		if err != nil {
+			return "", err
+		}
+		return idStr, nil
+	}
+}
+
+// wrap the new pkg.permission.ValueGetter
+func OrgIDByClusterWrapper(key string) func(ctx context.Context, req interface{}) (string, error) {
+	clusterNameGetter := permission.FieldValue(key)
+	orgidGetter := permission.OrgIDValue()
+	return func(ctx context.Context, req interface{}) (string, error) {
+		idStr, err := orgidGetter(ctx, req)
+		if err != nil {
+			return "", err
+		}
+		orgID, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			return "", fmt.Errorf("Org-ID is not number")
+		}
+		cluster, err := clusterNameGetter(ctx, req)
+		if err != nil {
+			return "", err
 		}
 		err = checkOrgIDsByCluster(orgID, cluster)
 		if err != nil {
