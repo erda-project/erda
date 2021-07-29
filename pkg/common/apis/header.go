@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	headerInternalClient = "Internal-Client"
+	headerInternalClient = "internal-client"
 )
 
 var langKeys = []string{"lang", "accept-language"}
@@ -90,7 +90,7 @@ func GetHeader(ctx context.Context, key string) string {
 }
 
 func GetInternalClient(ctx context.Context) string {
-	return GetHeader(ctx, "internal-client")
+	return GetHeader(ctx, headerInternalClient)
 }
 
 func IsInternalClient(ctx context.Context) bool {

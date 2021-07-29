@@ -76,7 +76,7 @@ func (s *cmsService) ListCmsNs(ctx context.Context, req *pb.CmsListNsRequest) (*
 func (s *cmsService) UpdateCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsUpdateRequest) (*pb.CmsNsConfigsUpdateResponse, error) {
 	// authentication
 	if !apis.IsInternalClient(ctx) {
-		return nil, apierrors.ErrListPipelineCmsNs.AccessDenied()
+		return nil, apierrors.ErrUpdatePipelineCmsConfigs.AccessDenied()
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
@@ -91,7 +91,7 @@ func (s *cmsService) UpdateCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfig
 func (s *cmsService) DeleteCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsDeleteRequest) (*pb.CmsNsConfigsDeleteResponse, error) {
 	// authentication
 	if !apis.IsInternalClient(ctx) {
-		return nil, apierrors.ErrListPipelineCmsNs.AccessDenied()
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.AccessDenied()
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
@@ -114,7 +114,7 @@ func (s *cmsService) DeleteCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfig
 func (s *cmsService) GetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsGetRequest) (*pb.CmsNsConfigsGetResponse, error) {
 	// authentication
 	if !apis.IsInternalClient(ctx) {
-		return nil, apierrors.ErrListPipelineCmsNs.AccessDenied()
+		return nil, apierrors.ErrGetPipelineCmsConfigs.AccessDenied()
 	}
 
 	ctx = getCtxWithSource(ctx, req.PipelineSource)
