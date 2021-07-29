@@ -117,11 +117,7 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *s
 			}
 		}
 		name := fmt.Sprintf("%sfor%s", clusterName, executorName)
-		taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
-		if err != nil {
-			return false, nil, err
-		}
-		return false, taskExecutor, nil
+		return s.taskManager.TryGetExecutor(tasktypes.Name(name), cluster)
 	default:
 		return false, nil, errors.Errorf("invalid cluster type: %s", cluster.Type)
 	}
