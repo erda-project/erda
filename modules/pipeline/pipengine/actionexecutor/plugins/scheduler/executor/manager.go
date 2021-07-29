@@ -112,6 +112,24 @@ func (m *Manager) GetCluster(clusterName string) (apistructs.ClusterInfo, error)
 	return cluster, nil
 }
 
+// TryGetExecutor if can`t get executor, manager try to make new executor by cluster info and return new executor
+func (m *Manager) TryGetExecutor(name types.Name, cluster apistructs.ClusterInfo) (bool, types.TaskExecutor, error) {
+	taskExecutor, err := m.Get(name)
+	if err != nil {
+		logrus.Warnf("failed to get executor: %s, err: %v, try to make executors...", name, err)
+		if updateErr := m.updateClusterExecutor(cluster); updateErr != nil {
+			return false, nil, updateErr
+		}
+		newExecutor, nErr := m.Get(name)
+		if nErr != nil {
+			logrus.Errorf("try to get executor failed, err: %v", nErr)
+			return false, nil, nErr
+		}
+		return false, newExecutor, nil
+	}
+	return false, taskExecutor, nil
+}
+
 func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
 	m.Lock()
 	defer m.Unlock()
@@ -158,46 +176,43 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
+			if _, exist := m.executors[name]; !exist {
+				k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
+				if err != nil {
+					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+					return err
+				}
+				m.executors[name] = k8sjobExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
-			k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
-			if err != nil {
-				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
-				return err
-			}
-			m.executors[name] = k8sjobExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 
 		k8sflinkCreate, ok := m.factory[k8sflink.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
+			if _, exist := m.executors[name]; !exist {
+				k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
+				if err != nil {
+					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
+					return err
+				}
+				m.executors[name] = k8sflinkExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
-			k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
-			if err != nil {
-				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
-				return err
-			}
-			m.executors[name] = k8sflinkExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 
 		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
+			if _, exist := m.executors[name]; !exist {
+				k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
+				if err != nil {
+					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
+					return err
+				}
+				m.executors[name] = k8ssparkExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
-			k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
-			if err != nil {
-				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
-				return err
-			}
-			m.executors[name] = k8ssparkExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 	default:
 
@@ -224,8 +239,8 @@ func (m *Manager) batchUpdateExecutors() error {
 
 func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan apistructs.ClusterEvent, triggerChan <-chan struct{}) {
 	var err error
-	interval := time.Duration(conf.ExecutorRefreshIntervalHour())
-	ticker := time.NewTicker(time.Hour * interval)
+	interval := time.Duration(conf.ExecutorRefreshIntervalMinute())
+	ticker := time.NewTicker(time.Minute * interval)
 	for {
 		select {
 		case <-ctx.Done():
