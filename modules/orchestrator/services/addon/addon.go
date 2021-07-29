@@ -33,7 +33,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
-	"github.com/erda-project/erda/modules/orchestrator/services/tenant"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -64,7 +63,6 @@ type Addon struct {
 	bdl      *bundle.Bundle
 	hc       *httpclient.HTTPClient
 	encrypt  *encryption.EnvEncrypt
-	tenant   *tenant.Tenant
 	resource *resource.Resource
 	Logger   *log.DeployLogHelper
 }
@@ -114,13 +112,6 @@ func WithEnvEncrypt(encrypt *encryption.EnvEncrypt) Option {
 func WithResource(resource *resource.Resource) Option {
 	return func(a *Addon) {
 		a.resource = resource
-	}
-}
-
-// WithTenant config tenant service
-func WithTenant(tenant *tenant.Tenant) Option {
-	return func(a *Addon) {
-		a.tenant = tenant
 	}
 }
 
