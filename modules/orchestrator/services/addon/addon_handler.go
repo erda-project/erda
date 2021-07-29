@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/recallsong/go-utils/conv"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -431,11 +430,7 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 	} else {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
-	tenantID, err := a.tenant.GetTenant(conv.ToInt64(params.ProjectID, 0), params.Workspace, md5V(params.ProjectID+"_"+params.Workspace+"_"+params.ClusterName+conf.TenantGroupKey()), params.OperatorID)
-	if err != nil {
-		return err
-	}
-	params.Options["tenantGroup"] = tenantID
+	params.Options["tenantGroup"] = md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
 	return nil
 }
 
