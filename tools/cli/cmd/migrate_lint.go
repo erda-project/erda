@@ -27,6 +27,8 @@ import (
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/configuration"
+	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 	"github.com/erda-project/erda/tools/cli/command"
 )
 
@@ -72,15 +74,57 @@ var MigrationLint = command.Command{
 		},
 		command.BoolFlag{
 			Short:        "",
-			Name:         "lint-base",
-			Doc:          "do lint on the script which marked baseline",
+			Name:         "custom",
+			Doc:          "custom directory",
 			DefaultValue: false,
 		},
 	},
 	Run: RunMigrateLint,
 }
 
-func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, output string, lintBase bool) (err error) {
+func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, output string, custom bool) (err error) {
+	log.Printf("Erda MySQL Lint the input file or directory: %s", input)
+	if custom {
+		return CustomMigrateLint(ctx, input, config, noDetail, output)
+	}
+	return StandardMigrateLint(ctx, input, config)
+}
+
+func StandardMigrateLint(ctx *command.Context, input, config string) (err error) {
+	var p = scriptsParameters{
+		migrationDir: input,
+		rules:        nil,
+	}
+
+	rulers, err := loadRules(config)
+	if err != nil {
+		return err
+	}
+	p.rules = rulers
+
+	scripts, err := migrator.NewScripts(&p)
+	if err != nil {
+		return err
+	}
+	scripts.IgnoreMarkPending()
+
+	if err = scripts.SameNameLint(); err != nil {
+		return err
+	}
+
+	if err = scripts.AlterPermissionLint(); err != nil {
+		return err
+	}
+
+	if err = scripts.Lint(); err != nil {
+		return err
+	}
+
+	log.Println("Erda MySQL Migration Lint OK")
+	return nil
+}
+
+func CustomMigrateLint(ctx *command.Context, input, config string, noDetail bool, output string) (err error) {
 	exitFunc := func(_ int) {
 		if err != nil {
 			os.Exit(1)
@@ -88,22 +132,11 @@ func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, o
 	}
 	defer exitFunc(1)
 
-	log.Printf("Erda MySQL Lint the input file or directory: %s", input)
 	files := new(walk).walk(input, ".sql").filenames()
 
-	var (
-		rulers  = configuration.DefaultRulers()
-		lintCfg *configuration.Configuration
-	)
-	if config != "" {
-		lintCfg, err = configuration.FromLocal(config)
-		if err != nil {
-			return errors.Wrapf(err, "filed to read lint configuration from local")
-		}
-		rulers, err = lintCfg.Rulers()
-		if err != nil {
-			return errors.Wrapf(err, "failed to generate lint rulers from lint configuration")
-		}
+	rulers, err := loadRules(config)
+	if err != nil {
+		return err
 	}
 
 	linter := sqllint.New(rulers...)
@@ -114,7 +147,7 @@ func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, o
 		if err != nil {
 			return errors.Wrapf(err, "failed to open file, filename: %s", filename)
 		}
-		if !lintBase && isBaseScript(data) {
+		if isBaseScript(data) {
 			continue
 		}
 		if err = linter.Input(data, filename); err != nil {
@@ -123,7 +156,7 @@ func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, o
 	}
 
 	if len(linter.Errors()) == 0 {
-		log.Println("Erda MySQL Lint OK")
+		log.Println("Erda MySQL Migration Lint OK")
 		return nil
 	}
 	exitFunc = os.Exit
@@ -189,8 +222,47 @@ func (w *walk) walk(input, suffix string) *walk {
 	return w
 }
 
+type scriptsParameters struct {
+	migrationDir string
+	rules        []rules.Ruler
+}
+
+func (p *scriptsParameters) Workdir() string {
+	return "."
+}
+
+func (p *scriptsParameters) MigrationDir() string {
+	return p.migrationDir
+}
+
+func (p *scriptsParameters) Modules() []string {
+	return nil
+}
+
+func (p *scriptsParameters) Rules() []rules.Ruler {
+	return p.rules
+}
+
 func isBaseScript(data []byte) bool {
 	return bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
 		bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
 		bytes.HasPrefix(data, []byte(baseScriptLabel3))
+}
+
+func loadRules(config string) (rulers []rules.Ruler, err error) {
+	var lintCfg *configuration.Configuration
+	rulers = configuration.DefaultRulers()
+
+	if config != "" {
+		lintCfg, err = configuration.FromLocal(config)
+		if err != nil {
+			return nil, errors.Wrapf(err, "filed to read lint configuration from local")
+		}
+		rulers, err = lintCfg.Rulers()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate lint rulers from lint configuration")
+		}
+	}
+
+	return rulers, nil
 }
