@@ -76,10 +76,10 @@ func (d *Demo) Status(ctx context.Context, action *spec.PipelineTask) (apistruct
 	return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusQueue, Desc: "lack of machine resource, waiting ..."}, nil
 }
 
-func (d *Demo) Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
+func (d *Demo) Inspect(ctx context.Context, action *spec.PipelineTask) (apistructs.TaskInspect, error) {
 	logrus.Info("demo inspect ...")
 	time.Sleep(time.Second * 5)
-	return nil, nil
+	return apistructs.TaskInspect{}, nil
 }
 
 func (d *Demo) Cancel(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {

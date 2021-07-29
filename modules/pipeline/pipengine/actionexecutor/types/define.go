@@ -38,7 +38,7 @@ type ActionExecutor interface {
 
 	// Status 只做简单重试
 	Status(ctx context.Context, action *spec.PipelineTask) (apistructs.PipelineStatusDesc, error)
-	Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
+	Inspect(ctx context.Context, action *spec.PipelineTask) (apistructs.TaskInspect, error)
 
 	Cancel(ctx context.Context, action *spec.PipelineTask) (interface{}, error)
 	Remove(ctx context.Context, action *spec.PipelineTask) (interface{}, error)

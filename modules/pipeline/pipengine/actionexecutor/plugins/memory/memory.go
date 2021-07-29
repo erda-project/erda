@@ -67,7 +67,7 @@ func (m *Memory) Status(ctx context.Context, action *spec.PipelineTask) (apistru
 	panic("implement me")
 }
 
-func (m *Memory) Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
+func (m *Memory) Inspect(ctx context.Context, action *spec.PipelineTask) (apistructs.TaskInspect, error) {
 	panic("implement me")
 }
 

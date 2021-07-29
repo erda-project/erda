@@ -14,6 +14,7 @@
 package taskrun
 
 import (
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -74,6 +75,33 @@ func (tr *TaskRun) AppendLastMsg(msg string) error {
 		return err
 	}
 	return nil
+}
+
+// UpdateTaskInspect update task inspect, and get events from inspect
+func (tr *TaskRun) UpdateTaskInspect(inspect string) error {
+	if inspect == "" {
+		return nil
+	}
+	if err := tr.fetchLatestTask(); err != nil {
+		return err
+	}
+	events := getEventsFromInspect(inspect)
+	tr.Task.Result.Inspect = inspect
+	tr.Task.Result.Events = events
+	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
+		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q update inspect failed, err: %v",
+			tr.P.ID, tr.Task.Name, err)
+		return err
+	}
+	return nil
+}
+
+func getEventsFromInspect(inspect string) string {
+	eventsIdx := strings.LastIndex(inspect, "Events")
+	if eventsIdx == -1 {
+		return ""
+	}
+	return inspect[eventsIdx:]
 }
 
 func (tr *TaskRun) fetchLatestPipelineStatus() error {
