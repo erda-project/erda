@@ -27,7 +27,7 @@ func gcDeadInstancesInDB(dbclient *instanceinfo.Client) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 
-	instances, err := r.ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(15).Do()
+	instances, err := r.ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(7).Do()
 	if err != nil {
 		return err
 	}

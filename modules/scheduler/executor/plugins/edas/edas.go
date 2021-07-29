@@ -2156,20 +2156,26 @@ func (e *EDAS) CapacityInfo() apistructs.CapacityInfoData {
 }
 
 func (e *EDAS) ResourceInfo(brief bool) (apistructs.ClusterResourceInfoData, error) {
-	r, err := e.resourceInfo.Get(brief)
-	if err != nil {
-		return r, err
-	}
-	r.ProdCPUOverCommit = 1.0
-	r.DevCPUOverCommit = 1.0
-	r.TestCPUOverCommit = 1.0
-	r.StagingCPUOverCommit = 1.0
-	r.ProdMEMOverCommit = 1.0
-	r.DevMEMOverCommit = 1.0
-	r.TestMEMOverCommit = 1.0
-	r.StagingMEMOverCommit = 1.0
-
-	return r, nil
+	return apistructs.ClusterResourceInfoData{
+		CPUOverCommit:        1.0,
+		ProdCPUOverCommit:    1.0,
+		DevCPUOverCommit:     1.0,
+		TestCPUOverCommit:    1.0,
+		StagingCPUOverCommit: 1.0,
+		ProdMEMOverCommit:    1.0,
+		DevMEMOverCommit:     1.0,
+		TestMEMOverCommit:    1.0,
+		StagingMEMOverCommit: 1.0,
+		Nodes: map[string]*apistructs.NodeResourceInfo{
+			"1.1.1.1": {
+				Labels:         []string{},
+				IgnoreLabels:   true,
+				Ready:          true,
+				CPUAllocatable: 999999999999999.0,
+				MemAllocatable: 999999999999999,
+			},
+		},
+	}, nil
 }
 
 func (*EDAS) CleanUpBeforeDelete() {}
