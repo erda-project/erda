@@ -42,7 +42,7 @@ func (mig *Migrator) DB() *gorm.DB {
 	defer open.Close()
 
 	if _, err = open.Exec(stmt); err != nil {
-		logrus.WithError(err).Fatalf("failed to Exec stmt %+v", stmt)
+		logrus.WithError(err).Fatalf("failed to Exec stmt %s", stmt)
 	}
 
 	dsn = mig.MySQLParameters().Format(true)

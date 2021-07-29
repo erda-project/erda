@@ -31,9 +31,16 @@ import (
 )
 
 type ScriptsParameters interface {
+	// Workdir gets pipeline node workdir
 	Workdir() string
+
+	// MigrationDir gets migration scripts direction from repo, like .dice/migrations or 4.1/sqls
 	MigrationDir() string
+
+	// Modules is the modules for installing.
+	// if is nil, to install all modules in the MigrationDir()
 	Modules() []string
+
 	Rules() []rules.Ruler
 }
 

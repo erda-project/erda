@@ -17,33 +17,24 @@ import (
 	"fmt"
 	"net/url"
 	"time"
-
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 )
 
 type Parameters interface {
+	ScriptsParameters
+
 	// MySQLParameters returns MySQL DSN configuration
 	MySQLParameters() *DSNParameters
 
 	// SandboxParameters returns Sandbox DSN configuration
 	SandboxParameters() *DSNParameters
 
-	// MigrationDir gets migration scripts direction from repo, like .dice/migrations or 4.1/sqls
-	MigrationDir() string
-
-	// Modules is the modules for installing.
-	// if is nil, to install all modules in the MigrationDir()
-	Modules() []string
-
-	// Workdir gets pipeline node workdir
-	Workdir() string
-
 	// DebugSQL gets weather to debug SQL executing
 	DebugSQL() bool
 
-	NeedErdaMySQLLint() bool
-
-	Rules() []rules.Ruler
+	SkipMigrationLint() bool
+	SkipSandbox() bool
+	SkipPreMigrate() bool
+	SkipMigrate() bool
 }
 
 type DSNParameters struct {

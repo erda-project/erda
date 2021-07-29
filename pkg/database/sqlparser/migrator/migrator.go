@@ -95,6 +95,12 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 }
 
 func (mig *Migrator) Run() (err error) {
+	defer func() {
+		if err == nil {
+			logrus.Infoln("Erda MySQL Migrate Complete !")
+		}
+	}()
+
 	// snapshot database schema structure
 	mig.snap, err = snapshot.From(mig.DB(), SchemaMigrationHistory)
 	if err != nil {
@@ -130,7 +136,7 @@ func (mig *Migrator) newInstallation() (err error) {
 	mig.LocalScripts.MarkPending(mig.DB())
 
 	// Erda mysql lint
-	if mig.NeedErdaMySQLLint() {
+	if !mig.SkipMigrationLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT...")
 		if err = mig.LocalScripts.Lint(); err != nil {
 			return err
@@ -138,40 +144,55 @@ func (mig *Migrator) newInstallation() (err error) {
 		logrus.Infoln("ERDA MYSQL LINT OK")
 	}
 
+	// same name lint
+	logrus.Infoln("DO SAME NAME LINT....")
+	if err = mig.LocalScripts.SameNameLint(); err != nil {
+		return err
+	}
+	logrus.Infoln("SAME NAME LINT OK")
+
 	// alter permission lint
 	logrus.Infoln("DO ALTER PERMISSION LINT...")
 	if err = mig.LocalScripts.AlterPermissionLint(); err != nil {
 		return err
 	}
 	logrus.Infoln("ALTER PERMISSION LINT OK")
-	// execute in sandbox
-	logrus.Infoln("DO MIGRATION IN SANDBOX...")
-	if err = mig.migrateSandbox(); err != nil {
-		return err
-	}
-	logrus.Infoln("MIGRATE IN SANDBOX OK")
 
-	// migrate schema SQLs
-	logrus.Infoln("DO PRE-MIGRATION...")
-	if err = mig.preMigrate(); err != nil {
-		return err
+	// execute in sandbox
+	if !mig.SkipSandbox() {
+		logrus.Infoln("DO MIGRATION IN SANDBOX...")
+		if err = mig.migrateSandbox(); err != nil {
+			return err
+		}
+		logrus.Infoln("MIGRATE IN SANDBOX OK")
 	}
-	logrus.Infoln("PRE-MIGRATE OK")
+
+	// pre-migrate schema SQLs
+	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
+		logrus.Infoln("DO PRE-MIGRATION...")
+		if err = mig.preMigrate(); err != nil {
+			return err
+		}
+		logrus.Infoln("PRE-MIGRATE OK")
+	}
 
 	// migrate data SQLs
-	logrus.Infoln("DO MIGRATION...")
-	if err = mig.migrate(); err != nil {
-		return err
+	if !mig.SkipMigrate() {
+		logrus.Infoln("DO MIGRATION...")
+		if err = mig.migrate(); err != nil {
+			return err
+		}
+		logrus.Infoln("MIGRATE OK")
 	}
-	logrus.Infoln("MIGRATE OK")
 
 	return nil
 }
 
 func (mig *Migrator) normalUpdate() (err error) {
-	// Erda mysql lint
 	mig.LocalScripts.MarkPending(mig.DB())
-	if mig.NeedErdaMySQLLint() {
+
+	// Erda mysql lint
+	if !mig.SkipMigrationLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT....")
 		if err = mig.LocalScripts.Lint(); err != nil {
 			return err
@@ -200,33 +221,39 @@ func (mig *Migrator) normalUpdate() (err error) {
 	}
 	logrus.Infoln("INSTALLED CHANGES LINT OK")
 
-	// copy database snapshot to sandbox
-	logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX....")
-	if err = mig.snap.RecoverTo(mig.SandBox()); err != nil {
-		return err
-	}
-	logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX OK")
+	if !mig.SkipSandbox() {
+		// copy database snapshot to sandbox
+		logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX....")
+		if err = mig.snap.RecoverTo(mig.SandBox()); err != nil {
+			return err
+		}
+		logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX OK")
 
-	// migrate in sandbox
-	logrus.Infoln("DO MIGRATION IN SANDBOX....")
-	if err = mig.migrateSandbox(); err != nil {
-		return err
+		// migrate in sandbox
+		logrus.Infoln("DO MIGRATION IN SANDBOX....")
+		if err = mig.migrateSandbox(); err != nil {
+			return err
+		}
+		logrus.Infoln("MIGRATE IN SANDBOX OK")
 	}
-	logrus.Infoln("MIGRATE IN SANDBOX OK")
 
 	// pre migrate data
-	logrus.Infoln("DO PRE-MIGRATION....")
-	if err = mig.preMigrate(); err != nil {
-		return err
+	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
+		logrus.Infoln("DO PRE-MIGRATION....")
+		if err = mig.preMigrate(); err != nil {
+			return err
+		}
+		logrus.Infoln("PRE-MIGRATE OK")
 	}
-	logrus.Infoln("PRE-MIGRATE OK")
 
 	// migrate data
-	logrus.Infoln("DO MIGRATION....")
-	if err = mig.migrate(); err != nil {
-		return err
+	if !mig.SkipMigrate() {
+		logrus.Infoln("DO MIGRATION....")
+		if err = mig.migrate(); err != nil {
+			return err
+		}
+		logrus.Infoln("MIGRATE OK")
 	}
-	logrus.Infoln("MIGRATE OK")
 
 	return nil
 }
