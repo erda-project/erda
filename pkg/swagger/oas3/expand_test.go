@@ -51,7 +51,7 @@ func TestToYaml(t *testing.T) {
 //	sort.Strings(paths)
 //	for _, path_ := range paths {
 //		pathItem := v3.Paths.Find(path_)
-//		for _, operation := range map[string]*openapi3.Operation{
+//		for _, operation := range map[string]*openapi3.GenerateOperation{
 //			http.MethodDelete:  pathItem.Delete,
 //			http.MethodGet:     pathItem.Get,
 //			http.MethodHead:    pathItem.Head,

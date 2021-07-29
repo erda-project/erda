@@ -157,7 +157,7 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-// Operation:
+// GenerateOperation:
 // - viewDetail->all disabled;
 // - update: deployResource:
 //           - mirror disabled: appName, deployResource, cluster;

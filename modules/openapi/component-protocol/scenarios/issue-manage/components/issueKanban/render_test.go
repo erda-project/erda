@@ -66,7 +66,7 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 //		},
 //		Event: apistructs.ComponentEvent{
 //			Component: "",
-//			Operation: "",
+//			GenerateOperation: "",
 //		},
 //		InParams: map[string]interface{}{"projectId": "11"},
 //	}

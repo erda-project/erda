@@ -184,7 +184,7 @@ func (this *MyProjectFilter) Render(ctx context.Context, c *apistructs.Component
 		this.Props.Visible = true
 	}
 	//this.State.IsFirstFilter = false
-	//if event.Operation == apistructs.ListProjectFilterOperation {
+	//if event.GenerateOperation == apistructs.ListProjectFilterOperation {
 	//	this.State.IsFirstFilter = true
 	//}
 	this.setComponentValue()

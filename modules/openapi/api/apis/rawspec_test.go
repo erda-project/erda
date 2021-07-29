@@ -11,34 +11,38 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package dop
+package apis_test
 
 import (
-	"net/http"
-	"net/url"
+	"context"
+	"testing"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/apis/dop"
+	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
-var GetAccess = apis.ApiSpec{
-	Path:         "/api/api-access/<accessID>",
-	BackendPath:  "/api/api-access/<accessID>",
-	Host:         APIMAddr,
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  nil,
-	ResponseType: nil,
-	Doc:          "get access",
-	Parameters: &apis.Parameters{
-		Tag:    "apim",
-		Header: nil,
-		QueryValues: url.Values{
-			"accessID": nil,
-		},
-		Body:     nil,
-		Response: &apistructs.GetAccessRspAccess{},
-	},
+func TestApiSpec_AddOperationTo(t *testing.T) {
+	var testAPIs = []*apis.ApiSpec{
+		&dop.CreateAPIAssetVersion,
+		&dop.GetAccess,
+	}
+	v3 := apis.NewSwagger("test")
+	for _, api := range testAPIs {
+		if err := api.AddOperationTo(v3); err != nil {
+			t.Fatal(err)
+		}
+	}
+	data, err := oas3.MarshalYaml(v3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newV3, err := oas3.LoadFromData(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = oas3.ValidateOAS3(context.Background(), *newV3); err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(data))
 }
