@@ -66,6 +66,8 @@ components:
     props:
       rowKey: "id"
       columns:
+        - title: "计划id"
+          dataIndex: "id"
         - title: "计划名"
           dataIndex: "name"
         - title: "测试空间"
