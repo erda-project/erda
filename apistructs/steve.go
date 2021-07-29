@@ -92,6 +92,12 @@ type SteveRequest struct {
 	// label selector, optional when list
 	// format: "key=value"，or "key in (value1, value2)"，or "key notin (value1, value2)"
 	LabelSelector []string
+	// field selector, optional when list
+	// format: "field=value", or "field==value", or "field!=value"
+	// Supported field selectors vary by k8s resource type
+	// All resource types support the metadata.name and metadata.namespace fields
+	// Using unsupported field selectors produces an error
+	FieldSelector []string
 	// required in  Update, Create，obj is a pointer of original k8s resource，like *v1.pod, *v1.node
 	Obj interface{}
 }
@@ -103,6 +109,10 @@ func (k *SteveRequest) URLQueryString() map[string][]string {
 	if len(k.LabelSelector) != 0 {
 		labels := strutil.Join(k.LabelSelector, ",", true)
 		query["labelSelector"] = []string{labels}
+	}
+	if len(k.FieldSelector) != 0 {
+		fields := strutil.Join(k.FieldSelector, ",", true)
+		query["fieldSelector"] = []string{fields}
 	}
 	return query
 }
