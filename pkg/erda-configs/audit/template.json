@@ -1669,11 +1669,99 @@
       "en": ""
     }
   },
-  "scaleRuntime":{
+  "scaleRuntime": {
     "desc": "服务扩缩容",
     "success": {
       "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
       "en": "in app [@appName](app), Changed the scale of service [@serviceName], [@scaleMessageEN]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "labelNode": {
+    "desc": "添加节点标签",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，为节点 [@name] 添加标签 [@targetLabel]",
+      "en": "Add label [@targetLabel] for node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "unLabelNode": {
+    "desc": "删除节点标签",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，为节点 [@name] 删除标签 [@targetLabel]",
+      "en": "Remove label [@targetLabel] for node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "cordonNode": {
+    "desc": "冻结节点",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，冻结节点 [@name]",
+      "en": "Cordon the node [@nodeName] in cluster [@name]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "uncordonNode": {
+    "desc": "解冻节点",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，解冻节点 [@name]",
+      "en": "Uncordon the node [@name] in cluster [@clusterName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "updateK8SResource": {
+    "desc": "更新K8S资源",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，更新 [@resourceType] : [@name]（命名空间：[@namespace]）",
+      "en": "Update [@resourceType] : [@name] in cluster [@clusterName] (namespace: [@namespace])"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "createK8SResource": {
+    "desc": "创建K8S资源",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，创建 [@resourceType] : [@name]（命名空间：[@namespace]）",
+      "en": "Create [@resourceType] : [@name] in cluster [@clusterName] (namespace: [@namespace])"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "deleteK8SResource": {
+    "desc": "删除K8S资源",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，删除 [@resourceType] : [@name]（命名空间：[@namespace]）",
+      "en": "Delete [@resourceType] : [@name] in cluster [@clusterName] (namespace: [@namespace])"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "kubectlShell": {
+    "desc": "通过kubectl控制台执行命令",
+    "success": {
+      "zh": "在集群 [@clusterName] 中，通过kubectl控制台执行命令 [@commands]",
+      "en": "Run commands in cluster [@clusterName]: [@commands]"
     },
     "fail": {
       "zh": "",

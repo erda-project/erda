@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -43,8 +44,9 @@ func (b *Bundle) GetSteveResource(req *apistructs.SteveRequest) (*apistructs.Ste
 	// path format: /api/k8s/clusters/{clusterName}/v1/{type}/{namespace}/{name}
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 	headers := http.Header{
-		"User-ID": []string{req.UserID},
-		"Org-ID":  []string{req.OrgID},
+		httputil.InternalHeader: []string{"bundle"},
+		httputil.UserHeader:     []string{req.UserID},
+		httputil.OrgHeader:      []string{req.OrgID},
 	}
 	hc := b.hc
 
@@ -84,8 +86,9 @@ func (b *Bundle) ListSteveResource(req *apistructs.SteveRequest) (*apistructs.St
 	// path format: /k8s/clusters/{clusterName}/v1/{type}/{namespace}?{label selectors}
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace)
 	headers := http.Header{
-		"User-ID": []string{req.UserID},
-		"Org-ID":  []string{req.OrgID},
+		httputil.InternalHeader: []string{"bundle"},
+		httputil.UserHeader:     []string{req.UserID},
+		httputil.OrgHeader:      []string{req.OrgID},
 	}
 	hc := b.hc
 
@@ -127,8 +130,9 @@ func (b *Bundle) UpdateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 	headers := http.Header{
-		"User-ID": []string{req.UserID},
-		"Org-ID":  []string{req.OrgID},
+		httputil.InternalHeader: []string{"bundle"},
+		httputil.UserHeader:     []string{req.UserID},
+		httputil.OrgHeader:      []string{req.OrgID},
 	}
 	hc := b.hc
 
@@ -170,8 +174,9 @@ func (b *Bundle) CreateSteveResource(req *apistructs.SteveRequest) (*apistructs.
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type))
 	headers := http.Header{
-		"User-ID": []string{req.UserID},
-		"Org-ID":  []string{req.OrgID},
+		httputil.InternalHeader: []string{"bundle"},
+		httputil.UserHeader:     []string{req.UserID},
+		httputil.OrgHeader:      []string{req.OrgID},
 	}
 	hc := b.hc
 
@@ -210,8 +215,9 @@ func (b *Bundle) DeleteSteveResource(req *apistructs.SteveRequest) error {
 
 	path := strutil.JoinPath("/api/k8s/clusters", req.ClusterName, "v1", string(req.Type), req.Namespace, req.Name)
 	headers := http.Header{
-		"User-ID": []string{req.UserID},
-		"Org-ID":  []string{req.OrgID},
+		httputil.InternalHeader: []string{"bundle"},
+		httputil.UserHeader:     []string{req.UserID},
+		httputil.OrgHeader:      []string{req.OrgID},
 	}
 	hc := b.hc
 

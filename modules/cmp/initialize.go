@@ -34,7 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
-	"github.com/erda-project/erda/modules/cmp/steve"
+	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -150,8 +150,14 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(append(ep.Routes()))
 
-	authenticator := steve.NewAuthenticator(bdl)
-	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(authenticator.AuthMiddleware(ep.SteveAggregator))
+	authenticator := middleware.NewAuthenticator(bdl)
+	auditor := middleware.NewAuditor(bdl)
+
+	middlewares := middleware.Chain{
+		authenticator.AuthMiddleware,
+		auditor.AuditMiddleWare,
+	}
+	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
