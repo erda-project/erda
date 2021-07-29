@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/autoscanner"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
 	"github.com/erda-project/erda/modules/cmp/endpoints"
@@ -154,9 +153,10 @@ func do() (*httpserver.Server, error) {
 	logrus.Info("starting cmp instance")
 
 	// autoScanner will scan expired cmp time
-	as := autoscanner.New(db, bdl)
-	logrus.Info("start autoScanner to scan expired cmp cluster")
-	go as.Run()
+	// autoScanner is cancelled due to open source.
+	//as := autoscanner.New(db, bdl)
+	//logrus.Info("start autoScanner to scan expired cmp cluster")
+	//go as.Run()
 
 	return server, nil
 }
