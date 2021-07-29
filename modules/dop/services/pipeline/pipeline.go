@@ -464,7 +464,7 @@ func DecodeV1UniquePipelineYmlName(p *apistructs.PagePipeline, name string) stri
 }
 
 // PipelineCronUpdate pipeline cron update
-func (p *Pipeline) PipelineCronUpdate(req apistructs.PayloadPushEvent) error {
+func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) error {
 	appID, err := strconv.ParseInt(req.ApplicationID, 10, 64)
 	if err != nil {
 		return err

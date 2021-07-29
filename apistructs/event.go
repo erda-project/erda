@@ -227,7 +227,7 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 	return params
 }
 
-type PayloadPushEvent struct {
+type GittarPushPayloadEvent struct {
 	EventHeader
 	Content struct {
 		Ref    string `json:"ref"`
