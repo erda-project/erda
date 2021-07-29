@@ -41,7 +41,8 @@ type AgentAccessible struct {
 // 1. 当集群类型为 k8s 时，通过 initContainer 进行下载
 // 2. 当集群类型为非 k8s 时，通过现有路径调用 soldier 进行下载
 func (s *ActionAgentSvc) Ensure(clusterInfo apistructs.ClusterInfoData, agentImage string, agentMD5 string) error {
-	if clusterInfo.IsK8S() {
+	// edas same with k8s cluster
+	if clusterInfo.IsK8S() || clusterInfo.IsEDAS() {
 		return nil
 	}
 
