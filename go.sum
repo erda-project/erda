@@ -436,6 +436,8 @@ github.com/erda-project/erda-infra v0.0.0-20210725152943-8d1044e4fc39 h1:P03+DWh
 github.com/erda-project/erda-infra v0.0.0-20210725152943-8d1044e4fc39/go.mod h1:L+fFQghY2po2P3H9pzwEOufDLAhL+mRRhPGdZ7vFnAw=
 github.com/erda-project/erda-infra v0.0.0-20210727055933-be7518b10590 h1:OPDlqUAh1A+nOLzMqa84XmjPA47ysTf1sYVLXlZv5Vg=
 github.com/erda-project/erda-infra v0.0.0-20210727055933-be7518b10590/go.mod h1:L+fFQghY2po2P3H9pzwEOufDLAhL+mRRhPGdZ7vFnAw=
+github.com/erda-project/erda-infra v0.0.0-20210729035209-8d1b436456f0 h1:ro6Hk0VLNt19jTDyiAtjF+MPRj9RnFbhvg1lyN5hSvs=
+github.com/erda-project/erda-infra v0.0.0-20210729035209-8d1b436456f0/go.mod h1:L+fFQghY2po2P3H9pzwEOufDLAhL+mRRhPGdZ7vFnAw=
 github.com/erda-project/erda-proto-go v0.0.0-20210728101536-42e74f28ce7c h1:2pTXn1Lp7Td/qokddLOcj++45nFBPUZDUiWDahr0aOs=
 github.com/erda-project/erda-proto-go v0.0.0-20210728101536-42e74f28ce7c/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
