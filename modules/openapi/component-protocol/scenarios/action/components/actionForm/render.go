@@ -447,6 +447,10 @@ func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, s
 		return fmt.Errorf("failed to Unmarshal actionData:%+v, err:%v", actionDataJson, err)
 	}
 
+	if action.Type == "" {
+		action.Type = scenario.ScenarioKey
+	}
+
 	doFunc := actionTypeRender[action.Type]
 	if doFunc == nil {
 		return nil
