@@ -15,10 +15,11 @@ package project
 
 import (
 	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	reflect "reflect"
 	testing "testing"
+
+	servicehub "github.com/erda-project/erda-infra/base/servicehub"
+	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 )
 
 func Test_projectService_GetProjects(t *testing.T) {

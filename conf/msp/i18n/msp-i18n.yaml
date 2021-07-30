@@ -8,6 +8,8 @@ en:
   workspace_staging: "STAGING"
   workspace_prod: "PROD"
   workspace_default: "DEFAULT"
+  project_type_dop: "DevOps Project"
+  project_type_msp: "MSP Project"
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -18,3 +20,5 @@ zh:
   workspace_staging: "预发"
   workspace_prod: "生产"
   workspace_default: "默认"
+  project_type_dop: "DevOps 项目"
+  project_type_msp: "微服务治理项目"

@@ -11,22 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package monitor
 
-import "time"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-const (
-	TableTmcIni = "tb_tmc_ini"
-)
-
-type TmcIni struct {
-	ID         int       `gorm:"column:id;primary_key"`
-	IniName    string    `gorm:"column:ini_name"`
-	IniDesc    string    `gorm:"column:ini_desc"`
-	IniValue   string    `gorm:"column:ini_value"`
-	CreateTime time.Time `gorm:"column:create_time"`
-	UpdateTime time.Time `gorm:"column:update_time"`
-	IsDeleted  string    `gorm:"column:is_deleted"`
+var MONITOR_RUNTIME = apis.ApiSpec{
+	Path:        "/api/tmc/monitor/runtime/<runtimeId>",
+	BackendPath: "/api/msp/monitor/runtime/<runtimeId>",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "summary: 获取Runtime信息",
 }
-
-func (TmcIni) TableName() string { return TableTmcIni }

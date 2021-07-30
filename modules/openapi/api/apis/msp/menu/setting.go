@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package msp
+package menu
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_INSTANCES = apis.ApiSpec{
-	Path:        "/api/monitor/instances/<terminusKey>",
-	BackendPath: "/api/msp/monitor/instances/<terminusKey>",
+var MSP_SETTING = apis.ApiSpec{
+	Path:        "/api/micro-service/setting/tenantGroup/<tenantGroup>",
+	BackendPath: "/api/msp/setting/<tenantGroup>",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 根据TerminusKey获取monitor实例",
+	Doc:         "summary: 获取微服务菜单",
 }

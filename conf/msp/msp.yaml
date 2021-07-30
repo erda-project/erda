@@ -76,7 +76,7 @@ erda.msp.apm.alert:
 permission:
 
 msp.permission:
-erda.msp.menu:
+erda.msp.tenant.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 

@@ -14,6 +14,8 @@
 package project
 
 import (
+	"github.com/jinzhu/gorm"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -22,7 +24,6 @@ import (
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {

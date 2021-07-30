@@ -33,13 +33,13 @@ type MSPTenant struct {
 func (MSPTenant) TableName() string { return TableMSPTenant }
 
 type MSPProject struct {
-	Id          int64     `gorm:"column:id" db:"id" json:"id" form:"id"`                                         //MSP project ID
-	Name        string    `gorm:"column:name" db:"name" json:"name" form:"name"`                                 //MSP 项目名称
-	DisplayName string    `gorm:"column:display_name" db:"display_name" json:"display_name" form:"display_name"` //MSP 项目展示名称
-	Type        string    `gorm:"column:type" db:"type" json:"type" form:"type"`                                 //MSP 项目类型
-	CreatedAt   time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"`         //创建时间
-	UpdatedAt   time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"`         //更新时间
-	IsDeleted   bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"`         //是否删除
+	Id          int64     `gorm:"column:id" db:"id" json:"id" form:"id"`                                         // MSP project ID
+	Name        string    `gorm:"column:name" db:"name" json:"name" form:"name"`                                 // MSP project name
+	DisplayName string    `gorm:"column:display_name" db:"display_name" json:"display_name" form:"display_name"` // MSP project display name
+	Type        string    `gorm:"column:type" db:"type" json:"type" form:"type"`                                 // MSP project type
+	CreatedAt   time.Time `gorm:"column:created_at" db:"created_at" json:"created_at" form:"created_at"`         // Create time
+	UpdatedAt   time.Time `gorm:"column:updated_at" db:"updated_at" json:"updated_at" form:"updated_at"`         // Update time
+	IsDeleted   bool      `gorm:"column:is_deleted" db:"is_deleted" json:"is_deleted" form:"is_deleted"`         // Deleted or not
 }
 
 func (MSPProject) TableName() string { return TableMSPProject }

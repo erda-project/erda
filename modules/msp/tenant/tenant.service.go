@@ -116,7 +116,6 @@ func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 	if tenant == nil {
 		return nil, errors.NewInternalServerErrorMessage("tenant not exist.")
 	}
-
 	return &pb.GetTenantResponse{Data: s.covertToTenant(tenant)}, nil
 }
 
