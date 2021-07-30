@@ -179,9 +179,6 @@ func (cs *CassandraSchema) listOrgNames() (res []string, err error) {
 	for _, item := range resp.List {
 		res = append(res, item.Name)
 	}
-
-	res = append(res, "erda")
-	res = append(res, "terminus")
 	return
 }
 
