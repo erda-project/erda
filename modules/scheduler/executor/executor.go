@@ -151,9 +151,12 @@ func createOneExecutor(m *Manager, eConfig *executorconfig.ExecutorConfig) error
 }
 
 func deleteOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) {
+	logrus.Infof("[deleteOneExecutor] config: %+v", config)
 	name := executortypes.Name(config.Name)
 	if chs, ok := m.executorStopCh[name]; ok {
+		logrus.Infof("close stop watch event ch on %s", config.Name)
 		close(chs.StopWatchEventCh)
+		logrus.Infof("close stop handle event ch on %s", config.Name)
 		close(chs.StopHandleEventCh)
 	}
 
@@ -179,8 +182,12 @@ func deleteOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) {
 }
 
 func updateOneExecutor(m *Manager, config *executorconfig.ExecutorConfig) error {
-	deleteOneExecutor(m, config)
+	name := executortypes.Name(config.Name)
+	_, ok := m.executors[name]
 	logrus.Infof("updating executor: %s", config.Name)
+	if ok {
+		deleteOneExecutor(m, config)
+	}
 	return createOneExecutor(m, config)
 }
 

@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -165,9 +166,10 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 	k8spodname, ok2 := instance.Metadata("k8spodname")
 	k8scontainername, ok3 := instance.Metadata("k8scontainername")
 	clustername := instance.Cluster
+
 	if !ok1 || !ok2 || !ok3 {
 		// If there is no corresponding namespace, name, containername in the meta, it is considered to be the dcos path, and the original soldier is taken
-		SoldierTerminal(r, message, conn)
+		logrus.Errorf("get terminial info failed, namespace %v, pod name %v, container name %v", ok1, ok2, ok3)
 		return
 	}
 
@@ -245,6 +247,10 @@ func SoldierTerminal(r *http.Request, initmessage []byte, upperConn *websocket.C
 
 func K8STerminal(clustername, namespace, podname, containername string, upperConn *websocket.Conn) {
 	executorname := clusterutil.GenerateExecutorByClusterName(clustername)
+	logrus.Infof("terminal get executor name %s", executorname)
+	if strings.Contains(executorname, "EDAS") {
+		executorname = "K8SFOR" + strings.ToUpper(strings.Replace(clustername, "-", "", -1))
+	}
 	executor, err := executor.GetManager().Get(executortypes.Name(executorname))
 	if err != nil {
 		logrus.Errorf("failed to get executor by executorname(%s)", executorname)
