@@ -143,11 +143,11 @@ copyright:
 	go run tools/gotools/copyright/main.go
 
 # docker image
-build-image:
+build-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
-build-push-image:
+build-push-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
 
 build-push-all:
