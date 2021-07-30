@@ -43,7 +43,7 @@ type Conf struct {
 
 	ErdaNamespace        string `default:"erda-system" env:"ERDA_NAMESPACE"`
 	ErdaHelmChartVersion string `default:"0.1.0" env:"ERDA_HELM_CHART_VERSION"`
-	ReleaseRepo          string `default:"registry.erda.cloud" env:"RELEASE_REPO"`
+	ReleaseRepo          string `default:"registry.erda.cloud/erda" env:"RELEASE_REPO"`
 	DialerPublicAddr     string `env:"CLUSTER_DIALER_PUBLIC_ADDR"`
 }
 
