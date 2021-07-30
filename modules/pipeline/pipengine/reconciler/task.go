@@ -44,6 +44,7 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 	const abnormalErrMaxRetryTimes = 3
 
 	var platformErrRetryTimes int
+	var sessionNotFoundTimes int
 
 	for {
 		// stop reconciler task if pipeline stopping reconcile
@@ -83,6 +84,14 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 			abnormalErr := tr.Do(taskOp)
 			if abnormalErr != nil {
 				rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry", taskOp.Op(), abnormalErr)
+				// if abnormalErr like failed to find Session for client xxx, don`t add platformErrRetryTimes
+				// continue retry until find session
+				if tr.IsSessionNotFound(abnormalErr) {
+					sessionNotFoundTimes++
+					rlog.TWarnf(tr.P.ID, tr.Task.ID, "continue retry task, err: %v, session not found times: %d", abnormalErr, sessionNotFoundTimes)
+					resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
+					continue
+				}
 				// 小于异常重试次数，继续重试
 				if platformErrRetryTimes < abnormalErrMaxRetryTimes {
 					resetTaskForAbnormalRetry(tr, platformErrRetryTimes)

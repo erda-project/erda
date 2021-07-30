@@ -16,6 +16,7 @@ package taskrun
 import (
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,6 +28,10 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	sessionNotFoundError = "failed to find Session"
 )
 
 func (tr *TaskRun) Do(itr TaskOp) error {
@@ -145,7 +150,11 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 
 	case err := <-o.ErrCh:
 		logrus.Errorf("reconciler: pipelineID: %d, task %q %s received error (%v)", tr.P.ID, tr.Task.Name, itr.Op(), err)
-		errs = append(errs, err.Error())
+		if tr.IsSessionNotFound(err) {
+			errs = append(errs, "Failed to find Session")
+		} else {
+			errs = append(errs, err.Error())
+		}
 		tr.LogStep(itr.Op(), "begin do WhenLogicError")
 		defer tr.LogStep(itr.Op(), "end do WhenLogicError")
 		if err := itr.WhenLogicError(err); err != nil {
@@ -184,4 +193,8 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 func (tr *TaskRun) LogStep(taskOp Op, step string) {
 	logrus.Debugf("reconciler: pipelineID: %d, taskID: %d, taskName: %s, taskOp: %s, step: %s",
 		tr.P.ID, tr.Task.ID, tr.Task.Name, string(taskOp), step)
+}
+
+func (tr *TaskRun) IsSessionNotFound(err error) bool {
+	return strings.Contains(err.Error(), sessionNotFoundError)
 }
