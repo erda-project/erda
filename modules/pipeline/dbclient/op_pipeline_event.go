@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -65,52 +66,16 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	// get latest events
+	// get events
 	report, events, err := client.GetPipelineEvents(pipelineID, ops...)
 	if err != nil {
 		return err
 	}
-	// merge all events
-	events = append(events, newEvents...)
-	// group events by event detail
-	group := make(map[string][]*apistructs.PipelineEvent)
-	for _, event := range events {
-		key := makeEventGroupKey(event)
-		group[key] = append(group[key], event)
-	}
-	mergedGroup := make(map[string]*apistructs.PipelineEvent)
-	for key, ses := range group {
-		newSe := *ses[0]
-		for i, se := range ses {
-			if i == 0 {
-				continue
-			}
-			if !se.FirstTimestamp.IsZero() && se.FirstTimestamp.Before(newSe.FirstTimestamp) {
-				newSe.FirstTimestamp = se.FirstTimestamp
-			}
-			if se.LastTimestamp.After(newSe.LastTimestamp) {
-				newSe.LastTimestamp = se.LastTimestamp
-			}
-			newSe.Count++
-		}
-		// set default
-		now := time.Now()
-		if newSe.FirstTimestamp.IsZero() {
-			newSe.FirstTimestamp = now
-		}
-		if newSe.LastTimestamp.IsZero() {
-			newSe.FirstTimestamp = now
-		}
-		// add to merged group
-		mergedGroup[key] = &newSe
-	}
-	// order message by firstTimestamp
-	var ordered orderedEvents
-	for _, g := range mergedGroup {
-		ordered = append(ordered, g)
-	}
-	sort.Sort(ordered)
-	if len(ordered) == 0 {
+
+	// get order events
+	ordered := makeOrderEvents(events, newEvents)
+
+	if len(ordered) <= 0 {
 		return nil
 	}
 
@@ -129,10 +94,78 @@ func (client *Client) AppendPipelineEvent(pipelineID uint64, newEvents []*apistr
 	return client.UpdatePipelineReport(report, ops...)
 }
 
+func getLastEvent(ordered orderedEvents) *apistructs.PipelineEvent {
+	if ordered != nil {
+		sort.Sort(ordered)
+		return ordered[len(ordered)-1]
+	}
+	return nil
+}
+
 type orderedEvents []*apistructs.PipelineEvent
 
+func makeOrderEvents(events []*apistructs.PipelineEvent, newEvents []*apistructs.PipelineEvent) orderedEvents {
+	// order events
+	var ordered orderedEvents
+	for _, g := range events {
+		ordered = append(ordered, g)
+	}
+
+	// new events order, if event not have time to add time
+	var newEventOrder orderedEvents
+	now := time.Now()
+	for index, g := range newEvents {
+		if g.FirstTimestamp.IsZero() {
+			g.FirstTimestamp = now.Add(time.Duration(index) * time.Millisecond)
+		}
+		if g.LastTimestamp.IsZero() {
+			g.FirstTimestamp = now.Add(time.Duration(index) * time.Millisecond)
+		}
+		newEventOrder = append(newEventOrder, g)
+	}
+	sort.Sort(newEventOrder)
+
+	// get before last events
+	lastEvent := getLastEvent(ordered)
+	for _, ev := range newEventOrder {
+		// if lastEvent was empty, mean ordered was empty
+		// lastEvent assignment this events
+		if lastEvent == nil {
+			ordered = append(ordered, ev)
+			lastEvent = ev
+			continue
+		}
+
+		// get last events key and this events key
+		lastEventKey := makeEventGroupKey(lastEvent)
+		thsEventKey := makeEventGroupKey(ev)
+
+		// same like
+		if strings.EqualFold(lastEventKey, thsEventKey) {
+			// compare time and exchange
+			if !ev.FirstTimestamp.IsZero() && ev.FirstTimestamp.Before(lastEvent.FirstTimestamp) {
+				lastEvent.FirstTimestamp = ev.FirstTimestamp
+			}
+			if ev.LastTimestamp.After(lastEvent.LastTimestamp) {
+				lastEvent.LastTimestamp = ev.LastTimestamp
+			}
+			// count++
+			// lastEvent not change
+			lastEvent.Count++
+			continue
+		} else {
+			// not like,
+			// append this events to orders
+			// lastEvent assignment this events
+			ordered = append(ordered, ev)
+			lastEvent = ev
+		}
+	}
+	return ordered
+}
+
 func (o orderedEvents) Len() int           { return len(o) }
-func (o orderedEvents) Less(i, j int) bool { return o[i].FirstTimestamp.Before(o[j].FirstTimestamp) }
+func (o orderedEvents) Less(i, j int) bool { return o[i].LastTimestamp.Before(o[j].LastTimestamp) }
 func (o orderedEvents) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
 
 func makeEventGroupKey(se *apistructs.PipelineEvent) string {
