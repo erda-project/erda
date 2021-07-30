@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
-	"github.com/erda-project/erda/modules/dicehub/service/image"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
@@ -34,7 +33,6 @@ type Endpoints struct {
 	db                 *dbclient.DBClient
 	bdl                *bundle.Bundle
 	release            *release.Release
-	image              *image.Image
 	extension          *extension.Extension
 	publishItem        *publish_item.PublishItem
 	pipelineTemplate   *template.PipelineTemplate
@@ -72,13 +70,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithRelease(release *release.Release) Option {
 	return func(e *Endpoints) {
 		e.release = release
-	}
-}
-
-// WithImage 配置 image service
-func WithImage(image *image.Image) Option {
-	return func(e *Endpoints) {
-		e.image = image
 	}
 }
 
@@ -131,10 +122,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/releases/actions/get-latest", Method: http.MethodGet, Handler: e.GetLatestReleases},
 
 		{Path: "/gc", Method: http.MethodPost, Handler: e.ReleaseGC},
-
-		// 镜像相关
-		{Path: "/api/images/{imageIdOrImage}", Method: http.MethodGet, Handler: e.GetImage},
-		{Path: "/api/images", Method: http.MethodGet, Handler: e.ListImage},
 
 		//插件市场
 		{Path: "/api/extensions/actions/search", Method: http.MethodPost, Handler: e.SearchExtensions},

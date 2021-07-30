@@ -355,6 +355,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// the interface of accesskey
 		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodGet, Handler: e.GetByAccessKeyID},
+		{Path: "/api/credential/access-keys", Method: http.MethodGet, Handler: e.ListAccessKeys},
 		{Path: "/api/credential/access-keys", Method: http.MethodPost, Handler: e.CreateAccessKey},
 		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodPut, Handler: e.UpdateAccessKey},
 		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodDelete, Handler: e.DeleteByAccessKeyID},

@@ -228,7 +228,7 @@ func storeIssues(sonarStore *apistructs.SonarStoreRequest, bdl *bundle.Bundle) (
 	sonar.LogID = sonarStore.LogID
 
 	if success { // update
-		if _, err = cimysql.Engine.Id(sonar.ID).Update(&sonar); err != nil {
+		if _, err = cimysql.Engine.ID(sonar.ID).Update(&sonar); err != nil {
 			return dbclient.QASonar{}, errors.Errorf("failed to update sonar info, sonar: %+v, (%+v)",
 				sonar, err)
 		}

@@ -108,7 +108,7 @@ var (
 	ResourceEmptyErr          = errors.New("node resource is empty")
 	ProtocolComponentEmptyErr = errors.New("component is nil or property empty")
 	BundleEmptyErr            = errors.New("bundle is empty")
-	NothingToBeDoneErr            = errors.New("nothing to be done")
+	NothingToBeDoneErr        = errors.New("nothing to be done")
 
 	TypeNotAvailableErr = errors.New("type not available")
 	ResourceNotFoundErr = errors.New("resource type not available")
@@ -130,7 +130,6 @@ var (
 		PodFailed:    {PodFailed, PodFailedCN},
 		PodUnknown:   {PodUnknown, PodUnknownCN},
 	}
-
 )
 
 type ChartDataItem struct {

@@ -30,9 +30,10 @@ func (db *InstanceTenantDb) QueryTkByTenantGroup(tenantGroup string) (string, er
 		Select("*").
 		Where("tenant_group = ?", tenantGroup).
 		Where("engine = ?", "monitor").
-		Find(&tenantInfo).
+		Where("is_deleted = ?", "N").
 		Order("create_time", false).
 		Limit(1).
+		Find(&tenantInfo).
 		Error
 	var config map[string]interface{}
 	err = json.Unmarshal([]byte(tenantInfo.Config), &config)

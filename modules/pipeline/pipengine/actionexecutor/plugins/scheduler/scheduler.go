@@ -117,11 +117,7 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *s
 			}
 		}
 		name := fmt.Sprintf("%sfor%s", clusterName, executorName)
-		taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
-		if err != nil {
-			return false, nil, err
-		}
-		return false, taskExecutor, nil
+		return s.taskManager.TryGetExecutor(tasktypes.Name(name), cluster)
 	default:
 		return false, nil, errors.Errorf("invalid cluster type: %s", cluster.Type)
 	}
@@ -359,6 +355,19 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 }
 
 func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
+	var (
+		taskExecutor   tasktypes.TaskExecutor
+		shouldDispatch bool
+		err            error
+	)
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute inspect", taskExecutor.Name())
+		return taskExecutor.Inspect(ctx, action)
+	}
 	return nil, errors.New("scheduler(job) not support inspect operation")
 }
 

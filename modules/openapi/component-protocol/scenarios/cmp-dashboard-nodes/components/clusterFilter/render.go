@@ -15,6 +15,7 @@ package clusterFilter
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -70,7 +71,7 @@ func (i *ComponentFilter) SetComponentValue() {
 
 // RenderProtocol 渲染组件
 func (i *ComponentFilter) RenderProtocol(c *apistructs.Component) error {
-	if err := common.Transfer(i.State,&c.State);err != nil {
+	if err := common.Transfer(i.State, &c.State); err != nil {
 		return err
 	}
 	c.Props = i.Props

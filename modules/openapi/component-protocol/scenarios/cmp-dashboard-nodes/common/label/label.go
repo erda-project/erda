@@ -15,8 +15,7 @@ package label
 
 type Label struct {
 	RenderType string `json:"render_type"`
-	Name string `json:"name"`
-	Value string `json:"value"`
-	Group string `json:"group"`
+	Name       string `json:"name"`
+	Value      string `json:"value"`
+	Group      string `json:"group"`
 }
-

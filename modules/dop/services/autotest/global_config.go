@@ -14,12 +14,16 @@
 package autotest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
@@ -98,16 +102,18 @@ func (svc *Service) parseGlobalConfigFromCmsNs(ns string) (*apistructs.AutoTestG
 	// result
 	result := apistructs.AutoTestGlobalConfig{Ns: ns}
 	// 查询
-	configs, err := svc.bdl.GetPipelineCmsNsConfigs(ns, apistructs.PipelineCmsGetConfigsRequest{
-		PipelineSource: apistructs.PipelineSourceAutoTest,
-		Keys:           nil,
-		GlobalDecrypt:  true,
-	})
+	configs, err := svc.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
+		&cmspb.CmsNsConfigsGetRequest{
+			Ns:             ns,
+			PipelineSource: apistructs.PipelineSourceAutoTest.String(),
+			Keys:           nil,
+			GlobalDecrypt:  true,
+		})
 	if err != nil {
 		return nil, err
 	}
 	// 解析
-	for _, cfg := range configs {
+	for _, cfg := range configs.Data {
 		switch cfg.Key {
 		case CmsCfgKeyScope:
 			result.Scope = cfg.Value
@@ -172,49 +178,49 @@ func (svc *Service) createOrUpdatePipelineCmsGlobalConfigs(cfg *apistructs.AutoT
 		return fmt.Errorf("invalid displayName")
 	}
 
-	kvs := make(map[string]apistructs.PipelineCmsConfigValue)
+	kvs := make(map[string]*cmspb.PipelineCmsConfigValue)
 	// 默认注入 scope & scopeID
-	kvs[CmsCfgKeyScope] = apistructs.PipelineCmsConfigValue{
+	kvs[CmsCfgKeyScope] = &cmspb.PipelineCmsConfigValue{
 		Value:       cfg.Scope,
 		EncryptInDB: false,
 	}
-	kvs[CmsCfgKeyScopeID] = apistructs.PipelineCmsConfigValue{
+	kvs[CmsCfgKeyScopeID] = &cmspb.PipelineCmsConfigValue{
 		Value:       cfg.ScopeID,
 		EncryptInDB: false,
 	}
 	if cfg.DisplayName != "" {
-		kvs[CmsCfgKeyDisplayName] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyDisplayName] = &cmspb.PipelineCmsConfigValue{
 			Value:       cfg.DisplayName,
 			EncryptInDB: false,
 		}
 	}
 	// desc 可以更新为空
-	kvs[CmsCfgKeyDesc] = apistructs.PipelineCmsConfigValue{
+	kvs[CmsCfgKeyDesc] = &cmspb.PipelineCmsConfigValue{
 		Value:       cfg.Desc,
 		EncryptInDB: false,
 	}
 	if cfg.CreatorID != "" {
-		kvs[CmsCfgKeyCreatorID] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyCreatorID] = &cmspb.PipelineCmsConfigValue{
 			Value:       cfg.CreatorID,
 			EncryptInDB: false,
 		}
 	}
 	if cfg.UpdaterID != "" {
-		kvs[CmsCfgKeyUpdaterID] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyUpdaterID] = &cmspb.PipelineCmsConfigValue{
 			Value:       cfg.UpdaterID,
 			EncryptInDB: false,
 		}
 	}
 	if !cfg.CreatedAt.IsZero() {
 		createdAtJSON, _ := cfg.CreatedAt.MarshalJSON()
-		kvs[CmsCfgKeyCreatedAt] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyCreatedAt] = &cmspb.PipelineCmsConfigValue{
 			Value:       string(createdAtJSON),
 			EncryptInDB: false,
 		}
 	}
 	if !cfg.UpdatedAt.IsZero() {
 		updatedAtJSON, _ := cfg.UpdatedAt.MarshalJSON()
-		kvs[CmsCfgKeyUpdatedAt] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyUpdatedAt] = &cmspb.PipelineCmsConfigValue{
 			Value:       string(updatedAtJSON),
 			EncryptInDB: false,
 		}
@@ -231,22 +237,22 @@ func (svc *Service) createOrUpdatePipelineCmsGlobalConfigs(cfg *apistructs.AutoT
 		if err != nil {
 			return fmt.Errorf("invalid apiConfig, err: %v", err)
 		}
-		kvs[CmsCfgKeyAPIGlobalConfig] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyAPIGlobalConfig] = &cmspb.PipelineCmsConfigValue{
 			Value:       string(b),
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
-			Operations:  &apistructs.PipelineCmsConfigDefaultOperationsForKV,
+			Type:        cms.ConfigTypeKV,
+			Operations:  &cms.DefaultOperationsForKV,
 			Comment:     "auto test api global config",
 			From:        apistructs.PipelineSourceAutoTest.String(),
 		}
 
 		// 转成 config.autotest.xx 语法由 pipeline 渲染
 		for _, item := range cfg.APIConfig.Global {
-			kvs[apistructs.PipelineSourceAutoTest.String()+"."+item.Name] = apistructs.PipelineCmsConfigValue{
+			kvs[apistructs.PipelineSourceAutoTest.String()+"."+item.Name] = &cmspb.PipelineCmsConfigValue{
 				Value:       item.Value,
 				EncryptInDB: false,
-				Type:        apistructs.PipelineCmsConfigTypeKV,
-				Operations:  &apistructs.PipelineCmsConfigDefaultOperationsForKV,
+				Type:        cms.ConfigTypeKV,
+				Operations:  &cms.DefaultOperationsForKV,
 				Comment:     "auto test api global config",
 				From:        apistructs.PipelineSourceAutoTest.String(),
 			}
@@ -257,17 +263,18 @@ func (svc *Service) createOrUpdatePipelineCmsGlobalConfigs(cfg *apistructs.AutoT
 		if err != nil {
 			return fmt.Errorf("invalid uiConfig, err: %v", err)
 		}
-		kvs[CmsCfgKeyUIGlobalConfig] = apistructs.PipelineCmsConfigValue{
+		kvs[CmsCfgKeyUIGlobalConfig] = &cmspb.PipelineCmsConfigValue{
 			Value:       string(b),
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
-			Operations:  &apistructs.PipelineCmsConfigDefaultOperationsForKV,
+			Type:        cms.ConfigTypeKV,
+			Operations:  &cms.DefaultOperationsForKV,
 			Comment:     "auto test ui global config",
 			From:        apistructs.PipelineSourceAutoTest.String(),
 		}
 	}
-	if err := svc.bdl.CreateOrUpdatePipelineCmsNsConfigs(cfg.Ns, apistructs.PipelineCmsUpdateConfigsRequest{
-		PipelineSource: apistructs.PipelineSourceAutoTest,
+	if _, err := svc.cms.UpdateCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &cmspb.CmsNsConfigsUpdateRequest{
+		Ns:             cfg.Ns,
+		PipelineSource: apistructs.PipelineSourceAutoTest.String(),
 		KVs:            kvs,
 	}); err != nil {
 		return err
@@ -296,10 +303,12 @@ func (svc *Service) DeleteGlobalConfig(req apistructs.AutoTestGlobalConfigDelete
 	}
 
 	// 删除
-	if err := svc.bdl.DeletePipelineCmsNsConfigs(req.PipelineCmsNs, apistructs.PipelineCmsDeleteConfigsRequest{
-		PipelineSource: apistructs.PipelineSourceAutoTest,
-		DeleteNS:       true,
+	if _, err := svc.cms.DeleteCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &cmspb.CmsNsConfigsDeleteRequest{
+		Ns:             req.PipelineCmsNs,
+		PipelineSource: apistructs.PipelineSourceAutoTest.String(),
+		DeleteNs:       false,
 		DeleteForce:    true,
+		DeleteKeys:     nil,
 	}); err != nil {
 		return nil, apierrors.ErrDeleteAutoTestGlobalConfig.InternalError(err)
 	}
@@ -315,8 +324,8 @@ func (svc *Service) ListGlobalConfigs(req apistructs.AutoTestGlobalConfigListReq
 
 	// 获取 cms ns 列表
 	nsPrefix := generateGlobalConfigPipelineCmsNsPrefix(req.Scope, req.ScopeID)
-	namespaces, err := svc.bdl.ListPipelineCmsNs(apistructs.PipelineCmsListNsRequest{
-		PipelineSource: apistructs.PipelineSourceAutoTest,
+	namespaces, err := svc.cms.ListCmsNs(utils.WithInternalClientContext(context.Background()), &cmspb.CmsListNsRequest{
+		PipelineSource: apistructs.PipelineSourceAutoTest.String(),
 		NsPrefix:       nsPrefix,
 	})
 	if err != nil {
@@ -325,8 +334,8 @@ func (svc *Service) ListGlobalConfigs(req apistructs.AutoTestGlobalConfigListReq
 
 	var results []apistructs.AutoTestGlobalConfig
 
-	for _, ns := range namespaces {
-		cfg, err := svc.parseGlobalConfigFromCmsNs(ns.NS)
+	for _, ns := range namespaces.Data {
+		cfg, err := svc.parseGlobalConfigFromCmsNs(ns.Ns)
 		if err != nil {
 			return nil, apierrors.ErrListAutoTestGlobalConfigs.InternalError(err)
 		}

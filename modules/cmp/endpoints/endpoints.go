@@ -72,6 +72,10 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	return e
 }
 
+func (e *Endpoints) GetCluster() *clusters.Clusters {
+	return e.clusters
+}
+
 // WithBundle With bundle
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(e *Endpoints) {

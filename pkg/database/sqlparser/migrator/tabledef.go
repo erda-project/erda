@@ -15,6 +15,7 @@ package migrator
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -66,10 +67,16 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 
 func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	if len(d.CreateStmt.Cols) != len(o.CreateStmt.Cols) {
+		sort.Slice(d.CreateStmt.Cols, func(i, j int) bool {
+			return d.CreateStmt.Cols[i].Name.String() < d.CreateStmt.Cols[j].Name.String()
+		})
+		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
+			return d.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
+		})
 		return &Equal{
 			equal: false,
-			reason: fmt.Sprintf("%s left columns: %v, right columns: %v",
-				d.CreateStmt.Table.Name.String(), len(o.CreateStmt.Cols), len(d.CreateStmt.Cols)),
+			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, table name: %s, left %v, righ: %v",
+				d.CreateStmt.Table.Name.String(), o.CreateStmt.Cols, d.CreateStmt.Cols),
 		}
 	}
 
@@ -89,10 +96,11 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		if !ok {
 			return &Equal{
 				equal:  false,
-				reason: fmt.Sprintf("%s.%s not in left", d.CreateStmt.Table.Name.String(), name),
+				reason: fmt.Sprintf("%s.%s is missing in left", d.CreateStmt.Table.Name.String(), name),
 			}
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
+			equal.reason += fmt.Sprintf("%s.%s", d.CreateStmt.Table.Name.String(), name)
 			return equal
 		}
 	}

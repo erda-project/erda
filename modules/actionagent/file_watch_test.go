@@ -15,7 +15,10 @@ package actionagent
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
+
+	"github.com/alecthomas/assert"
 )
 
 //func TestWatchFiles(t *testing.T) {
@@ -59,4 +62,16 @@ func TestSlice(t *testing.T) {
 	fmt.Println(logs)
 	f(logs, "l2")
 	fmt.Println(logs)
+}
+
+func TestMatchStdErrLine(t *testing.T) {
+	regexpList := []*regexp.Regexp{}
+	regexpStrList := []string{"^[a-z]*can't*"}
+	for i := range regexpStrList {
+		reg, err := regexp.Compile(regexpStrList[i])
+		assert.NoError(t, err)
+		regexpList = append(regexpList, reg)
+	}
+	assert.False(t, matchStdErrLine(regexpList, "failed to open file test.text"))
+	assert.True(t, matchStdErrLine(regexpList, "can't open '/jfoejfoijlkjlj/jflejwf.txt': No such file or directory"))
 }

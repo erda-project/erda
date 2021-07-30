@@ -25,7 +25,6 @@ import (
 	"github.com/rancher/steve/pkg/resources/apigroups"
 	"github.com/rancher/steve/pkg/resources/cluster"
 	"github.com/rancher/steve/pkg/resources/formatters"
-	"github.com/rancher/steve/pkg/resources/userpreferences"
 	"github.com/rancher/steve/pkg/schema"
 	steveschema "github.com/rancher/steve/pkg/schema"
 	"github.com/rancher/steve/pkg/stores/proxy"
@@ -43,7 +42,6 @@ func DefaultSchemas(ctx context.Context, baseSchema *types.APISchemas, cg proxy.
 	subscribe.Register(baseSchema)
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
 	cluster.Register(ctx, baseSchema, cg, schemaFactory)
-	userpreferences.Register(baseSchema)
 	return nil
 }
 

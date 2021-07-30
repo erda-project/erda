@@ -15,11 +15,11 @@ package memChart
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -66,7 +66,7 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 			"hostname":     structpb.NewStringValue(chart.State.Name),
 		},
 	}
-	if resp, err = chart.Metrics.Query( req,string(v1.ResourceMemory)); err != nil {
+	if resp, err = chart.Metrics.Query(req, string(v1.ResourceMemory)); err != nil {
 		return err
 	}
 	var items []common.ChartDataItem

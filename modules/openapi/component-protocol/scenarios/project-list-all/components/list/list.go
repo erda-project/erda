@@ -58,7 +58,7 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 			Target: "project",
 		},
 	}
-	//opManage := Operation{
+	//opManage := GenerateOperation{
 	//	Key:    apistructs.ListProjectToManageOperationKey.String(),
 	//	Reload: false,
 	//	Text:   "管理",
@@ -68,7 +68,7 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 	//		Target: "https://terminus-org.dev.terminus.io/orgCenter/projects",
 	//	},
 	//}
-	//opExist := Operation{
+	//opExist := GenerateOperation{
 	//	Key:     apistructs.ListProjectExistOperationKey.String(),
 	//	Reload:  true,
 	//	Text:    "退出",
@@ -77,7 +77,7 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 	//		ID: pro.ID,
 	//	},
 	//}
-	//opApplyDeploy := Operation{
+	//opApplyDeploy := GenerateOperation{
 	//	Key:    apistructs.ApplyDeployProjectFilterOperation.String(),
 	//	Reload: false,
 	//	Text:   "申请部署",

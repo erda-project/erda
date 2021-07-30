@@ -23,9 +23,9 @@ import (
 )
 
 type MetricClient struct {
-	ctx     context.Context
-	Metric  pb.MetricServiceServer
-	Cache   *lru.Cache
+	ctx    context.Context
+	Metric pb.MetricServiceServer
+	Cache  *lru.Cache
 }
 
 func New() *MetricClient {
@@ -34,31 +34,31 @@ func New() *MetricClient {
 	return c
 }
 
-func reqKey(req *pb.QueryWithInfluxFormatRequest,tag string) string {
+func reqKey(req *pb.QueryWithInfluxFormatRequest, tag string) string {
 	key := tag
-	for _,v := range req.Params{
-		key+=v.String()
+	for _, v := range req.Params {
+		key += v.String()
 	}
-	key = key+req.Start+req.End
+	key = key + req.Start + req.End
 	return key
 }
 
-func (c *MetricClient) Query(req *pb.QueryWithInfluxFormatRequest,tag string) (*pb.QueryWithInfluxFormatResponse,error) {
+func (c *MetricClient) Query(req *pb.QueryWithInfluxFormatRequest, tag string) (*pb.QueryWithInfluxFormatResponse, error) {
 	var (
 		resp  *pb.QueryWithInfluxFormatResponse
 		value interface{}
 		ok    bool
-		key   = reqKey(req,tag)
+		key   = reqKey(req, tag)
 	)
 	value, ok = c.Cache.Get(key)
 	if ok {
 		resp = value.(*pb.QueryWithInfluxFormatResponse)
-		return resp,nil
+		return resp, nil
 	}
 	format, err := c.Metric.QueryWithInfluxFormat(c.ctx, req)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	c.Cache.Add(key,format)
-	return format,nil
+	c.Cache.Add(key, format)
+	return format, nil
 }

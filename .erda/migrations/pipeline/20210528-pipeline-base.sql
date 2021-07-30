@@ -191,7 +191,7 @@ CREATE TABLE `pipeline_extras`
     `time_updated`  datetime   NOT NULL,
     `commit`        varchar(64)  DEFAULT NULL,
     `org_name`      varchar(191) DEFAULT NULL,
-    `snippets`      text COMMENT 'snippet 历史',
+    `snippets`      mediumtext COMMENT 'snippet 历史',
     PRIMARY KEY (`pipeline_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='流水线额外信息表';
 
@@ -244,7 +244,7 @@ CREATE TABLE `pipeline_tasks`
     `status`                  varchar(128) NOT NULL,
     `extra`                   mediumtext   NOT NULL,
     `context`                 text         NOT NULL,
-    `result`                  text         NOT NULL,
+    `result`                  mediumtext         NOT NULL,
     `is_snippet`              tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否是嵌套流水线任务',
     `snippet_pipeline_id`     bigint(20) DEFAULT NULL COMMENT '当前任务对应的嵌套流水线 ID',
     `snippet_pipeline_detail` mediumtext COMMENT '当前任务对应的嵌套流水线汇总后的详情',

@@ -15,6 +15,7 @@ package nodeFilter
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -71,7 +72,7 @@ func (i *NodeFilter) SetComponentValue() {
 
 // RenderProtocol 渲染组件
 func (i *NodeFilter) RenderProtocol(c *apistructs.Component) error {
-	if err := common.Transfer(i.State,&c.State);err != nil{
+	if err := common.Transfer(i.State, &c.State); err != nil {
 		return err
 	}
 	c.Props = i.Props
@@ -81,8 +82,8 @@ func (i *NodeFilter) RenderProtocol(c *apistructs.Component) error {
 
 func (i *NodeFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	var (
-		ops   []filter.Options
-		err   error
+		ops []filter.Options
+		err error
 	)
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	if err = i.SetCtxBundle(bdl); err != nil {

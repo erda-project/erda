@@ -44,8 +44,8 @@ etcd:
 etcd-mutex:
   root_path: "/erda/streaming"
 
-logs-store:
-  _enable: ${LOGS_STORE_ENABLE:true}
+log-store:
+  _enable: ${LOG_STORE_ENABLE:true}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
@@ -72,7 +72,6 @@ logs-store:
             factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
       default_ttl: "${LOG_TTL:168h}"
       gc_grace_seconds: 86400
-
 
 browser-analytics:
   _enable: ${BROWSER_ENABLE:true}

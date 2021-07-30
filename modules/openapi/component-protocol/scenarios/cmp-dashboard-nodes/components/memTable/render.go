@@ -15,21 +15,19 @@ package cpuTable
 
 import (
 	"context"
-	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	common2 "github.com/erda-project/erda/pkg/common"
 	"reflect"
 	"strings"
-
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 
 	"github.com/cznic/mathutil"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
 )
 
@@ -88,7 +86,7 @@ func (mt *MemInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
-	}else{
+	} else {
 		mt.Props["visible"] = false
 	}
 	if err := mt.RenderList(c, event); err != nil {
@@ -310,7 +308,7 @@ func getItemStatus(node *v1.Node) (*common.SteveStatus, error) {
 
 func RenderCreator() protocol.CompRender {
 	mt := MemInfoTable{}
-	mt.Metric = common2.Hub.Provider("metrics-query").(pb.MetricServiceServer)
+	mt.Metric = metrics.New()
 	mt.Type = "Table"
 	mt.Props = getProps()
 	mt.Operations = getTableOperation()

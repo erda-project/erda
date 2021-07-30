@@ -29,6 +29,7 @@ func init() {
 		bundle.WithScheduler(),
 		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
+		bundle.WithClusterManager(),
 		bundle.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second*10, time.Second*60),
 		)),

@@ -15,15 +15,15 @@ package cpuChart
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/cmp/metrics"
-	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 )
@@ -41,7 +41,7 @@ func (chart *CpuChart) Render(ctx context.Context, c *apistructs.Component, s ap
 		resp *pb.QueryWithInfluxFormatResponse
 		err  error
 	)
-	if err = common.Transfer(c.State,&chart.State); err != nil {
+	if err = common.Transfer(c.State, &chart.State); err != nil {
 		return err
 	}
 	switch event.Operation {
@@ -64,7 +64,7 @@ func (chart *CpuChart) Render(ctx context.Context, c *apistructs.Component, s ap
 			"hostname":     structpb.NewStringValue(chart.State.Name),
 		},
 	}
-	if resp, err = chart.Metric.Query(req,string(v1.ResourceCPU)); err != nil {
+	if resp, err = chart.Metric.Query(req, string(v1.ResourceCPU)); err != nil {
 		return err
 	}
 	var items []common.ChartDataItem

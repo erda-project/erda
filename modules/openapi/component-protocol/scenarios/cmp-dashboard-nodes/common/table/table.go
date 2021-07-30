@@ -17,8 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"strconv"
 	"strings"
 	"time"
@@ -28,8 +26,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -180,7 +180,7 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 		logrus.Warningf("metrics service is busy")
 		break
 	default:
-		if resp, err =t.Metric.Query(req,string(resName)); err != nil {
+		if resp, err = t.Metric.Query(req, string(resName)); err != nil {
 			return nil, err
 		}
 	}

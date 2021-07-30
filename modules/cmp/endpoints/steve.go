@@ -49,11 +49,7 @@ func (e *Endpoints) SteveClusterHook(ctx context.Context, r *http.Request, vars 
 	}
 
 	if strutil.Equal(req.Action, bundle.CreateAction, true) {
-		err := e.SteveAggregator.Add(&req.Content)
-		if err != nil {
-			logrus.Errorf("failed to start steve server for cluster %s, %v", req.Content.Name, err)
-			return httpserver.HTTPResponse{Status: http.StatusInternalServerError}, nil
-		}
+		e.SteveAggregator.Add(&req.Content)
 	}
 
 	if strutil.Equal(req.Action, bundle.DeleteAction, true) {

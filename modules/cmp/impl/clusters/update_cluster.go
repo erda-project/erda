@@ -51,6 +51,10 @@ func (c *Clusters) UpdateCluster(req apistructs.CMPClusterUpdateRequest, header 
 		newSchedulerConfig = req.SchedulerConfig
 	}
 
+	// TODO: support tag switch, current force true
+	// e.g. modules/scheduler/impl/cluster/hook.go line:136
+	newSchedulerConfig.EnableTag = true
+
 	return c.bdl.UpdateCluster(apistructs.ClusterUpdateRequest{
 		Name:            cluster.Name,
 		DisplayName:     req.DisplayName,

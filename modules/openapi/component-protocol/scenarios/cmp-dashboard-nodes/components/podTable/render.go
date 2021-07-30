@@ -89,7 +89,7 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
-	}else{
+	} else {
 		pt.Props["visible"] = false
 		return nil
 	}
@@ -383,4 +383,3 @@ func RenderCreator() protocol.CompRender {
 	pi.State = table.State{}
 	return &pi
 }
-

@@ -705,11 +705,12 @@ type MicroServiceProjectResponse struct {
 }
 
 type MicroServiceProjectResponseData struct {
-	ProjectID    string   `json:"projectId"`
-	ProjectName  string   `json:"projectName"`
-	LogoURL      string   `json:"logoUrl"`
-	Envs         []string `json:"envs"`
-	TenantGroups []string `json:"tenantGroups"`
+	ProjectID    string            `json:"projectId"`
+	ProjectName  string            `json:"projectName"`
+	LogoURL      string            `json:"logoUrl"`
+	Envs         []string          `json:"envs"`
+	TenantGroups []string          `json:"tenantGroups"`
+	Workspaces   map[string]string `json:"workspaces"`
 }
 
 type MicroServiceMenuResponse struct {

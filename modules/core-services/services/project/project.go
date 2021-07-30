@@ -165,6 +165,7 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 		Functions:      string(functions),
 		ActiveTime:     time.Now(),
 		EnableNS:       conf.EnableNS(),
+		Type:           string(createReq.Template),
 	}
 	if err = p.db.CreateProject(project); err != nil {
 		logrus.Warnf("failed to insert project to db, (%v)", err)
@@ -437,9 +438,17 @@ func (p *Project) FillQuota(orgResources map[uint64]apistructs.OrgResourceInfo) 
 	return nil
 }
 
-// ListProjects
-func (p *Project) GetAllProjects() ([]model.Project, error) {
-	return p.db.GetAllProjects()
+// GetAllProjects list all project
+func (p *Project) GetAllProjects() ([]apistructs.ProjectDTO, error) {
+	projects, err := p.db.GetAllProjects()
+	if err != nil {
+		return nil, err
+	}
+	projectsDTO := make([]apistructs.ProjectDTO, 0, len(projects))
+	for _, v := range projects {
+		projectsDTO = append(projectsDTO, p.convertToProjectDTO(true, &v))
+	}
+	return projectsDTO, nil
 }
 
 // ListAllProjects 企业管理员可查看当前企业下所有项目，包括未加入的项目
@@ -895,6 +904,7 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		ActiveTime:     project.ActiveTime.Format("2006-01-02 15:04:05"),
 		Owners:         []string{},
 		IsPublic:       project.IsPublic,
+		Type:           project.Type,
 	}
 	if projectDto.DisplayName == "" {
 		projectDto.DisplayName = projectDto.Name
