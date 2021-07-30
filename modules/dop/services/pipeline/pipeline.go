@@ -18,11 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -472,4 +474,160 @@ func DecodeV1UniquePipelineYmlName(p *apistructs.PagePipeline, name string) stri
 	prefix := fmt.Sprintf("%s/%s/%s/", p.FilterLabels[apistructs.LabelAppID], p.Extra.DiceWorkspace,
 		p.FilterLabels[apistructs.LabelBranch])
 	return strutil.TrimPrefixes(name, prefix)
+}
+
+// PipelineCronUpdate pipeline cron update
+func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) error {
+	appID, err := strconv.ParseInt(req.ApplicationID, 10, 64)
+	if err != nil {
+		return err
+	}
+	appDto, err := p.bdl.GetApp(uint64(appID))
+	if err != nil {
+		return err
+	}
+	branch := getBranch(req.Content.Ref)
+
+	// get diffs between two commits
+	compare, err := p.bdl.GetGittarCompare(req.Content.After, req.Content.Before, appID)
+	if err != nil {
+		return err
+	}
+	for _, v := range compare.Diff.Files {
+		// is pipeline.yml rename to others,need to delete cron and stop it if cron enable
+		if isPipelineYmlPath(v.OldName) && !isPipelineYmlPath(v.Name) {
+			cron, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
+			if err != nil {
+				logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+				continue
+			}
+			if *cron.Enable {
+				_, err = p.bdl.StopPipelineCron(cron.ID)
+				if err != nil {
+					logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					continue
+				}
+			}
+		}
+		if isPipelineYmlPath(v.Name) {
+			// if pipeline cron is not exist,no need to do anything
+			cron, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
+			if err != nil {
+				logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+				continue
+			}
+
+			// if type is delete,need to delete cron and stop it if cron enable
+			// if type is rename,need to delete cron and stop it if cron enable
+			if v.Type == "delete" || v.Type == "rename" {
+				if *cron.Enable {
+					_, err = p.bdl.StopPipelineCron(cron.ID)
+					if err != nil {
+						logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					}
+				}
+				continue
+			}
+
+			// if type modified, need to update cron and stop it if cron enable and cronExpr is empty
+			if v.Type == "modified" {
+				// get pipeline yml file content
+				searchINode := appDto.ProjectName + "/" + appDto.Name + "/blob/" + branch + "/" + v.Name
+				pipelineYml, err := p.bdl.GetGittarBlobNode("/wb/"+searchINode, req.OrgID)
+				if err != nil {
+					logrus.Errorf("fail to GetGittarBlobNode,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					continue
+				}
+				// get cronExpr from pipelineYml
+				cronExpr, err := getCronExpr(pipelineYml)
+				if err != nil {
+					logrus.Errorf("fail to getCronExpr,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					continue
+				}
+
+				if err := p.bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+					ID:          cron.ID,
+					PipelineYml: pipelineYml,
+					CronExpr:    cronExpr,
+				}); err != nil {
+					logrus.Errorf("fail to UpdatePipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					continue
+				}
+				if *cron.Enable && cronExpr == "" {
+					_, err = p.bdl.StopPipelineCron(cron.ID)
+					if err != nil {
+						logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func getCronExpr(pipelineYmlStr string) (string, error) {
+	if pipelineYmlStr == "" {
+		return "", nil
+	}
+	pipelineYml, err := pipelineyml.New([]byte(pipelineYmlStr))
+	if err != nil {
+		return "", err
+	}
+	return pipelineYml.Spec().Cron, nil
+}
+
+func getBranch(ref string) string {
+	var branchPrefix = "refs/heads/"
+	if len(ref) <= len(branchPrefix) {
+		return ""
+	}
+	return ref[len(branchPrefix):]
+}
+
+func isPipelineYmlPath(path string) bool {
+	const pipelineYmlPathPattern = `^pipeline\.yml$|^\.dice/pipelines/.+\.yml$`
+	matched, err := regexp.MatchString(pipelineYmlPathPattern, path)
+	if err != nil {
+		return false
+	}
+	return matched
+}
+
+// GetPipelineCron get pipeline cron
+func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch string) (*apistructs.PipelineCronDTO, error) {
+	workspace, err := p.getWorkSpace(projectID, branch)
+	if err != nil {
+		return nil, err
+	}
+	pipelineYmlNameOld := getPipelineYmlName(appID, workspace, branch, pathOld)
+	pagingReq := apistructs.PipelineCronPagingRequest{
+		AllSources: false,
+		Sources:    []apistructs.PipelineSource{"dice"},
+		YmlNames:   []string{pipelineYmlNameOld},
+		PageSize:   1,
+		PageNo:     1,
+	}
+	crons, err := p.bdl.PageListPipelineCrons(pagingReq)
+	if err != nil {
+		return nil, err
+	}
+	if len(crons.Data) == 0 {
+		return nil, fmt.Errorf("the pipeline cron is not exist,pipelineName: %s", pipelineYmlNameOld)
+	}
+	return crons.Data[0], nil
+}
+
+// GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml
+func getPipelineYmlName(appID int64, workspace, branch, path string) string {
+	return strutil.Concat(strconv.FormatInt(appID, 10), "/", workspace, "/", branch, "/", path)
+}
+
+// GetWorkSpace return workSpace of project's workspaceConfig by given branch
+func (p *Pipeline) getWorkSpace(project int64, branch string) (string, error) {
+	rules, err := p.branchRuleSvc.Query(apistructs.ProjectScope, project)
+	if err != nil {
+		return "", err
+	}
+	branchRule := diceworkspace.GetValidBranchByGitReference(branch, rules)
+	return branchRule.Workspace, nil
 }

@@ -165,3 +165,22 @@ func (e *Endpoints) pipelineCronGet(ctx context.Context, r *http.Request, vars m
 
 	return httpserver.OkResp(cron.Convert2DTO())
 }
+
+// pipelineCronUpdate pipeline cron update
+func (e *Endpoints) pipelineCronUpdate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdatePipelineCron.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.PipelineCronUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdatePipelineCron.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err = e.pipelineCronSvc.PipelineCronUpdate(req); err != nil {
+		return apierrors.ErrUpdatePipelineCron.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(nil)
+}

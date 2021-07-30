@@ -226,3 +226,12 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 
 	return params
 }
+
+type GittarPushPayloadEvent struct {
+	EventHeader
+	Content struct {
+		Ref    string `json:"ref"`
+		After  string `json:"after"`
+		Before string `json:"before"`
+	} `json:"content"`
+}

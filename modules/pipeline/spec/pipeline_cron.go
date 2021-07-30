@@ -24,6 +24,7 @@ const (
 	//pipelineCron表的字段名
 	PipelineCronCronExpr = "cron_expr"
 	PipelineCronEnable   = "enable"
+	Extra                = "extra"
 )
 
 type PipelineCron struct {

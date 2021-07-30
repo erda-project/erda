@@ -582,3 +582,29 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int) error {
 	}
 	return nil
 }
+
+// GetGittarCompare gittar compare between commits
+func (b *Bundle) GetGittarCompare(after, before string, appID int64) (*apistructs.GittarCompareData, error) {
+	var (
+		host            string
+		err             error
+		compareResponse apistructs.GittarCompareResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Get(host).
+		Path(fmt.Sprintf("/app-repo/%d/compare/%s", appID, fmt.Sprintf("%s...%s", after, before))).
+		Do().JSON(&compareResponse)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !compareResponse.Success {
+		return nil, toAPIError(resp.StatusCode(), compareResponse.Error)
+	}
+
+	return &compareResponse.Data, nil
+}
