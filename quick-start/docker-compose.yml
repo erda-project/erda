@@ -1,7 +1,7 @@
 version: "3"
 services:
   ui:
-    image: erdaproject/erda-ui:1.1-20210721-dd8ed4d8
+    image: erdaproject/erda-ui:1.1-20210729-dd8ed4d8
     container_name: erda-ui
     depends_on:
       - openapi
