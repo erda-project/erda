@@ -252,6 +252,9 @@ func (c *Cluster) Update(req *apistructs.ClusterUpdateRequest) error {
 		}
 		cluster.ManageConfig = string(manageConfig)
 	}
+	if req.CloudVendor != "" {
+		cluster.CloudVendor = req.CloudVendor
+	}
 
 	if err = c.db.UpdateCluster(cluster); err != nil {
 		return err
