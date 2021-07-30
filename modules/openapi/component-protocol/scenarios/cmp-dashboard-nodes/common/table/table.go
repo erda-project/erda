@@ -17,7 +17,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"strconv"
 	"strings"
 	"time"
@@ -27,10 +28,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -42,15 +43,24 @@ var (
 	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname
 	ORDER BY TIMESTAMP DESC`
 )
-var metricsServer = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
 
 type Table struct {
 	TableInterface
+	Ctx        context.Context
+	Metric     *metrics.MetricClient
 	CtxBdl     protocol.ContextBundle
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
 	State      State                  `json:"state"`
+}
+
+func (t *Table) Init(ctx servicehub.Context) error { return nil }
+
+func (t *Table) Run(ctx context.Context) error {
+	//p.Index.WaitIndicesLoad() // example query can be carried out after the index is loaded
+	//return p.queryExample(ctx)
+	return nil
 }
 
 type TableInterface interface {
@@ -163,9 +173,18 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 	default:
 		return nil, common.ResourceNotFoundErr
 	}
-	if resp, err = metricsServer.QueryWithInfluxFormat(context.Background(), req); err != nil {
-		return nil, err
+	ctx, cancel := context.WithDeadline(t.Ctx, time.Now().Add(3*time.Second))
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		logrus.Warningf("metrics service is busy")
+		break
+	default:
+		if resp, err =t.Metric.Query(req,string(resName)); err != nil {
+			return nil, err
+		}
 	}
+
 	if len(resp.Results) > 0 && len(resp.Results[0].Series) > 0 {
 		serie := resp.Results[0].Series[0]
 		usageDecimal := serie.Rows[0].Values[0].GetNumberValue()

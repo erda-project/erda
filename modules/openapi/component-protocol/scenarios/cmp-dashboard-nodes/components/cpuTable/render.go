@@ -15,7 +15,6 @@ package cpuTable
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"reflect"
 	"strings"
 
@@ -24,9 +23,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
 )
 
@@ -42,9 +43,9 @@ var tableProperties = map[string]interface{}{
 		{DataIndex: "node", Title: "节点"},
 		{DataIndex: "role", Title: "角色"},
 		{DataIndex: "version", Title: "版本"},
-		{DataIndex: "distribuTion", Title: "cpu分配率"},
+		{DataIndex: "distribution", Title: "cpu分配率"},
 		{DataIndex: "use", Title: "cpu使用率"},
-		{DataIndex: "distribuTionRate", Title: "cpu分配使用率"},
+		{DataIndex: "distribution", Title: "cpu分配使用率"},
 	},
 	"bordered":        true,
 	"selectable":      true,
@@ -57,6 +58,7 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 		state table.State
 	)
 	ct.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	ct.Ctx = ctx
 	err = common.Transfer(c.State, &state)
 	if err != nil {
 		return err
@@ -77,7 +79,6 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 				return err
 			}
 		case apistructs.RenderingOperation:
-
 			// IsFirstFilter delivered from filer component
 			if ct.State.IsFirstFilter {
 				ct.State.PageNo = 1
@@ -89,6 +90,9 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
+	}else{
+		ct.Props["visible"] = true
+		return nil
 	}
 	if err = ct.RenderList(c, event, v1.ResourceCPU); err != nil {
 		return err
@@ -274,6 +278,7 @@ func (ct *CpuInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.Resour
 func RenderCreator() protocol.CompRender {
 	ci := CpuInfoTable{}
 	ci.Type = "Table"
+	ci.Metric = metrics.New()
 	ci.Props = getProps()
 	ci.Operations = getTableOperation()
 	ci.State = table.State{}

@@ -15,6 +15,7 @@ package common
 
 import (
 	"errors"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -107,6 +108,7 @@ var (
 	ResourceEmptyErr          = errors.New("node resource is empty")
 	ProtocolComponentEmptyErr = errors.New("component is nil or property empty")
 	BundleEmptyErr            = errors.New("bundle is empty")
+	NothingToBeDoneErr            = errors.New("nothing to be done")
 
 	TypeNotAvailableErr = errors.New("type not available")
 	ResourceNotFoundErr = errors.New("resource type not available")
@@ -114,19 +116,22 @@ var (
 	//util error
 	PtrRequiredErr = errors.New("ptr is required")
 )
-var nodeStatusMap = map[int][]SteveStatusEnum{
-	NodeStatusReady:  {NodeSuccess, NodeSuccessCN},
-	NodeStatusFreeze: {NodeFreeze, NodeFreezeCN},
-	NodeStatusError:  {NodeError, NodeErrorCN},
-}
+var (
+	nodeStatusMap = map[int][]SteveStatusEnum{
+		NodeStatusReady:  {NodeSuccess, NodeSuccessCN},
+		NodeStatusFreeze: {NodeFreeze, NodeFreezeCN},
+		NodeStatusError:  {NodeError, NodeErrorCN},
+	}
 
-var podStatusMap = map[SteveStatusEnum][]SteveStatusEnum{
-	PodRunning:   {PodRunning, PodRunningCN},
-	PodPending:   {PodPending, PodPendingCN},
-	PodSuccessed: {PodSuccessed, PodSuccessedCN},
-	PodFailed:    {PodFailed, PodFailedCN},
-	PodUnknown:   {PodUnknown, PodUnknownCN},
-}
+	podStatusMap = map[SteveStatusEnum][]SteveStatusEnum{
+		PodRunning:   {PodRunning, PodRunningCN},
+		PodPending:   {PodPending, PodPendingCN},
+		PodSuccessed: {PodSuccessed, PodSuccessedCN},
+		PodFailed:    {PodFailed, PodFailedCN},
+		PodUnknown:   {PodUnknown, PodUnknownCN},
+	}
+
+)
 
 type ChartDataItem struct {
 	Value float64 `json:"value"`

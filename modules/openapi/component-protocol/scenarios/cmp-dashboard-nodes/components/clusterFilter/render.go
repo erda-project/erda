@@ -15,7 +15,6 @@ package clusterFilter
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -62,26 +61,6 @@ func (i *ComponentFilter) SetCtxBundle(b protocol.ContextBundle) error {
 	return nil
 }
 
-// GenComponentState mapping c.State to i.State
-func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return common.ProtocolComponentEmptyErr
-	}
-	var state State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal components state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal components state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	i.State = state
-	return nil
-}
-
 func (i *ComponentFilter) SetComponentValue() {
 	i.Props = props
 	i.Operations = ops
@@ -91,16 +70,9 @@ func (i *ComponentFilter) SetComponentValue() {
 
 // RenderProtocol 渲染组件
 func (i *ComponentFilter) RenderProtocol(c *apistructs.Component) error {
-	stateValue, err := json.Marshal(i.State)
-	if err != nil {
+	if err := common.Transfer(i.State,&c.State);err != nil {
 		return err
 	}
-	var state map[string]interface{}
-	err = json.Unmarshal(stateValue, &state)
-	if err != nil {
-		return err
-	}
-	c.State = state
 	c.Props = i.Props
 	c.Operations = i.Operations
 	return nil

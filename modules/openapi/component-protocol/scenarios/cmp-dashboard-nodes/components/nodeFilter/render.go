@@ -15,13 +15,12 @@ package nodeFilter
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
 )
 
 var (
@@ -63,26 +62,6 @@ func (i *NodeFilter) SetCtxBundle(b protocol.ContextBundle) error {
 	return nil
 }
 
-// GenComponentState mapping c.State to i.State
-func (i *NodeFilter) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
-		return common.ProtocolComponentEmptyErr
-	}
-	var state filter.State
-	cont, err := json.Marshal(c.State)
-	if err != nil {
-		logrus.Errorf("marshal components state failed, content:%v, err:%v", c.State, err)
-		return err
-	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal components state failed, content:%v, err:%v", cont, err)
-		return err
-	}
-	i.State = state
-	return nil
-}
-
 func (i *NodeFilter) SetComponentValue() {
 	i.Props = props
 	i.Operations = ops
@@ -92,16 +71,9 @@ func (i *NodeFilter) SetComponentValue() {
 
 // RenderProtocol 渲染组件
 func (i *NodeFilter) RenderProtocol(c *apistructs.Component) error {
-	stateValue, err := json.Marshal(i.State)
-	if err != nil {
+	if err := common.Transfer(i.State,&c.State);err != nil{
 		return err
 	}
-	var state map[string]interface{}
-	err = json.Unmarshal(stateValue, &state)
-	if err != nil {
-		return err
-	}
-	c.State = state
 	c.Props = i.Props
 	c.Operations = i.Operations
 	return nil
@@ -109,7 +81,6 @@ func (i *NodeFilter) RenderProtocol(c *apistructs.Component) error {
 
 func (i *NodeFilter) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	var (
-		state filter.State
 		ops   []filter.Options
 		err   error
 	)
@@ -117,10 +88,9 @@ func (i *NodeFilter) Render(ctx context.Context, c *apistructs.Component, s apis
 	if err = i.SetCtxBundle(bdl); err != nil {
 		return err
 	}
-	if err = common.Transfer(c.State, &state); err != nil {
+	if err = common.Transfer(c.State, &i.State); err != nil {
 		return err
 	}
-	i.State = state
 	switch event.Operation {
 	case apistructs.InitializeOperation:
 		ops, err = i.getFilterOptions()
@@ -128,10 +98,10 @@ func (i *NodeFilter) Render(ctx context.Context, c *apistructs.Component, s apis
 			return err
 		}
 		i.State.Conditions[1].Options = ops
+		i.SetComponentValue()
 	default:
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
-	i.SetComponentValue()
 	return i.RenderProtocol(c)
 }
 
@@ -147,7 +117,6 @@ func (i *NodeFilter) getFilterOptions() ([]filter.Options, error) {
 			Value: cluster.Name,
 		})
 	}
-
 	return ops, nil
 }
 

@@ -14,6 +14,7 @@
 package memChart
 
 import (
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
@@ -21,6 +22,7 @@ import (
 
 type MemChart struct {
 	CtxBdl protocol.ContextBundle
+	Metrics *metrics.MetricClient
 	State  table.State            `json:"state"`
 	Data   []common.ChartDataItem `json:"data"`
 }

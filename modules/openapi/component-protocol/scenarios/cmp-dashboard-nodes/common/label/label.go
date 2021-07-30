@@ -11,18 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cpuChart
+package label
 
-import (
-	"github.com/erda-project/erda/modules/cmp/metrics"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
-)
-
-type CpuChart struct {
-	CtxBdl protocol.ContextBundle
-	Metric *metrics.MetricClient
-	State  table.State            `json:"state"`
-	Data   []common.ChartDataItem `json:"data"`
+type Label struct {
+	RenderType string `json:"render_type"`
+	Name string `json:"name"`
+	Value string `json:"value"`
+	Group string `json:"group"`
 }
+

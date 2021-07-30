@@ -15,22 +15,25 @@ package memChart
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
+	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 )
 
 var (
-	metricsServer   = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
 	defaultDuration = 24 * time.Hour
+	sqlStatement    = `SELECT mem_used_percent, timestamp FROM status_page 
+	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname 
+	ORDER BY TIMESTAMP DESC`
 )
 
 func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -53,19 +56,17 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 	}
 	req := &pb.QueryWithInfluxFormatRequest{
-		Start:   chart.State.Start.String(),
-		End:     time.Now().String(),
-		Filters: nil,
-		Options: nil,
-		Statement: `SELECT cpu_usage_active, timestamp FROM status_page 
-	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname 
-	ORDER BY TIMESTAMP DESC`,
+		Start:     chart.State.Start.String(),
+		End:       time.Now().String(),
+		Filters:   nil,
+		Options:   nil,
+		Statement: sqlStatement,
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue(chart.State.ClusterName),
 			"hostname":     structpb.NewStringValue(chart.State.Name),
 		},
 	}
-	if resp, err = metricsServer.QueryWithInfluxFormat(context.Background(), req); err != nil {
+	if resp, err = chart.Metrics.Query( req,string(v1.ResourceMemory)); err != nil {
 		return err
 	}
 	var items []common.ChartDataItem
@@ -86,5 +87,6 @@ func (chart *MemChart) Render(ctx context.Context, c *apistructs.Component, s ap
 }
 func RenderCreator() protocol.CompRender {
 	mc := MemChart{}
+	mc.Metrics = metrics.New()
 	return &mc
 }

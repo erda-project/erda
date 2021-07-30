@@ -24,6 +24,9 @@ func Transfer(a, b interface{}) error {
 	if reflect.ValueOf(b).Kind() != reflect.Ptr {
 		return PtrRequiredErr
 	}
+	if a == nil {
+		return NothingToBeDoneErr
+	}
 	aBytes, err := json.Marshal(a)
 	if err != nil {
 		return err
@@ -105,6 +108,8 @@ func GetNodeStatus(status int) []SteveStatusEnum {
 func GetPodStatus(status SteveStatusEnum) []SteveStatusEnum {
 	return podStatusMap[status]
 }
+
+// SortByString sort by string value
 func SortByString(data []interface{}, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
@@ -116,6 +121,8 @@ func SortByString(data []interface{}, sortColumn string, asc bool) {
 
 	})
 }
+
+// SortByNode sort by node struct
 func SortByNode(data []interface{}, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])
@@ -127,7 +134,7 @@ func SortByNode(data []interface{}, sortColumn string, asc bool) {
 	})
 }
 
-// SortByDistribution
+// SortByDistribution sort by percent
 func SortByDistribution(data []interface{}, sortColumn string, asc bool) {
 	sort.Slice(data, func(i, j int) bool {
 		a := reflect.ValueOf(data[i])

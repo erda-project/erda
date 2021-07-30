@@ -15,9 +15,7 @@ package podTable
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"reflect"
 	"strings"
 
@@ -25,12 +23,11 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/tab"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/resourceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -43,26 +40,26 @@ const (
 
 var tableProperties = map[string]interface{}{
 	"rowKey": "name",
+	// todo update dataindex
 	"columns": []table.Columns{
 		{DataIndex: "status", Title: "状态"},
 		{DataIndex: "pod", Title: "名称"},
 		{DataIndex: "role", Title: "命名空间"},
-		{DataIndex: "distribuTion", Title: "cpu分配量"},
+		{DataIndex: "distributionRate", Title: "cpu分配量"},
 		{DataIndex: "use", Title: "cpu水位(使用量/限制量)"},
-		{DataIndex: "distribuTionRate", Title: "内存分配量"},
-		{DataIndex: "distribuTionRate", Title: "内存水位(使用量/限制量)"},
-		{DataIndex: "distribuTionRate", Title: "容器就绪"},
-		{DataIndex: "distribuTionRate", Title: "重启次数"},
-		{DataIndex: "distribuTionRate", Title: "IP"},
-		{DataIndex: "distribuTionRate", Title: "节点"},
-		{DataIndex: "distribuTionRate", Title: "存活时间"},
-		{DataIndex: "distribuTionRate", Title: "工作负载"},
+		{DataIndex: "distribution", Title: "内存分配量"},
+		{DataIndex: "distribution", Title: "内存水位(使用量/限制量)"},
+		{DataIndex: "distribution", Title: "容器就绪"},
+		{DataIndex: "restart", Title: "重启次数"},
+		{DataIndex: "ip", Title: "IP"},
+		{DataIndex: "node", Title: "节点"},
+		{DataIndex: "distribution", Title: "存活时间"},
+		{DataIndex: "distribution", Title: "工作负载"},
 	},
 	"bordered":        true,
 	"selectable":      true,
 	"pageSizeOptions": []string{"10", "20", "50", "100"},
 }
-var metricsServer = servicehub.New().Service("metrics-query").(pb.MetricServiceServer)
 
 func (pt *PodInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	pt.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
@@ -75,7 +72,6 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 			return nil
 		}
 		switch event.Operation {
-
 		case apistructs.CMPDashboardChangePageSizeOperationKey:
 			if err := pt.RenderChangePageSize(event.OperationData); err != nil {
 				return err
@@ -93,6 +89,9 @@ func (pt *PodInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 		default:
 			logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
 		}
+	}else{
+		pt.Props["visible"] = false
+		return nil
 	}
 	if err := pt.RenderList(c, event); err != nil {
 		return err
@@ -376,45 +375,6 @@ func getLabelOperation(rowId string) map[string]table.Operation {
 	}
 }
 
-func getNodeOperation() map[string]table.Operation {
-	return map[string]table.Operation{
-		"click": {Key: "goto", Target: "orgRoot"},
-	}
-}
-
-func getNodeAddress(addrs []v1.NodeAddress) string {
-	for _, addr := range addrs {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address
-		}
-	}
-	return ""
-}
-
-func (pt *PodInfoTable) updateTable(c *apistructs.Component) error {
-	var (
-		stateValue []byte
-		err        error
-		state      map[string]interface{}
-	)
-
-	if stateValue, err = json.Marshal(c.State); err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(stateValue, &state); err != nil {
-		return err
-	}
-
-	c.State = state
-	c.Type = pt.Type
-
-	// export rendered components data
-	c.Operations = pt.Operations
-	c.Props = getProps()
-	return nil
-}
-
 func RenderCreator() protocol.CompRender {
 	pi := PodInfoTable{}
 	pi.Type = "Table"
@@ -424,40 +384,3 @@ func RenderCreator() protocol.CompRender {
 	return &pi
 }
 
-func GetOpsInfo(opsData interface{}) (*table.Meta, error) {
-	if opsData == nil {
-		return nil, common.OperationsEmptyErr
-	}
-	var op table.Operation
-	cont, err := json.Marshal(opsData)
-	if err != nil {
-		logrus.Errorf("marshal inParams failed, content:%v, err:%v", opsData, err)
-		return nil, err
-	}
-	err = json.Unmarshal(cont, &op)
-	if err != nil {
-		logrus.Errorf("unmarshal move out request failed, content:%v, err:%v", cont, err)
-		return nil, err
-	}
-	meta := op.Meta.(table.Meta)
-	return &meta, nil
-}
-func (pt *PodInfoTable) RenderChangePageSize(ops interface{}) error {
-	meta, err := GetOpsInfo(ops)
-	if err != nil {
-		return err
-	}
-	pt.State.PageNo = 1
-	pt.State.PageSize = meta.PageSize
-	return nil
-}
-
-func (pt *PodInfoTable) RenderChangePageNo(ops interface{}) error {
-	meta, err := GetOpsInfo(ops)
-	if err != nil {
-		return err
-	}
-	pt.State.PageNo = meta.PageNo
-	pt.Props = getProps()
-	return nil
-}
