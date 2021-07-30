@@ -16,7 +16,6 @@ package k8s
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
@@ -126,9 +125,6 @@ func init() {
 		bdl := bundle.New(bundle.WithCoreServices())
 		syncer := instanceinfosync.NewSyncer(clustername, k.addr, dbclient, bdl, k.pod, k.sts, k.deploy, k.event)
 
-		if options["IS_EDAS"] == "true" {
-			return k, nil
-		}
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
 
@@ -273,66 +269,6 @@ func getIstioEngine(info apistructs.ClusterInfoData) (istioctl.IstioEngine, erro
 	return localEngine, nil
 }
 
-// GetClient get http client with cluster info.
-func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
-	inetPortal := "inet://"
-
-	hcOptions := []httpclient.OpOption{
-		httpclient.WithHTTPS(),
-	}
-
-	// check mange config type
-	switch manageConfig.Type {
-	case apistructs.ManageProxy, apistructs.ManageToken:
-		// cluster-agent -> (register) cluster-dialer -> (patch) cluster-manager
-		// -> (update) eventBox -> (update) scheduler -> scheduler reload executor
-		if manageConfig.Token == "" || manageConfig.Address == "" {
-			return "", nil, fmt.Errorf("token or address is empty")
-		}
-
-		hc := httpclient.New(hcOptions...)
-		hc.BearerTokenAuth(manageConfig.Token)
-
-		if manageConfig.Type == apistructs.ManageToken {
-			return manageConfig.Address, hc, nil
-		}
-
-		// parseInetAddr parse inet addr, will add proxy header in custom http request
-		return fmt.Sprintf("%s%s/%s", inetPortal, clusterName, manageConfig.Address), hc, nil
-	case apistructs.ManageCert:
-		if len(manageConfig.KeyData) == 0 ||
-			len(manageConfig.CertData) == 0 {
-			return "", nil, fmt.Errorf("cert or key is empty")
-		}
-
-		certBase64, err := base64.StdEncoding.DecodeString(manageConfig.CertData)
-		if err != nil {
-			return "", nil, err
-		}
-		keyBase64, err := base64.StdEncoding.DecodeString(manageConfig.KeyData)
-		if err != nil {
-			return "", nil, err
-		}
-
-		var certOption httpclient.OpOption
-
-		certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, nil)
-
-		if len(manageConfig.CaData) != 0 {
-			caBase64, err := base64.StdEncoding.DecodeString(manageConfig.CaData)
-			if err != nil {
-				return "", nil, err
-			}
-			certOption = httpclient.WithHttpsCertFromJSON(certBase64, keyBase64, caBase64)
-		}
-		hcOptions = append(hcOptions, certOption)
-
-		return manageConfig.Address, httpclient.New(hcOptions...), nil
-	default:
-		return "", nil, fmt.Errorf("manage type is not support")
-	}
-}
-
 // New new kubernetes executor struct
 func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
 	// get cluster from cluster manager
@@ -348,7 +284,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
 	}
 
-	addr, client, err := GetClient(clusterName, cluster.ManageConfig)
+	addr, client, err := util.GetClient(clusterName, cluster.ManageConfig)
 	if err != nil {
 		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
 		return nil, err
