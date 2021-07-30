@@ -14,43 +14,10 @@
 package utils
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"math/rand"
-	"unsafe"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-var (
-	APPLICATION_CONFIG_PATH = "conf/application.yml"
-	TEMPLATE_JSON_PATH      = "conf/template.json"
-	IPDB_PATH               = "conf/ipdata.dat"
-	TA_JS_PATH              = "static/ta.js"
-	TRANSLATE_PATH          = "conf/translate.yml"
-)
-
-func UUID() (string, error) {
-	u := uuid.NewV4()
-	return u.String(), nil
-}
-
-func GetMD5Base64(bytes []byte) string {
-	md5Ctx := sha256.New()
-	md5Ctx.Write(bytes)
-	md5Value := md5Ctx.Sum(nil)
-	return base64.RawURLEncoding.EncodeToString(md5Value)
-}
-
-func GetMD5Base64WithLegth(bytes []byte, maxLength int) string {
-	res := GetMD5Base64(bytes)
-	if len(res) > maxLength {
-		res = res[:maxLength]
-	}
-	return res
-}
 
 func RandomString(n int) string {
 	b := make([]byte, n)
@@ -58,8 +25,4 @@ func RandomString(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func StringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
 }

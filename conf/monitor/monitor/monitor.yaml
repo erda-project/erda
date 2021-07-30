@@ -125,8 +125,8 @@ org-apis:
 runtime-apis:
 project-apis:
 erda.core.monitor.settings:
-chart-block:
-  preset_dashboards: "${CONFIG_PATH}/preset-dashboards"
+erda.core.monitor.dataview:
+dataview-v1:
 template:
 
 i18n:

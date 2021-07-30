@@ -14,6 +14,7 @@
 package browser
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
@@ -25,7 +26,6 @@ import (
 	"github.com/varstr/uaparser"
 
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/browser/timing"
 )
 
@@ -70,7 +70,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 	dp, err := url.Parse(data.Get("dp"))
 	if err == nil {
-		metric.Tags["doc_path"] = utils.GetPath(dp.Path)
+		metric.Tags["doc_path"] = getPath(dp.Path)
 	}
 	name := data.Get("t")
 	switch name {
@@ -200,8 +200,8 @@ func (p *provider) handleEvent(metric *metrics.Metric, data url.Values) error {
 	metric.Tags["x"] = data.Get("x")
 	metric.Tags["y"] = data.Get("y")
 	metric.Tags["xp"] = data.Get("xp")
-	metric.Fields["x"] = utils.ParseInt64(data.Get("x"), 0)
-	metric.Fields["y"] = utils.ParseInt64(data.Get("y"), 0)
+	metric.Fields["x"] = parseInt64(data.Get("x"), 0)
+	metric.Fields["y"] = parseInt64(data.Get("y"), 0)
 	return nil
 }
 
@@ -302,11 +302,11 @@ func (p *provider) handleError(metric *metrics.Metric, data url.Values) error {
 func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error {
 	metric.Name = "ta_req"
 	_ = appendMobileInfoIfNeed(metric, data)
-	metric.Fields["tt"] = utils.ParseInt64(data.Get("tt"), 0)
-	metric.Fields["req"] = utils.ParseInt64(data.Get("req"), 0)
-	metric.Fields["res"] = utils.ParseInt64(data.Get("res"), 0)
+	metric.Fields["tt"] = parseInt64(data.Get("tt"), 0)
+	metric.Fields["req"] = parseInt64(data.Get("req"), 0)
+	metric.Fields["res"] = parseInt64(data.Get("res"), 0)
 	statusCodeStr := data.Get("st")
-	statusCode := utils.ParseInt64(statusCodeStr, 0)
+	statusCode := parseInt64(statusCodeStr, 0)
 	reqError := false
 	if statusCode >= 400 {
 		reqError = true
@@ -315,7 +315,7 @@ func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error 
 	metric.Fields["status"] = statusCode
 	reqURL := data.Get("url")
 	metric.Tags["url"] = reqURL
-	metric.Tags["req_path"] = utils.GetPath(reqURL)
+	metric.Tags["req_path"] = getPath(reqURL)
 	metric.Tags["status_code"] = statusCodeStr
 	metric.Tags["method"] = data.Get("me")
 	return nil
@@ -324,7 +324,7 @@ func (p *provider) handleRequest(metric *metrics.Metric, data url.Values) error 
 func (p *provider) handleTiming(metric *metrics.Metric, data url.Values) error {
 	metric.Name = "ta_timing"
 	if appendMobileInfoIfNeed(metric, data) {
-		metric.Fields["plt"] = utils.ParseInt64(data.Get("nt"), 0)
+		metric.Fields["plt"] = parseInt64(data.Get("nt"), 0)
 	} else {
 		ua := data.Get("ua")
 		handleUA(ua, metric)
@@ -425,7 +425,7 @@ func (p *provider) handleTiming(metric *metrics.Metric, data url.Values) error {
 
 func appendMobileInfoIfNeed(metric *metrics.Metric, data url.Values) bool {
 	ua := data.Get("ua")
-	if utils.IsMobile(ua) {
+	if isMobile(ua) {
 		metric.Name = metric.Name + "_mobile"
 		metric.Tags["type"] = "mobile"
 		appendMobileInfo(metric, data)
@@ -480,4 +480,37 @@ func handleUA(ua string, metric *metrics.Metric) {
 			}
 		}
 	}
+}
+
+func isMobile(ua string) bool {
+	ua = strings.ToLower(ua)
+	return ua == "ios" || ua == "android"
+}
+
+func getPath(s string) string {
+	return replaceNumber(s)
+}
+
+func replaceNumber(path string) string {
+	parts := strings.Split(path, "/")
+	last := len(parts) - 1
+	var buffer bytes.Buffer
+	for i, item := range parts {
+		if _, err := strconv.ParseInt(item, 10, 64); err == nil {
+			buffer.WriteString("{number}")
+		} else {
+			buffer.WriteString(item)
+		}
+		if i != last {
+			buffer.WriteString("/")
+		}
+	}
+	return buffer.String()
+}
+
+func parseInt64(value string, def int64) int64 {
+	if num, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return num
+	}
+	return def
 }

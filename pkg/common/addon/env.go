@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package env
+package addon
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 // GetHostIndex .
 func GetHostIndex() string {
 	hostname, err := os.Hostname()
-	fmt.Println("hostname", hostname)
 	if err == nil {
 		idx := strings.LastIndex(hostname, "-")
 		if idx > 0 {
@@ -36,8 +35,8 @@ func GetHostIndex() string {
 	return ""
 }
 
-// Override .
-func Override() {
+// OverrideEnvs .
+func OverrideEnvs() {
 	idx := GetHostIndex()
 	if len(idx) <= 0 {
 		return

@@ -18,8 +18,6 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-
-	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 var (
@@ -120,7 +118,7 @@ func ParseResourceTiming(s string) (ResourceTimingList, error) {
 
 		rt := ResourceTiming{
 			Name:                  key,
-			InitiatorType:         utils.ParseInt64(typeKey, 0),
+			InitiatorType:         parseInt64(typeKey, 0),
 			StartTime:             times[0],
 			ResponseEnd:           times[1],
 			ResponseStart:         times[2],
@@ -153,10 +151,10 @@ func decodeResource(input map[string]interface{}, output map[string]string, preK
 func resTimingDecode(timing string) [11]int64 {
 	var times [11]int64
 	parts := strings.Split(timing, ",")
-	t := utils.ParseInt64WithRadix(parts[0], 0, 36)
+	t := parseInt64WithRadix(parts[0], 0, 36)
 	times[0] = t
 	for i := 1; i < 11 && i < len(parts); i++ {
-		times[i] = t + utils.ParseInt64WithRadix(parts[i], 0, 36)
+		times[i] = t + parseInt64WithRadix(parts[i], 0, 36)
 	}
 	return times
 }

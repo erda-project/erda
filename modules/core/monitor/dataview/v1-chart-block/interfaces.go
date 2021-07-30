@@ -23,7 +23,6 @@ import (
 
 type DashboardAPI interface {
 	CreateDashboard(block *UserBlock) (dash *DashboardBlockDTO, err error)
-	// GenerateDashboardWithViewAPIList(api []*API) (block *UserBlock, err error)
 }
 
 func (p *provider) CreateDashboard(body *UserBlock) (dash *DashboardBlockDTO, err error) {

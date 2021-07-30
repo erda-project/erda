@@ -30,12 +30,12 @@ var (
 // systemBlock .
 type SystemBlock struct {
 	ID         string         `gorm:"not null;unique_index:id;type:varchar(64)" json:"id"`
-	Name       string         `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID"  json:"name" binding:"required"`
+	Name       string         `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID" json:"name" binding:"required"`
 	Desc       string         `json:"desc"`
 	Domain     string         `json:"domain"`
 	Scope      string         `gorm:"unique_index: Name, Scope, ScopeID" json:"scope"`
 	ScopeID    string         `gorm:"unique_index: Name, Scope, ScopeID" json:"scopeId"`
-	ViewConfig *ViewConfigDTO `gorm:"not null;type:text"json:"viewConfig"`
+	ViewConfig *ViewConfigDTO `gorm:"not null;type:text" json:"viewConfig"`
 	DataConfig *dataConfigDTO `gorm:"type:text" json:"dataConfig"`
 	CreatedAt  time.Time      `json:"createdAt"`
 	UpdatedAt  time.Time      `json:"updatedAt"`
@@ -48,7 +48,7 @@ func (SystemBlock) TableName() string { return tableSystemBlock }
 // userBlock .
 type UserBlock struct {
 	ID         string         `gorm:"not null;unique_index: Name, Scope, ScopeID,ID;type:varchar(64)" json:"id"`
-	Name       string         `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID,ID"  json:"name" binding:"required"`
+	Name       string         `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID,ID" json:"name" binding:"required"`
 	Desc       string         `json:"desc"`
 	Domain     string         `json:"domain"`
 	Scope      string         `gorm:"unique_index: Name, Scope, ScopeID,ID" json:"scope"`

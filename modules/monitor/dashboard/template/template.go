@@ -14,16 +14,17 @@
 package template
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func (p *provider) createTemplate(query struct {
@@ -33,7 +34,7 @@ func (p *provider) createTemplate(query struct {
 		body.ScopeID = query.ScopeID
 	}
 	if len(body.ID) == 0 {
-		body.ID = uuid.UUID()
+		body.ID = hex.EncodeToString(uuid.NewV4().Bytes())
 	}
 	if err := p.db.templateDB.Save(&body); err != nil {
 		if mysql.IsUniqueConstraintError(err) {

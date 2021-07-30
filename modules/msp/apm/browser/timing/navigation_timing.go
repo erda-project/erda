@@ -15,8 +15,6 @@ package timing
 
 import (
 	"strings"
-
-	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // NavigationTiming .
@@ -44,10 +42,10 @@ func ParseNavigationTiming(nt string) *NavigationTiming {
 	}
 	times := strings.Split(nt, ",")
 	ts := make([]int64, 13)
-	t := utils.ParseInt64WithRadix(times[0], 0, 36)
+	t := parseInt64WithRadix(times[0], 0, 36)
 	ts[0] = t
 	for i := 1; i < 13 && i < len(times); i++ {
-		ts[i] = utils.ParseInt64WithRadix(times[i], 0, 36)
+		ts[i] = parseInt64WithRadix(times[i], 0, 36)
 		if ts[i] > t {
 			ts[i] = 0
 		}

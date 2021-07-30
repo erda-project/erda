@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 
 	dicestructs "github.com/erda-project/erda/apistructs"
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 )
 
 type reportFrequency string

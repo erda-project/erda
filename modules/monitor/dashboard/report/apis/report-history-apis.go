@@ -18,7 +18,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	api "github.com/erda-project/erda/pkg/common/httpapi"

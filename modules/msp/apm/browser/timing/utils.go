@@ -11,17 +11,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package block
+package timing
 
 import (
-	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/monitor/common"
-	"github.com/erda-project/erda/modules/monitor/common/permission"
+	"strconv"
 )
 
-func (p *provider) getPermissionByScopeId(action permission.Action) httpserver.Interceptor {
-	return permission.Intercepter(
-		permission.ScopeProject, permission.ScopeIdFromParams(p.authDb),
-		common.ResourceMicroService, action,
-	)
+func parseInt64(value string, def int64) int64 {
+	if num, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return num
+	}
+	return def
+}
+
+func parseInt64WithRadix(value string, def int64, radix int) int64 {
+	if num, err := strconv.ParseInt(value, radix, 64); err == nil {
+		return num
+	}
+	return def
 }
