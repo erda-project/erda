@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -555,10 +556,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 		return 0, ErrorAlreadyExists
 	}
 	// create alert
-	index, err := a.generateCustomizeAlertIndex()
-	if err != nil {
-		return 0, err
-	}
+	index := a.generateCustomizeAlertIndex()
 
 	// related to the dashboard
 	dashboardID, err := NewDashboard(a).CreateChartDashboard(alertDetail)
@@ -631,8 +629,8 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 	return alertDetail.Id, nil
 }
 
-func (a *Adapt) generateCustomizeAlertIndex() (string, error) {
-	return utils.UUID()
+func (a *Adapt) generateCustomizeAlertIndex() string {
+	return uuid.NewV4().String()
 }
 
 // UpdateCustomizeAlert .
