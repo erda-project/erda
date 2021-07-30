@@ -15,6 +15,7 @@ package clusters
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -34,7 +35,7 @@ func (c *Clusters) UpdateCluster(req apistructs.CMPClusterUpdateRequest, header 
 	mc = cluster.ManageConfig
 
 	// if credential content is empty, use latest credential data.
-	if req.Credential.Content != "" {
+	if req.Credential.Content != "" || strings.ToUpper(req.CredentialType) == ProxyType {
 		// parse manage config from credential info
 		mc, err = ParseManageConfigFromCredential(req.CredentialType, req.Credential)
 		if err != nil {

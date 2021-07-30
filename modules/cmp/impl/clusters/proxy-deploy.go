@@ -96,7 +96,7 @@ spec:
             - name: "CHART_ERDA_ADDONS_VALUES"
               value: "registry.networkMode=''"
             - name: "CHART_ERDA_VALUES"
-              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},masterClusterDomain={{.MasterClusterDomain}}"
+              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},masterCluster.domain={{.MasterClusterDomain}},masterCluster.protocol={{.MasterClusterProtocol}}"
           command:
             - sh
             - -c

@@ -133,6 +133,10 @@ func (c *Client) Execute() error {
 
 		labels := c.parseLabels()
 
+		if len(labels) == 0 {
+			return nil
+		}
+
 		logrus.Infof("start to label nodes, labels: %+v", labels)
 
 		for _, node := range nodes.Items {
@@ -205,6 +209,9 @@ func (c *Client) getInitCharts() []*erdahelm.ChartSpec {
 
 func (c *Client) parseLabels() map[string]string {
 	res := make(map[string]string, 0)
+	if c.config.NodeLabels == "" {
+		return res
+	}
 
 	labels := strings.Split(c.config.NodeLabels, ",")
 	for _, label := range labels {
