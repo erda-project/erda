@@ -14,6 +14,7 @@
 package menu
 
 import (
+	"github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -47,6 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.menuService = &menuService{
 		p:                p,
+		db:               &db.MenuConfigDB{DB: p.DB},
 		instanceTenantDB: &instancedb.InstanceTenantDB{DB: p.DB},
 		instanceDB:       &instancedb.InstanceDB{DB: p.DB},
 		bdl:              p.bdl,
