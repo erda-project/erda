@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda/modules/monitor/notify/template/db"
 	"github.com/erda-project/erda/modules/monitor/notify/template/model"
-	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 var (
@@ -62,10 +62,7 @@ func getNotifyTemplateList(scope, name, nType string) (list []*model.GetNotifyRe
 
 func ToNotifyConfig(c *model.CreateUserDefineNotifyTemplate) (*db.NotifyConfig, error) {
 	//generate template_id
-	templateID, err := utils.UUID()
-	if err != nil {
-		return nil, err
-	}
+	templateID := uuid.NewV4().String()
 	metadata := model.Metadata{
 		Name:   c.Name,
 		Type:   "custom",

@@ -9,7 +9,7 @@ require (
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
-	github.com/alecthomas/colour v0.1.0 // indirect; indirectp
+	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.426
 	github.com/aliyun/aliyun-log-go-sdk v0.1.19
@@ -53,6 +53,7 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -125,6 +126,7 @@ require (
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210728212813-7823e685a01f
+	google.golang.org/grpc v1.39.0 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

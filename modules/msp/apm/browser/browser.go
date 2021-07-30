@@ -16,13 +16,11 @@ package browser
 import (
 	"fmt"
 
-	"github.com/labstack/gommon/log"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/monitor/utils"
+	"github.com/erda-project/erda/modules/msp/apm/browser/ipdb"
 )
 
 type config struct {
@@ -34,18 +32,18 @@ type config struct {
 type provider struct {
 	Cfg    *config
 	Log    logs.Logger
-	ipdb   *utils.Locator
+	ipdb   *ipdb.Locator
 	output writer.Writer
 	kafka  kafka.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	ipdb, err := utils.NewLocator(p.Cfg.Ipdb)
+	ipdb, err := ipdb.NewLocator(p.Cfg.Ipdb)
 	if err != nil {
 		return fmt.Errorf("fail to load ipdb: %s", err)
 	}
 	p.ipdb = ipdb
-	log.Infof("load ipdb from %s", p.Cfg.Ipdb)
+	p.Log.Infof("load ipdb from %s", p.Cfg.Ipdb)
 
 	p.kafka = ctx.Service("kafka").(kafka.Interface)
 	w, err := p.kafka.NewProducer(&p.Cfg.Output)

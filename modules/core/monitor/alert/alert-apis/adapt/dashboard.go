@@ -23,7 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/errors"
 )

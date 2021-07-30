@@ -26,8 +26,12 @@ type MonitorDB struct {
 	*gorm.DB
 }
 
+func (db *MonitorDB) query() *gorm.DB {
+	return db.Table(TableMonitor).Where("is_delete=0")
+}
+
 func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error) {
-	query := db.Table(TableMonitor)
+	query := db.query()
 	query, err := gormutil.GetQueryFilterByFields(query, monitorFieldColumns, fields)
 	if err != nil {
 		return nil, err
@@ -45,7 +49,7 @@ func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error
 // GetByTerminusKey .
 func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 	var monitor Monitor
-	result := db.Table(TableMonitor).
+	result := db.query().
 		Where("`terminus_key`=?", terminusKey).
 		Limit(1).
 		Last(&monitor)

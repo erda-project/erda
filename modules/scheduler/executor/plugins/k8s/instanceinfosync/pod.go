@@ -421,10 +421,11 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			prevContainerFinishedAt time.Time
 			prevMessage             string
 
-			currentContainerID        string
-			currentContainerStartedAt time.Time
-			currentPhase              instanceinfo.InstancePhase
-			currentMessage            string
+			currentContainerID         string
+			currentContainerStartedAt  time.Time
+			currentContainerFinishedAt *time.Time = nil
+			currentPhase               instanceinfo.InstancePhase
+			currentMessage             string
 		)
 
 		mainContainer := getMainContainerStatus(pod.Status.ContainerStatuses)
@@ -469,6 +470,11 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			if currentTerminatedContainer != nil {
 				currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
 				currentContainerStartedAt = mainContainer.State.Terminated.StartedAt.Time
+				currentContainerFinishedAt = &mainContainer.State.Terminated.FinishedAt.Time
+				if currentContainerFinishedAt.Year() < 2000 {
+					t, _ := time.Parse("2006-01", "2000-01")
+					currentContainerFinishedAt = &t
+				}
 				currentPhase = instanceinfo.InstancePhaseDead
 				if currentMessage == "" {
 					currentMessage = strutil.Join([]string{currentTerminatedContainer.Reason, currentTerminatedContainer.Message}, ", ", true)
@@ -476,6 +482,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						currentMessage = currentMessage[:1000]
 					}
 				}
+
 				exitCode = int(currentTerminatedContainer.ExitCode)
 			}
 		}
@@ -589,6 +596,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				ContainerIP:         containerIP,
 				HostIP:              hostIP,
 				StartedAt:           currentContainerStartedAt,
+				FinishedAt:          currentContainerFinishedAt,
 				CpuOrigin:           cpuOrigin,
 				CpuRequest:          cpuRequest,
 				CpuLimit:            cpuLimit,

@@ -314,6 +314,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configManageNamespaces []string, cronCompensator *pipelineyml.CronCompensator) error {
 
 	var cron *spec.PipelineCron
+	var cronID uint64
 
 	//是定时类型的流水线，切定时的表达式不为空，更新cron的配置
 	if p.TriggerMode != apistructs.PipelineTriggerModeCron && p.Extra.CronExpr != "" {
@@ -324,23 +325,22 @@ func (s *PipelineSvc) UpdatePipelineCron(p *spec.Pipeline, cronStartFrom *time.T
 			return apierrors.ErrUpdatePipelineCron.InternalError(err)
 		}
 		p.CronID = &cron.ID
-
-		if err := s.crondSvc.DistributedReloadCrond(); err != nil {
-			logrus.Errorf("[alert] distributed reload crond failed, err: %v", err)
-		}
+		cronID = cron.ID
 	}
+
 	//cron表达式为空，就需要关闭定时
 	if p.Extra.CronExpr == "" {
+		var err error
 
 		cron = constructPipelineCron(p, cronStartFrom, configManageNamespaces, cronCompensator)
-		if err := s.dbClient.DisablePipelineCron(cron); err != nil {
+		if cronID, err = s.dbClient.DisablePipelineCron(cron); err != nil {
 			return apierrors.ErrUpdatePipelineCron.InternalError(err)
 		}
 		p.CronID = nil
+	}
 
-		if err := s.crondSvc.DistributedReloadCrond(); err != nil {
-			logrus.Errorf("[alert] distributed reload crond failed, err: %v", err)
-		}
+	if err := s.crondSvc.AddIntoPipelineCrond(cronID); err != nil {
+		logrus.Errorf("[alert] add crond failed, err: %v", err)
 	}
 
 	return nil

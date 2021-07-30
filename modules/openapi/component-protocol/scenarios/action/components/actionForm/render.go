@@ -486,19 +486,17 @@ func registerActionTypeRender() {
 				}
 				formData = newMap
 				if strings.EqualFold(string(event.Operation), "changeTestSpace") {
-					if _, ok := formData["params.test_scene_set"]; ok {
-						delete(formData, "params.test_scene_set")
+					params, ok := formData["params"].(map[string]interface{})
+					if !ok {
+						return err
 					}
-					if _, ok := formData["params.test_scene"]; ok {
-						delete(formData, "params.test_scene")
+					if _, ok := params["test_scene_set"]; ok {
+						delete(params, "test_scene_set")
 					}
-					if _, ok := c.State["params.test_scene_set"]; ok {
-						delete(c.State, "params.test_scene_set")
+					if _, ok := params["test_scene"]; ok {
+						delete(params, "test_scene")
 					}
-					if _, ok := c.State["params.test_scene"]; ok {
-						delete(c.State, "params.test_scene")
-					}
-					space, _ := c.State["params.test_space"].(float64)
+					space, _ := params["test_space"].(float64)
 					spaceId := uint64(space)
 					sceneSetReq := apistructs.SceneSetRequest{
 						SpaceID: spaceId,
@@ -514,17 +512,16 @@ func registerActionTypeRender() {
 					sceneSetField.ComponentProps = map[string]interface{}{
 						"options": testSceneSets,
 					}
-					formData["params.test_space"] = spaceId
-					c.State["params.cms"] = formData["params.cms"]
-					c.State["params.test_space"] = space
+					formData["params"] = params
 				} else if strings.EqualFold(string(event.Operation), "changeTestSet") {
-					if _, ok := formData["params.test_scene"]; ok {
-						delete(formData, "params.test_scene")
+					params, ok := formData["params"].(map[string]interface{})
+					if !ok {
+						return err
 					}
-					if _, ok := c.State["params.test_scene"]; ok {
-						delete(c.State, "params.test_scene")
+					if _, ok := params["test_scene"]; ok {
+						delete(params, "test_scene")
 					}
-					space, _ := formData["params.test_space"].(float64)
+					space, _ := params["test_space"].(float64)
 					spaceId := uint64(space)
 					sceneSetReq := apistructs.SceneSetRequest{
 						SpaceID: spaceId,
@@ -541,7 +538,7 @@ func registerActionTypeRender() {
 						"options": testSceneSets,
 					}
 
-					set, _ := c.State["params.test_scene_set"].(float64)
+					set, _ := params["test_scene_set"].(float64)
 					setId := uint64(set)
 					sceneReq := apistructs.AutotestSceneRequest{
 						SetID: setId,
@@ -557,11 +554,7 @@ func registerActionTypeRender() {
 					sceneField.ComponentProps = map[string]interface{}{
 						"options": testScenes,
 					}
-					formData["params.test_space"] = space
-					formData["params.test_scene_set"] = set
-					c.State["params.cms"] = formData["params.cms"]
-					c.State["params.test_space"] = space
-					c.State["params.test_scene_set"] = set
+					formData["params"] = params
 				}
 			} else {
 				actionData, ok := bdl.InParams["actionData"].(map[string]interface{})
@@ -604,14 +597,7 @@ func registerActionTypeRender() {
 						sceneField.ComponentProps = map[string]interface{}{
 							"options": testScenes,
 						}
-						formData["params.test_space"] = space
-						formData["params.test_scene_set"] = set
-						formData["params.test_scene"] = param["test_scene"].(float64)
-						formData["params.cms"] = param["cms"].(string)
-						c.State["params.test_space"] = space
-						c.State["params.test_scene_set"] = set
-						c.State["params.test_scene"] = param["test_scene"].(float64)
-						c.State["params.test_scene_set"] = param["cms"].(string)
+						formData["params"] = params
 					}
 				}
 			}

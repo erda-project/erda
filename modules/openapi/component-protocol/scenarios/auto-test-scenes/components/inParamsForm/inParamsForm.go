@@ -297,7 +297,7 @@ func (i *ComponentInParamsForm) RenderOnSelect(opsData interface{}) error {
 					// 	cfgChildren2 = append(cfgChildren2, Input{Label: k, Value: "{{" + k + "}}", IsLeaf: true})
 					// }
 					for _, v := range cfg.APIConfig.Global {
-						cfgChildren3 = append(cfgChildren3, PropChangeOption{Label: v.Name, Value: "${{ configs.autotest." + v.Name + " }}", IsLeaf: true})
+						cfgChildren3 = append(cfgChildren3, PropChangeOption{Label: v.Name, Value: expression.GenAutotestConfigParams(v.Name), IsLeaf: true})
 					}
 					// cfgChildren1 = append(cfgChildren1, Input{Label: "Header", Value: "Header", IsLeaf: false, Children: cfgChildren2})
 					cfgChildren1 = append(cfgChildren1, PropChangeOption{Label: "Global", Value: "Global", IsLeaf: false, Children: cfgChildren3})

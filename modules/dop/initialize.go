@@ -508,6 +508,21 @@ func registerWebHook(bdl *bundle.Bundle) {
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register approval status changed event, %v", err)
 	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "pipeline_yml_update",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/cicd-crons/actions/hook-for-update"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register pipeline yml event, %v", err)
+	}
 }
 
 func exportTestFileTask(ep *endpoints.Endpoints) {
