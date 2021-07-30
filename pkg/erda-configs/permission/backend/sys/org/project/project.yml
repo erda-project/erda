@@ -320,7 +320,7 @@
 - scope: project
   resource: issue-ticket
   action: CREATE
-  role: Owner,Lead,PM,PD,Dev,QA,Reporter
+  role: Owner,Lead,PM,PD,Dev,QA,Reporter,Guest
   resource_role: Creator,Assignee
 - scope: project
   resource: issue-ticket
