@@ -19,7 +19,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
@@ -33,7 +33,7 @@ const (
 type reportTask struct {
 	ID             uint64             `gorm:"primary_key" json:"id"`
 	Name           string             `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID"  json:"name"`
-	Scope          string             `gorm:"unique_index: Name, Scope, ScopeID"json:"scope"`
+	Scope          string             `gorm:"unique_index: Name, Scope, ScopeID" json:"scope"`
 	ScopeID        string             `gorm:"unique_index: Name, Scope, ScopeID" json:"scopeId"`
 	Type           reportFrequency    `gorm:"not null"  json:"type"`
 	DashboardId    string             `gorm:"not null" json:"dashboardId" `

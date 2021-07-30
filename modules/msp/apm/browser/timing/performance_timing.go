@@ -15,8 +15,6 @@ package timing
 
 import (
 	"strings"
-
-	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
 // PerformanceTiming .
@@ -55,7 +53,7 @@ func ParsePerformanceTiming(pt string) *PerformanceTiming {
 	times := strings.Split(pt, ",")
 	ts := make([]int64, 22)
 	for i := 0; i < 22 && i < len(times); i++ {
-		ts[i] = utils.ParseInt64WithRadix(times[i], 0, 36)
+		ts[i] = parseInt64WithRadix(times[i], 0, 36)
 	}
 	performanceTiming.FirstPaintTime = ts[0]
 	if performanceTiming.FirstPaintTime < 0 {

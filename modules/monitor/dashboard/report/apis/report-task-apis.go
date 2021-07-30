@@ -14,6 +14,7 @@
 package apis
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -22,15 +23,15 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	dicestructs "github.com/erda-project/erda/apistructs"
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
-	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 )
 
@@ -381,7 +382,7 @@ func (p *provider) generatePipeline(r *reportTask) (pipeline dicestructs.Pipelin
 		return pipeline, err
 	}
 	pipeline.PipelineSource = dicestructs.PipelineSourceDice
-	pipeline.PipelineYmlName = uuid.UUID() + ".yml"
+	pipeline.PipelineYmlName = hex.EncodeToString(uuid.NewV4().Bytes()) + ".yml"
 	pipeline.ClusterName = p.Cfg.ClusterName
 	pipeline.AutoRunAtOnce = r.RunAtOnce
 	if r.Enable {

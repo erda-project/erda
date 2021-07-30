@@ -19,10 +19,11 @@ import (
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
+	// modules
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
-
-	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/dataview"
+	_ "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	_ "github.com/erda-project/erda/modules/core/monitor/log/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/index"
 	_ "github.com/erda-project/erda/modules/core/monitor/metric/query"
@@ -34,7 +35,6 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"
-	_ "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/node-topo"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/org-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/project-apis"
