@@ -673,6 +673,9 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		api.Errors.Internal(err)
 	}
+	if request.AlertType == "" {
+		alertDetail.AlertType = "micro_service_customize"
+	}
 	alertDetail.Enable = customAlertResp.Data.Enable
 	alertDetail.AlertScope = MicroServiceScope
 	alertDetail.AlertScopeId = request.TenantGroup
