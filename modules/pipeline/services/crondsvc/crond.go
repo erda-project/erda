@@ -14,43 +14,101 @@
 package crondsvc
 
 import (
-	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/cron"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const etcdCrondUpdateWatchKey = "/devops/pipeline/crond/update"
+const cronChanPrefixDeleteKey = "delete-"
+const cronChanPrefixAddKey = "add-"
 
+// Listen the key in the channel
+// decide to delete or add a scheduled task according to the prefix of the key
 func (s *CrondSvc) ListenCrond(pipelineCronFunc func(id uint64)) {
-	logrus.Info("crond: start listen")
 	for {
-		// watch: isPrefix[true], filterDelete[true], keyOnly[true]
-		err := s.js.IncludeWatch().Watch(context.Background(), etcdCrondUpdateWatchKey, false, true, true, nil,
-			func(key string, _ interface{}, t storetypes.ChangeType) error {
-				// sync update
-				logrus.Infof("crond: watched update request key, key: %s", key)
-				if _, err := s.ReloadCrond(pipelineCronFunc); err != nil {
-					logrus.Errorf("[alert] crond: failed to reload crond (%v)", err)
-					return nil
+		for key := range s.cronChan {
+			logrus.Infof("crond: watched update chan key: %s", key)
+
+			cronID, err := parseCronIDFromWatchedKey(key)
+			if err != nil {
+				logrus.Errorf("crond: failed to parse cronID from watched key, key: %s, err: %v", key, err)
+				continue
+			}
+
+			if strings.HasPrefix(key, cronChanPrefixAddKey) {
+				pc, err := s.dbClient.GetPipelineCron(cronID)
+				if err != nil {
+					logrus.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
+					continue
 				}
-				logrus.Infof("crond: watched and reload successfully")
-				return nil
-			})
-		if err != nil {
-			logrus.Errorf("[alert] crond: watch failed, err: %v", err)
+				// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name
+				err = s.crond.Remove(makePipelineCronName(cronID))
+				if err != nil {
+					logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
+					continue
+				}
+
+				// determine whether there is a scheduled task
+				if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
+					err = s.crond.AddFunc(pc.CronExpr, func() {
+						pipelineCronFunc(pc.ID)
+					}, makePipelineCronName(pc.ID))
+					if err != nil {
+						logrus.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, pc.CronExpr, err)
+						continue
+					}
+				}
+			} else if strings.HasPrefix(key, cronChanPrefixDeleteKey) {
+				err = s.crond.Remove(makePipelineCronName(cronID))
+				if err != nil {
+					logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
+					continue
+				}
+			}
+			logrus.Infof("crond: watched and reload successfully")
 		}
+		time.Sleep(10 * time.Second)
 	}
 }
 
-// DistributedReloadCrond 和 ReloadCrond 不同，触发所有 crond 实例更新任务.
-func (s *CrondSvc) DistributedReloadCrond() error {
-	return s.js.Put(context.Background(), etcdCrondUpdateWatchKey, "")
+// Remove the prefix of the key and get the cronid
+func parseCronIDFromWatchedKey(key string) (uint64, error) {
+	pipelineIDStr := strutil.TrimPrefixes(key, cronChanPrefixDeleteKey)
+	pipelineIDStr = strutil.TrimPrefixes(pipelineIDStr, cronChanPrefixAddKey)
+	return strconv.ParseUint(pipelineIDStr, 10, 64)
+}
+
+// delete the timing task of a certain timing id
+// todo Multi-instance watch etcd delete key
+func (s *CrondSvc) DeletePipelineCrond(cronID uint64) error {
+	if s.cronChan == nil {
+		return fmt.Errorf("delete cron error: cron chan was empty")
+	}
+	if cronID <= 0 {
+		return nil
+	}
+	s.cronChan <- cronChanPrefixDeleteKey + strconv.FormatUint(cronID, 10)
+	return nil
+}
+
+// add the timing task of a certain timing id
+// todo Multi-instance watch etcd add key
+func (s *CrondSvc) AddIntoPipelineCrond(cronID uint64) error {
+	if s.cronChan == nil {
+		return fmt.Errorf("delete cron error: cron chan was empty")
+	}
+	if cronID <= 0 {
+		return nil
+	}
+	s.cronChan <- cronChanPrefixAddKey + strconv.FormatUint(cronID, 10)
+	return nil
 }
 
 // ReloadCrond 触发当前 crond 实例更新任务.
@@ -80,13 +138,13 @@ func (s *CrondSvc) ReloadCrond(pipelineCronFunc func(uint64)) ([]string, error) 
 		pc := pcs[i]
 		//todo 校验pc.CronExpr是否合法
 		if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
-			if err = s.crond.AddFunc(pc.CronExpr, func() { pipelineCronFunc(pc.ID) }, makePipelineCronName(pc)); err != nil {
-				l := fmt.Sprintf("failed to load pipeline cron item: %s, err: %v", makePipelineCronName(pc), err)
+			if err = s.crond.AddFunc(pc.CronExpr, func() { pipelineCronFunc(pc.ID) }, makePipelineCronName(pc.ID)); err != nil {
+				l := fmt.Sprintf("failed to load pipeline cron item: %s, cronExpr: %v, err: %v", makePipelineCronName(pc.ID), pc.CronExpr, err)
 				logs = append(logs, l)
 				logrus.Errorln("[alert]", l)
 				continue
 			}
-			logs = append(logs, fmt.Sprintf("loaded pipeline cron item: %s", makePipelineCronName(pc)))
+			logs = append(logs, fmt.Sprintf("loaded pipeline cron item: %s, cronExpr: %v", makePipelineCronName(pc.ID), pc.CronExpr))
 		}
 	}
 
@@ -123,8 +181,8 @@ func (s *CrondSvc) crondSnapshot() []string {
 	return logs
 }
 
-func makePipelineCronName(cron spec.PipelineCron) string {
-	return fmt.Sprintf("pipeline-cron[%d]-expr[%s]-source[%s]-ymlname[%s]", cron.ID, cron.CronExpr, cron.PipelineSource, cron.PipelineYmlName)
+func makePipelineCronName(cronID uint64) string {
+	return fmt.Sprintf("pipeline-cron[%v]", cronID)
 }
 
 func makeCleanBuildCacheJobName(cronExpr string) string {
