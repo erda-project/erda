@@ -24,8 +24,12 @@ type InstanceTenantDB struct {
 	*gorm.DB
 }
 
+func (db *InstanceTenantDB) query() *gorm.DB {
+	return db.Table(TableInstanceTenant).Where("`is_deleted`='N'")
+}
+
 func (db *InstanceTenantDB) GetByFields(fields map[string]interface{}) (*InstanceTenant, error) {
-	query := db.Table(TableInstanceTenant)
+	query := db.query()
 	query, err := gormutil.GetQueryFilterByFields(query, instanceTenantFieldColumns, fields)
 	if err != nil {
 		return nil, err
@@ -51,7 +55,7 @@ func (db *InstanceTenantDB) GetByTenantGroup(group string) ([]*InstanceTenant, e
 		return nil, nil
 	}
 	var list []*InstanceTenant
-	if err := db.Table(TableInstanceTenant).
+	if err := db.query().
 		Where("tenant_group=?", group).Find(&list).Error; err != nil {
 		return nil, err
 	}
@@ -63,7 +67,7 @@ func (db *InstanceTenantDB) GetClusterNameByTenantGroup(group string) (string, e
 		return "", nil
 	}
 	var list []*InstanceTenant
-	if err := db.Table(TableInstanceTenant).
+	if err := db.query().
 		Where("tenant_group=?", group).Limit(1).Find(&list).Error; err != nil {
 		return "", err
 	}
