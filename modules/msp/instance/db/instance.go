@@ -24,8 +24,12 @@ type InstanceDB struct {
 	*gorm.DB
 }
 
+func (db *InstanceDB) query() *gorm.DB {
+	return db.Table(TableInstance).Where("`is_deleted`='N'")
+}
+
 func (db *InstanceDB) GetByFields(fields map[string]interface{}) (*Instance, error) {
-	query := db.Table(TableInstance)
+	query := db.query()
 	query, err := gormutil.GetQueryFilterByFields(query, instanceFieldColumns, fields)
 	if err != nil {
 		return nil, err
@@ -48,10 +52,9 @@ func (db *InstanceDB) GetByID(id string) (*Instance, error) {
 
 func (db *InstanceDB) GetByEngineAndVersionAndAz(engine string, version string, az string) (*Instance, error) {
 	var list []*Instance
-	if err := db.Table(TableInstance).
+	if err := db.query().
 		Where("`engine`=?", engine).
 		Where("`version`=?", version).
-		Where("`is_deleted`=?", "N").
 		Where("`az`=?", az).Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
@@ -65,7 +68,7 @@ func (db *InstanceDB) GetByEngineAndVersionAndAz(engine string, version string, 
 
 func (db *InstanceDB) GetByEngineAndTenantGroup(engine string, tenantGroup string) (*Instance, error) {
 	var list []*Instance
-	if err := db.Table(TableInstance).
+	if err := db.query().
 		Where("`engine`=?", engine).
 		Where("`tenant_group`=?", tenantGroup).
 		Limit(1).
