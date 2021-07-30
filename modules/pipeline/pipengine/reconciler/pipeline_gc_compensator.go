@@ -66,6 +66,7 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 	var req apistructs.PipelinePageListRequest
 	req.PageNum = pageNum
 	req.PageSize = 1000
+	req.LargePageSize = true
 	req.AscCols = []string{"id"}
 	for _, end := range apistructs.PipelineEndStatuses {
 		req.Statuses = append(req.Statuses, end.String())
