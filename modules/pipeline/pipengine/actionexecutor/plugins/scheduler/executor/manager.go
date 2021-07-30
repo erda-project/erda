@@ -176,11 +176,13 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
-			if _, exist := m.executors[name]; !exist {
-				k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
-				if err != nil {
-					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
-					return err
+			k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
+				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
 				}
 				m.executors[name] = k8sjobExecutor
 				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
@@ -190,28 +192,32 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 		k8sflinkCreate, ok := m.factory[k8sflink.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
-			if _, exist := m.executors[name]; !exist {
-				k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
-				if err != nil {
-					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
-					return err
+			k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
+				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
 				}
 				m.executors[name] = k8sflinkExecutor
-				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+				logrus.Infof("=> kind [%s], name [%s], created", k8sflink.Kind, name)
 			}
 		}
 
 		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
-			if _, exist := m.executors[name]; !exist {
-				k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
-				if err != nil {
-					logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
-					return err
+			k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
+			if err != nil {
+				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
+				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
 				}
 				m.executors[name] = k8ssparkExecutor
-				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
+				logrus.Infof("=> kind [%s], name [%s], created", k8sspark.Kind, name)
 			}
 		}
 	default:
