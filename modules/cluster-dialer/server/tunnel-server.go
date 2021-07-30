@@ -123,7 +123,7 @@ func clusterRegister(server *remotedialer.Server, rw http.ResponseWriter, req *h
 
 	if needClusterInfo {
 		// Get cluster info from agent request
-		clusterKey := req.Header.Get("Authorization")
+		clusterKey := req.Header.Get("X-Erda-Cluster-Key")
 		if clusterKey == "" {
 			remotedialer.DefaultErrorWriter(rw, req, 400, errors.New("missing header:Authorization"))
 			return
