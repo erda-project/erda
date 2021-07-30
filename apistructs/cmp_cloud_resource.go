@@ -144,8 +144,9 @@ type CloudClusterInfo struct {
 	Nameservers string `json:"nameservers"` //已有资源创建所需参数，通过逗号分隔
 
 	// 中心集群配置信息，自动获取
-	CollectorURL string `json:"collectorURL"`
-	OpenAPI      string `json:"openapi"`
+	CollectorURL  string `json:"collectorURL"`
+	OpenAPI       string `json:"openapi"`
+	ClusterDialer string `json:"clusterDialer"`
 }
 
 type CloudClusterInstaller struct {

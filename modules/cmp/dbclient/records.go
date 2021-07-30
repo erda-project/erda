@@ -85,7 +85,7 @@ func (r *recordsReader) ByUserIDs(userids ...string) *recordsReader {
 }
 
 func (r *recordsReader) ByCreateTime(beforeNSecs int) *recordsReader {
-	r.conditions = append(r.conditions, fmt.Sprintf("created_at < now() - interval %d second", beforeNSecs))
+	r.conditions = append(r.conditions, fmt.Sprintf("created_at > now() - interval %d second", beforeNSecs))
 	return r
 }
 
