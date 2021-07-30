@@ -215,6 +215,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicd-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
 		{Path: "/api/cicd-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
 		{Path: "/api/cicd-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
+		// eventBox call back only support post method
+		{Path: "/api/cicd-crons/actions/hook-for-update", Method: http.MethodPost, Handler: e.pipelineCronUpdate},
 		{Path: "/api/cicd-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 
 		// project pipeline

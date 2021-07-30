@@ -138,3 +138,15 @@ func (s *PipelineCronSvc) Get(cronID uint64) (*spec.PipelineCron, error) {
 	}
 	return &cron, nil
 }
+
+// PipelineCronUpdate pipeline cron update
+func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRequest) error {
+	cron, err := s.dbClient.GetPipelineCron(req.ID)
+	if err != nil {
+		return err
+	}
+	cron.CronExpr = req.CronExpr
+	cron.Extra.PipelineYml = req.PipelineYml
+	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{spec.PipelineCronCronExpr, spec.Extra})
+	return err
+}

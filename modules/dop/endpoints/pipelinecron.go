@@ -159,3 +159,17 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 
 	return httpserver.OkResp(nil)
 }
+
+// pipelineUpdate pipeline cron update
+func (e *Endpoints) pipelineCronUpdate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var req apistructs.GittarPushPayloadEvent
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpdatePipeline.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.pipeline.PipelineCronUpdate(req); err != nil {
+		return apierrors.ErrUpdatePipeline.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("ok")
+}
