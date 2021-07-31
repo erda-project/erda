@@ -455,7 +455,7 @@ services:
     platform: linux/amd64
 
   streaming:
-    image: erdaproject/streaming:1.1-20210729-57f03b18
+    image: erdaproject/streaming:1.1-20210731-07fea0c1
     command: /app/streaming
     container_name: erda-streaming
     env_file:
