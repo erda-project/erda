@@ -17,7 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -60,7 +59,7 @@ func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 		return "", errors.NewDatabaseError(err)
 	}
 	if mspTenant != nil {
-		return strconv.FormatInt(mspTenant.RelatedProjectId, 10), nil
+		return mspTenant.RelatedProjectId, nil
 	}
 
 	tenant, err := p.instanceTenantDB.GetByID(id)

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `msp_project`
 (
-    `id`           bigint(20)   NOT NULL COMMENT 'MSP project ID',
+    `id`           varchar(100) NOT NULL COMMENT 'MSP project ID',
     `name`         varchar(100) NOT NULL COMMENT 'MSP 项目名称',
     `display_name` varchar(100) NOT NULL COMMENT 'MSP 项目展示名称',
     `type`         varchar(10)  NOT NULL COMMENT 'MSP 项目类型',

@@ -32,7 +32,7 @@ type tenantService struct {
 	MonitorDB   *monitor.MonitorDB
 }
 
-func GenerateTenantID(projectID int64, tenantType, workspace string) string {
+func GenerateTenantID(projectID string, tenantType, workspace string) string {
 	md5H := md5.New()
 	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
 	md5H.Write([]byte(hStr))
@@ -59,7 +59,7 @@ func (s *tenantService) GetTenantID(projectID int64, workspace, tenantGroup, ten
 }
 
 func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.CreateTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -87,8 +87,8 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 		tenant.Type = req.TenantType
 		tenant.RelatedWorkspace = workspace
 		tenant.RelatedProjectId = req.ProjectID
-		tenant.UpdateTime = time.Now()
-		tenant.CreateTime = time.Now()
+		tenant.UpdatedAt = time.Now()
+		tenant.CreatedAt = time.Now()
 		tenant.IsDeleted = false
 		result, err := s.MSPTenantDB.InsertTenant(&tenant)
 		if err != nil {
@@ -100,7 +100,7 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 }
 
 func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.GetTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -125,8 +125,8 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 		Type:       tenant.Type,
 		Workspace:  tenant.RelatedWorkspace,
 		ProjectID:  tenant.RelatedProjectId,
-		CreateTime: tenant.CreateTime.UnixNano(),
-		UpdateTime: tenant.UpdateTime.UnixNano(),
+		CreateTime: tenant.CreatedAt.UnixNano(),
+		UpdateTime: tenant.UpdatedAt.UnixNano(),
 		IsDeleted:  tenant.IsDeleted,
 	}
 }

@@ -62,7 +62,7 @@ func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID int64, works
 	return &tenant, nil
 }
 
-func (db *MSPTenantDB) QueryTenantByProjectID(projectID int64) ([]*MSPTenant, error) {
+func (db *MSPTenantDB) QueryTenantByProjectID(projectID string) ([]*MSPTenant, error) {
 	var tenants []*MSPTenant
 	err := db.db().Where("`related_project_id` = ?", projectID).Find(&tenants).Error
 	if err == gorm.ErrRecordNotFound {

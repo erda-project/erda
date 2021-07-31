@@ -16,7 +16,6 @@ package project
 import (
 	context "context"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -88,7 +87,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 	// request orch for history project
 	params := url.Values{}
 	for _, id := range req.ProjectId {
-		params.Add("projectId", strconv.FormatInt(id, 10))
+		params.Add("projectId", id)
 	}
 	userID := apis.GetUserID(ctx)
 	orgID := apis.GetOrgID(ctx)
@@ -103,11 +102,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 	}
 	for _, project := range orchProjects {
 		pbProject := pb.Project{}
-		parseInt, err := strconv.ParseInt(project.ProjectID, 10, 64)
-		if err != nil {
-			continue
-		}
-		pbProject.Id = parseInt
+		pbProject.Id = project.ProjectID
 		pbProject.Name = project.ProjectName
 		pbProject.DisplayName = project.ProjectName
 		pbProject.Type = tenantpb.Type_DOP.String()
@@ -149,7 +144,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 }
 
 func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
-	if req.Id <= 0 || req.Name == "" || req.Type == "" || req.DisplayName == "" {
+	if req.Id == "" || req.Name == "" || req.Type == "" || req.DisplayName == "" {
 		return nil, errors.NewMissingParameterError("id,name,displayName or type missing.")
 	}
 	var project db.MSPProject
@@ -170,8 +165,8 @@ func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjec
 	mspTenant := db.MSPTenant{}
 	if project.Type == tenantpb.Type_MSP.String() {
 		mspTenant.Id = tenant.GenerateTenantID(project.Id, project.Type, tenantpb.Workspace_DEFAULT.String())
-		mspTenant.CreateTime = time.Now()
-		mspTenant.UpdateTime = time.Now()
+		mspTenant.CreatedAt = time.Now()
+		mspTenant.UpdatedAt = time.Now()
 		mspTenant.IsDeleted = false
 		mspTenant.Type = tenantpb.Type_MSP.String()
 		mspTenant.RelatedProjectId = project.Id
@@ -197,7 +192,7 @@ func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjec
 	return &pb.CreateProjectResponse{Data: pbProject}, nil
 }
 
-func (s *projectService) getProject(lang i18n.LanguageCodes, id int64) (*pb.Project, error) {
+func (s *projectService) getProject(lang i18n.LanguageCodes, id string) (*pb.Project, error) {
 	projectDB, err := s.MSPProjectDB.Query(id)
 	if err != nil {
 		return nil, err

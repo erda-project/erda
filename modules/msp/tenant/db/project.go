@@ -38,7 +38,7 @@ func (db *MSPProjectDB) Create(project *MSPProject) (*MSPProject, error) {
 	return value, nil
 }
 
-func (db *MSPProjectDB) Query(id int64) (*MSPProject, error) {
+func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 	project := MSPProject{}
 	err := db.db().Where("`id` = ?", id).Find(&project).Error
 	if err == gorm.ErrRecordNotFound {

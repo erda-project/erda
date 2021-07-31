@@ -67,7 +67,7 @@ type CompatibleTerminusKey struct {
 
 func (db *MonitorDB) GetMonitorByProjectId(projectID int64) ([]*Monitor, error) {
 	var monitors []*Monitor
-	err := db.Where("`project_id` = ?", projectID).Find(&monitors).Error
+	err := db.Where("`project_id` = ?", projectID).Where("`is_delete` = ?", 0).Find(&monitors).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -79,7 +79,7 @@ func (db *MonitorDB) GetMonitorByProjectId(projectID int64) ([]*Monitor, error) 
 
 func (db *MonitorDB) GetMonitorByProjectIdAndWorkspace(projectID int64, workspace string) (*Monitor, error) {
 	monitor := Monitor{}
-	err := db.Where("`project_id` = ?", projectID).Where("`workspace` = ?", workspace).Find(&monitor).Error
+	err := db.Where("`project_id` = ?", projectID).Where("`workspace` = ?", workspace).Where("`is_delete` = ?", 0).Find(&monitor).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
