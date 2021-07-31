@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
@@ -35,6 +36,7 @@ type projectService struct {
 	p            *provider
 	MSPProjectDB *db.MSPProjectDB
 	MSPTenantDB  *db.MSPTenantDB
+	MonitorDB    *monitor.MonitorDB
 }
 
 func (s *projectService) getDisplayWorkspace(lang i18n.LanguageCodes, workspace string) string {

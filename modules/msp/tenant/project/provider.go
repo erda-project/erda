@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -45,6 +46,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p:            p,
 		MSPProjectDB: &db.MSPProjectDB{DB: p.DB},
 		MSPTenantDB:  &db.MSPTenantDB{DB: p.DB},
+		MonitorDB:    &monitor.MonitorDB{DB: p.DB},
 	}
 	if p.Register != nil {
 		pb.RegisterProjectServiceImp(p.Register, p.projectService, apis.Options())
