@@ -24,7 +24,7 @@ import (
 type ComponentAction struct{}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{ "className": "center-flex-box" }`), &c.Props)
+	return json.Unmarshal([]byte(`{ "className": "flex items-center justify-center flex-wrap" }`), &c.Props)
 }
 
 func RenderCreator() protocol.CompRender {
