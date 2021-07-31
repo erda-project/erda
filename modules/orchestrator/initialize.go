@@ -102,6 +102,8 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 		bundle.WithPipeline(),
 		bundle.WithGittar(),
 		bundle.WithMSP(),
+		bundle.WithDOP(),
+		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
 

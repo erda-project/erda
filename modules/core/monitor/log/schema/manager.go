@@ -35,7 +35,7 @@ const (
 	gcGraceSeconds   = 86400
 )
 
-var bdl = bundle.New(bundle.WithCoreServices())
+var bdl = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
 
 type LogSchema interface {
 	Name() string

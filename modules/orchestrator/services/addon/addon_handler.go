@@ -1155,16 +1155,8 @@ func (a *Addon) getRandomId() string {
 
 // CreateAddonProvider 请求addon provider，获取新的addon实例
 func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonName, providerDomain, userId string) (int, *apistructs.AddonProviderResponse, error) {
-	clusterInfo, err := a.bdl.QueryClusterInfo(conf.MainClusterName())
-	if err != nil {
-		logrus.Errorf("拉取cluster接口失败")
-		return 0, nil, err
-	}
-	// 若为 kubernetes 集群
-	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = discover.MSP()
-		}
+	if strings.Contains(providerDomain, "tmc.") {
+		providerDomain = discover.MSP()
 	}
 	req.Callback = "http://" + discover.Orchestrator()
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
@@ -1197,19 +1189,11 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 func (a *Addon) DeleteAddonProvider(req *apistructs.AddonProviderRequest, uuid, addonName, providerDomain string) (*apistructs.AddonProviderDeleteResponse, error) {
 	logrus.Infof("deleting addon provider request: %+v", req)
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(conf.MainClusterName())
-	if err != nil {
-		logrus.Errorf("拉取cluster接口失败")
-		return nil, err
-	}
-	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "pandora") {
-			providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
-		}
-		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = discover.MSP()
-			//providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
-		}
+	if strings.Contains(providerDomain, "pandora.") {
+		providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
+	} else if strings.Contains(providerDomain, "tmc.") {
+		providerDomain = discover.MSP()
+		//providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
 	}
 	logrus.Infof("start delete addon provider, url: %v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath+"/"+uuid)
 
