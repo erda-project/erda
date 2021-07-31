@@ -18,6 +18,8 @@ const (
 	I18nKeyExport             = "wb.content.autotest.space.export"
 	I18nKeyStatusSuccess      = "wb.content.autotest.space.status.success"
 	I18nKeyStatusFailed       = "wb.content.autotest.space.status.failed"
+	I18nKeyStatusPending      = "wb.content.autotest.space.status.pending"
+	I18nKeyStatusProcessing   = "wb.content.autotest.space.status.processing"
 	I18nKeyDownloadFile       = "wb.content.autotest.space.download.file"
 	I18nKeyImportExportRecord = "wb.content.autotest.space.import.export.record"
 	I18nKeyImportExportTable  = "wb.content.autotest.space.import.export.table"

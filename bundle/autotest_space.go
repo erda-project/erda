@@ -182,7 +182,6 @@ func (b *Bundle) ExportTestSpace(userID string, req apistructs.AutoTestSpaceExpo
 	hc := b.hc
 	var exportID uint64
 	_, err = hc.Post(host).Path("/api/autotests/spaces/actions/export").
-		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.UserHeader, req.UserID).
 		JSONBody(req).Do().JSON(&exportID)
 	if err != nil {
