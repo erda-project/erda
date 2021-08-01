@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -36,12 +37,14 @@ type provider struct {
 	Log            logs.Logger
 	Register       transport.Register
 	projectService *projectService
+	bdl            *bundle.Bundle
 	I18n           i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	DB             *gorm.DB                     `autowired:"mysql-client"`
 	TenantServer   tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.bdl = bundle.New(bundle.WithMSP())
 	p.projectService = &projectService{
 		p:            p,
 		MSPProjectDB: &db.MSPProjectDB{DB: p.DB},

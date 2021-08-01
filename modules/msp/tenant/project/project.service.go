@@ -24,11 +24,8 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
-	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type projectService struct {
@@ -72,15 +69,6 @@ func (s *projectService) getDisplayType(lang i18n.LanguageCodes, projectType str
 	}
 }
 
-type OrchestratorProjectResponseData struct {
-	ProjectID    string            `json:"projectId"`
-	ProjectName  string            `json:"projectName"`
-	LogoURL      string            `json:"logoUrl"`
-	Envs         []string          `json:"envs"`
-	TenantGroups []string          `json:"tenantGroups"`
-	Workspaces   map[string]string `json:"workspaces"`
-}
-
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
 	var projects []*pb.Project
 
@@ -91,13 +79,8 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 	}
 	userID := apis.GetUserID(ctx)
 	orgID := apis.GetOrgID(ctx)
-	do := httpclient.New().Get(discover.Orchestrator()).
-		Header("User-ID", userID).
-		Header("Org-ID", orgID).
-		Path("/api/microservice/projects").
-		Params(params)
-	var orchProjects []*OrchestratorProjectResponseData
-	if err := utils.DoJson(do, &orchProjects); err != nil {
+	orchProjects, err := s.p.bdl.GetMSProjects(orgID, userID, params)
+	if err != nil {
 		return nil, err
 	}
 	for _, project := range orchProjects {

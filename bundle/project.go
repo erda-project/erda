@@ -16,12 +16,14 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -317,6 +319,23 @@ func (b *Bundle) GetProjectNamespaceWithoutErr(projectID uint64, workspace strin
 	}
 
 	return prjNs.Namespaces[workspace]
+}
+
+func (b *Bundle) GetMSProjects(orgID, userID string, params url.Values) ([]apistructs.MicroServiceProjectResponseData, error) {
+	hc := b.hc
+	var getResp *apistructs.MicroServiceProjectResponse
+	resp, err := hc.Get(discover.Orchestrator()).
+		Header("User-ID", userID).
+		Header("Org-ID", orgID).
+		Path("/api/microservice/projects").
+		Params(params).Do().JSON(&getResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !getResp.Success {
+		return nil, toAPIError(resp.StatusCode(), getResp.Error)
+	}
+	return getResp.Data, nil
 }
 
 // GetMyProjectIDs get projectIDs by orgID adn userID from core-services.
