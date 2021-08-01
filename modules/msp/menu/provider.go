@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
-	db "github.com/erda-project/erda/modules/msp/menu/db"
+	"github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
@@ -73,8 +73,10 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register("erda.msp.menu", &servicehub.Spec{
-		Services: pb.ServiceNames(),
-		Types:    pb.Types(),
+		Services:             pb.ServiceNames(),
+		Types:                pb.Types(),
+		OptionalDependencies: []string{"service-register"},
+		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

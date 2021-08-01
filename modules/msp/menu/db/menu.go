@@ -21,7 +21,6 @@ const (
 	EngineMenuJumpKeyPrefix = "MK_JUMP_"
 )
 
-// MenuConfig .
 type MenuConfigDB struct {
 	*gorm.DB
 }

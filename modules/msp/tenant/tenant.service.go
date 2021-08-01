@@ -16,10 +16,12 @@ package tenant
 import (
 	context "context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"time"
 
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -27,17 +29,37 @@ import (
 type tenantService struct {
 	p           *provider
 	MSPTenantDB *db.MSPTenantDB
+	MonitorDB   *monitor.MonitorDB
 }
 
-func generateTenantID(projectID int64, tenantType, workspace string) string {
+func GenerateTenantID(projectID string, tenantType, workspace string) string {
 	md5H := md5.New()
 	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
-	sum := md5H.Sum([]byte(hStr))
-	return fmt.Sprintf("%x", sum)
+	md5H.Write([]byte(hStr))
+	return hex.EncodeToString(md5H.Sum(nil))
+}
+
+func (s *tenantService) GetTenantID(projectID int64, workspace, tenantGroup, tenantType string) (string, error) {
+	item, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(projectID, workspace)
+	if err != nil {
+		return "", err
+	}
+	if item != nil {
+		return tenantGroup, nil
+	}
+
+	tenant, err := s.MSPTenantDB.QueryTenantByProjectIDAndWorkspace(projectID, workspace)
+	if err != nil {
+		return "", err
+	}
+	if tenant == nil {
+		return tenant.Id, nil
+	}
+	return "", nil
 }
 
 func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.CreateTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -49,7 +71,7 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 
 	var tenants []*pb.Tenant
 	for _, workspace := range req.Workspaces {
-		tenantID := generateTenantID(req.ProjectID, req.TenantType, workspace)
+		tenantID := GenerateTenantID(req.ProjectID, req.TenantType, workspace)
 
 		queryTenant, err := s.MSPTenantDB.QueryTenant(tenantID)
 		if err != nil {
@@ -65,8 +87,8 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 		tenant.Type = req.TenantType
 		tenant.RelatedWorkspace = workspace
 		tenant.RelatedProjectId = req.ProjectID
-		tenant.UpdateTime = time.Now()
-		tenant.CreateTime = time.Now()
+		tenant.UpdatedAt = time.Now()
+		tenant.CreatedAt = time.Now()
 		tenant.IsDeleted = false
 		result, err := s.MSPTenantDB.InsertTenant(&tenant)
 		if err != nil {
@@ -78,7 +100,7 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 }
 
 func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.GetTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -87,14 +109,13 @@ func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 	if req.Workspace == "" {
 		return nil, errors.NewMissingParameterError("workspace")
 	}
-	tenant, err := s.MSPTenantDB.QueryTenant(generateTenantID(req.ProjectID, req.TenantType, req.Workspace))
+	tenant, err := s.MSPTenantDB.QueryTenant(GenerateTenantID(req.ProjectID, req.TenantType, req.Workspace))
 	if err != nil {
 		return nil, err
 	}
 	if tenant == nil {
 		return nil, errors.NewInternalServerErrorMessage("tenant not exist.")
 	}
-
 	return &pb.GetTenantResponse{Data: s.covertToTenant(tenant)}, nil
 }
 
@@ -104,8 +125,8 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 		Type:       tenant.Type,
 		Workspace:  tenant.RelatedWorkspace,
 		ProjectID:  tenant.RelatedProjectId,
-		CreateTime: tenant.CreateTime.UnixNano(),
-		UpdateTime: tenant.UpdateTime.UnixNano(),
+		CreateTime: tenant.CreatedAt.UnixNano(),
+		UpdateTime: tenant.UpdatedAt.UnixNano(),
 		IsDeleted:  tenant.IsDeleted,
 	}
 }

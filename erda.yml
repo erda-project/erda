@@ -14,6 +14,7 @@ envs:
   COLLECTOR_ADDR: collector:7076
   PIPELINE_ADDR: pipeline:3081
   ADMIN_ADDR: admin:9095
+  MSP_ADDR: msp:8080
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -40,10 +41,10 @@ services:
         port: 9500
         path: "/healthz"
         duration: 120
-      exec: {}
-    expose: []
-    hosts: []
-    envs: {}
+      exec: { }
+    expose: [ ]
+    hosts: [ ]
+    envs: { }
   dop:
     binds:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
@@ -58,7 +59,7 @@ services:
       DEBUG: "true"
       MONITOR_ADDR: monitor:7096
     health_check:
-      exec: {}
+      exec: { }
       http:
         duration: 120
         path: /_api/health
@@ -110,7 +111,7 @@ services:
         port: 9095
         path: "/api/healthy"
         duration: 120
-      exec: {}
+      exec: { }
   core-services:
     cmd: "/app/core-services"
     ports:
@@ -171,8 +172,8 @@ services:
       labels:
         GROUP: "dice"
     health_check:
-      http: {}
-      exec: {}
+      http: { }
+      exec: { }
   cluster-dialer:
     cmd: "/app/cluster-dialer"
     expose:
@@ -195,11 +196,11 @@ services:
       labels:
         GROUP: "dice"
     health_check:
-      http: {}
-      exec: {}
+      http: { }
+      exec: { }
   cluster-agent:
     cmd: "/app/cluster-agent"
-    ports: []
+    ports: [ ]
     envs:
       DEBUG: "false"
     resources:
@@ -214,7 +215,7 @@ services:
       labels:
         GROUP: "dice"
     health_check:
-      http: {}
+      http: { }
       exec:
         cmd: "ls"
   collector:
@@ -248,9 +249,9 @@ services:
         port: 7076
         path: "/api/health"
         duration: 120
-      exec: {}
-    hosts: []
-    binds: []
+      exec: { }
+    hosts: [ ]
+    binds: [ ]
   dicehub:
     cmd: "/app/dicehub"
     ports:
@@ -281,7 +282,7 @@ services:
         port: 10000
         path: "/healthz"
         duration: 120
-      exec: {}
+      exec: { }
   eventbox:
     cmd: "/app/eventbox"
     ports:
@@ -310,7 +311,7 @@ services:
         port: 9528
         path: "/api/dice/eventbox/version"
         duration: 120
-      exec: {}
+      exec: { }
   gittar:
     cmd: "/app/gittar"
     ports:
@@ -341,8 +342,8 @@ services:
     expose:
       - 5566
     health_check:
-      http: {}
-      exec: {}
+      http: { }
+      exec: { }
   hepa:
     cmd: "/app/hepa"
     ports:
@@ -367,7 +368,7 @@ services:
         port: 8080
         path: "/api/gateway/health/check"
         duration: 120
-      exec: {}
+      exec: { }
   monitor:
     cmd: "/app/monitor"
     ports:
@@ -398,10 +399,10 @@ services:
         port: 7096
         path: "/api/health"
         duration: 120
-      exec: {}
-    expose: []
-    hosts: []
-    binds: []
+      exec: { }
+    expose: [ ]
+    hosts: [ ]
+    binds: [ ]
   msp:
     cmd: "/app/msp"
     ports:
@@ -432,9 +433,9 @@ services:
         port: 8080
         path: "/health"
         duration: 120
-      exec: {}
-    expose: []
-    hosts: []
+      exec: { }
+    expose: [ ]
+    hosts: [ ]
     binds:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
@@ -470,7 +471,7 @@ services:
         port: 9529
         path: "/api/openapi/version"
         duration: 120
-      exec: {}
+      exec: { }
   ecp:
     cmd: "/app/ecp"
     ports:
@@ -488,8 +489,8 @@ services:
       labels:
         GROUP: "dice"
     health_check:
-      http: {}
-      exec: {}
+      http: { }
+      exec: { }
   cmp:
     cmd: "/app/cmp"
     envs:
@@ -516,8 +517,8 @@ services:
       labels:
         GROUP: "dice"
     health_check:
-      http: {}
-      exec: {}
+      http: { }
+      exec: { }
   orchestrator:
     cmd: "/app/orchestrator"
     ports:
@@ -548,7 +549,7 @@ services:
         port: 8081
         path: "/info"
         duration: 120
-      exec: {}
+      exec: { }
   pipeline:
     cmd: "/app/pipeline"
     ports:
@@ -583,7 +584,7 @@ services:
         port: 3081
         path: "/ping"
         duration: 120
-      exec: {}
+      exec: { }
   scheduler:
     cmd: "/app/scheduler"
     ports:
@@ -614,7 +615,7 @@ services:
         port: 9091
         path: "/info"
         duration: 120
-      exec: {}
+      exec: { }
   streaming:
     cmd: "/app/streaming"
     ports:
@@ -657,7 +658,7 @@ services:
         port: 7091
         path: "/api/health"
         duration: 120
-      exec: {}
+      exec: { }
   uc-adaptor:
     cmd: "/app/uc-adaptor"
     ports:
@@ -693,7 +694,7 @@ services:
         port: 12580
         path: "/healthy"
         duration: 120
-      exec: {}
+      exec: { }
 addons:
   infos:
     plan: "custom:basic"

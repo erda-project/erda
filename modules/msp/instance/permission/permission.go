@@ -54,6 +54,14 @@ func (p *provider) TenantToProjectID(tgroup, tenant string) permission.ValueGett
 }
 
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
+	mspTenant, err := p.MSPTenantDB.QueryTenant(id)
+	if err != nil {
+		return "", errors.NewDatabaseError(err)
+	}
+	if mspTenant != nil {
+		return mspTenant.RelatedProjectId, nil
+	}
+
 	tenant, err := p.instanceTenantDB.GetByID(id)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)

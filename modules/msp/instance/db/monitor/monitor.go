@@ -65,6 +65,30 @@ type CompatibleTerminusKey struct {
 	TerminusKeyRuntime string `gorm:"column:terminus_key_runtime"`
 }
 
+func (db *MonitorDB) GetMonitorByProjectId(projectID int64) ([]*Monitor, error) {
+	var monitors []*Monitor
+	err := db.Where("`project_id` = ?", projectID).Where("`is_delete` = ?", 0).Find(&monitors).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return monitors, nil
+}
+
+func (db *MonitorDB) GetMonitorByProjectIdAndWorkspace(projectID int64, workspace string) (*Monitor, error) {
+	monitor := Monitor{}
+	err := db.Where("`project_id` = ?", projectID).Where("`workspace` = ?", workspace).Where("`is_delete` = ?", 0).Find(&monitor).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &monitor, nil
+}
+
 func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {
 	var list []*CompatibleTerminusKey
 	if err := db.Raw("SELECT terminus_key,terminus_key_runtime FROM sp_monitor WHERE terminus_key_runtime is not null AND is_delete = 0").
