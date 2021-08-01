@@ -14,7 +14,6 @@
 package menu
 
 import (
-	"github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -24,6 +23,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
+	"github.com/erda-project/erda/modules/msp/menu/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
