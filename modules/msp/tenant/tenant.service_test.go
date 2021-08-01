@@ -138,7 +138,7 @@ func Test_tenantService_GetTenant(t *testing.T) {
 
 func Test_generateTenantID(t *testing.T) {
 	type args struct {
-		projectID  int64
+		projectID  string
 		tenantType string
 		workspace  string
 	}
@@ -147,7 +147,7 @@ func Test_generateTenantID(t *testing.T) {
 		args args
 		want string
 	}{
-		{"case1", args{1, "msp", "DEFAULT"}, GenerateTenantID(1, "msp", "DEFAULT")},
+		{"case1", args{"1", "msp", "DEFAULT"}, GenerateTenantID("1", "msp", "DEFAULT")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
