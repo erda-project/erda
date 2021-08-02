@@ -62,6 +62,10 @@ func (p parameter) Rules() []rules.Ruler {
 	return nil
 }
 
+func (p parameter) ChangedFiles() []string {
+	return nil
+}
+
 func TestNewScripts(t *testing.T) {
 	var p = parameter{
 		workdir:      "..",
