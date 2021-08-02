@@ -46,7 +46,7 @@ const (
 	// dlockKeyPrefix 分布式锁前缀，每个集群一把锁
 	dlockKeyPrefix = "/dice/scheduler/dlock/clusterinfo/"
 	// loopSyncTimeout 一次同步的超时时间
-	loopSyncTimeout = 10 * time.Minute
+	loopSyncTimeout = 1 * time.Minute
 )
 
 const (
