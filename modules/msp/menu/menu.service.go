@@ -53,6 +53,9 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				params := s.composeMSPMenuParams(req)
 				item.Params = params
 				for _, child := range item.Children {
+					if child.Key == "MonitorIntro" {
+						continue
+					}
 					child.Params = params
 				}
 				mspItems = append(mspItems, item)

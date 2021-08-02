@@ -246,6 +246,7 @@ func (a *Addon) appendMicroServiceProjectData(dataMap map[uint64]*apistructs.Mic
 		data.ProjectID = strconv.FormatUint(project.ID, 10)
 		data.ProjectName = project.DisplayName
 		data.LogoURL = project.Logo
+		data.CreateTime = project.CreatedAt
 		dataMap[project.ID] = data
 	}
 	data.Envs = append(data.Envs, env)
