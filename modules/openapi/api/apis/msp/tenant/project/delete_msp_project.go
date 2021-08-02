@@ -23,5 +23,5 @@ var MSP_PROJECT_DELETE = apis.ApiSpec{
 	Method:      "DELETE",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "GET MSP project",
+	Doc:         "DELETE MSP project",
 }
