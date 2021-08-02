@@ -15,6 +15,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -126,7 +127,6 @@ func (s *settingsService) GetSettings(ctx context.Context, req *pb.GetSettingsRe
 }
 
 func (s *settingsService) PutSettings(ctx context.Context, req *pb.PutSettingsRequest) (*pb.PutSettingsResponse, error) {
-	fmt.Println(req)
 	orgName, err := s.getOrgName(req.OrgID)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError("org", err)
@@ -158,8 +158,10 @@ func (s *settingsService) PutSettings(ctx context.Context, req *pb.PutSettingsRe
 				if cdef == nil || item.Value == nil {
 					continue
 				}
-				cfg[item.Key] = item.Value.AsInterface()
-				err := tx.Exec(globalSettingInsertUpdate, req.OrgID, orgName, ns, group.Key, item.Key, cdef.Type, fmt.Sprint(item.Value), cdef.Unit).Error
+				val := item.Value.AsInterface()
+				cfg[item.Key] = val
+				byts, _ := json.Marshal(val)
+				err := tx.Exec(globalSettingInsertUpdate, req.OrgID, orgName, ns, group.Key, item.Key, cdef.Type, string(byts), cdef.Unit).Error
 				if err != nil {
 					tx.Rollback()
 					return nil, errors.NewDatabaseError(err)
@@ -254,7 +256,6 @@ func getValue(typ string, value interface{}) *structpb.Value {
 }
 
 func (s *settingsService) getOrgName(id int64) (string, error) {
-	fmt.Println("org id", id)
 	if true {
 		return "terminus", nil
 	}
