@@ -21,16 +21,6 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 )
 
-type define struct{}
-
-func (d *define) Services() []string     { return []string{"project-apis"} }
-func (d *define) Dependencies() []string { return []string{"http-server", "metrics-query"} }
-func (d *define) Summary() string        { return "project apis" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider { return &provider{} }
-}
-
 type provider struct {
 	L       logs.Logger
 	metricq metricq.Queryer
@@ -43,5 +33,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("project-apis", &define{})
+	servicehub.Register("project-apis", &servicehub.Spec{
+		Services:     []string{"project-apis"},
+		Dependencies: []string{"http-server", "metrics-query"},
+		Description:  "project apis",
+		Creator:      func() servicehub.Provider { return &provider{} },
+	})
 }

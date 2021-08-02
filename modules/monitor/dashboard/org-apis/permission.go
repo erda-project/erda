@@ -134,8 +134,15 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 	if info == nil {
 		return "", fmt.Errorf("not found org")
 	}
+	clusters, err := p.listClustersByOrg(orgID)
+	if err != nil {
+		return "", fmt.Errorf("fail to list cluster by org(%d)", orgID)
+	}
 	q := ctx.Request().URL.Query()
-	q.Add("filter_org_name", info.Name)
+	q.Add("or_in_org_name", info.Name)
+	for _, cluster := range clusters {
+		q.Add("or_in_cluster_name", cluster)
+	}
 	ctx.Request().URL.RawQuery = q.Encode()
 	return idStr, nil
 }
@@ -158,6 +165,18 @@ func (p *provider) checkOrgIDByClusters(orgID uint64, clusterNames []string) err
 		}
 	}
 	return nil
+}
+
+func (p *provider) listClustersByOrg(orgID uint64) ([]string, error) {
+	resp, err := p.bundle.ListClusters("", orgID)
+	if err != nil {
+		return nil, err
+	}
+	var list []string
+	for _, item := range resp {
+		list = append(list, item.Name)
+	}
+	return list, nil
 }
 
 func (p *provider) checkOrgByClusters(ctx httpserver.Context, clusters []*resourceCluster) error {
