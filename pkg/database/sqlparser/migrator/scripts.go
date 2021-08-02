@@ -30,6 +30,10 @@ import (
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
+const (
+	patchesModuleName = "_patches_"
+)
+
 type ScriptsParameters interface {
 	// Workdir gets pipeline node workdir
 	Workdir() string
@@ -50,6 +54,7 @@ type Scripts struct {
 	Dirname       string
 	ServicesNames []string
 	Services      map[string]*Module
+	Patches       *Module
 
 	rulers          []rules.Ruler
 	markPending     bool
@@ -123,7 +128,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		services[moduleInfo.Name()] = &module
 	}
 
-	return &Scripts{
+	var scritps = &Scripts{
 		Workdir:       parameters.Workdir(),
 		Dirname:       parameters.MigrationDir(),
 		ServicesNames: modulesNames,
@@ -131,12 +136,22 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		rulers:        parameters.Rules(),
 		markPending:   false,
 		destructive:   0,
-	}, nil
+	}
+	if module, ok := scritps.Services[patchesModuleName]; ok {
+		scritps.Patches = module
+		delete(scritps.Services, patchesModuleName)
+	}
+
+	return scritps, nil
 }
 
 func (s *Scripts) Get(serviceName string) ([]*Script, bool) {
 	module, ok := s.Services[serviceName]
 	return module.Scripts, ok
+}
+
+func (s *Scripts) GetPatches() *Module {
+	return s.Patches
 }
 
 func (s *Scripts) Lint() error {
@@ -172,6 +187,10 @@ func (s *Scripts) Lint() error {
 
 func (s *Scripts) AlterPermissionLint() error {
 	for moduleName, module := range s.Services {
+		if moduleName == patchesModuleName {
+			continue
+		}
+
 		tableNames := make(map[string]bool, 0)
 		for _, script := range module.Scripts {
 			for _, ddl := range script.DDLNodes() {
