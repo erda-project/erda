@@ -69,8 +69,16 @@ func (s *projectService) getDisplayType(lang i18n.LanguageCodes, projectType str
 	}
 }
 
+type Projects []*pb.Project
+
+func (p Projects) Len() int { return len(p) }
+
+func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+
+func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
+
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	var projects []*pb.Project
+	var projects Projects
 
 	// request orch for history project
 	params := url.Values{}
@@ -88,6 +96,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		pbProject.Id = project.ProjectID
 		pbProject.Name = project.ProjectName
 		pbProject.DisplayName = project.ProjectName
+		pbProject.CreateTime = project.CreateTime.UnixNano()
 		pbProject.Type = tenantpb.Type_DOP.String()
 		pbProject.DisplayType = s.getDisplayType(apis.Language(ctx), tenantpb.Type_DOP.String())
 
@@ -123,6 +132,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		}
 		projects = append(projects, project)
 	}
+
 	return &pb.GetProjectsResponse{Data: projects}, nil
 }
 
