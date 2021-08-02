@@ -16,6 +16,7 @@ package project
 import (
 	context "context"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -132,7 +133,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		}
 		projects = append(projects, project)
 	}
-
+	sort.Sort(projects)
 	return &pb.GetProjectsResponse{Data: projects}, nil
 }
 
