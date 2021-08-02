@@ -15,7 +15,6 @@ package project
 
 import (
 	context "context"
-	"github.com/erda-project/erda/apistructs"
 	"net/url"
 	"sort"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
