@@ -47,12 +47,12 @@ func (p *provider) TenantToProjectID(tgroup, tenant string) permission.ValueGett
 }
 
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
-	mspTenant, err := p.MSPTenantDB.QueryTenant(id)
+	id, err := p.getProjectIdByMSPTenantID(id)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
-	if mspTenant != nil {
-		return mspTenant.RelatedProjectId, nil
+	if id != "" {
+		return id, nil
 	}
 
 	tenants, err := p.instanceTenantDB.GetByTenantGroup(id)
@@ -78,6 +78,17 @@ func (p *provider) getProjectIDByTenantID(id string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("projectId not found from group %q", id)
+}
+
+func (p *provider) getProjectIdByMSPTenantID(id string) (string, error) {
+	mspTenant, err := p.MSPTenantDB.QueryTenant(id)
+	if err != nil {
+		return "", err
+	}
+	if mspTenant != nil {
+		return mspTenant.RelatedProjectId, nil
+	}
+	return "", nil
 }
 
 func (p *provider) getProjectIDByTenant(tenant *instancedb.InstanceTenant) string {
@@ -116,6 +127,14 @@ func (p *provider) TerminusKeyToProjectIDForHTTP(keys ...string) httpperm.ValueG
 			if len(key) <= 0 {
 				continue
 			}
+			id, err := p.getProjectIdByMSPTenantID(key)
+			if err != nil {
+				return "", errors.NewDatabaseError(err)
+			}
+			if id != "" {
+				return id, nil
+			}
+
 			m, err := p.monitorDB.GetByTerminusKey(key)
 			if err != nil {
 				return "", fmt.Errorf("fail to get monitor: %s", err)
