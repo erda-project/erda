@@ -430,11 +430,11 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 	} else {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
-	tenant, err := a.bdl.CreateMSPTenant(params.OrgID, params.OperatorID, params.ProjectID, params.Workspace, pb.Type_DOP.String())
+	tenantID, err := a.bdl.CreateMSPTenant(params.OrgID, params.OperatorID, params.ProjectID, params.Workspace, pb.Type_DOP.String())
 	if err != nil {
 		return err
 	}
-	params.Options["tenantGroup"] = tenant
+	params.Options["tenantGroup"] = tenantID
 	return nil
 }
 
