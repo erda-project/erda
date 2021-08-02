@@ -1,3 +1,3 @@
-ALTER TABLE pipeline_extras MODIFY snippets MEDIUMTEXT NOT NULL DEFAULT '' COMMENT 'snippet 历史';
+UPDATE pipeline_extras SET snippets='' WHERE snippets IS NULL ;
 
-ALTER TABLE pipeline_tasks MODIFY result MEDIUMTEXT NOT NULL DEFAULT '' COMMENT 'result';
+UPDATE pipeline_tasks SET result='' WHERE result IS NULL ;
