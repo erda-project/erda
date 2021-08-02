@@ -34,9 +34,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("runtime-apis", &servicehub.Spec{
-		Services: []string{"runtime-apis"},
+		Services:     []string{"runtime-apis"},
 		Dependencies: []string{"http-server", "metrics-query"},
-		Description: "runtime apis",
-		Creator: func() servicehub.Provider { return &provider{} },
+		Description:  "runtime apis",
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }
