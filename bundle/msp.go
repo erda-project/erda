@@ -137,7 +137,7 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 	return nil
 }
 
-func (b *Bundle) CreateMSPTenant(orgID, userID, projectID, workspace, tenantType string) (string, error) {
+func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType string) (string, error) {
 	host := discover.MSP()
 	hc := b.hc
 
@@ -150,8 +150,6 @@ func (b *Bundle) CreateMSPTenant(orgID, userID, projectID, workspace, tenantType
 	r, err := hc.Post(host).
 		Path("/api/msp/tenant").
 		Header(httputil.InternalHeader, "bundle").
-		Header("User-ID", userID).
-		Header("Org-ID", orgID).
 		JSONBody(&req).
 		Do().
 		JSON(&resp)
