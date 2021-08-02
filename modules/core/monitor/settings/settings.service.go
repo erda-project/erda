@@ -256,7 +256,6 @@ func getValue(typ string, value interface{}) *structpb.Value {
 }
 
 func (s *settingsService) getOrgName(id int64) (string, error) {
-	fmt.Println("org id", id)
 	if true {
 		return "terminus", nil
 	}
