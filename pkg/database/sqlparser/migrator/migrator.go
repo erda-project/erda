@@ -191,6 +191,10 @@ func (mig *Migrator) newInstallation() (err error) {
 func (mig *Migrator) normalUpdate() (err error) {
 	mig.LocalScripts.MarkPending(mig.DB())
 
+	if err = mig.patchBeforeUpdating(); err != nil {
+		return errors.Wrapf(err, "failed to patch before this time updating")
+	}
+
 	// Erda mysql lint
 	if !mig.SkipMigrationLint() {
 		logrus.Infoln("DO ERDA MYSQL LINT....")
@@ -216,7 +220,7 @@ func (mig *Migrator) normalUpdate() (err error) {
 
 	// installed script changes lint
 	logrus.Infoln("DO INSTALLED CHANGES LINT....")
-	if err = mig.LocalScripts.InstalledChangesLint(); err != nil {
+	if err = mig.LocalScripts.InstalledChangesLint(mig.DB()); err != nil {
 		return err
 	}
 	logrus.Infoln("INSTALLED CHANGES LINT OK")

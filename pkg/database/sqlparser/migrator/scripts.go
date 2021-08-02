@@ -236,14 +236,14 @@ func (s *Scripts) IgnoreMarkPending() {
 	s.markPending = true
 }
 
-func (s *Scripts) InstalledChangesLint() error {
-	if !s.markPending {
-		return errors.New("scripts did not mark if is pending, please mark it and then do InstalledChangesLint")
-	}
-
+func (s *Scripts) InstalledChangesLint(db *gorm.DB) error {
 	for moduleName, module := range s.Services {
 		for _, script := range module.Scripts {
-			if script.Pending {
+			if script.Record == nil {
+				script.Record = new(HistoryModel)
+			}
+			db := db.Where(map[string]interface{}{"filename": script.GetName()}).First(script.Record)
+			if db.Error != nil {
 				continue
 			}
 			if script.Checksum() != script.Record.Checksum {
