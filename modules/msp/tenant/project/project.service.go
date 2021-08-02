@@ -15,6 +15,7 @@ package project
 
 import (
 	context "context"
+	"github.com/erda-project/erda/apistructs"
 	"net/url"
 	"sort"
 	"time"
@@ -93,26 +94,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		return nil, err
 	}
 	for _, project := range orchProjects {
-		pbProject := pb.Project{}
-		pbProject.Id = project.ProjectID
-		pbProject.Name = project.ProjectName
-		pbProject.DisplayName = project.ProjectName
-		pbProject.CreateTime = project.CreateTime.UnixNano()
-		pbProject.Type = tenantpb.Type_DOP.String()
-		pbProject.DisplayType = s.getDisplayType(apis.Language(ctx), tenantpb.Type_DOP.String())
-
-		var rss []*pb.TenantRelationship
-		for i, env := range project.Envs {
-			if env == "" {
-				continue
-			}
-			rs := pb.TenantRelationship{}
-			rs.Workspace = env
-			rs.DisplayWorkspace = s.getDisplayWorkspace(apis.Language(ctx), env)
-			rs.TenantID = project.TenantGroups[i]
-			rss = append(rss, &rs)
-		}
-		pbProject.Relationship = rss
+		pbProject := s.covertHistoryProjectToMSPProject(ctx, project)
 		projects = append(projects, &pbProject)
 	}
 
@@ -135,6 +117,30 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 	}
 	sort.Sort(projects)
 	return &pb.GetProjectsResponse{Data: projects}, nil
+}
+
+func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) pb.Project {
+	pbProject := pb.Project{}
+	pbProject.Id = project.ProjectID
+	pbProject.Name = project.ProjectName
+	pbProject.DisplayName = project.ProjectName
+	pbProject.CreateTime = project.CreateTime.UnixNano()
+	pbProject.Type = tenantpb.Type_DOP.String()
+	pbProject.DisplayType = s.getDisplayType(apis.Language(ctx), tenantpb.Type_DOP.String())
+
+	var rss []*pb.TenantRelationship
+	for i, env := range project.Envs {
+		if env == "" {
+			continue
+		}
+		rs := pb.TenantRelationship{}
+		rs.Workspace = env
+		rs.DisplayWorkspace = s.getDisplayWorkspace(apis.Language(ctx), env)
+		rs.TenantID = project.TenantGroups[i]
+		rss = append(rss, &rs)
+	}
+	pbProject.Relationship = rss
+	return pbProject
 }
 
 func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
@@ -218,6 +224,22 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 	if err != nil {
 		return nil, err
 	}
+
+	if project == nil {
+		// request orch for history project
+		params := url.Values{}
+		params.Add("projectId", req.ProjectID)
+		userID := apis.GetUserID(ctx)
+		orgID := apis.GetOrgID(ctx)
+		orchProjects, err := s.p.bdl.GetMSProjects(orgID, userID, params)
+		if err != nil {
+			return nil, err
+		}
+		historyMicroserviceProject := orchProjects[0]
+		mspProject := s.covertHistoryProjectToMSPProject(ctx, historyMicroserviceProject)
+		project = &mspProject
+	}
+
 	return &pb.GetProjectResponse{Data: project}, nil
 }
 
