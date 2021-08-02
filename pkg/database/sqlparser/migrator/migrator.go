@@ -263,6 +263,10 @@ func (mig *Migrator) firstTimeUpdate() (err error) {
 	// if not, returns error, manual intervention.
 	// marks all baseScripts !pending, marks others pending
 
+	if err = mig.patchBeforeUpdating(); err != nil {
+		return errors.Wrapf(err, "failed to patch before first time updating")
+	}
+
 	// compare local base schema and cloud base schema for every service
 	logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
 	for _, service := range mig.LocalScripts.Services {
@@ -446,6 +450,58 @@ func (mig *Migrator) migrate() error {
 			if err := mig.DB().Create(&record).Error; err != nil {
 				return errors.Wrapf(err, "internal error: failed to record migration")
 			}
+		}
+	}
+
+	return nil
+}
+
+func (mig *Migrator) patchBeforeUpdating() error {
+	now := time.Now()
+	module := mig.LocalScripts.GetPatches()
+	if module == nil {
+		return nil
+	}
+
+	logrus.WithField("module", module.Name)
+	for _, script := range module.Scripts {
+		if tx := mig.DB().Where(map[string]interface{}{"filename": script.GetName()}); tx.RowsAffected > 0 {
+			continue
+		}
+
+		logrus.WithField("script name", script.GetName()).Infoln("patch it")
+		switch script.Type {
+		case ScriptTypeSQL:
+			after := func(tx *gorm.DB, err error) {
+				tx.Commit()
+			}
+			if err := mig.installSQL(script, mig.DB, mig.DB().Begin, after); err != nil {
+				return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
+					module.Name, script.GetName(), ScriptTypeSQL)
+			}
+
+		case ScriptTypePython:
+			if err := mig.installPy(script, module, mig.dbSettings, true); err != nil {
+				return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
+					module.Name, script.GetName(), ScriptTypePython)
+			}
+		}
+
+		// record it
+		record := HistoryModel{
+			ID:           0,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+			ServiceName:  module.Name,
+			Filename:     script.GetName(),
+			Checksum:     script.Checksum(),
+			InstalledBy:  "",
+			InstalledOn:  "",
+			LanguageType: string(script.Type),
+			Reversed:     "",
+		}
+		if err := mig.DB().Create(&record).Error; err != nil {
+			return errors.Wrapf(err, "patch error: failed to record migration")
 		}
 	}
 
