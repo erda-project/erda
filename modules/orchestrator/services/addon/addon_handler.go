@@ -24,9 +24,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
@@ -430,7 +430,11 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 	} else {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
-	params.Options["tenantGroup"] = md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
+	tenantID, err := a.bdl.CreateMSPTenant(params.ProjectID, params.Workspace, pb.Type_DOP.String())
+	if err != nil {
+		return err
+	}
+	params.Options["tenantGroup"] = tenantID
 	return nil
 }
 

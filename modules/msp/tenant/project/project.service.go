@@ -16,11 +16,13 @@ package project
 import (
 	context "context"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
@@ -69,8 +71,16 @@ func (s *projectService) getDisplayType(lang i18n.LanguageCodes, projectType str
 	}
 }
 
+type Projects []*pb.Project
+
+func (p Projects) Len() int { return len(p) }
+
+func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+
+func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
+
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
-	var projects []*pb.Project
+	var projects Projects
 
 	// request orch for history project
 	params := url.Values{}
@@ -84,25 +94,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		return nil, err
 	}
 	for _, project := range orchProjects {
-		pbProject := pb.Project{}
-		pbProject.Id = project.ProjectID
-		pbProject.Name = project.ProjectName
-		pbProject.DisplayName = project.ProjectName
-		pbProject.Type = tenantpb.Type_DOP.String()
-		pbProject.DisplayType = s.getDisplayType(apis.Language(ctx), tenantpb.Type_DOP.String())
-
-		var rss []*pb.TenantRelationship
-		for i, env := range project.Envs {
-			if env == "" {
-				continue
-			}
-			rs := pb.TenantRelationship{}
-			rs.Workspace = env
-			rs.DisplayWorkspace = s.getDisplayWorkspace(apis.Language(ctx), env)
-			rs.TenantID = project.TenantGroups[i]
-			rss = append(rss, &rs)
-		}
-		pbProject.Relationship = rss
+		pbProject := s.covertHistoryProjectToMSPProject(ctx, project)
 		projects = append(projects, &pbProject)
 	}
 
@@ -123,7 +115,32 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		}
 		projects = append(projects, project)
 	}
+	sort.Sort(projects)
 	return &pb.GetProjectsResponse{Data: projects}, nil
+}
+
+func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) pb.Project {
+	pbProject := pb.Project{}
+	pbProject.Id = project.ProjectID
+	pbProject.Name = project.ProjectName
+	pbProject.DisplayName = project.ProjectName
+	pbProject.CreateTime = project.CreateTime.UnixNano()
+	pbProject.Type = tenantpb.Type_DOP.String()
+	pbProject.DisplayType = s.getDisplayType(apis.Language(ctx), tenantpb.Type_DOP.String())
+
+	var rss []*pb.TenantRelationship
+	for i, env := range project.Envs {
+		if env == "" {
+			continue
+		}
+		rs := pb.TenantRelationship{}
+		rs.Workspace = env
+		rs.DisplayWorkspace = s.getDisplayWorkspace(apis.Language(ctx), env)
+		rs.TenantID = project.TenantGroups[i]
+		rss = append(rss, &rs)
+	}
+	pbProject.Relationship = rss
+	return pbProject
 }
 
 func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
@@ -207,7 +224,41 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 	if err != nil {
 		return nil, err
 	}
+
+	if project == nil {
+		// request orch for history project
+		params := url.Values{}
+		params.Add("projectId", req.ProjectID)
+		userID := apis.GetUserID(ctx)
+		orgID := apis.GetOrgID(ctx)
+		orchProjects, err := s.p.bdl.GetMSProjects(orgID, userID, params)
+		if err != nil {
+			return nil, err
+		}
+		historyMicroserviceProject := orchProjects[0]
+		mspProject := s.covertHistoryProjectToMSPProject(ctx, historyMicroserviceProject)
+		project = &mspProject
+	}
+
 	return &pb.GetProjectResponse{Data: project}, nil
+}
+
+func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.DeleteProjectResponse, error) {
+	_, err := s.MSPProjectDB.Delete(req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	tenants, err := s.MSPTenantDB.QueryTenantByProjectID(req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	for _, mspTenant := range tenants {
+		_, err := s.MSPTenantDB.DeleteTenantByTenantID(tenant.GenerateTenantID(mspTenant.RelatedProjectId, mspTenant.Type, mspTenant.RelatedWorkspace))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &pb.DeleteProjectResponse{Data: nil}, nil
 }
 
 func (s *projectService) convertToProject(project *db.MSPProject) *pb.Project {

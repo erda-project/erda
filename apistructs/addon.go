@@ -711,6 +711,7 @@ type MicroServiceProjectResponseData struct {
 	Envs         []string          `json:"envs"`
 	TenantGroups []string          `json:"tenantGroups"`
 	Workspaces   map[string]string `json:"workspaces"`
+	CreateTime   time.Time         `json:"createTime"`
 }
 
 type MicroServiceMenuResponse struct {

@@ -50,7 +50,7 @@ func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 	return &tenant, nil
 }
 
-func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID int64, workspace string) (*MSPTenant, error) {
+func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID, workspace string) (*MSPTenant, error) {
 	tenant := MSPTenant{}
 	err := db.db().Where("`related_project_id` = ?", projectID).Where("`related_workspace` = ?", workspace).Find(&tenant).Error
 	if err == gorm.ErrRecordNotFound {
@@ -72,4 +72,17 @@ func (db *MSPTenantDB) QueryTenantByProjectID(projectID string) ([]*MSPTenant, e
 		return nil, err
 	}
 	return tenants, nil
+}
+
+func (db *MSPTenantDB) DeleteTenantByTenantID(tenantId string) (*MSPTenant, error) {
+	tenant, err := db.QueryTenant(tenantId)
+	if err != nil {
+		return nil, err
+	}
+	tenant.IsDeleted = true
+	err = db.Model(&tenant).Update(&tenant).Error
+	if err != nil {
+		return nil, err
+	}
+	return tenant, err
 }

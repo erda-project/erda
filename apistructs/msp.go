@@ -72,6 +72,22 @@ type TenantGroupDetails struct {
 	ProjectID string `json:"projectID"`
 }
 
+// MSPTenantResponse .
+type MSPTenantResponse struct {
+	Header
+	Data []*Tenant `json:"data"`
+}
+
+type Tenant struct {
+	Id         string `json:"id,omitempty"`
+	Type       string `json:"type,omitempty"`
+	ProjectID  string `json:"projectID,omitempty"`
+	Workspace  string `json:"workspace,omitempty"`
+	CreateTime int64  `json:"createTime,omitempty"`
+	UpdateTime int64  `json:"updateTime,omitempty"`
+	IsDeleted  bool   `json:"isDeleted,omitempty"`
+}
+
 // MonitorStatusMetricDetailsResponse .
 type MonitorStatusMetricDetailsResponse struct {
 	Header

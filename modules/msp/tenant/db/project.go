@@ -40,7 +40,7 @@ func (db *MSPProjectDB) Create(project *MSPProject) (*MSPProject, error) {
 
 func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 	project := MSPProject{}
-	err := db.db().Where("`id` = ?", id).Find(&project).Error
+	err := db.db().Where("`id` = ?", id).Where("`is_deleted` = ?", false).Find(&project).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -48,4 +48,17 @@ func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 		return nil, errors.NewDatabaseError(err)
 	}
 	return &project, err
+}
+
+func (db *MSPProjectDB) Delete(id string) (*MSPProject, error) {
+	project, err := db.Query(id)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	project.IsDeleted = true
+	err = db.Model(&project).Update(&project).Error
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return project, err
 }

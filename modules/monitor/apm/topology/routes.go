@@ -23,7 +23,7 @@ import (
 
 func (topology *provider) initRoutes(routes httpserver.Router) error {
 
-	routes.GET("/api/apm/topology/search/tags", topology.searchTags, GetTopologyPermission(topology.db))
+	routes.GET("/api/apm/topology/search/tags", topology.searchTags)
 	routes.GET("/api/apm/topology/search/tagv", topology.searchTagv)
 	routes.GET("/api/apm/topology", topology.topology)
 	routes.GET("/api/apm/topology/overview", topology.overview)
