@@ -139,13 +139,9 @@ func (p *provider) checkOrgMetrics(ctx httpserver.Context) (string, error) {
 		return "", fmt.Errorf("fail to list cluster by org(%d)", orgID)
 	}
 	q := ctx.Request().URL.Query()
-	if len(cluster) <= 1 {
-		q.Add("filter_org_name", info.Name)
-	} else {
-		q.Add("or_in_org_name", info.Name)
-		for _, cluster := range clusters {
-			q.Add("or_in_cluster_name", cluster)
-		}
+	q.Add("or_in_org_name", info.Name)
+	for _, cluster := range clusters {
+		q.Add("or_in_cluster_name", cluster)
 	}
 	ctx.Request().URL.RawQuery = q.Encode()
 	return idStr, nil
