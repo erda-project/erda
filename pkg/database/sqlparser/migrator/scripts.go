@@ -42,6 +42,8 @@ type ScriptsParameters interface {
 	Modules() []string
 
 	Rules() []rules.Ruler
+
+	ChangedFiles() []string
 }
 
 // Scripts is the set of Module
@@ -55,6 +57,7 @@ type Scripts struct {
 	markPending     bool
 	destructive     int
 	destructiveText string
+	changedFiles    map[string]bool
 }
 
 // NewScripts range the directory
@@ -62,7 +65,12 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 	var (
 		modulesNames []string
 		services     = make(map[string]*Module, 0)
+		changedFiles = make(map[string]bool, len(parameters.ChangedFiles()))
 	)
+	for _, filename := range parameters.ChangedFiles() {
+		changedFiles[filename] = true
+	}
+
 	dirname := filepath.Join(parameters.Workdir(), parameters.MigrationDir())
 	modulesInfos, err := ioutil.ReadDir(dirname)
 	if err != nil {
@@ -124,13 +132,15 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 	}
 
 	return &Scripts{
-		Workdir:       parameters.Workdir(),
-		Dirname:       parameters.MigrationDir(),
-		ServicesNames: modulesNames,
-		Services:      services,
-		rulers:        parameters.Rules(),
-		markPending:   false,
-		destructive:   0,
+		Workdir:         parameters.Workdir(),
+		Dirname:         parameters.MigrationDir(),
+		ServicesNames:   modulesNames,
+		Services:        services,
+		rulers:          parameters.Rules(),
+		markPending:     false,
+		destructive:     0,
+		destructiveText: "",
+		changedFiles:    changedFiles,
 	}, nil
 }
 
@@ -197,15 +207,26 @@ func (s *Scripts) AlterPermissionLint() error {
 func (s *Scripts) MarkPending(tx *gorm.DB) {
 	for _, module := range s.Services {
 		for i := range module.Scripts {
-			var record HistoryModel
-			if tx := tx.Where(map[string]interface{}{
-				"filename": module.Scripts[i].GetName(),
-			}).
-				First(&record); tx.Error != nil || tx.RowsAffected == 0 {
+			var (
+				record HistoryModel
+				where  = map[string]interface{}{
+					"filename": module.Scripts[i].GetName(),
+				}
+			)
+			if tx := tx.Where(where).First(&record); tx.Error != nil || tx.RowsAffected == 0 {
 				module.Scripts[i].Pending = true
-			} else {
-				module.Scripts[i].Pending = false
-				module.Scripts[i].Record = &record
+				continue
+			}
+
+			module.Scripts[i].Pending = false
+			module.Scripts[i].Record = &record
+
+			if _, ok := s.changedFiles[module.Scripts[i].GetName()]; ok {
+				if tx := tx.Where(where).Update("checksum", module.Scripts[i].Checksum()); tx.Error != nil {
+					logrus.WithError(tx.Error).Warnln("failed to update script record checksum")
+					continue
+				}
+				module.Scripts[i].Record.Checksum = module.Scripts[i].Checksum()
 			}
 		}
 	}

@@ -125,12 +125,18 @@ var Migrate = command.Command{
 			Doc:          "[Migrate] skip doing pre-migration and real migration",
 			DefaultValue: false,
 		},
+		command.StringListFlag{
+			Short:        "",
+			Name:         "changed-files",
+			Doc:          "[Migrate] the installed files that is changed",
+			DefaultValue: nil,
+		},
 	),
 	Run: RunMigrate,
 }
 
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
-	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool) error {
+	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, changedFiles []string) error {
 	logrus.Infoln("Erda Migrator is working")
 
 	var p = parameters{
@@ -251,6 +257,7 @@ type parameters struct {
 	workdir       string
 	debugSQL      bool
 	rules         []rules.Ruler
+	changedFiles  []string
 
 	skipLint       bool
 	skipSandbox    bool
@@ -307,4 +314,8 @@ func (p parameters) SkipMigrate() bool {
 
 func (p parameters) Rules() []rules.Ruler {
 	return p.rules
+}
+
+func (p parameters) ChangedFiles() []string {
+	return p.changedFiles
 }

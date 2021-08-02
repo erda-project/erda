@@ -243,6 +243,10 @@ func (p *scriptsParameters) Rules() []rules.Ruler {
 	return p.rules
 }
 
+func (p *scriptsParameters) ChangedFiles() []string {
+	return nil
+}
+
 func isBaseScript(data []byte) bool {
 	return bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
 		bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
