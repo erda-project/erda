@@ -40,7 +40,7 @@ func (db *MSPProjectDB) Create(project *MSPProject) (*MSPProject, error) {
 
 func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 	project := MSPProject{}
-	err := db.db().Where("`id` = ?", id).Find(&project).Error
+	err := db.db().Where("`id` = ?", id).Where("`is_deleted` = ?", false).Find(&project).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
