@@ -17,6 +17,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/task"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -30,21 +32,29 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
 	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		if force != "true" {
 			if err == jsonstore.NotFoundErr {
+				logrus.Errorf("not found runtime %s on namespace %s", name, namespace)
 				return DeleteNotFound
 			}
+			logrus.Errorf("get from etcd err: %v when delete runtime %s on namespace %s", err, name, namespace)
 			return err
 		}
 	}
-
+	ns := sg.ProjectNamespace
+	if ns == "" {
+		ns = sg.Type
+	}
+	logrus.Infof("start to delete service group %s on namespace %s", sg.ID, ns)
 	if _, err := s.handleServiceGroup(context.Background(), &sg, task.TaskDestroy); err != nil {
 		if force != "true" {
 			return err
 		}
 	}
+	logrus.Infof("delete service group %s on namespace %s from etcd", sg.ID, ns)
 	if err := s.js.Remove(context.Background(), mkServiceGroupKey(namespace, name), nil); err != nil {
 		if force != "true" {
 			return err
 		}
 	}
+	logrus.Infof("delete service group %s on namespace %s from etcd successfully", sg.ID, ns)
 	return nil
 }

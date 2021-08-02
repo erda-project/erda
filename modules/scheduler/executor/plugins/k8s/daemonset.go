@@ -61,6 +61,7 @@ func (k *Kubernetes) getDaemonSetStatusFromMap(service *apistructs.Service, daem
 }
 
 func (k *Kubernetes) deleteDaemonSet(namespace, name string) error {
+	logrus.Infof("delete daemonset %s on namespace %s", name, namespace)
 	return k.ds.Delete(namespace, name)
 }
 

@@ -246,6 +246,7 @@ func (k *Kubernetes) createProjectService(service *apistructs.Service, sgID stri
 }
 
 func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
+	logrus.Infof("delete the kubernetes service %s on namespace %s", service.ProjectServiceName, service.Namespace)
 	if service.ProjectServiceName != "" {
 		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
 		if ok {
@@ -258,6 +259,7 @@ func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
 			}
 		}
 	}
+	logrus.Infof("delete the kubernetes service %s on namespace %s", service.ProjectServiceName, service.Namespace)
 	return nil
 }
 
