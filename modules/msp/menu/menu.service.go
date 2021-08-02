@@ -49,6 +49,9 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	if req.Type == tenantpb.Type_MSP.String() {
 		var mspItems []*pb.MenuItem
 		for _, item := range items {
+			if item.Key == "MonitorIntro" {
+				continue
+			}
 			if item.Key == "ServiceGovernance" || item.Key == "AppMonitor" {
 				params := s.composeMSPMenuParams(req)
 				item.Params = params
