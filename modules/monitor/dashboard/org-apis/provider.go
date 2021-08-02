@@ -27,19 +27,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-type define struct{}
-
-func (d *define) Services() []string     { return []string{"org-apis"} }
-func (d *define) Dependencies() []string { return []string{"http-server", "metrics-query", "i18n"} }
-func (d *define) Summary() string        { return "org apis" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
-
 type config struct {
 	OfflineTimeout time.Duration `file:"offline_timeout"`
 	OfflineSleep   time.Duration `file:"offline_sleep"`
@@ -61,6 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(
 		bundle.WithHTTPClient(hc),
 		bundle.WithCoreServices(),
+		bundle.WithClusterManager(),
 	)
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
@@ -70,5 +58,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("org-apis", &define{})
+	servicehub.Register("org-apis", &servicehub.Spec{
+		Services:     []string{"org-apis"},
+		Dependencies: []string{"http-server", "metrics-query", "i18n"},
+		Description:  "org apis",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
