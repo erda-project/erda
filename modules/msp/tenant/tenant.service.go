@@ -41,8 +41,12 @@ func GenerateTenantID(projectID string, tenantType, workspace string) string {
 	return hex.EncodeToString(md5H.Sum(nil))
 }
 
-func (s *tenantService) GetTenantID(projectID int64, workspace, tenantGroup, tenantType string) (string, error) {
-	item, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(projectID, workspace)
+func (s *tenantService) GetTenantID(projectID, workspace, tenantGroup, tenantType string) (string, error) {
+	id, err := strconv.ParseInt(projectID, 10, 64)
+	if err != nil {
+		return "", err
+	}
+	item, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(id, workspace)
 	if err != nil {
 		return "", err
 	}
@@ -183,6 +187,15 @@ func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 		return nil, errors.NewInternalServerErrorMessage("tenant not exist.")
 	}
 	return &pb.GetTenantResponse{Data: s.covertToTenant(tenant)}, nil
+}
+
+func (s *tenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+	tenantID := GenerateTenantID(req.ProjectID, req.TenantType, req.Workspace)
+	_, err := s.MSPTenantDB.DeleteTenantByTenantID(tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteTenantResponse{Data: nil}, nil
 }
 
 func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {

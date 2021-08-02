@@ -49,3 +49,16 @@ func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 	}
 	return &project, err
 }
+
+func (db *MSPProjectDB) Delete(id string) (*MSPProject, error) {
+	project, err := db.Query(id)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	project.IsDeleted = true
+	err = db.Model(&project).Update(&project).Error
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return project, err
+}

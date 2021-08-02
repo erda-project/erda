@@ -243,6 +243,24 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 	return &pb.GetProjectResponse{Data: project}, nil
 }
 
+func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.DeleteProjectResponse, error) {
+	_, err := s.MSPProjectDB.Delete(req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	tenants, err := s.MSPTenantDB.QueryTenantByProjectID(req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	for _, mspTenant := range tenants {
+		_, err := s.MSPTenantDB.DeleteTenantByTenantID(tenant.GenerateTenantID(mspTenant.RelatedProjectId, mspTenant.Type, mspTenant.RelatedWorkspace))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &pb.DeleteProjectResponse{Data: nil}, nil
+}
+
 func (s *projectService) convertToProject(project *db.MSPProject) *pb.Project {
 	return &pb.Project{
 		Id:          project.Id,
