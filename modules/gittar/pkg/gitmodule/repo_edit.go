@@ -57,6 +57,19 @@ type CreateCommit struct {
 	Branch    string            `json:"branch"`
 }
 
+func (req *CreateCommit) Validate() error {
+	if req.Message == "" {
+		return errors.New("the message is empty")
+	}
+	if req.Branch == "" {
+		return errors.New("the branch is empty")
+	}
+	if len(req.Actions) <= 0 {
+		return errors.New("the actions is empty")
+	}
+	return nil
+}
+
 func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 	repo.RwLock.RLock()
 	defer repo.RwLock.RUnlock()
