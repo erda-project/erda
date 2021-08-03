@@ -24,20 +24,20 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-var MSP_PROJECT_LIST = apis.ApiSpec{
-	Path:        "/api/msp/tenant/projects",
-	BackendPath: "/api/msp/tenant/projects",
+var MSP_METRIC_PROJECT_OVERVIEW = apis.ApiSpec{
+	Path:        "/api/msp/metrics/tenant/project/overview",
+	BackendPath: "/api/msp/metrics/tenant/project/overview",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Custom:      attachProjectParams,
+	Custom:      attachMetricProjectParams,
 	IsOpenAPI:   true,
-	Doc:         "GET MSP projects",
+	Doc:         "GET MSP project overview for dashboard",
 }
 
-func attachProjectParams(w http.ResponseWriter, r *http.Request) {
+func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("User-ID")
 	orgID := r.Header.Get("Org-ID")
 	lang := r.Header.Get("lang")
@@ -54,19 +54,22 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := r.URL.Query()
-	params.Del("projectId")
+
+	params.Del("in_project_id")
 	for _, p := range perms.List {
 		if p.Scope.Type == apistructs.ProjectScope && p.Access {
-			params.Add("projectId", p.Scope.ID)
+			params.Add("in_project_id", p.Scope.ID)
 		}
 	}
 
 	var data json.RawMessage
-	cr = client.Get(discover.MSP()).
+	cr = client.Post(discover.MSP()).
 		Header("lang", lang).
 		Header("User-ID", userID).
 		Header("Org-ID", orgID).
-		Path(r.URL.Path).Params(params)
+		Path(r.URL.Path).
+		Params(params).
+		RawBody(r.Body)
 
 	if err := utils.DoJson(cr, &data); err != nil {
 		ErrFromError(w, err)
@@ -74,26 +77,4 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, data)
-}
-
-func Success(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	b, _ := json.Marshal(utils.Resp{
-		Success: true,
-		Data:    data,
-	})
-	w.Write(b)
-}
-func ErrFromError(w http.ResponseWriter, error error) {
-	Err(w, &apistructs.ErrorResponse{Code: "InternalError", Msg: error.Error()}, http.StatusInternalServerError)
-}
-func Err(w http.ResponseWriter, err *apistructs.ErrorResponse, httpCode int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(httpCode)
-	b, _ := json.Marshal(utils.Resp{
-		Success: false,
-		Err:     err,
-	})
-	w.Write(b)
 }

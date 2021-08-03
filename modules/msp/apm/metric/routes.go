@@ -46,6 +46,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.POST(apiPathPrefix+"/metrics/:metric", p.metricQuery, checkByTerminusKeys)
 	routes.GET(apiPathPrefix+"/metrics/:metric/:aggregate", p.metricQuery, checkByTerminusKeys)
 	routes.POST(apiPathPrefix+"/metrics/:metric/:aggregate", p.metricQuery, checkByTerminusKeys)
+	routes.POST(apiPathPrefix+"/metrics/tenant/project/overview", p.metricQueryByQLForProjectOverview)
 
 	checkByScopeID := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP("scopeId"),
@@ -57,6 +58,14 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.Any(apiPathPrefix+"/dashboard/blocks", p.proxyBlocks, checkByScopeID)
 	routes.Any(apiPathPrefix+"/dashboard/blocks/:id", p.proxyBlock, checkByScopeID)
 	return nil
+}
+
+func (p *provider) metricQueryByQLForProjectOverview(rw http.ResponseWriter, r *http.Request) interface{} {
+	metric := p.getMetricFromSQL(r)
+	if len(metric) <= 0 {
+		return api.Errors.InvalidParameter("not found metric name")
+	}
+	return p.proxyMonitor("/api/query", nil, rw, r)
 }
 
 func (p *provider) metricQueryByQL(rw http.ResponseWriter, r *http.Request) interface{} {
