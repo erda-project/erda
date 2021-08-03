@@ -15,13 +15,13 @@ package project
 
 import (
 	"encoding/json"
-	"fmt"
+	"net/http"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-	"net/http"
 )
 
 var MSP_METRIC_PROJECT_OVERVIEW = apis.ApiSpec{
@@ -70,10 +70,6 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 		Path(r.URL.Path).
 		Params(params).
 		RawBody(r.Body)
-
-	fmt.Println("*************************", r.URL.Path)
-	fmt.Println("*************************", params)
-	fmt.Println("*************************", r.Body)
 
 	if err := utils.DoJson(cr, &data); err != nil {
 		ErrFromError(w, err)
