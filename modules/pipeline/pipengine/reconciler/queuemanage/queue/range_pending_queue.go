@@ -59,7 +59,9 @@ func (q *defaultQueue) RangePendingQueue() {
 			q.unsetNeedReRangePendingQueueFlag()
 		}
 	}()
+	// TODO: query items every cycle instead of using original passed range, support items priority swap
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
+		time.Sleep(time.Hour * 1)
 		// fast reRange
 		defer func() {
 			if q.needReRangePendingQueue() {
