@@ -23,7 +23,7 @@ import (
 var ADAPTOR_CICD_CONFIG_NAMESPACES = apis.ApiSpec{
 	Path:         "/api/cicds/actions/fetch-config-namespaces",
 	BackendPath:  "/api/cicds/actions/fetch-config-namespaces",
-	Host:         "dop.default.svc.cluster.local:9527",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,
