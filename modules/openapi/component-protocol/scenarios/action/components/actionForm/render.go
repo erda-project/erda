@@ -195,8 +195,11 @@ func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPr
 	maxTimes := apistructs.FormPropItem{
 		Label:     "最大循环次数",
 		Component: "inputNumber",
-		Key:       GroupLoop + "." + "strategy.max_times",
-		Group:     GroupLoop,
+		ComponentProps: map[string]interface{}{
+			"precision": 0,
+		},
+		Key:   GroupLoop + "." + "strategy.max_times",
+		Group: GroupLoop,
 	}
 	declineRatio := apistructs.FormPropItem{
 		Label:     "衰退比例",
@@ -208,9 +211,12 @@ func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPr
 	declineLimit := apistructs.FormPropItem{
 		Label:     "衰退最大值(秒)",
 		Component: "inputNumber",
-		Key:       GroupLoop + "." + "strategy.decline_limit_sec",
-		Group:     GroupLoop,
-		LabelTip:  "循环最大间隔时间",
+		ComponentProps: map[string]interface{}{
+			"precision": 0,
+		},
+		Key:      GroupLoop + "." + "strategy.decline_limit_sec",
+		Group:    GroupLoop,
+		LabelTip: "循环最大间隔时间",
 	}
 	interval := apistructs.FormPropItem{
 		Label:     "起始间隔(秒)",
