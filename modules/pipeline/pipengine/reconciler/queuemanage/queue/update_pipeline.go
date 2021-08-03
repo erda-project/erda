@@ -14,13 +14,44 @@
 package queue
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (q *defaultQueue) UpdatePipelinePriority(p *spec.Pipeline, priority int64) {
+func (q *defaultQueue) BatchUpdatePipelinePriorityInQueue(pipelines []*spec.Pipeline) error {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	itemKey := makeItemKey(p)
-	q.eq.Add(itemKey, priority, *p.TimeCreated)
+	q.updatingPendingQueue = true
+	defer q.unsetIsUpdatingPendingQueueFlag()
+
+	peeked := q.eq.PendingQueue().Peek()
+	if peeked == nil {
+		return fmt.Errorf("pending queue is empty")
+	}
+
+	priority := peeked.Priority() + int64(len(pipelines))
+
+	for _, p := range pipelines {
+		pipelineID := makeItemKey(p)
+		if !q.eq.InPending(pipelineID) {
+			return fmt.Errorf("failed to query pipeline: %s in pending queue", pipelineID)
+		}
+	}
+
+	for _, p := range pipelines {
+		if p.Extra.QueueInfo.PriorityChangeHistory == nil {
+			p.Extra.QueueInfo.PriorityChangeHistory = []int64{p.Extra.QueueInfo.CustomPriority}
+		}
+		p.Extra.QueueInfo.PriorityChangeHistory = append(p.Extra.QueueInfo.PriorityChangeHistory, priority)
+		p.Extra.QueueInfo.CustomPriority = priority
+		priority -= 1
+		if err := q.dbClient.UpdatePipelineExtraByPipelineID(p.ID, &p.PipelineExtra); err != nil {
+			return err
+		}
+		q.AddPipelineIntoQueueUnblock(p, nil)
+	}
+
+	return nil
 }

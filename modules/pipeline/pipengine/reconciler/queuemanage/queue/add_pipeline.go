@@ -25,7 +25,26 @@ import (
 func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{}) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	q.AddPipelineIntoQueueUnblock(p, doneCh)
+}
 
+// parsePipelineIDFromQueueItem
+// item key is the pipeline id
+func parsePipelineIDFromQueueItem(item priorityqueue.Item) uint64 {
+	pipelineID, err := strconv.ParseUint(item.Key(), 10, 64)
+	if err != nil {
+		rlog.Errorf("failed to parse pipeline id from queue item key, key: %s, err: %v", item.Key(), err)
+		return 0
+	}
+	return pipelineID
+}
+
+// makeItemKey
+func makeItemKey(p *spec.Pipeline) string {
+	return strconv.FormatUint(p.ID, 10)
+}
+
+func (q *defaultQueue) AddPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan struct{}) {
 	// make item key by pipeline info
 	itemKey := makeItemKey(p)
 	// set priority
@@ -49,13 +68,18 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	//   else add to pending queue.
 	if p.Status.AfterPipelineQueue() {
 		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
-		go func() {
-			doneCh <- struct{}{}
-			close(doneCh)
-		}()
+		//    if doneCh is nil, external operations do not effect doneCh
+		if doneCh != nil {
+			go func() {
+				doneCh <- struct{}{}
+				close(doneCh)
+			}()
+		}
 	} else {
 		q.eq.Add(itemKey, priority, *createdTime)
-		q.doneChanByPipelineID[p.ID] = doneCh
+		if doneCh != nil {
+			q.doneChanByPipelineID[p.ID] = doneCh
+		}
 	}
 
 	// judge needReRangePendingQueue flag after p is added into queue.
@@ -69,20 +93,4 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	go func() {
 		q.rangeAtOnceCh <- true
 	}()
-}
-
-// parsePipelineIDFromQueueItem
-// item key is the pipeline id
-func parsePipelineIDFromQueueItem(item priorityqueue.Item) uint64 {
-	pipelineID, err := strconv.ParseUint(item.Key(), 10, 64)
-	if err != nil {
-		rlog.Errorf("failed to parse pipeline id from queue item key, key: %s, err: %v", item.Key(), err)
-		return 0
-	}
-	return pipelineID
-}
-
-// makeItemKey
-func makeItemKey(p *spec.Pipeline) string {
-	return strconv.FormatUint(p.ID, 10)
 }

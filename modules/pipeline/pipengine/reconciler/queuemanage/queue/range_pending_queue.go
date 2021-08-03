@@ -43,7 +43,7 @@ const (
 )
 
 func (q *defaultQueue) RangePendingQueue() {
-	if q.getIsRangingPendingQueue() {
+	if q.getIsUpdatingPendingQueue() || q.getIsRangingPendingQueue() {
 		return
 	}
 	q.setIsRangingPendingQueueFlag()
