@@ -40,6 +40,7 @@ var MSP_PROJECT_LIST = apis.ApiSpec{
 func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("User-ID")
 	orgID := r.Header.Get("Org-ID")
+	lang := r.Header.Get("lang")
 
 	// get permissions
 	client := httpclient.New()
@@ -62,6 +63,7 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 
 	var data json.RawMessage
 	cr = client.Get(discover.MSP()).
+		Header("lang", lang).
 		Header("User-ID", userID).
 		Header("Org-ID", orgID).
 		Path(r.URL.Path).Params(params)
