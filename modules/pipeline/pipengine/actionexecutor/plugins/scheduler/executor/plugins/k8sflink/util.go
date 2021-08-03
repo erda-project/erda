@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 )
 
 const (
@@ -132,7 +133,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 		Spec: flinkoperatorv1beta1.FlinkClusterSpec{
 			Image: flinkoperatorv1beta1.ImageSpec{
 				Name:       data.Spec.Image,
-				PullPolicy: corev1.PullAlways,
+				PullPolicy: logic.GetPullImagePolicy(),
 				PullSecrets: []corev1.LocalObjectReference{
 					{
 						Name: apistructs.AliyunRegistry,
@@ -218,6 +219,7 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 		flinkoperatorv1beta1.ClusterStatePartiallyStopped,
 		flinkoperatorv1beta1.ClusterStateStopped:
 		statusDesc.Status = apistructs.StatusStopped
+		return statusDesc
 	}
 	if status.Components.Job == nil {
 		return statusDesc
@@ -227,9 +229,20 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 		statusDesc.Status = apistructs.StatusStoppedOnOK
 	case flinkoperatorv1beta1.JobStateFailed:
 		statusDesc.Status = apistructs.StatusStoppedOnFailed
+		return statusDesc
 	case flinkoperatorv1beta1.JobStateCancelled:
 		statusDesc.Status = apistructs.StatusStoppedByKilled
+		return statusDesc
 	}
+	switch status.Components.TaskManagerStatefulSet.State {
+	case flinkoperatorv1beta1.ComponentStateReady,
+		flinkoperatorv1beta1.ComponentStateNotReady,
+		flinkoperatorv1beta1.ComponentStateUpdating:
+		statusDesc.Status = apistructs.StatusRunning
+	case flinkoperatorv1beta1.ComponentStateDeleted:
+		statusDesc.Status = apistructs.StatusStoppedByKilled
+	}
+
 	return statusDesc
 }
 

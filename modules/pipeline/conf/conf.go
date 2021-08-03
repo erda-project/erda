@@ -109,6 +109,7 @@ type Conf struct {
 
 	// scheduler executor refresh interval
 	ExecutorRefreshIntervalMinute uint64 `env:"EXECUTOR_REFRESH_INTERVAL_MINUTE" default:"20"`
+	SpecifyImagePullPolicy        string `env:"SPECIFY_IMAGE_PULL_POLICY" default:"IfNotPresent"`
 }
 
 var cfg Conf
@@ -349,4 +350,9 @@ func FailedPipelineDefaultResourceGCTTLSec() uint64 {
 // ExecutorRefreshIntervalMinute return default executor refresh interval
 func ExecutorRefreshIntervalMinute() uint64 {
 	return cfg.ExecutorRefreshIntervalMinute
+}
+
+// SpecifyImagePullPolicy return default image pull policy
+func SpecifyImagePullPolicy() string {
+	return cfg.SpecifyImagePullPolicy
 }
