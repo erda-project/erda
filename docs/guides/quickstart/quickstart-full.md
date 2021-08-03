@@ -5,6 +5,13 @@
 * k8s cluster (optional, required for CI/CD)
 * host resource required: 4 Cores with 8 GB RAM
 
+## One-line script setup
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/erda-project/erda/master/quick-start/quick-start.sh)"
+```
+
+If you encounter problems using the script above to set up erda, try manually set up following the steps described bellow.
+
 ## Setup
 
 First, you need change directory to `quick-start`.
