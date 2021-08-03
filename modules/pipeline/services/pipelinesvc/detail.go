@@ -92,6 +92,16 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 				needApproval = true
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
+			if task.Result.Metadata == nil {
+				task.Result.Metadata = make([]apistructs.MetadataField, 0)
+			}
+			// add task inspect to result metadata if task status isn`t success
+			if !task.Status.IsSuccessStatus() && task.Result.Events != "" {
+				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
+					Name:  "task-events",
+					Value: task.Result.Events,
+				})
+			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,

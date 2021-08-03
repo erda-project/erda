@@ -51,6 +51,8 @@ type PipelineTaskResult struct {
 	Metadata    Metadata                 `json:"metadata,omitempty"`
 	Errors      []ErrorResponse          `json:"errors,omitempty"`
 	MachineStat *PipelineTaskMachineStat `json:"machineStat,omitempty"`
+	Inspect     string                   `json:"inspect,omitempty"`
+	Events      string                   `json:"events,omitempty"`
 }
 
 type PipelineTaskSnippetDetail struct {

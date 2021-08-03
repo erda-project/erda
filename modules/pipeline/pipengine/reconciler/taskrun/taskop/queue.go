@@ -90,6 +90,12 @@ func (q *queue) Processing() (interface{}, error) {
 			lastMessage = newMsg
 		}
 
+		if !statusDesc.Status.IsEndStatus() && statusDesc.Status != apistructs.PipelineStatusRunning {
+			if inspect, _ := q.Executor.Inspect(q.Ctx, q.Task); inspect.Desc != "" {
+				_ = q.TaskRun().UpdateTaskInspect(inspect.Desc)
+			}
+		}
+
 		if statusDesc.Status == apistructs.PipelineStatusUnknown {
 			logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q queue get status %q, retry", q.P.ID, q.Task.Name, apistructs.PipelineStatusUnknown)
 			return false, err4EnableDeclineRatio

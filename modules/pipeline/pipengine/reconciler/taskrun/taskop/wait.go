@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -108,8 +107,8 @@ func (w *wait) WhenDone(data interface{}) error {
 		if inspect, err := w.Executor.Inspect(w.Ctx, w.Task); err != nil {
 			logrus.Errorf("failed to inspect task, pipelineID:%d, taskID: %d, err: %v", w.P.ID, w.Task.ID, err)
 		} else {
-			if err := w.reportTaskInspect(inspect); err != nil {
-				logrus.Errorf("failed to report task inspect, pipelineID:%d, taskID: %d, err: %v", w.P.ID, w.Task.ID, err)
+			if inspect.Desc != "" {
+				_ = w.TaskRun().UpdateTaskInspect(inspect.Desc)
 			}
 		}
 	}
@@ -185,14 +184,4 @@ func (w *wait) TuneTriggers() taskrun.TaskOpTuneTriggers {
 		BeforeProcessing: aoptypes.TuneTriggerTaskBeforeWait,
 		AfterProcessing:  aoptypes.TuneTriggerTaskAfterWait,
 	}
-}
-
-func (w *wait) reportTaskInspect(inspect interface{}) error {
-	return w.DBClient.CreatePipelineReport(&spec.PipelineReport{
-		PipelineID: w.P.ID,
-		Type:       apistructs.PipelineReportTypeInspect,
-		Meta: apistructs.PipelineReportMeta{
-			"data": inspect,
-		},
-	})
 }
