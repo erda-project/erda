@@ -42,13 +42,6 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 		}
 	}
 
-	if !(l.Flen == -1 || r.Flen == -1) && l.Flen != r.Flen {
-		return &Equal{
-			equal:  false,
-			reason: fmt.Sprintf("FieldType.Flen is not equal, left: %v, right: %v", l.Flen, r.Flen),
-		}
-	}
-
 	if !(l.Decimal == -1 || r.Decimal == -1) && l.Decimal != r.Decimal {
 		return &Equal{
 			equal:  false,
