@@ -14,6 +14,7 @@
 package migrator
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ const (
 )
 
 type installType string
+
+const patchesKey = "patchesKey"
 
 type Migrator struct {
 	Parameters
@@ -121,12 +124,11 @@ func (mig *Migrator) Run() (err error) {
 	if tx.Error == nil && tx.RowsAffected > 0 {
 		logrus.Infoln("found migration histories, it is the normal update installation...")
 		mig.installingType = normalUpdate
-		return mig.normalUpdate()
+	} else {
+		logrus.Infoln("there are some tables but no migration histories, it is the first time update installation by Erda MySQL Migration...")
+		mig.installingType = firstTimeUpdate
 	}
-
-	logrus.Infoln("there are some tables but no migration histories, it is the first time update installation by Erda MySQL Migration...")
-	mig.installingType = firstTimeUpdate
-	return mig.firstTimeUpdate()
+	return mig.normalUpdate()
 }
 
 func (mig *Migrator) newInstallation() (err error) {
@@ -156,10 +158,11 @@ func (mig *Migrator) newInstallation() (err error) {
 	}
 	logrus.Infoln("OK")
 
+	var ctx = context.Background()
 	// execute in sandbox
 	if !mig.SkipSandbox() {
 		logrus.Infoln("DO MIGRATION IN SANDBOX...")
-		if err = mig.migrateSandbox(); err != nil {
+		if err = mig.migrateSandbox(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("OK")
@@ -168,7 +171,7 @@ func (mig *Migrator) newInstallation() (err error) {
 	// pre-migrate schema SQLs
 	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
 		logrus.Infoln("DO PRE-MIGRATION...")
-		if err = mig.preMigrate(); err != nil {
+		if err = mig.preMigrate(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("OK")
@@ -177,7 +180,7 @@ func (mig *Migrator) newInstallation() (err error) {
 	// migrate
 	if !mig.SkipMigrate() {
 		logrus.Infoln("DO MIGRATION...")
-		if err = mig.migrate(); err != nil {
+		if err = mig.migrate(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("MIGRATE OK")
@@ -212,9 +215,11 @@ func (mig *Migrator) normalUpdate() (err error) {
 	}
 	logrus.Infoln("OK")
 
+	ctx := context.Background()
+
 	// installed script changes lint
 	logrus.Infoln("DO INSTALLED CHANGES LINT....")
-	if err = mig.LocalScripts.InstalledChangesLint(mig.DB()); err != nil {
+	if err = mig.LocalScripts.InstalledChangesLint(&ctx, mig.DB()); err != nil {
 		return err
 	}
 	logrus.Infoln("OK")
@@ -222,7 +227,7 @@ func (mig *Migrator) normalUpdate() (err error) {
 	if !mig.SkipSandbox() {
 		// migrate in sandbox
 		logrus.Infoln("DO MIGRATION IN SANDBOX....")
-		if err = mig.migrateSandbox(); err != nil {
+		if err = mig.migrateSandbox(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("OK")
@@ -231,7 +236,7 @@ func (mig *Migrator) normalUpdate() (err error) {
 	// pre migrate data
 	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
 		logrus.Infoln("DO PRE-MIGRATION....")
-		if err = mig.preMigrate(); err != nil {
+		if err = mig.preMigrate(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("PRE-MIGRATE OK")
@@ -240,49 +245,13 @@ func (mig *Migrator) normalUpdate() (err error) {
 	// migrate data
 	if !mig.SkipMigrate() {
 		logrus.Infoln("DO MIGRATION....")
-		if err = mig.migrate(); err != nil {
+		if err = mig.migrate(ctx); err != nil {
 			return err
 		}
 		logrus.Infoln("MIGRATE OK")
 	}
 
 	return nil
-}
-
-func (mig *Migrator) firstTimeUpdate() (err error) {
-	// the correct state in this time is db.Schema == baseScriptsSchema,
-	// if not, returns error, manual intervention.
-	// marks all baseScripts !pending, marks others pending
-
-	// record base
-	logrus.Infoln("RECORD BASE... ..")
-	new(HistoryModel).CreateTable(mig.DB())
-	now := time.Now()
-	for moduleName, module := range mig.LocalScripts.Services {
-		for i := range module.Scripts {
-			module.Scripts[i].Pending = true
-			if module.Scripts[i].IsBaseline() {
-				module.Scripts[i].Pending = false
-				record := HistoryModel{
-					ID:           0,
-					CreatedAt:    now,
-					UpdatedAt:    now,
-					ServiceName:  moduleName,
-					Filename:     filepath.Base(module.Scripts[i].GetName()),
-					Checksum:     module.Scripts[i].Checksum(),
-					InstalledBy:  "",
-					InstalledOn:  "",
-					LanguageType: string(module.Scripts[i].Type),
-					Reversed:     ddlreverser.ReverseCreateTableStmts(module.Scripts[i]),
-				}
-				if err := mig.DB().Create(&record).Error; err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return mig.normalUpdate()
 }
 
 func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
@@ -300,7 +269,7 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 	return nil
 }
 
-func (mig *Migrator) migrateSandbox() (err error) {
+func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 	if err = mig.destructiveLint(); err != nil {
 		return err
 	}
@@ -316,6 +285,33 @@ func (mig *Migrator) migrateSandbox() (err error) {
 	}
 	logrus.Infoln("OK")
 
+	rows, err := mig.SandBox().Raw("show tables").Rows()
+	if err != nil {
+		return err
+	}
+	logrus.Infoln("tables in sandbox:")
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return errors.Wrapf(err, "scan error")
+		}
+		logrus.Infoln(tableName)
+	}
+
+	if mig.installingType == firstTimeUpdate {
+		reason, ok := mig.compareSchemas(mig.SandBox())
+		if !ok {
+			logrus.WithField("reason", reason).Warnln("local schema is not equal with cloud schema, try to resolve it")
+			if err := mig.patchBeforeMigrating(mig.SandBox(), []string{patchInit}); err != nil {
+				return errors.Wrap(err, "failed to patch init")
+			}
+			reason, ok := mig.compareSchemas(mig.SandBox())
+			if !ok {
+				return errors.Errorf("local base schema is not equal with cloud schema: %s", reason)
+			}
+		}
+	}
+
 	// record base to sandbox
 	var records []HistoryModel
 	if err = mig.DB().Find(&records).Error; err != nil {
@@ -328,7 +324,18 @@ func (mig *Migrator) migrateSandbox() (err error) {
 		}
 	}
 
-	if err = mig.patchBeforeMigrating(mig.SandBox(), mig.SandBox().Begin(), true); err != nil {
+	value := ctx.Value(patchesKey)
+	var (
+		files []string
+		ok    bool
+	)
+	if value != nil {
+		files, ok = value.([]string)
+		if !ok {
+			return errors.New("failed to retrieve patches files")
+		}
+	}
+	if err = mig.patchBeforeMigrating(mig.SandBox(), files); err != nil {
 		return errors.Wrapf(err, "failed to patch before migrating in sandbox")
 	}
 
@@ -348,7 +355,7 @@ func (mig *Migrator) migrateSandbox() (err error) {
 					return errors.Wrapf(err, "failed to migrate in sandbox:  module name: %s, filename: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
-				if err := mig.patchSQLAfterInstalling(script, mig.SandBox(), tx, after); err != nil {
+				if err := mig.patchSQLAfterInstalling(script, mig.SandBox()); err != nil {
 					return errors.Wrapf(err, "failed to migrate patch in sandbox, module name: %s, filename: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
@@ -365,7 +372,7 @@ func (mig *Migrator) migrateSandbox() (err error) {
 }
 
 // pre migrate data SQLs, all applied in this runtime will be rollback
-func (mig *Migrator) preMigrate() (err error) {
+func (mig *Migrator) preMigrate(ctx context.Context) (err error) {
 	if err = mig.destructiveLint(); err != nil {
 		return err
 	}
@@ -380,18 +387,12 @@ func (mig *Migrator) preMigrate() (err error) {
 
 	mig.reversing = nil
 
-	if err = mig.patchBeforeMigrating(mig.DB(), mig.DB().Begin(), false); err != nil {
-		return errors.Wrapf(err, "failed to patch before migrating in pre-migration")
+	files, err := retrievePatchesFiles(ctx)
+	if err != nil {
+		return err
 	}
-
-	if mig.installingType == firstTimeUpdate {
-		// compare local base schema and cloud base schema for every service
-		logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
-		for _, service := range mig.LocalScripts.Services {
-			if equal := service.BaselineEqualCloud(mig.DB()); !equal.Equal() {
-				return errors.Errorf("local base schema is not equal with cloud schema: %s", equal.Reason())
-			}
-		}
+	if err = mig.patchBeforeMigrating(mig.DB(), files); err != nil {
+		return errors.Wrapf(err, "failed to patch before migrating in pre-migration")
 	}
 
 	// install every module
@@ -414,7 +415,7 @@ func (mig *Migrator) preMigrate() (err error) {
 					return errors.Wrapf(err, "failed to pre-migrate, module name: %s, script name: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
-				if err := mig.patchSQLAfterInstalling(script, mig.DB(), tx, after); err != nil {
+				if err := mig.patchSQLAfterInstalling(script, mig.DB()); err != nil {
 					return errors.Wrapf(err, "failed to patch after pre-migreating, module name: %s, script name: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
@@ -430,21 +431,57 @@ func (mig *Migrator) preMigrate() (err error) {
 	return nil
 }
 
-func (mig *Migrator) migrate() error {
+func (mig *Migrator) migrate(ctx context.Context) error {
 	now := time.Now()
 
-	if err := mig.patchBeforeMigrating(mig.DB(), mig.DB().Begin(), true); err != nil {
-		return errors.Wrap(err, "failed to patch before migrating")
-	}
-
 	if mig.installingType == firstTimeUpdate {
-		// compare local base schema and cloud base schema for every service
-		logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
-		for _, service := range mig.LocalScripts.Services {
-			if equal := service.BaselineEqualCloud(mig.DB()); !equal.Equal() {
-				return errors.Errorf("local base schema is not equal with cloud schema: %s", equal.Reason())
+		_, ok := mig.compareSchemas(mig.DB())
+		if !ok {
+			if err := mig.patchBeforeMigrating(mig.DB(), []string{patchInit}); err != nil {
+				return errors.Wrap(err, "failed to patch init")
+			}
+			reason, ok := mig.compareSchemas(mig.DB())
+			if !ok {
+				return errors.Errorf("local base schema is not equal with cloud schema: %s", reason)
 			}
 		}
+
+		// record base
+		logrus.Infoln("RECORD BASE... ..")
+		new(HistoryModel).CreateTable(mig.DB())
+		now := time.Now()
+		for moduleName, module := range mig.LocalScripts.Services {
+			for i := range module.Scripts {
+				module.Scripts[i].Pending = true
+				if module.Scripts[i].IsBaseline() {
+					module.Scripts[i].Pending = false
+					record := HistoryModel{
+						ID:           0,
+						CreatedAt:    now,
+						UpdatedAt:    now,
+						ServiceName:  moduleName,
+						Filename:     filepath.Base(module.Scripts[i].GetName()),
+						Checksum:     module.Scripts[i].Checksum(),
+						InstalledBy:  "",
+						InstalledOn:  "",
+						LanguageType: string(module.Scripts[i].Type),
+						Reversed:     ddlreverser.ReverseCreateTableStmts(module.Scripts[i]),
+					}
+					if err := mig.DB().Create(&record).Error; err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	files, err := retrievePatchesFiles(ctx)
+	if err != nil {
+		return err
+	}
+	logrus.Infoln("retrieve:", files)
+	if err := mig.patchBeforeMigrating(mig.DB(), files); err != nil {
+		return errors.Wrap(err, "failed to patch before migrating")
 	}
 
 	// install every service
@@ -471,7 +508,7 @@ func (mig *Migrator) migrate() error {
 					return errors.Wrapf(err, "failed to migrate: %+v",
 						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
 				}
-				if err := mig.patchSQLAfterInstalling(script, mig.DB(), tx, after); err != nil {
+				if err := mig.patchSQLAfterInstalling(script, mig.DB()); err != nil {
 					return errors.Wrapf(err, "failed to patch after migrating, module name: %s, script name: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
@@ -506,7 +543,7 @@ func (mig *Migrator) migrate() error {
 	return nil
 }
 
-func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, tx *gorm.DB, recordIt bool) error {
+func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, files []string) error {
 	mod := mig.LocalScripts.GetPatches()
 	if mod == nil {
 		return nil
@@ -515,74 +552,60 @@ func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, tx *gorm.DB, recordIt boo
 	logrus.WithField("module", mod.Name)
 	for _, script := range mod.Scripts {
 		var (
-			record      HistoryModel
-			patchRecord HistoryModel
-			filename    = strings.TrimPrefix(script.GetName(), patchPrefix)
-			where       = map[string]interface{}{"filename": filename}
-			patchWhere  = map[string]interface{}{"filename": script.GetName()}
-			hasPatched  = false
+			record   HistoryModel
+			filename = strings.TrimPrefix(script.GetName(), patchPrefix)
+			where    = map[string]interface{}{"filename": filename}
 		)
-		// if there is no corresponding original file, skip
-		_, originalScript, ok := mig.LocalScripts.GetScriptByFilename(filename)
-		if !ok {
+		// if the script is not in the diff checksum file list, skip
+		var in = false
+		for _, file := range files {
+			if file == script.GetName() {
+				in = true
+				break
+			}
+		}
+		if !in {
 			continue
 		}
 
 		// if the file is going to be patched is not installed, do not patch it
-		if db := db.Where(where).First(&record); db.Error != nil || db.RowsAffected == 0 {
+		if db := db.Where(where).First(&record); (db.Error != nil || db.RowsAffected == 0) && script.GetName() != patchInit {
 			continue
-		}
-		// if patch file is not changed, do not patch it
-		if db := db.Where(patchWhere).First(&patchRecord); db.RowsAffected > 0 {
-			hasPatched = true
-			if script.Checksum() == patchRecord.Checksum {
-				continue
-			}
 		}
 
 		switch script.Type {
 		case ScriptTypeSQL:
 			logrus.WithField("script name", script.GetName()).Infoln("patch it before all migrating")
-			// do the patch
-			after := func(tx *gorm.DB, err error) {
-				tx.Commit()
-			}
-			if err := mig.installSQL(script, db, tx, after); err != nil {
+			logrus.Infof("script Rawtext: %s", string(script.Rawtext))
+			if err := db.Exec(string(script.Rawtext)).Error; err != nil {
 				return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
 					mod.Name, script.GetName(), ScriptTypeSQL)
 			}
-			// correct the checksum
-			if err := db.Model(new(HistoryModel)).Where(where).
-				Update("checksum", originalScript.Checksum()).Error; err != nil {
-				return errors.Wrapf(err, "failed to patch new checksum, modeule name: %s, script name: %s, type: %s",
-					mod.Name, script.GetName(), ScriptTypeSQL)
-			}
-		}
 
-		// record it
-		if recordIt {
-			if hasPatched {
-				db.Model(new(HistoryModel)).Where(patchWhere).Update("checksum", script.Checksum())
-			} else {
-				db.Create(&HistoryModel{
-					ServiceName:  mod.Name,
-					Filename:     script.GetName(),
-					Checksum:     script.Checksum(),
-					LanguageType: string(script.Type),
-				})
+			// correct the checksum
+			// if there is no corresponding original file, skip
+			_, originalScript, ok := mig.LocalScripts.GetScriptByFilename(filename)
+			if ok {
+				if err := db.Model(new(HistoryModel)).Where(where).
+					Update("checksum", originalScript.Checksum()).Error; err != nil {
+					return errors.Wrapf(err, "failed to patch new checksum, modeule name: %s, script name: %s, type: %s",
+						mod.Name, script.GetName(), ScriptTypeSQL)
+				}
 			}
+		default:
+			return errors.New("only support .sql patch file")
 		}
 	}
 
 	return nil
 }
 
-func (mig *Migrator) patchSQLAfterInstalling(s *Script, exec *gorm.DB, begin *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
+func (mig *Migrator) patchSQLAfterInstalling(s *Script, exec *gorm.DB) (err error) {
 	script, ok := mig.LocalScripts.Patches.GetScriptByFilename(patchPrefix + s.GetName())
 	if !ok {
 		return nil
 	}
-	return mig.installSQL(script, exec, begin, after)
+	return exec.Raw(string(script.Rawtext)).Error
 }
 
 func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, tx *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
@@ -649,4 +672,31 @@ func (mig *Migrator) destructiveLint() error {
 	}
 
 	return nil
+}
+
+func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
+	logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
+	for _, service := range mig.LocalScripts.Services {
+		if equal := service.BaselineEqualCloud(db); !equal.Equal() {
+			return equal.Reason(), false
+		}
+	}
+	return "", true
+}
+
+func retrievePatchesFiles(ctx context.Context) ([]string, error) {
+	value := ctx.Value(patchesKey)
+	if value == nil {
+		logrus.Infoln("retrievePatchesFiles value is nil")
+		return nil, nil
+	}
+	var (
+		files []string
+		ok    bool
+	)
+	files, ok = value.([]string)
+	if !ok {
+		return nil, errors.New("failed to retrieve patches files list")
+	}
+	return files, nil
 }
