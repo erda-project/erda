@@ -140,6 +140,8 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 	if module, ok := scritps.Services[patchesModuleName]; ok {
 		scritps.Patches = module
 		delete(scritps.Services, patchesModuleName)
+	} else {
+		scritps.Patches = new(Module)
 	}
 
 	return scritps, nil
@@ -152,6 +154,16 @@ func (s *Scripts) Get(serviceName string) ([]*Script, bool) {
 
 func (s *Scripts) GetPatches() *Module {
 	return s.Patches
+}
+
+func (s *Scripts) GetScriptByFilename(filename string) (*Module, *Script, bool) {
+	for _, mod := range s.Services {
+		script, ok := mod.GetScriptByFilename(filename)
+		if ok {
+			return mod, script, true
+		}
+	}
+	return nil, nil, false
 }
 
 func (s *Scripts) Lint() error {
@@ -247,6 +259,9 @@ func (s *Scripts) InstalledChangesLint(db *gorm.DB) error {
 				continue
 			}
 			if script.Checksum() != script.Record.Checksum {
+				if _, ok := s.Patches.GetScriptByFilename(patchPrefix + script.GetName()); ok {
+					continue
+				}
 				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
 					moduleName, script.GetName())
 			}
