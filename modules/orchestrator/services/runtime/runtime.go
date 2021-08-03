@@ -164,10 +164,11 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 			apistructs.LabelAppName:       app.Name,
 			apistructs.LabelProjectName:   app.ProjectName,
 		},
-		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s", branch),
-		ClusterName:     releaseResp.ClusterName,
-		PipelineSource:  apistructs.PipelineSourceDice,
-		AutoRunAtOnce:   true,
+		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s-%d-%s", releaseReq.Workspace,
+			releaseReq.ApplicationID, branch),
+		ClusterName:    releaseResp.ClusterName,
+		PipelineSource: apistructs.PipelineSourceDice,
+		AutoRunAtOnce:  true,
 	})
 	if err != nil {
 		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
