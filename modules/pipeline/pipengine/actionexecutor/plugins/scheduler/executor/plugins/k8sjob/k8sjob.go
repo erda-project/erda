@@ -60,8 +60,6 @@ const (
 
 const (
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
-	// Specify Image Pull Policy with IfNotPresent,Always,Never
-	SpecifyImagePullPolicy = "SPECIFY_IMAGE_PULL_POLICY"
 )
 
 var (
@@ -409,16 +407,6 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		vols, volMounts, _ = logic.GenerateK8SVolumes(&job)
 	}
 
-	var imagePullPolicy corev1.PullPolicy
-	switch corev1.PullPolicy(os.Getenv(SpecifyImagePullPolicy)) {
-	case corev1.PullAlways:
-		imagePullPolicy = corev1.PullAlways
-	case corev1.PullNever:
-		imagePullPolicy = corev1.PullNever
-	default:
-		imagePullPolicy = corev1.PullIfNotPresent
-	}
-
 	scheduleInfo2, _, err := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	if err != nil {
 		return nil, err
@@ -470,7 +458,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 							},
-							ImagePullPolicy: imagePullPolicy,
+							ImagePullPolicy: logic.GetPullImagePolicy(),
 							VolumeMounts:    volMounts,
 						},
 					},
@@ -531,7 +519,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 					//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 				},
 			},
-			ImagePullPolicy: imagePullPolicy,
+			ImagePullPolicy: logic.GetPullImagePolicy(),
 		}
 
 		volumeMount := corev1.VolumeMount{
