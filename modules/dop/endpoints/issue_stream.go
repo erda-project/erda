@@ -59,7 +59,7 @@ func (e *Endpoints) CreateCommentIssueStream(ctx context.Context, r *http.Reques
 		if err != nil {
 			return apierrors.ErrCreateIssueStream.InvalidParameter(err).ToResp(), nil
 		}
-		istParam.UserName = user.Name
+		istParam.UserName = user.Nick
 	} else { // mr 类型评论
 		istParam.MRInfo = createReq.MRInfo
 	}
