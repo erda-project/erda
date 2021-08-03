@@ -966,21 +966,7 @@ func (i ComponentIssueBoard) FilterByPriority(req apistructs.IssuePagingRequest,
 // FilterByTime 根据完成时间(planFinishedAt)分为：未分类，已过期，1天内过期，2天内，7天内，30天，未来
 func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
 	// 为减少事件数量，不需要展示终态的事项[CLOSED, DONE]
-	nowTime := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	tomorrow := nowTime.Add(time.Hour * time.Duration(24))
-	twoDay := nowTime.Add(time.Hour * time.Duration(24*2))
-	sevenDay := nowTime.Add(time.Hour * time.Duration(24*7))
-	thirtyDay := nowTime.Add(time.Hour * time.Duration(24*30))
-	timeList := [][]int64{
-		{0, 0}, // 未定义
-		{1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},                 // 已过期
-		{nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},   // 今天
-		{tomorrow.Unix(), twoDay.Add(time.Second * time.Duration(-1)).Unix()},    // 明天
-		{twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // 7天
-		{sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // 30天
-		{thirtyDay.Unix(), 0}, // 未来
-	}
-
+	timeMap := getTimeMap()
 	// map并发写需要加锁
 	date := struct {
 		Map  map[ExpireType]CartList
@@ -1000,8 +986,8 @@ func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kan
 	wg.Add(len(expireTypes))
 
 	// 按特定PlanFinishedAt的一个并发查询、
-	for index, et := range expireTypes {
-		f := func(tm ExpireType, index int) {
+	for _, et := range expireTypes {
+		go func(tm ExpireType) {
 			defer func() {
 				wg.Done()
 			}()
@@ -1013,11 +999,11 @@ func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kan
 			if tm == ExpireTypeUndefined {
 				r.IsEmptyPlanFinishedAt = true
 			} else {
-				r.StartFinishedAt = timeList[index][0] * 1000
+				r.StartFinishedAt = timeMap[tm][0] * 1000
 				if req.StartFinishedAt != 0 && r.StartFinishedAt < req.StartFinishedAt {
 					r.StartFinishedAt = req.StartFinishedAt
 				}
-				r.EndFinishedAt = timeList[index][1] * 1000
+				r.EndFinishedAt = timeMap[tm][1] * 1000
 				if req.EndFinishedAt != 0 && (r.EndFinishedAt > req.EndFinishedAt || tm == ExpireTypeExpireInFuture) {
 					r.EndFinishedAt = req.EndFinishedAt
 				}
@@ -1047,14 +1033,32 @@ func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kan
 			date.Lock.Unlock()
 			// uid
 			uids = append(uids, rsp.UserIDs...)
-		}
-		go f(et, index)
+		}(et)
 	}
 	wg.Wait()
 	for _, v := range expireTypes {
 		cls = append(cls, date.Map[v])
 	}
 	return
+}
+
+// getTimeMap return timeMap,key: ExpireType,value: struct of startTime and endTime
+func getTimeMap() map[ExpireType][]int64 {
+	nowTime := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	tomorrow := nowTime.Add(time.Hour * time.Duration(24))
+	twoDay := nowTime.Add(time.Hour * time.Duration(24*2))
+	sevenDay := nowTime.Add(time.Hour * time.Duration(24*7))
+	thirtyDay := nowTime.Add(time.Hour * time.Duration(24*30))
+	timeMap := map[ExpireType][]int64{
+		ExpireTypeUndefined:      {0, 0},
+		ExpireTypeExpired:        {1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},
+		ExpireTypeExpireIn1Day:   {nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},
+		ExpireTypeExpireIn2Days:  {tomorrow.Unix(), twoDay.Add(time.Second * time.Duration(-1)).Unix()},    // 明天
+		ExpireTypeExpireIn7Days:  {twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // 7天
+		ExpireTypeExpireIn30Days: {sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // 30天
+		ExpireTypeExpireInFuture: {thirtyDay.Unix(), 0},                                                    // 未来
+	}
+	return timeMap
 }
 
 // 按自定义看板 过滤
