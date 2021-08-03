@@ -11,21 +11,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package release
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+	"context"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/dicehub"
-	_ "github.com/erda-project/erda/modules/dicehub/image"
-	_ "github.com/erda-project/erda/modules/dicehub/release"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dicehub/dicehub.yaml",
-	})
+// GetApplicationId .
+func GetApplicationId(ctx context.Context) string {
+	return apis.GetHeader(ctx, "applicationId")
+}
+
+// GetProjectID .
+func GetProjectID(ctx context.Context) string {
+	return apis.GetHeader(ctx, "projectID")
+}
+
+// GetVersion .
+func GetVersion(ctx context.Context) string {
+	return apis.GetHeader(ctx, "version")
 }
