@@ -23,7 +23,7 @@ erda.core.dicehub.release:
   gc_switch: "${RELEASE_GC_SWITCH:true}"
 
 erda.core.dicehub.extension:
-  extension_menu: ${EXTENSION_MENU:{"":""}}
+#  extension_menu: ${EXTENSION_MENU:{"":""}}
 
 mysql:
   host: "${MYSQL_HOST:localhost}"
