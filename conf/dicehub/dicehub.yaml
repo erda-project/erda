@@ -18,6 +18,8 @@ service-register:
 
 erda.core.dicehub.image:
 
+erda.core.dicehub.template:
+
 erda.core.dicehub.release:
   max_time_reserved: "${RELEASE_MAX_TIME_RESERVED:72}"
   gc_switch: "${RELEASE_GC_SWITCH:true}"

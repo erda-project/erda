@@ -52,6 +52,8 @@ var (
 	ErrSetPublishItemVersionStatus     = err("ErrSetPublishItemVersionStatus", "更新版本状态失败")
 	ErrGetMonitorKeys                  = err("ErrGetMonitorKeys", "获取监控key失败")
 
+	QuerySnippetYml = err("ErrQuerySnippetYml", "查询嵌套Yml文件失败")
+
 	ErrCreateBlacklist = err("ErrCreateBlacklist", "添加黑名单失败")
 	ErrGetBlacklist    = err("ErrCreateBlacklist", "查询黑名单失败")
 	ErrDeleteBlacklist = err("ErrDeleteBlacklist", "删除黑名单失败")

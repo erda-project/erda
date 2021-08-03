@@ -22,6 +22,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dicehub"
 	_ "github.com/erda-project/erda/modules/dicehub/image"
 	_ "github.com/erda-project/erda/modules/dicehub/release"
+	_ "github.com/erda-project/erda/modules/dicehub/template"
 )
 
 func main() {
