@@ -14,6 +14,7 @@
 package migrator
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -31,7 +32,8 @@ import (
 )
 
 const (
-	patchesModuleName = "_patches_"
+	patchesModuleName = ".patches"
+	patchInit         = "patch-init.sql"
 )
 
 type ScriptsParameters interface {
@@ -229,9 +231,7 @@ func (s *Scripts) MarkPending(tx *gorm.DB) {
 	for _, module := range s.Services {
 		for i := range module.Scripts {
 			var record HistoryModel
-			if tx := tx.Where(map[string]interface{}{
-				"filename": module.Scripts[i].GetName(),
-			}).
+			if tx := tx.Where(map[string]interface{}{"filename": module.Scripts[i].GetName()}).
 				First(&record); tx.Error != nil || tx.RowsAffected == 0 {
 				module.Scripts[i].Pending = true
 			} else {
@@ -248,7 +248,8 @@ func (s *Scripts) IgnoreMarkPending() {
 	s.markPending = true
 }
 
-func (s *Scripts) InstalledChangesLint(db *gorm.DB) error {
+func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error {
+	var patchesList []string
 	for moduleName, module := range s.Services {
 		for _, script := range module.Scripts {
 			if script.Record == nil {
@@ -259,7 +260,10 @@ func (s *Scripts) InstalledChangesLint(db *gorm.DB) error {
 				continue
 			}
 			if script.Checksum() != script.Record.Checksum {
-				if _, ok := s.Patches.GetScriptByFilename(patchPrefix + script.GetName()); ok {
+				filename := patchPrefix + script.GetName()
+				if _, ok := s.Patches.GetScriptByFilename(filename); ok {
+					logrus.Infof("found patch file and append it to the list, filename: %s", filename)
+					patchesList = append(patchesList, filename)
 					continue
 				}
 				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
@@ -267,6 +271,8 @@ func (s *Scripts) InstalledChangesLint(db *gorm.DB) error {
 			}
 		}
 	}
+
+	*ctx = context.WithValue(*ctx, patchesKey, patchesList)
 	return nil
 }
 
