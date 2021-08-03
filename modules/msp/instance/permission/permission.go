@@ -39,20 +39,26 @@ func (p *provider) TenantToProjectID(tgroup, tenantID string) permission.ValueGe
 	groupGetter := permission.FieldValue(tgroup)
 	tenantGetter := permission.FieldValue(tenantID)
 	return func(ctx context.Context, req interface{}) (string, error) {
-		tg, err := groupGetter(ctx, req)
-		if err != nil {
-			return "", err
-		}
-		projectID, _ := p.getProjectIDByGroupID(tg)
-		if projectID == "" {
-			tID, err := tenantGetter(ctx, req)
+		tg, _ := groupGetter(ctx, req)
+		tID, _ := tenantGetter(ctx, req)
+		idByTg, _ := p.getProjectIDByGroupIDOrTenantID(tg)
+		if idByTg == "" {
+			idByTID, err := p.getProjectIDByGroupIDOrTenantID(tID)
 			if err != nil {
 				return "", err
 			}
-			return p.getProjectIDByTenantID(tID)
+			return idByTID, nil
 		}
-		return projectID, nil
+		return idByTg, nil
 	}
+}
+
+func (p *provider) getProjectIDByGroupIDOrTenantID(id string) (string, error) {
+	projectID, _ := p.getProjectIDByGroupID(id)
+	if projectID == "" {
+		return p.getProjectIDByTenantID(id)
+	}
+	return projectID, nil
 }
 
 func (p *provider) getProjectIDByGroupID(group string) (string, error) {
