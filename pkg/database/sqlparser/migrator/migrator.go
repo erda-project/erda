@@ -332,19 +332,6 @@ func (mig *Migrator) migrateSandbox() (err error) {
 		return errors.Wrapf(err, "failed to patch before migrating in sandbox")
 	}
 
-	if mig.installingType == firstTimeUpdate {
-		// record base
-		logrus.Infoln("record base")
-
-		// compare local base schema and cloud base schema for every service
-		logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
-		for _, service := range mig.LocalScripts.Services {
-			if equal := service.BaselineEqualCloud(mig.SandBox()); !equal.Equal() {
-				return errors.Errorf("local base schema is not equal with cloud schema: %s", equal.Reason())
-			}
-		}
-	}
-
 	// install every module
 	for moduleName, module := range mig.LocalScripts.Services {
 		for _, script := range module.Scripts {
