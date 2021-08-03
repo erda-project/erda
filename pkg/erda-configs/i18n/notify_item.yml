@@ -134,7 +134,7 @@ zh-CN:
   notify.model.model: 模型数据量监控
   # 个人消息
   notify.issue_create.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} 项目]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} 项目]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>事件 {{issueType}}-{{issueTitle}} 已创建</p>
     <p>[查看详情]({{issueEmailLink}})</p>
@@ -260,14 +260,14 @@ en-US:
   notify.model.model: Model Data Monitoring
   # 个人消息
   notify.issue_create.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} project]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} project]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>The issue {{issueType}}-{{issueTitle}} has been creaed</p>
     <p>[see details]({{issueEmailLink}})</p>
   notify.issue_create.personal_message.markdown: |-
     {{issueEmailLink}}
   notify.issue_update.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} project]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} project]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>{{issueEmailContent}}</p>
     <p>[see details]({{issueEmailLink}})</p>
