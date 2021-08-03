@@ -194,18 +194,11 @@ func (e *Endpoints) batchUpgradePipelinePriority(ctx context.Context, r *http.Re
 	if req.QueueID == 0 {
 		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("queueID")
 	}
-	if len(req.PipelineIDs) == 0 {
+	if len(req.PipelineIDsByPriorityFromHighToLow) == 0 {
 		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("pipelineIDs")
 	}
 
-	queue, err := e.queueManage.GetPipelineQueue(req.QueueID)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	queue.Usage = e.reconciler.QueueManager.QueryQueueUsage(queue)
-
-	if err = e.queueManage.BatchUpgradePipelinePriority(queue, req.PipelineIDs, e.reconciler); err != nil {
+	if err = e.reconciler.QueueManager.BatchUpdatePipelinePriorityInQueue(req.QueueID, req.PipelineIDsByPriorityFromHighToLow); err != nil {
 		return apierrors.ErrUpgradePipelinePriority.InternalError(err).ToResp(), nil
 	}
 

@@ -15,6 +15,6 @@ package apistructs
 
 type PipelinePriorityBatchUpgradeRequest struct {
 	// PipelineIDs array with expected priority from high to low
-	PipelineIDs []uint64 `json:"pipelineIDs"`
-	QueueID     uint64   `json:"queueID"`
+	PipelineIDsByPriorityFromHighToLow []uint64 `json:"pipelineIDsByPriorityFromHighToLow"`
+	QueueID                            uint64   `json:"queueID"`
 }

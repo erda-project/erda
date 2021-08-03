@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
@@ -148,13 +149,27 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	return pq
 }
 
-func (mgr *defaultManager) UpdatePipelinePriorityInQueue(queueID uint64, pipelineIDs []uint64, maxPriority int64) error {
+func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(queueID uint64, pipelineIDs []uint64) error {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 
 	q, ok := mgr.queueByID[strconv.FormatUint(queueID, 10)]
 	if !ok {
 		return fmt.Errorf("Queue %v is not valid", queueID)
+	}
+
+	pendingQueueItems := q.Usage().PendingDetails
+	for _, i := range pipelineIDs {
+		if !pipelineInpending(pendingQueueItems, i) {
+			return fmt.Errorf("Pipeline %v is not in pending queue %v", i, queueID)
+		}
+	}
+
+	var maxPriority int64
+	for _, i := range pendingQueueItems {
+		if i.Priority > maxPriority {
+			maxPriority = i.Priority
+		}
 	}
 
 	priority := maxPriority
@@ -167,9 +182,9 @@ func (mgr *defaultManager) UpdatePipelinePriorityInQueue(queueID uint64, pipelin
 		}
 
 		if p.Extra.QueueInfo.PriorityChangeHistory == nil {
-			p.Extra.QueueInfo.PriorityChangeHistory = make([]int64, 0)
+			p.Extra.QueueInfo.PriorityChangeHistory = []int64{p.Extra.QueueInfo.CustomPriority}
 		}
-		p.Extra.QueueInfo.PriorityChangeHistory = append(p.Extra.QueueInfo.PriorityChangeHistory, p.Extra.QueueInfo.CustomPriority)
+		p.Extra.QueueInfo.PriorityChangeHistory = append(p.Extra.QueueInfo.PriorityChangeHistory, priority)
 		p.Extra.QueueInfo.CustomPriority = priority
 		if err := mgr.dbClient.UpdatePipelineExtraByPipelineID(pipelineID, &p.PipelineExtra); err != nil {
 			return err
@@ -179,4 +194,13 @@ func (mgr *defaultManager) UpdatePipelinePriorityInQueue(queueID uint64, pipelin
 	}
 
 	return nil
+}
+
+func pipelineInpending(pendingQueueItems []*pb.QueueUsageItem, pipelineID uint64) bool {
+	for _, i := range pendingQueueItems {
+		if i.PipelineID == pipelineID {
+			return true
+		}
+	}
+	return false
 }

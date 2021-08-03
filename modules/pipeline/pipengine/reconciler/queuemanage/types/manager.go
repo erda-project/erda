@@ -24,5 +24,5 @@ type QueueManager interface {
 	QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage
 	PutPipelineIntoQueue(pipelineID uint64) (popCh <-chan struct{}, needRetryIfErr bool, err error)
 	PopOutPipelineFromQueue(pipelineID uint64)
-	UpdatePipelinePriorityInQueue(queueID uint64, pipelineID []uint64, priority int64) error
+	BatchUpdatePipelinePriorityInQueue(queueID uint64, pipelineID []uint64) error
 }
