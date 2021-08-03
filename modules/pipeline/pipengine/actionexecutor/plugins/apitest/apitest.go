@@ -99,8 +99,8 @@ func (d *define) Status(ctx context.Context, task *spec.PipelineTask) (apistruct
 	return apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusCreated}, nil
 }
 
-func (d *define) Inspect(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
-	return nil, nil
+func (d *define) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	return apistructs.TaskInspect{}, nil
 }
 
 func (d *define) Cancel(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
