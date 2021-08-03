@@ -1,8 +1,9 @@
 # Quickstart
 
 ## Requirements
-* docker
+* docker with docker-compose
 * k8s cluster (optional, required for CI/CD)
+* host resource required: 4 Cores with 8 GB RAM
 
 ## Setup
 
@@ -41,20 +42,13 @@ And register your first account, this account will automatically become the admi
 
 ![](../../assets/quickstart_switch_to_signup.jpg)
 
-It is best to log out first, register a normal user, and then login back to the admin.
-Since the user management page is now broken, all users must create it by themselves at this time, we are fixing this bug.
+Since the user management page is now broken, all users must register account by themselves, we are fixing this bug.
+The first registered user would become the Admin account, which is used for some special management cases but cannot be used to manage projects, so it's recommended that you log-out when first registered and register another normal user for full feature use.
 
 ### Create an org
-Admin user can create org by entering required fields.
-Grant the normal user we created before as org manager.
+Sign in as a normal user, you will see a guide page, you can create organization by click the `Create Organization` button.
 
-![](../../assets/quickstart_create_org.jpg)
-
-### Switch to normal user
-We log in as a normal user, and the page will be redirected to the personal dashboard.
-As an org manager, we can create projects.
-
-![](../../assets/quickstart_personal_dashboard.jpg)
+![](../../assets/quickstart_create_org.png)
 
 ### Next
 You can read our official `User Documentation` to learn how to use erda for DevOps and other practices.
