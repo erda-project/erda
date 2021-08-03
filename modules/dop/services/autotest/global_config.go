@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
@@ -135,7 +136,7 @@ func (svc *Service) parseGlobalConfigFromCmsNs(ns string) (*apistructs.AutoTestG
 		case CmsCfgKeyUpdatedAt:
 			var updatedAt time.Time
 			if err := json.Unmarshal([]byte(cfg.Value), &updatedAt); err == nil {
-				result.CreatedAt = updatedAt
+				result.UpdatedAt = updatedAt
 			}
 		case CmsCfgKeyAPIGlobalConfig:
 			var apiConfig apistructs.AutoTestAPIConfig
@@ -332,15 +333,17 @@ func (svc *Service) ListGlobalConfigs(req apistructs.AutoTestGlobalConfigListReq
 		return nil, apierrors.ErrListAutoTestGlobalConfigs.InternalError(err)
 	}
 
-	var results []apistructs.AutoTestGlobalConfig
+	var sortResult apistructs.SortByUpdateTimeAutoTestGlobalConfigs
 
 	for _, ns := range namespaces.Data {
 		cfg, err := svc.parseGlobalConfigFromCmsNs(ns.Ns)
 		if err != nil {
 			return nil, apierrors.ErrListAutoTestGlobalConfigs.InternalError(err)
 		}
-		results = append(results, *cfg)
+		sortResult = append(sortResult, *cfg)
 	}
+	// sort by update time
+	sort.Sort(sortResult)
 
-	return results, nil
+	return sortResult, nil
 }

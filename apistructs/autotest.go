@@ -160,6 +160,18 @@ type AutoTestGlobalConfig struct {
 	UIConfig  *AutoTestUIConfig  `json:"uiConfig,omitempty"`
 }
 
+type SortByUpdateTimeAutoTestGlobalConfigs []AutoTestGlobalConfig
+
+func (p SortByUpdateTimeAutoTestGlobalConfigs) Len() int {
+	return len(p)
+}
+func (p SortByUpdateTimeAutoTestGlobalConfigs) Less(i, j int) bool {
+	return p[i].UpdatedAt.After(p[j].UpdatedAt)
+}
+func (p SortByUpdateTimeAutoTestGlobalConfigs) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
 func (cfg AutoTestGlobalConfig) GetUserIDs() []string {
 	return strutil.DedupSlice([]string{cfg.CreatorID, cfg.UpdaterID}, true)
 }
