@@ -151,14 +151,7 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
-	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
-	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
-	}
-	list, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
+	list, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
