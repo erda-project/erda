@@ -120,8 +120,9 @@ func (mig *Migrator) Run() (err error) {
 
 	// if there is any history record then goto normal update,
 	// otherwise goto first time update
-	tx := mig.DB().Find(new([]HistoryModel))
-	if tx.Error == nil && tx.RowsAffected > 0 {
+	var histories []HistoryModel
+	tx := mig.DB().Find(&histories)
+	if tx.Error == nil && len(histories) > 0 {
 		logrus.Infoln("found migration histories, it is the normal update installation...")
 		mig.installingType = normalUpdate
 	} else {
