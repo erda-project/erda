@@ -170,11 +170,11 @@ func (mig *Migrator) newInstallation() (err error) {
 
 	// pre-migrate schema SQLs
 	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
-		logrus.Infoln("DO PRE-MIGRATION...")
-		if err = mig.preMigrate(ctx); err != nil {
-			return err
-		}
-		logrus.Infoln("OK")
+		//logrus.Infoln("DO PRE-MIGRATION...")
+		//if err = mig.preMigrate(ctx); err != nil {
+		//	return err
+		//}
+		//logrus.Infoln("OK")
 	}
 
 	// migrate
@@ -235,11 +235,11 @@ func (mig *Migrator) normalUpdate() (err error) {
 
 	// pre migrate data
 	if !mig.SkipPreMigrate() && !mig.SkipMigrate() {
-		logrus.Infoln("DO PRE-MIGRATION....")
-		if err = mig.preMigrate(ctx); err != nil {
-			return err
-		}
-		logrus.Infoln("PRE-MIGRATE OK")
+		//logrus.Infoln("DO PRE-MIGRATION....")
+		//if err = mig.preMigrate(ctx); err != nil {
+		//	return err
+		//}
+		//logrus.Infoln("PRE-MIGRATE OK")
 	}
 
 	// migrate data
