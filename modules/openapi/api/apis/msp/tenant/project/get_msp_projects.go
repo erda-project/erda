@@ -71,10 +71,10 @@ func attachProjectParams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Succ(w, data)
+	Success(w, data)
 }
 
-func Succ(w http.ResponseWriter, data interface{}) {
+func Success(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(utils.Resp{
