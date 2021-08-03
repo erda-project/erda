@@ -31,7 +31,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210729162038-a2e798d921de
-	github.com/erda-project/erda-proto-go v0.0.0-20210802130403-b91c7eae263b
+	github.com/erda-project/erda-proto-go v0.0.0-20210803124211-0d0ca1e699db
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -53,7 +53,6 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt v3.2.1+incompatible
-	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -126,7 +125,6 @@ require (
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210729151513-df9385d47c1b
-	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

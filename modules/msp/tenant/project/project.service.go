@@ -80,11 +80,20 @@ func (p Projects) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p Projects) Less(i, j int) bool { return p[i].CreateTime > p[j].CreateTime }
 
 func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
+	projects, err := s.getProjects(ctx, req.ProjectId)
+	if err != nil {
+		return &pb.GetProjectsResponse{Data: nil}, err
+	}
+	sort.Sort(projects)
+	return &pb.GetProjectsResponse{Data: projects}, nil
+}
+
+func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (Projects, error) {
 	var projects Projects
 
 	// request orch for history project
 	params := url.Values{}
-	for _, id := range req.ProjectId {
+	for _, id := range projectIDs {
 		params.Add("projectId", id)
 	}
 	userID := apis.GetUserID(ctx)
@@ -98,7 +107,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		projects = append(projects, &pbProject)
 	}
 
-	for _, id := range req.ProjectId {
+	for _, id := range projectIDs {
 		project, err := s.getProject(apis.Language(ctx), id)
 		if err != nil {
 			return nil, err
@@ -115,8 +124,7 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 		}
 		projects = append(projects, project)
 	}
-	sort.Sort(projects)
-	return &pb.GetProjectsResponse{Data: projects}, nil
+	return projects, nil
 }
 
 func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) pb.Project {
@@ -259,6 +267,27 @@ func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjec
 		}
 	}
 	return &pb.DeleteProjectResponse{Data: nil}, nil
+}
+
+func (s *projectService) GetProjectOverview(ctx context.Context, req *pb.GetProjectOverviewRequest) (*pb.GetProjectOverviewResponse, error) {
+	projects, err := s.getProjects(ctx, req.ProjectId)
+	predata := pb.ProjectOverviewList{}
+	var data []*pb.ProjectOverview
+	pv := pb.ProjectOverview{}
+
+	if err != nil {
+		return &pb.GetProjectOverviewResponse{Data: nil}, err
+	}
+	projectCount := int64(projects.Len())
+	workspaceCount := int64(0)
+	for _, project := range projects {
+		workspaceCount += int64(len(project.Relationship))
+	}
+	pv.ProjectCount = projectCount
+	pv.WorkspaceCount = workspaceCount
+	data = append(data, &pv)
+	predata.Data = data
+	return &pb.GetProjectOverviewResponse{Data: &predata}, nil
 }
 
 func (s *projectService) convertToProject(project *db.MSPProject) *pb.Project {
