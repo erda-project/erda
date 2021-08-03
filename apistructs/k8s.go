@@ -15,7 +15,6 @@ package apistructs
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -25,6 +24,7 @@ const (
 // TaskInspect inspect k8s job, like kubectl describe
 // contains task object and events
 type TaskInspect struct {
-	Object runtime.Object    `json:"object"`
+	Object interface{}       `json:"object"`
 	Events *corev1.EventList `json:"events"`
+	Desc   string            `json:"desc"`
 }

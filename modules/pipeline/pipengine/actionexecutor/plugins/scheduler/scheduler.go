@@ -354,7 +354,7 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 	}, nil
 }
 
-func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
+func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (apistructs.TaskInspect, error) {
 	var (
 		taskExecutor   tasktypes.TaskExecutor
 		shouldDispatch bool
@@ -362,13 +362,13 @@ func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (interfa
 	)
 	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
 	if err != nil {
-		return nil, err
+		return apistructs.TaskInspect{}, err
 	}
 	if !shouldDispatch {
 		logrus.Infof("task executor %s execute inspect", taskExecutor.Name())
 		return taskExecutor.Inspect(ctx, action)
 	}
-	return nil, errors.New("scheduler(job) not support inspect operation")
+	return apistructs.TaskInspect{}, errors.New("scheduler(job) not support inspect operation")
 }
 
 func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
