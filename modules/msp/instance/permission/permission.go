@@ -36,14 +36,55 @@ type Interface interface {
 
 // TenantToProjectID .
 func (p *provider) TenantToProjectID(tgroup, tenant string) permission.ValueGetter {
+	groupGetter := permission.FieldValue(tgroup)
 	tenantGetter := permission.FieldValue(tenant)
 	return func(ctx context.Context, req interface{}) (string, error) {
+		if len(tgroup) > 0 {
+			group, err := groupGetter(ctx, req)
+			if err == nil && len(group) > 0 {
+				return p.getProjectIDByGroupID(group)
+			}
+		}
 		id, err := tenantGetter(ctx, req)
 		if err != nil {
 			return "", err
 		}
 		return p.getProjectIDByTenantID(id)
 	}
+}
+
+func (p *provider) getProjectIDByGroupID(group string) (string, error) {
+	id, err := p.getProjectIdByMSPTenantID(group)
+	if err != nil {
+		return "", errors.NewDatabaseError(err)
+	}
+	if id != "" {
+		return id, nil
+	}
+
+	tenants, err := p.instanceTenantDB.GetByTenantGroup(group)
+	if err != nil {
+		return "", errors.NewDatabaseError(err)
+	}
+	if len(tenants) <= 0 {
+		return "", fmt.Errorf("tenant group %q not found", group)
+	}
+	for _, tenant := range tenants {
+		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
+		if err != nil {
+			return "", errors.NewDatabaseError(err)
+		}
+		if tmc == nil {
+			continue
+		}
+		if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
+			id := p.getProjectIDByTenant(tenant)
+			if len(id) > 0 {
+				return id, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("projectId not found from group %q", group)
 }
 
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
