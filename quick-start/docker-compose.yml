@@ -496,6 +496,11 @@ services:
       - '2181:2181'
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - type: volume
+        source: erda-zookeeper
+        target: /bitnami/zookeeper
+        read_only: false
     restart: always
     platform: linux/amd64
   
@@ -541,7 +546,7 @@ services:
     image: bitnami/elasticsearch:6-debian-10
     container_name: erda-elasticsearch 
     environment:
-      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - type: volume
         source: erda-elasticsearch
@@ -631,6 +636,7 @@ volumes:
   erda-elasticsearch: {}
   erda-cassandra: {}
   erda-kafka: {}
+  erda-zookeeper: {}
 
 networks:
   default:
