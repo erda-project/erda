@@ -38,6 +38,14 @@ func (db *MSPProjectDB) Create(project *MSPProject) (*MSPProject, error) {
 	return value, nil
 }
 
+func (db *MSPProjectDB) Update(project *MSPProject) (*MSPProject, error) {
+	err := db.db().Model(project).Update(project).Error
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return project, nil
+}
+
 func (db *MSPProjectDB) Query(id string) (*MSPProject, error) {
 	project := MSPProject{}
 	err := db.db().Where("`id` = ?", id).Where("`is_deleted` = ?", false).Find(&project).Error
