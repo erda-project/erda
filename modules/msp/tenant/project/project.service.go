@@ -200,6 +200,26 @@ func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjec
 	return &pb.CreateProjectResponse{Data: pbProject}, nil
 }
 
+func (s *projectService) UpdateProject(ctx context.Context, req *pb.UpdateProjectRequest) (*pb.UpdateProjectResponse, error) {
+	project, err := s.MSPProjectDB.Query(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return &pb.UpdateProjectResponse{Data: nil}, nil
+	}
+	project.UpdatedAt = time.Now()
+	project.Name = req.Name
+	project.DisplayName = req.DisplayName
+	project, err = s.MSPProjectDB.Update(project)
+	pbProject := s.convertToProject(project)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.UpdateProjectResponse{Data: pbProject}, nil
+}
+
 func (s *projectService) getProject(lang i18n.LanguageCodes, id string) (*pb.Project, error) {
 	projectDB, err := s.MSPProjectDB.Query(id)
 	if err != nil {

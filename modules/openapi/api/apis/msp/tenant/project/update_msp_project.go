@@ -15,13 +15,13 @@ package project
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var CREATE_MSP_PROJECT = apis.ApiSpec{
+var UPDATE_MSP_PROJECT = apis.ApiSpec{
 	Path:        "/api/msp/tenant/project",
 	BackendPath: "/api/msp/tenant/project",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "POST",
+	Method:      "PUT",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "Create MSP project",
+	Doc:         "Update MSP projects",
 }
