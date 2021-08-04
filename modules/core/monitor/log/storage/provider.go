@@ -104,7 +104,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
+	if err := p.schema.CreateDefault(); err != nil {
+		return fmt.Errorf("create default error: %w", err)
+	}
 	go p.schema.RunDaemon(ctx, p.Cfg.Output.LogSchema.OrgRefreshInterval, p.EtcdMutexInf)
+
 	go p.ttl.Run(ctx, p.Cfg.Output.Cassandra.TTLReloadInterval)
 	go p.startStoreMetaCache(ctx)
 	if err := p.Kafka.NewConsumer(&p.Cfg.Input, p.invoke); err != nil {
