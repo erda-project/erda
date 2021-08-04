@@ -20,6 +20,7 @@ import (
 
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
 	_ "github.com/erda-project/erda/modules/msp/apm/adapter"
@@ -63,10 +64,8 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/zkproxy"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/zookeeper"
 	_ "github.com/erda-project/erda/modules/msp/tenant"
+	_ "github.com/erda-project/erda/modules/msp/tenant/project"
 	_ "github.com/erda-project/erda/pkg/common/permission"
-
-	// providers
-	_ "github.com/erda-project/erda-infra/providers/cassandra"
 )
 
 func main() {

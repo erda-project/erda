@@ -14,11 +14,16 @@
 package bundle
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	cerrors "github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // PutRuntimeService 部署runtime之后，orchestrator需要将服务域名信息通过此接口提交给hepa
@@ -130,4 +135,33 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 		return toAPIError(r.StatusCode(), resp.Error)
 	}
 	return nil
+}
+
+func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType string) (string, error) {
+	host := discover.MSP()
+	hc := b.hc
+
+	req := pb.CreateTenantRequest{
+		ProjectID:  projectID,
+		TenantType: tenantType,
+		Workspaces: []string{workspace},
+	}
+	var resp apistructs.MSPTenantResponse
+	r, err := hc.Post(host).
+		Path("/api/msp/tenant").
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(&req).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return "", toAPIError(r.StatusCode(), resp.Error)
+	}
+	if len(resp.Data) <= 0 {
+		return "", cerrors.NewInternalServerError(errors.New("data failed"))
+	}
+	return resp.Data[0].Id, nil
 }

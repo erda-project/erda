@@ -75,7 +75,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
 			return nil, err
 		}
-		TrimCharacterSetFromRawCreateTableSQL(stmt)
+		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
 			return nil, err

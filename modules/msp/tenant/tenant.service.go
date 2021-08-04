@@ -16,10 +16,14 @@ package tenant
 import (
 	context "context"
 	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -27,17 +31,41 @@ import (
 type tenantService struct {
 	p           *provider
 	MSPTenantDB *db.MSPTenantDB
+	MonitorDB   *monitor.MonitorDB
 }
 
-func generateTenantID(projectID int64, tenantType, workspace string) string {
+func GenerateTenantID(projectID string, tenantType, workspace string) string {
 	md5H := md5.New()
 	hStr := fmt.Sprintf("%v-%s-%s", projectID, tenantType, workspace)
-	sum := md5H.Sum([]byte(hStr))
-	return fmt.Sprintf("%x", sum)
+	md5H.Write([]byte(hStr))
+	return hex.EncodeToString(md5H.Sum(nil))
+}
+
+func (s *tenantService) GetTenantID(projectID, workspace, tenantGroup, tenantType string) (string, error) {
+	id, err := strconv.ParseInt(projectID, 10, 64)
+	if err != nil {
+		return "", err
+	}
+	item, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(id, workspace)
+	if err != nil {
+		return "", err
+	}
+	if item != nil {
+		return tenantGroup, nil
+	}
+
+	tenant, err := s.MSPTenantDB.QueryTenantByProjectIDAndWorkspace(projectID, workspace)
+	if err != nil {
+		return "", err
+	}
+	if tenant == nil {
+		return tenant.Id, nil
+	}
+	return "", nil
 }
 
 func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.CreateTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -49,8 +77,8 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 
 	var tenants []*pb.Tenant
 	for _, workspace := range req.Workspaces {
-		tenantID := generateTenantID(req.ProjectID, req.TenantType, workspace)
-
+		tenantID := GenerateTenantID(req.ProjectID, req.TenantType, workspace)
+		// query msp db
 		queryTenant, err := s.MSPTenantDB.QueryTenant(tenantID)
 		if err != nil {
 			return nil, err
@@ -60,13 +88,33 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 			continue
 		}
 
+		// query monitor db
+		id, err := strconv.ParseInt(req.ProjectID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		monitorInfo, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(id, workspace)
+		if err != nil {
+			return nil, err
+		}
+		if monitorInfo != nil {
+			tenant, err := s.covertMonitorInfoToTenant(monitorInfo)
+			if err != nil {
+				return nil, err
+			}
+			tenants = append(tenants, tenant)
+			continue
+		}
+
+		// insert when not found
 		var tenant db.MSPTenant
 		tenant.Id = tenantID
 		tenant.Type = req.TenantType
 		tenant.RelatedWorkspace = workspace
 		tenant.RelatedProjectId = req.ProjectID
-		tenant.UpdateTime = time.Now()
-		tenant.CreateTime = time.Now()
+		tenant.UpdatedAt = time.Now()
+		tenant.CreatedAt = time.Now()
 		tenant.IsDeleted = false
 		result, err := s.MSPTenantDB.InsertTenant(&tenant)
 		if err != nil {
@@ -77,8 +125,36 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 	return &pb.CreateTenantResponse{Data: tenants}, nil
 }
 
+func (s *tenantService) covertMonitorInfoToTenant(monitorInfo *monitor.Monitor) (*pb.Tenant, error) {
+	c := monitorInfo.Config
+	var mc map[string]interface{}
+	err := json.Unmarshal([]byte(c), &mc)
+	if err != nil {
+		return nil, err
+	}
+	ph := mc["PUBLIC_HOST"].(string)
+	err = json.Unmarshal([]byte(ph), &mc)
+	if err != nil {
+		return nil, err
+	}
+	tg := mc["tenantGroup"].(string)
+	var tenant pb.Tenant
+	tenant.Id = tg
+	tenant.Type = pb.Type_DOP.String()
+	tenant.ProjectID = monitorInfo.ProjectId
+	tenant.Workspace = monitorInfo.Workspace
+	tenant.UpdateTime = monitorInfo.Updated.UnixNano()
+	tenant.CreateTime = monitorInfo.Created.UnixNano()
+	if monitorInfo.IsDelete == 1 {
+		tenant.IsDeleted = true
+	} else {
+		tenant.IsDeleted = false
+	}
+	return &tenant, nil
+}
+
 func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.GetTenantResponse, error) {
-	if req.ProjectID <= 0 {
+	if req.ProjectID == "" {
 		return nil, errors.NewMissingParameterError("projectId")
 	}
 	if req.TenantType == "" {
@@ -87,15 +163,39 @@ func (s *tenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 	if req.Workspace == "" {
 		return nil, errors.NewMissingParameterError("workspace")
 	}
-	tenant, err := s.MSPTenantDB.QueryTenant(generateTenantID(req.ProjectID, req.TenantType, req.Workspace))
+	tenant, err := s.MSPTenantDB.QueryTenant(GenerateTenantID(req.ProjectID, req.TenantType, req.Workspace))
 	if err != nil {
 		return nil, err
 	}
 	if tenant == nil {
+		id, err := strconv.ParseInt(req.ProjectID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		monitorInfo, err := s.MonitorDB.GetMonitorByProjectIdAndWorkspace(id, req.Workspace)
+
+		if err != nil {
+			return nil, err
+		}
+		if monitorInfo != nil {
+			oldTenant, err := s.covertMonitorInfoToTenant(monitorInfo)
+			if err != nil {
+				return nil, err
+			}
+			return &pb.GetTenantResponse{Data: oldTenant}, nil
+		}
 		return nil, errors.NewInternalServerErrorMessage("tenant not exist.")
 	}
-
 	return &pb.GetTenantResponse{Data: s.covertToTenant(tenant)}, nil
+}
+
+func (s *tenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+	tenantID := GenerateTenantID(req.ProjectID, req.TenantType, req.Workspace)
+	_, err := s.MSPTenantDB.DeleteTenantByTenantID(tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteTenantResponse{Data: nil}, nil
 }
 
 func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
@@ -104,8 +204,8 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 		Type:       tenant.Type,
 		Workspace:  tenant.RelatedWorkspace,
 		ProjectID:  tenant.RelatedProjectId,
-		CreateTime: tenant.CreateTime.UnixNano(),
-		UpdateTime: tenant.UpdateTime.UnixNano(),
+		CreateTime: tenant.CreatedAt.UnixNano(),
+		UpdateTime: tenant.UpdatedAt.UnixNano(),
 		IsDeleted:  tenant.IsDeleted,
 	}
 }

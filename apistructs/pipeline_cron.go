@@ -18,12 +18,12 @@ import (
 )
 
 type PipelineCronPagingRequest struct {
-	AllSources bool
+	AllSources bool             `schema:"allSources"`
 	Sources    []PipelineSource `schema:"source"`  // ?source=cdp-dev&source=cdp-test
 	YmlNames   []string         `schema:"ymlName"` // ?ymlName=11&ymlName=22
 
-	PageSize int
-	PageNo   int
+	PageSize int `schema:"pageSize"`
+	PageNo   int `schema:"pageNo"`
 }
 
 type PipelineCronPagingResponse struct {
@@ -60,5 +60,15 @@ type PipelineCronCreateResponse struct {
 }
 
 type PipelineCronDeleteResponse struct {
+	Header
+}
+
+type PipelineCronUpdateRequest struct {
+	ID          uint64 `json:"id"`
+	PipelineYml string `json:"pipelineYml"`
+	CronExpr    string `json:"cronExpr"`
+}
+
+type PipelineCronUpdateResponse struct {
 	Header
 }

@@ -31,6 +31,7 @@ import (
 type Column struct {
 	DataIndex string `json:"dataIndex"`
 	Title     string `json:"title"`
+	Width     uint64 `json:"width,omitempty"`
 }
 
 type Props struct {
@@ -112,21 +113,26 @@ func (r *RecordTable) setProps() {
 	r.Props.Columns = append(r.Props.Columns, Column{
 		DataIndex: "id",
 		Title:     "ID",
+		Width:     80,
 	}, Column{
 		DataIndex: "type",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableType),
+		Width:     80,
 	}, Column{
 		DataIndex: "operator",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableOperator),
+		Width:     150,
 	}, Column{
 		DataIndex: "time",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableTime),
+		Width:     150,
 	}, Column{
 		DataIndex: "desc",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableDesc),
 	}, Column{
 		DataIndex: "status",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableStatus),
+		Width:     80,
 	}, Column{
 		DataIndex: "result",
 		Title:     i18nLocale.Get(i18n.I18nKeyTableResult),
@@ -158,11 +164,20 @@ func (r *RecordTable) setData() error {
 			recordTypeKey = i18n.I18nKeyExport
 		}
 		var statusKey string
+		var recordState string
 		switch fileRecord.State {
 		case apistructs.FileRecordStateFail:
 			statusKey = i18n.I18nKeyStatusFailed
+			recordState = "error"
 		case apistructs.FileRecordStateSuccess:
 			statusKey = i18n.I18nKeyStatusSuccess
+			recordState = "success"
+		case apistructs.FileRecordStatePending:
+			statusKey = i18n.I18nKeyStatusPending
+			recordState = "pending"
+		case apistructs.FileRecordStateProcessing:
+			statusKey = i18n.I18nKeyStatusProcessing
+			recordState = "processing"
 		}
 		var operatorName string
 		operator, err := r.ctxBdl.Bdl.GetCurrentUser(fileRecord.OperatorID)
@@ -178,12 +193,12 @@ func (r *RecordTable) setData() error {
 			Status: Status{
 				RenderType: "textWithBadge",
 				Value:      i18nLocale.Get(statusKey),
-				Status:     string(fileRecord.State),
+				Status:     recordState,
 			},
 			Result: Result{
 				RenderType: "downloadUrl",
 				URL:        fmt.Sprintf("%s/api/files/%s", conf.RootDomain(), fileRecord.ApiFileUUID),
-				Value:      i18nLocale.Get(i18n.I18nKeyDownloadFile),
+				Value:      fileRecord.FileName,
 			},
 		})
 	}

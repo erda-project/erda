@@ -27,6 +27,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubectl/pkg/describe"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
 	"github.com/erda-project/erda/apistructs"
@@ -60,8 +61,6 @@ const (
 
 const (
 	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
-	// Specify Image Pull Policy with IfNotPresent,Always,Never
-	SpecifyImagePullPolicy = "SPECIFY_IMAGE_PULL_POLICY"
 )
 
 var (
@@ -304,20 +303,16 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 	return nil, nil
 }
 
-// Inspect similar to kubectl describe, return job information and event list
+// Inspect use kubectl describe job information
 func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
-	jobName := logic.MakeJobName(task)
-	job, err := k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	d := describe.JobDescriber{k.client.ClientSet}
+	s, err := d.Describe(task.Extra.Namespace, logic.MakeJobName(task), describe.DescriberSettings{
+		ShowEvents: true,
+	})
 	if err != nil {
 		return apistructs.TaskInspect{}, err
 	}
-
-	var events *corev1.EventList
-	events, _ = logic.SearchEvents(k.client.ClientSet.CoreV1(), job)
-	return apistructs.TaskInspect{
-		Object: job,
-		Events: events,
-	}, nil
+	return apistructs.TaskInspect{Desc: s}, nil
 }
 
 func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
@@ -414,16 +409,6 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		vols, volMounts, _ = logic.GenerateK8SVolumes(&job)
 	}
 
-	var imagePullPolicy corev1.PullPolicy
-	switch corev1.PullPolicy(os.Getenv(SpecifyImagePullPolicy)) {
-	case corev1.PullAlways:
-		imagePullPolicy = corev1.PullAlways
-	case corev1.PullNever:
-		imagePullPolicy = corev1.PullNever
-	default:
-		imagePullPolicy = corev1.PullIfNotPresent
-	}
-
 	scheduleInfo2, _, err := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	if err != nil {
 		return nil, err
@@ -475,7 +460,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 									//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 								},
 							},
-							ImagePullPolicy: imagePullPolicy,
+							ImagePullPolicy: logic.GetPullImagePolicy(),
 							VolumeMounts:    volMounts,
 						},
 					},
@@ -536,7 +521,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 					//corev1.ResourceStorage: resource.MustParse(strconv.Itoa(int(job.Disk)) + "M"),
 				},
 			},
-			ImagePullPolicy: imagePullPolicy,
+			ImagePullPolicy: logic.GetPullImagePolicy(),
 		}
 
 		volumeMount := corev1.VolumeMount{

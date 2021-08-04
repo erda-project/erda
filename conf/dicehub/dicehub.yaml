@@ -7,9 +7,23 @@ health:
 grpc-server:
   addr: ":7080"
 
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
 service-register:
 
 erda.core.dicehub.image:
+
+erda.core.dicehub.release:
+  max_time_reserved: "${RELEASE_MAX_TIME_RESERVED:72}"
+  gc_switch: "${RELEASE_GC_SWITCH:true}"
+
+erda.core.dicehub.extension:
+#  extension_menu: ${EXTENSION_MENU:{"":""}}
 
 mysql:
   host: "${MYSQL_HOST:localhost}"

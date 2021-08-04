@@ -29,4 +29,5 @@ type Queue interface {
 	RangePendingQueue()
 	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
 	PopOutPipeline(p *spec.Pipeline)
+	BatchUpdatePipelinePriorityInQueue(pipelines []*spec.Pipeline) error
 }

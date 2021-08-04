@@ -144,7 +144,7 @@ func (client *Client) DeletePipelineCron(id interface{}) error {
 }
 
 //更新cron的enable = false，cronExpr = new_.CronExpr
-func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
+func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) (cronID uint64, err error) {
 
 	var disable = false
 	var updateCron = &spec.PipelineCron{}
@@ -157,7 +157,7 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 	}
 	v1Exist, err := client.Get(queryV1)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if queryV1.Extra.Version == "v2" {
 		v1Exist = false
@@ -167,7 +167,7 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 		updateCron.Enable = &disable
 		updateCron.ID = queryV1.ID
 		updateCron.CronExpr = new_.CronExpr
-		return client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
 	}
 
 	//------------------------ v2
@@ -179,17 +179,17 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 	}
 	v2Exist, err := client.Get(queryV2)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	//只更新enable为false
 	if v2Exist {
 		updateCron.Enable = &disable
 		updateCron.ID = queryV2.ID
 		updateCron.CronExpr = new_.CronExpr
-		return client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
 	}
 
-	return nil
+	return 0, nil
 }
 
 func (client *Client) UpdatePipelineCron(id interface{}, cron *spec.PipelineCron) error {

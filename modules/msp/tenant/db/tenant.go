@@ -41,8 +41,48 @@ func (db *MSPTenantDB) InsertTenant(tenant *MSPTenant) (*MSPTenant, *errors.Data
 func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 	tenant := MSPTenant{}
 	err := db.db().Where("`id` = ?", tenantID).Find(&tenant).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
 	return &tenant, nil
+}
+
+func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID, workspace string) (*MSPTenant, error) {
+	tenant := MSPTenant{}
+	err := db.db().Where("`related_project_id` = ?", projectID).Where("`related_workspace` = ?", workspace).Find(&tenant).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &tenant, nil
+}
+
+func (db *MSPTenantDB) QueryTenantByProjectID(projectID string) ([]*MSPTenant, error) {
+	var tenants []*MSPTenant
+	err := db.db().Where("`related_project_id` = ?", projectID).Find(&tenants).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return tenants, nil
+}
+
+func (db *MSPTenantDB) DeleteTenantByTenantID(tenantId string) (*MSPTenant, error) {
+	tenant, err := db.QueryTenant(tenantId)
+	if err != nil {
+		return nil, err
+	}
+	tenant.IsDeleted = true
+	err = db.Model(&tenant).Update(&tenant).Error
+	if err != nil {
+		return nil, err
+	}
+	return tenant, err
 }

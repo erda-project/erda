@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
-	"github.com/erda-project/erda/apistructs"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/menu/db"
@@ -41,89 +41,122 @@ var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
 // GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
-	// get cluster info
-	clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantGroup)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
-	if len(clusterName) <= 0 {
-		return nil, errors.NewNotFoundError("TenantGroup.ClusterName")
-	}
-	clusterInfo, err := s.bdl.QueryClusterInfo(clusterName)
-	if err != nil {
-		return nil, errors.NewServiceInvokingError("QueryClusterInfo", err)
-	}
-	clusterType := clusterInfo.Get(apistructs.ClusterInfoMapKey("DICE_CLUSTER_TYPE"))
-
 	// get menu items
 	items, err := s.getMenuItems()
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	menuMap := make(map[string]*pb.MenuItem)
-	for _, item := range items {
-		item.ClusterName = clusterName
-		item.ClusterType = clusterType
-		for _, child := range item.Children {
-			if len(child.Href) > 0 {
-				child.Href = s.version + child.Href
+	if req.Type == tenantpb.Type_MSP.String() {
+		var mspItems []*pb.MenuItem
+		for _, item := range items {
+			if item.Key == "ServiceGovernance" || item.Key == "AppMonitor" {
+				params := s.composeMSPMenuParams(req)
+				item.Params = params
+				for _, child := range item.Children {
+					if child.Key == "MonitorIntro" {
+						child.Exists = false
+						continue
+					}
+					child.Exists = true
+					child.Params = params
+				}
+				mspItems = append(mspItems, item)
 			}
 		}
-		menuMap[item.Key] = item
+		items = mspItems
 	}
 
-	configs, err := s.getEngineConfigs(req.TenantGroup, req.TenantId)
-	if err != nil {
-		return nil, err
-	}
-	for engine, config := range configs {
-		menuKey, err := s.db.GetMicroServiceEngineKey(engine)
+	// get cluster info
+	if req.Type != tenantpb.Type_MSP.String() {
+		clusterName, err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantId)
 		if err != nil {
 			return nil, errors.NewDatabaseError(err)
 		}
-		if len(menuKey) <= 0 {
-			continue
+		if len(clusterName) <= 0 {
+			return nil, errors.NewNotFoundError("TenantGroup.ClusterName")
 		}
-		item := menuMap[menuKey]
-		if item == nil {
-			return nil, errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
+		clusterInfo, err := s.bdl.QueryClusterInfo(clusterName)
+		if err != nil {
+			return nil, errors.NewServiceInvokingError("QueryClusterInfo", err)
+		}
+		clusterType := clusterInfo.Get("DICE_CLUSTER_TYPE")
+
+		menuMap := make(map[string]*pb.MenuItem)
+		for _, item := range items {
+			item.ClusterName = clusterName
+			item.ClusterType = clusterType
+			for _, child := range item.Children {
+				if len(child.Href) > 0 {
+					child.Href = s.version + child.Href
+				}
+			}
+			menuMap[item.Key] = item
 		}
 
-		// setup params
-		item.Params = make(map[string]string)
-		paramsStr := config["PUBLIC_HOST"]
-		if len(paramsStr) > 0 {
-			params := make(map[string]interface{})
-			err := json.Unmarshal([]byte(paramsStr), &params)
+		configs, err := s.getEngineConfigs(req.TenantId, req.TenantId)
+		if err != nil {
+			return nil, err
+		}
+		for engine, config := range configs {
+			menuKey, err := s.db.GetMicroServiceEngineKey(engine)
 			if err != nil {
-				return nil, errors.NewDatabaseError(fmt.Errorf("PUBLIC_HOST format error"))
+				return nil, errors.NewDatabaseError(err)
 			}
-			for k, v := range params {
-				item.Params[k] = fmt.Sprint(v)
+			if len(menuKey) <= 0 {
+				continue
 			}
-		}
+			item := menuMap[menuKey]
+			if item == nil {
+				return nil, errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
+			}
 
-		// setup exists
-		isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-		for _, child := range item.Children {
-			child.Params = item.Params
-			// 反转exists字段，隐藏引导页，显示功能子菜单
-			child.Exists = !child.Exists
-			if child.OnlyK8S && !isK8s {
-				child.Exists = false
+			// setup params
+			item.Params = make(map[string]string)
+			paramsStr := config["PUBLIC_HOST"]
+			if len(paramsStr) > 0 {
+				params := make(map[string]interface{})
+				err := json.Unmarshal([]byte(paramsStr), &params)
+				if err != nil {
+					return nil, errors.NewDatabaseError(fmt.Errorf("PUBLIC_HOST format error"))
+				}
+				for k, v := range params {
+					item.Params[k] = fmt.Sprint(v)
+				}
 			}
-			if child.OnlyNotK8S && isK8s {
-				child.Exists = false
-			}
-			if child.MustExists {
-				child.Exists = true
+
+			// setup exists
+			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
+			for _, child := range item.Children {
+				child.Params = item.Params
+				// 反转exists字段，隐藏引导页，显示功能子菜单
+				child.Exists = !child.Exists
+				if child.OnlyK8S && !isK8s {
+					child.Exists = false
+				}
+				if child.OnlyNotK8S && isK8s {
+					child.Exists = false
+				}
+				if child.MustExists {
+					child.Exists = true
+				}
 			}
 		}
 	}
+
 	if items == nil {
 		items = make([]*pb.MenuItem, 0)
 	}
+
 	return &pb.GetMenuResponse{Data: s.adjustMenuParams(items)}, nil
+}
+
+func (s *menuService) composeMSPMenuParams(req *pb.GetMenuRequest) map[string]string {
+	params := map[string]string{}
+	params["key"] = "Overview"
+	params["tenantGroup"] = req.TenantId
+	params["tenantId"] = req.TenantId
+	params["terminusKey"] = req.TenantId
+	return params
 }
 
 // GetSetting api

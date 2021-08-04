@@ -14,6 +14,7 @@
 package migrator
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,6 +29,11 @@ import (
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
+)
+
+const (
+	patchesModuleName = ".patches"
+	patchInit         = "patch.sql"
 )
 
 type ScriptsParameters interface {
@@ -50,6 +56,7 @@ type Scripts struct {
 	Dirname       string
 	ServicesNames []string
 	Services      map[string]*Module
+	Patches       *Module
 
 	rulers          []rules.Ruler
 	markPending     bool
@@ -123,7 +130,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		services[moduleInfo.Name()] = &module
 	}
 
-	return &Scripts{
+	var scritps = &Scripts{
 		Workdir:       parameters.Workdir(),
 		Dirname:       parameters.MigrationDir(),
 		ServicesNames: modulesNames,
@@ -131,12 +138,34 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		rulers:        parameters.Rules(),
 		markPending:   false,
 		destructive:   0,
-	}, nil
+	}
+	if module, ok := scritps.Services[patchesModuleName]; ok {
+		scritps.Patches = module
+		delete(scritps.Services, patchesModuleName)
+	} else {
+		scritps.Patches = new(Module)
+	}
+
+	return scritps, nil
 }
 
 func (s *Scripts) Get(serviceName string) ([]*Script, bool) {
 	module, ok := s.Services[serviceName]
 	return module.Scripts, ok
+}
+
+func (s *Scripts) GetPatches() *Module {
+	return s.Patches
+}
+
+func (s *Scripts) GetScriptByFilename(filename string) (*Module, *Script, bool) {
+	for _, mod := range s.Services {
+		script, ok := mod.GetScriptByFilename(filename)
+		if ok {
+			return mod, script, true
+		}
+	}
+	return nil, nil, false
 }
 
 func (s *Scripts) Lint() error {
@@ -172,6 +201,10 @@ func (s *Scripts) Lint() error {
 
 func (s *Scripts) AlterPermissionLint() error {
 	for moduleName, module := range s.Services {
+		if moduleName == patchesModuleName {
+			continue
+		}
+
 		tableNames := make(map[string]bool, 0)
 		for _, script := range module.Scripts {
 			for _, ddl := range script.DDLNodes() {
@@ -198,9 +231,7 @@ func (s *Scripts) MarkPending(tx *gorm.DB) {
 	for _, module := range s.Services {
 		for i := range module.Scripts {
 			var record HistoryModel
-			if tx := tx.Where(map[string]interface{}{
-				"filename": module.Scripts[i].GetName(),
-			}).
+			if tx := tx.Where(map[string]interface{}{"filename": module.Scripts[i].GetName()}).
 				First(&record); tx.Error != nil || tx.RowsAffected == 0 {
 				module.Scripts[i].Pending = true
 			} else {
@@ -217,22 +248,39 @@ func (s *Scripts) IgnoreMarkPending() {
 	s.markPending = true
 }
 
-func (s *Scripts) InstalledChangesLint() error {
-	if !s.markPending {
-		return errors.New("scripts did not mark if is pending, please mark it and then do InstalledChangesLint")
-	}
-
+func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error {
+	var (
+		patchesList        []string
+		missingPatchesList []string
+	)
 	for moduleName, module := range s.Services {
 		for _, script := range module.Scripts {
-			if script.Pending {
+			if script.Record == nil {
+				script.Record = new(HistoryModel)
+			}
+			db := db.Where(map[string]interface{}{"filename": script.GetName()}).First(script.Record)
+			if db.Error != nil {
 				continue
 			}
 			if script.Checksum() != script.Record.Checksum {
-				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
-					moduleName, script.GetName())
+				logrus.Warnf("the installed file is changed on local, filename: %s, expected checksum: %s, actual checksum: %s",
+					script.GetName(), script.Checksum(), script.Record.Checksum)
+				filename := patchPrefix + script.GetName()
+				if _, ok := s.Patches.GetScriptByFilename(filename); ok {
+					logrus.Infof("found patch file and append it to the list, filename: %s", filename)
+					patchesList = append(patchesList, filename)
+				} else {
+					missingPatchesList = append(missingPatchesList, filepath.Join(moduleName, script.GetName()))
+				}
 			}
 		}
 	}
+
+	if len(missingPatchesList) > 0 {
+		return errors.Errorf("these installed script is changed on local and mising paches: %s", strings.Join(missingPatchesList, ","))
+	}
+
+	*ctx = context.WithValue(*ctx, patchesKey, patchesList)
 	return nil
 }
 

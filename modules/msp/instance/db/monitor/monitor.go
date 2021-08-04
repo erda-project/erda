@@ -26,8 +26,12 @@ type MonitorDB struct {
 	*gorm.DB
 }
 
+func (db *MonitorDB) query() *gorm.DB {
+	return db.Table(TableMonitor).Where("is_delete=0")
+}
+
 func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error) {
-	query := db.Table(TableMonitor)
+	query := db.query()
 	query, err := gormutil.GetQueryFilterByFields(query, monitorFieldColumns, fields)
 	if err != nil {
 		return nil, err
@@ -45,7 +49,7 @@ func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error
 // GetByTerminusKey .
 func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 	var monitor Monitor
-	result := db.Table(TableMonitor).
+	result := db.query().
 		Where("`terminus_key`=?", terminusKey).
 		Limit(1).
 		Last(&monitor)
@@ -59,6 +63,30 @@ func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 type CompatibleTerminusKey struct {
 	TerminusKey        string `gorm:"column:terminus_key"`
 	TerminusKeyRuntime string `gorm:"column:terminus_key_runtime"`
+}
+
+func (db *MonitorDB) GetMonitorByProjectId(projectID int64) ([]*Monitor, error) {
+	var monitors []*Monitor
+	err := db.Where("`project_id` = ?", projectID).Where("`is_delete` = ?", 0).Find(&monitors).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return monitors, nil
+}
+
+func (db *MonitorDB) GetMonitorByProjectIdAndWorkspace(projectID int64, workspace string) (*Monitor, error) {
+	monitor := Monitor{}
+	err := db.Where("`project_id` = ?", projectID).Where("`workspace` = ?", workspace).Where("`is_delete` = ?", 0).Find(&monitor).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &monitor, nil
 }
 
 func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {

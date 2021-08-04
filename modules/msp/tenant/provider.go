@@ -20,6 +20,7 @@ import (
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	pb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
@@ -42,13 +43,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.tenantService = &tenantService{
 		p:           p,
 		MSPTenantDB: &db.MSPTenantDB{DB: p.DB},
+		MonitorDB:   &monitor.MonitorDB{DB: p.DB},
 	}
 	if p.Register != nil {
 		type TenantService pb.TenantServiceServer
-		pb.RegisterTenantServiceImp(p.Register, p.tenantService, apis.Options(), p.Perm.Check(
-			perm.Method(TenantService.CreateTenant, perm.ScopeProject, "msp-tenant", perm.ActionCreate, perm.FieldValue("ProjectID")),
-			perm.Method(TenantService.GetTenant, perm.ScopeProject, "msp-tenant", perm.ActionGet, perm.FieldValue("ProjectID")),
-		))
+		pb.RegisterTenantServiceImp(p.Register, p.tenantService, apis.Options())
 	}
 	return nil
 }

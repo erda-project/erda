@@ -63,7 +63,7 @@ func (s *PipelineCronSvc) operate(cronID uint64, enable bool) (*spec.PipelineCro
 		return nil, apierrors.ErrOperatePipeline.InternalError(err)
 	}
 
-	if err := s.crondSvc.DistributedReloadCrond(); err != nil {
+	if err := s.crondSvc.AddIntoPipelineCrond(cron.ID); err != nil {
 		return nil, apierrors.ErrReloadCrond.InternalError(err)
 	}
 
@@ -110,7 +110,7 @@ func (s *PipelineCronSvc) Create(req apistructs.PipelineCronCreateRequest) (*spe
 		return nil, apierrors.ErrCreatePipelineCron.InternalError(err)
 	}
 
-	if err := s.crondSvc.DistributedReloadCrond(); err != nil {
+	if err := s.crondSvc.AddIntoPipelineCrond(cron.ID); err != nil {
 		return nil, apierrors.ErrReloadCrond.InternalError(err)
 	}
 
@@ -125,7 +125,7 @@ func (s *PipelineCronSvc) Delete(cronID uint64) error {
 	if err := s.dbClient.DeletePipelineCron(cron.ID); err != nil {
 		return apierrors.ErrDeletePipelineCron.InternalError(err)
 	}
-	if err := s.crondSvc.DistributedReloadCrond(); err != nil {
+	if err := s.crondSvc.DeletePipelineCrond(cron.ID); err != nil {
 		return apierrors.ErrReloadCrond.InternalError(err)
 	}
 	return nil
@@ -137,4 +137,16 @@ func (s *PipelineCronSvc) Get(cronID uint64) (*spec.PipelineCron, error) {
 		return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
 	}
 	return &cron, nil
+}
+
+// PipelineCronUpdate pipeline cron update
+func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRequest) error {
+	cron, err := s.dbClient.GetPipelineCron(req.ID)
+	if err != nil {
+		return err
+	}
+	cron.CronExpr = req.CronExpr
+	cron.Extra.PipelineYml = req.PipelineYml
+	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{spec.PipelineCronCronExpr, spec.Extra})
+	return err
 }

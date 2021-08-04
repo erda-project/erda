@@ -35,11 +35,12 @@ const (
 	gcGraceSeconds   = 86400
 )
 
-var bdl = bundle.New(bundle.WithCoreServices())
+var bdl = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
 
 type LogSchema interface {
 	Name() string
 	RunDaemon(ctx context.Context, interval time.Duration, muInf mutex.Interface)
+	CreateDefault() error
 }
 
 type CassandraSchema struct {
@@ -207,7 +208,7 @@ func (cs *CassandraSchema) CreateDefault() error {
 	} {
 		err := cs.createTable(stmt)
 		if err != nil {
-			return fmt.Errorf("create default tables failed. stmt=%s, err=%s", stmt, err)
+			return fmt.Errorf("create default tables failed. stmt=%s, err: %w", stmt, err)
 		}
 	}
 	return nil

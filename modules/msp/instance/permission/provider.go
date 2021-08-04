@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
+	tenantdb "github.com/erda-project/erda/modules/msp/tenant/db"
 )
 
 // +provider
@@ -29,12 +30,14 @@ type provider struct {
 	instanceTenantDB *instancedb.InstanceTenantDB
 	tmcDB            *instancedb.TmcDB
 	monitorDB        *monitordb.MonitorDB
+	MSPTenantDB      *tenantdb.MSPTenantDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.instanceTenantDB = &instancedb.InstanceTenantDB{DB: p.DB}
 	p.tmcDB = &instancedb.TmcDB{DB: p.DB}
 	p.monitorDB = &monitordb.MonitorDB{DB: p.DB}
+	p.MSPTenantDB = &tenantdb.MSPTenantDB{DB: p.DB}
 	return nil
 }
 
