@@ -52,7 +52,7 @@ func (q *defaultQueue) addPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan
 	//   else add to pending queue.
 	if p.Status.AfterPipelineQueue() {
 		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
-		//    if doneCh is nil, external operations do not effect doneCh
+		// if doneCh is nil, external operations do not effect doneCh
 		if doneCh != nil {
 			go func() {
 				doneCh <- struct{}{}
