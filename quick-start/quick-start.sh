@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -u
 
 abort() {
@@ -135,6 +137,8 @@ ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
     cd "${INSTALL_LOCATION}/quick-start" >/dev/null
 
 ) || exit 1
+
+cd "${INSTALL_LOCATION}/quick-start"
 
 ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
 execute "docker-compose" "up" "-d" "mysql" || exit 1
