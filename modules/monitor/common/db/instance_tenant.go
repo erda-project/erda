@@ -35,6 +35,9 @@ func (db *InstanceTenantDb) QueryTkByTenantGroup(tenantGroup string) (string, er
 		Limit(1).
 		Find(&tenantInfo).
 		Error
+	if err != nil {
+		return "", err
+	}
 	var config map[string]interface{}
 	err = json.Unmarshal([]byte(tenantInfo.Config), &config)
 	if err != nil {
