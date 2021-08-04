@@ -50,7 +50,7 @@ func (db *SystemViewDB) ListByFields(fields map[string]interface{}) ([]*SystemVi
 		return nil, err
 	}
 	var list []*SystemView
-	if err := query.Find(&list).Order("created_at DESC").Error; err != nil {
+	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
@@ -85,7 +85,7 @@ func (db *CustomViewDB) ListByFields(fields map[string]interface{}) ([]*CustomVi
 		return nil, err
 	}
 	var list []*CustomView
-	if err := query.Find(&list).Order("created_at DESC").Error; err != nil {
+	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil
