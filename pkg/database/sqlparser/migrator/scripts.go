@@ -33,7 +33,7 @@ import (
 
 const (
 	patchesModuleName = ".patches"
-	patchInit         = "patch-init.sql"
+	patchInit         = "patch.sql"
 )
 
 type ScriptsParameters interface {

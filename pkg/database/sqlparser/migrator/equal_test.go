@@ -59,7 +59,7 @@ func TestFieldTypeEqual(t *testing.T) {
 		t.Fatalf("error assert equal between col a and col b")
 	}
 	if eq := migrator.FieldTypeEqual(a.Tp, c.Tp); eq.Equal() {
-		t.Fatal("error assert equal between col a and col c")
+		t.Fatal("error assert equal between col a and col c", eq.Reason())
 	}
 	if eq := migrator.FieldTypeEqual(b.Tp, d.Tp); !eq.Equal() {
 		t.Fatalf("error assert equal between col b and col c, reason: %s", eq.Reason())
