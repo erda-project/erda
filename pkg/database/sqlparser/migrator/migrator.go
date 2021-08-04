@@ -15,6 +15,7 @@ package migrator
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -280,11 +281,11 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 		return err
 	}
 	// copy database snapshot to sandbox
-	logrus.Infoln("COPY CURRENT DATABASE STRUCTURE TO SANDBOX")
+	logrus.Infoln("copy current database structure to sandbox")
 	if err = snap.RecoverTo(mig.SandBox()); err != nil {
 		return err
 	}
-	logrus.Infoln("OK")
+	logrus.Infoln("ok")
 
 	rows, err := mig.SandBox().Raw("show tables").Rows()
 	if err != nil {
@@ -313,29 +314,11 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 		}
 	}
 
-	// record base to sandbox
-	var records []HistoryModel
-	if err = mig.DB().Find(&records).Error; err != nil {
-		return err
+	files, err := retrievePatchesFiles(ctx)
+	if err != nil {
+		return errors.New("failed to retrieve patches files")
 	}
-	new(HistoryModel).CreateTable(mig.SandBox())
-	for _, record := range records {
-		if err = mig.SandBox().Create(&record).Error; err != nil {
-			return err
-		}
-	}
-
-	value := ctx.Value(patchesKey)
-	var (
-		files []string
-		ok    bool
-	)
-	if value != nil {
-		files, ok = value.([]string)
-		if !ok {
-			return errors.New("failed to retrieve patches files")
-		}
-	}
+	logrus.Infoln("retrieve files that needs to patch:", files)
 	if err = mig.patchBeforeMigrating(mig.SandBox(), files); err != nil {
 		return errors.Wrapf(err, "failed to patch before migrating in sandbox")
 	}
@@ -480,7 +463,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("retrieve:", files)
+	logrus.Infoln("retrieve files that needs to patch:", files)
 	if err := mig.patchBeforeMigrating(mig.DB(), files); err != nil {
 		return errors.Wrap(err, "failed to patch before migrating")
 	}
@@ -676,13 +659,19 @@ func (mig *Migrator) destructiveLint() error {
 }
 
 func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
-	logrus.Infoln("COMPARE LOCAL SCHEMA AND CLOUD SCHEMA FOR EVERY SERVICE... ..")
-	for _, service := range mig.LocalScripts.Services {
+	logrus.Infoln("compare local schema and cloud schema for every service...")
+	var (
+		reasons []string
+		eq      = true
+	)
+	for modName, service := range mig.LocalScripts.Services {
 		if equal := service.BaselineEqualCloud(db); !equal.Equal() {
-			return equal.Reason(), false
+			eq = false
+			reason := fmt.Sprintf("mod name: %s, reasons: %s", modName, equal.Reason())
+			reasons = append(reasons, reason)
 		}
 	}
-	return "", true
+	return strings.Join(reasons, "\n"), eq
 }
 
 func retrievePatchesFiles(ctx context.Context) ([]string, error) {

@@ -249,7 +249,10 @@ func (s *Scripts) IgnoreMarkPending() {
 }
 
 func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error {
-	var patchesList []string
+	var (
+		patchesList        []string
+		missingPatchesList []string
+	)
 	for moduleName, module := range s.Services {
 		for _, script := range module.Scripts {
 			if script.Record == nil {
@@ -264,12 +267,15 @@ func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error 
 				if _, ok := s.Patches.GetScriptByFilename(filename); ok {
 					logrus.Infof("found patch file and append it to the list, filename: %s", filename)
 					patchesList = append(patchesList, filename)
-					continue
+				} else {
+					missingPatchesList = append(missingPatchesList, filepath.Join(moduleName, script.GetName()))
 				}
-				return errors.Errorf("the installed script is changed in local. The service name: %s, script filename: %s",
-					moduleName, script.GetName())
 			}
 		}
+	}
+
+	if len(missingPatchesList) > 0 {
+		return errors.Errorf("these installed script is changed in local: %s", strings.Join(missingPatchesList, ","))
 	}
 
 	*ctx = context.WithValue(*ctx, patchesKey, patchesList)

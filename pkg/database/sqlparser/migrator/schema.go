@@ -15,6 +15,7 @@ package migrator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -66,18 +67,24 @@ func (s *Schema) Equal(o *Schema) *Equal {
 		}
 	}
 
+	var (
+		reasons []string
+		eq      = true
+	)
 	for tableName, sDef := range s.TableDefinitions {
 		oDef, ok := o.TableDefinitions[tableName]
 		if !ok {
-			return &Equal{
-				equal:  false,
-				reason: fmt.Sprintf("table %s in left but not in right", tableName),
-			}
+			eq = false
+			reason := fmt.Sprintf("table %s in left but is missing in right", tableName)
+			reasons = append(reasons, reason)
+			continue
 		}
 		if equal := sDef.Equal(oDef); !equal.Equal() {
-			return equal
+			eq = false
+			reasons = append(reasons, equal.Reason())
+			continue
 		}
 	}
 
-	return &Equal{equal: true}
+	return &Equal{equal: eq, reason: strings.Join(reasons, "\n")}
 }
