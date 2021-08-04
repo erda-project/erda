@@ -63,5 +63,6 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 		c.Timeout = time.Second * 150
 	}
 	params.Add("timeout", fmt.Sprintf("%vs", int(c.Timeout.Seconds())))
+	params.Add("multiStatements", "true")
 	return dsn + "?" + params.Encode()
 }

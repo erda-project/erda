@@ -141,3 +141,12 @@ func (m *Module) Filenames() []string {
 	}
 	return names
 }
+
+func (m *Module) GetScriptByFilename(filename string) (*Script, bool) {
+	for _, script := range m.Scripts {
+		if filename == script.GetName() {
+			return script, true
+		}
+	}
+	return nil, false
+}
