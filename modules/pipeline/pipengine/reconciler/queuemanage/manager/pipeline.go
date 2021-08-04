@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -145,4 +146,26 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	}
 
 	return pq
+}
+
+func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *apistructs.PipelineQueue, pipelineIDs []uint64) error {
+	mgr.qLock.RLock()
+	defer mgr.qLock.RUnlock()
+
+	queueID := queue.New(pq).ID()
+	q, ok := mgr.queueByID[queueID]
+	if !ok {
+		return fmt.Errorf("failed to query queue: %s", queueID)
+	}
+
+	pipelines := make([]*spec.Pipeline, 0, len(pipelineIDs))
+	for _, pipelineID := range pipelineIDs {
+		p := mgr.ensureQueryPipelineDetail(pipelineID)
+		if p == nil {
+			return fmt.Errorf("failed to query pipeline: %d", pipelineID)
+		}
+		pipelines = append(pipelines, p)
+	}
+
+	return q.BatchUpdatePipelinePriorityInQueue(pipelines)
 }

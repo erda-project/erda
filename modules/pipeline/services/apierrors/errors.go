@@ -105,6 +105,8 @@ var (
 	ErrCreatePipelineReport   = err("ErrCreatePipelineReport", "创建流水线报告失败")
 	ErrQueryPipelineReportSet = err("ErrQueryPipelineReportSet", "查询流水线报告集失败")
 	ErrPagingPipelineReports  = err("ErrPagingPipelineReports", "分页查询流水线报告集失败")
+
+	ErrUpgradePipelinePriority = err("ErrUpgradePipelinePriority", "提升流水线优先级失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
