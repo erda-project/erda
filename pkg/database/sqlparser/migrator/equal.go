@@ -42,7 +42,7 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 		}
 	}
 
-	if (l.Flen == -1 || r.Flen == -1) && l.Flen != r.Flen && !mysql.IsIntegerType(l.Tp) {
+	if !(l.Flen == -1 || r.Flen == -1) && (l.Flen != r.Flen) && !mysql.IsIntegerType(l.Tp) {
 		return &Equal{
 			equal:  false,
 			reason: fmt.Sprintf("FieldType.Flen is not equal, left: %v, right: %v", l.Flen, r.Flen),
