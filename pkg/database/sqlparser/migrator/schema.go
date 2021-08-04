@@ -15,8 +15,9 @@ package migrator
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/ast"
 	"strings"
+
+	"github.com/pingcap/parser/ast"
 )
 
 // Schema is the set of TableDefinitions.
