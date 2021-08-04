@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	"github.com/mitchellh/mapstructure"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -142,11 +143,19 @@ func (a *alertService) GetAlert(ctx context.Context, request *alert.GetAlertRequ
 }
 
 func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAlertRequest) (*alert.CreateAlertResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	projectId, workspace, err := a.getOtherValue(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	ProjectID, err := strconv.Atoi(projectId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	org, err := a.p.bdl.GetProject(uint64(ProjectID))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -163,15 +172,15 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}
-	alertData.Attributes[DiceOrgId] = structpb.NewStringValue(monitorInstance.OrgId)
+	alertData.Attributes[DiceOrgId] = structpb.NewNumberValue(float64(org.OrgID))
 	alertData.Attributes[Domain] = structpb.NewStringValue(request.Domain)
 	alertData.Attributes[TenantGroup] = structpb.NewStringValue(request.TenantGroup)
-	alertData.Attributes[ProjectId] = structpb.NewStringValue(monitorInstance.ProjectId)
-	alertData.Attributes[TargetProjectId] = structpb.NewStringValue(monitorInstance.ProjectId)
-	alertData.Attributes[WORKSPACE] = structpb.NewStringValue(monitorInstance.Workspace)
-	alertData.Attributes[TargetWorkspace] = structpb.NewStringValue(monitorInstance.Workspace)
-	alertData.Attributes[TK] = structpb.NewStringValue(monitorInstance.TerminusKey)
-	alertData.Attributes[TkAlias] = structpb.NewStringValue(monitorInstance.TerminusKey)
+	alertData.Attributes[ProjectId] = structpb.NewStringValue(projectId)
+	alertData.Attributes[TargetProjectId] = structpb.NewStringValue(projectId)
+	alertData.Attributes[WORKSPACE] = structpb.NewStringValue(workspace)
+	alertData.Attributes[TargetWorkspace] = structpb.NewStringValue(workspace)
+	alertData.Attributes[TK] = structpb.NewStringValue(tk)
+	alertData.Attributes[TkAlias] = structpb.NewStringValue(tk)
 	if request.AppIds != nil && len(request.AppIds) > 0 {
 		applicationId, err := (&adapt.Adapt{}).StringSliceToValue(request.AppIds)
 		if err != nil {
@@ -181,9 +190,9 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 		alertData.Attributes[TargetApplicationId] = applicationId
 	}
 	alertData.Attributes[DashboardPath] =
-		structpb.NewStringValue(fmt.Sprintf(DashboardPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk))
+		structpb.NewStringValue(fmt.Sprintf(DashboardPathFormat, projectId, workspace, request.TenantGroup, tk))
 	alertData.Attributes[RecordPath] =
-		structpb.NewStringValue(fmt.Sprintf(RecordPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk))
+		structpb.NewStringValue(fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk))
 	ma, err := a.AlertToMonitor(alertData)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -225,12 +234,11 @@ func (a *alertService) AlertToMonitor(alertData *monitor.Alert) (*monitor.Alert,
 }
 
 func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAlertRequest) (*alert.UpdateAlertResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-
-	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	projectId, workspace, err := a.getOtherValue(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -277,8 +285,8 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if request.Domain != "" && len(request.Domain) > 0 {
 		alertData.Attributes["alert_domain"] = structpb.NewStringValue(request.Domain)
 	}
-	dashboardPath := fmt.Sprintf(DashboardPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk)
-	recordPath := fmt.Sprintf(RecordPathFormat, monitorInstance.ProjectId, monitorInstance.Workspace, request.TenantGroup, tk)
+	dashboardPath := fmt.Sprintf(DashboardPathFormat, projectId, workspace, request.TenantGroup, tk)
+	recordPath := fmt.Sprintf(RecordPathFormat, projectId, workspace, request.TenantGroup, tk)
 	alertData.Attributes[DashboardPath] = structpb.NewStringValue(dashboardPath)
 	alertData.Attributes[RecordPath] = structpb.NewStringValue(recordPath)
 	data, err := json.Marshal(alertData)
@@ -354,10 +362,7 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 }
 
 func (a *alertService) QueryCustomizeMetric(ctx context.Context, request *alert.QueryCustomizeMetricRequest) (*alert.QueryCustomizeMetricResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
-	if err != nil {
-		return nil, errors.NewInternalServerError(fmt.Errorf("get tk failed"))
-	}
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	req := &monitor.QueryCustomizeMetricRequest{
 		Scope:   MicroServiceScope,
 		ScopeId: tk,
@@ -455,9 +460,9 @@ func (a *alertService) GetCustomizeAlert(ctx context.Context, request *alert.Get
 }
 
 func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.CreateCustomizeAlertRequest) (*alert.CreateCustomizeAlertResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
-		return nil, errors.NewInternalServerError(fmt.Errorf("get tk failed"))
+		return nil, errors.NewInternalServerError(err)
 	}
 	customizeMetricsReq := &monitor.QueryCustomizeMetricRequest{
 		Scope:   MicroServiceScope,
@@ -531,6 +536,38 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 			Id: resp.Data,
 		},
 	}, nil
+}
+
+func (a *alertService) getTKByTenant(tenantGroup string) (string, error) {
+	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(tenantGroup)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			mspRecord, err := a.p.mspDb.MspTenant.QueryTenant(tenantGroup)
+			if err != nil {
+				return "", fmt.Errorf("get msp tenant failed")
+			}
+			if mspRecord != nil {
+				tk = mspRecord.Id
+			}
+		} else {
+			return "", fmt.Errorf("get msp tenant failed")
+		}
+	}
+	return tk, nil
+}
+
+func (a *alertService) getOtherValue(terminusKey string) (string, string, error) {
+	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(terminusKey)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			mspTenant, err := a.p.mspDb.MspTenant.QueryTenant(terminusKey)
+			if err != nil {
+				return "", "", errors.NewInternalServerError(err)
+			}
+			return mspTenant.RelatedProjectId, mspTenant.RelatedWorkspace, nil
+		}
+	}
+	return monitorInstance.ProjectId, monitorInstance.Workspace, nil
 }
 
 func checkCustomMetric(customMetrics *monitor.CustomizeMetrics, alert *monitor.CustomizeAlertDetail) error {
@@ -645,9 +682,9 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if customAlertResp.Data.AlertScope != MicroServiceScope || customAlertResp.Data.AlertScopeId != request.TenantGroup {
 		return nil, errors.NewPermissionError("monitor_project_alert", "update", "scope or scopeId is invalidate")
 	}
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
-		return nil, errors.NewInternalServerError(fmt.Errorf("get tk failed"))
+		return nil, errors.NewInternalServerError(err)
 	}
 	if tk == "" {
 		return nil, fmt.Errorf("no monitor")
@@ -790,14 +827,14 @@ func (a *alertService) GetAlertRecordAttrs(ctx context.Context, request *alert.G
 }
 
 func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAlertRecordsRequest) (*alert.GetAlertRecordsResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	if tk == "" {
 		return nil, errors.NewInternalServerError(fmt.Errorf("tenantGroup has no tk"))
 	}
-	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	mspProjectId, _, err := a.getOtherValue(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -824,8 +861,8 @@ func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAl
 		return nil, errors.NewInternalServerError(err)
 	}
 	var projectId int
-	if monitorInstance.ProjectId != "" {
-		projectId, err = strconv.Atoi(monitorInstance.ProjectId)
+	if mspProjectId != "" {
+		projectId, err = strconv.Atoi(mspProjectId)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
@@ -850,20 +887,17 @@ func (a *alertService) GetAlertRecords(ctx context.Context, request *alert.GetAl
 }
 
 func (a *alertService) GetAlertRecord(ctx context.Context, request *alert.GetAlertRecordRequest) (*alert.GetAlertRecordResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if tk == "" {
-		return nil, errors.NewInternalServerError(fmt.Errorf("tenantGroup has no tk"))
-	}
-	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	mspProjectId, _, err := a.getOtherValue(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	var projectId int
-	if monitorInstance.ProjectId != "" {
-		projectId, err = strconv.Atoi(monitorInstance.ProjectId)
+	if mspProjectId != "" {
+		projectId, err = strconv.Atoi(mspProjectId)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
@@ -910,17 +944,15 @@ func (a *alertService) GetAlertHistories(ctx context.Context, request *alert.Get
 }
 
 func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *alert.CreateAlertRecordIssueRequest) (*alert.CreateAlertRecordIssueResponse, error) {
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if tk == "" {
-		return nil, errors.NewInternalServerError(fmt.Errorf("tenantGroup has no tk"))
-	}
-	monitorInstance, err := a.p.authDb.Monitor.GetInstanceByTk(tk)
+	mspProjectId, _, err := a.getOtherValue(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+
 	context := utils.NewContextWithHeader(ctx)
 	userID := apis.GetUserID(ctx)
 	getRecordReq := &monitor.GetAlertRecordRequest{
@@ -939,10 +971,10 @@ func (a *alertService) CreateAlertRecordIssue(ctx context.Context, request *aler
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if monitorInstance.ProjectId == "" {
+	if mspProjectId == "" {
 		return nil, errors.NewInternalServerError(fmt.Errorf("monitor has no project id"))
 	}
-	projectId, err := strconv.Atoi(monitorInstance.ProjectId)
+	projectId, err := strconv.Atoi(mspProjectId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -1009,7 +1041,7 @@ func (a *alertService) UpdateAlertRecordIssue(ctx context.Context, request *aler
 
 func (a *alertService) DashboardPreview(ctx context.Context, request *alert.DashboardPreviewRequest) (*alert.DashboardPreviewResponse, error) {
 	request.AlertScope = MicroServiceScope
-	tk, err := a.p.authDb.InstanceTenant.QueryTkByTenantGroup(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
