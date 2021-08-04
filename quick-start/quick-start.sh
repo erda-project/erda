@@ -17,6 +17,20 @@ if [[ "$OS" == "Linux" ]]; then
   ON_LINUX=1
 elif [[ "$OS" == "Darwin" ]]; then
   ON_MACOS=1
+else
+  abort "The script is only supported on macOS and Linux."
+fi
+
+if [[ -z "${ON_LINUX-}" ]]; then
+  PERMISSION_FORMAT="%A"
+  CHOWN="/usr/sbin/chown"
+  CHGRP="/usr/bin/chgrp"
+  GROUP="admin"
+else
+  PERMISSION_FORMAT="%a"
+  CHOWN="/bin/chown"
+  CHGRP="/bin/chgrp"
+  GROUP="$(id -gn)"
 fi
 
 # string formatters
@@ -95,6 +109,21 @@ execute_sudo() {
   fi
 }
 
+# USER isn't always set so provide a fall back for the installer and subprocesses.
+if [[ -z "${USER-}" ]]; then
+  USER="$(chomp "$(id -un)")"
+  export USER
+fi
+
+# Invalidate sudo timestamp before exiting (if it wasn't active before).
+if ! /usr/bin/sudo -n -v 2>/dev/null; then
+  trap '/usr/bin/sudo -k' EXIT
+fi
+
+# Things can fail later if `pwd` doesn't exist.
+# Also sudo prints a warning message for no good reason
+cd "/usr" || exit 1
+
 ######################################################script
 
 if ! command -v git >/dev/null; then
@@ -114,33 +143,40 @@ fi
 INSTALL_LOCATION="/opt/erda-quickstart"
 ERDA_REPOSITORY="https://github.com/erda-project/erda.git"
 
+# shellcheck disable=SC2016
+ohai 'Checking for `sudo` access (which may request your password).'
+have_sudo_access
+
+# chown
+if ! [[ -d "${INSTALL_LOCATION}" ]]; then
+  execute_sudo "/bin/mkdir" "-p" "${INSTALL_LOCATION}"
+fi
+execute_sudo "$CHOWN" "-R" "$USER:$GROUP" "${INSTALL_LOCATION}"
+
 ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
 (
-    execute_sudo "/bin/mkdir" "-p" "${INSTALL_LOCATION}"
-    cd "${INSTALL_LOCATION}" >/dev/null || return
+  cd "${INSTALL_LOCATION}" >/dev/null || return
 
-    # we do it in four steps to avoid merge errors when reinstalling
-    execute_sudo "git" "init" "-q"
+  # we do it in four steps to avoid merge errors when reinstalling
+  execute "git" "init" "-q"
 
-    # "git remote add" will fail if the remote is defined in the global config
-    execute_sudo "git" "config" "remote.origin.url" "${ERDA_REPOSITORY}"
-    execute_sudo "git" "config" "remote.origin.fetch" "+refs/heads/*:refs/remotes/origin/*"
+  # "git remote add" will fail if the remote is defined in the global config
+  execute "git" "config" "remote.origin.url" "${ERDA_REPOSITORY}"
+  execute "git" "config" "remote.origin.fetch" "+refs/heads/*:refs/remotes/origin/*"
 
-    # ensure we don't munge line endings on checkout
-    execute_sudo "git" "config" "core.autocrlf" "false"
+  # ensure we don't munge line endings on checkout
+  execute "git" "config" "core.autocrlf" "false"
 
-    execute_sudo "git" "fetch" "--force" "origin"
-    execute_sudo "git" "fetch" "--force" "--tags" "origin"
+  execute "git" "fetch" "--force" "origin"
+  execute "git" "fetch" "--force" "--tags" "origin"
 
-    execute_sudo "git" "reset" "--hard" "origin/master"
-
-    cd "${INSTALL_LOCATION}/quick-start" >/dev/null
+  execute "git" "reset" "--hard" "origin/master"
 
 ) || exit 1
 
-cd "${INSTALL_LOCATION}/quick-start"
-
 ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
+
+cd "${INSTALL_LOCATION}/quick-start" || exit 1
 execute "docker-compose" "up" "-d" "mysql" || exit 1
 
 echo "waiting for mysql ready"
@@ -172,7 +208,7 @@ ohai "Setup local hosts"
 ohai "Erda has been started successfully using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
 
 ohai "Next steps:"
-echo "visit http://erda.local to start your trivial on Erda"
-echo "visit https://github.com/erda-project/erda/blob/master/docs/guides/quickstart/quickstart-full.md#try-erda for basic use of Erda"
-echo "visit https://docs.erda.cloud for full introduction of Erda"
+echo "visit ${tty_underline}http://erda.local${tty_reset} to start your journey on Erda"
+echo "visit ${tty_underline}https://github.com/erda-project/erda/blob/master/docs/guides/quickstart/quickstart-full.md#try-erda${tty_reset} for basic use of Erda"
+echo "visit ${tty_underline}https://docs.erda.cloud${tty_reset} for full introduction of Erda"
 echo "goto ${INSTALL_LOCATION}/quick-start/ dir to check and manage the docker-compose resources"
