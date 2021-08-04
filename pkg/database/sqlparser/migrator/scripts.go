@@ -275,7 +275,7 @@ func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error 
 	}
 
 	if len(missingPatchesList) > 0 {
-		return errors.Errorf("these installed script is changed in local: %s", strings.Join(missingPatchesList, ","))
+		return errors.Errorf("these installed script is changed in local and mising paches: %s", strings.Join(missingPatchesList, ","))
 	}
 
 	*ctx = context.WithValue(*ctx, patchesKey, patchesList)
