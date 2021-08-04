@@ -117,6 +117,8 @@ type PipelineExtraInfo struct {
 type QueueInfo struct {
 	QueueID        uint64 `json:"queueID"`
 	CustomPriority int64  `json:"customPriority"`
+	// Pipeline priority changed history from initial to latest in queue
+	PriorityChangeHistory []int64 `json:"priorityChangeHistory,omitempty"`
 }
 
 type Snapshot struct {
