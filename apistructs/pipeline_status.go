@@ -194,6 +194,10 @@ func (status PipelineStatus) IsSuccessStatus() bool {
 	return status == PipelineStatusSuccess
 }
 
+func (status PipelineStatus) IsRunningStatus() bool {
+	return status == PipelineStatusRunning
+}
+
 func (status PipelineStatus) CanDelete() bool {
 	// 未开始可删除
 	if status == PipelineStatusAnalyzed {
