@@ -303,13 +303,13 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 	if mig.installingType == firstTimeUpdate {
 		reason, ok := mig.compareSchemas(mig.SandBox())
 		if !ok {
-			logrus.WithField("reason", reason).Warnln("local schema is not equal with cloud schema, try to resolve it")
+			logrus.Warnf("local schema is not equal with cloud schema, try to resolve it:\n%s", reason)
 			if err := mig.patchBeforeMigrating(mig.SandBox(), []string{patchInit}); err != nil {
 				return errors.Wrap(err, "failed to patch init")
 			}
 			reason, ok := mig.compareSchemas(mig.SandBox())
 			if !ok {
-				return errors.Errorf("local base schema is not equal with cloud schema: %s", reason)
+				return errors.Errorf("local base schema is not equal with cloud schema:\n%s", reason)
 			}
 		}
 
@@ -696,7 +696,7 @@ func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
 		equal := service.BaselineEqualCloud(db)
 		if !equal.Equal() {
 			eq = false
-			reasons += fmt.Sprintf("module name: %s, %s.\n", modName, equal.Reason())
+			reasons += fmt.Sprintf("module name: %s:\n%s", modName, equal.Reason())
 		}
 	}
 	return reasons, eq
