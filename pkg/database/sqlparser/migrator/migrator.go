@@ -312,6 +312,34 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 				return errors.Errorf("local base schema is not equal with cloud schema: %s", reason)
 			}
 		}
+
+		// record base
+		logrus.Infoln("RECORD BASE... ..")
+		new(HistoryModel).CreateTable(mig.SandBox())
+		now := time.Now()
+		for moduleName, module := range mig.LocalScripts.Services {
+			for i := range module.Scripts {
+				module.Scripts[i].Pending = true
+				if module.Scripts[i].IsBaseline() {
+					module.Scripts[i].Pending = false
+					record := HistoryModel{
+						ID:           0,
+						CreatedAt:    now,
+						UpdatedAt:    now,
+						ServiceName:  moduleName,
+						Filename:     filepath.Base(module.Scripts[i].GetName()),
+						Checksum:     module.Scripts[i].Checksum(),
+						InstalledBy:  "",
+						InstalledOn:  "",
+						LanguageType: string(module.Scripts[i].Type),
+						Reversed:     ddlreverser.ReverseCreateTableStmts(module.Scripts[i]),
+					}
+					if err := mig.SandBox().Create(&record).Error; err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 
 	files, err := retrievePatchesFiles(ctx)
@@ -668,7 +696,7 @@ func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
 		equal := service.BaselineEqualCloud(db)
 		if !equal.Equal() {
 			eq = false
-			reasons += fmt.Sprintf("module name: %s, %s. ", modName, equal.Reason())
+			reasons += fmt.Sprintf("module name: %s, %s.\n", modName, equal.Reason())
 		}
 	}
 	return reasons, eq
