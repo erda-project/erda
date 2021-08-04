@@ -43,7 +43,7 @@ const (
 )
 
 func (q *defaultQueue) RangePendingQueue() {
-	if q.getIsRangingPendingQueue() {
+	if q.getIsUpdatingPendingQueue() || q.getIsRangingPendingQueue() {
 		return
 	}
 	q.setIsRangingPendingQueueFlag()
@@ -59,6 +59,7 @@ func (q *defaultQueue) RangePendingQueue() {
 			q.unsetNeedReRangePendingQueueFlag()
 		}
 	}()
+	// TODO: query items every cycle instead of using original passed range, support items priority swap
 	q.eq.PendingQueue().Range(func(item priorityqueue.Item) (stopRange bool) {
 		// fast reRange
 		defer func() {

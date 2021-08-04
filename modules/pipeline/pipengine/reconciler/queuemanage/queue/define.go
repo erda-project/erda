@@ -51,6 +51,9 @@ type defaultQueue struct {
 	needReRangePendingQueueFlag bool
 	currentItemKeyAtRanging     string // is meaningful only when rangingPendingQueue is true
 	rangeAtOnceCh               chan bool
+
+	// is updating pending queue
+	updatingPendingQueue bool
 }
 
 func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
@@ -113,6 +116,22 @@ func (q *defaultQueue) setCurrentItemKeyAtRanging(itemKey string) {
 }
 
 func (q *defaultQueue) getIsRangingPendingQueue() bool {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+	return q.rangingPendingQueue
+}
+
+func (q *defaultQueue) setIsUpdatingPendingQueueFlag() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	q.updatingPendingQueue = true
+}
+
+func (q *defaultQueue) unsetIsUpdatingPendingQueueFlag() {
+	q.updatingPendingQueue = false
+}
+
+func (q *defaultQueue) getIsUpdatingPendingQueue() bool {
 	q.lock.RLock()
 	defer q.lock.RUnlock()
 	return q.rangingPendingQueue

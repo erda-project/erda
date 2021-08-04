@@ -176,3 +176,36 @@ func (e *Endpoints) deletePipelineQueue(ctx context.Context, r *http.Request, va
 
 	return httpserver.OkResp(nil)
 }
+
+func (e *Endpoints) batchUpgradePipelinePriority(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var req apistructs.PipelinePriorityBatchUpgradeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.ErrUpgradePipelinePriority.InvalidParameter(fmt.Errorf("failed to unmarshal request body, err: %v", err)).ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if !identityInfo.IsInternalClient() {
+		return apierrors.ErrUpgradePipelinePriority.AccessDenied().ToResp(), nil
+	}
+
+	if req.QueueID == 0 {
+		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("queueID")
+	}
+	if len(req.PipelineIDsOrderByPriorityFromHighToLow) == 0 {
+		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("pipelineIDsOrderByPriorityFromHighToLow")
+	}
+
+	queue, err := e.queueManage.GetPipelineQueue(req.QueueID)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	if err = e.reconciler.QueueManager.BatchUpdatePipelinePriorityInQueue(queue, req.PipelineIDsOrderByPriorityFromHighToLow); err != nil {
+		return apierrors.ErrUpgradePipelinePriority.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp(nil)
+}

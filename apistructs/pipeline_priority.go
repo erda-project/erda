@@ -11,23 +11,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package types
+package apistructs
 
-import (
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
-)
-
-type Queue interface {
-	QueueValidator
-	Start(stopCh chan struct{})
-	ID() string
-	IsStrictMode() bool
-	Usage() pb.QueueUsage
-	Update(pq *apistructs.PipelineQueue)
-	RangePendingQueue()
-	AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{})
-	PopOutPipeline(p *spec.Pipeline)
-	BatchUpdatePipelinePriorityInQueue(pipelines []*spec.Pipeline) error
+type PipelinePriorityBatchUpgradeRequest struct {
+	// PipelineIDs array with expected priority from high to low
+	PipelineIDsOrderByPriorityFromHighToLow []uint64 `json:"pipelineIDsOrderByPriorityFromHighToLow"`
+	QueueID                                 uint64   `json:"queueID"`
 }

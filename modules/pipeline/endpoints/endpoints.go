@@ -202,6 +202,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-queues", Method: http.MethodGet, Handler: e.pagingPipelineQueues},
 		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodPut, Handler: e.updatePipelineQueue},
 		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodDelete, Handler: e.deletePipelineQueue},
+		{Path: "/api/pipeline-queues/actions/batch-upgrade-pipeline-priority", Method: http.MethodPut, Handler: e.batchUpgradePipelinePriority},
 
 		// build artifact
 		{Path: "/api/build-artifacts/{sha}", Method: http.MethodGet, Handler: e.queryBuildArtifact},

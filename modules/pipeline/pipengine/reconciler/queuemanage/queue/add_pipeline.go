@@ -25,7 +25,10 @@ import (
 func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{}) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	q.addPipelineIntoQueueUnblock(p, doneCh)
+}
 
+func (q *defaultQueue) addPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan struct{}) {
 	// make item key by pipeline info
 	itemKey := makeItemKey(p)
 	// set priority
@@ -49,13 +52,18 @@ func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct
 	//   else add to pending queue.
 	if p.Status.AfterPipelineQueue() {
 		q.eq.ProcessingQueue().Add(priorityqueue.NewItem(itemKey, priority, *createdTime))
-		go func() {
-			doneCh <- struct{}{}
-			close(doneCh)
-		}()
+		// if doneCh is nil, external operations do not effect doneCh
+		if doneCh != nil {
+			go func() {
+				doneCh <- struct{}{}
+				close(doneCh)
+			}()
+		}
 	} else {
 		q.eq.Add(itemKey, priority, *createdTime)
-		q.doneChanByPipelineID[p.ID] = doneCh
+		if doneCh != nil {
+			q.doneChanByPipelineID[p.ID] = doneCh
+		}
 	}
 
 	// judge needReRangePendingQueue flag after p is added into queue.
