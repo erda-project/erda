@@ -16,7 +16,9 @@ package project
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"net/http"
+	"net/url"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
@@ -55,12 +57,42 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := r.URL.Query()
-	fk := fmt.Sprintf("in_%s", params.Get("project_key"))
+	key := params.Get("project_key")
 	params.Del("project_key")
-	params.Del(fk)
-	for _, p := range perms.List {
-		if p.Scope.Type == apistructs.ProjectScope && p.Access {
-			params.Add(fk, p.Scope.ID)
+	if key == "gateway" {
+		paramsForProject := url.Values{}
+		paramsForProject.Del("projectId")
+		for _, p := range perms.List {
+			if p.Scope.Type == apistructs.ProjectScope && p.Access {
+				paramsForProject.Add("projectId", p.Scope.ID)
+			}
+		}
+		var data []*pb.Project
+		cr = client.Get(discover.MSP()).
+			Header("lang", lang).
+			Header("User-ID", userID).
+			Header("Org-ID", orgID).
+			Path("/api/msp/tenant/projects").
+			Params(paramsForProject)
+		if err := utils.DoJson(cr, &data); err != nil {
+			ErrFromError(w, err)
+			return
+		}
+
+		for _, p := range data {
+			if len(p.Relationship) > 0 {
+				for _, rs := range p.Relationship {
+					params.Add("in__metric_scope_id", rs.TenantID)
+				}
+			}
+		}
+	} else {
+		fk := fmt.Sprintf("in_%s", key)
+		params.Del(fk)
+		for _, p := range perms.List {
+			if p.Scope.Type == apistructs.ProjectScope && p.Access {
+				params.Add(fk, p.Scope.ID)
+			}
 		}
 	}
 
