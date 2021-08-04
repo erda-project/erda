@@ -54,6 +54,9 @@ func (p *provider) TenantToProjectID(tgroup, tenantID string) permission.ValueGe
 }
 
 func (p *provider) getProjectIDByGroupIDOrTenantID(id string) (string, error) {
+	if id == "" {
+		return "", errors.NewNotFoundError(id)
+	}
 	projectID, _ := p.getProjectIDByGroupID(id)
 	if projectID == "" {
 		return p.getProjectIDByTenantID(id)
@@ -96,37 +99,26 @@ func (p *provider) getProjectIDByGroupID(group string) (string, error) {
 }
 
 func (p *provider) getProjectIDByTenantID(id string) (string, error) {
-	id, err := p.getProjectIdByMSPTenantID(id)
+	pid, err := p.getProjectIdByMSPTenantID(id)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
-	if id != "" {
+	if pid != "" {
 		return id, nil
 	}
 
-	tenants, err := p.instanceTenantDB.GetByTenantGroup(id)
+	tenant, err := p.instanceTenantDB.GetByID(id)
 	if err != nil {
 		return "", errors.NewDatabaseError(err)
 	}
-	if len(tenants) <= 0 {
-		return "", errors.NewNotFoundError(id)
+	if tenant == nil {
+		return "", fmt.Errorf("fail to find tenant by id %q", id)
 	}
-	for _, tenant := range tenants {
-		tmc, err := p.tmcDB.GetByEngine(tenant.Engine)
-		if err != nil {
-			return "", errors.NewDatabaseError(err)
-		}
-		if tmc == nil {
-			continue
-		}
-		if strings.EqualFold(tmc.ServiceType, string(instance.ServiceTypeMicroService)) {
-			id := p.getProjectIDByTenant(tenant)
-			if len(id) > 0 {
-				return id, nil
-			}
-		}
+	projectId := p.getProjectIDByTenant(tenant)
+	if len(projectId) <= 0 {
+		return "", fmt.Errorf("fail to find project id by tenant %q", tenant.ID)
 	}
-	return "", errors.NewNotFoundError(id)
+	return projectId, nil
 }
 
 func (p *provider) getProjectIdByMSPTenantID(id string) (string, error) {
