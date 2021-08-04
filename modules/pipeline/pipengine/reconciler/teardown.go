@@ -29,17 +29,24 @@ import (
 	"github.com/erda-project/erda/pkg/loop"
 )
 
+func (r *Reconciler) teardownCurrentReconcile(ctx context.Context, pipelineID uint64) {
+	closePipelineExitChannel(ctx, pipelineID)
+	r.deleteEtcdWatchKey(context.Background(), pipelineID)
+	r.teardownPipelines.Delete(pipelineID)
+	r.QueueManager.PopOutPipelineFromQueue(pipelineID)
+}
+
 func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithTasks) {
+	if !p.Pipeline.Status.IsEndStatus() {
+		return
+	}
+
 	if _, ing := r.teardownPipelines.LoadOrStore(p.Pipeline.ID, true); ing {
 		return
 	}
-	defer closePipelineExitChannel(ctx, p.Pipeline)
-	defer r.doCronCompensate(ctx, p.Pipeline.ID)
-	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)
-	defer r.teardownPipelines.Delete(p.Pipeline.ID)
-	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
-	//defer r.WaitDBGC(p.Pipeline.ID, *p.Pipeline.Extra.GC.DatabaseGC.Finished.TTLSecond, *p.Pipeline.Extra.GC.DatabaseGC.Finished.NeedArchive)
 	logrus.Infof("reconciler: begin teardown pipeline, pipelineID: %d", p.Pipeline.ID)
+	defer r.doCronCompensate(ctx, p.Pipeline.ID)
+	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
 	defer func() {
 		// // metrics
 		// go metrics.PipelineCounterTotalAdd(*p.Pipeline, 1)
@@ -48,7 +55,6 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 		// aop
 		_ = aop.Handle(aop.NewContextForPipeline(*p.Pipeline, aoptypes.TuneTriggerPipelineAfterExec))
 	}()
-	defer r.QueueManager.PopOutPipelineFromQueue(p.Pipeline.ID)
 	defer logrus.Infof("reconciler: pipelineID: %d, pipeline is completed", p.Pipeline.ID)
 	for _, task := range p.Tasks {
 		if task.Status == apistructs.PipelineStatusAnalyzed || task.Status == apistructs.PipelineStatusBorn {
@@ -82,12 +88,12 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 }
 
 // closePipelineExitChannel send signal to pipeline exit channel to stop other related things.
-func closePipelineExitChannel(ctx context.Context, p *spec.Pipeline) {
-	rlog.PDebugf(p.ID, "pipeline exit, begin send signal to exit channel to stop other related things")
-	defer rlog.PDebugf(p.ID, "pipeline exit, end send signal to exit channel to stop other related things")
+func closePipelineExitChannel(ctx context.Context, pipelineID uint64) {
+	rlog.PDebugf(pipelineID, "pipeline exit, begin send signal to exit channel to stop other related things")
+	defer rlog.PDebugf(pipelineID, "pipeline exit, end send signal to exit channel to stop other related things")
 	defer func() {
 		if err := recover(); err != nil {
-			rlog.PErrorf(p.ID, "pipeline trigger panic, err: %v", err)
+			rlog.PErrorf(pipelineID, "pipeline occurred a panic when closePipelineExitChannel, err: %v", err)
 		}
 	}()
 	exitCh, ok := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})

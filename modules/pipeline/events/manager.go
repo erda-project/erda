@@ -43,16 +43,16 @@ func Initialize(bdl *bundle.Bundle, wsClient *websocket.Publisher, dbClient *dbc
 	go func() {
 		for {
 			e := <-mgr.ch
-			go func() {
+			go func(ev Event) {
 				//logrus.Debugf("received an %s Event: %s (kind: %s, header: %+v, sender: %s, content: %+v)",
 				//	e.Kind(), e, e.Kind(), e.Header(), e.Sender(), e.Content())
 
-				go handle(e, HookTypeWebHook, e.HandleWebhook)
-				go handle(e, HookTypeWebSocket, e.HandleWebSocket)
-				go handle(e, HookTypeDINGDING, e.HandleDingDing)
-				go handle(e, HookTypeHTTP, e.HandleHTTP)
-				go handle(e, HookTypeDB, e.HandleDB)
-			}()
+				go handle(ev, HookTypeWebHook, ev.HandleWebhook)
+				go handle(ev, HookTypeWebSocket, ev.HandleWebSocket)
+				go handle(ev, HookTypeDINGDING, ev.HandleDingDing)
+				go handle(ev, HookTypeHTTP, ev.HandleHTTP)
+				go handle(ev, HookTypeDB, ev.HandleDB)
+			}(e)
 		}
 	}()
 }

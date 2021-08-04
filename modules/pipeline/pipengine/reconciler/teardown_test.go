@@ -27,7 +27,7 @@ func TestClosePipelineExitChannel(t *testing.T) {
 
 	// empty context
 	emptyCtx := context.TODO()
-	closePipelineExitChannel(emptyCtx, p)
+	closePipelineExitChannel(emptyCtx, p.ID)
 
 	// context with exitCh
 	exitCh := make(chan struct{})
@@ -38,7 +38,7 @@ func TestClosePipelineExitChannel(t *testing.T) {
 		}
 	}()
 	rightCtx := context.WithValue(context.TODO(), ctxKeyPipelineExitCh, exitCh)
-	closePipelineExitChannel(rightCtx, p)
+	closePipelineExitChannel(rightCtx, p.ID)
 }
 
 func TestEmptyContextValue(t *testing.T) {
