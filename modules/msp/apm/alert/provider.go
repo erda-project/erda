@@ -23,8 +23,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
+	db2 "github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
@@ -38,6 +40,8 @@ type provider struct {
 	alertService *alertService
 	Monitor      monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 	authDb       *db.DB
+	mspDb        *db2.DB
+	bdl          *bundle.Bundle
 
 	microServiceFilterTags map[string]bool
 }
@@ -56,6 +60,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.alertService = &alertService{p}
 	p.authDb = db.New(ctx.Service("mysql").(mysql.Interface).DB())
+	p.mspDb = db2.New(ctx.Service("mysql").(mysql.Interface).DB())
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	p.alertService = &alertService{
 		p: p,
 	}

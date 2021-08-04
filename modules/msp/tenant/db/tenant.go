@@ -40,7 +40,7 @@ func (db *MSPTenantDB) InsertTenant(tenant *MSPTenant) (*MSPTenant, *errors.Data
 
 func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 	tenant := MSPTenant{}
-	err := db.db().Where("`id` = ?", tenantID).Find(&tenant).Error
+	err := db.db().Where("`id` = ?", tenantID).Where("is_deleted = ?", false).Find(&tenant).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -52,7 +52,8 @@ func (db *MSPTenantDB) QueryTenant(tenantID string) (*MSPTenant, error) {
 
 func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID, workspace string) (*MSPTenant, error) {
 	tenant := MSPTenant{}
-	err := db.db().Where("`related_project_id` = ?", projectID).Where("`related_workspace` = ?", workspace).Find(&tenant).Error
+	err := db.db().Where("`related_project_id` = ?", projectID).Where("`related_workspace` = ?", workspace).
+		Where("is_deleted = ?", false).Find(&tenant).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -64,7 +65,7 @@ func (db *MSPTenantDB) QueryTenantByProjectIDAndWorkspace(projectID, workspace s
 
 func (db *MSPTenantDB) QueryTenantByProjectID(projectID string) ([]*MSPTenant, error) {
 	var tenants []*MSPTenant
-	err := db.db().Where("`related_project_id` = ?", projectID).Find(&tenants).Error
+	err := db.db().Where("`related_project_id` = ?", projectID).Where("is_deleted = ?", false).Find(&tenants).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
