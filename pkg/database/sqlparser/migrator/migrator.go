@@ -668,7 +668,7 @@ func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
 		equal := service.BaselineEqualCloud(db)
 		if !equal.Equal() {
 			eq = false
-			reasons += fmt.Sprintf("module name: %s, reasons: %s. ", modName, equal.Reason())
+			reasons += fmt.Sprintf("module name: %s, %s. ", modName, equal.Reason())
 		}
 	}
 	return reasons, eq

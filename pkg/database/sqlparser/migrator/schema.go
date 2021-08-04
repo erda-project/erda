@@ -79,7 +79,7 @@ func (s *Schema) Equal(o *Schema) *Equal {
 		}
 		if equal := sDef.Equal(oDef); !equal.Equal() {
 			eq = false
-			reasons += fmt.Sprintf("table %s %s; ", tableName, equal.Reason())
+			reasons += fmt.Sprintf("table: %s, %s; ", tableName, equal.Reason())
 		}
 	}
 

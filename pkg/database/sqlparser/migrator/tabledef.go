@@ -106,7 +106,7 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
 			eq = false
-			reasons += fmt.Sprintf("column %s %s, ", name, equal.Reason())
+			reasons += fmt.Sprintf("column: %s, %s, ", name, equal.Reason())
 		}
 	}
 
