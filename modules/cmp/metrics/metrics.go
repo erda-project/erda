@@ -22,15 +22,15 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 )
 
-type MetricClient struct {
+type Metrics struct {
 	ctx    context.Context
 	Metric pb.MetricServiceServer
 	Cache  *lru.Cache
 }
 
-func New() *MetricClient {
-	c := &MetricClient{}
-	c.Metric = common.Hub.Service("metrics-query").(pb.MetricServiceServer)
+func New() *Metrics {
+	c := &Metrics{}
+	c.Metric = common.Hub.Service("metric-query-example").(pb.MetricServiceServer)
 	return c
 }
 
@@ -43,7 +43,7 @@ func reqKey(req *pb.QueryWithInfluxFormatRequest, tag string) string {
 	return key
 }
 
-func (c *MetricClient) Query(req *pb.QueryWithInfluxFormatRequest, tag string) (*pb.QueryWithInfluxFormatResponse, error) {
+func (c *Metrics) Query(req *pb.QueryWithInfluxFormatRequest, tag string) (*pb.QueryWithInfluxFormatResponse, error) {
 	var (
 		resp  *pb.QueryWithInfluxFormatResponse
 		value interface{}

@@ -11,18 +11,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cpuChart
+package log
 
 import (
-	"github.com/erda-project/erda/modules/cmp/metrics"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
+	"context"
+
+	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/pkg/common"
 )
 
-type CpuChart struct {
-	CtxBdl protocol.ContextBundle
-	Metric *metrics.Metrics
-	State  table.State            `json:"state"`
-	Data   []common.ChartDataItem `json:"data"`
+type Log struct {
+	ctx   context.Context
+	Log   pb.LogQueryServiceServer
+	Cache *lru.Cache
+}
+
+func New() *Log {
+	c := &Log{}
+	c.Log = common.Hub.Service("erda.core.monitor.log.query.LogQueryService").(pb.LogQueryServiceServer)
+	return c
+}
+
+func (c *Log) Query(ctx context.Context, req *pb.GetLogByRuntimeRequest) (*pb.GetLogByRuntimeResponse, error) {
+	return c.Log.GetLogByRuntime(ctx, req)
 }
