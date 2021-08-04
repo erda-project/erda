@@ -1,7 +1,7 @@
 # Quickstart
 
 ## Requirements
-* docker with docker-compose
+* docker `20.10.0+` with docker-compose
 * k8s cluster (optional, required for CI/CD)
 * host resource required: 4 Cores with 8 GB RAM
 

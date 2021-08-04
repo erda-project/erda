@@ -11,17 +11,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package project
+package apistructs
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
-
-var CREATE_MSP_PROJECT = apis.ApiSpec{
-	Path:        "/api/msp/tenant/project",
-	BackendPath: "/api/msp/tenant/project",
-	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
-	Scheme:      "http",
-	Method:      "POST",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "Create MSP project",
+type PipelinePriorityBatchUpgradeRequest struct {
+	// PipelineIDs array with expected priority from high to low
+	PipelineIDsOrderByPriorityFromHighToLow []uint64 `json:"pipelineIDsOrderByPriorityFromHighToLow"`
+	QueueID                                 uint64   `json:"queueID"`
 }

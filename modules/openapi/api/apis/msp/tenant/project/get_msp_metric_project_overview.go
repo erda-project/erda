@@ -15,6 +15,7 @@ package project
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -54,11 +55,12 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := r.URL.Query()
-
-	params.Del("in_project_id")
+	fk := fmt.Sprintf("in_%s", params.Get("project_key"))
+	params.Del("project_key")
+	params.Del(fk)
 	for _, p := range perms.List {
 		if p.Scope.Type == apistructs.ProjectScope && p.Access {
-			params.Add("in_project_id", p.Scope.ID)
+			params.Add(fk, p.Scope.ID)
 		}
 	}
 
