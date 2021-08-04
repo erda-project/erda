@@ -68,8 +68,8 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 
 func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	var (
-		reasons []string
-		eq      bool
+		reasons string
+		eq      = true
 	)
 
 	if len(d.CreateStmt.Cols) != len(o.CreateStmt.Cols) {
@@ -79,10 +79,11 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
 			return d.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
 		})
-		eq = false
-		reason := fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v",
-			o.CreateStmt.Cols, d.CreateStmt.Cols)
-		reasons = append(reasons, reason)
+		return &Equal{
+			equal: false,
+			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
+				o.CreateStmt.Cols, d.CreateStmt.Cols),
+		}
 	}
 
 	var (
@@ -94,29 +95,23 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	}
 	for _, col := range o.CreateStmt.Cols {
 		oCols[col.Name.String()] = col
-		if _, ok := dCols[col.Name.String()]; !ok {
-			eq = false
-			reason := fmt.Sprintf("the column is missing in expected, column name: %s")
-			reasons = append(reasons, reason)
-		}
 	}
 
 	for name, dCol := range dCols {
 		oCol, ok := oCols[name]
 		if !ok {
 			eq = false
-			reason := fmt.Sprintf("the column is missing in actual, column name: %s", name)
-			reasons = append(reasons, reason)
+			reasons += fmt.Sprintf("the column is missing in actual, column name: %s, ", name)
 			continue
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
 			eq = false
-			reasons = append(reasons, equal.reason)
+			reasons += fmt.Sprintf("column %s %s, ", name, equal.Reason())
 		}
 	}
 
 	return &Equal{
 		equal:  eq,
-		reason: strings.Join(reasons, "\n"),
+		reason: strings.TrimRight(reasons, ", "),
 	}
 }

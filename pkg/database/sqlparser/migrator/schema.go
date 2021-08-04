@@ -15,9 +15,8 @@ package migrator
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/pingcap/parser/ast"
+	"strings"
 )
 
 // Schema is the set of TableDefinitions.
@@ -63,28 +62,26 @@ func (s *Schema) Equal(o *Schema) *Equal {
 	if len(s.TableDefinitions) != len(o.TableDefinitions) {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("expected length: %v, actual length: %v", len(s.TableDefinitions), len(o.TableDefinitions)),
+			reason: fmt.Sprintf("expected numbers of tables: %v, actual: %v", len(s.TableDefinitions), len(o.TableDefinitions)),
 		}
 	}
 
 	var (
-		reasons []string
+		reasons string
 		eq      = true
 	)
 	for tableName, sDef := range s.TableDefinitions {
 		oDef, ok := o.TableDefinitions[tableName]
 		if !ok {
 			eq = false
-			reason := fmt.Sprintf("table %s is expected but missing in actual", tableName)
-			reasons = append(reasons, reason)
+			reasons += fmt.Sprintf("table %s is expected but missing in actual; ", tableName)
 			continue
 		}
 		if equal := sDef.Equal(oDef); !equal.Equal() {
 			eq = false
-			reasons = append(reasons, equal.Reason())
-			continue
+			reasons += fmt.Sprintf("table %s %s; ", tableName, equal.Reason())
 		}
 	}
 
-	return &Equal{equal: eq, reason: strings.Join(reasons, "\n")}
+	return &Equal{equal: eq, reason: strings.TrimRight(reasons, "; ")}
 }

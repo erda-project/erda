@@ -661,17 +661,17 @@ func (mig *Migrator) destructiveLint() error {
 func (mig *Migrator) compareSchemas(db *gorm.DB) (string, bool) {
 	logrus.Infoln("compare local schema and cloud schema for every service...")
 	var (
-		reasons []string
+		reasons string
 		eq      = true
 	)
 	for modName, service := range mig.LocalScripts.Services {
-		if equal := service.BaselineEqualCloud(db); !equal.Equal() {
+		equal := service.BaselineEqualCloud(db)
+		if !equal.Equal() {
 			eq = false
-			reason := fmt.Sprintf("mod name: %s, reasons: %s", modName, equal.Reason())
-			reasons = append(reasons, reason)
+			reasons += fmt.Sprintf("module name: %s, reasons: %s. ", modName, equal.Reason())
 		}
 	}
-	return strings.Join(reasons, "\n"), eq
+	return reasons, eq
 }
 
 func retrievePatchesFiles(ctx context.Context) ([]string, error) {
