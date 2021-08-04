@@ -158,7 +158,7 @@ func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *apistructs.Pip
 		return fmt.Errorf("failed to query queue: %s", queueID)
 	}
 
-	pipelines := make([]*spec.Pipeline, 0)
+	pipelines := make([]*spec.Pipeline, 0, len(pipelineIDs))
 	for _, pipelineID := range pipelineIDs {
 		p := mgr.ensureQueryPipelineDetail(pipelineID)
 		if p == nil {

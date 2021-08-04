@@ -25,26 +25,10 @@ import (
 func (q *defaultQueue) AddPipelineIntoQueue(p *spec.Pipeline, doneCh chan struct{}) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	q.AddPipelineIntoQueueUnblock(p, doneCh)
+	q.addPipelineIntoQueueUnblock(p, doneCh)
 }
 
-// parsePipelineIDFromQueueItem
-// item key is the pipeline id
-func parsePipelineIDFromQueueItem(item priorityqueue.Item) uint64 {
-	pipelineID, err := strconv.ParseUint(item.Key(), 10, 64)
-	if err != nil {
-		rlog.Errorf("failed to parse pipeline id from queue item key, key: %s, err: %v", item.Key(), err)
-		return 0
-	}
-	return pipelineID
-}
-
-// makeItemKey
-func makeItemKey(p *spec.Pipeline) string {
-	return strconv.FormatUint(p.ID, 10)
-}
-
-func (q *defaultQueue) AddPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan struct{}) {
+func (q *defaultQueue) addPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan struct{}) {
 	// make item key by pipeline info
 	itemKey := makeItemKey(p)
 	// set priority
@@ -93,4 +77,20 @@ func (q *defaultQueue) AddPipelineIntoQueueUnblock(p *spec.Pipeline, doneCh chan
 	go func() {
 		q.rangeAtOnceCh <- true
 	}()
+}
+
+// parsePipelineIDFromQueueItem
+// item key is the pipeline id
+func parsePipelineIDFromQueueItem(item priorityqueue.Item) uint64 {
+	pipelineID, err := strconv.ParseUint(item.Key(), 10, 64)
+	if err != nil {
+		rlog.Errorf("failed to parse pipeline id from queue item key, key: %s, err: %v", item.Key(), err)
+		return 0
+	}
+	return pipelineID
+}
+
+// makeItemKey
+func makeItemKey(p *spec.Pipeline) string {
+	return strconv.FormatUint(p.ID, 10)
 }

@@ -195,7 +195,7 @@ func (e *Endpoints) batchUpgradePipelinePriority(ctx context.Context, r *http.Re
 		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("queueID")
 	}
 	if len(req.PipelineIDsOrderByPriorityFromHighToLow) == 0 {
-		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("pipelineIDs")
+		return nil, apierrors.ErrUpgradePipelinePriority.InvalidParameter("pipelineIDsOrderByPriorityFromHighToLow")
 	}
 
 	queue, err := e.queueManage.GetPipelineQueue(req.QueueID)

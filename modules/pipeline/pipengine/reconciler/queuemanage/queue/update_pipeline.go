@@ -50,7 +50,7 @@ func (q *defaultQueue) BatchUpdatePipelinePriorityInQueue(pipelines []*spec.Pipe
 		if err := q.dbClient.UpdatePipelineExtraByPipelineID(p.ID, &p.PipelineExtra); err != nil {
 			return err
 		}
-		q.AddPipelineIntoQueueUnblock(p, nil)
+		q.addPipelineIntoQueueUnblock(p, nil)
 	}
 
 	return nil
