@@ -263,6 +263,8 @@ func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error 
 				continue
 			}
 			if script.Checksum() != script.Record.Checksum {
+				logrus.Warnf("the installed file is changed on local, filename: %s, expected checksum: %s, actual checksum: %s",
+					script.GetName(), script.Checksum(), script.Record.Checksum)
 				filename := patchPrefix + script.GetName()
 				if _, ok := s.Patches.GetScriptByFilename(filename); ok {
 					logrus.Infof("found patch file and append it to the list, filename: %s", filename)
@@ -275,7 +277,7 @@ func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error 
 	}
 
 	if len(missingPatchesList) > 0 {
-		return errors.Errorf("these installed script is changed in local and mising paches: %s", strings.Join(missingPatchesList, ","))
+		return errors.Errorf("these installed script is changed on local and mising paches: %s", strings.Join(missingPatchesList, ","))
 	}
 
 	*ctx = context.WithValue(*ctx, patchesKey, patchesList)
