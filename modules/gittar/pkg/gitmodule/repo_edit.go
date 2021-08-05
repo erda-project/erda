@@ -17,6 +17,7 @@ package gitmodule
 
 import (
 	"errors"
+	"strings"
 
 	git "github.com/libgit2/git2go/v30"
 )
@@ -58,10 +59,10 @@ type CreateCommit struct {
 }
 
 func (req *CreateCommit) Validate() error {
-	if req.Message == "" {
+	if strings.TrimSpace(req.Message) == "" {
 		return errors.New("the message is empty")
 	}
-	if req.Branch == "" {
+	if strings.TrimSpace(req.Branch) == "" {
 		return errors.New("the branch is empty")
 	}
 	if len(req.Actions) <= 0 {
