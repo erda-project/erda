@@ -1,1 +1,1 @@
-SELECT 1 FROM `ps_images` LIMIT 1;
+SELECT 1 FROM `schema_migration_history` LIMIT 1;

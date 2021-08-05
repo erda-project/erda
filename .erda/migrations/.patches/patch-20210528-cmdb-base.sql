@@ -1,1 +1,1 @@
-SELECT 1 FROM `dice_config_namespace` LIMIT 1;
+SELECT 1 FROM `schema_migration_history` LIMIT 1;

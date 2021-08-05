@@ -1,1 +1,1 @@
-SELECT 1 FROM ps_v2_domains LIMIT 1;
+SELECT 1 FROM `schema_migration_history` LIMIT 1;
