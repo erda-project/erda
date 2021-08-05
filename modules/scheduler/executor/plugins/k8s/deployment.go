@@ -109,6 +109,7 @@ func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment) error {
 }
 
 func (k *Kubernetes) deleteDeployment(namespace, name string) error {
+	logrus.Debugf("delete deployment %s on namespace %s", name, namespace)
 	return k.deploy.Delete(namespace, name)
 }
 
