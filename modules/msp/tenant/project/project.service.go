@@ -94,6 +94,7 @@ var workspaces = []string{
 	tenantpb.Workspace_TEST.String(),
 	tenantpb.Workspace_STAGING.String(),
 	tenantpb.Workspace_PROD.String(),
+	tenantpb.Workspace_DEFAULT.String(),
 }
 
 func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (Projects, error) {
