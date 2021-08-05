@@ -535,6 +535,7 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 				var service *apistructs.Service
 
 				service = s
+				logrus.Infof("[EDAS] run app flow to create service %s", s.Name)
 				if err = e.createService(ctx, runtime, service); err != nil {
 					logrus.Errorf("[EDAS] failed to create service: %s, error: %v", group+"-"+s.Name, err)
 				}
@@ -546,16 +547,8 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 			return errors.Wrap(err, "wait service flow on batch")
 		}
 	}
+	logrus.Infof("[EDAS] run app flow %s finished", group)
 	return nil
-}
-
-func (e *EDAS) removeAndCreateService(ctx context.Context, runtime *apistructs.ServiceGroup, service *apistructs.Service) error {
-	group := runtime.Type + "-" + runtime.ID
-
-	// TODO: how to handle the error
-	_ = e.removeService(ctx, group, service)
-
-	return e.createService(ctx, runtime, service)
 }
 
 func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGroup, s *apistructs.Service) error {
@@ -656,7 +649,6 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -724,6 +716,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				appName := group + "-" + svcName
 				// add service
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
+					logrus.Infof("[EDAS] cyclicupdate to create service %s", svcName)
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
 						logrus.Errorf("[EDAS] Failed to create service: %s, error: %v", appName, err)
 						errChan <- err
