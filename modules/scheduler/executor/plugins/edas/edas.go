@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	eventapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -121,18 +122,18 @@ func init() {
 			DisableCompression: true,
 		}
 
-		kubeAddr, ok := options["KUBEADDR"]
-		if !ok {
-			return nil, errors.Errorf("not found edas k8s addr in env variables")
+		bdl := bundle.New(bundle.WithClusterManager())
+
+		cluster, err := bdl.GetCluster(clustername)
+		if err != nil {
+			logrus.Errorf("get cluster error: %v", err)
+			return nil, err
 		}
 
-		kubeClient := httpclient.New()
-		kubeBasicAuth, ok := options["KUBEBASICAUTH"]
-		if !ok {
-			userPasswd := strings.Split(kubeBasicAuth, ":")
-			if len(userPasswd) == 2 {
-				kubeClient.BasicAuth(userPasswd[0], userPasswd[1])
-			}
+		kubeAddr, kubeClient, err := k8s.GetClient(clustername, cluster.ManageConfig)
+		if err != nil {
+			logrus.Errorf("get kuberentes addrees and client error: %v", err)
+			return nil, err
 		}
 
 		regAddr, ok := options["REGADDR"]
