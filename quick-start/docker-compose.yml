@@ -587,7 +587,7 @@ services:
     platform: linux/amd64
 
   erda-migration:
-    image: erdaproject/erda-mysql-migration-action:20210721-02c4af4
+    image: erdaproject/erda-mysql-migration-action:20210805-8119373
     container_name: erda-migration
     depends_on:
       - mysql
@@ -599,7 +599,10 @@ services:
       - MIGRATION_MYSQL_PASSWORD=123456
       - MIGRATION_MYSQL_DBNAME=erda
       - MIGRATION_DEBUGSQL=false
-      - MIGRATION_ERDA_LINT=true
+      - MIGRATION_SKIP_LINT=false
+      - MIGRATION_SKIP_PRE_MIGRATION=true
+      - MIGRATION_SKIP_MIGRATION=false
+      - MIGRATION_DIR=/migrations
     volumes:
       - ../.erda/migrations:/migrations
     restart: on-failure
