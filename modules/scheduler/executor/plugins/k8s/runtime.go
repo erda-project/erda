@@ -77,6 +77,7 @@ func (k *Kubernetes) createRuntime(sg *apistructs.ServiceGroup) error {
 
 func (k *Kubernetes) destroyRuntime(ns string) error {
 	// Deleting a namespace will cascade delete the resources under that namespace
+	logrus.Debugf("delete the kubernetes namespace %s", ns)
 	return k.DeleteNamespace(ns)
 }
 
@@ -114,6 +115,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		}
 
 		if remainCount < 1 {
+			logrus.Debugf("delete the kubernetes service %s on namespace %s", service.Name, service.Namespace)
 			err = k.service.Delete(ns, service.Name)
 			if err != nil {
 				return fmt.Errorf("delete service %s error: %v", service.Name, err)
@@ -124,6 +126,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 					return fmt.Errorf("delete istio resource error: %v", err)
 				}
 			}
+			logrus.Debugf("delete the kubernetes service %s on namespace %s finished", service.Name, service.Namespace)
 		}
 	}
 	return nil
@@ -168,6 +171,7 @@ func (k *Kubernetes) createStatelessGroup(sg *apistructs.ServiceGroup, layers []
 				service.Name, service.Namespace, err)
 
 			defer func() {
+				logrus.Debugf("revert resource when create runtime %s failed", sg.ID)
 				var delErr error
 				if sg.ProjectNamespace == "" {
 					delErr = k.destroyRuntime(ns)
