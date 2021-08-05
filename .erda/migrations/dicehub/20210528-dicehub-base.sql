@@ -250,6 +250,6 @@ CREATE TABLE `ps_images`
     `image_tag`  varchar(64)  DEFAULT NULL,
     `image`      varchar(255) NOT NULL,
     PRIMARY KEY (`id`),
-    KEY          `idx_release_id` (`release_id`)
+    KEY          `idx_release_id` (`release_id`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Dice 镜像表';
 

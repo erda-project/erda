@@ -25,8 +25,8 @@ CREATE TABLE `ci_v3_build_caches`
     `updated_at`   datetime     DEFAULT NULL COMMENT '更新时间',
     `deleted_at`   datetime     DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (`id`),
-    KEY            `idx_name` (`name`),
-    KEY            `idx_cluster_name` (`cluster_name`)
+    KEY            `idx_name` (`name`(191)),
+    KEY            `idx_cluster_name` (`cluster_name`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='buildpack action 使用的构建缓存';
 
 CREATE TABLE `dice_pipeline_cms_configs`
