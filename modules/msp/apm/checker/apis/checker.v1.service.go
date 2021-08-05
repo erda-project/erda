@@ -52,7 +52,7 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	}
 	now := time.Now()
 	m := &db.Metric{
-		ProjectID:  proj.ID,
+		ProjectID:  proj.ProjectID,
 		Env:        req.Data.Env,
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
