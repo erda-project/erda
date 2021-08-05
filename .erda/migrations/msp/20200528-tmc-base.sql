@@ -232,8 +232,7 @@ CREATE TABLE `sp_status` (
 INSERT INTO `sp_status` (`id`, `name`, `color`, `level`) VALUES (1,'Operational','#2fcc66',0000000000),(2,'Major Outage','#e74c3c',0000000003),(3,'Partial Outage','#e67e22',0000000002),(4,'Degraded Performance','#f1c40f',0000000001);
 
 CREATE TABLE `sp_trace_request_history` (
-  `request_id` varchar(
-      128) NOT NULL,
+  `request_id` varchar(128) NOT NULL,
   `terminus_key` varchar(55) NOT NULL DEFAULT '',
   `url` varchar(1024) NOT NULL,
   `query_string` text,

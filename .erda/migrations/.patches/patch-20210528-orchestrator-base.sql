@@ -1,1 +1,5 @@
-SELECT 1 FROM `schema_migration_history` LIMIT 1;
+ALTER TABLE ps_runtime_instances DEFAULT CHARACTER SET utf8;
+
+ALTER TABLE ps_v2_domains DEFAULT CHARACTER SET utf8;
+
+ALTER TABLE ps_v2_project_runtimes DEFAULT CHARACTER SET utf8;
