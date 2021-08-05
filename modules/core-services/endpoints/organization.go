@@ -477,9 +477,9 @@ func (e *Endpoints) convertToOrgDTO(org model.Org, domains ...string) apistructs
 	if len(domainAndPort) > 1 {
 		port = domainAndPort[1]
 	}
-	concatDomain := strutil.Concat(strutil.ToLower(org.Name), "-org.", conf.RootDomain())
+	concatDomain := conf.UIDomain()
 	if port != "" {
-		concatDomain = strutil.Concat(strutil.ToLower(org.Name), "-org.", conf.RootDomain(), ":", port)
+		concatDomain = strutil.Concat(conf.UIDomain(), ":", port)
 	}
 
 	orgDto := apistructs.OrgDTO{
