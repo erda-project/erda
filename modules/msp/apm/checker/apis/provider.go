@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -34,13 +35,14 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Register transport.Register           `autowired:"service-register" optional:"true"`
-	Metric   metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-	Redis    *redis.Client                `autowired:"redis-client"`
-	DB       *gorm.DB                     `autowired:"mysql-client"`
-	Perm     perm.Interface               `autowired:"permission"`
+	Cfg           *config
+	Log           logs.Logger
+	Register      transport.Register             `autowired:"service-register" optional:"true"`
+	Metric        metricpb.MetricServiceServer   `autowired:"erda.core.monitor.metric.MetricService"`
+	ProjectServer projectpb.ProjectServiceServer `autowired:"erda.msp.tenant.project.ProjectService"`
+	Redis         *redis.Client                  `autowired:"redis-client"`
+	DB            *gorm.DB                       `autowired:"mysql-client"`
+	Perm          perm.Interface                 `autowired:"permission"`
 
 	// implements
 	checkerService   *checkerService
@@ -52,10 +54,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.checkerService = &checkerService{p}
 	p.checkerV1Service = &checkerV1Service{
-		metricq:   p.Metric,
-		projectDB: &db.ProjectDB{DB: p.DB},
-		metricDB:  &db.MetricDB{DB: p.DB},
-		cache:     cache,
+		metricq:       p.Metric,
+		projectServer: p.ProjectServer,
+		projectDB:     &db.ProjectDB{DB: p.DB},
+		metricDB:      &db.MetricDB{DB: p.DB},
+		cache:         cache,
 	}
 	if p.Register != nil {
 		pb.RegisterCheckerServiceImp(p.Register, p.checkerService, apis.Options())
