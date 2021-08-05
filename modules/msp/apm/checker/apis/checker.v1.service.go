@@ -94,7 +94,7 @@ func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, p
 		return nil
 	}
 	project := response.Data
-	if project != nil && len(project.Relationship) > 1 {
+	if project != nil && len(project.Relationship) > 0 {
 		var relationship *projectpb.TenantRelationship
 		for _, r := range project.Relationship {
 			if r.Workspace == m.Env {
