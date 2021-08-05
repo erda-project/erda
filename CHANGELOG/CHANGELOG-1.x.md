@@ -7,7 +7,8 @@
 </tr>
 <tr>
   <td valign="top">
-    <b><a href="#v110">1.1.0</a></b><br/>
+    <b><a href="#v110">1.1.1</a></b><br/>
+    <a href="#v110">1.1.0</a><br/>
   </td>
   <td valign="top">
     <a href="#v101">1.0.1</a><br/>
@@ -16,11 +17,21 @@
 </tr>
 </table>
 
+# v1.1.1
+
+`2021-8-5`
+
+### Bug Fixes
+
+* EDAS and K8S use the same agent now. ([#1277](https://github.com/erda-project/erda/pull/1277))
+* Enable cloud management platform for free users. ([#810](https://github.com/erda-project/erda-ui/pull/810))
+* Fixed the issue that error occured when editing custom addon of extended service. ([#813](https://github.com/erda-project/erda-ui/pull/813))
+
 # v1.1.0
 
 `2021-07-28`
 
-## New Features
+### New Features
 
 - Support existing clusters importing by users ([#806](https://github.com/erda-project/erda/pull/806))
 - Support subscription to issue changes, to receive notifications timely when followed issue is modified ([#451](https://github.com/erda-project/erda-ui/pull/451))
@@ -36,7 +47,7 @@
 - Optimize the downloaded file name and suffix format of container log: service name_timestamp.log ([#684](https://github.com/erda-project/erda/pull/684/files))
 - Upgrade logo ([#688](https://github.com/erda-project/erda-ui/pull/688))
 
-## Bug Fixes
+### Bug Fixes
 
 - Safari page crashes when access Code Repository > Commit History ([#384](https://github.com/erda-project/erda-ui/pull/384))
 - The list order remains unchanged after viewing MR ([#661](https://github.com/erda-project/erda/pull/661))
@@ -46,7 +57,7 @@
 - The pipeline node shows the previously failed error ([#422](https://github.com/erda-project/erda-ui/pull/422))
 - Members will automatically log out if exit the organization ([#347](https://github.com/erda-project/erda-ui/pull/347))
 
-## Refactor
+### Refactor
 
 - Split out new platform services of dop, msp, cmp, ecp and admin
   - dop ([#392](https://github.com/erda-project/erda-ui/pull/392))
@@ -62,12 +73,12 @@
 
 `2021-07-08`
 
-## New features
+### New features
 
 - Support individuals to create organization if he/she doesn't belong to any organizations ([#592](https://github.com/erda-project/erda/pull/592))
 - Support scaling application without restarting the existing instances ([#644](https://github.com/erda-project/erda/pull/644)) ([#645](https://github.com/erda-project/erda/pull/645))
 
-## Bug Fixes
+### Bug Fixes
 
 - Fix the issue that custom stages were created with null value ([#588](https://github.com/erda-project/erda/pull/588)) ([#606](https://github.com/erda-project/erda/pull/606))
 - Keep the creator, assignee, create time and man hour unchanged when issue type is switched ([#610](https://github.com/erda-project/erda/pull/610)) ([#612](https://github.com/erda-project/erda/pull/612))
