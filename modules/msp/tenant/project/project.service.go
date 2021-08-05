@@ -17,6 +17,7 @@ import (
 	context "context"
 	"net/url"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -88,17 +89,18 @@ func (s *projectService) GetProjects(ctx context.Context, req *pb.GetProjectsReq
 	return &pb.GetProjectsResponse{Data: projects}, nil
 }
 
+var workspaces = []string{
+	tenantpb.Workspace_DEV.String(),
+	tenantpb.Workspace_TEST.String(),
+	tenantpb.Workspace_STAGING.String(),
+	tenantpb.Workspace_PROD.String(),
+}
+
 func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (Projects, error) {
 	var projects Projects
 
 	// request orch for history project
-	params := url.Values{}
-	for _, id := range projectIDs {
-		params.Add("projectId", id)
-	}
-	userID := apis.GetUserID(ctx)
-	orgID := apis.GetOrgID(ctx)
-	orchProjects, err := s.p.bdl.GetMSProjects(orgID, userID, params)
+	orchProjects, err := s.getHistoryProjects(ctx, projectIDs, projects)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +127,20 @@ func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (
 		projects = append(projects, project)
 	}
 	return projects, nil
+}
+
+func (s *projectService) getHistoryProjects(ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
+	params := url.Values{}
+	for _, id := range projectIDs {
+		params.Add("projectId", id)
+	}
+	userID := apis.GetUserID(ctx)
+	orgID := apis.GetOrgID(ctx)
+	orchProjects, err := s.p.bdl.GetMSProjects(orgID, userID, params)
+	if err != nil {
+		return nil, err
+	}
+	return orchProjects, err
 }
 
 func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) pb.Project {
@@ -234,12 +250,17 @@ func (s *projectService) getProject(lang i18n.LanguageCodes, id string) (*pb.Pro
 		return nil, err
 	}
 	var trs []*pb.TenantRelationship
-	for _, mspTenant := range tenants {
-		var rs pb.TenantRelationship
-		rs.TenantID = mspTenant.Id
-		rs.Workspace = mspTenant.RelatedWorkspace
-		rs.DisplayWorkspace = s.getDisplayWorkspace(lang, rs.Workspace)
-		trs = append(trs, &rs)
+	for _, workspace := range workspaces {
+		for _, mspTenant := range tenants {
+			if workspace == mspTenant.RelatedWorkspace {
+				var rs pb.TenantRelationship
+				rs.TenantID = mspTenant.Id
+				rs.Workspace = mspTenant.RelatedWorkspace
+				rs.DisplayWorkspace = s.getDisplayWorkspace(lang, rs.Workspace)
+				trs = append(trs, &rs)
+				break
+			}
+		}
 	}
 
 	project.Relationship = trs
@@ -308,6 +329,37 @@ func (s *projectService) GetProjectOverview(ctx context.Context, req *pb.GetProj
 	data = append(data, &pv)
 	predata.Data = data
 	return &pb.GetProjectOverviewResponse{Data: &predata}, nil
+}
+
+func (s *projectService) GetProjectsTenantsIDs(ctx context.Context, req *pb.GetProjectsTenantsIDsRequest) (*pb.GetProjectsTenantsIDsResponse, error) {
+	var ids []string
+	idmap := map[string]string{}
+	for _, idstr := range req.ProjectId {
+		id, err := strconv.ParseInt(idstr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		monitors, err := s.MonitorDB.GetMonitorByProjectId(id)
+		for _, m := range monitors {
+			ids = append(ids, m.TerminusKey)
+			idmap[m.TerminusKey] = m.TerminusKey
+		}
+	}
+
+	for _, id := range req.ProjectId {
+		tenants, err := s.MSPTenantDB.QueryTenantByProjectID(id)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, mspTenant := range tenants {
+			if idmap[mspTenant.Id] != mspTenant.Id {
+				ids = append(ids, mspTenant.Id)
+			}
+		}
+	}
+
+	return &pb.GetProjectsTenantsIDsResponse{Data: ids}, nil
 }
 
 func (s *projectService) convertToProject(project *db.MSPProject) *pb.Project {

@@ -16,7 +16,6 @@ package project
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"net/http"
 	"net/url"
 
@@ -67,24 +66,20 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 				paramsForProject.Add("projectId", p.Scope.ID)
 			}
 		}
-		var data []*pb.Project
+		var data []string
 		cr = client.Get(discover.MSP()).
 			Header("lang", lang).
 			Header("User-ID", userID).
 			Header("Org-ID", orgID).
-			Path("/api/msp/tenant/projects").
+			Path("/api/msp/tenant/projects/tenants/ids").
 			Params(paramsForProject)
 		if err := utils.DoJson(cr, &data); err != nil {
 			ErrFromError(w, err)
 			return
 		}
 
-		for _, p := range data {
-			if len(p.Relationship) > 0 {
-				for _, rs := range p.Relationship {
-					params.Add("in__metric_scope_id", rs.TenantID)
-				}
-			}
+		for _, id := range data {
+			params.Add("in__metric_scope_id", id)
 		}
 	} else {
 		fk := fmt.Sprintf("in_%s", key)
