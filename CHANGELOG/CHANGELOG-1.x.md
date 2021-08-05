@@ -23,8 +23,8 @@
 
 ### Bug Fixes
 
-* EDAS shares the same Agent with K8s. ([#1277](https://github.com/erda-project/erda/pull/1277))
-* Releases functions of cloud management platform for free users. ([#810](https://github.com/erda-project/erda-ui/pull/810))
+* EDAS and K8S use the same agent now. ([#1277](https://github.com/erda-project/erda/pull/1277))
+* Enable cloud management platform for free users. ([#810](https://github.com/erda-project/erda-ui/pull/810))
 * Fixed the issue that error occured when editing custom addon of extended service. ([#813](https://github.com/erda-project/erda-ui/pull/813))
 
 # v1.1.0
