@@ -52,18 +52,19 @@ func (p *provider) DeleteTenant(tenant *db.InstanceTenant, tmcInstance *db.Insta
 func (p *provider) createMonitor(engine, requestId, requestGroup string, options map[string]string) (map[string]string, error) {
 
 	key, _ := p.TmcIniDb.GetMicroServiceEngineJumpKey(engine)
+	tenantId := requestGroup
 
 	console := map[string]string{
 		"tenantId":    requestId,
-		"tenantGroup": requestGroup,
-		"terminusKey": requestId,
+		"tenantGroup": tenantId,
+		"terminusKey": tenantId,
 		"key":         key,
 	}
 
 	phstr, err := utils.JsonConvertObjToString(console)
 
 	config := map[string]string{
-		"TERMINUS_KEY":              requestId,
+		"TERMINUS_KEY":              tenantId,
 		"TERMINUS_AGENT_ENABLE":     "true",
 		"TERMINUS_TA_ENABLE":        "true",
 		"TERMINUS_TA_URL":           p.Cfg.TaStaticUrl,
@@ -89,8 +90,8 @@ func (p *provider) createMonitor(engine, requestId, requestGroup string, options
 	configStr, err := utils.JsonConvertObjToString(config)
 
 	data = &monitordb.Monitor{
-		TerminusKey:   requestId,
-		MonitorId:     requestId,
+		TerminusKey:   tenantId,
+		MonitorId:     tenantId,
 		CallbackUrl:   "",
 		Plan:          "",
 		IsDelete:      0,

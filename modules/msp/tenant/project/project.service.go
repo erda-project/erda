@@ -106,7 +106,7 @@ func (s *projectService) getProjects(ctx context.Context, projectIDs []string) (
 	}
 	for _, project := range orchProjects {
 		pbProject := s.covertHistoryProjectToMSPProject(ctx, project)
-		projects = append(projects, &pbProject)
+		projects = append(projects, pbProject)
 	}
 
 	for _, id := range projectIDs {
@@ -143,7 +143,7 @@ func (s *projectService) getHistoryProjects(ctx context.Context, projectIDs []st
 	return orchProjects, err
 }
 
-func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) pb.Project {
+func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, project apistructs.MicroServiceProjectResponseData) *pb.Project {
 	pbProject := pb.Project{}
 	pbProject.Id = project.ProjectID
 	pbProject.Name = project.ProjectName
@@ -164,7 +164,7 @@ func (s *projectService) covertHistoryProjectToMSPProject(ctx context.Context, p
 		rss = append(rss, &rs)
 	}
 	pbProject.Relationship = rss
-	return pbProject
+	return &pbProject
 }
 
 func (s *projectService) CreateProject(ctx context.Context, req *pb.CreateProjectRequest) (*pb.CreateProjectResponse, error) {
@@ -286,7 +286,7 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 		}
 		historyMicroserviceProject := orchProjects[0]
 		mspProject := s.covertHistoryProjectToMSPProject(ctx, historyMicroserviceProject)
-		project = &mspProject
+		project = mspProject
 	}
 
 	return &pb.GetProjectResponse{Data: project}, nil
