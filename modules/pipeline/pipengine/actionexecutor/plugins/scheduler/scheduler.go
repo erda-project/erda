@@ -373,6 +373,9 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 	if !shouldDispatch {
 		logrus.Infof("task executor %s execute cancel", taskExecutor.Name())
+		// TODO move all makeJobID to framework
+		// now move makeJobID to framework may change task uuid in database
+		action.Extra.UUID = task_uuid.MakeJobID(action)
 		return taskExecutor.Remove(ctx, action)
 	}
 	var body bytes.Buffer
@@ -410,6 +413,9 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !shouldDispatch {
+		// TODO move all makeJobID to framework
+		// now move makeJobID to framework may change task uuid in database
+		action.Extra.UUID = task_uuid.MakeJobID(action)
 		logrus.Infof("task executor %s execute remove", taskExecutor.Name())
 		return taskExecutor.Remove(ctx, action)
 	}
