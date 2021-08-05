@@ -258,6 +258,7 @@ func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
 			}
 		}
 	}
+	logrus.Infof("delete the kubernetes service %s on namespace %s successfully", service.ProjectServiceName, service.Namespace)
 	return nil
 }
 

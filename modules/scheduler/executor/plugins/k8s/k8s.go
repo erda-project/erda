@@ -468,6 +468,7 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 		k.setProjectServiceName(runtime)
 	}
 	if runtime.ProjectNamespace == "" {
+		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.Type)
 		if err := k.destroyRuntime(ns); err != nil {
 			if k8serror.NotFound(err) {
 				logrus.Debugf("k8s namespace not found or already deleted, namespace: %s", ns)
@@ -480,15 +481,16 @@ func (k *Kubernetes) Destroy(ctx context.Context, specObj interface{}) error {
 			logrus.Errorf("failed to delete pv, namespace: %s, name: %s, (%v)", runtime.Type, runtime.ID, err)
 			return err
 		}
-		logrus.Debugf("succeed to destroy runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 		return nil
 	} else {
+		logrus.Infof("delete runtime %s on namespace %s", runtime.ID, runtime.ProjectNamespace)
 		err = k.destroyRuntimeByProjectNamespace(ns, runtime)
 		if err != nil {
 			logrus.Errorf("failed to delete runtime resource %v", err)
 			return err
 		}
 	}
+	logrus.Infof("delete runtime %s finished", runtime.ID)
 	return nil
 }
 
