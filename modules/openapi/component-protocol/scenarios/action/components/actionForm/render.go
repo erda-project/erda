@@ -648,6 +648,23 @@ func registerActionTypeRender() {
 			newProps := map[string]interface{}{
 				"fields": newField,
 			}
+
+			actionData, ok := bdl.InParams["actionData"].(map[string]interface{})
+			if !ok {
+				return err
+			}
+			if _, ok := actionData["loop"]; ok {
+				formData["loop"] = actionData["loop"]
+			}
+			if _, ok := actionData["resources"]; ok {
+				formData["resources"] = actionData["resources"]
+			}
+			formData["alias"] = actionData["alias"]
+			formData["description"] = actionData["description"]
+			formData["logoUrl"] = actionData["logoUrl"]
+			formData["type"] = actionData["type"]
+			formData["version"] = actionData["version"]
+
 			c.State["formData"] = formData
 			c.Props = newProps
 			return nil
