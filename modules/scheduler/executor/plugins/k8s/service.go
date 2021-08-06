@@ -60,6 +60,7 @@ func (k *Kubernetes) ListService(namespace string, selectors map[string]string) 
 // Port changes in the service description will cause changes in services and ingress
 func (k *Kubernetes) updateService(service *apistructs.Service, selectors map[string]string) error {
 	// Service.Ports is empty, indicating that no service is expected
+	logrus.Infof("update service %s on namespace %s", service.Name, service.Namespace)
 	if len(service.Ports) == 0 {
 		// There is a service before the update, if there is no service, delete the servicece
 		if err := k.DeleteService(service.Namespace, service.Name); err != nil {
@@ -69,6 +70,7 @@ func (k *Kubernetes) updateService(service *apistructs.Service, selectors map[st
 		return nil
 	}
 
+	logrus.Infof("get k8s service %s on namespace %s", service.Name, service.Namespace)
 	svc, getErr := k.GetService(service.Namespace, service.Name)
 	if getErr != nil && getErr != k8serror.ErrNotFound {
 		return errors.Errorf("failed to get service, name: %s, (%v)", service.Name, getErr)
@@ -226,6 +228,7 @@ func (k *Kubernetes) deleteRuntimeServiceWithProjectNamespace(service apistructs
 }
 
 func (k *Kubernetes) createProjectService(service *apistructs.Service, sgID string) error {
+	logrus.Infof("create k8s service %s on namespace %s", service.ProjectServiceName, service.Namespace)
 	if service.ProjectServiceName != "" {
 		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
 		if ok {
@@ -262,6 +265,7 @@ func (k *Kubernetes) deleteProjectService(service *apistructs.Service) error {
 }
 
 func (k *Kubernetes) updateProjectService(service *apistructs.Service, sgID string) error {
+	logrus.Infof("update k8s service %s on namespace %s", service.ProjectServiceName, service.Namespace)
 	if service.ProjectServiceName != "" {
 		projectService, ok := deepcopy.Copy(service).(*apistructs.Service)
 		if ok {

@@ -82,6 +82,7 @@ func (k *Kubernetes) destroyRuntime(ns string) error {
 
 func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.ServiceGroup) error {
 	for _, service := range sg.Services {
+		logrus.Infof("start to delete service name %s", service.Name)
 		err := k.deleteProjectService(&service)
 		if err != nil {
 			return fmt.Errorf("delete service %s error: %v", service.ProjectServiceName, err)
@@ -112,8 +113,9 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 				remainCount++
 			}
 		}
-
+		logrus.Infof("remain deployment count is %d",remainCount)
 		if remainCount < 1 {
+			logrus.Infof("start to delete k8s service name %s", service.Name)
 			err = k.service.Delete(ns, service.Name)
 			if err != nil {
 				return fmt.Errorf("delete service %s error: %v", service.Name, err)
@@ -125,6 +127,8 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 				}
 			}
 		}
+		logrus.Infof("delete service name %s successfully", service.Name)
+
 	}
 	return nil
 }
