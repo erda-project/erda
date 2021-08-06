@@ -215,7 +215,7 @@ func (e *EmptyProjectContent) Render(ctx context.Context, c *apistructs.Componen
 		createProStr = i18nLocale.Get(i18n.I18nKeyProCreate)
 		createProDetail = map[string]interface{}{
 			"text": []interface{}{i18nLocale.Get(i18n.I18nKeyProCreateBy), map[string]interface{}{
-				"icon":          "appstore",
+				"icon":          "application-menu",
 				"iconStyleName": "primary-icon",
 			}, i18nLocale.Get(i18n.I18nKeyProCreateByCenter)},
 		}
