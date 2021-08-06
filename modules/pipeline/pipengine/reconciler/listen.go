@@ -140,6 +140,10 @@ func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID 
 
 	p := pipelineWithTasks.Pipeline
 	tasks := pipelineWithTasks.Tasks
+	// if status is end status like stopByUser, should return immediately
+	if p.Status.IsEndStatus() {
+		return nil
+	}
 
 	// calculate pipeline status by tasks
 	calcPStatus := statusutil.CalculatePipelineStatusV2(tasks)
