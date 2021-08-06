@@ -126,11 +126,15 @@ func (m *Module) BaselineTableNames() []string {
 
 func (m *Module) Sort() {
 	sort.Slice(m.Scripts, func(i, j int) bool {
+		if m.Scripts[i].IsBaseline() && !m.Scripts[j].IsBaseline() {
+			return true
+		}
+		if !m.Scripts[i].IsBaseline() && m.Scripts[j].IsBaseline() {
+			return false
+		}
+
 		return strings.TrimSuffix(m.Scripts[i].GetName(), filepath.Ext(m.Scripts[i].GetName())) <
 			strings.TrimSuffix(m.Scripts[j].GetName(), filepath.Ext(m.Scripts[j].GetName()))
-	})
-	sort.Slice(m.Scripts, func(i, j int) bool {
-		return m.Scripts[i].IsBaseline() && !m.Scripts[j].IsBaseline()
 	})
 }
 
