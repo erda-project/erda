@@ -22,7 +22,7 @@ import (
 
 type MemChart struct {
 	CtxBdl  protocol.ContextBundle
-	Metrics *metrics.MetricClient
+	Metrics *metrics.Metrics
 	State   table.State            `json:"state"`
 	Data    []common.ChartDataItem `json:"data"`
 }

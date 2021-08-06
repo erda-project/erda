@@ -47,7 +47,7 @@ var (
 type Table struct {
 	TableInterface
 	Ctx        context.Context
-	Metric     *metrics.MetricClient
+	Metric     *metrics.Metrics
 	CtxBdl     protocol.ContextBundle
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
