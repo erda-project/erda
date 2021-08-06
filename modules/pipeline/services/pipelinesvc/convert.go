@@ -53,11 +53,11 @@ func (s *PipelineSvc) ConvertPipeline(p *spec.Pipeline) *apistructs.PipelineDTO 
 	}
 	result.Namespace = p.Extra.Namespace
 	result.OrgName = p.GetOrgName()
-	result.ProjectName = p.NormalLabels[apistructs.LabelProjectName]
-	result.ApplicationName = p.NormalLabels[apistructs.LabelAppName]
+	result.ProjectName = p.GetLabel(apistructs.LabelProjectName)
+	result.ApplicationName = p.GetLabel(apistructs.LabelAppName)
 	result.Commit = p.GetCommitID()
 	result.CommitDetail = p.CommitDetail
-	result.YmlSource = p.NormalLabels[apistructs.LabelPipelineYmlSource]
+	result.YmlSource = p.GetLabel(apistructs.LabelPipelineYmlSource)
 	result.YmlNameV1 = p.Extra.PipelineYmlNameV1
 	result.YmlContent = p.PipelineYml
 	result.Extra.DiceWorkspace = p.Extra.DiceWorkspace.String()
