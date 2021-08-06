@@ -216,11 +216,7 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 		// history record
 		oldCheckers, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
 		for _, checker := range oldCheckers {
-			extra, err := strconv.ParseInt(checker.Extra, 10, 64)
-			if err != nil {
-				return nil, errors.NewDatabaseError(err)
-			}
-			if extra != checker.ProjectID {
+			if checker.Extra == "" {
 				list = append(list, checker)
 			}
 		}
@@ -232,12 +228,14 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 			return nil, errors.NewDatabaseError(err)
 		}
 		for _, checker := range newCheckers {
-			extra, err := strconv.ParseInt(checker.Extra, 10, 64)
-			if err != nil {
-				return nil, errors.NewDatabaseError(err)
-			}
-			if checker.ProjectID == extra {
-				list = append(list, checker)
+			if checker.Extra != "" {
+				extra, err := strconv.ParseInt(checker.Extra, 10, 64)
+				if err != nil {
+					return nil, errors.NewDatabaseError(err)
+				}
+				if checker.ProjectID == extra {
+					list = append(list, checker)
+				}
 			}
 		}
 	} else {
