@@ -15,6 +15,7 @@ package snapshot
 
 import (
 	"bytes"
+	"regexp"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -74,6 +75,7 @@ func From(tx *gorm.DB, ignore ...string) (s *Snapshot, err error) {
 		if err = tx.Row().Scan(&tableName, &stmt); err != nil {
 			return nil, err
 		}
+		stmt = TrimCharacterSetFromRawCreateTableSQL(stmt)
 		node, err := parser.New().ParseOneStmt(stmt, "", "")
 		if err != nil {
 			return nil, err
@@ -141,17 +143,12 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 
 		// install
 		var (
-			options []*ast.TableOption
-			buf     = bytes.NewBuffer(nil)
+			buf = bytes.NewBuffer(nil)
 		)
-		for _, opt := range create.Options {
-			switch opt.Tp {
-			case ast.TableOptionCollate:
-			default:
-				options = append(options, opt)
-			}
-		}
-		create.Options = options
+		TrimCollateOptionFromCreateTable(create)
+		TrimCollateOptionFromCols(create)
+		TrimConstraintCheckFromCreateTable(create)
+
 		if err := create.Restore(&format.RestoreCtx{
 			Flags:     format.DefaultRestoreFlags,
 			In:        buf,
@@ -174,4 +171,43 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	for i := range create.Cols {
+		for j := len(create.Cols[i].Options) - 1; j >= 0; j-- {
+			if create.Cols[i].Options[j].Tp == ast.ColumnOptionCollate {
+				create.Cols[i].Options = append(create.Cols[i].Options[:j], create.Cols[i].Options[j+1:]...)
+			}
+		}
+	}
+}
+
+func TrimCollateOptionFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	for i := len(create.Options) - 1; i >= 0; i-- {
+		if create.Options[i].Tp == ast.TableOptionCollate {
+			create.Options = append(create.Options[:i], create.Options[i+1:]...)
+		}
+	}
+}
+
+func TrimConstraintCheckFromCreateTable(create *ast.CreateTableStmt) {
+	if create == nil {
+		return
+	}
+	for i := len(create.Constraints) - 1; i >= 0; i-- {
+		if create.Constraints[i].Tp == ast.ConstraintCheck {
+			create.Constraints = append(create.Constraints[:i], create.Constraints[i+1:]...)
+		}
+	}
+}
+
+func TrimCharacterSetFromRawCreateTableSQL(sql string) string {
+	return regexp.MustCompile(`(?i)(?:DEFAULT)* CHARACTER SET = \w+`).ReplaceAllString(sql, "")
 }

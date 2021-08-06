@@ -15,6 +15,8 @@ package migrator
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -65,11 +67,22 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
+	var (
+		reasons string
+		eq      = true
+	)
+
 	if len(d.CreateStmt.Cols) != len(o.CreateStmt.Cols) {
+		sort.Slice(d.CreateStmt.Cols, func(i, j int) bool {
+			return d.CreateStmt.Cols[i].Name.String() < d.CreateStmt.Cols[j].Name.String()
+		})
+		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
+			return d.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
+		})
 		return &Equal{
 			equal: false,
-			reason: fmt.Sprintf("%s left columns: %v, right columns: %v",
-				d.CreateStmt.Table.Name.String(), len(o.CreateStmt.Cols), len(d.CreateStmt.Cols)),
+			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
+				o.CreateStmt.Cols, d.CreateStmt.Cols),
 		}
 	}
 
@@ -87,18 +100,18 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	for name, dCol := range dCols {
 		oCol, ok := oCols[name]
 		if !ok {
-			return &Equal{
-				equal:  false,
-				reason: fmt.Sprintf("%s.%s not in left", d.CreateStmt.Table.Name.String(), name),
-			}
+			eq = false
+			reasons += fmt.Sprintf("the column is missing in actual, column name: %s, ", name)
+			continue
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
-			return equal
+			eq = false
+			reasons += fmt.Sprintf("column: %s, %s, ", name, equal.Reason())
 		}
 	}
 
 	return &Equal{
-		equal:  true,
-		reason: "",
+		equal:  eq,
+		reason: strings.TrimRight(reasons, ", "),
 	}
 }
