@@ -15,6 +15,7 @@ package migrator
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/tidb/types"
@@ -37,50 +38,53 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 	if l.Tp != r.Tp {
 		return &Equal{
 			equal:  false,
-			reason: "FieldType.Tp is not equal",
+			reason: fmt.Sprintf("FieldType.Tp is not equal, expected: %s, actual: %s; ", l.String(), r.String()),
 		}
 	}
 
-	if !(l.Flen == -1 || r.Flen == -1) && l.Flen != r.Flen {
+	if !(l.Flen == -1 || r.Flen == -1) && (l.Flen != r.Flen) && !mysql.IsIntegerType(l.Tp) {
 		return &Equal{
 			equal:  false,
-			reason: "FieldType.Flen is not equal",
+			reason: fmt.Sprintf("FieldType.Flen is not equal, expected: %v, actual: %v; ", l.Flen, r.Flen),
 		}
 	}
 
 	if !(l.Decimal == -1 || r.Decimal == -1) && l.Decimal != r.Decimal {
 		return &Equal{
 			equal:  false,
-			reason: "FieldType.Decimal is not equal",
+			reason: fmt.Sprintf("FieldType.Decimal is not equal, expected: %v, actual: %v; ", l.Decimal, r.Decimal),
 		}
 	}
 
 	if l.Collate != r.Collate {
 		return &Equal{
 			equal:  false,
-			reason: "FieldType.Collate is not equal",
+			reason: fmt.Sprintf("FieldType.Collate is not equal, expected: %s, actual: %s; ", l.Collate, r.Collate),
 		}
 	}
 
 	if mysql.HasUnsignedFlag(l.Flag) != mysql.HasUnsignedFlag(r.Flag) {
 		return &Equal{
-			equal:  false,
-			reason: "FieldType's HasUnsignedFlag is not equal",
+			equal: false,
+			reason: fmt.Sprintf("FieldType's HasUnsignedFlag is not equal, expected unsigned flag: %v, actual unsigned flag: %v; ",
+				mysql.HasUnsignedFlag(l.Flag), mysql.HasUnsignedFlag(r.Flag)),
 		}
 	}
 
 	if len(l.Elems) != len(r.Elems) {
 		return &Equal{
 			equal:  false,
-			reason: "FieldType.Elems length is not equal",
+			reason: fmt.Sprintf("FieldType.Elems length is not equal, expected: %v, actual: %v; ", l.Elems, r.Elems),
 		}
 	}
 
+	sort.Strings(l.Elems)
+	sort.Strings(r.Elems)
 	for i := range l.Elems {
 		if l.Elems[i] != r.Elems[i] {
 			return &Equal{
 				equal:  false,
-				reason: fmt.Sprintf("FieldType.Elems[%v] is not equal", i),
+				reason: fmt.Sprintf("FieldType.Elems[%v] is not equal, expected: %s, actual: %s; ", i, l.Elems[i], r.Elems[i]),
 			}
 		}
 	}
