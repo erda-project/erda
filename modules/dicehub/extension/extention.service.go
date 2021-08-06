@@ -16,6 +16,7 @@ package extension
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -110,6 +111,13 @@ func (s *extensionService) QueryExtensions(ctx context.Context, req *pb.QueryExt
 }
 
 func (s *extensionService) QueryExtensionsMenu(ctx context.Context, req *pb.QueryExtensionsMenuRequest) (*pb.QueryExtensionsMenuResponse, error) {
+	if req.Labels != "" {
+		labelsUnescaped, err := url.QueryUnescape(req.Labels)
+		if err == nil {
+			req.Labels = labelsUnescaped
+		}
+	}
+
 	result, err := s.QueryExtensionList(req.All, req.Type, req.Labels)
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
@@ -139,8 +147,14 @@ func (s *extensionService) CreateExtensionVersion(ctx context.Context, req *pb.E
 }
 
 func (s *extensionService) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreateRequest) (*pb.ExtensionVersionCreateResponse, error) {
+	name, err := url.QueryUnescape(req.Name)
+	if err != nil {
+		return nil, apierrors.ErrCreateExtensionVersion.InvalidParameter("name")
+	}
+	req.Name = name
+
 	specData := apistructs.Spec{}
-	err := yaml.Unmarshal([]byte(req.SpecYml), &specData)
+	err = yaml.Unmarshal([]byte(req.SpecYml), &specData)
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
@@ -271,6 +285,18 @@ func (s *extensionService) CreateExtensionVersionByRequest(req *pb.ExtensionVers
 }
 
 func (s *extensionService) GetExtensionVersion(ctx context.Context, req *pb.GetExtensionVersionRequest) (*pb.GetExtensionVersionResponse, error) {
+	name, err := url.QueryUnescape(req.Name)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InvalidParameter("name")
+	}
+	req.Name = name
+
+	version, err := url.QueryUnescape(req.Version)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InvalidParameter("version")
+	}
+	req.Version = version
+
 	result, err := s.GetExtension(req.Name, req.Version, req.YamlFormat)
 
 	if err != nil {
@@ -283,6 +309,12 @@ func (s *extensionService) GetExtensionVersion(ctx context.Context, req *pb.GetE
 	return &pb.GetExtensionVersionResponse{Data: result}, nil
 }
 func (s *extensionService) QueryExtensionVersions(ctx context.Context, req *pb.ExtensionVersionQueryRequest) (*pb.ExtensionVersionQueryResponse, error) {
+	name, err := url.QueryUnescape(req.Name)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InvalidParameter("name")
+	}
+	req.Name = name
+
 	ext, err := s.db.GetExtension(req.Name)
 	if err != nil {
 		return nil, err

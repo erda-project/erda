@@ -31,7 +31,7 @@ import (
 )
 
 type config struct {
-	ExtensionMenu map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
+	ExtensionMenu string `file:"extension_menu" env:"EXTENSION_MENU"`
 }
 
 const FilePath = "/app/extensions-init"
@@ -46,7 +46,10 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.newExtensionService()
+	err := p.newExtensionService()
+	if err != nil {
+		return err
+	}
 	if p.Register != nil {
 		pb.RegisterExtensionServiceImp(p.Register, p.extensionService, apis.Options(),
 			transport.WithHTTPOptions(
@@ -69,13 +72,18 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) newExtensionService() {
+func (p *provider) newExtensionService() error {
+	extensionMenu, err := p.Cfg.ConvertConfigExtensionMenu()
+	if err != nil {
+		return err
+	}
 	p.extensionService = &extensionService{
 		p:             p,
 		db:            &db.ExtensionConfigDB{DB: p.DB},
 		bdl:           bundle.New(bundle.WithCoreServices()),
-		extensionMenu: p.Cfg.ExtensionMenu,
+		extensionMenu: extensionMenu,
 	}
+	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

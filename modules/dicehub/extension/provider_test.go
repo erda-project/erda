@@ -27,7 +27,7 @@ import (
 )
 
 func Test_provider(t *testing.T) {
-	pv := &provider{Cfg: &config{ExtensionMenu: nil}}
+	pv := &provider{Cfg: &config{ExtensionMenu: "{}"}}
 	pv.newExtensionService()
 	cl := &db.ExtensionConfigDB{}
 	p := &extensionService{
