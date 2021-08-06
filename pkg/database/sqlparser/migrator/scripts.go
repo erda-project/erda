@@ -77,7 +77,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 	}
 	var (
 		moduleList = parameters.Modules()
-		modules    = make(map[string]bool)
+		modules    = map[string]bool{patchesModuleName: true}
 	)
 	for _, moduleName := range moduleList {
 		if moduleName != "" {
@@ -89,7 +89,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 			continue
 		}
 		// specified modules and this service is in specified modules then to continue
-		if _, ok := modules[moduleInfo.Name()]; len(modules) > 0 && !ok {
+		if _, ok := modules[moduleInfo.Name()]; len(moduleList) > 0 && !ok {
 			continue
 		}
 
