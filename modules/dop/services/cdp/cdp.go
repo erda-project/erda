@@ -181,7 +181,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 				failedDetailLogs, err := cdp.getFailedTaskLogs(pipelineDetail)
 				if err != nil {
 					logrus.Errorf("get cdp workflow's failed log err: %v", err)
-					continue
+					failedDetailLogs = "Log cannot be displayed"
 				}
 				params["failedDetail"] = failedDetailLogs
 			}
