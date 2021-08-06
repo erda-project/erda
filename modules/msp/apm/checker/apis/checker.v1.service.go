@@ -43,19 +43,17 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
 	}
-	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+	if req.Data.ProjectID <= 0 {
+		return nil, errors.NewMissingParameterError("projectId")
 	}
-	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
-	}
+	extra := strconv.FormatInt(req.Data.ProjectID, 10)
 	now := time.Now()
 	m := &db.Metric{
-		ProjectID:  proj.ProjectID,
+		ProjectID:  req.Data.ProjectID,
 		Env:        req.Data.Env,
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
+		Extra:      extra,
 		URL:        req.Data.Url,
 		CreateTime: now,
 		UpdateTime: now,
@@ -209,10 +207,46 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 }
 
 func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.DescribeCheckersV1Request) (*pb.DescribeCheckersV1Response, error) {
-	list, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
+	proj, err := s.projectDB.GetByProjectID(req.ProjectID)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
+	var list []*db.Metric
+	if proj != nil {
+		// history record
+		oldCheckers, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
+		for _, checker := range oldCheckers {
+			extra, err := strconv.ParseInt(checker.Extra, 10, 64)
+			if err != nil {
+				return nil, errors.NewDatabaseError(err)
+			}
+			if extra != checker.ProjectID {
+				list = append(list, checker)
+			}
+		}
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		newCheckers, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		for _, checker := range newCheckers {
+			extra, err := strconv.ParseInt(checker.Extra, 10, 64)
+			if err != nil {
+				return nil, errors.NewDatabaseError(err)
+			}
+			if checker.ProjectID == extra {
+				list = append(list, checker)
+			}
+		}
+	} else {
+		list, err = s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+	}
+
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
 		result := &pb.DescribeItemV1{
