@@ -36,6 +36,7 @@ const (
 	SenderCoreServices   Sender = "coreServices"
 	SenderClusterManager Sender = "clusterManager"
 	SenderDOP            Sender = "dop"
+	SenderGittar         Sender = "gittar"
 )
 
 // Event types
@@ -49,6 +50,8 @@ const (
 	ApproveEvent               = "approve"
 	ApprovalStatusChangedEvent = "approvalStatusChanged"
 	IssueEvent                 = "issue"
+	PipelineYmlEvent           = "pipelineYml"
+	GitPushEvent               = "git_push"
 )
 
 // Event actions

@@ -300,7 +300,7 @@ func (r *Release) GetDiceYAML(orgID int64, releaseID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if orgID != 0 && release.OrgID != orgID { // 内部调用时，orgID为0
+	if orgID != 0 && release.OrgID != orgID { // when calling internally，orgID is 0
 		return "", errors.Errorf("release not found")
 	}
 
@@ -313,7 +313,7 @@ func (r *Release) GetIosPlist(orgID int64, releaseID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if orgID != 0 && release.OrgID != orgID { // 内部调用时，orgID为0
+	if orgID != 0 && release.OrgID != orgID { // when calling internally，orgID is 0
 		return "", errors.Errorf("release not found")
 	}
 

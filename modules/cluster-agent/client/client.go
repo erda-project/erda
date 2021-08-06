@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -70,8 +71,20 @@ func Start(ctx context.Context, cfg *config.Config) error {
 		}
 		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
 	}
+
+	u, err := url.Parse(cfg.ClusterDialEndpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "https":
+		u.Scheme = "wss"
+	case "http":
+		u.Scheme = "ws"
+	}
+
 	for {
-		remotedialer.ClientConnect(ctx, cfg.ClusterDialEndpoint, headers, nil, func(proto, address string) bool {
+		remotedialer.ClientConnect(ctx, u.String(), headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
 				return true

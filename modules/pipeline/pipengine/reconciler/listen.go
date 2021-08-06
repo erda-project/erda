@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
+	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -63,6 +65,24 @@ func (r *Reconciler) Listen() {
 					rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
 					<-popCh
 					rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
+					var p spec.Pipeline
+					_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
+						p, err = r.dbClient.GetPipeline(pipelineID)
+						if err != nil {
+							rlog.PWarnf(pipelineID, "failed to get pipeline, err: %v, will continue until get pipeline", err)
+							return false, err
+						}
+						return true, nil
+					})
+					if p.Status.IsEndStatus() {
+						rlog.PErrorf(pipelineID, "unable to reconcile end status pipeline")
+						return
+					}
+
+					if err := r.updateStatusBeforeReconcile(p); err != nil {
+						rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
+						return
+					}
 
 					// construct context for pipeline reconciler
 					pCtx := makeContextForPipelineReconcile(pipelineID)
@@ -70,12 +90,18 @@ func (r *Reconciler) Listen() {
 					// reconciler
 					reconcileErr := r.reconcile(pCtx, pipelineID)
 
-					// if reconcile failed, put and wait next reconcile
-					if reconcileErr != nil {
-						rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
-						r.reconcileAgain(pipelineID)
-						return
-					}
+					defer func() {
+						r.teardownCurrentReconcile(pCtx, pipelineID)
+						if err := r.updateStatusAfterReconcile(pCtx, pipelineID); err != nil {
+							rlog.PErrorf(pipelineID, "failed to update status after reconcile, err: %v", err)
+						}
+
+						// if reconcile failed, put and wait next reconcile
+						if reconcileErr != nil {
+							rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
+							r.reconcileAgain(pipelineID)
+						}
+					}()
 				}()
 
 				return nil
@@ -88,6 +114,52 @@ func (r *Reconciler) Listen() {
 func (r *Reconciler) reconcileAgain(pipelineID uint64) {
 	time.Sleep(time.Second * 5)
 	r.Add(pipelineID)
+}
+
+// updateStatusBeforeReconcile update pipeline status to running
+func (r *Reconciler) updateStatusBeforeReconcile(p spec.Pipeline) error {
+	if !p.Status.IsRunningStatus() {
+		oldStatus := p.Status
+		if err := r.updatePipelineStatus(&spec.Pipeline{
+			PipelineBase: spec.PipelineBase{
+				ID:     p.ID,
+				Status: apistructs.PipelineStatusRunning,
+			},
+		}); err != nil {
+			return err
+		}
+		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, apistructs.PipelineStatusRunning)
+	}
+	return nil
+}
+
+// updateStatusAfterReconcile get latest pipeline after reconcile
+func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID uint64) error {
+	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
+	if err != nil {
+		rlog.PErrorf(pipelineID, "failed to get pipeline with tasks, err: %v", err)
+		return err
+	}
+	defer r.teardownPipeline(ctx, pipelineWithTasks)
+
+	p := pipelineWithTasks.Pipeline
+	tasks := pipelineWithTasks.Tasks
+	// if status is end status like stopByUser, should return immediately
+	if p.Status.IsEndStatus() {
+		return nil
+	}
+
+	// calculate pipeline status by tasks
+	calcPStatus := statusutil.CalculatePipelineStatusV2(tasks)
+	if calcPStatus != p.Status {
+		oldStatus := p.Status
+		p.Status = calcPStatus
+		if err := r.updatePipelineStatus(p); err != nil {
+			return err
+		}
+		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, calcPStatus)
+	}
+	return nil
 }
 
 // makeContextForPipelineReconcile

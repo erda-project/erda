@@ -317,11 +317,19 @@ func (b *Bundle) PageListPipelineCrons(req apistructs.PipelineCronPagingRequest)
 		return nil, err
 	}
 	hc := b.hc
+	sources := make([]string, 0, len(req.Sources))
+	for _, v := range req.Sources {
+		sources = append(sources, v.String())
+	}
 
 	var pageResp apistructs.PipelineCronPagingResponse
 	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/pipeline-crons")).
 		Header(httputil.InternalHeader, "bundle").
-		JSONBody(&req).
+		Param("allSources", strconv.FormatBool(req.AllSources)).
+		Params(map[string][]string{"source": sources}).
+		Params(map[string][]string{"ymlName": req.YmlNames}).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
 		Do().JSON(&pageResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

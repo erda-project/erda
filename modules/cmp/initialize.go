@@ -162,12 +162,6 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
 
-	// autoScanner will scan expired cmp time
-	// autoScanner is cancelled due to open source.
-	//as := autoscanner.New(db, bdl)
-	//logrus.Info("start autoScanner to scan expired cmp cluster")
-	//go as.Run()
-
 	// init cron job
 	initCron(ep)
 

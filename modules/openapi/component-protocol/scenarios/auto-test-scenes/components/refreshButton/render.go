@@ -24,28 +24,10 @@ import (
 type ComponentAction struct{}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-
 	switch event.Operation {
 	case apistructs.ClickOperation:
-		if c.State == nil {
-			c.State = map[string]interface{}{}
-		}
-		c.State["reloadScenesInfo"] = true
-	case "autoRefresh":
-		if c.State == nil {
-			c.State = map[string]interface{}{}
-		}
-		c.State["reloadScenesInfo"] = true
-		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
-			c.Operations["autoRefresh"] = map[string]interface{}{
-				"key":         "autoRefresh",
-				"reload":      true,
-				"showLoading": false,
-				"duration":    10000,
-			}
-		} else {
-			delete(c.Operations, "autoRefresh")
+		c.State = map[string]interface{}{
+			"reloadScenesInfo": true,
 		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
 		c.Type = "Button"
@@ -58,16 +40,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 				"key":    "refresh",
 				"reload": true,
 			},
-		}
-		if pipelineShowRefresh(c.State["pipelineId"], bdl.Bdl) {
-			c.Operations["autoRefresh"] = map[string]interface{}{
-				"key":         "autoRefresh",
-				"reload":      true,
-				"showLoading": false,
-				"duration":    10000,
-			}
-		} else {
-			delete(c.Operations, "autoRefresh")
 		}
 	}
 	return nil

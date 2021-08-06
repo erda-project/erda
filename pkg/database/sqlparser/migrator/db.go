@@ -56,7 +56,7 @@ func (mig *Migrator) DB() *gorm.DB {
 			SlowThreshold:             200 * time.Millisecond,
 			Colorful:                  true,
 			IgnoreRecordNotFoundError: true,
-			LogLevel:                  logger.Error,
+			LogLevel:                  logger.Silent,
 		},
 	)
 

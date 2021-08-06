@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/http/pprof"
+	"net/url"
 	"strings"
 	"time"
 
@@ -142,7 +143,16 @@ func (s *Server) internal(handler func(context.Context, *http.Request, map[strin
 			locale = s.localeLoader.Locale(localeName)
 		}
 
-		response, err := handler(ctx, r, mux.Vars(r))
+		// Manual decoding url var
+		muxVars := mux.Vars(r)
+		for k, v := range muxVars {
+			decodedVar, err := url.QueryUnescape(v)
+			if err != nil {
+				continue
+			}
+			muxVars[k] = decodedVar
+		}
+		response, err := handler(ctx, r, muxVars)
 		if err == nil && s.localeLoader != nil {
 			response = response.GetLocaledResp(locale)
 		}

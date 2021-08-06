@@ -11,17 +11,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package msp
+package project
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MSP_MENU = apis.ApiSpec{
-	Path:        "/api/micro-service/menu/tenantGroup/<tenantGroup>",
-	BackendPath: "/api/msp/menu/<tenantGroup>",
+var CREATE_MSP_PROJECT = apis.ApiSpec{
+	Path:        "/api/msp/tenant/project",
+	BackendPath: "/api/msp/tenant/project",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 获取微服务菜单",
+	Doc:         "Create MSP project",
 }

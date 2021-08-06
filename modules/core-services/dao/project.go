@@ -18,10 +18,10 @@ import (
 
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/erda-project/erda/modules/core-services/model"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // CreateProject 创建项目
@@ -100,6 +100,7 @@ func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs
 	if params.Query != "" {
 		db = db.Where("(name LIKE ? OR display_name LIKE ?)", strutil.Concat("%", params.Query, "%"), strutil.Concat("%", params.Query, "%"))
 	}
+	db = db.Where("`type` != ?", pb.Type_MSP.String())
 	if params.OrderBy != "" {
 		if params.Asc {
 			db = db.Order(fmt.Sprintf("%s", params.OrderBy))

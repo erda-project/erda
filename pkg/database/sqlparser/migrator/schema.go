@@ -62,22 +62,26 @@ func (s *Schema) Equal(o *Schema) *Equal {
 	if len(s.TableDefinitions) != len(o.TableDefinitions) {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("left length: %v, right length: %v", len(s.TableDefinitions), len(o.TableDefinitions)),
+			reason: fmt.Sprintf("expected numbers of tables: %v, actual: %v", len(s.TableDefinitions), len(o.TableDefinitions)),
 		}
 	}
 
+	var (
+		reasons string
+		eq      = true
+	)
 	for tableName, sDef := range s.TableDefinitions {
 		oDef, ok := o.TableDefinitions[tableName]
 		if !ok {
-			return &Equal{
-				equal:  false,
-				reason: fmt.Sprintf("table %s in left but not in right", tableName),
-			}
+			eq = false
+			reasons += fmt.Sprintf("table %s is expected but missing in actual\n", tableName)
+			continue
 		}
 		if equal := sDef.Equal(oDef); !equal.Equal() {
-			return equal
+			eq = false
+			reasons += fmt.Sprintf("table: %s, %s\n", tableName, equal.Reason())
 		}
 	}
 
-	return &Equal{equal: true}
+	return &Equal{equal: eq, reason: reasons}
 }

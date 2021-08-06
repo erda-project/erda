@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	mathpkg "github.com/erda-project/erda/pkg/math"
 )
 
 type traceService struct {
@@ -110,28 +111,37 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 type void struct{}
 
 func (s *traceService) handleSpanResponse(spanTree SpanTree) (*pb.GetSpansResponse, error) {
-	var spans []*pb.Span
+	var (
+		spans          []*pb.Span
+		traceStartTime int64 = 0
+		traceEndTime   int64 = 0
+		depth          int64 = 0
+	)
+
 	spanCount := int64(len(spanTree))
-	durationTotal := int64(0)
-	depth := int64(0)
 	if spanCount > 0 {
 		depth = 1
 	}
 	services := map[string]void{}
-	for id, span := range spanTree {
+	for _, span := range spanTree {
 		services[span.Tags["service_name"]] = void{}
 		tempDepth := calculateDepth(depth, span, spanTree)
 		if tempDepth > depth {
 			depth = tempDepth
 		}
-		span.Duration = (span.EndTime - span.StartTime) - childSpanDuration(id, spanTree)
-		durationTotal += span.Duration
+		if traceStartTime == 0 || traceStartTime > span.StartTime {
+			traceStartTime = span.StartTime
+		}
+		if traceEndTime == 0 || traceEndTime < span.EndTime {
+			traceEndTime = span.EndTime
+		}
+		span.Duration = mathpkg.AbsInt64(span.EndTime - span.StartTime)
 		spans = append(spans, span)
 	}
 
 	serviceCount := int64(len(services))
 
-	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: durationTotal, SpanCount: spanCount}, nil
+	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: mathpkg.AbsInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
 }
 
 func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
@@ -140,16 +150,6 @@ func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
 		calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
 	}
 	return depth
-}
-
-func childSpanDuration(id string, spanTree SpanTree) int64 {
-	duration := int64(0)
-	for _, span := range spanTree {
-		if span.ParentSpanId == id {
-			duration += span.EndTime - span.StartTime
-		}
-	}
-	return duration
 }
 
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {

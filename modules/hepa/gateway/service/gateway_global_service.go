@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
@@ -296,7 +297,11 @@ func md5V(str string) string {
 }
 
 func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) string {
-	return md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+	tenant, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String())
+	if err != nil {
+		return ""
+	}
+	return tenant
 }
 
 func (impl *GatewayGlobalServiceImpl) GetTenantGroup(projectId, env string) (res *common.StandardResult) {

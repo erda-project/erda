@@ -13,26 +13,20 @@
 
 package db
 
-import (
-	"time"
-)
+import "time"
 
-// tables name
 const (
 	TableTmcIni = "tb_tmc_ini"
 )
 
-// TmcIni .
 type TmcIni struct {
-	ID       int    `gorm:"column:id;primary_key"`
-	IniName  string `gorm:"column:ini_name"`
-	IniDesc  string `gorm:"column:ini_desc"`
-	IniValue string `gorm:"column:ini_value"`
-
+	ID         int       `gorm:"column:id;primary_key"`
+	IniName    string    `gorm:"column:ini_name"`
+	IniDesc    string    `gorm:"column:ini_desc"`
+	IniValue   string    `gorm:"column:ini_value"`
 	CreateTime time.Time `gorm:"column:create_time"`
 	UpdateTime time.Time `gorm:"column:update_time"`
 	IsDeleted  string    `gorm:"column:is_deleted"`
 }
 
-// TableName .
 func (TmcIni) TableName() string { return TableTmcIni }
