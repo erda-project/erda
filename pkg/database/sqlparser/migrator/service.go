@@ -150,3 +150,26 @@ func (m *Module) GetScriptByFilename(filename string) (*Script, bool) {
 	}
 	return nil, false
 }
+
+func (m *Module) FilterFreshBaseline(db *gorm.DB) *Module {
+	var mod Module
+	mod.Name = m.Name
+
+	for _, script := range m.Scripts {
+		// if the script is not baseline, skip
+		if !script.IsBaseline() {
+			continue
+		}
+
+		// if the script is not fresh, skip
+		var cnt int64
+		if db.Where(map[string]interface{}{"filename": script.GetName()}).
+			First(new(HistoryModel)).Count(&cnt); db.Error == nil && cnt > 0 {
+			continue
+		}
+
+		mod.Scripts = append(mod.Scripts, script)
+	}
+
+	return &mod
+}
