@@ -270,6 +270,7 @@ func (s *Scripts) InstalledChangesLint(ctx *context.Context, db *gorm.DB) error 
 					logrus.Infof("found patch file and append it to the list, filename: %s", filename)
 					patchesList = append(patchesList, filename)
 				} else {
+					logrus.Errorf("missing path file, filename: %s", filename)
 					missingPatchesList = append(missingPatchesList, filepath.Join(moduleName, script.GetName()))
 				}
 			}
@@ -336,4 +337,15 @@ func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
 	}
 
 	return "", false
+}
+
+func (s *Scripts) FreshBaselineModules(db *gorm.DB) map[string]*Module {
+	var modules = make(map[string]*Module)
+	for name, mod := range s.Services {
+		mod := mod.FilterFreshBaseline(db)
+		if len(mod.Scripts) > 0 {
+			modules[name] = mod
+		}
+	}
+	return modules
 }
