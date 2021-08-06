@@ -14,6 +14,9 @@
 package cache
 
 import (
+	"fmt"
+	"github.com/sirupsen/logrus"
+	"math/rand"
 	"reflect"
 	"testing"
 )
@@ -219,7 +222,7 @@ func TestCache_WriteMulti(t *testing.T) {
 
 			err = cache.WriteMulti(map[string]bool{"metrics2": true}, map[string]Values{"metrics2": {
 				IntValue{
-					unixnano: 1,
+					unixnano: 4,
 					value:    2,
 				}, IntValue{
 					unixnano: 2,
@@ -228,7 +231,7 @@ func TestCache_WriteMulti(t *testing.T) {
 					unixnano: 3,
 					value:    2,
 				}, IntValue{
-					unixnano: 4,
+					unixnano: 1,
 					value:    2,
 				}}})
 			err = cache.WriteMulti(map[string]bool{"metrics2": true}, map[string]Values{"metrics2": {
@@ -383,11 +386,11 @@ func TestCache_Write(t *testing.T) {
 			name: "UpdateTest",
 			args: args{
 				serializable: map[string]bool{
-					"metricsInt":   false,
-					"metricsStr":   false,
-					"metricsFloat": false,
-					"metricsUint":  false,
-					"metricsIntSeria":  true,
+					"metricsInt":      false,
+					"metricsStr":      false,
+					"metricsFloat":    false,
+					"metricsUint":     false,
+					"metricsIntSeria": true,
 				},
 				pairs: map[string]Values{
 					"metricsInt": {IntValue{
@@ -453,5 +456,117 @@ func TestCache_Write(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func BenchmarkLRU_Rand(b *testing.B) {
+	l := New(int64(8192))
+	l.log.SetLevel(logrus.ErrorLevel)
+	trace := make([]string, b.N*2)
+	for i := 0; i < b.N*2; i++ {
+		trace[i] = fmt.Sprintf("%d", rand.Int63()%32768)
+	}
+
+	b.ResetTimer()
+	var hit, miss int
+	for i := 0; i < 2*b.N; i++ {
+		if i%2 == 0 {
+			l.Write(false, trace[i], Values{IntValue{0, 1}})
+		} else {
+			_, err := l.Get(trace[i])
+			if err != nil {
+				hit++
+			} else {
+				miss++
+			}
+		}
+	}
+	b.Logf("hit: %d miss: %d ratio: %f", hit, miss, float64(hit)/float64(miss))
+}
+
+func BenchmarkLRU_Freq(b *testing.B) {
+	l := New(8192)
+	l.log.SetLevel(logrus.ErrorLevel)
+	trace := make([]string, b.N*2)
+	for i := 0; i < b.N*2; i++ {
+		if i%2 == 0 {
+			trace[i] = fmt.Sprintf("%d", rand.Int63()%16384)
+		} else {
+			trace[i] = fmt.Sprintf("%d", rand.Int63()%32768)
+		}
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		l.Write(false, trace[i], Values{IntValue{0, 1}})
+	}
+	var hit, miss int
+	for i := 0; i < b.N; i++ {
+		_, err := l.Get(trace[i])
+		if err != nil {
+			hit++
+		} else {
+			miss++
+		}
+	}
+	b.Logf("hit: %d miss: %d ratio: %f", hit, miss, float64(hit)/float64(miss))
+}
+
+func TestLRU(t *testing.T) {
+
+	l := New(IntValue{}.Size() *128)
+
+	for i := 0; i < 256; i++ {
+		err := l.Write(false, fmt.Sprintf("%d", i), Values{IntValue{
+			unixnano: 1,
+			value:    int64(i),
+		}})
+		if err != nil {
+			t.Fatalf("cache insert error %v",err)
+		}
+	}
+	if l.Len() != 128 {
+		t.Fatalf("bad len: %v", l.Len())
+	}
+
+	for i := 0; i < 128; i++ {
+		if v, ok := l.Get(fmt.Sprintf("%d", i+128)); ok != nil || int(v[0].(IntValue).value) != i+128 {
+			t.Fatalf("bad key: %v", i+128)
+		}
+	}
+	for i := 0; i < 128; i++ {
+		_, err := l.Get(fmt.Sprintf("%d", i))
+		if err == nil {
+			t.Fatalf("should be evicted")
+		}
+	}
+	for i := 128; i < 256; i++ {
+		_, err := l.Get(fmt.Sprintf("%d", i))
+		if err != nil {
+			t.Fatalf("should not be evicted")
+		}
+	}
+	for i := 128; i < 192; i++ {
+		err := l.Remove(fmt.Sprintf("%d", i))
+		if err != nil {
+			t.Fatalf("should be deleted")
+		}
+		_, err = l.Get(fmt.Sprintf("%d", i))
+		if err == nil {
+			t.Fatalf("should be deleted")
+		}
+	}
+
+	_, err := l.Get(fmt.Sprintf("%d", 192))
+	if err != nil {
+		return
+	} // expect 192 to be last key in l.Keys()
+
+	if l.Len() != 64 {
+		t.Fatalf("bad len: %v", l.Len())
+	}
+	if _, ok := l.Get(fmt.Sprintf("%d", 200)); ok != nil {
+		t.Fatalf("should contain nothing")
 	}
 }

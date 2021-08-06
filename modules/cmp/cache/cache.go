@@ -14,6 +14,7 @@
 package cache
 
 import (
+	"container/list"
 	"fmt"
 	"sort"
 	"strings"
@@ -41,15 +42,16 @@ const (
 var (
 	EvictError              = errors.New("cache memory evicted")
 	NilPtrError             = errors.New("nil ptr error")
-	EntryTypeDifferentError = errors.New("entry and value type different")
+	EntryTypeDifferentError = errors.New("entry and cacheValues type different")
 	WrongEntryKeyError      = errors.New("entry key is wrong")
 	InitEntryFailedError    = errors.New("entry initialized failed")
-	ValueNotFoundError      = errors.New("value not found")
-	ValueTypeNotFoundError  = errors.New("value type not found")
+	ValueNotFoundError      = errors.New("cacheValues not found")
+	KeyNotFoundError        = errors.New("key  not found")
+	ValueTypeNotFoundError  = errors.New("cacheValues type not found")
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
-// Cache implement concurrent safe cache with LRU strategy.
+// Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
 	store *store
 	log   *logrus.Logger
@@ -57,151 +59,187 @@ type Cache struct {
 
 // store implement LRU strategy
 type store struct {
-	maxSize int64
-	used    int64
-	keys    *cmpCacheHeap
-	value   *sync.Map
-	log     *logrus.Logger
-	mtx     *sync.RWMutex
+	maxSize     int64
+	used        int64
+	cacheKeys   *cmpCacheKeys
+	cacheValues *cmpCacheValues
+	log         *logrus.Logger
+	mtx         *sync.RWMutex
 }
 type keyPair struct {
 	value  interface{}
 	number int64
 }
 
-func newKeyPair(key interface{}, number int64) *keyPair {
-	return &keyPair{
-		value:  key,
-		number: number,
-	}
-}
+//func newKeyPair(key interface{}, number int64) *keyPair {
+//
+//	return &keyPair{
+//		cacheValues:  key,
+//		number: number,
+//	}
+//}
 func newStore(maxSize int64, logger *logrus.Logger) *store {
 	return &store{
-		keys:    newCmpCacheHeap(),
-		value:   &sync.Map{},
-		log:     logger,
-		maxSize: maxSize,
-		mtx:     &sync.RWMutex{},
+		cacheKeys:   newCmpCacheKeys(),
+		cacheValues: newCmpCacheValue(),
+		log:         logger,
+		maxSize:     maxSize,
+		mtx:         &sync.RWMutex{},
 	}
 }
 func (s *store) write(key string, freshEntry *entry) error {
+
 	needSize, _ := freshEntry.getEntrySize()
 	if s.maxSize < needSize {
-		s.log.Errorf("evict cache size,try another one")
+		s.log.Errorf("evict cache size,try next")
 		return EvictError
 	}
 	var (
 		cacheEntry *entry
-		isNew      = false
-		i          = 0
+		tail       *list.Element
 	)
 	usage := s.used
-	e, _ := s.value.Load(key)
+	e, _ := s.cacheValues.value.Load(key)
+	tail = s.cacheKeys.keys.Back()
+	// 1. move key to tail. maybe new entry, handle error is unnecessary
+	s.cacheKeys.moveToBack(key)
 
 	if e != nil {
 		cacheEntry = e.(*entry)
-	} else {
-		cacheEntry = newEntry()
-		isNew = true
-	}
-
-	if !isNew && freshEntry.serializable && freshEntry.endTimeStamp <= cacheEntry.endTimeStamp && freshEntry.startTimeStamp >= cacheEntry.startTimeStamp {
-		s.log.Infof("values is subset of exist entry,continue")
-		return nil
-	}
-
-	if !isNew {
 		cSize, _ := cacheEntry.getEntrySize()
 		usage -= cSize
 	}
 
-	i = 0
 	snapUsage := usage
-	keys := s.keys.Keys()
-	// 1. sum memory could reduce when required by freshEntry not sufficient
-	for ; i < len(keys); i++ {
-		if s.maxSize-usage < needSize && keys[i].value != key {
-			rEntry, _ := s.value.Load(keys[i].value)
-			rSize, _ := rEntry.(*entry).getEntrySize()
-			usage -= rSize
+
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	if tail != nil {
+		// 2. sum memory could reduce when required by freshEntry not sufficient
+		head := s.cacheKeys.keys.Front()
+		for ; head != tail.Next(); head = head.Next() {
+			if s.maxSize-usage < needSize {
+				rEntry, _ := s.cacheValues.value.Load(head.Value.(*keyPair).value)
+				rSize, _ := rEntry.(*entry).getEntrySize()
+				usage -= rSize
+			} else {
+				break
+			}
+		}
+		// 3. reduce memory from oldest cache
+		if snapUsage != usage {
+			for elem := s.cacheKeys.keys.Front(); elem != head; {
+				cur := elem
+				elem = elem.Next()
+				rKey := cur.Value.(*keyPair).value
+				s.remove(rKey, cur)
+				s.log.Warnf("not enough memory,remove %v",rKey)
+			}
 		}
 	}
-	// 2. reduce memory from oldest cache
-	if snapUsage != usage {
-		for j := 0; j < i; j++ {
-			s.remove(keys[j].value)
-			s.log.Warnf("not enough memory,remove %v", keys[j].value)
-		}
-	}
+
 	usage += needSize
-	s.keys.keyPairs.pairs = append(s.keys.keyPairs.pairs, newKeyPair(key, s.keys.cnt))
-	s.value.Store(key, freshEntry)
+	s.cacheValues.value.Store(key, freshEntry)
 	s.used = usage
-	s.keys.cnt++
+	s.cacheKeys.cnt++
 	s.log.Infof("%v has add in cache", key)
 	return nil
 }
 
-func (s *store) load(key interface{}) (interface{}, error) {
-	if v, ok := s.value.Load(key); !ok {
+func (s *store) load(key string) (interface{}, error) {
+	if v, ok := s.cacheValues.value.Load(key); !ok {
 		return nil, ValueNotFoundError
 	} else {
+		s.mtx.Lock()
+		defer s.mtx.Unlock()
+		err := s.cacheKeys.moveToBack(key)
+		if err != nil {
+			return nil, err
+		}
 		return v, nil
 	}
 }
 
-func (s *store) remove(key interface{}) (interface{}, error) {
-	for i, v := range s.keys.keyPairs.pairs {
-		if v.value == key {
-			s.keys.keyPairs.pairs = append(s.keys.keyPairs.pairs[:i], s.keys.keyPairs.pairs[i+1:]...)
-			s.value.Delete(key)
-			return key, nil
-		}
-	}
-	return nil, ValueNotFoundError
+func (s *store) remove(key interface{}, rElem *list.Element) {
+	delete(s.cacheKeys.mapping, key.(string))
+	s.cacheKeys.keys.Remove(rElem)
+	s.cacheKeys.pool.Put(rElem.Value)
+	entry, _ := s.cacheValues.value.LoadAndDelete(key)
+	s.cacheValues.pool.Put(entry)
 }
 
-type KeyPairs struct {
-	pairs []*keyPair
+// cmpCacheKeys store keys orderly. head elem is the smallest.
+type cmpCacheKeys struct {
+	keys    *list.List
+	mapping map[string]*list.Element
+	cnt     int64
+	pool    *sync.Pool
 }
 
-func (k KeyPairs) Len() int {
-	return len(k.pairs)
+type cmpCacheValues struct {
+	value *sync.Map
+	pool  *sync.Pool
 }
 
-func (k KeyPairs) Less(i, j int) bool {
-	return k.pairs[i].number > k.pairs[j].number
-}
-
-func (k KeyPairs) Swap(i, j int) {
-	k.pairs[i], k.pairs[j] = k.pairs[j], k.pairs[i]
-}
-
-type cmpCacheHeap struct {
-	keyPairs KeyPairs
-	cnt      int64
-}
-
-func newCmpCacheHeap() *cmpCacheHeap {
-	return &cmpCacheHeap{
-		keyPairs: KeyPairs{pairs: make([]*keyPair, 0)},
-		cnt:      0,
+func newCmpCacheKeys() *cmpCacheKeys {
+	return &cmpCacheKeys{
+		keys:    list.New(),
+		cnt:     0,
+		mapping: map[string]*list.Element{},
+		pool: &sync.Pool{New: func() interface{} {
+			return &keyPair{
+				value:  nil,
+				number: 0,
+			}
+		}},
 	}
 }
 
-// Keys returns sorted keys by pair number
-func (c cmpCacheHeap) Keys() []*keyPair {
-	if c.keyPairs.Len() == 0 {
+func newCmpCacheValue() *cmpCacheValues {
+	return &cmpCacheValues{
+		value: &sync.Map{},
+		pool: &sync.Pool{New: func() interface{} {
+			return &entry{
+				serializable:   false,
+				key:            "",
+				startTimeStamp: 0,
+				endTimeStamp:   0,
+				value:          nil,
+				entryType:      0,
+			}
+		}},
+	}
+}
+
+//// SortKeys returns sorted cacheKeys by pair number
+//func (c cmpCacheKeys) SortKeys() []*keyPair {
+//	if c.keyPairs.Len() == 0 {
+//		return nil
+//	}
+//	cacheKeys := make([]*keyPair, c.keyPairs.Len())
+//	copy(cacheKeys, c.keyPairs.pairs)
+//	sort.Slice(cacheKeys, c.keyPairs.Less)
+//	return cacheKeys
+//}
+
+// moveToBack move latest keyPair to the end of KeyPairs
+func (c cmpCacheKeys) moveToBack(key string) error {
+	if elem, ok := c.mapping[key]; !ok {
+		kp := c.pool.Get().(*keyPair)
+		kp.number = c.cnt
+		kp.value = key
+		c.mapping[key] = c.keys.PushBack(kp)
+		return WrongEntryKeyError
+	} else {
+		elem.Value.(*keyPair).number = c.cnt
+		c.keys.MoveToBack(elem)
 		return nil
 	}
-	keys := make([]*keyPair, c.keyPairs.Len())
-	copy(keys, c.keyPairs.pairs)
-	sort.Slice(keys, c.keyPairs.Less)
-	return keys
 }
 
 // Entry struct contains serializable data, always sorted by timestamp.
-// Also can be used to store common data
+// Also can be used to store common data.
 type entry struct {
 	serializable   bool
 	key            string
@@ -209,115 +247,123 @@ type entry struct {
 	endTimeStamp   int64
 	value          Values
 	entryType      EntryType
+	overdueTimestamp int64
 }
 
-func newEntry() *entry {
-	return &entry{}
-}
+//func newEntry() *entry {
+//	return &entry{}
+//}
 
 type CmpCache interface {
 	Remove(key string) error
 	WriteMulti(serializable map[string]bool, pairs map[string]Values) error
+	Write(serializable bool, key string, value Values) error
 	IncreaseSize(size int64)
 	DecrementSize(size int64) error
 	Get(key string) (Values, error)
 }
 
-// updateOrNew returns update values if entry exist or create new entry.
-func (e *entry) updateOrNew(key string, serializable bool, newValues Values) (*entry, error) {
-	freshEntry := newEntry()
+// newEntry return new entry.
+func (s *store) updateEntry(serializable bool, key string, newValues Values, freshEntry *entry) error {
+	length := len(newValues)
+	if length == 0 {
+		return InitEntryFailedError
+	}
+	entryType := returnValueType(newValues[0])
+	if !freshEntry.serializable {
+		entrySortByValue(newValues, entryType)
+		deduplicateByValue(newValues)
+	} else {
+		entrySortByTimestamp(newValues)
+		deduplicateByTimeStamp(newValues)
+	}
+	if freshEntry.key == "" && freshEntry.serializable && freshEntry.endTimeStamp >= newValues[length-1].TimeStamp() && freshEntry.startTimeStamp <= newValues[0].TimeStamp() {
+		s.log.Infof("values is subset of exist entry,continue")
+		return nil
+	}
 	freshEntry.serializable = serializable
 	freshEntry.value = newValues
 	freshEntry.key = key
-	freshEntry.entryType = returnValueType(newValues[0])
-	e.entryType = newValues[0].Type()
-	// e not exist in cache ,then return freshEntry
-	if e == nil || e.key == "" {
-		if len(newValues) == 0 {
-			return nil, InitEntryFailedError
-		}
-		if !freshEntry.serializable {
-			freshEntry.entrySort()
-		} else {
-			freshEntry.entrySortByTimestamp()
-		}
-		freshEntry.deduplicate()
-		freshEntry.startTimeStamp = newValues[0].TimeStamp()
-		freshEntry.endTimeStamp = freshEntry.value[len(freshEntry.value)-1].TimeStamp()
-		return freshEntry, nil
-	}
-	if e.key != key {
-		return nil, WrongEntryKeyError
-	}
-	// if new values are sub set of cache then nothing to update
-	if e.serializable && freshEntry.serializable && e.startTimeStamp <= freshEntry.startTimeStamp && e.endTimeStamp >= freshEntry.endTimeStamp {
-		return e, nil
-	}
-	e.update(freshEntry)
-	return e, nil
+	freshEntry.startTimeStamp = newValues[0].TimeStamp()
+	freshEntry.endTimeStamp = freshEntry.value[len(freshEntry.value)-1].TimeStamp()
+	return nil
 }
 
 // getEntrySize returns total size of values.
-func (e *entry) getEntrySize() (int64, error) {
-	if e == nil {
+func (freshEntry *entry) getEntrySize() (int64, error) {
+	if freshEntry == nil {
 		return 0, NilPtrError
 	}
 	var usage = int64(0)
-	for _, v := range e.value {
+	for _, v := range freshEntry.value {
 		usage += v.Size()
 	}
 	// 21 = sizeof int64 *2 + bool + int
-	return usage + 21 + int64(len(e.key)), nil
+	return usage , nil
 }
 
-func (e *entry) update(fresh *entry) {
-	e.value = fresh.value
-	e.serializable = fresh.serializable
-	e.endTimeStamp = fresh.endTimeStamp
-	e.startTimeStamp = fresh.startTimeStamp
-	e.entryType = fresh.entryType
+func (freshEntry *entry) update(fresh *entry) {
+	freshEntry.value = fresh.value
+	freshEntry.serializable = fresh.serializable
+	freshEntry.endTimeStamp = fresh.endTimeStamp
+	freshEntry.startTimeStamp = fresh.startTimeStamp
+	freshEntry.entryType = fresh.entryType
 }
 
-func (e *entry) entrySort() {
-	switch e.entryType {
+func entrySortByValue(value Values, entryType EntryType) {
+	switch entryType {
 	case IntType:
-		sort.Slice(e.value, func(i, j int) bool {
-			return e.value[i].(IntValue).value < e.value[j].(IntValue).value
+		sort.Slice(value, func(i, j int) bool {
+			return value[i].(IntValue).value < value[j].(IntValue).value
 		})
 	case FloatType:
-		sort.Slice(e.value, func(i, j int) bool {
-			return e.value[i].(FloatValue).value < e.value[j].(FloatValue).value
+		sort.Slice(value, func(i, j int) bool {
+			return value[i].(FloatValue).value < value[j].(FloatValue).value
 		})
 	case StringType:
-		sort.Slice(e.value, func(i, j int) bool {
-			return e.value[i].(StringValue).value < e.value[j].(StringValue).value
+		sort.Slice(value, func(i, j int) bool {
+			return value[i].(StringValue).value < value[j].(StringValue).value
 		})
 	case UnsignedType:
-		sort.Slice(e.value, func(i, j int) bool {
-			return e.value[i].(UnsignedValue).value < e.value[j].(UnsignedValue).value
+		sort.Slice(value, func(i, j int) bool {
+			return value[i].(UnsignedValue).value < value[j].(UnsignedValue).value
 		})
 	}
 }
 
-func (e *entry) entrySortByTimestamp() {
-	values := e.value
+func entrySortByTimestamp(values Values) {
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].TimeStamp() < values[j].TimeStamp()
 	})
 }
 
 // deduplicate values must be sorted
-func (e *entry) deduplicate() {
-	length := len(e.value)
+func deduplicateByValue(value Values) {
+	length := len(value)
 	if length <= 1 {
 		return
 	}
-	var val = e.value[length-1]
+	var val = value[length-1]
 	for i := length - 2; i >= 0; i-- {
-		if e.value[i].TimeStamp() == val.TimeStamp() {
-			e.value = append(e.value[:i], e.value[i+1:]...)
+		if value[i].Value() == val.Value() {
+			value = append(value[:i], value[i+1:]...)
 		}
-		val = e.value[i]
+		val = value[i]
+	}
+}
+
+// deduplicate values must be sorted
+func deduplicateByTimeStamp(value Values) {
+	length := len(value)
+	if length <= 1 {
+		return
+	}
+	var val = value[length-1]
+	for i := length - 2; i >= 0; i-- {
+		if value[i].TimeStamp() == val.TimeStamp() {
+			value = append(value[:i], value[i+1:]...)
+		}
+		val = value[i]
 	}
 }
 
@@ -490,7 +536,7 @@ func New(size int64) *Cache {
 	return cache
 }
 
-// WriteMulti write each key value pair into cache
+// WriteMulti write each key cacheValues pair into cache
 func (c *Cache) WriteMulti(serializable map[string]bool, pairs map[string]Values) error {
 	for k, v := range pairs {
 		if serialize, ok := serializable[k]; !ok {
@@ -505,20 +551,19 @@ func (c *Cache) WriteMulti(serializable map[string]bool, pairs map[string]Values
 	return nil
 }
 
-// Write write key value pair into cache
+// Write write key cacheValues pair into cache
 func (c *Cache) Write(serializable bool, key string, value Values) error {
-	c.store.mtx.Lock()
-	defer c.store.mtx.Unlock()
+
 	var (
-		cacheKey *entry
-		err      error
+		freshEntry *entry
+		err        error
 	)
 	if v, err := c.store.load(key); err != nil {
-		cacheKey = newEntry()
+		freshEntry = c.store.cacheValues.pool.Get().(*entry)
 	} else {
-		cacheKey = v.(*entry)
+		freshEntry = v.(*entry)
 	}
-	freshEntry, err := cacheKey.updateOrNew(key, serializable, value)
+	err = c.store.updateEntry(serializable, key, value, freshEntry)
 	if err != nil {
 		return err
 	}
@@ -533,16 +578,15 @@ func (c *Cache) Write(serializable bool, key string, value Values) error {
 func (c *Cache) Remove(key string) error {
 	c.store.mtx.Lock()
 	defer c.store.mtx.Unlock()
-	keys := c.store.keys.Keys()
-	for _, k := range keys {
-		if k.value == key {
-			if _, err := c.store.remove(key); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	return ValueNotFoundError
+	c.store.remove(key, c.store.cacheKeys.mapping[key])
+	return nil
+}
+
+// Len return number of key in cache
+func (c *Cache) Len() int {
+	c.store.mtx.RLock()
+	defer c.store.mtx.RUnlock()
+	return c.store.cacheKeys.keys.Len()
 }
 
 // Get returns cache from key
