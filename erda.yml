@@ -5,7 +5,7 @@ values:
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
-    replicas: 1
+    replicas: 2
     request_cpu: 0.1
     request_mem: 128
 envs:
@@ -239,7 +239,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "spot-v2"
     expose:
@@ -274,7 +274,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     health_check:
@@ -391,7 +391,7 @@ services:
       network:
         mode: "container"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "spot-v2"
     health_check:
@@ -461,7 +461,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "dice"
     expose:
@@ -650,7 +650,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: 1
+      replicas: ${replicas:1}
       labels:
         GROUP: "spot-v2"
     health_check:
