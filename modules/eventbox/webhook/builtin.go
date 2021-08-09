@@ -17,7 +17,6 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/discover"
 )
 
 // 如果不存在相同名字的 webhook 则创建
@@ -47,19 +46,7 @@ func createIfNotExist(impl *WebHookImpl, req *CreateHookRequest) error {
 
 // MakeSureBuiltinHooks 创建默认 webhook (如果不存在)
 func MakeSureBuiltinHooks(impl *WebHookImpl) error {
-	hooks := []CreateHookRequest{
-		{
-			Name:   "scheduler-clusterhook",
-			Events: []string{"cluster"},
-			URL:    fmt.Sprintf("http://%s/clusterhook", discover.Scheduler()),
-			Active: true,
-			HookLocation: apistructs.HookLocation{
-				Org:         "-1",
-				Project:     "-1",
-				Application: "-1",
-			},
-		},
-	}
+	hooks := make([]CreateHookRequest, 0)
 
 	for i := range hooks {
 		if err := createIfNotExist(impl, &hooks[i]); err != nil {
