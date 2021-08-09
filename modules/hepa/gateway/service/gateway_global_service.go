@@ -297,7 +297,8 @@ func md5V(str string) string {
 }
 
 func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) string {
-	tenant, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String())
+	tenantGroup := md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+	tenant, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
 	if err != nil {
 		return ""
 	}

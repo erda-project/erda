@@ -29,9 +29,10 @@ import (
 )
 
 type tenantService struct {
-	p           *provider
-	MSPTenantDB *db.MSPTenantDB
-	MonitorDB   *monitor.MonitorDB
+	p            *provider
+	MSPTenantDB  *db.MSPTenantDB
+	MSPProjectDB *db.MSPProjectDB
+	MonitorDB    *monitor.MonitorDB
 }
 
 func GenerateTenantID(projectID string, tenantType, workspace string) string {
@@ -73,6 +74,13 @@ func (s *tenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 	}
 	if len(req.Workspaces) <= 0 {
 		return nil, errors.NewMissingParameterError("workspaces")
+	}
+	project, err := s.MSPProjectDB.Query(req.ProjectID)
+	if err != nil {
+		return &pb.CreateTenantResponse{Data: nil}, err
+	}
+	if project == nil {
+		return &pb.CreateTenantResponse{Data: nil}, nil
 	}
 
 	var tenants []*pb.Tenant

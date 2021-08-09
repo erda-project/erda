@@ -41,9 +41,10 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.tenantService = &tenantService{
-		p:           p,
-		MSPTenantDB: &db.MSPTenantDB{DB: p.DB},
-		MonitorDB:   &monitor.MonitorDB{DB: p.DB},
+		p:            p,
+		MSPTenantDB:  &db.MSPTenantDB{DB: p.DB},
+		MSPProjectDB: &db.MSPProjectDB{DB: p.DB},
+		MonitorDB:    &monitor.MonitorDB{DB: p.DB},
 	}
 	if p.Register != nil {
 		type TenantService pb.TenantServiceServer
