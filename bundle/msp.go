@@ -14,14 +14,12 @@
 package bundle
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
-	cerrors "github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -137,7 +135,7 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 	return nil
 }
 
-func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType string) (string, error) {
+func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType, tenantGroup string) (string, error) {
 	host := discover.MSP()
 	hc := b.hc
 
@@ -161,7 +159,8 @@ func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType string) (strin
 		return "", toAPIError(r.StatusCode(), resp.Error)
 	}
 	if len(resp.Data) <= 0 {
-		return "", cerrors.NewInternalServerError(errors.New("data failed"))
+		// history project
+		return tenantGroup, nil
 	}
 	return resp.Data[0].Id, nil
 }
