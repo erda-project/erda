@@ -81,7 +81,7 @@ type notifier struct {
 type blockEntity struct {
 	ID         string      `json:"id,omitempty"`
 	Scope      string      `json:"scope"`
-	ScopeID    string      `json:"scope_id"`
+	ScopeID    string      `json:"scopeId"`
 	Desc       string      `json:"desc"`
 	Name       string      `json:"name"`
 	ViewConfig interface{} `json:"viewConfig"`
