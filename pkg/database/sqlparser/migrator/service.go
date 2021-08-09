@@ -126,11 +126,15 @@ func (m *Module) BaselineTableNames() []string {
 
 func (m *Module) Sort() {
 	sort.Slice(m.Scripts, func(i, j int) bool {
+		if m.Scripts[i].IsBaseline() && !m.Scripts[j].IsBaseline() {
+			return true
+		}
+		if !m.Scripts[i].IsBaseline() && m.Scripts[j].IsBaseline() {
+			return false
+		}
+
 		return strings.TrimSuffix(m.Scripts[i].GetName(), filepath.Ext(m.Scripts[i].GetName())) <
 			strings.TrimSuffix(m.Scripts[j].GetName(), filepath.Ext(m.Scripts[j].GetName()))
-	})
-	sort.Slice(m.Scripts, func(i, j int) bool {
-		return m.Scripts[i].IsBaseline() && !m.Scripts[j].IsBaseline()
 	})
 }
 
@@ -149,4 +153,27 @@ func (m *Module) GetScriptByFilename(filename string) (*Script, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (m *Module) FilterFreshBaseline(db *gorm.DB) *Module {
+	var mod Module
+	mod.Name = m.Name
+
+	for _, script := range m.Scripts {
+		// if the script is not baseline, skip
+		if !script.IsBaseline() {
+			continue
+		}
+
+		// if the script is not fresh, skip
+		var cnt int64
+		if db.Where(map[string]interface{}{"filename": script.GetName()}).
+			First(new(HistoryModel)).Count(&cnt); db.Error == nil && cnt > 0 {
+			continue
+		}
+
+		mod.Scripts = append(mod.Scripts, script)
+	}
+
+	return &mod
 }

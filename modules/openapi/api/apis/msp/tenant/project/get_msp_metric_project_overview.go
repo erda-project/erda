@@ -79,7 +79,7 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, id := range data {
-			params.Add("in__metric_scope_id", id)
+			params.Add("in_target_terminus_key", id)
 		}
 	} else {
 		fk := fmt.Sprintf("in_%s", key)

@@ -307,7 +307,7 @@ func (svc *Service) DeleteGlobalConfig(req apistructs.AutoTestGlobalConfigDelete
 	if _, err := svc.cms.DeleteCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &cmspb.CmsNsConfigsDeleteRequest{
 		Ns:             req.PipelineCmsNs,
 		PipelineSource: apistructs.PipelineSourceAutoTest.String(),
-		DeleteNs:       false,
+		DeleteNs:       true,
 		DeleteForce:    true,
 		DeleteKeys:     nil,
 	}); err != nil {
