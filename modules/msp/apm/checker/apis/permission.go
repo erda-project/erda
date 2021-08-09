@@ -45,7 +45,22 @@ func getProjectFromMetricID(metricDB *db.MetricDB, projectDB *db.ProjectDB) func
 		if m == nil {
 			return "", fmt.Errorf("not found id for permission")
 		}
-		proj, err := projectDB.GetByProjectID(m.ProjectID)
+		if m.Extra != "" {
+			extra, err := strconv.ParseInt(m.Extra, 10, 64)
+			if err != nil {
+				return "", errors.NewInternalServerError(err)
+			}
+			if extra == m.ProjectID {
+				proj, err := projectDB.GetByProjectID(m.ProjectID)
+				if err != nil {
+					return "", errors.NewDatabaseError(err)
+				}
+				if proj != nil {
+					return strconv.FormatInt(proj.ProjectID, 10), nil
+				}
+			}
+		}
+		proj, err := projectDB.GetByID(m.ProjectID)
 		if err != nil {
 			return "", errors.NewDatabaseError(err)
 		}
