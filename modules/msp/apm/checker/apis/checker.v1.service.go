@@ -134,7 +134,7 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.ConvertToChecker(ctx, metric, -1)
+	checker := s.ConvertToChecker(ctx, metric, metric.ProjectID)
 	if checker != nil {
 		err := s.cache.Put(checker)
 		if err != nil {
@@ -188,19 +188,12 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 	if metric == nil {
 		return &pb.GetCheckerV1Response{}, nil
 	}
-	proj, err := s.projectDB.GetByID(metric.ProjectID)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
-	if proj == nil {
-		return &pb.GetCheckerV1Response{}, nil
-	}
 	return &pb.GetCheckerV1Response{
 		Data: &pb.CheckerV1{
 			Name:      metric.Name,
 			Mode:      metric.Mode,
 			Url:       metric.URL,
-			ProjectID: proj.ProjectID,
+			ProjectID: metric.ProjectID,
 			Env:       metric.Env,
 		},
 	}, nil
