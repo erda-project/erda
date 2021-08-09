@@ -88,21 +88,21 @@ func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, p
 		},
 	}
 	response, err := s.projectServer.GetProject(ctx, &projectpb.GetProjectRequest{ProjectID: strconv.FormatInt(projectID, 10)})
-	if err != nil {
-		return nil
-	}
-	project := response.Data
-	if project != nil && len(project.Relationship) > 0 {
-		var relationship *projectpb.TenantRelationship
-		for _, r := range project.Relationship {
-			if r.Workspace == m.Env {
-				relationship = r
+	if err == nil && response != nil {
+		project := response.Data
+		if project != nil && len(project.Relationship) > 0 {
+			var relationship *projectpb.TenantRelationship
+			for _, r := range project.Relationship {
+				if r.Workspace == m.Env {
+					relationship = r
+				}
+			}
+			if relationship != nil {
+				s.addTenantTags(ck, relationship.TenantID, project.Name)
+				return ck
 			}
 		}
-		if relationship != nil {
-			s.addTenantTags(ck, relationship.TenantID, project.Name)
-			return ck
-		}
+		return nil
 	}
 
 	scopeInfo, err := s.metricDB.QueryScopeInfo(projectID, m.Env)
