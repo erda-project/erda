@@ -353,6 +353,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 		modules := mig.LocalScripts.FreshBaselineModules(mig.DB())
 		reason, ok := compareSchemas(mig.DB(), modules)
 		if !ok {
+			logrus.Warnf("local schema is not equal with cloud schema, try to resolve it:\n%s", reason)
 			if err := mig.patchBeforeMigrating(mig.DB(), []string{patchInit}); err != nil {
 				return errors.Wrap(err, "failed to patch init")
 			}
