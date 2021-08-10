@@ -16,7 +16,10 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -130,49 +133,56 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		issueItem.IssueList = issues
 		issueItem.ProjectDTO = v
 
+		var wg sync.WaitGroup
+		wg.Add(len(expireDays))
 		for index, et := range expireDays {
-			etIssueReq := apistructs.IssuePagingRequest{}
-			etIssueReq.OrgID = int64(workReq.OrgID)
-			etIssueReq.StartFinishedAt = timeList[index][0] * 1000
-			if et == "unspecified" {
-				etIssueReq.IsEmptyPlanFinishedAt = true
-			} else {
-				if timeList[index][1] != 0 {
-					etIssueReq.EndFinishedAt = timeList[index][1] * 1000
+			go func(idx int, ed string) {
+				defer wg.Done()
+				etIssueReq := apistructs.IssuePagingRequest{}
+				etIssueReq.OrgID = int64(workReq.OrgID)
+				etIssueReq.StartFinishedAt = timeList[idx][0] * 1000
+				if et == "unspecified" {
+					etIssueReq.IsEmptyPlanFinishedAt = true
+				} else {
+					if timeList[idx][1] != 0 {
+						etIssueReq.EndFinishedAt = timeList[idx][1] * 1000
+					}
 				}
-			}
-			etIssueReq.StateBelongs = stateBelongs
-			etIssueReq.ProjectID = uint64(v.ID)
-			etIssueReq.PageNo = 1
-			etIssueReq.PageSize = 1
-			etIssueReq.External = true
-			etIssueReq.Type = []apistructs.IssueType{
-				apistructs.IssueTypeRequirement,
-				apistructs.IssueTypeBug,
-				apistructs.IssueTypeTask,
-			}
-			etIssueReq.Assignees = []string{userID.String()}
-			_, total, err := e.issue.Paging(etIssueReq)
-			if err != nil {
-				return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
-			}
-			switch et {
-			case "unspecified":
-				issueItem.UnSpecialIssueNum = int(total)
-			case "expired":
-				issueItem.ExpiredIssueNum = int(total)
-			case "oneDay":
-				issueItem.ExpiredOneDayNum = int(total)
-			case "tomorrow":
-				issueItem.ExpiredTomorrowNum = int(total)
-			case "sevenDay":
-				issueItem.ExpiredSevenDayNum = int(total)
-			case "thirtyDay":
-				issueItem.ExpiredThirtyDayNum = int(total)
-			case "feature":
-				issueItem.FeatureDayNum = int(total)
-			}
+				etIssueReq.StateBelongs = stateBelongs
+				etIssueReq.ProjectID = uint64(v.ID)
+				etIssueReq.PageNo = 1
+				etIssueReq.PageSize = 1
+				etIssueReq.External = true
+				etIssueReq.Type = []apistructs.IssueType{
+					apistructs.IssueTypeRequirement,
+					apistructs.IssueTypeBug,
+					apistructs.IssueTypeTask,
+				}
+				etIssueReq.Assignees = []string{userID.String()}
+				_, total, err := e.issue.Paging(etIssueReq)
+				if err != nil {
+					logrus.Errorf("Failed to paging issue, request: %v, err: %v", etIssueReq, err)
+					return
+				}
+				switch ed {
+				case "unspecified":
+					issueItem.UnSpecialIssueNum = int(total)
+				case "expired":
+					issueItem.ExpiredIssueNum = int(total)
+				case "oneDay":
+					issueItem.ExpiredOneDayNum = int(total)
+				case "tomorrow":
+					issueItem.ExpiredTomorrowNum = int(total)
+				case "sevenDay":
+					issueItem.ExpiredSevenDayNum = int(total)
+				case "thirtyDay":
+					issueItem.ExpiredThirtyDayNum = int(total)
+				case "feature":
+					issueItem.FeatureDayNum = int(total)
+				}
+			}(index, et)
 		}
+		wg.Wait()
 		res.Data.List = append(res.Data.List, issueItem)
 	}
 	return httpserver.OkResp(res.Data)
