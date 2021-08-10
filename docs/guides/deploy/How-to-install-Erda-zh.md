@@ -86,14 +86,14 @@
 3. 通过 Helm 安装 Erda ，并且等待所有的 Erda 组件准备就绪
 
    ```shell
-   # 安装 erda-base
-   helm install package/erda-base-$(cat VERSION).tgz --generate-name
+   # 安装 erda-base，erda 平台依赖的 operator 
+   helm install erda-base package/erda-base-$(cat VERSION).tgz 
    
-   # 安装 erda-addons
-   helm install package/erda-addons-$(cat VERSION).tgz --generate-name
+   # 安装 erda-addons，erda 平台依赖的中间件
+   helm install erda-addons package/erda-addons-$(cat VERSION).tgz 
    
-   # 安装 erda
-   helm install package/erda-$(cat VERSION).tgz --generate-name
+   # 安装 erda 平台
+   helm install erda package/erda-$(cat VERSION).tgz 
    ```
 
 4. 安装 Erda 平台组件之后
@@ -129,3 +129,25 @@
      ```
 
 5. 最后您可以通过浏览器访问 `http://erda.io`，并开始您的 Erda 之旅
+
+## 卸载 Erda
+
+1. 通过 Helm 卸载 Erda
+
+   ```shell
+   # 卸载 erda
+   helm uninstall erda 
+
+   # 卸载 erda-addons
+   helm uninstall erda-addons 
+   
+   # 卸载 erda-base
+   helm uninstall erda-base 
+   ```
+   
+2. 删除初始化数据库的任务
+    
+   ```shell
+   # 配置之前安装时指定的 namespace
+   kubectl delete job dice-init-image -n ${ERDA_NAMESPACE}
+   ```
