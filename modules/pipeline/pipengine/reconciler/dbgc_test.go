@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-
 	"github.com/alecthomas/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"

@@ -18,9 +18,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
 type MemStore struct {

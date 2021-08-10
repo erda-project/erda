@@ -18,14 +18,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/hepa/common"
-	. "github.com/erda-project/erda/modules/hepa/common/vars"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/xormplus/builder"
 	"github.com/xormplus/xorm"
+
+	"github.com/erda-project/erda/modules/hepa/common"
+	. "github.com/erda-project/erda/modules/hepa/common/vars"
 )
 
 // type IntBool bool

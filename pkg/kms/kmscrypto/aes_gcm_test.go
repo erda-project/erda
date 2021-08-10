@@ -17,9 +17,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/crypto/uuid"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 func TestAES(t *testing.T) {

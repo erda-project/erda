@@ -21,12 +21,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/events"
 	_ "github.com/erda-project/erda/pkg/monitor"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (

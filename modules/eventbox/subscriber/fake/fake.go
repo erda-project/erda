@@ -17,10 +17,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 const (

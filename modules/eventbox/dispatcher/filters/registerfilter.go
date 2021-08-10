@@ -17,12 +17,12 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/register"
 	"github.com/erda-project/erda/modules/eventbox/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 type RegisterFilter struct {

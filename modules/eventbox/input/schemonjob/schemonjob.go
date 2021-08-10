@@ -21,6 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/modules/eventbox/input"
 	"github.com/erda-project/erda/modules/eventbox/types"
@@ -29,9 +32,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type ScheMonJob struct {

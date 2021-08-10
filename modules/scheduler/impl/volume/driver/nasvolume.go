@@ -16,11 +16,11 @@ package driver
 import (
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
 	"github.com/erda-project/erda/pkg/jsonstore"
-
-	"github.com/pkg/errors"
 )
 
 var (

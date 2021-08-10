@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erda-project/erda/pkg/terminal/table"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/terminal/table"
 )
 
 // Metrics 返回单调递增的 openapi metrics
