@@ -32,6 +32,10 @@ jobs:
           fetch-depth: 0
       - name: Go generate files
         run: make prepare
+      - name: Build erda-cli
+        run: make cli
+      - name: SQL Lint
+        run: ./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
       - name: Set up Go mod
         run: go mod tidy
       - name: Run Lint
