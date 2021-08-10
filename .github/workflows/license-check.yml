@@ -22,7 +22,7 @@ on:
       - release/*
   pull_request:
 jobs:
-  CI:
+  LICENSE-CHECK:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
