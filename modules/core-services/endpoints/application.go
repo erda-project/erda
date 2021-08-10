@@ -526,15 +526,22 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
 	unpinedAppDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
 
+	projectIDs := make([]uint64, 0, len(applications))
+	for _, app := range applications {
+		projectIDs = append(projectIDs, uint64(app.ProjectID))
+	}
+
+	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
+	if err != nil {
+		return apierrors.ErrListApplication.InternalError(err).ToResp(), nil
+	}
+
 	for i := range applications {
 		var projectName string
 		var projectDisplayName string
-		project, err := e.project.GetModelProject(applications[i].ProjectID)
-		if err == nil {
+		if project, ok := projectMap[applications[i].ProjectID]; ok {
 			projectName = project.Name
 			projectDisplayName = project.DisplayName
-		} else {
-			logrus.Error(err)
 		}
 
 		if params.IsSimple {
