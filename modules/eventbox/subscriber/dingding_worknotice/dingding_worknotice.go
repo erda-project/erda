@@ -20,14 +20,14 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/subscriber/dingding"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var (

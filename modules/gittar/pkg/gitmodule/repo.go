@@ -27,12 +27,12 @@ import (
 	"sync"
 	"time"
 
+	git "github.com/libgit2/git2go/v30"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
-
-	git "github.com/libgit2/git2go/v30"
-	"github.com/sirupsen/logrus"
 )
 
 // Repository represents a Git repository.

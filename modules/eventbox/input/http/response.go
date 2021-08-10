@@ -16,10 +16,10 @@ package http
 import (
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/server/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 func genResponse(dispatchErrs *errors.DispatchError) types.HTTPResponse {

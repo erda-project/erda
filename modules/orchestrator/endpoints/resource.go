@@ -18,10 +18,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/erda-project/erda/apistructs"
-
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )

@@ -18,10 +18,10 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/pkg/jsonstore/stm"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
-	"github.com/pkg/errors"
 )
 
 var (

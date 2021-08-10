@@ -21,15 +21,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/modules/eventbox/webhook"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var (

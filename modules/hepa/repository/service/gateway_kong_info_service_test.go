@@ -16,8 +16,9 @@ package service
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	"github.com/xormplus/xorm"
+
+	"github.com/erda-project/erda/modules/hepa/repository/orm"
 )
 
 func TestGatewayKongInfoServiceImpl_acquireKongAddr(t *testing.T) {

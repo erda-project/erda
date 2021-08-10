@@ -14,9 +14,9 @@
 package main
 
 import (
-	"github.com/erda-project/erda/tools/cli/command"
-
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
 var (

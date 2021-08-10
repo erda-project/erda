@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/ws"
 	"github.com/erda-project/erda/modules/pkg/websocket"
-
-	"github.com/sirupsen/logrus"
 )
 
 type WsPublisher struct {

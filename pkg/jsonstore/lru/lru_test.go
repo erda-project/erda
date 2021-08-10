@@ -17,9 +17,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/jsonstore/mem"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/jsonstore/mem"
 )
 
 var objects = [][2]string{

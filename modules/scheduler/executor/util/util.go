@@ -22,11 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/http/httpclient"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type serviceDepends map[string]struct{}

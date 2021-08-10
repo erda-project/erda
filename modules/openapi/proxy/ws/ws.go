@@ -20,9 +20,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erda-project/erda/modules/openapi/api"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/openapi/api"
 )
 
 type ReverseProxy struct {

@@ -14,11 +14,12 @@
 package trace
 
 import (
-	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {

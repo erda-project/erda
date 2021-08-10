@@ -19,10 +19,11 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/ucauth"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetLoginMethodMap(t *testing.T) {

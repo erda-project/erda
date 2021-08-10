@@ -18,12 +18,12 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/pkg/goroutinepool"
-
-	"github.com/sirupsen/logrus"
 )
 
 // Filter的最后一个，实际上用来做后续对 message 的操作
