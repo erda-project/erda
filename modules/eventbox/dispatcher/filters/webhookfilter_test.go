@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/modules/eventbox/webhook"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func testWebhookFilter(t *testing.T, f Filter) {

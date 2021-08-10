@@ -16,11 +16,11 @@ package servicegroup
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/task"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/task"
 )
 
 func (s ServiceGroupImpl) Info(ctx context.Context, namespace string, name string) (apistructs.ServiceGroup, error) {

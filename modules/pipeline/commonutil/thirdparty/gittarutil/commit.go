@@ -14,10 +14,10 @@
 package gittarutil
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
-
-	"github.com/pkg/errors"
 )
 
 type Commit struct {

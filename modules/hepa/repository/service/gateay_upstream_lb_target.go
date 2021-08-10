@@ -14,11 +14,11 @@
 package service
 
 import (
-	. "github.com/erda-project/erda/modules/hepa/common/vars"
-	"github.com/erda-project/erda/modules/hepa/repository/orm"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	. "github.com/erda-project/erda/modules/hepa/common/vars"
+	"github.com/erda-project/erda/modules/hepa/repository/orm"
 )
 
 type GatewayUpstreamLbTargetServiceImpl struct {

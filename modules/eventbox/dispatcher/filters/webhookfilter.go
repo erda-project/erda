@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/modules/eventbox/webhook"
-
-	"github.com/sirupsen/logrus"
 )
 
 type WebhookFilter struct {

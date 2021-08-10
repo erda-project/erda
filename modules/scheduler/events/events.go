@@ -21,6 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -28,9 +31,6 @@ import (
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var (

@@ -22,11 +22,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erda-project/erda/modules/eventbox/conf"
-	"github.com/erda-project/erda/modules/eventbox/server/types"
-
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/eventbox/conf"
+	"github.com/erda-project/erda/modules/eventbox/server/types"
 )
 
 type Server struct {

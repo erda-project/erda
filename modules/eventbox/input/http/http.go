@@ -18,12 +18,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/input"
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	stypes "github.com/erda-project/erda/modules/eventbox/server/types"
 	"github.com/erda-project/erda/modules/eventbox/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 type HttpInput struct {

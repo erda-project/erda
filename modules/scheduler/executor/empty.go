@@ -16,10 +16,10 @@ package executor
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Empty struct {

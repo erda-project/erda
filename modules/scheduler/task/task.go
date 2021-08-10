@@ -17,12 +17,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type Action int

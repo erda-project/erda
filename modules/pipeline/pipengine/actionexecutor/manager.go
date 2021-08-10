@@ -14,12 +14,11 @@
 package actionexecutor
 
 import (
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-
-	"github.com/pkg/errors"
-
-	"github.com/sirupsen/logrus"
 )
 
 // Manager is an executor manager, it holds the all executor instances.

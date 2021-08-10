@@ -14,10 +14,10 @@
 package pipelineymlv1
 
 import (
-	"github.com/erda-project/erda/pkg/cron"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/cron"
 )
 
 func (y *PipelineYml) validateTriggers() error {

@@ -14,14 +14,14 @@
 package service
 
 import (
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type GatewayMockServiceImpl struct {

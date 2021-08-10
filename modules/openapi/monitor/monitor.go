@@ -17,11 +17,11 @@ package monitor
 import (
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/persist_stat"
 	"github.com/erda-project/erda/pkg/persist_stat/backend"
-
-	"github.com/sirupsen/logrus"
 )
 
 var (

@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/persist_stat"
-
-	"github.com/sirupsen/logrus"
 )
 
 type accumValue struct {

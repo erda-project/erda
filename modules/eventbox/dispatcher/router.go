@@ -16,11 +16,11 @@ package dispatcher
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/filters"
 	"github.com/erda-project/erda/modules/eventbox/types"
-
-	"github.com/sirupsen/logrus"
 )
 
 // dispatcher 内部处理 message 的相关逻辑

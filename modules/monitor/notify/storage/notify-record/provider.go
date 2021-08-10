@@ -14,13 +14,13 @@
 package notify_record
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda-infra/providers/mysql"
-
 	"github.com/jinzhu/gorm"
 	"github.com/recallsong/go-utils/logs"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda-infra/providers/mysql"
 )
 
 type define struct{}

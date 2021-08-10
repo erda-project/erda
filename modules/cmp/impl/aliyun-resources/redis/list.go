@@ -18,14 +18,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/pkg/strutil"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
 	kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/sirupsen/logrus"
 
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // list instance

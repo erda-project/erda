@@ -18,13 +18,13 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
 const kindNameFormat = `^[A-Z0-9]+$`

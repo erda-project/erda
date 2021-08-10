@@ -139,8 +139,12 @@ normalize:
 	done;
 
 # check copyright header
-copyright:
-	go run tools/gotools/copyright/main.go
+check-copyright:
+	go run tools/gotools/go-copyright/main.go
+
+# check go imports order
+check-imports:
+	go run tools/gotools/go-imports-order/main.go
 
 # docker image
 build-image: prepare

@@ -18,13 +18,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/apistructs"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	libvpc "github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 )
 

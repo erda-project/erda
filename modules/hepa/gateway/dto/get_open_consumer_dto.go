@@ -14,10 +14,10 @@
 package dto
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type GetOpenConsumersDto struct {

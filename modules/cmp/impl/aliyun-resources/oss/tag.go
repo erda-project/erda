@@ -17,13 +17,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang-collections/collections/set"
-
-	"github.com/erda-project/erda/apistructs"
-
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 )
 

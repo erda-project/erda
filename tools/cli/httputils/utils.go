@@ -18,9 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
-
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type Resp struct {

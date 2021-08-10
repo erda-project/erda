@@ -19,12 +19,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/modules/eventbox/register/label"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/pkg/jsonstore"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Register interface {

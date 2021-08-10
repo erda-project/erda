@@ -18,11 +18,11 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-
-	"github.com/sirupsen/logrus"
 )
 
 // CDPCallback cdp hook的回调

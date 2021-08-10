@@ -17,13 +17,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/constant"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	_ "github.com/erda-project/erda/pkg/monitor"
 	"github.com/erda-project/erda/pkg/persist_stat"
 	"github.com/erda-project/erda/pkg/persist_stat/backend"
-
-	"github.com/sirupsen/logrus"
 )
 
 var (

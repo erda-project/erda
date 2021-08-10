@@ -16,10 +16,10 @@ package pipelineymlv1
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	. "github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/pipelineymlvars"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1/steptasktype"
-
-	"github.com/stretchr/testify/require"
 )
 
 func getBytePipelineYml() []byte {

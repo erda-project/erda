@@ -16,11 +16,11 @@ package cloudstorage
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/pkg/cloudstorage/minioclient"
-	"github.com/erda-project/erda/pkg/cloudstorage/ossclient"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/cloudstorage/minioclient"
+	"github.com/erda-project/erda/pkg/cloudstorage/ossclient"
 )
 
 type Client interface {

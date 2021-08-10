@@ -18,11 +18,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	stypes "github.com/erda-project/erda/modules/eventbox/server/types"
-	"github.com/erda-project/erda/modules/eventbox/types"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	stypes "github.com/erda-project/erda/modules/eventbox/server/types"
+	"github.com/erda-project/erda/modules/eventbox/types"
 )
 
 type PutRequest struct {

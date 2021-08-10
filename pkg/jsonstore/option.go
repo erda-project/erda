@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/pkg/jsonstore/cacheetcd"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/jsonstore/lru"
@@ -25,8 +27,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/memetcd"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/jsonstore/timeout"
-
-	"github.com/sirupsen/logrus"
 )
 
 type BackendType = int

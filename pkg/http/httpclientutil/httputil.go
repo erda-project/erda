@@ -17,10 +17,10 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpclient"
-
-	"github.com/pkg/errors"
 )
 
 type RespForRead struct {

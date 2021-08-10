@@ -19,10 +19,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
+
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
 const (

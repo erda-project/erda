@@ -15,11 +15,12 @@ package util
 
 import (
 	"bytes"
-	"gotest.tools/assert"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestHandleRequest(t *testing.T) {

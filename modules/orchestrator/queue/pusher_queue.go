@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/modules/orchestrator/conf"
-
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 )
 
 type QueueEnum string

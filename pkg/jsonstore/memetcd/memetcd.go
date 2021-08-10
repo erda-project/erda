@@ -20,12 +20,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/jsonstore/mem"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type MemEtcdStore struct {

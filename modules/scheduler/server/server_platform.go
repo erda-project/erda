@@ -20,10 +20,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/task"
-
-	"github.com/sirupsen/logrus"
 )
 
 func (s *Server) epCreatePlatform(ctx context.Context, r *http.Request, vars map[string]string) (Responser, error) {

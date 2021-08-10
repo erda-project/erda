@@ -19,10 +19,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/erda-project/erda/pkg/http/httpclient"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 // call this in form of goroutine
