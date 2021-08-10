@@ -11,8 +11,6 @@
 - Helm 3 +
 - 泛域名(可选项，用于访问 Erda 平台，如 *.erda.io)
 
-
-
 ### 安装 Erda
 
 1. 在您的 Kubernetes Master 节点上下载 [压缩包](https://github.com/erda-project/erda/releases) 并解压
@@ -24,8 +22,6 @@
    cd erda
    ```
 
-
-
 2. 在 Kubernetes Master 节点上设置安装 Erda 时的必要配置
 
    - 请确保 `~/.kube/` 路径下有 **kubeconfig** 文件
@@ -33,8 +29,6 @@
       	- `certificate-authority-data`
       	- `client-certificate-data`
       	- `client-key-data`
-
-      
       
    - 设置 Erda 安装前的配置并且执行 `prepare.sh` 脚本
    
@@ -58,8 +52,6 @@
      bash scripts/prepare.sh
      ```
 
-     
-
    - 修改 docker daemon 文件中的 `insecure-registries` 字段
    
       ```shell
@@ -73,8 +65,6 @@
       # 重启 docker daemon
       systemctl restart docker
       ```
-
-      
    
    - 在每个节点上设置 NFS 作为网络共享存储
    
@@ -94,9 +84,6 @@
         bash scripts/storage_prepare.sh
         ```
       
-      
-      
-      
    - 您需要在 LB 机器上开放 80， 443 端口，这台机器将承载所有的外部流量
    
       ```shell
@@ -107,22 +94,18 @@
    
       - 记住节点的 IP，您将会在后续设置**泛域名**时用到该节点 IP
 
-
-
 3. 通过 Helm 安装 Erda Helm 包，并且等待所有的 Erda 组件准备就绪
 
    ```shell
-   # 安装 erda-base
-   helm install package/erda-base-$(cat VERSION).tgz --generate-name
+   # 安装 erda-base，erda 平台依赖的 operator 
+   helm install erda-base package/erda-base-$(cat VERSION).tgz 
    
-   # 安装 erda-addons
-   helm install package/erda-addons-$(cat VERSION).tgz --generate-name
+   # 安装 erda-addons，erda 平台依赖的中间件
+   helm install erda-addons package/erda-addons-$(cat VERSION).tgz 
    
-   # 安装 erda
-   helm install package/erda-$(cat VERSION).tgz --generate-name
+   # 安装 erda 平台
+   helm install erda package/erda-$(cat VERSION).tgz 
    ```
-
-   
 
 4. 安装 Erda 平台组件之后
 
@@ -135,13 +118,9 @@
      bash scripts/push-ext.sh
      ```
 
-     
-
    - 如果您购买了真实的泛域名，您需要将其与上述获取到的 LB 节点 IP 绑定
 
      > 举例如下，假设您有 LB 节点的 IP 为 10.0.0.1，泛域名(ERDA_GENERIC_DOMAIN 变量中设置)为 `erda.io`, 您需要将 LB 节点 IP 与泛域名在您的解析器（如 DNS 或 F5 服务器）上绑定
-
-     
 
    - 如果没有真实的泛域名地址, 您需要在您浏览器所在的机器上将下列的 URL 写到 `etc/hosts` 文件中，请替换 IP 为 **LB 节点**的 IP
 
@@ -156,14 +135,32 @@
      10.0.0.1 erda-test-org.erda.io
      ```
 
-     
-
    - 将您创建好的组织名称作为标签设置到您的 Kubernetes 节点上（组织名称是 Erda 中的一种组）
 
      ```shell
      kubectl label node <node_name> dice/org-<orgname>=true --overwrite
      ```
 
-     
+5. 最后您可以通过浏览器访问 `http://erda.io`，并开始您的 Erda 之旅
 
-5. 在您设置过 `/etc/hosts` 文件的机器上用浏览器访问 `http://erda.io`，并开始您的 Erda 之旅
+## 卸载 Erda
+
+1. 通过 Helm 卸载 Erda
+
+   ```shell
+   # 卸载 erda
+   helm uninstall erda 
+
+   # 卸载 erda-addons
+   helm uninstall erda-addons 
+   
+   # 卸载 erda-base
+   helm uninstall erda-base 
+   ```
+   
+2. 删除初始化数据库的任务
+    
+   ```shell
+   # 配置之前安装时指定的 namespace
+   kubectl delete job dice-init-image -n ${ERDA_NAMESPACE}
+   ```
