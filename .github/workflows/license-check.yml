@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-name: CI AND IT
+name: License Check
 on:
   push:
     tags:
@@ -30,11 +30,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Go generate files
-        run: make prepare
-      - name: Run Build
-        run: make GO_BUILD_OPTIONS="-tags=musl"
-      - name: Run Test
-        run: |
-          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
-          curl -s https://codecov.io/bash | bash
+      - name: Check Copyright Header
+        run: make check-copyright
+
+    
