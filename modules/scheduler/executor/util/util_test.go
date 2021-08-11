@@ -14,9 +14,13 @@
 package util
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestParsePreserveProjects(t *testing.T) {
@@ -116,4 +120,48 @@ func TestCombineLabels(t *testing.T) {
 		"C": "v3",
 		"B": "v4",
 	}))
+}
+
+func TestGetClient(t *testing.T) {
+	clusterName := "fake-clusterName"
+	fakeAddress := "fake-address"
+	fakeToken := "fake-token"
+
+	_, _, err := GetClient(clusterName, nil)
+	assert.Equal(t, err, fmt.Errorf("cluster %s manage config is nil", clusterName))
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{
+		Type:    apistructs.ManageProxy,
+		Address: fakeAddress,
+	})
+	assert.Equal(t, err, fmt.Errorf("token or address is empty"))
+
+	mc1 := &apistructs.ManageConfig{
+		Type:    apistructs.ManageProxy,
+		Address: fakeAddress,
+		Token:   fakeToken,
+	}
+	address, _, err := GetClient(clusterName, mc1)
+	assert.Equal(t, strings.Contains(address, "inet://"), true)
+	assert.Equal(t, err, nil)
+
+	mc1.Type = apistructs.ManageToken
+	address, _, err = GetClient(clusterName, mc1)
+	assert.Equal(t, strings.Contains(address, "inet://"), false)
+	assert.Equal(t, err, nil)
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{
+		Type: apistructs.ManageCert,
+	})
+	assert.Equal(t, err, fmt.Errorf("cert or key is empty"))
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{})
+	assert.Equal(t, err, fmt.Errorf("manage type is not support"))
+
+	m2 := &apistructs.ManageConfig{
+		Type: apistructs.ManageCert,
+	}
+
+	_, _, err = GetClient(clusterName, m2)
+	assert.Equal(t, err, fmt.Errorf("cert or key is empty"))
 }
