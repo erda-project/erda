@@ -34,5 +34,5 @@ jobs:
         run: make prepare
       - name: Run Test
         run: |
-          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
+          make run-go-test
           curl -s https://codecov.io/bash | bash
