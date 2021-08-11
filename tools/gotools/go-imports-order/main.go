@@ -30,22 +30,21 @@ import (
 
 const LocalPrefix = "github.com/erda-project/erda"
 
-func checkAllFiles(dir string) ([]string, error) {
+func checkAllFiles() ([]string, error) {
 	var files []string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			// Skip directories like ".git".
-			if strings.HasPrefix(info.Name(), ".") {
+			if name := info.Name(); name != "." && strings.HasPrefix(name, ".") {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		// Skip git ignore files
-		relPath, err := filepath.Rel(dir, path)
-		if err == nil && ignoreMatcher != nil && ignoreMatcher.MatchesPath(relPath) {
+		if err == nil && ignoreMatcher != nil && ignoreMatcher.MatchesPath(path) {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
@@ -56,23 +55,23 @@ func checkAllFiles(dir string) ([]string, error) {
 			return nil
 		}
 		// Don't check testdata files.
-		if strings.Contains("/"+relPath, "/testdata/") {
+		if strings.Contains("/"+path, "/testdata/") {
 			return nil
 		}
 
-		needsFormat, err := checkFile(dir, path)
+		needsFormat, err := checkFile(path)
 		if err != nil {
 			return err
 		}
 		if needsFormat {
-			files = append(files, relPath)
+			files = append(files, path)
 		}
 		return nil
 	})
 	return files, err
 }
 
-func checkFile(dir, filename string) (bool, error) {
+func checkFile(filename string) (bool, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false, err
@@ -193,8 +192,7 @@ func init() {
 }
 
 func main() {
-	wd, _ := os.Getwd()
-	files, err := checkAllFiles(wd)
+	files, err := checkAllFiles()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
