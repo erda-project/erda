@@ -172,7 +172,7 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	if alertData.Attributes == nil {
 		alertData.Attributes = make(map[string]*structpb.Value)
 	}
-	alertData.Attributes[DiceOrgId] = structpb.NewNumberValue(float64(org.OrgID))
+	alertData.Attributes[DiceOrgId] = structpb.NewStringValue(strconv.Itoa(int(org.OrgID)))
 	alertData.Attributes[Domain] = structpb.NewStringValue(request.Domain)
 	alertData.Attributes[TenantGroup] = structpb.NewStringValue(request.TenantGroup)
 	alertData.Attributes[ProjectId] = structpb.NewStringValue(projectId)
