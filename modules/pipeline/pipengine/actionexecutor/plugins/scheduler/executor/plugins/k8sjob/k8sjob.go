@@ -298,10 +298,19 @@ func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (d
 	return nil, nil
 }
 
-// Inspect use kubectl describe job information
+// Inspect use kubectl describe pod information, return latest pod description for current job
 func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistructs.TaskInspect, error) {
-	d := describe.JobDescriber{k.client.ClientSet}
-	s, err := d.Describe(task.Extra.Namespace, logic.MakeJobName(task), describe.DescriberSettings{
+	jobPods, err := k.client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: logic.MakeJobLabelSelector(task),
+	})
+	if err != nil {
+		return apistructs.TaskInspect{}, err
+	}
+	if len(jobPods.Items) == 0 {
+		return apistructs.TaskInspect{}, errors.Errorf("get empty pods in job: %s", logic.MakeJobName(task))
+	}
+	d := describe.PodDescriber{k.client.ClientSet}
+	s, err := d.Describe(task.Extra.Namespace, jobPods.Items[len(jobPods.Items)-1].Name, describe.DescriberSettings{
 		ShowEvents: true,
 	})
 	if err != nil {

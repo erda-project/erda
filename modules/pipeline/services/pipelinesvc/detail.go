@@ -15,10 +15,12 @@ package pipelinesvc
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
@@ -95,8 +97,8 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 			if task.Result.Metadata == nil {
 				task.Result.Metadata = make([]apistructs.MetadataField, 0)
 			}
-			// add task inspect to result metadata if task status isn`t success
-			if !task.Status.IsSuccessStatus() && task.Result.Events != "" {
+			// add task events to result metadata if task status isn`t success and events it`s failed
+			if !task.Status.IsSuccessStatus() && task.Result.Events != "" && isEventsContainWarn(task.Result.Events) {
 				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
 					Name:  "task-events",
 					Value: task.Result.Events,
@@ -475,4 +477,23 @@ func findRunningStageID(p spec.Pipeline, tasks []spec.PipelineTask) uint64 {
 		}
 	}
 	return runningStageID
+}
+
+// isEventsContainWarn return k8s events is contain warn
+// Events:
+//  Type    Reason     Age   From               Message
+//  ----    ------     ----  ----               -------
+//  Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200
+//  Normal  Pulled     6s    kubelet            Container image "registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495" already present on machine
+func isEventsContainWarn(events string) bool {
+	eventLst := strings.Split(events, "\n")
+	if len(eventLst) <= 3 {
+		return false
+	}
+	for _, ev := range eventLst {
+		if strings.Contains(ev, corev1.EventTypeWarning) {
+			return true
+		}
+	}
+	return false
 }
