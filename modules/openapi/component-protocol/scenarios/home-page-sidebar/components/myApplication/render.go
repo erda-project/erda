@@ -60,6 +60,7 @@ func (this *MyApplication) getAppsNum(orgID string, queryStr string) (int, error
 		PageSize: 1,
 		PageNo:   1,
 		Query:    queryStr,
+		IsSimple: true,
 	}
 	appsDTO, err := this.ctxBdl.Bdl.GetAllMyApps(this.ctxBdl.Identity.UserID, uint64(orgIntId), req)
 	if err != nil {

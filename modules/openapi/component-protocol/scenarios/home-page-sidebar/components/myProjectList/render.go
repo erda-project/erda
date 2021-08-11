@@ -191,28 +191,6 @@ func (m *MyProjectList) getProjectDTO(orgID string, queryStr string) (*apistruct
 	return projectDTO, nil
 }
 
-func (this *MyProjectList) getProjectsNum(orgID string, queryStr string) (int, error) {
-	orgIntId, err := strconv.Atoi(orgID)
-	if err != nil {
-		return 0, err
-	}
-	req := apistructs.ProjectListRequest{
-		OrgID:    uint64(orgIntId),
-		PageNo:   1,
-		PageSize: 1,
-		Query:    queryStr,
-	}
-
-	projectDTO, err := this.ctxBdl.Bdl.ListMyProject(this.ctxBdl.Identity.UserID, req)
-	if err != nil {
-		return 0, err
-	}
-	if projectDTO == nil {
-		return 0, nil
-	}
-	return projectDTO.Total, nil
-}
-
 func (m *MyProjectList) addDataList(datas *apistructs.PagingProjectDTO) error {
 	var orgName string
 	dataList := make([]ProItem, 0)
@@ -267,10 +245,7 @@ func (this *MyProjectList) Render(ctx context.Context, c *apistructs.Component, 
 
 	switch event.Operation {
 	case apistructs.InitializeOperation:
-		prosNum, err := this.getProjectsNum(this.ctxBdl.Identity.OrgID, queryStr)
-		if err != nil {
-			return err
-		}
+		prosNum := this.State.ProNums
 		if prosNum == 0 && queryStr == "" {
 			this.Props.Visible = false
 			return nil

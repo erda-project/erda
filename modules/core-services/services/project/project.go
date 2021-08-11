@@ -387,6 +387,22 @@ func (p *Project) GetModelProject(projectID int64) (*model.Project, error) {
 	return &project, nil
 }
 
+func (p *Project) GetModelProjectsMap(projectIDs []uint64) (map[int64]*model.Project, error) {
+	_, projects, err := p.db.GetProjectsByIDs(projectIDs, &apistructs.ProjectListRequest{
+		PageNo:   1,
+		PageSize: len(projectIDs),
+	})
+	if err != nil {
+		return nil, errors.Errorf("failed to get projects, (%v)", err)
+	}
+
+	projectMap := make(map[int64]*model.Project)
+	for _, p := range projects {
+		projectMap[p.ID] = &p
+	}
+	return projectMap, nil
+}
+
 // FillQuota 根据项目资源使用情况填充项目资源配额
 func (p *Project) FillQuota(orgResources map[uint64]apistructs.OrgResourceInfo) error {
 	for k, v := range orgResources {

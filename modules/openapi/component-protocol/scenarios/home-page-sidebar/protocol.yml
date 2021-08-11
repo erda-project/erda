@@ -133,66 +133,51 @@ rendering:
     - name: createProjectTipWithoutOrg
     - name: myProject
     - name: myProjectTitle
+    - name: myApplication
       state:
         - name: "prosNum"
           value: "{{ myProject.prosNum }}"
+    - name: myApplicationTitle
     - name: joinedBrief
       state:
         - name: "prosNum"
-          value: "{{ myProjectTitle.prosNum }}"
+          value: "{{ myProject.prosNum }}"
+        - name: "appsNum"
+          value: "{{ myApplication.appsNum }}"
     - name: myProjectFilter
       state:
         - name: "prosNum"
-          value: "{{ myProjectTitle.prosNum }}"
+          value: "{{ myProject.prosNum }}"
     - name: myProjectList
       state:
         - name: "prosNum"
-          value: "{{ myProjectFilter.prosNum }}"
+          value: "{{ myProject.prosNum }}"
         - name: "values"
           value: "{{ myProjectFilter.values }}"
     - name: emptyProject
       state:
         - name: "prosNum"
-          value: "{{ myProjectList.prosNum }}"
+          value: "{{ myProject.prosNum }}"
     - name: projectTipWithOrg
       state:
         - name: "prosNum"
-          value: "{{ emptyProject.prosNum }}"
+          value: "{{ myProject.prosNum }}"
     - name: projectTipWithoutOrg
-      state:
-        - name: "prosNum"
-          value: "{{ projectTipWithOrg.prosNum }}"
     - name: createProjectTip
       state:
         - name: "prosNum"
-          value: "{{ projectTipWithoutOrg.prosNum }}"
-    - name: myApplication
-      state:
-        - name: "prosNum"
-          value: "{{ createProjectTip.prosNum }}"
-    - name: myApplicationTitle
-      state:
-        - name: "prosNum"
-          value: "{{ myApplication.prosNum }}"
-        - name: "appsNum"
-          value: "{{ myApplication.appsNum }}"
+          value: "{{ myProject.prosNum }}"
     - name: myApplicationFilter
       state:
-        - name: "prosNum"
-          value: "{{ myApplicationTitle.prosNum }}"
         - name: "appsNum"
-          value: "{{ myApplicationTitle.appsNum }}"
+          value: "{{ myApplication.appsNum }}"
     - name: myApplicationList
       state:
-        - name: "prosNum"
-          value: "{{ myApplicationFilter.prosNum }}"
         - name: "appsNum"
-          value: "{{ myApplicationFilter.appsNum }}"
+          value: "{{ myApplication.appsNum }}"
     - name: emptyApplication
       state:
         - name: "prosNum"
-          value: "{{ myApplicationList.prosNum }}"
+          value: "{{ myProject.prosNum }}"
         - name: "appsNum"
-          value: "{{ myApplicationList.appsNum }}"
-    - name: myApplicationTitle
-
+          value: "{{ myApplication.appsNum }}"

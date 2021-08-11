@@ -350,7 +350,7 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 	}
 
 	t.setBaseComponentValue()
-	if t.ctxBdl.Identity.OrgID == "" || t.State.ProsNum == 0 {
+	if t.ctxBdl.Identity.OrgID == "" {
 		t.Props.Visible = false
 		return nil
 	}
@@ -400,6 +400,10 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 			t.State.Total = workDatas.Data.TotalProject
 			t.addWorkbenchData(workDatas, orgName, orgDisplayName)
 		}
+	}
+	t.State.ProsNum = t.State.Total
+	if t.State.ProsNum == 0 {
+		t.Props.Visible = false
 	}
 	return nil
 }

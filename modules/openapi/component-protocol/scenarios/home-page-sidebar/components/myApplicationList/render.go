@@ -202,6 +202,7 @@ func (m *MyApplicationList) getAppDTO(orgID string, queryStr string) (*apistruct
 		PageNo:   m.State.PageNo,
 		Query:    queryStr,
 		OrderBy:  "name",
+		IsSimple: true,
 	}
 	appsDTO, err := m.ctxBdl.Bdl.GetAllMyApps(m.ctxBdl.Identity.UserID, uint64(orgIDInt), req)
 	if err != nil {

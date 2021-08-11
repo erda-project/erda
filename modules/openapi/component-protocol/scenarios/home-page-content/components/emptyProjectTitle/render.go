@@ -141,11 +141,7 @@ func (e *EmptyProjectTitle) Render(ctx context.Context, c *apistructs.Component,
 		e.Props.Visible = true
 		return nil
 	}
-	prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
-	if err != nil {
-		return err
-	}
-	if prosNum == 0 {
+	if e.State.ProsNum == 0 {
 		req := &apistructs.PermissionCheckRequest{
 			UserID:   e.ctxBdl.Identity.UserID,
 			Scope:    apistructs.OrgScope,

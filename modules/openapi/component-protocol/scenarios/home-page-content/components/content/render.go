@@ -71,15 +71,6 @@ func (this *Content) Render(ctx context.Context, c *apistructs.Component, scenar
 	if err := this.SetCtxBundle(ctx); err != nil {
 		return err
 	}
-	if this.ctxBdl.Identity.OrgID != "" {
-		workbenchData, err := this.getWorkbenchData()
-		if err != nil {
-			return err
-		}
-		if workbenchData != nil {
-			this.State.ProsNum = workbenchData.Data.TotalProject
-		}
-	}
 	this.Type = "Container"
 	this.Props.Visible = true
 	return nil

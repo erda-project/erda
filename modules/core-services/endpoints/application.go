@@ -526,18 +526,38 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
 	unpinedAppDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
 
+	projectIDs := make([]uint64, 0, len(applications))
+	for _, app := range applications {
+		projectIDs = append(projectIDs, uint64(app.ProjectID))
+	}
+
+	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
+	if err != nil {
+		return apierrors.ErrListApplication.InternalError(err).ToResp(), nil
+	}
+
 	for i := range applications {
+		var projectName string
+		var projectDisplayName string
+		if project, ok := projectMap[applications[i].ProjectID]; ok {
+			projectName = project.Name
+			projectDisplayName = project.DisplayName
+		}
+
 		if params.IsSimple {
 			appDTO := apistructs.ApplicationDTO{
-				Pined:       applications[i].Pined,
-				Name:        applications[i].Name,
-				Desc:        applications[i].Desc,
-				Creator:     applications[i].UserID,
-				CreatedAt:   applications[i].CreatedAt,
-				UpdatedAt:   applications[i].UpdatedAt,
-				ID:          uint64(applications[i].ID),
-				DisplayName: applications[i].DisplayName,
-				IsPublic:    applications[i].IsPublic,
+				Pined:              applications[i].Pined,
+				Name:               applications[i].Name,
+				Desc:               applications[i].Desc,
+				Creator:            applications[i].UserID,
+				CreatedAt:          applications[i].CreatedAt,
+				UpdatedAt:          applications[i].UpdatedAt,
+				ID:                 uint64(applications[i].ID),
+				DisplayName:        applications[i].DisplayName,
+				IsPublic:           applications[i].IsPublic,
+				ProjectID:          uint64(applications[i].ProjectID),
+				ProjectName:        projectName,
+				ProjectDisplayName: projectDisplayName,
 			}
 			if appDTO.Pined {
 				pinedAppDTOs = append(pinedAppDTOs, appDTO)
@@ -552,16 +572,6 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 			appDTO.MemberRoles = roles
 		}
 
-		// 填充项目名称
-		var projectName string
-		var projectDisplayName string
-		project, err := e.project.Get(applications[i].ProjectID)
-		if err == nil {
-			projectName = project.Name
-			projectDisplayName = project.DisplayName
-		} else {
-			logrus.Error(err)
-		}
 		appDTO.ProjectName = projectName
 		appDTO.ProjectDisplayName = projectDisplayName
 		if appDTO.Pined {

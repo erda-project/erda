@@ -71,22 +71,19 @@ rendering:
     - name: emptyOrgTitle
     - name: emptyOrgContent
     - name: content
+    - name: tableGroup
     - name: emptyProjectIssue
       state:
         - name: "prosNum"
-          value: "{{ content.prosNum }}"
+          value: "{{ tableGroup.prosNum }}"
     - name: title
       state:
         - name: "prosNum"
-          value: "{{ emptyProjectIssue.prosNum }}"
+          value: "{{ tableGroup.prosNum }}"
     - name: emptyProjectTip
       state:
         - name: "prosNum"
-          value: "{{ title.prosNum }}"
-    - name: tableGroup
-      state:
-        - name: "prosNum"
-          value: "{{ emptyProjectTip.prosNum }}"
+          value: "{{ tableGroup.prosNum }}"
     - name: emptyProjectText
       state:
         - name: "prosNum"
@@ -94,8 +91,8 @@ rendering:
     - name: emptyProjectTitle
       state:
         - name: "prosNum"
-          value: "{{ emptyProjectText.prosNum }}"
+          value: "{{ tableGroup.prosNum }}"
     - name: emptyProjectContent
       state:
         - name: "prosNum"
-          value: "{{ emptyProjectTitle.prosNum }}"
+          value: "{{ tableGroup.prosNum }}"
