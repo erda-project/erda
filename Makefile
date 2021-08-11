@@ -146,6 +146,10 @@ check-copyright:
 check-imports:
 	go run tools/gotools/go-imports-order/main.go
 
+# test and generate go.test.sum
+run-go-test:
+	go run tools/gotools/go-test-sum/main.go
+
 # docker image
 build-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build
