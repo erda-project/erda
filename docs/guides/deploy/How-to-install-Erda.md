@@ -133,7 +133,7 @@
 
 ### Uninstall Erda
 
-1. Uninstall Erda via Helm
+Uninstall Erda via Helm
 
    ```shell
    helm uninstall erda 
@@ -141,11 +141,4 @@
    helm uninstall erda-addons 
    
    helm uninstall erda-base 
-   ```
-
-2. Delete the job of initializing the database
-
-   ```shell
-   # Configure the namespace specified during the previous installation
-   kubectl delete job dice-init-image -n ${ERDA_NAMESPACE}
    ```
