@@ -61,11 +61,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		return 0, apierrors.ErrCreateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
-	count, err := svc.db.CountSceneBySetAndName(req.SetID, req.Name)
-	if err != nil {
-		return 0, err
-	}
-	if count > 0 {
+	if ok := svc.checkSceneSetSameNameScene(req.SetID, req.Name, 0); !ok {
 		return 0, apierrors.ErrCreateAutoTestScene.AlreadyExists()
 	}
 
@@ -174,7 +170,7 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 		return 0, err
 	}
 	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
-		return 0, apierrors.ErrCreateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
+		return 0, apierrors.ErrUpdateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
 	scene, err := svc.db.GetAutotestScene(req.SceneID)
@@ -182,11 +178,7 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 		return 0, err
 	}
 
-	count, err := svc.db.CountSceneBySetAndName(req.SetID, req.Name)
-	if err != nil {
-		return 0, err
-	}
-	if count > 1 || count == 1 && req.Name != scene.Name {
+	if ok := svc.checkSceneSetSameNameScene(req.SetID, req.Name, scene.ID); !ok {
 		return 0, apierrors.ErrUpdateAutoTestScene.AlreadyExists()
 	}
 
@@ -211,13 +203,11 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	var preID uint64
 	// 移动到另一scene set
 	if req.GroupID > 0 {
-		count, err := svc.db.CountSceneBySetAndName(uint64(req.GroupID), req.Name)
-		if err != nil {
-			return 0, err
-		}
-		if count > 0 {
+
+		if ok := svc.checkSceneSetSameNameScene(uint64(req.GroupID), req.Name, req.ID); !ok {
 			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
 		}
+
 		_, scenes, err := svc.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: uint64(req.GroupID)})
 		if err != nil {
 			return 0, err
@@ -239,6 +229,10 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 		}
 		preID = id
 		req.GroupID = int64(setID)
+
+		if ok := svc.checkSceneSetSameNameScene(uint64(req.GroupID), req.Name, req.ID); !ok {
+			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
+		}
 	}
 	err := svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID))
 	if err != nil {
@@ -246,6 +240,28 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	}
 
 	return req.ID, nil
+}
+
+func (svc *Service) checkSceneSetSameNameScene(sceneSetID uint64, sceneName string, sceneID uint64) bool {
+	dbScenes, err := svc.db.FindSceneBySetAndName(sceneSetID, sceneName)
+	if err != nil {
+		return false
+	}
+	var checkExistScenes []dao.AutoTestScene
+	for _, rangeScene := range dbScenes {
+		// mysql not case sensitive
+		if rangeScene.Name != sceneName {
+			continue
+		}
+		if rangeScene.ID == sceneID {
+			continue
+		}
+		checkExistScenes = append(checkExistScenes, rangeScene)
+	}
+	if len(checkExistScenes) >= 1 {
+		return false
+	}
+	return true
 }
 
 // GetAutotestScene 获取场景
