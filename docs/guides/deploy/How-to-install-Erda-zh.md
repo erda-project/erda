@@ -132,7 +132,7 @@
 
 ## 卸载 Erda
 
-1. 通过 Helm 卸载 Erda
+通过 Helm 卸载 Erda
 
    ```shell
    # 卸载 erda
@@ -143,11 +143,4 @@
    
    # 卸载 erda-base
    helm uninstall erda-base 
-   ```
-   
-2. 删除初始化数据库的任务
-    
-   ```shell
-   # 配置之前安装时指定的 namespace
-   kubectl delete job dice-init-image -n ${ERDA_NAMESPACE}
    ```
