@@ -1,0 +1,287 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package action
+
+import (
+	"context"
+	"strconv"
+	"strings"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+)
+
+// testSceneRun testSceneRun component protocol
+func testSceneRun(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	projectId, err := strconv.ParseInt(bdl.InParams["projectId"].(string), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	c.Operations = map[string]interface{}{
+		"change": map[string]changeStruct{
+			"params.test_space": {
+				Key:    "changeTestSpace",
+				Reload: true,
+			},
+			"params.test_scene_set": {
+				Key:    "changeTestSet",
+				Reload: true,
+			},
+		},
+	}
+	var field []apistructs.FormPropItem
+	props, ok := c.Props.(map[string]interface{})
+	if !ok {
+		return err
+	}
+	for key, val := range props {
+		if key == "fields" {
+			field = val.([]apistructs.FormPropItem)
+			break
+		}
+	}
+
+	spaces, err := bdl.Bdl.ListTestSpace(projectId, 500, 1)
+	if err != nil {
+		return err
+	}
+	testSpaces := make([]map[string]interface{}, 0, spaces.Total)
+	for _, v := range spaces.List {
+		testSpaces = append(testSpaces, map[string]interface{}{"name": v.Name, "value": v.ID})
+	}
+	testSceneSets := make([]map[string]interface{}, 0)
+
+	testScenes := make([]map[string]interface{}, 0)
+
+	formData := make(map[string]interface{})
+	newMap, ok := c.State["formData"].(map[string]interface{})
+	if !ok {
+		newMap = nil
+	}
+
+	if strings.EqualFold(string(event.Operation), "changeTestSpace") {
+
+		formData = changeTestSpace(newMap)
+
+		params, ok := formData["params"].(map[string]interface{})
+		if !ok {
+			params = nil
+		}
+		space, _ := params["test_space"].(float64)
+		spaceId := uint64(space)
+		sceneSetReq := apistructs.SceneSetRequest{
+			SpaceID: spaceId,
+		}
+		sceneSetReq.UserID = bdl.Identity.UserID
+		sceneSets, err := bdl.Bdl.GetSceneSets(sceneSetReq)
+		if err != nil {
+			return err
+		}
+		for _, v := range sceneSets {
+			testSceneSets = append(testSceneSets, map[string]interface{}{"name": v.Name, "value": v.ID})
+		}
+	} else if strings.EqualFold(string(event.Operation), "changeTestSet") {
+
+		formData = changeTestSet(newMap)
+
+		params, ok := formData["params"].(map[string]interface{})
+		if !ok {
+			params = nil
+		}
+
+		space, _ := params["test_space"].(float64)
+		spaceId := uint64(space)
+		sceneSetReq := apistructs.SceneSetRequest{
+			SpaceID: spaceId,
+		}
+		sceneSetReq.UserID = bdl.Identity.UserID
+		sceneSets, err := bdl.Bdl.GetSceneSets(sceneSetReq)
+		if err != nil {
+			return err
+		}
+		for _, v := range sceneSets {
+			testSceneSets = append(testSceneSets, map[string]interface{}{"name": v.Name, "value": v.ID})
+		}
+
+		set, _ := params["test_scene_set"].(float64)
+		setId := uint64(set)
+		sceneReq := apistructs.AutotestSceneRequest{
+			SetID: setId,
+		}
+		sceneReq.UserID = bdl.Identity.UserID
+		_, scenes, err := bdl.Bdl.ListAutoTestScene(sceneReq)
+		if err != nil {
+			return err
+		}
+		for _, v := range scenes {
+			testScenes = append(testScenes, map[string]interface{}{"name": v.Name, "value": v.ID})
+		}
+	} else {
+		if actionData, ok := bdl.InParams["actionData"].(map[string]interface{}); ok {
+			if params, ok := actionData["params"]; ok {
+				param := params.(map[string]interface{})
+				formData = actionData
+
+				space, _ := param["test_space"].(float64)
+				spaceId := uint64(space)
+				sceneSetReq := apistructs.SceneSetRequest{
+					SpaceID: spaceId,
+				}
+				sceneSetReq.UserID = bdl.Identity.UserID
+				sceneSets, err := bdl.Bdl.GetSceneSets(sceneSetReq)
+				if err != nil {
+					return err
+				}
+				for _, v := range sceneSets {
+					testSceneSets = append(testSceneSets, map[string]interface{}{"name": v.Name, "value": v.ID})
+				}
+
+				set, _ := param["test_scene_set"].(float64)
+				setId := uint64(set)
+				sceneReq := apistructs.AutotestSceneRequest{
+					SetID: setId,
+				}
+				sceneReq.UserID = bdl.Identity.UserID
+				_, scenes, err := bdl.Bdl.ListAutoTestScene(sceneReq)
+				if err != nil {
+					return err
+				}
+				for _, v := range scenes {
+					testScenes = append(testScenes, map[string]interface{}{"name": v.Name, "value": v.ID})
+				}
+			}
+		}
+	}
+	// 获取全局配置
+	globalConfigRequest := apistructs.AutoTestGlobalConfigListRequest{
+		ScopeID: bdl.InParams["projectId"].(string),
+		Scope:   "project-autotest-testcase",
+	}
+	globalConfigRequest.UserID = bdl.Identity.UserID
+
+	globalConfigs, err := bdl.Bdl.ListAutoTestGlobalConfig(globalConfigRequest)
+	if err != nil {
+		return err
+	}
+	cms := make([]map[string]interface{}, 0, len(globalConfigs))
+	for _, v := range globalConfigs {
+		cms = append(cms, map[string]interface{}{"name": v.DisplayName, "value": v.Ns})
+	}
+
+	newField := fillFields(field, testSpaces, testSceneSets, testScenes, cms)
+	newProps := map[string]interface{}{
+		"fields": newField,
+	}
+	c.State["formData"] = formData
+	c.Props = newProps
+	return nil
+}
+
+func changeTestSpace(newMap map[string]interface{}) map[string]interface{} {
+	formData := newMap
+	if params, ok := formData["params"].(map[string]interface{}); ok {
+		if _, ok := params["test_scene_set"]; ok {
+			delete(params, "test_scene_set")
+		}
+		if _, ok := params["test_scene"]; ok {
+			delete(params, "test_scene")
+		}
+		formData["params"] = params
+		return formData
+	}
+	return formData
+}
+
+func changeTestSet(newMap map[string]interface{}) map[string]interface{} {
+	formData := newMap
+	if params, ok := formData["params"].(map[string]interface{}); ok {
+		if _, ok := params["test_scene"]; ok {
+			delete(params, "test_scene")
+		}
+		formData["params"] = params
+		return formData
+	}
+	return formData
+}
+
+func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interface{}, testSceneSets []map[string]interface{}, testScenes []map[string]interface{}, cms []map[string]interface{}) []apistructs.FormPropItem {
+
+	// Add task parameters
+	taskParams := apistructs.FormPropItem{
+		Component: "formGroup",
+		ComponentProps: map[string]interface{}{
+			"title": "任务参数",
+		},
+		Group: "params",
+		Key:   "params",
+	}
+	spaceField := apistructs.FormPropItem{
+		Label:     "测试空间",
+		Component: "select",
+		Required:  true,
+		Key:       "params.test_space",
+		ComponentProps: map[string]interface{}{
+			"options": testSpaces,
+		},
+		Group: "params",
+	}
+	sceneSetField := apistructs.FormPropItem{
+		Label:     "场景集",
+		Component: "select",
+		Required:  true,
+		Key:       "params.test_scene_set",
+		ComponentProps: map[string]interface{}{
+			"options": testSceneSets,
+		},
+		Group: "params",
+	}
+	if testSceneSets != nil {
+
+	}
+
+	sceneField := apistructs.FormPropItem{
+		Label:     "场景",
+		Component: "select",
+		Required:  true,
+		Key:       "params.test_scene",
+		ComponentProps: map[string]interface{}{
+			"options": testScenes,
+		},
+		Group: "params",
+	}
+	globalConfigField := apistructs.FormPropItem{
+		Label:     "参数配置",
+		Component: "select",
+		Required:  true,
+		Key:       "params.cms",
+		ComponentProps: map[string]interface{}{
+			"options": cms,
+		},
+		Group: "params",
+	}
+	var newField []apistructs.FormPropItem
+	for _, val := range field {
+		newField = append(newField, val)
+		if strings.EqualFold(val.Label, "执行条件") {
+			newField = append(newField, taskParams)
+			newField = append(newField, spaceField)
+			newField = append(newField, sceneSetField)
+			newField = append(newField, sceneField)
+			newField = append(newField, globalConfigField)
+		}
+	}
+	return newField
+}
