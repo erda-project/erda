@@ -151,7 +151,7 @@ run-test:
 	go run tools/gotools/go-test-sum/main.go
 
 base-test:
-	docker run --rm -ti -v $(pwd):/go/src/output letmein7788/letmein:golangci-lint \
+	docker run --rm -ti -v $$(pwd):/go/src/output letmein7788/letmein:golangci-lint \
 		bash -c 'cd /go/src && git clone https://github.com/recallsong/erda && cd erda && git checkout feature/quick-test && build/scripts/test_in_container.sh'
 
 # docker image
@@ -183,5 +183,5 @@ cli-linux:
 
 .PHONY: upload-cli
 upload-cli: cli cli-linux
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
+	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
+	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
