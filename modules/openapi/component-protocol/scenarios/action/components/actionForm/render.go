@@ -17,8 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -303,101 +301,7 @@ func registerActionTypeRender() {
 			return nil
 		}
 
-		actionTypeRender["testplan-run"] = func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
-			bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-			projectId, err := strconv.Atoi(bdl.InParams["projectId"].(string))
-
-			if err != nil {
-				return err
-			}
-			var field []apistructs.FormPropItem
-			props, ok := c.Props.(map[string]interface{})
-			if !ok {
-				return err
-			}
-			for key, val := range props {
-				if key == "fields" {
-					field = val.([]apistructs.FormPropItem)
-					break
-				}
-			}
-
-			// Add task parameters
-			taskParams := apistructs.FormPropItem{
-				Component: "formGroup",
-				ComponentProps: map[string]interface{}{
-					"title": "任务参数",
-				},
-				Group: "params",
-				Key:   "params",
-			}
-
-			// get testplan
-			testPlanRequest := apistructs.TestPlanV2PagingRequest{
-				ProjectID: uint64(projectId),
-			}
-			testPlanRequest.UserID = bdl.Identity.UserID
-			plans, err := bdl.Bdl.PagingTestPlansV2(testPlanRequest)
-			if err != nil {
-				return err
-			}
-			testPlans := make([]map[string]interface{}, 0, plans.Total)
-			for _, v := range plans.List {
-				testPlans = append(testPlans, map[string]interface{}{"name": fmt.Sprintf("%s-%d", v.Name, v.ID), "value": v.ID})
-			}
-			testPlanField := apistructs.FormPropItem{
-				Label:     "测试计划",
-				Component: "select",
-				Required:  true,
-				Key:       "params.test_plan",
-				ComponentProps: map[string]interface{}{
-					"options": testPlans,
-				},
-				Group: "params",
-			}
-
-			// get globalConfigRequest
-			globalConfigRequest := apistructs.AutoTestGlobalConfigListRequest{
-				ScopeID: strconv.Itoa(projectId),
-				Scope:   "project-autotest-testcase",
-			}
-			globalConfigRequest.UserID = bdl.Identity.UserID
-
-			globalConfigs, err := bdl.Bdl.ListAutoTestGlobalConfig(globalConfigRequest)
-			if err != nil {
-				return err
-			}
-			cms := make([]map[string]interface{}, 0, len(globalConfigs))
-			for _, v := range globalConfigs {
-				cms = append(cms, map[string]interface{}{"name": v.DisplayName, "value": v.Ns})
-			}
-			globalConfigField := apistructs.FormPropItem{
-				Label:     "参数配置",
-				Component: "select",
-				Required:  true,
-				Key:       "params.cms",
-				ComponentProps: map[string]interface{}{
-					"options": cms,
-				},
-				Group: "params",
-			}
-
-			var newField []apistructs.FormPropItem
-			for _, val := range field {
-				newField = append(newField, val)
-
-				if strings.EqualFold(val.Label, "执行条件") {
-					newField = append(newField, taskParams)
-					newField = append(newField, testPlanField)
-					newField = append(newField, globalConfigField)
-				}
-			}
-			newProps := map[string]interface{}{
-				"fields": newField,
-			}
-			c.Props = newProps
-			return nil
-		}
+		actionTypeRender["testplan-run"] = testPlanRun
 
 		actionTypeRender["testscene-run"] = testSceneRun
 	})
