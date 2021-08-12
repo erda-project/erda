@@ -61,7 +61,7 @@ func TestGet(t *testing.T) {
 
 	result, err = Get(data, "this.does.not[0].exist")
 	if _, ok := err.(DoesNotExist); result != nil || !ok {
-		t.Errorf("does not handle non-existant path correctly")
+		t.Errorf("does not handle non-existent path correctly")
 	}
 }
 
