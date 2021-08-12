@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-name: Code Check
+name: Build
 on:
   push:
     tags:
@@ -22,6 +22,22 @@ on:
       - release/*
   pull_request:
 jobs:
+  BUILD:
+    runs-on: ubuntu-latest
+    container:
+      image: letmein7788/letmein:golangci-lint
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Go generate files
+        run: make prepare
+      - name: Run Build
+        run: make GO_BUILD_OPTIONS="-tags=musl"
+      - name: Run Test
+        run: |
+          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
+          curl -s https://codecov.io/bash | bash
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
@@ -39,7 +55,7 @@ jobs:
       - name: Run SQL Lint
         run: ./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
       - name: Run Go Lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v2.5.2
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.29
@@ -55,6 +71,17 @@ jobs:
           skip-pkg-cache: true
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
           skip-build-cache: true
-
-
-    
+  CODE-TEST:
+    runs-on: ubuntu-latest
+    container:
+      image: letmein7788/letmein:golangci-lint
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Go generate files
+        run: make prepare
+      - name: Run Test
+        run: |
+          make run-test
+          curl -s https://codecov.io/bash | bash
