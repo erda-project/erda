@@ -50,6 +50,8 @@ type Agent struct {
 	ExitCode int
 
 	StdErrRegexpList []*regexp.Regexp
+
+	BlackList []string // enciphered data will Replaced by '******' when log output
 }
 
 type AgentArg struct {
@@ -62,6 +64,8 @@ type AgentArg struct {
 
 	PipelineID     uint64 `json:"pipelineID"`
 	PipelineTaskID uint64 `json:"pipelineTaskID"`
+
+	EncryptSecretKeys []string `json:"encryptSecretKeys"`
 }
 
 type EasyUse struct {

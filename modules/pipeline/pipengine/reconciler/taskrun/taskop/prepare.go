@@ -205,6 +205,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.Action = *action
 	// --- uuid ---
 	task.Extra.UUID = fmt.Sprintf("pipeline-task-%d", task.ID)
+	task.Extra.EncryptSecretKeys = p.Snapshot.EncryptSecretKeys
 
 	const (
 		TerminusDefineTag = "TERMINUS_DEFINE_TAG"

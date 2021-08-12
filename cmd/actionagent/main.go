@@ -60,6 +60,7 @@ func realMain(args string) {
 	agent := &actionagent.Agent{
 		Errs:              make([]error, 0),
 		PushedMetaFileMap: make(map[string]string),
+		BlackList:         make([]string, 0),
 		Ctx:               ctx,
 		Cancel:            cancel,
 	}

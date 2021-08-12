@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +28,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/retry"
 )
+
+const EncryptedValueLen = "ACTIONAGENT_ENCRYPTED_VAlUE_LEN"
 
 func (agent *Agent) pullBootstrapInfo() {
 	if !agent.Arg.PullBootstrapInfo {
@@ -73,6 +77,19 @@ func (agent *Agent) pullBootstrapInfo() {
 	agent.Arg.Commands = bootstrapArg.Commands
 	agent.Arg.Context = bootstrapArg.Context
 	agent.Arg.PrivateEnvs = bootstrapArg.PrivateEnvs
+	agent.Arg.EncryptSecretKeys = bootstrapArg.EncryptSecretKeys
+
+	valueLen, err := strconv.Atoi(os.Getenv(EncryptedValueLen))
+	if err != nil || valueLen == 0 {
+		valueLen = 6
+	}
+
+	for _, v := range agent.Arg.EncryptSecretKeys {
+		// the value's len >= EncryptedValueLen will be appended to BlackList
+		if value, ok := agent.Arg.PrivateEnvs[strings.ToUpper(v)]; ok && len(value) >= valueLen {
+			agent.BlackList = append(agent.BlackList, value)
+		}
+	}
 
 	// set envs to current process, so `run` and other scripts can inherit
 	for k, v := range agent.Arg.PrivateEnvs {
