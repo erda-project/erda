@@ -418,11 +418,9 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	var isOrg bool
 	if request.AlertScope != MicroService {
 		request.AlertScope = "org"
 		request.AlertScopeId = orgID
-		isOrg = true
 	}
 	request.Attributes = make(map[string]*structpb.Value)
 	var metricNames []string
@@ -448,32 +446,12 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		ruleMetric := metricMap[rule.Metric]
 		labels := ruleMetric.Labels
 		scope := labels["metric_scope"]
-		scopeId := labels["metric_scope_id"]
+		scopeId := org.Name
 
 		if err := m.checkMetricMeta(rule, metricMap[rule.Metric]); err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
-		if isOrg {
-			if scope != "" {
-				rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-					Tag:      "_metric_scope",
-					Operator: "eq",
-					Value:    structpb.NewStringValue(scope),
-				})
-			}
-			if scopeId != "" {
-				rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-					Tag:      "_metric_scope_id",
-					Operator: "eq",
-					Value:    structpb.NewStringValue(scopeId),
-				})
-			}
-			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
-				Tag:      "cluster_name",
-				Operator: "in",
-				Value:    structpb.NewStringValue("$" + "cluster_name"),
-			})
-		}
+		m.addFilter(request.AlertScope, scope, scopeId, rule)
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
@@ -498,6 +476,30 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		Id: id,
 	}
 	return result, nil
+}
+
+func (m *alertService) addFilter(alertScope, scope, scopeId string, rule *pb.CustomizeAlertRule) {
+	if alertScope == "org" {
+		if scope != "" {
+			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+				Tag:      "_metric_scope",
+				Operator: "eq",
+				Value:    structpb.NewStringValue(scope),
+			})
+		}
+		if scopeId != "" {
+			rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+				Tag:      "_metric_scope_id",
+				Operator: "eq",
+				Value:    structpb.NewStringValue(scopeId),
+			})
+		}
+		rule.Filters = append(rule.Filters, &pb.CustomizeAlertRuleFilter{
+			Tag:      "cluster_name",
+			Operator: "in",
+			Value:    structpb.NewStringValue("$" + "cluster_name"),
+		})
+	}
 }
 
 func (m *alertService) checkMetricMeta(
@@ -699,6 +701,11 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 			}
 			rule.Attributes["metric_name"] = structpb.NewStringValue(metric.Name.Name)
 		}
+		ruleMetric := metricMap[rule.Metric]
+		labels := ruleMetric.Labels
+		scope := labels["metric_scope"]
+		scopeId := labels["metric_scope_id"]
+		m.addFilter(request.AlertScope, scope, scopeId, rule)
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
