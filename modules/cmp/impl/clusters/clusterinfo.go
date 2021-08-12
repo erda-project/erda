@@ -62,6 +62,14 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 			"initJobClusterName": {Name: i18n.Sprintf("init job cluster name"), Value: os.Getenv("DICE_CLUSTER_NAME")},
 		}
 
+		if clusterMetaData.ManageConfig != nil && (clusterMetaData.ManageConfig.Type == apistructs.ManageProxy &&
+			clusterMetaData.ManageConfig.AccessKey == "") {
+			baseInfo["registered"] = apistructs.NameValue{
+				Name:  i18n.Sprintf("cluster agent registered"),
+				Value: true,
+			}
+		}
+
 		urlInfo := map[string]apistructs.NameValue{}
 
 		if ci, err := c.bdl.QueryClusterInfo(clusterName); err != nil {
@@ -72,14 +80,6 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 			baseInfo["clusterVersion"] = apistructs.NameValue{Name: i18n.Sprintf("cluster version"), Value: ci.Get(apistructs.DICE_VERSION)}
 			baseInfo["rootDomain"] = apistructs.NameValue{Name: i18n.Sprintf("root domain"), Value: ci.Get(apistructs.DICE_ROOT_DOMAIN)}
 			baseInfo["edgeCluster"] = apistructs.NameValue{Name: i18n.Sprintf("edge cluster"), Value: ci.Get(apistructs.DICE_IS_EDGE) == "true"}
-			baseInfo["masterNum"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("master num"),
-				Value: len(strutil.Split(ci.Get(apistructs.MASTER_ADDR), ",", true)),
-			}
-			baseInfo["lbNum"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("lb num"),
-				Value: len(strutil.Split(ci.Get(apistructs.LB_ADDR), ",", true)),
-			}
 			baseInfo["httpsEnabled"] = apistructs.NameValue{
 				Name:  i18n.Sprintf("https enabled"),
 				Value: strutil.Contains(ci.Get(apistructs.DICE_PROTOCOL), "https"),
@@ -87,8 +87,6 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 			urlInfo["registry"] = apistructs.NameValue{Name: "registry", Value: ci.Get(apistructs.REGISTRY_ADDR)}
 			urlInfo["nexus"] = apistructs.NameValue{Name: "nexus", Value: ci.Get(apistructs.NEXUS_ADDR)}
-			urlInfo["masters"] = apistructs.NameValue{Name: "masters", Value: ci.Get(apistructs.MASTER_ADDR)}
-			urlInfo["lb"] = apistructs.NameValue{Name: "lb", Value: ci.Get(apistructs.LB_ADDR)}
 		}
 
 		cs, err := c.k8s.GetInClusterClient()
