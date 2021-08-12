@@ -85,7 +85,7 @@ func WithBundle(bdl *bundle.Bundle) Option {
 }
 
 // GetUndoneProjectItem query issue list and use SetSpecialIssueNum func set issue num
-func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apistructs.ProjectDTO) (apistructs.WorkbenchProjectItem, error) {
+func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apistructs.ProjectDTO) (*apistructs.WorkbenchProjectItem, error) {
 	var issueItem apistructs.WorkbenchProjectItem
 	issueItem.IssueList = make([]apistructs.Issue, 0)
 	issueReq := apistructs.IssuePagingRequest{
@@ -105,19 +105,23 @@ func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apist
 	}
 	issues, total, err := w.issueSvc.Paging(issueReq)
 	if err != nil {
-		return apistructs.WorkbenchProjectItem{}, err
+		return nil, err
 	}
 	issueItem.TotalIssueNum = int(total)
 	issueItem.IssueList = issues
 	issueItem.ProjectDTO = pro
-	if err := w.SetSpecialIssueNum(userID, &issueItem); err != nil {
-		return apistructs.WorkbenchProjectItem{}, err
-	}
-	return issueItem, nil
+	return &issueItem, nil
 }
 
-// SetSpecialIssueNum concurrent query different expire issue num
-func (w *Workbench) SetSpecialIssueNum(userID string, item *apistructs.WorkbenchProjectItem) error {
+// e.workBench.GetUndoneProjectItem concurrent query different expire issue num
+func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, items []*apistructs.WorkbenchProjectItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	var projectIDS []uint64
+	for _, item := range items {
+		projectIDS = append(projectIDS, item.ProjectDTO.ID)
+	}
 	nowTime := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	tomorrow := nowTime.Add(time.Hour * time.Duration(24))
 	twoDay := nowTime.Add(time.Hour * time.Duration(24*2))
@@ -140,7 +144,7 @@ func (w *Workbench) SetSpecialIssueNum(userID string, item *apistructs.Workbench
 		go func(idx int, ed string) {
 			defer wg.Done()
 			etIssueReq := apistructs.IssuePagingRequest{}
-			etIssueReq.OrgID = int64(item.ProjectDTO.OrgID)
+			etIssueReq.State = req.State
 			etIssueReq.StartFinishedAt = timeList[idx][0] * 1000
 			if ed == issueUnspecified {
 				etIssueReq.IsEmptyPlanFinishedAt = true
@@ -150,33 +154,38 @@ func (w *Workbench) SetSpecialIssueNum(userID string, item *apistructs.Workbench
 				}
 			}
 			etIssueReq.StateBelongs = StateBelongs
-			etIssueReq.ProjectID = uint64(item.ProjectDTO.ID)
-			etIssueReq.PageNo = 1
-			etIssueReq.PageSize = 1
 			etIssueReq.External = true
 			etIssueReq.Type = IssueTypes
-			etIssueReq.Assignees = []string{userID}
-			_, total, err := w.issueSvc.Paging(etIssueReq)
+			etIssueReq.Assignees = req.Assignees
+			prosIssueNumList, err := w.issueSvc.GetIssueNumByPros(projectIDS, etIssueReq)
 			if err != nil {
 				iErr = err
-				logrus.Errorf("Failed to paging issue, request: %v, err: %v", etIssueReq, err)
+				logrus.Errorf("Failed to get special issue num, request: %v, err: %v", etIssueReq, err)
 				return
 			}
-			switch ed {
-			case issueUnspecified:
-				item.UnSpecialIssueNum = int(total)
-			case issueExpired:
-				item.ExpiredIssueNum = int(total)
-			case issueOneDay:
-				item.ExpiredOneDayNum = int(total)
-			case issueTomorrow:
-				item.ExpiredTomorrowNum = int(total)
-			case issueSevenDay:
-				item.ExpiredSevenDayNum = int(total)
-			case issueThirtyDay:
-				item.ExpiredThirtyDayNum = int(total)
-			case issueFeature:
-				item.FeatureDayNum = int(total)
+			issueNumMap := map[uint64]uint64{}
+			for _, issueNum := range prosIssueNumList {
+				issueNumMap[issueNum.ProjectID] = issueNum.IssueNum
+			}
+			for _, item := range items {
+				if total, existed := issueNumMap[item.ProjectDTO.ID]; existed {
+					switch ed {
+					case issueUnspecified:
+						item.UnSpecialIssueNum = int(total)
+					case issueExpired:
+						item.ExpiredIssueNum = int(total)
+					case issueOneDay:
+						item.ExpiredOneDayNum = int(total)
+					case issueTomorrow:
+						item.ExpiredTomorrowNum = int(total)
+					case issueSevenDay:
+						item.ExpiredSevenDayNum = int(total)
+					case issueThirtyDay:
+						item.ExpiredThirtyDayNum = int(total)
+					case issueFeature:
+						item.FeatureDayNum = int(total)
+					}
+				}
 			}
 		}(index, et)
 	}

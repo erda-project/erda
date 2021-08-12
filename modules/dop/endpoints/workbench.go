@@ -66,15 +66,17 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 	}
 	proTotal, unDonePros := resp.Total, resp.List
 	res.Data.TotalProject = proTotal
-	res.Data.List = make([]apistructs.WorkbenchProjectItem, 0)
+	res.Data.List = make([]*apistructs.WorkbenchProjectItem, 0)
 
 	for _, v := range unDonePros {
-		var issueItem apistructs.WorkbenchProjectItem
 		issueItem, err := e.workBench.GetUndoneProjectItem(userID.String(), workReq.IssueSize, v)
 		if err != nil {
 			return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 		}
 		res.Data.List = append(res.Data.List, issueItem)
+	}
+	if err := e.workBench.SetDiffFinishedIssueNum(stateReq, res.Data.List); err != nil {
+		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(res.Data)
 }

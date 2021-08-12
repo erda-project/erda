@@ -24,20 +24,40 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issue"
 )
 
-func TestSetSpecialIssueNum(t *testing.T) {
+func TestSetDiffFinishedIssueNum(t *testing.T) {
 	issueSvc := &issue.Issue{}
-	m := monkey.PatchInstanceMethod(reflect.TypeOf(issueSvc), "Paging",
-		func(issueSvc *issue.Issue, req apistructs.IssuePagingRequest) ([]apistructs.Issue, uint64, error) {
-			return []apistructs.Issue{}, 3, nil
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(issueSvc), "GetIssueNumByPros",
+		func(issueSvc *issue.Issue, projectIDS []uint64, req apistructs.IssuePagingRequest) ([]apistructs.IssueNum, error) {
+			res := []apistructs.IssueNum{}
+			for _, proID := range projectIDS {
+				num := apistructs.IssueNum{
+					ProjectID: proID,
+					IssueNum:  3,
+				}
+				res = append(res, num)
+			}
+			return res, nil
 		})
 	defer m.Unpatch()
 
 	workbench := New(WithIssue(issueSvc))
-	item := apistructs.WorkbenchProjectItem{}
-	err := workbench.SetSpecialIssueNum("1", &item)
+	items := []*apistructs.WorkbenchProjectItem{
+		&apistructs.WorkbenchProjectItem{
+			ProjectDTO: apistructs.ProjectDTO{ID: 1},
+		},
+		&apistructs.WorkbenchProjectItem{
+			ProjectDTO: apistructs.ProjectDTO{ID: 2},
+		},
+	}
+	req := apistructs.IssuePagingRequest{
+		IssueListRequest: apistructs.IssueListRequest{
+			State: []int64{1, 2, 3},
+		},
+	}
+	err := workbench.SetDiffFinishedIssueNum(req, items)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, item.ExpiredIssueNum)
-	assert.Equal(t, 3, item.FeatureDayNum)
+	assert.Equal(t, 3, items[0].ExpiredIssueNum)
+	assert.Equal(t, 3, items[1].UnSpecialIssueNum)
 }
 
 func TestGetUndoneProjectItem(t *testing.T) {
@@ -52,5 +72,4 @@ func TestGetUndoneProjectItem(t *testing.T) {
 	item, err := workbench.GetUndoneProjectItem("1", 3, apistructs.ProjectDTO{})
 	assert.NoError(t, err)
 	assert.Equal(t, 5, item.TotalIssueNum)
-	assert.Equal(t, 5, item.ExpiredOneDayNum, 5)
 }

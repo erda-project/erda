@@ -340,6 +340,14 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	return issues, total, nil
 }
 
+// GetIssueNumByPros query by issue request and group by project id list, optimization for workbench issue num
+func (svc *Issue) GetIssueNumByPros(projectIDS []uint64, req apistructs.IssuePagingRequest) ([]apistructs.IssueNum, error) {
+	if len(projectIDS) <= 0 {
+		return nil, apierrors.ErrPagingIssues.MissingParameter("projectIDS")
+	}
+	return svc.db.GetIssueNumByPros(projectIDS, req)
+}
+
 // get all undone issues by orgid
 func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apistructs.Issue, uint64, error) {
 	if (req.IterationID == -1 || (len(req.IterationIDs) == 1 && req.IterationIDs[0] == -1)) && req.OrderBy == "" {
