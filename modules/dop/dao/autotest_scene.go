@@ -287,12 +287,12 @@ func (db *DBClient) GetAutoTestScenePreByPosition(req apistructs.AutotestSceneRe
 
 }
 
-func (db *DBClient) CountSceneBySetAndName(setId uint64, name string) (int, error) {
-	var res int
-	if err := db.Model(&AutoTestScene{}).Where("`set_id` = ? and name = ?", setId, name).Count(&res).Error; err != nil {
-		return -1, err
+func (db *DBClient) FindSceneBySetAndName(setId uint64, name string) ([]AutoTestScene, error) {
+	var scenes []AutoTestScene
+	if err := db.Model(&AutoTestScene{}).Where("`set_id` = ? and name = ?", setId, name).Find(&scenes).Error; err != nil {
+		return nil, err
 	}
-	return res, nil
+	return scenes, nil
 }
 
 func (db *DBClient) CountSceneBySetID(setId uint64) (uint64, error) {
