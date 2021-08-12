@@ -446,7 +446,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		ruleMetric := metricMap[rule.Metric]
 		labels := ruleMetric.Labels
 		scope := labels["metric_scope"]
-		scopeId := labels["metric_scope_id"]
+		scopeId := org.Name
 
 		if err := m.checkMetricMeta(rule, metricMap[rule.Metric]); err != nil {
 			return nil, errors.NewInternalServerError(err)
