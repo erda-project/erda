@@ -16,7 +16,6 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -115,8 +114,11 @@ func testAllPackages(base string) error {
 		buf := make([]byte, 8)
 		hash := md5.New()
 		for _, file := range info.files {
-			hash.Write([]byte(file.path))
-			binary.BigEndian.PutUint64(buf, uint64(file.updateTime.UnixNano()))
+			byts, err := ioutil.ReadFile(file.path)
+			if err != nil {
+				return err
+			}
+			hash.Write(byts)
 			hash.Write(buf)
 		}
 		byts := hash.Sum(nil)
@@ -137,43 +139,46 @@ func testAllPackages(base string) error {
 		}
 	}
 	preSum := readTestSum()
-	profiles, err := cover.ParseProfiles("coverage.txt")
-	if preSum == nil || err != nil {
-		_, err := runTest("./...")
-		if err != nil {
-			return err
-		}
-	} else {
-		coverage := make(map[string][]*cover.Profile)
-		for pkg, sum := range pkgSum {
-			if sum.tested {
-				continue
-			}
-			pre, ok := preSum[pkg]
-			if ok && pre.hash == sum.hash {
-				sum.testTime = pre.testTime
-				continue
-			}
-			err := recursiveTest(sum, pkgSum, incoming, coverage)
+	const doTestCheck = true
+	if doTestCheck {
+		profiles, err := cover.ParseProfiles("coverage.txt")
+		if preSum == nil || err != nil {
+			_, err := runTest("./...")
 			if err != nil {
 				return err
 			}
-		}
-		var newProfiles []*cover.Profile
-		for _, p := range profiles {
-			dir := filepath.Dir(p.FileName)
-			if _, ok := coverage[dir]; !ok {
-				newProfiles = append(newProfiles, p)
+		} else {
+			coverage := make(map[string][]*cover.Profile)
+			for pkg, sum := range pkgSum {
+				if sum.tested {
+					continue
+				}
+				pre, ok := preSum[pkg]
+				if ok && pre.hash == sum.hash {
+					sum.testTime = pre.testTime
+					continue
+				}
+				err := recursiveTest(sum, pkgSum, incoming, coverage)
+				if err != nil {
+					return err
+				}
 			}
+			var newProfiles []*cover.Profile
+			for _, p := range profiles {
+				dir := filepath.Dir(p.FileName)
+				if _, ok := coverage[dir]; !ok {
+					newProfiles = append(newProfiles, p)
+				}
+			}
+			for _, ps := range coverage {
+				newProfiles = append(newProfiles, ps...)
+			}
+			err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
+			if err != nil {
+				return err
+			}
+			os.Rename("coverage.txt.tmp", "coverage.txt")
 		}
-		for _, ps := range coverage {
-			newProfiles = append(newProfiles, ps...)
-		}
-		err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
-		if err != nil {
-			return err
-		}
-		os.Rename("coverage.txt.tmp", "coverage.txt")
 	}
 	return writeTestSum(pkgSum)
 }

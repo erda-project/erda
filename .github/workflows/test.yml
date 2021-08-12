@@ -34,5 +34,5 @@ jobs:
         run: make prepare
       - name: Run Test
         run: |
-          make run-go-test
+          make run-test
           curl -s https://codecov.io/bash | bash

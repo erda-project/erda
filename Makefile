@@ -147,8 +147,12 @@ check-imports:
 	go run tools/gotools/go-imports-order/main.go
 
 # test and generate go.test.sum
-run-go-test:
+run-test:
 	go run tools/gotools/go-test-sum/main.go
+
+base-test:
+	docker run --rm -ti -v $(pwd):/go/src/output letmein7788/letmein:golangci-lint \
+		bash -c 'cd /go/src && git clone https://github.com/recallsong/erda && cd erda && git checkout feature/quick-test && build/scripts/test_in_container.sh'
 
 # docker image
 build-image: prepare
