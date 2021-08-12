@@ -84,7 +84,7 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
 		// add your logic here
-		// logrus.Printf("stdout tailed a line: %s\n", line)
+		logrus.Printf("stdout tailed a line: %s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
