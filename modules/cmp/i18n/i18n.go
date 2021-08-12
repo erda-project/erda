@@ -50,8 +50,6 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "cluster version", "集群版本")
 	message.SetString(language.SimplifiedChinese, "root domain", "泛域名")
 	message.SetString(language.SimplifiedChinese, "edge cluster", "边缘集群")
-	message.SetString(language.SimplifiedChinese, "master num", "master 数")
-	message.SetString(language.SimplifiedChinese, "lb num", "lb 数")
 	message.SetString(language.SimplifiedChinese, "basic", "基本信息")
 	message.SetString(language.SimplifiedChinese, "init", "初始化")
 	message.SetString(language.SimplifiedChinese, "plan", "执行计划")
@@ -63,8 +61,8 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "manage type", "管理方式")
 	message.SetString(language.SimplifiedChinese, "node count", "节点数")
 	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
-	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
 	message.SetString(language.SimplifiedChinese, "cluster init container id", "集群初始化任务容器ID")
+	message.SetString(language.SimplifiedChinese, "cluster agent registered", "Agent 注册")
 	// cloud resource type
 	message.SetString(language.SimplifiedChinese, "Compute", "计算")
 	message.SetString(language.SimplifiedChinese, "Network", "网络")
