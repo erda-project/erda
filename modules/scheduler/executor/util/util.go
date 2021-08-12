@@ -247,6 +247,10 @@ func IsNotFound(err error) bool {
 
 // GetClient get http client with cluster info.
 func GetClient(clusterName string, manageConfig *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
+	if manageConfig == nil {
+		return "", nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
+	}
+
 	inetPortal := "inet://"
 
 	hcOptions := []httpclient.OpOption{
