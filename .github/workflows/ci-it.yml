@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-name: Build
+name: CI AND IT
 on:
   push:
     tags:
@@ -22,7 +22,7 @@ on:
       - release/*
   pull_request:
 jobs:
-  BUILD:
+  CI:
     runs-on: ubuntu-latest
     container:
       image: letmein7788/letmein:golangci-lint
@@ -34,10 +34,6 @@ jobs:
         run: make prepare
       - name: Run Build
         run: make GO_BUILD_OPTIONS="-tags=musl"
-      - name: Run Test
-        run: |
-          go test -tags=musl -work -cpu=2 -timeout 30s -failfast -race -coverprofile=coverage.txt -covermode=atomic ./...
-          curl -s https://codecov.io/bash | bash
   CODE-CHECK:
     runs-on: ubuntu-latest
     container:
