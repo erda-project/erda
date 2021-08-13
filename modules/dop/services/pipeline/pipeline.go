@@ -37,6 +37,7 @@ import (
 
 const (
 	DicePipelinesGitFolder = ".dice/pipelines"
+	ErdaPipelinesGitFolder = ".erda/pipelines"
 )
 
 // Pipeline pipeline 结构体
@@ -87,11 +88,14 @@ func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.B
 		}
 	}
 
-	pipelinePath := DicePipelinesGitFolder
-	files, err = bdl.SearchGittarFiles(req.AppID, req.Branch, "*.yml", pipelinePath, 3)
-	if err == nil {
-		for _, file := range files {
-			result = append(result, pipelinePath+"/"+file.Name)
+	pipelineFolders := [...]string{DicePipelinesGitFolder, ErdaPipelinesGitFolder}
+
+	for _, pipelinePath := range pipelineFolders {
+		files, err = bdl.SearchGittarFiles(req.AppID, req.Branch, "*.yml", pipelinePath, 3)
+		if err == nil {
+			for _, file := range files {
+				result = append(result, pipelinePath+"/"+file.Name)
+			}
 		}
 	}
 
