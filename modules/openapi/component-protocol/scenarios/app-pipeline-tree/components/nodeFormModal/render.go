@@ -24,6 +24,14 @@ import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/app-pipeline-tree/components/fileTree"
 )
 
+var (
+	I18nLocalePrefixKey = "wb.content.pipeline.file.tree.node.form."
+
+	addPipeline  = "addPipeline"
+	branch       = "branch"
+	pipelineName = "pipelineName"
+)
+
 func (a *ComponentNodeFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	err = a.SetBundle(bdl)
@@ -68,6 +76,30 @@ func (a *ComponentNodeFormModal) Render(ctx context.Context, c *apistructs.Compo
 			return err
 		}
 	}
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
+	a.Props = map[string]interface{}{
+		"title": i18nLocale.Get(I18nLocalePrefixKey + addPipeline),
+		"fields": []map[string]interface{}{
+			{
+				"key":       "branch",
+				"label":     i18nLocale.Get(I18nLocalePrefixKey + branch),
+				"component": "input",
+				"required":  true,
+				"disabled":  true,
+			},
+			{
+				"key":       "name",
+				"label":     i18nLocale.Get(I18nLocalePrefixKey + pipelineName),
+				"component": "input",
+				"required":  true,
+				"componentProps": map[string]interface{}{
+					"maxLength": 30,
+				},
+			},
+		},
+	}
+
 	return nil
 }
 
