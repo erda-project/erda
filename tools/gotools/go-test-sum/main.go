@@ -30,8 +30,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/tools/gotools/go-test-sum/cover"
 	"github.com/mitchellh/go-homedir"
+
+	"github.com/erda-project/erda/tools/gotools/go-test-sum/cover"
 )
 
 var (
