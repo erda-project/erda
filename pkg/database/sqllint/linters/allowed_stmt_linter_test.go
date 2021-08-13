@@ -93,6 +93,11 @@ const (
 	allowedStmtLinter_SplitRegionStmt                      = ``
 )
 
+const (
+	begin  = "begin;"
+	commit = "commit;"
+)
+
 func TestNewAllowedStmtLinter(t *testing.T) {
 	sqlsList := []string{
 		allowedStmtLinter_CreateDatabaseStmt,
@@ -184,4 +189,13 @@ func TestNewAllowedStmtLinter(t *testing.T) {
 	if errors := linterB.Errors(); len(errors["stmt [lints]"]) == 0 {
 		t.Fatal("fails")
 	}
+
+	if err := linterA.Input([]byte(begin), "begin"); err != nil {
+		t.Fatal(err)
+	}
+	if errors := linterA.Errors(); len(errors["begin [lints]"]) == 0 {
+		t.Fatal("fails")
+	}
+	data, _ := json.Marshal(linterA.Errors())
+	t.Log("report:", linterA.Report(), "errors:", string(data))
 }
