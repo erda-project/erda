@@ -14,6 +14,8 @@
 package pipelinesvc
 
 import (
+	"sync"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -27,6 +29,7 @@ type passedDataWhenCreate struct {
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
 	actionJobDefines map[string]*diceyml.Job
 	actionJobSpecs   map[string]*apistructs.ActionSpec
+	lock             sync.Mutex
 }
 
 func (that *passedDataWhenCreate) getActionJobDefine(actionTypeVersion string) *diceyml.Job {
@@ -61,6 +64,7 @@ func (that *passedDataWhenCreate) initData(extMarketSvc *extmarketsvc.ExtMarketS
 		that.actionJobSpecs = make(map[string]*apistructs.ActionSpec)
 	}
 	that.extMarketSvc = extMarketSvc
+	that.lock = sync.Mutex{}
 }
 
 func (that *passedDataWhenCreate) putPassedDataByPipelineYml(pipelineYml *pipelineyml.PipelineYml) error {
@@ -90,6 +94,10 @@ func (that *passedDataWhenCreate) putPassedDataByPipelineYml(pipelineYml *pipeli
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
+
+	that.lock.Lock()
+	defer that.lock.Unlock()
+
 	for extItem, actionJobDefine := range actionJobDefines {
 		that.actionJobDefines[extItem] = actionJobDefine
 	}
