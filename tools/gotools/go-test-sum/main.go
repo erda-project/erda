@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/tools/gotools/go-test-sum/cover"
+	"github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -41,23 +42,28 @@ var (
 		".h":   true,
 		".cpp": true,
 	}
-	// homeDir string
+	homeDir         string
+	cachePath       string
+	testSumFilename = "erda-go.test.sum"
 )
 
-const testSumFilename = "go.test.sum"
-
-// func init() {
-// 	home, err := homedir.Dir()
-// 	if err != nil {
-// 		fmt.Println("failed to get home directory")
-// 		os.Exit(1)
-// 	}
-// 	homeDir = home
-// }
+func init() {
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println("failed to get home directory")
+		os.Exit(1)
+	}
+	homeDir = home
+	cachePath = filepath.Join(homeDir, "go-test")
+	err = os.MkdirAll(cachePath, os.ModePerm)
+	if err != nil {
+		fmt.Println("failed to create go test cache")
+		os.Exit(1)
+	}
+	testSumFilename = filepath.Join(cachePath, testSumFilename)
+}
 
 func main() {
-	wd, err := os.Getwd()
-	fmt.Println("--", wd, err)
 	base, err := readBasePath()
 	if err != nil {
 		fmt.Println(err)
@@ -170,7 +176,8 @@ func testAllPackages(base string) error {
 	const doTestCheck = true
 	if doTestCheck {
 		preSum := readTestSum()
-		profiles, err := cover.ParseProfiles("coverage.txt")
+		cachedCoverage := filepath.Join(cachePath, "coverage.txt")
+		profiles, err := cover.ParseProfiles(cachedCoverage)
 		if preSum == nil || err != nil {
 			_, err := runTest("./...")
 			if err != nil {
@@ -202,11 +209,19 @@ func testAllPackages(base string) error {
 			for _, ps := range coverage {
 				newProfiles = append(newProfiles, ps...)
 			}
+
 			err = cover.Write("coverage.txt.tmp", "atomic", newProfiles)
 			if err != nil {
 				return err
 			}
 			os.Rename("coverage.txt.tmp", "coverage.txt")
+
+			cacheCoverageTmp := filepath.Join(cachePath, "coverage.txt.tmp")
+			err = cover.Write(cacheCoverageTmp, "atomic", newProfiles)
+			if err != nil {
+				return err
+			}
+			os.Rename(cacheCoverageTmp, filepath.Join(cachePath, cachedCoverage))
 		}
 	}
 	return writeTestSum(pkgSum)

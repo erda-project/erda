@@ -80,6 +80,7 @@ require (
 	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/minio/md5-simd v1.1.2
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/mwitkow/go-proto-validators v0.3.2
