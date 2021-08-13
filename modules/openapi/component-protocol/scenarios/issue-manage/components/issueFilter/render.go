@@ -129,7 +129,7 @@ func (f *ComponentFilter) SetToProtocolComponent(c *apistructs.Component) error 
 func (f *ComponentFilter) InitDefaultOperation(state State) error {
 	f.Props = filter.Props{Delay: 2000}
 	f.Operations = GetAllOperations()
-	f.State.FrontendConditionProps = generateFrontendConditionProps(f.InParams.FrontendFixedIssueType, state)
+	f.State.FrontendConditionProps = generateFrontendConditionProps(f.InParams.FrontendFixedIssueType, state, f.CtxBdl)
 
 	// 初始化时从 url query params 中获取已经存在的过滤参数
 	if f.InParams.FrontendUrlQuery != "" {

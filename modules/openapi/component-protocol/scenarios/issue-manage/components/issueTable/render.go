@@ -469,7 +469,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			severityOps["changeSeverityTo"+severityAuto[s]+string(s)] = map[string]interface{}{
 				"key":        "changeSeverityTo" + severityAuto[s] + string(s),
 				"reload":     true,
-				"text":       s.GetZhName(),
+				"text":       bdl.I18nPrinter.Sprintf(string(s)),
 				"prefixIcon": "ISSUE_ICON.severity." + string(s),
 				"meta": map[string]string{
 					"id":       strconv.FormatInt(data.ID, 10),
@@ -479,7 +479,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		severity := Severity{
 			RenderType: "operationsDropdownMenu",
-			Value:      string(data.Severity.GetZhName()),
+			Value:      bdl.I18nPrinter.Sprintf(string(data.Severity)),
 			PrefixIcon: "ISSUE_ICON.severity." + string(data.Severity),
 			Operations: severityOps,
 			Disabled:   isGuest,
@@ -564,7 +564,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Progress:    progress,
 			Severity:    severity,
 			Priority: Priority{
-				Value:      data.Priority.GetZhName(),
+				Value:      bdl.I18nPrinter.Sprintf(string(data.Priority)),
 				RenderType: "operationsDropdownMenu",
 				PrefixIcon: priorityIcon[data.Priority],
 				Operations: map[string]interface{}{
@@ -574,7 +574,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 							"priority": "LOW",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityLow],
-						"text":       apistructs.IssuePriorityLow.GetZhName(),
+						"text":       bdl.I18nPrinter.Sprintf(string(apistructs.IssuePriorityLow)),
 						"reload":     true,
 						"key":        "changePriorityTodLOW",
 					}, "changePriorityTocNORMAL": map[string]interface{}{
@@ -583,7 +583,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 							"priority": "NORMAL",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityNormal],
-						"text":       apistructs.IssuePriorityNormal.GetZhName(),
+						"text":       bdl.I18nPrinter.Sprintf(string(apistructs.IssuePriorityNormal)),
 						"reload":     true,
 						"key":        "changePriorityTocNORMAL",
 					}, "changePriorityTobHIGH": map[string]interface{}{
@@ -592,7 +592,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 							"priority": "HIGH",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityHigh],
-						"text":       apistructs.IssuePriorityHigh.GetZhName(),
+						"text":       bdl.I18nPrinter.Sprintf(string(apistructs.IssuePriorityHigh)),
 						"reload":     true,
 						"key":        "changePriorityTobHIGH",
 					},
@@ -602,7 +602,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 							"priority": "URGENT",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityUrgent],
-						"text":       apistructs.IssuePriorityUrgent.GetZhName(),
+						"text":       bdl.I18nPrinter.Sprintf(string(apistructs.IssuePriorityUrgent)),
 						"reload":     true,
 						"key":        "changePriorityToaURGENT",
 					},
@@ -667,29 +667,29 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
         },
         {
             "dataIndex": "title",
-            "title": "标题"
+            "title": "` + bdl.I18nPrinter.Sprintf("title") + `"
         },` +
 		progressCol +
 		severityCol +
 		`{
             "width": 100,
             "dataIndex": "priority",
-            "title": "优先级"
+            "title": "` + bdl.I18nPrinter.Sprintf("Priority") + `"
         },
         {
             "width": 110,
             "dataIndex": "state",
-            "title": "状态"
+            "title": "` + bdl.I18nPrinter.Sprintf("State") + `"
         },
         {
             "width": 120,
             "dataIndex": "assignee",
-            "title": "处理人"
+            "title": "` + bdl.I18nPrinter.Sprintf("Assignee") + `"
         },
         {
             "width": 100,
             "dataIndex": "deadline",
-            "title": "截止日期"
+            "title": "` + bdl.I18nPrinter.Sprintf("Deadline") + `"
         }` +
 		closedAtCol +
 		`],
@@ -774,4 +774,42 @@ func getTotalPage(total, pageSize uint64) (page uint64) {
 		return total / pageSize
 	}
 	return total/pageSize + 1
+}
+
+func genProps() string {
+	return `{
+    "columns": [
+		{
+			"dataIndex": "id",
+			"title": "ID",
+			"width": 90
+        },
+        {
+            "dataIndex": "title",
+            "title": ` + "title" + `
+        },` +
+		`{
+            "width": 100,
+            "dataIndex": "priority",
+            "title": ` + "Priority" + `
+        },
+        {
+            "width": 110,
+            "dataIndex": "state",
+            "title": ` + "State" + `
+        },
+        {
+            "width": 120,
+            "dataIndex": "assignee",
+            "title": ` + "Assignee" + `
+        },
+        {
+            "width": 100,
+            "dataIndex": "deadline",
+            "title": ` + "Deadline" + `
+        }` +
+		`],
+    "rowKey": "id",
+	"pageSizeOptions": ["10", "20", "50", "100"]
+}`
 }

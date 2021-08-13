@@ -63,7 +63,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createRequirement"}},
 		PrefixIcon: "ISSUE_ICON.issue.REQUIREMENT",
-		Text:       "需求",
+		Text:       ctxBdl.I18nPrinter.Sprintf("REQUIREMENT"),
 	}
 	taskCandidate := AddButtonCandidate{
 		Disabled:    isGuest,
@@ -74,7 +74,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createTask"}},
 		PrefixIcon: "ISSUE_ICON.issue.TASK",
-		Text:       "任务",
+		Text:       ctxBdl.I18nPrinter.Sprintf("TASK"),
 	}
 	bugCandidate := AddButtonCandidate{
 		Disabled:    isGuest,
@@ -85,12 +85,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createBug"}},
 		PrefixIcon: "ISSUE_ICON.issue.BUG",
-		Text:       "缺陷",
+		Text:       ctxBdl.I18nPrinter.Sprintf("BUG"),
 	}
 	props := Props{
 		Menu:       nil,
 		SuffixIcon: "di",
-		Text:       "新建事项",
+		Text:       ctxBdl.I18nPrinter.Sprintf("Create Issue"),
 		Type:       "primary",
 		Disabled:   isGuest,
 	}
@@ -107,7 +107,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		props.Menu = menu
 		c.Props = props
 	case apistructs.IssueTypeRequirement.String():
-		prop.Text = "新建需求"
+		prop.Text = ctxBdl.I18nPrinter.Sprintf("Create Requirement")
 		c.Operations = make(apistructs.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
@@ -116,7 +116,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}{Reload: false, Key: "createRequirement", Disabled: isGuest}
 		c.Props = prop
 	case apistructs.IssueTypeTask.String():
-		prop.Text = "新建任务"
+		prop.Text = ctxBdl.I18nPrinter.Sprintf("Create Task")
 		c.Operations = make(apistructs.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
@@ -125,7 +125,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		}{Reload: false, Key: "createTask", Disabled: isGuest}
 		c.Props = prop
 	case apistructs.IssueTypeBug.String():
-		prop.Text = "新建缺陷"
+		prop.Text = ctxBdl.I18nPrinter.Sprintf("Create Bug")
 		c.Operations = make(apistructs.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`

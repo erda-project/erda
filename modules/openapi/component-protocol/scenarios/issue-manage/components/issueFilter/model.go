@@ -43,83 +43,83 @@ type FrontendConditions struct {
 	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
 }
 
-func generateFrontendConditionProps(fixedIssueType string, state State) FrontendConditionProps {
+func generateFrontendConditionProps(fixedIssueType string, state State, bdl protocol.ContextBundle) FrontendConditionProps {
 	conditionProps := []filter.PropCondition{
 		{
 			Key:         PropConditionKeyIterationIDs,
-			Label:       "迭代",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Sprint"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       true,
 			ShowIndex:   1,
 			HaveFilter:  true,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择迭代",
+			Placeholder: bdl.I18nPrinter.Sprintf("Choose Sprint"),
 			Options:     nil,
 		},
 		{
 			Key:         PropConditionKeyTitle,
-			Label:       "标题",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Title"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       true,
 			ShowIndex:   2,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeInput,
-			Placeholder: "请输入标题或ID",
+			Placeholder: bdl.I18nPrinter.Sprintf("Please enter title or ID"),
 		},
 		{
 			Key:         PropConditionKeyLabelIDs,
-			Label:       "标签",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Label"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  true,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择标签",
+			Placeholder: bdl.I18nPrinter.Sprintf("Please choose label"),
 			Options:     nil,
 		},
 		{
 			Key:         PropConditionKeyPriorities,
-			Label:       "优先级",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Priority"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择优先级",
+			Placeholder: bdl.I18nPrinter.Sprintf("Choose Priorities"),
 			Options: []filter.PropConditionOption{
-				{Label: "紧急", Value: "URGENT", Icon: ""},
-				{Label: "高", Value: "HIGH", Icon: ""},
-				{Label: "中", Value: "NORMAL", Icon: ""},
-				{Label: "低", Value: "LOW", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("URGENT"), Value: "URGENT", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("HIGH"), Value: "HIGH", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("NORMAL"), Value: "NORMAL", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("LOW"), Value: "LOW", Icon: ""},
 			},
 		},
 		{
 			Key:         PropConditionKeySeverities,
-			Label:       "严重程度",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Severity"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择优先级",
+			Placeholder: bdl.I18nPrinter.Sprintf("Choose Severity"),
 			Options: []filter.PropConditionOption{
-				{Label: "致命", Value: "FATAL", Icon: ""},
-				{Label: "严重", Value: "SERIOUS", Icon: ""},
-				{Label: "一般", Value: "NORMAL", Icon: ""},
-				{Label: "轻微", Value: "SLIGHT", Icon: ""},
-				{Label: "建议", Value: "SUGGEST", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("URGENT"), Value: "FATAL", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("SERIOUS"), Value: "SERIOUS", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("NORMAL"), Value: "NORMAL", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("SLIGHT"), Value: "SLIGHT", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("SUGGEST"), Value: "SUGGEST", Icon: ""},
 			},
 		},
 		{
 			Key:        PropConditionKeyCreatorIDs,
-			Label:      "创建人",
-			EmptyText:  "全部",
+			Label:      bdl.I18nPrinter.Sprintf("Creator"),
+			EmptyText:  bdl.I18nPrinter.Sprintf("All"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        bdl.I18nPrinter.Sprintf("Choose Yourself"),
 				OperationKey: OperationKeyCreatorSelectMe,
 			},
 			Placeholder: "",
@@ -127,14 +127,14 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:        PropConditionKeyAssigneeIDs,
-			Label:      "处理人",
-			EmptyText:  "全部",
+			Label:      bdl.I18nPrinter.Sprintf("Assignee"),
+			EmptyText:  bdl.I18nPrinter.Sprintf("All"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        bdl.I18nPrinter.Sprintf("Choose Yourself"),
 				OperationKey: OperationKeyAssigneeSelectMe,
 			},
 			Placeholder: "",
@@ -142,14 +142,14 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:        PropConditionKeyOwnerIDs,
-			Label:      "责任人",
-			EmptyText:  "全部",
+			Label:      bdl.I18nPrinter.Sprintf("Responsible Person"),
+			EmptyText:  bdl.I18nPrinter.Sprintf("All"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        bdl.I18nPrinter.Sprintf("Choose Yourself"),
 				OperationKey: OperationKeyOwnerSelectMe,
 			},
 			Placeholder: "",
@@ -163,13 +163,13 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 				case apistructs.IssueTypeEpic.String():
 				case apistructs.IssueTypeRequirement.String():
 				case apistructs.IssueTypeTask.String():
-					return "任务类型"
+					return bdl.I18nPrinter.Sprintf("Task Type")
 				case apistructs.IssueTypeBug.String():
-					return "引入源"
+					return bdl.I18nPrinter.Sprintf("Import Source")
 				}
 				return ""
 			}(),
-			EmptyText:   "全部",
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       false,
 			HaveFilter:  false,
 			ShowIndex:   0,
@@ -177,15 +177,15 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 			QuickSelect: filter.QuickSelect{},
 			Placeholder: "",
 			Options: []filter.PropConditionOption{
-				{Label: "需求设计", Value: "demandDesign", Icon: ""},
-				{Label: "架构设计", Value: "architectureDesign", Icon: ""},
-				{Label: "代码研发", Value: "codeDevelopment", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("Demand Design"), Value: "demandDesign", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("Architecture Design"), Value: "architectureDesign", Icon: ""},
+				{Label: bdl.I18nPrinter.Sprintf("Code Development"), Value: "codeDevelopment", Icon: ""},
 			},
 		},
 		{
 			Key:         PropConditionKeyCreatedAtStartEnd,
-			Label:       "创建日期",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("Created At"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
@@ -199,7 +199,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:         PropConditionKeyFinishedAtStartEnd,
-			Label:       "截止日期",
+			Label:       bdl.I18nPrinter.Sprintf("Deadline"),
 			EmptyText:   "",
 			Fixed:       false,
 			ShowIndex:   0,
@@ -217,7 +217,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 	if fixedIssueType == apistructs.IssueTypeBug.String() {
 		conditionProps = append(conditionProps, filter.PropCondition{
 			Key:         PropConditionKeyClosed,
-			Label:       "关闭日期",
+			Label:       bdl.I18nPrinter.Sprintf("Closed at"),
 			EmptyText:   "",
 			Fixed:       false,
 			ShowIndex:   0,
@@ -236,21 +236,21 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
 		status := filter.PropCondition{
 			Key:         PropConditionKeyStateBelongs,
-			Label:       "状态",
-			EmptyText:   "全部",
+			Label:       bdl.I18nPrinter.Sprintf("State"),
+			EmptyText:   bdl.I18nPrinter.Sprintf("All"),
 			Fixed:       true,
 			ShowIndex:   3,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
 			Placeholder: "",
 			Options: func() []filter.PropConditionOption {
-				open := filter.PropConditionOption{Label: "待处理", Value: apistructs.IssueStateBelongOpen, Icon: ""}
-				reopen := filter.PropConditionOption{Label: "重新打开", Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				resolved := filter.PropConditionOption{Label: "已解决", Value: apistructs.IssueStateBelongResloved, Icon: ""}
-				wontfix := filter.PropConditionOption{Label: "不修复", Value: apistructs.IssueStateBelongWontfix, Icon: ""}
-				closed := filter.PropConditionOption{Label: "已关闭", Value: apistructs.IssueStateBelongClosed, Icon: ""}
-				working := filter.PropConditionOption{Label: "进行中", Value: apistructs.IssueStateBelongWorking, Icon: ""}
-				done := filter.PropConditionOption{Label: "已完成", Value: apistructs.IssueStateBelongDone, Icon: ""}
+				open := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("OPEN"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
+				reopen := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("REOPEN"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
+				resolved := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("RESOLVED"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
+				wontfix := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("WONTFIX"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
+				closed := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("CLOSED"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
+				working := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("WORKING"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
+				done := filter.PropConditionOption{Label: bdl.I18nPrinter.Sprintf("DONE"), Value: apistructs.IssueStateBelongDone, Icon: ""}
 				switch fixedIssueType {
 				case "ALL":
 					return []filter.PropConditionOption{open, working, done, reopen, resolved, wontfix, closed}

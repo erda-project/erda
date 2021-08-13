@@ -14,6 +14,7 @@
 package issueTable
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,4 +34,8 @@ func TestGetTotalPage(t *testing.T) {
 	for _, v := range data {
 		assert.Equal(t, getTotalPage(v.total, v.pageSize), v.page)
 	}
+}
+
+func TestGenProps(t *testing.T) {
+	fmt.Println(genProps())
 }

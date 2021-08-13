@@ -98,13 +98,13 @@ func (g *Gantt) genProps(edgeMinTime, edgeMaxTime *time.Time) {
 		RowKey:  "id",
 		// ClassName: "task-gantt-table",
 		Columns: []gantt.PropColumn{
-			{Title: "处理人", DataIndex: "user", Width: 160},
-			{Title: "标题", DataIndex: "issues",
+			{Title: g.CtxBdl.I18nPrinter.Sprintf("Gantt Chart"), DataIndex: "user", Width: 160},
+			{Title: g.CtxBdl.I18nPrinter.Sprintf("Title"), DataIndex: "issues",
 				TitleTip: []string{
-					"事项的甘特图只有确保正确输入截止日期、预计时间才能正常显示",
-					"#gray#灰色#>gray#：代表事项截止日期的剩余时间段",
-					"#blue#蓝色#>blue#：代表从事项开始时间到当前/事项完成日期的时间段",
-					"#red#红色#>red#：代表截止日期到当前/事项完成日期的超时时间段",
+					g.CtxBdl.I18nPrinter.Sprintf("The Gantt chart of the event can only be displayed properly if the deadline and estimated time are correctly entered"),
+					g.CtxBdl.I18nPrinter.Sprintf("#gray#gray#>gray#: Represents the remaining time period of the deadline"),
+					g.CtxBdl.I18nPrinter.Sprintf("#blue#blue#>blue#: Represents the time period from the start time of the issue to the current or the issue completion date"),
+					g.CtxBdl.I18nPrinter.Sprintf("#red#read#>red#: Represents the timeout period from the due date to the current or completion date of the issue"),
 				},
 			},
 		}}

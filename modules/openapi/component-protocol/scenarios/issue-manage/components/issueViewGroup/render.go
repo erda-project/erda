@@ -68,32 +68,32 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	props["buttonStyle"] = "solid"
 	props["size"] = "small"
 	optionTable := map[string]interface{}{
-		"text":       "表格",
+		"text":       ctxBdl.I18nPrinter.Sprintf("List"),
 		"tooltip":    "",
 		"prefixIcon": "default-list",
 		"key":        "table",
 	}
 	optionKanban := map[string]interface{}{
-		"text":       "看板",
-		"tooltip":    "看板视图",
+		"text":       ctxBdl.I18nPrinter.Sprintf("Board"),
+		"tooltip":    ctxBdl.I18nPrinter.Sprintf("Board View"),
 		"prefixIcon": "data-matrix",
 		"suffixIcon": "di",
 		"key":        "kanban",
 	}
 	optionGantt := map[string]interface{}{
-		"text":       "甘特图",
+		"text":       ctxBdl.I18nPrinter.Sprintf("Gantt Chart"),
 		"tooltip":    "",
 		"prefixIcon": "gantetu",
 		"key":        "gantt",
 	}
 	optionKanbanChildren := []map[string]string{
-		{"text": "优先级", "key": "priority"},
+		{"text": ctxBdl.I18nPrinter.Sprintf("Priority"), "key": "priority"},
 		//{"text": "处理人", "key": "assignee"},
-		{"text": "截止日期", "key": "deadline"},
-		{"text": "自定义", "key": "custom"},
+		{"text": ctxBdl.I18nPrinter.Sprintf("Deadline"), "key": "deadline"},
+		{"text": ctxBdl.I18nPrinter.Sprintf("Custom"), "key": "custom"},
 	}
 	if ctxBdl.InParams["fixedIssueType"].(string) != "ALL" {
-		optionKanbanChildren = append(optionKanbanChildren, map[string]string{"text": "状态", "key": "status"})
+		optionKanbanChildren = append(optionKanbanChildren, map[string]string{"text": ctxBdl.I18nPrinter.Sprintf("State"), "key": "status"})
 	}
 	optionKanban["children"] = optionKanbanChildren
 	props["options"] = []map[string]interface{}{optionTable, optionKanban, optionGantt}
