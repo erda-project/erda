@@ -23,6 +23,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
+	github.com/cespare/xxhash v1.1.0
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
@@ -152,6 +153,7 @@ require (
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20200214040336-fe8f39a4210d
 	kmodules.xyz/offshoot-api v0.0.0-20200216080509-45ee6418d1c1
+	modernc.org/mathutil v1.0.0
 	moul.io/http2curl v1.0.0 // indirect
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
