@@ -33,15 +33,43 @@ import (
 	"github.com/erda-project/erda/tools/gotools/go-test-sum/cover"
 )
 
-var codeFileExts = map[string]bool{
-	".go":  true,
-	".s":   true,
-	".c":   true,
-	".h":   true,
-	".cpp": true,
-}
+var (
+	codeFileExts = map[string]bool{
+		".go":  true,
+		".s":   true,
+		".c":   true,
+		".h":   true,
+		".cpp": true,
+	}
+	// homeDir string
+)
 
 const testSumFilename = "go.test.sum"
+
+// func init() {
+// 	home, err := homedir.Dir()
+// 	if err != nil {
+// 		fmt.Println("failed to get home directory")
+// 		os.Exit(1)
+// 	}
+// 	homeDir = home
+// }
+
+func main() {
+	wd, err := os.Getwd()
+	fmt.Println("--", wd, err)
+	base, err := readBasePath()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	err = testAllPackages(base)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+		return
+	}
+}
 
 func testAllPackages(base string) error {
 	packages := make(map[string]*packageInfo)
@@ -138,9 +166,10 @@ func testAllPackages(base string) error {
 			m[pkg] = struct{}{}
 		}
 	}
-	preSum := readTestSum()
+
 	const doTestCheck = true
 	if doTestCheck {
+		preSum := readTestSum()
 		profiles, err := cover.ParseProfiles("coverage.txt")
 		if preSum == nil || err != nil {
 			_, err := runTest("./...")
@@ -314,18 +343,4 @@ func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming 
 		}
 	}
 	return nil
-}
-
-func main() {
-	base, err := readBasePath()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	err = testAllPackages(base)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-		return
-	}
 }
