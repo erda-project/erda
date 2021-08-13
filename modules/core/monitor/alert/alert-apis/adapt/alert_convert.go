@@ -466,9 +466,6 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if !ok {
 			continue
 		}
-		//if tag == "cluster_name" && value != "$cluster_name" {
-		//	continue
-		//}
 		if tag == ClusterName || tag == ApplicationId {
 			v, ok := value.(string)
 			if !ok {
