@@ -16,6 +16,7 @@ package k8sapi
 
 import (
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NamespacePhase describes phase of a namespace
@@ -69,7 +70,7 @@ var DeleteOptions = &CascadingDeleteOptions{
 	// 'Foreground' - a cascading policy that deletes all dependents in the foreground
 	// e.g. if you delete a deployment, this option would delete related replicaSets and pods
 	// See more: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#delete-24
-	PropagationPolicy: "Foreground",
+	PropagationPolicy: string(metav1.DeletePropagationBackground),
 }
 
 // CascadingDeleteOptions describe the option of cascading deletion
