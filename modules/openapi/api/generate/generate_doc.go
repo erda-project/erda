@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
-
 func generateDoc(onlyOpenapi bool, resultfile string) {
 	var (
 		apisM     = make(map[string][]*apis.ApiSpec)
@@ -56,7 +55,7 @@ func generateDoc(onlyOpenapi bool, resultfile string) {
 
 func writeSwagger(filename, title string, v3 *openapi3.Swagger) error {
 	filename = filepath.Base(filename)
-	filename = strings.TrimSuffix(filename, filepath.Ext(filename))+".yml"
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename)) + ".yml"
 	filename = title + "-" + filename
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
