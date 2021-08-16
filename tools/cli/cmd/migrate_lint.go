@@ -91,6 +91,12 @@ func RunMigrateLint(ctx *command.Context, input, config string, noDetail bool, o
 }
 
 func StandardMigrateLint(ctx *command.Context, input, config string) (err error) {
+	defer func() {
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
 	var p = scriptsParameters{
 		migrationDir: input,
 		rules:        nil,
