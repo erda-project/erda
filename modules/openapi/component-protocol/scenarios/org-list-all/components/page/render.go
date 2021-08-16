@@ -16,9 +16,13 @@ package page
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/org-list-all/i18n"
 )
 
 func (i *ComponentPage) marshal(c *apistructs.Component) error {
@@ -37,7 +41,21 @@ func (i *ComponentPage) marshal(c *apistructs.Component) error {
 	return nil
 }
 
+func (i *ComponentPage) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	i.CtxBdl = bdl
+	return nil
+}
+
 func (i *ComponentPage) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+	if err := i.SetCtxBundle(ctx); err != nil {
+		return err
+	}
+
 	defer func() {
 		fail := i.marshal(c)
 		if err == nil && fail != nil {
@@ -51,9 +69,10 @@ func (i *ComponentPage) Render(ctx context.Context, c *apistructs.Component, s a
 }
 
 func (i *ComponentPage) initProperty(s apistructs.ComponentProtocolScenario) {
+	i18nLocale := i.CtxBdl.Bdl.GetLocale(i.CtxBdl.Locale)
 	publicOrgs := Option{
 		Key:  "public",
-		Name: "公开组织",
+		Name: i18nLocale.Get(i18n.I18nPublicOrg),
 		Operations: map[string]interface{}{
 			"click": ClickOperation{
 				Reload: false,
