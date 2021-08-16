@@ -148,11 +148,11 @@ check-imports:
 
 # docker image
 build-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build
+	./build/scripts/docker_image.sh ${MODULE_PATH} build ${EXTENSION_ZIP_ADDRS}
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
 build-push-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push ${EXTENSION_ZIP_ADDRS}
 
 build-push-all:
 	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
