@@ -60,7 +60,7 @@ func realMain(args string) {
 	agent := &actionagent.Agent{
 		Errs:              make([]error, 0),
 		PushedMetaFileMap: make(map[string]string),
-		BlackList:         make([]string, 0),
+		BlackList:         make([]string, 0), // enciphered data will Replaced by '******' when log output
 		Ctx:               ctx,
 		Cancel:            cancel,
 	}

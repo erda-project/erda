@@ -83,16 +83,7 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 // stdoutTailHandler 以 tail 方式处理 stdout
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		values := make([]string, 0)
-		for _, v := range agent.BlackList {
-			if strings.Contains(line, v) {
-				values = append(values, v)
-			}
-		}
-		for _, v := range values {
-			line = strings.Replace(line, v, "******", -1)
-		}
-
+		replace(agent.BlackList, &line)
 		fmt.Printf("%s\n", line)
 
 		// meta
@@ -110,16 +101,7 @@ func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 // stderrTailHandler 以 tail 方式处理 stderr
 func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		values := make([]string, 0)
-		for _, v := range agent.BlackList {
-			if strings.Contains(line, v) {
-				values = append(values, v)
-			}
-		}
-		for _, v := range values {
-			line = strings.Replace(line, v, "******", -1)
-		}
-
+		replace(agent.BlackList, &line)
 		fmt.Errorf("%s\n", line)
 
 		// meta
@@ -135,6 +117,18 @@ func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 		}
 
 		return nil
+	}
+}
+
+func replace(blackList []string, line *string) {
+	values := make([]string, 0)
+	for _, v := range blackList {
+		if strings.Contains(*line, v) {
+			values = append(values, v)
+		}
+	}
+	for _, v := range values {
+		*line = strings.Replace(*line, v, "******", -1)
 	}
 }
 

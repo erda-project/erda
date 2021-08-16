@@ -65,7 +65,7 @@ type AgentArg struct {
 	PipelineID     uint64 `json:"pipelineID"`
 	PipelineTaskID uint64 `json:"pipelineTaskID"`
 
-	EncryptSecretKeys []string `json:"encryptSecretKeys"`
+	EncryptSecretKeys []string `json:"encryptSecretKeys"` // Encrypt envs, it will Replaced by '******' when log output
 }
 
 type EasyUse struct {
