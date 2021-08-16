@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/conf"
@@ -33,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/i18n"
 	aliyun_resources "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -44,7 +46,7 @@ import (
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-func initialize() error {
+func initialize(ctx context.Context) error {
 	conf.Load()
 
 	// set log formatter
@@ -65,15 +67,15 @@ func initialize() error {
 	dumpstack.Open()
 	logrus.Infoln(version.String())
 
-	server, err := do()
+	server, err := do(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return server.ListenAndServe()
 }
 
-func do() (*httpserver.Server, error) {
+func do(ctx context.Context) (*httpserver.Server, error) {
 	var redisCli *redis.Client
 
 	db := dbclient.Open(dbengine.MustOpen())
@@ -136,16 +138,28 @@ func do() (*httpserver.Server, error) {
 		org_resource.WithRedisClient(redisCli),
 	)
 
-	ep, err := initEndpoints(db, js, cachedJs, bdl, o)
+	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o)
 	if err != nil {
 		return nil, err
 	}
+
 	if conf.EnableEss() {
 		initServices(ep)
 	}
 
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(append(ep.Routes()))
+
+	authenticator := middleware.NewAuthenticator(bdl)
+	shellHandler := middleware.NewShellHandler(ctx)
+	auditor := middleware.NewAuditor(bdl)
+
+	middlewares := middleware.Chain{
+		authenticator.AuthMiddleware,
+		shellHandler.HandleShell,
+		auditor.AuditMiddleWare,
+	}
+	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")
@@ -156,10 +170,11 @@ func do() (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
+func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle, o *org_resource.OrgResource) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
 	ep := endpoints.New(
+		ctx,
 		db,
 		js,
 		cachedJS,

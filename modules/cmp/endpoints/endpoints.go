@@ -14,6 +14,7 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/erda-project/erda/bundle"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/mns"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
@@ -34,21 +36,22 @@ type Endpoints struct {
 	bdl      *bundle.Bundle
 	dbclient *dbclient.DBClient
 
-	nodes        *nodes.Nodes
-	labels       *labels.Labels
-	clusters     *clusters.Clusters
-	orgResource  *org_resource.OrgResource
-	Mns          *mns.Mns
-	Ess          *ess.Ess
-	CloudAccount *cloud_account.CloudAccount
-	Addons       *addons.Addons
-	JS           jsonstore.JsonStore
-	CachedJS     jsonstore.JsonStore
+	nodes           *nodes.Nodes
+	labels          *labels.Labels
+	clusters        *clusters.Clusters
+	orgResource     *org_resource.OrgResource
+	Mns             *mns.Mns
+	Ess             *ess.Ess
+	CloudAccount    *cloud_account.CloudAccount
+	Addons          *addons.Addons
+	JS              jsonstore.JsonStore
+	CachedJS        jsonstore.JsonStore
+	SteveAggregator *steve.Aggregator
 }
 
 type Option func(*Endpoints)
 
-func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonStore, options ...Option) *Endpoints {
+func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonStore, options ...Option) *Endpoints {
 	e := &Endpoints{}
 
 	for _, op := range options {
@@ -64,6 +67,7 @@ func New(db *dbclient.DBClient, js jsonstore.JsonStore, cachedJS jsonstore.JsonS
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.CachedJS = cachedJS
+	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
 
 	return e
 }
