@@ -222,7 +222,7 @@ func testAllPackages(base string) error {
 			if err != nil {
 				return err
 			}
-			os.Rename(cacheCoverageTmp, filepath.Join(cachePath, cachedCoverage))
+			os.Rename(cacheCoverageTmp, filepath.Join(cachePath, "coverage.txt"))
 		}
 	}
 	return writeTestSum(pkgSum)
@@ -285,6 +285,7 @@ func readTestSum() map[string]*testSumItem {
 			testTime: t,
 		}
 	}
+	fmt.Println("read test sum:", testSumFilename)
 	return sum
 }
 
