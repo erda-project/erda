@@ -16,12 +16,24 @@ package browsePublicProjects
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/i18n"
 )
+
+func (i *ComponentBrowsePublic) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	i.ctxBdl = bdl
+	return nil
+}
 
 // GenComponentState 获取state
 func (i *ComponentBrowsePublic) GenComponentState(c *apistructs.Component) error {
@@ -47,6 +59,9 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 	if err := i.GenComponentState(c); err != nil {
 		return err
 	}
+	if err := i.SetCtxBundle(ctx); err != nil {
+		return err
+	}
 
 	// 如果list组件的数据不为空，则直接返回
 	if !i.State.IsEmpty {
@@ -54,6 +69,7 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 		return nil
 	}
 
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = Props{
 		Visible:    true,
 		RenderType: "linkText",
@@ -64,7 +80,7 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 		Value: map[string]interface{}{
 			"text": []interface{}{
 				map[string]interface{}{
-					"text":         "浏览该组织下的公开项目",
+					"text":         i18nLocale.Get(i18n.I18nProjectPublicBrowse),
 					"operationKey": "toPublicProject",
 					"styleConfig":  map[string]interface{}{"bold": true},
 				},
