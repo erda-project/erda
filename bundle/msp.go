@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -121,7 +122,7 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 	hc := b.hc
 
 	var resp apistructs.Header
-	r, err := hc.Post(host).
+	r, err := hc.Post(host, httpclient.NoRetry).
 		Path("/api/gateway/tenants").
 		JSONBody(req).
 		Do().

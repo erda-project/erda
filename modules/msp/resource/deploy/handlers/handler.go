@@ -248,6 +248,7 @@ func NewDefaultHandler(dbClient *gorm.DB, logger logs.Logger) *DefaultDeployHand
 			bundle.WithPipeline(),
 			bundle.WithMonitor(),
 			bundle.WithCollector(),
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second*10, time.Second*60))),
 		),
 		Log: logger,
 	}
