@@ -55,6 +55,17 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Go Build Cache For Test
+        uses: actions/cache@v2
+        env:
+          action-name: test
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ env.action-name }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Go generate files
         run: make prepare
       - name: Check Go Imports
@@ -88,8 +99,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Install Tools
-        run: apk add tar
       - name: Go Build Cache For Test
         uses: actions/cache@v2
         env:
@@ -106,7 +115,9 @@ jobs:
         with:
           path: |
             ~/.cache/go-test
-          key: ${{ runner.os }}-go-test
+          key: ${{ runner.os }}-go-test-${{ hashFiles('**/*.go', '**/*.s", '**/*.c", '**/*.h', '**/*.cpp') }}
+          restore-keys: |
+            ${{ runner.os }}-go-test-
       - name: Go generate files
         run: make prepare
       - name: Run Test
