@@ -23,6 +23,7 @@ import (
 // see: https://github.com/semver/semver/issues/232#issuecomment-405596809
 var SemverRegexp = regexp.MustCompile(`^(v)?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 
+// Valid .
 func Valid(ver string) bool {
 	return SemverRegexp.MatchString(ver)
 }
