@@ -279,11 +279,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		return nil, err
 	}
 
-	// credential config
-	if cluster.ManageConfig == nil {
-		return nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
-	}
-
 	addr, client, err := util.GetClient(clusterName, cluster.ManageConfig)
 	if err != nil {
 		logrus.Errorf("cluster %s get http client and addr error: %v", clusterName, err)
