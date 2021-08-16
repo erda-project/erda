@@ -60,7 +60,9 @@ func Initialize() error {
 		return err
 	}
 
+	bdl := bundle.New()
 	server := httpserver.New(conf.ListenAddr())
+	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("orchestrator"))
 	server.RegisterEndpoint(ep.Routes())
 
