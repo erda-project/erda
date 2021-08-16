@@ -1136,6 +1136,11 @@ func (e *EDAS) getAppID(name string) (string, error) {
 		return "", errors.Errorf("failed to list app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
+	if len(resp.ApplicationList.Application) == 0 {
+		errMsg := fmt.Sprintf("[EDAS] application list count is 0")
+		logrus.Errorf(errMsg)
+		return "", fmt.Errorf(errMsg)
+	}
 	for _, app := range resp.ApplicationList.Application {
 		if name == app.Name {
 			logrus.Infof("[EDAS] Successfully to get app id: %s, name: %s", app.AppId, name)
