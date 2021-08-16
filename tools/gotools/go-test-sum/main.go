@@ -55,7 +55,7 @@ func init() {
 		os.Exit(1)
 	}
 	homeDir = home
-	cachePath = filepath.Join(homeDir, "go-test")
+	cachePath = filepath.Join(homeDir, ".cache", "go-test")
 	err = os.MkdirAll(cachePath, os.ModePerm)
 	if err != nil {
 		fmt.Println("failed to create go test cache")
