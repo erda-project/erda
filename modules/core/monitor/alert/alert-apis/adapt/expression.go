@@ -70,6 +70,11 @@ const (
 	Hours   = "hours"
 )
 
+const (
+	ClusterName   = "cluster_name"
+	ApplicationId = "application_id"
+)
+
 type (
 	// DisplayKey .
 	DisplayKey struct {
