@@ -179,6 +179,9 @@ func testAllPackages(base string) error {
 		preSum := readTestSum()
 		cachedCoverage := filepath.Join(cachePath, "coverage.txt")
 		profiles, err := cover.ParseProfiles(cachedCoverage)
+		if err != nil {
+			fmt.Printf("fail to read %s : %s\n", cachedCoverage, err)
+		}
 		if preSum == nil || err != nil {
 			_, err := runTest("./...")
 			if err != nil {
