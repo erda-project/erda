@@ -16,7 +16,9 @@ package migrator
 import (
 	"fmt"
 
+	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
+	"gorm.io/gorm"
 )
 
 // Schema is the set of TableDefinitions.
@@ -84,4 +86,39 @@ func (s *Schema) Equal(o *Schema) *Equal {
 	}
 
 	return &Equal{equal: eq, reason: reasons}
+}
+
+func (s *Schema) EqualWith(db *gorm.DB) *Equal {
+	if len(s.TableDefinitions) == 0 {
+		return &Equal{equal: true}
+	}
+
+	cloud := NewSchema()
+	for tableName := range s.TableDefinitions {
+		raw := "SHOW CREATE TABLE " + tableName
+		this := db.Raw(raw)
+		if err := this.Error; err != nil {
+			return &Equal{
+				equal:  false,
+				reason: fmt.Sprintf("failed to exec %s", raw),
+			}
+		}
+		var _ig, create string
+		if err := this.Row().Scan(&_ig, &create); err != nil {
+			return &Equal{
+				equal:  false,
+				reason: fmt.Sprintf("failed to Scan create table stmt, raw: %s", raw),
+			}
+		}
+		node, err := parser.New().ParseOneStmt(create, "", "")
+		if err != nil {
+			return &Equal{
+				equal:  false,
+				reason: fmt.Sprintf("failed to ParseOneStmt: %s, raw: %s", create, raw),
+			}
+		}
+		node.Accept(cloud)
+	}
+
+	return s.Equal(cloud)
 }
