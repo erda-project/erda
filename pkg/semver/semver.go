@@ -27,6 +27,7 @@ func Valid(ver string) bool {
 	return SemverRegexp.MatchString(ver)
 }
 
+// New .
 func New(major int, vers ...int) string {
 	minor := 0
 	patch := 0
