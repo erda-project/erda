@@ -226,6 +226,24 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 			"value":    structpb.NewStringValue("xxxxxxx"),
 			"dataType": structpb.NewStringValue(""),
 		},
+		map[string]*structpb.Value{
+			"tag":      structpb.NewStringValue("cluster_name"),
+			"operator": structpb.NewStringValue("in"),
+			"value":    structpb.NewStringValue("$cluster_name"),
+			"dataType": structpb.NewStringValue(""),
+		},
+		map[string]*structpb.Value{
+			"tag":      structpb.NewStringValue("_metric_scope"),
+			"operator": structpb.NewStringValue("eq"),
+			"value":    structpb.NewStringValue("org"),
+			"dataType": structpb.NewStringValue(""),
+		},
+		map[string]*structpb.Value{
+			"tag":      structpb.NewStringValue("_metric_scope_id"),
+			"operator": structpb.NewStringValue("eq"),
+			"value":    structpb.NewStringValue("terminus"),
+			"dataType": structpb.NewStringValue(""),
+		},
 	})
 	templateFunctions, _ := structpb.NewList([]interface{}{
 		map[string]*structpb.Value{
