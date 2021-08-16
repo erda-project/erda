@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
-const AddonLogIndexPrefix = "spotlogs-"
+const AddonLogIndexPrefix = "rlogs-"
 
 func (p *provider) IsMatch(tmc *db.Tmc) bool {
 	return tmc.Engine == handlers.ResourceLogAnalytics
