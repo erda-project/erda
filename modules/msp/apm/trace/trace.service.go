@@ -290,9 +290,9 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	bodyString, err := json.Marshal(req.Body)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	bodyValid := json.Valid([]byte(req.Body))
+	if req.Body != "" && !bodyValid {
+		return nil, errors.NewParameterTypeError("body")
 	}
 	if req.CreateTime == "" || req.UpdateTime == "" {
 		req.CreateTime = time.Now().Format(layout)
@@ -312,7 +312,7 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		Url:            req.Url,
 		QueryString:    string(queryString),
 		Header:         string(headerString),
-		Body:           string(bodyString),
+		Body:           req.Body,
 		Method:         req.Method,
 		Status:         int(req.Status),
 		ResponseBody:   req.ResponseBody,
@@ -336,7 +336,6 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewInternalServerError(err)
 	}
 	responseCode := response.StatusCode
-	responseBody, err := ioutil.ReadAll(response.Body)
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -345,7 +344,7 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		}
 	}(response.Body)
 
-	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
+	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
