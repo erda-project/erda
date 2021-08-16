@@ -188,12 +188,6 @@ func testAllPackages(base string) error {
 			if err != nil {
 				return err
 			}
-			cacheCoverageTmp := filepath.Join(cachePath, "coverage.txt.tmp")
-			_, err = copyFile(cacheCoverageTmp, "coverage.txt")
-			if err != nil {
-				fmt.Println("failed to copy coverage.txt:", err)
-			}
-			os.Rename(cacheCoverageTmp, cachedCoverage)
 		} else {
 			coverage := make(map[string][]*cover.Profile)
 			for pkg, sum := range pkgSum {
@@ -226,13 +220,17 @@ func testAllPackages(base string) error {
 				return err
 			}
 			os.Rename("coverage.txt.tmp", "coverage.txt")
-
+		}
+		absCachedCoverageFilePath, _ := filepath.Abs(cachedCoverage)
+		absCoverageFilePath, _ := filepath.Abs("coverage.txt")
+		if absCachedCoverageFilePath != absCoverageFilePath {
 			cacheCoverageTmp := filepath.Join(cachePath, "coverage.txt.tmp")
 			_, err = copyFile(cacheCoverageTmp, "coverage.txt")
 			if err != nil {
 				fmt.Println("failed to copy coverage.txt:", err)
 			}
 			os.Rename(cacheCoverageTmp, cachedCoverage)
+			fmt.Println("save coverage.txt ->", cachedCoverage)
 		}
 	}
 	return writeTestSum(pkgSum)
