@@ -24,6 +24,7 @@ if [ -z "$1" ]; then
 fi
 MODULE_PATH=$1
 ACTION=$2
+EXTENSION_ZIP_ADDRS=$3
 
 # cd to root directory
 cd $(git rev-parse --show-toplevel)
@@ -128,6 +129,7 @@ build_image()  {
         --build-arg "DOCKER_IMAGE=${DOCKER_IMAGE}" \
         --build-arg "BASE_DOCKER_IMAGE=${BASE_DOCKER_IMAGE}" \
         --build-arg "MAKE_BUILD_CMD=${MAKE_BUILD_CMD}" \
+        --build-arg "EXTENSION_ZIP_ADDRS=${EXTENSION_ZIP_ADDRS}" \
         -f "${DOCKERFILE}" .
 }
 

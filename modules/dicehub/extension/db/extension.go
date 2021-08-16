@@ -200,3 +200,12 @@ func (client *ExtensionConfigDB) GetExtensionVersionCount(name string) (int64, e
 		Count(&count).Error
 	return count, err
 }
+
+func (client *ExtensionConfigDB) QueryAllExtensions() ([]ExtensionVersion, error) {
+	var result []ExtensionVersion
+	err := client.Model(&ExtensionVersion{}).Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

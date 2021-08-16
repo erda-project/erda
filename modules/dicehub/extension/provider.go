@@ -17,6 +17,7 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
@@ -61,6 +62,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			))
 	}
+	go func() {
+		err := p.extensionService.InitExtension("/app/extension")
+		if err != nil {
+			panic(err)
+		}
+		logrus.Infoln("End init extension")
+	}()
 	return nil
 }
 
