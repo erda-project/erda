@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -187,6 +188,12 @@ func testAllPackages(base string) error {
 			if err != nil {
 				return err
 			}
+			cacheCoverageTmp := filepath.Join(cachePath, "coverage.txt.tmp")
+			_, err = copyFile(cacheCoverageTmp, "coverage.txt")
+			if err != nil {
+				fmt.Println("failed to copy coverage.txt:", err)
+			}
+			os.Rename(cacheCoverageTmp, cachedCoverage)
 		} else {
 			coverage := make(map[string][]*cover.Profile)
 			for pkg, sum := range pkgSum {
@@ -221,9 +228,9 @@ func testAllPackages(base string) error {
 			os.Rename("coverage.txt.tmp", "coverage.txt")
 
 			cacheCoverageTmp := filepath.Join(cachePath, "coverage.txt.tmp")
-			err = cover.Write(cacheCoverageTmp, "atomic", newProfiles)
+			_, err = copyFile(cacheCoverageTmp, "coverage.txt")
 			if err != nil {
-				return err
+				fmt.Println("failed to copy coverage.txt:", err)
 			}
 			os.Rename(cacheCoverageTmp, cachedCoverage)
 		}
@@ -338,6 +345,20 @@ func runTest(file string) (profiles []*cover.Profile, err error) {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	return
+}
+
+func copyFile(dstName, srcName string) (written int64, err error) {
+	src, err := os.Open(srcName)
+	if err != nil {
+		return
+	}
+	defer src.Close()
+	dst, err := os.OpenFile(dstName, os.O_WRONLY|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return
+	}
+	defer dst.Close()
+	return io.Copy(dst, src)
 }
 
 func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming map[string]map[string]struct{}, coverage map[string][]*cover.Profile) error {
