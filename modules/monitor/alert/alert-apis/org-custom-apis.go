@@ -152,7 +152,7 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 		ruleMetric := metricMap[rule.Metric]
 		labels := ruleMetric.Labels
 		scope := labels["metric_scope"]
-		scopeId := labels["metric_scope_id"]
+		scopeId := org.Name
 
 		if err := p.checkMetricMeta(rule, metricMap[rule.Metric]); err != nil {
 			return api.Errors.InvalidParameter(err)
@@ -172,6 +172,11 @@ func (p *provider) createOrgCustomizeAlert(r *http.Request, alert *adapt.Customi
 				Value:    scopeId,
 			})
 		}
+		rule.Filters = append(rule.Filters, &adapt.CustomizeAlertRuleFilter{
+			Tag:      "cluster_name",
+			Operator: "in",
+			Value:    "$cluster_name",
+		})
 	}
 	if err := p.checkCustomizeAlert(alert); err != nil {
 		return api.Errors.InvalidParameter(err)

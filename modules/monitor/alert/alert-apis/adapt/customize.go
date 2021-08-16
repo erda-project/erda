@@ -271,6 +271,8 @@ const (
 	customizeAlertTypeMicroService = "micro_service_customize"
 	applicationIdTag               = "application_id"
 	applicationIdValue             = "$application_id"
+	clusterNameTag                 = "cluster_name"
+	clusterNameValue               = "$cluster_name"
 )
 
 // CustomizeAlerts .
@@ -382,7 +384,9 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*CustomizeAlertDetail, error) {
 			if filter.Tag == applicationIdTag && filter.Value == applicationIdValue {
 				continue
 			}
-
+			if filter.Tag == clusterNameTag && filter.Value.(string) == clusterNameValue {
+				continue
+			}
 			if alert.AlertType == customizeAlertTypeMicroService && a.microServiceFilterTags[filter.Tag] {
 				continue
 			}
