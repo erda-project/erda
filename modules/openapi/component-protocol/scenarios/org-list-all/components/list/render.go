@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/org-list-all/i18n"
 )
 
 const defaultOrgImage = "frontImg_default_org_icon"
@@ -130,6 +131,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 		orgMap[o.ID] = true
 	}
 
+	i18nLocale := i.CtxBdl.Bdl.GetLocale(i.CtxBdl.Locale)
 	i.State.Total = orgs.Total
 	data := []Org{}
 	for _, org := range orgs.List {
@@ -141,7 +143,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 			ExtraInfos: []ExtraInfo{
 				{
 					Icon: "unlock",
-					Text: "公开组织",
+					Text: i18nLocale.Get(i18n.I18nPublicOrg),
 				},
 			},
 		}
@@ -163,7 +165,7 @@ func (i *ComponentList) RenderPublicOrgs() error {
 		if _, ok := orgMap[org.ID]; ok {
 			item.ExtraInfos = append(item.ExtraInfos, ExtraInfo{
 				Icon: "user",
-				Text: "已加入",
+				Text: i18nLocale.Get(i18n.I18nOrgJoined),
 			})
 			command.Target = "dopRoot"
 		}

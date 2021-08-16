@@ -48,4 +48,5 @@ const (
 	I18nKeyOrgBrosePublic      = "wb.sidebar.component.org.browsePublic"
 	I18nKeyOrgAddFirstOr       = "wb.sidebar.component.org.addFirstOr"
 	I18nKeyOrgAddFirst         = "wb.sidebar.component.org.addFirst"
+	I18nKeyOrgCreateRegexp     = "wb.sidebar.component.org.create.regexp"
 )
