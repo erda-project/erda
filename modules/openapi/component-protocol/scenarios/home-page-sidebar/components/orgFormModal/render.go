@@ -101,7 +101,7 @@ func (o *OrgFormModal) SetProps() {
 				"required":  true,
 				"rules": []interface{}{
 					map[string]interface{}{
-						"msg":     "由小写字母、数字，-组成(不允许纯数字)",
+						"msg":     i18nLocale.Get(i18n.I18nKeyOrgCreateRegexp),
 						"pattern": "/^(?:[a-z]+|[0-9]+[a-z]+|[0-9]+[-]+[a-z0-9])+(?:(?:(?:[-]*)[a-z0-9]+)+)?$/",
 					},
 				},
