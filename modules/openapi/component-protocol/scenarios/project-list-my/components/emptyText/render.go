@@ -16,11 +16,13 @@ package emptyText
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/i18n"
 )
 
 // GenComponentState 获取state
@@ -43,8 +45,21 @@ func (i *ComponentText) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
+func (i *ComponentText) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	i.ctxBdl = bdl
+	return nil
+}
+
 func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
 	if err := i.GenComponentState(c); err != nil {
+		return err
+	}
+	if err := i.SetCtxBundle(ctx); err != nil {
 		return err
 	}
 
@@ -54,6 +69,7 @@ func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ a
 		return nil
 	}
 
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = Props{
 		Visible:    true,
 		RenderType: "linkText",
@@ -63,7 +79,7 @@ func (i *ComponentText) Render(ctx context.Context, c *apistructs.Component, _ a
 		},
 		Value: map[string]interface{}{
 			"text": []interface{}{
-				"您当前还未被邀请加入任何项目",
+				i18nLocale.Get(i18n.I18nProjectNotJoined),
 			},
 		},
 	}

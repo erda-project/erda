@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-all/i18n"
 )
 
 func GetOpsInfo(opsData interface{}) (*Meta, error) {
@@ -44,8 +45,9 @@ func GetOpsInfo(opsData interface{}) (*Meta, error) {
 	return &meta, nil
 }
 
-func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
-	activeTime, err := CountActiveTime(pro.ActiveTime)
+func (i *ComponentList) RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
+	activeTime, err := i.CountActiveTime(pro.ActiveTime)
 	if err != nil {
 		return ProItem{}, err
 	}
@@ -97,17 +99,17 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 			map[bool]ExtraInfos{
 				true: {
 					Icon: "unlock",
-					Text: "公开项目",
+					Text: i18nLocale.Get(i18n.I18nPublicProject),
 				},
 				false: {
 					Icon: "lock",
-					Text: "私有项目",
+					Text: i18nLocale.Get(i18n.I18nPrivateProject),
 				},
 			}[pro.IsPublic],
 			{
 				Icon:    "application-one",
 				Text:    strconv.Itoa(pro.Stats.CountApplications),
-				Tooltip: "应用数",
+				Tooltip: i18nLocale.Get(i18n.I18nAppNumber),
 			},
 			{
 				Icon:    "time",
@@ -127,21 +129,21 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 	if pro.Joined {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
 			Icon: "user",
-			Text: "已加入",
+			Text: i18nLocale.Get(i18n.I18nJoined),
 		})
 	}
 	// 解封状态
 	if pro.BlockStatus == "unblocking" {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
 			Icon:    "link-cloud-faild",
-			Text:    "解封处理中，请稍等",
+			Text:    i18nLocale.Get(i18n.I18nUnblocking),
 			Type:    "warning",
-			Tooltip: "解封处理中，请稍等",
+			Tooltip: i18nLocale.Get(i18n.I18nUnblocking),
 		})
 	} else if pro.BlockStatus == "unblocked" {
 		item.ExtraInfos = append(item.ExtraInfos, ExtraInfos{
 			Icon: "link-cloud-sucess",
-			Text: "已解封",
+			Text: i18nLocale.Get(i18n.I18nUnblocked),
 			Type: "success",
 		})
 	}
@@ -195,7 +197,7 @@ func (i *ComponentList) RenderList() error {
 	i.State.Total = 0
 	if projectDTO != nil {
 		for _, v := range projectDTO.List {
-			p, err := RenItem(v, org.Domain)
+			p, err := i.RenItem(v, org.Domain)
 			if err != nil {
 				return err
 			}
@@ -241,8 +243,9 @@ func (i *ComponentList) RenderChangePageNo(ops interface{}) error {
 	return nil
 }
 
-func CountActiveTime(ActiveTimeStr string) (string, error) {
+func (i *ComponentList) CountActiveTime(ActiveTimeStr string) (string, error) {
 	var subStr string
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	nowTime := time.Now()
 	activeTime, err := time.Parse("2006-01-02 15:04:05", ActiveTimeStr)
 	if err != nil {
@@ -252,17 +255,17 @@ func CountActiveTime(ActiveTimeStr string) (string, error) {
 	sub := nowTime.Sub(activeTime)
 	sub = sub + 8*time.Hour
 	if int64(sub.Hours()) >= 24*30*12 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30*12), 10) + " 年前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30*12), 10) + " " + i18nLocale.Get(i18n.I18nYearAgo)
 	} else if int64(sub.Hours()) >= 24*30 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30), 10) + " 月前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30), 10) + " " + i18nLocale.Get(i18n.I18nMonthAgo)
 	} else if int64(sub.Hours()) >= 24 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/24, 10) + " 天前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/24, 10) + " " + i18nLocale.Get(i18n.I18nDayAgo)
 	} else if int64(sub.Hours()) > 0 {
-		subStr = strconv.FormatInt(int64(sub.Hours()), 10) + " 小时前"
+		subStr = strconv.FormatInt(int64(sub.Hours()), 10) + " " + i18nLocale.Get(i18n.I18nHourAgo)
 	} else if int64(sub.Minutes()) > 0 {
-		subStr = strconv.FormatInt(int64(sub.Minutes()), 10) + " 分钟前"
+		subStr = strconv.FormatInt(int64(sub.Minutes()), 10) + " " + i18nLocale.Get(i18n.I18nMinuteAgo)
 	} else {
-		subStr = "几秒前"
+		subStr = i18nLocale.Get(i18n.I18nSecondAgo)
 	}
 	return subStr, nil
 }

@@ -1,0 +1,10 @@
+{
+  "zh-CN": {
+    "project.list.my.project.not.joined": "您当前还未被邀请加入任何项目",
+    "project.list.my.project.public.browse": "浏览该组织下的公开项目"
+  },
+  "en-US": {
+    "project.list.my.project.not.joined": "You are not currently invited to join any projects",
+    "project.list.my.project.public.browse": "Browse public projects under this organization"
+  }
+}

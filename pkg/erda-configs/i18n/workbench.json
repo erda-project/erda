@@ -35,6 +35,7 @@
     "wb.sidebar.component.org.browsePublic": "浏览公开组织信息",
     "wb.sidebar.component.org.addFirstOr": "请先加入组织或者",
     "wb.sidebar.component.org.addFirst": "请先加入组织",
+    "wb.sidebar.component.org.create.regexp": "由小写字母、数字，-组成(不允许纯数字)",
 
     "wb.content.component.admin": "管理员",
     "wb.content.component.newMember": "新成员",
@@ -118,6 +119,7 @@
     "wb.sidebar.component.org.browsePublic": "Browse public organization information",
     "wb.sidebar.component.org.addFirstOr": "Please join the organization first or",
     "wb.sidebar.component.org.addFirst": "Please join the organization first",
+    "wb.sidebar.component.org.create.regexp": "Consists of lowercase letters, numbers, and-(no pure numbers are allowed)",
 
     "wb.content.component.admin": "Administrator",
     "wb.content.component.newMember": "New Member",
