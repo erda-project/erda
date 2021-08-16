@@ -26,9 +26,9 @@ type WorkbenchResponse struct {
 }
 
 type WorkbenchResponseData struct {
-	TotalProject int                    `json:"totalProject"`
-	TotalIssue   int                    `json:"totalIssue"`
-	List         []WorkbenchProjectItem `json:"list"`
+	TotalProject int                     `json:"totalProject"`
+	TotalIssue   int                     `json:"totalIssue"`
+	List         []*WorkbenchProjectItem `json:"list"`
 }
 
 type WorkbenchProjectItem struct {

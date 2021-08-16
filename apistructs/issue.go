@@ -1074,3 +1074,9 @@ type IssueSubscriberBatchUpdateRequest struct {
 	IssueID      int64    `json:"-"`
 	IdentityInfo `json:"-"`
 }
+
+// IssueNum workbench special issue num
+type IssueNum struct {
+	IssueNum  uint64
+	ProjectID uint64
+}

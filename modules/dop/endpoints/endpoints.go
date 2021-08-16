@@ -61,6 +61,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
+	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -638,6 +639,7 @@ type Endpoints struct {
 	issueProperty  *issueproperty.IssueProperty
 	issueState     *issuestate.IssueState
 	issuePanel     *issuepanel.IssuePanel
+	workBench      *workbench.Workbench
 	uc             *ucauth.UCClient
 	iteration      *iteration.Iteration
 	publisher      *publisher.Publisher
@@ -799,6 +801,12 @@ func WithSonarMetricRule(sonarMetricRule *sonar_metric_rule.Service) Option {
 func WithTestplan(testPlan *testplan.TestPlan) Option {
 	return func(e *Endpoints) {
 		e.testPlan = testPlan
+	}
+}
+
+func WithWorkbench(w *workbench.Workbench) Option {
+	return func(e *Endpoints) {
+		e.workBench = w
 	}
 }
 

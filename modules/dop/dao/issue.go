@@ -518,3 +518,104 @@ func (client *DBClient) GetReceiversByIssueID(issueID int64) ([]string, error) {
 
 	return strutil.DedupSlice(receivers), nil
 }
+
+// GetIssueNumByPros query by IssuePagingRequest and group by project_id to get special issue num
+func (client *DBClient) GetIssueNumByPros(projectIDS []uint64, req apistructs.IssuePagingRequest) ([]apistructs.IssueNum, error) {
+	var (
+		res []apistructs.IssueNum
+	)
+
+	sql := client.Table("dice_issues").Select("count(id) as issue_num, project_id").Where("deleted = ?", 0)
+	if len(req.IDs) > 0 {
+		sql = sql.Where("dice_issues.id IN (?)", req.IDs)
+	}
+	if len(req.IterationIDs) > 0 {
+		sql = sql.Where("iteration_id in (?)", req.IterationIDs)
+	}
+	if len(req.Type) > 0 {
+		sql = sql.Where("type IN (?)", req.Type)
+	}
+	if len(req.Creators) > 0 {
+		sql = sql.Where("creator IN (?)", req.Creators)
+	}
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("assignee IN (?)", req.Assignees)
+	}
+	if len(req.Priority) > 0 {
+		sql = sql.Where("priority IN (?)", req.Priority)
+	}
+	if len(req.Complexity) > 0 {
+		sql = sql.Where("complexity IN (?)", req.Complexity)
+	}
+	if len(req.Severity) > 0 {
+		sql = sql.Where("severity IN (?)", req.Severity)
+	}
+	if len(req.State) > 0 {
+		sql = sql.Where("state IN (?)", req.State)
+	}
+	if len(req.Owner) > 0 {
+		sql = sql.Where("owner IN (?)", req.Owner)
+	}
+	if len(req.BugStage) > 0 {
+		sql = sql.Where("stage IN (?)", req.BugStage)
+	} else if len(req.TaskType) > 0 {
+		sql = sql.Where("stage IN (?)", req.TaskType)
+	}
+	if len(req.ExceptIDs) > 0 {
+		sql = sql.Not("id", req.ExceptIDs)
+	}
+	if req.StartCreatedAt > 0 {
+		startCreatedAt := time.Unix(req.StartCreatedAt/1000, 0)
+		sql = sql.Where("dice_issues.created_at >= ?", startCreatedAt)
+	}
+	if req.EndCreatedAt > 0 {
+		endCreatedAt := time.Unix(req.EndCreatedAt/1000, 0)
+		sql = sql.Where("dice_issues.created_at <= ?", endCreatedAt)
+	}
+	if req.IsEmptyPlanFinishedAt {
+		sql = sql.Where("plan_finished_at IS NULL")
+	}
+	if req.StartFinishedAt > 0 && !req.IsEmptyPlanFinishedAt {
+		startFinishedAt := time.Unix(req.StartFinishedAt/1000, 0)
+		sql = sql.Where("plan_finished_at >= ?", startFinishedAt)
+	}
+	if req.EndFinishedAt > 0 && !req.IsEmptyPlanFinishedAt {
+		endFinishedAt := time.Unix(req.EndFinishedAt/1000, 0)
+		sql = sql.Where("plan_finished_at <= ?", endFinishedAt)
+	}
+
+	if req.StartClosedAt > 0 {
+		startClosedAt := time.Unix(req.StartClosedAt/1000, 0)
+		sql = sql.Where("finish_time >= ?", startClosedAt)
+	}
+	if req.EndClosedAt > 0 {
+		endClosedAt := time.Unix(req.EndClosedAt/1000, 0)
+		sql = sql.Where("finish_time <= ?", endClosedAt)
+	}
+	if len(projectIDS) > 0 {
+		sql = sql.Where("project_id IN (?)", projectIDS)
+	}
+
+	if req.Title != "" {
+		title := strings.ReplaceAll(req.Title, "%", "\\%")
+		if _, err := strutil.Atoi64(title); err == nil {
+			sql = sql.Where("title LIKE ? OR dice_issues.id LIKE ?", "%"+title+"%", "%"+title+"%")
+		} else {
+			sql = sql.Where("title LIKE ?", "%"+title+"%")
+		}
+	}
+	if req.Source != "" {
+		sql = sql.Where("source LIKE ?", "%"+req.Source+"%")
+	}
+	if req.External {
+		sql = sql.Where("external = 1")
+	} else {
+		sql = sql.Where("external = 0")
+	}
+
+	if err := sql.Group("project_id").Find(&res).Error; err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

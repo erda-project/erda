@@ -30,7 +30,7 @@ import (
 
 const (
 	DefaultPageNo    = 1
-	DefaultPageSize  = 5
+	DefaultPageSize  = 3
 	DefaultIssueSize = 5
 )
 
