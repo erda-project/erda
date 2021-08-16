@@ -65,6 +65,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
+	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
@@ -369,6 +370,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		testplan.WithIssueState(issueState),
 	)
 
+	workBench := workbench.New(
+		workbench.WithBundle(bdl.Bdl),
+		workbench.WithIssue(issue),
+	)
+
 	rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 		PublicKey:          conf.Base64EncodedRsaPublicKey(),
 		PublicKeyDataType:  encryption.Base64,
@@ -447,6 +453,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithTestSet(testSetSvc),
 		endpoints.WithSonarMetricRule(sonarMetricRule),
 		endpoints.WithTestplan(testPlan),
+		endpoints.WithWorkbench(workBench),
 		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule))),
 		endpoints.WithAutoTest(autotest),
 		endpoints.WithAutoTestV2(autotestV2),
