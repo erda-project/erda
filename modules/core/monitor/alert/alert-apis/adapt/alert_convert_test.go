@@ -219,68 +219,22 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 		"machine_mem",
 		"machine",
 	})
-	templateFilters, _ := structpb.NewList([]interface{}{
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("cluster_name"),
-			"operator": structpb.NewStringValue("neq"),
-			"value":    structpb.NewStringValue("xxxxxxx"),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("cluster_name"),
-			"operator": structpb.NewStringValue("in"),
-			"value":    structpb.NewStringValue("$cluster_name"),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("_metric_scope"),
-			"operator": structpb.NewStringValue("eq"),
-			"value":    structpb.NewStringValue("org"),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("_metric_scope_id"),
-			"operator": structpb.NewStringValue("eq"),
-			"value":    structpb.NewStringValue("terminus"),
-			"dataType": structpb.NewStringValue(""),
+	templateFilters0, _ := structpb.NewList([]interface{}{
+		map[string]interface{}{
+			"tag":      "cluster_name",
+			"operator": "neq",
+			"value":    "xxxxxxx",
+			"dataType": "",
 		},
 	})
-	templateFilters2, _ := structpb.NewList([]interface{}{
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("cluster_name"),
-			"operator": structpb.NewStringValue("neq"),
-			"value":    structpb.NewNumberValue(float64(3)),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("cluster_name"),
-			"operator": structpb.NewStringValue("in"),
-			"value":    structpb.NewStringValue("$cluster_name"),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("_metric_scope"),
-			"operator": structpb.NewStringValue("eq"),
-			"value":    structpb.NewStringValue("org"),
-			"dataType": structpb.NewStringValue(""),
-		},
-		map[string]*structpb.Value{
-			"tag":      structpb.NewStringValue("_metric_scope_id"),
-			"operator": structpb.NewStringValue("eq"),
-			"value":    structpb.NewStringValue("terminus"),
-			"dataType": structpb.NewStringValue(""),
-		},
-	})
-	templateFunctions, _ := structpb.NewList([]interface{}{
-		map[string]*structpb.Value{
-			"unit":       structpb.NewStringValue(""),
-			"field":      structpb.NewStringValue("mem_used"),
-			"alias":      structpb.NewStringValue("sdf"),
-			"aggregator": structpb.NewStringValue("sum"),
-			"operator":   structpb.NewStringValue("neq"),
-			"value":      structpb.NewNumberValue(float64(1)),
-			"dataType":   structpb.NewStringValue(""),
-		},
+	templateFunctions, _ := structpb.NewStruct(map[string]interface{}{
+		"unit":       "",
+		"field":      "mem_used",
+		"alias":      "sdf",
+		"aggregator": "sum",
+		"operator":   "neq",
+		"value":      1,
+		"dataType":   "",
 	})
 	templateSelect, _ := structpb.NewList([]interface{}{
 		map[string]*structpb.Value{
@@ -381,133 +335,9 @@ func TestToDBAlertExpressionModel(t *testing.T) {
 						Display: "erda_test",
 					},
 					Template: map[string]*structpb.Value{
-						"filters":   structpb.NewListValue(templateFilters),
+						"filters":   structpb.NewListValue(templateFilters0),
 						"window":    structpb.NewNumberValue(float64(1)),
-						"functions": structpb.NewListValue(templateFunctions),
-						"group":     structpb.NewListValue(templateCluster),
-						"metric":    structpb.NewStringValue("host_summary"),
-						"outputs":   structpb.NewListValue(templateOutput),
-						"select":    structpb.NewListValue(templateSelect),
-					},
-					Window: 1,
-					Functions: []*pb.AlertRuleFunction{
-						{
-							Field: &pb.DisplayKey{
-								Key:     "mem_used",
-								Display: "mem_used",
-							},
-							Aggregator: "sum",
-							Operator:   "neq",
-							Value:      structpb.NewNumberValue(float64(1)),
-							DataType:   "number",
-							Unit:       "",
-						},
-					},
-					IsRecover: false,
-					Attributes: map[string]*structpb.Value{
-						"active_metric_groups": structpb.NewListValue(ruleAttribute),
-						"alert_dashboard_id":   structpb.NewStringValue("e1730156951c47ec90ea79552b596a39"),
-						"alert_group":          structpb.NewStringValue("{{cluster_name}}-{{cluster_name}}"),
-						"level":                structpb.NewStringValue("WARNING"),
-						"recover":              structpb.NewStringValue("false"),
-						"tickets_metric_key":   structpb.NewStringValue("{{cluster_name}}"),
-					},
-					Version:    "",
-					Enable:     true,
-					CreateTime: 1628821079000,
-					UpdateTime: 1628821079000,
-				},
-			},
-		},
-		{
-			name: "TestToDBAlertExpressionModel",
-			args: args{
-				e: &pb.AlertExpression{
-					Id:         44,
-					RuleId:     0,
-					AlertIndex: "96683ebf-a1de-4756-9f55-e2794e00a19e",
-					Window:     1,
-					Functions: []*pb.AlertExpressionFunction{
-						{
-							Field:      "mem_used",
-							Aggregator: "sum",
-							Operator:   "neq",
-							Value:      structpb.NewNumberValue(1),
-						},
-					},
-					IsRecover:  false,
-					CreateTime: 1628821079000,
-					UpdateTime: 1628821079000,
-				},
-				orgName: "terminus",
-				alert: &pb.Alert{
-					Id:           56,
-					Name:         "pjycccc",
-					AlertScope:   "org",
-					AlertScopeId: "1",
-					Enable:       true,
-					Rules: []*pb.AlertExpression{
-						{
-							Id:         44,
-							RuleId:     0,
-							AlertIndex: "96683ebf-a1de-4756-9f55-e2794e00a19e",
-							Window:     1,
-							Functions: []*pb.AlertExpressionFunction{
-								{
-									Field:      "mem_used",
-									Aggregator: "sum",
-									Operator:   "neq",
-									Value:      structpb.NewNumberValue(1),
-								},
-							},
-							IsRecover:  false,
-							CreateTime: 1628821079000,
-							UpdateTime: 1628821079000,
-						},
-					},
-					Notifies: []*pb.AlertNotify{
-						{
-							Id:          0,
-							Type:        "notify_group",
-							GroupId:     21,
-							GroupType:   "mbox",
-							NotifyGroup: nil,
-							DingdingUrl: "",
-							Silence: &pb.AlertNotifySilence{
-								Value:  5,
-								Unit:   "minutes",
-								Policy: "fixed",
-							},
-							CreateTime: 0,
-							UpdateTime: 0,
-						},
-					},
-					Filters: nil,
-					Attributes: map[string]*structpb.Value{
-						"alert_domain":         structpb.NewStringValue("https://erda.test.terminus.io"),
-						"alert_dashboard_path": structpb.NewStringValue("/dataCenter/customDashboard"),
-						"alert_record_path":    structpb.NewStringValue("/dataCenter/alarm/record"),
-						"dice_org_id":          structpb.NewStringValue("1"),
-						"cluster_name":         structpb.NewListValue(clusterName),
-					},
-					ClusterNames: []string{"terminus-test", "fdp-test"},
-					Domain:       "https://erda.test.terminus.io",
-					CreateTime:   0,
-					UpdateTime:   0,
-				},
-				rule: &pb.AlertRule{
-					Id:         44,
-					Name:       "erda_test",
-					AlertScope: "org",
-					AlertType:  "org_customize",
-					AlertIndex: &pb.DisplayKey{
-						Key:     "96683ebf-a1de-4756-9f55-e2794e00a19e",
-						Display: "erda_test",
-					},
-					Template: map[string]*structpb.Value{
-						"filters":   structpb.NewListValue(templateFilters2),
-						"window":    structpb.NewNumberValue(float64(1)),
-						"functions": structpb.NewListValue(templateFunctions),
+						"functions": structpb.NewStructValue(templateFunctions),
 						"group":     structpb.NewListValue(templateCluster),
 						"metric":    structpb.NewStringValue("host_summary"),
 						"outputs":   structpb.NewListValue(templateOutput),
