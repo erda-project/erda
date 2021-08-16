@@ -135,9 +135,12 @@ func (s *extensionService) CreateExtensionVersion(ctx context.Context, req *pb.E
 	if err != nil {
 		return nil, apierrors.ErrCreateExtensionVersion.AccessDenied()
 	}
+	return s.CreateExtensionVersionByRequest(req)
+}
 
+func (s *extensionService) CreateExtensionVersionByRequest(req *pb.ExtensionVersionCreateRequest) (*pb.ExtensionVersionCreateResponse, error) {
 	specData := apistructs.Spec{}
-	err = yaml.Unmarshal([]byte(req.SpecYml), &specData)
+	err := yaml.Unmarshal([]byte(req.SpecYml), &specData)
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
@@ -266,6 +269,7 @@ func (s *extensionService) CreateExtensionVersion(ctx context.Context, req *pb.E
 		return nil, apierrors.ErrQueryExtension.InternalError(errors.New("version already exist"))
 	}
 }
+
 func (s *extensionService) GetExtensionVersion(ctx context.Context, req *pb.GetExtensionVersionRequest) (*pb.GetExtensionVersionResponse, error) {
 	result, err := s.GetExtension(req.Name, req.Version, req.YamlFormat)
 
