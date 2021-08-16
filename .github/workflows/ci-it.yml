@@ -104,3 +104,4 @@ jobs:
         run: |
           make run-test
           curl -s https://codecov.io/bash | bash
+
