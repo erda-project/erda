@@ -6,11 +6,8 @@ RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 
-ARG MODULE_PATH
-ARG EXTENSION_ZIP_ADDRS
-RUN if [ ${MODULE_PATH} = dicehub ] ; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
-
 ARG CONFIG_PATH
+ARG MODULE_PATH
 ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN --mount=type=cache,target=/root/.cache/go-build\
@@ -20,10 +17,16 @@ RUN --mount=type=cache,target=/root/.cache/go-build\
 ARG BASE_DOCKER_IMAGE
 FROM ${BASE_DOCKER_IMAGE}
 
+ENV KUBECTL_VERSION v1.19.7
+ARG ARCH=amd64
+
 RUN apk add --no-cache jq py3-pip && \
     apk add --update nodejs nodejs-npm && \
     npm i -g jackson-converter@1.0.10 && \
-    pip3 install dicttoxml xmindparser
+    pip3 install dicttoxml xmindparser && \
+    apk add shadow && \
+    curl -sLf https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
+    chmod +x /usr/bin/kubectl
 
 WORKDIR /app
 
@@ -37,14 +40,7 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/${CONFIG_PATH}"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/app/erda-configs"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/conf/common"
 
-# use for dicehub
-COPY --from=build "$GOPATH/src/extension" "/app/extension"
-
-# use for gittar
-COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
-
-# use for ops
-RUN curl -o /usr/bin/orgalorg http://terminus-dice.oss.aliyuncs.com/installer/orgalorg && \
-    chmod 755 /usr/bin/orgalorg
+COPY --from=build "$GOPATH/src/github.com/erda-project/erda/build/scripts/cluster-agent/*" "/usr/bin/"
+RUN chmod 777 /usr/bin/kubectl-shell.sh /usr/bin/shell-setup.sh
 
 CMD ["sh", "-c", "/app/${APP_NAME}"]

@@ -11,29 +11,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package cmp Core components of multi-cloud management platform
-package cmp
+package middleware
 
 import (
-	"context"
+	"net/http"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/gorilla/mux"
 )
 
-type provider struct{}
+type Chain []mux.MiddlewareFunc
 
-// Run Run the provider
-func (p *provider) Run(ctx context.Context) error {
-	logrus.Info("cmp provider is running...")
-	return initialize(ctx)
-}
-
-func init() {
-	servicehub.Register("cmp", &servicehub.Spec{
-		Services:    []string{"cmp"},
-		Description: "Core components of multi-cloud management platform.",
-		Creator:     func() servicehub.Provider { return &provider{} },
-	})
+func (c Chain) Handler(handler http.Handler) http.Handler {
+	res := handler
+	for i := len(c) - 1; i >= 0; i-- {
+		res = c[i](res)
+	}
+	return res
 }

@@ -11,29 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package cmp Core components of multi-cloud management platform
-package cmp
+package websocket
 
 import (
-	"context"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda-infra/base/servicehub"
+	"encoding/base64"
+	"testing"
 )
 
-type provider struct{}
-
-// Run Run the provider
-func (p *provider) Run(ctx context.Context) error {
-	logrus.Info("cmp provider is running...")
-	return initialize(ctx)
-}
-
-func init() {
-	servicehub.Register("cmp", &servicehub.Spec{
-		Services:    []string{"cmp"},
-		Description: "Core components of multi-cloud management platform.",
-		Creator:     func() servicehub.Provider { return &provider{} },
-	})
+func TestDecodeFrame(t *testing.T) {
+	frame := []byte{129, 144, 155, 182, 186, 247, 250, 241, 236, 132, 249, 241, 130, 144, 255, 132, 131, 142, 249,
+		241, 235, 202, 0, 62, 249, 122, 86, 4, 248, 80, 11, 4, 165, 72, 17, 5, 140, 87, 44,
+	}
+	data := DecodeFrame(frame)
+	res, err := base64.StdEncoding.DecodeString(string(data))
+	if err != nil {
+		t.Error(err)
+	}
+	if string(res) != "hello world" {
+		t.Errorf("test failed, expect res %s, actual %s", "hello world", string(res))
+	}
 }
