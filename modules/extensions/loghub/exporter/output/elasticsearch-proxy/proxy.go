@@ -24,9 +24,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/recallsong/go-utils/logs"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 

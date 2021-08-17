@@ -17,6 +17,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
+	"github.com/erda-project/erda/pkg/common/addon"
 
 	// providers and modules
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis"
@@ -35,6 +36,7 @@ import (
 )
 
 func main() {
+	common.RegisterInitializer(addon.OverrideEnvs)
 	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{})
 }
