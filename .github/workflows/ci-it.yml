@@ -55,6 +55,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Install Tools
+        run: apk add tar
       - name: Go generate files
         run: make prepare
       - name: Check Go Imports
