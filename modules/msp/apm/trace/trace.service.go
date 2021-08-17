@@ -280,45 +280,14 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 }
 
 func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
-	req.RequestID = uuid.NewV4().String()
+	bodyValid := bodyCheck(req.Body)
+	if !bodyValid {
+		return nil, errors.NewParameterTypeError("body")
+	}
 
-	queryString, err := json.Marshal(req.Query)
+	history, err := composeTraceRequestHistory(req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
-	}
-	headerString, err := json.Marshal(req.Header)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	bodyString, err := json.Marshal(req.Body)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	if req.CreateTime == "" || req.UpdateTime == "" {
-		req.CreateTime = time.Now().Format(layout)
-		req.UpdateTime = time.Now().Format(layout)
-	}
-	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	history := &db.TraceRequestHistory{
-		RequestId:      req.RequestID,
-		TerminusKey:    req.ScopeID,
-		Url:            req.Url,
-		QueryString:    string(queryString),
-		Header:         string(headerString),
-		Body:           string(bodyString),
-		Method:         req.Method,
-		Status:         int(req.Status),
-		ResponseBody:   req.ResponseBody,
-		ResponseStatus: int(req.ResponseCode),
-		CreateTime:     createTime,
-		UpdateTime:     updateTime,
 	}
 	insertHistory, err := s.traceRequestHistoryDB.InsertHistory(*history)
 	if err != nil {
@@ -336,7 +305,6 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewInternalServerError(err)
 	}
 	responseCode := response.StatusCode
-	responseBody, err := ioutil.ReadAll(response.Body)
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -345,11 +313,59 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		}
 	}(response.Body)
 
-	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
+	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.CreateTraceDebugResponse{Data: &statusInfo}, nil
+}
+
+func bodyCheck(body string) bool {
+	if body == "" {
+		return true
+	}
+	return json.Valid([]byte(body))
+}
+
+func composeTraceRequestHistory(req *pb.CreateTraceDebugRequest) (*db.TraceRequestHistory, error) {
+	req.RequestID = uuid.NewV4().String()
+
+	queryString, err := json.Marshal(req.Query)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	headerString, err := json.Marshal(req.Header)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if req.CreateTime == "" || req.UpdateTime == "" {
+		req.CreateTime = time.Now().Format(layout)
+		req.UpdateTime = time.Now().Format(layout)
+	}
+	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	history := &db.TraceRequestHistory{
+		RequestId:      req.RequestID,
+		TerminusKey:    req.ScopeID,
+		Url:            req.Url,
+		QueryString:    string(queryString),
+		Header:         string(headerString),
+		Body:           req.Body,
+		Method:         req.Method,
+		Status:         int(req.Status),
+		ResponseBody:   req.ResponseBody,
+		ResponseStatus: int(req.ResponseCode),
+		CreateTime:     createTime,
+		UpdateTime:     updateTime,
+	}
+	return history, nil
 }
 
 func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {
