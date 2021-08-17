@@ -606,3 +606,25 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		})
 	}
 }
+
+func Test_bodyCheck(t *testing.T) {
+	type args struct {
+		body string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"case1", args{body: ""}, true},
+		{"case2", args{body: "{\"test\":\"test\"}"}, true},
+		{"case3", args{body: "s{ss}sss"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := bodyCheck(tt.args.body); got != tt.want {
+				t.Errorf("bodyCheck() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

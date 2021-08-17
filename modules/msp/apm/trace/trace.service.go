@@ -280,11 +280,9 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 }
 
 func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
-
-	if req.Body != "" {
-		if bodyValid := json.Valid([]byte(req.Body)); !bodyValid {
-			return nil, errors.NewParameterTypeError("body")
-		}
+	bodyValid := bodyCheck(req.Body)
+	if !bodyValid {
+		return nil, errors.NewParameterTypeError("body")
 	}
 
 	history, err := composeTraceRequestHistory(req)
@@ -320,6 +318,13 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.CreateTraceDebugResponse{Data: &statusInfo}, nil
+}
+
+func bodyCheck(body string) bool {
+	if body == "" {
+		return true
+	}
+	return json.Valid([]byte(body))
 }
 
 func composeTraceRequestHistory(req *pb.CreateTraceDebugRequest) (*db.TraceRequestHistory, error) {
