@@ -464,7 +464,7 @@ func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, files []string) error {
 		case ScriptTypeSQL:
 			logrus.WithField("script name", script.GetName()).Infoln("patch it before all migrating")
 			logrus.Infof("script Rawtext: %s", string(script.GetData()))
-			if len(script.GetData()) > 0 {
+			if !script.IsEmpty() {
 				if err := db.Exec(string(script.GetData())).Error; err != nil {
 					return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
 						mod.Name, script.GetName(), ScriptTypeSQL)
