@@ -2,13 +2,22 @@
 
 ### Prerequisites
 
-- Kubernetes 1.16 - 1.18
-  - At least 4 Nodes (1 Master and 3 Workers)
-  - Each node needs at least 4 core CPU, 16G memory
-  - Install the [ingress controller](https://kubernetes.io/zh/docs/concepts/services-networking/ingress-controllers/) component
+- Resource configuration（Does not contain the resources required to run Kubernetes components）
+  
+  > **Note:** Currently Erda only supports Demo scale deployment
+  
+  | Size | CPU（c） | Memory（GB） | Storage（GB） | Recommended configuration                |
+  | ---- | -------- | ------------ | ------------- | ---------------------------------------- |
+  | Demo | 8        | 32           | 400           | Node count: 2<br/>Size: 4 c/16 GB/200 GB |
+  
+- Kubernetes 1.16 - 1.20 (Install the [ingress controller](https://kubernetes.io/zh/docs/concepts/services-networking/ingress-controllers/) component)
+
 - Docker 19.03 +
+
 - CentOS 7.4 +
+
 - Helm 3 +
+
 - Generic Domain Name (Optional, configure the domain name through Kubernetes Ingress to access the Erda platform，e.g. *.erda.io)
 
 ### Install Erda
@@ -24,33 +33,7 @@
 
 2. Apply Erda necessary configurations on the **Kubernetes Master Node**.
 
-   - make sure the **kubeconfig** file on the ~/.kube/config.
-
-     - Make sure the kubeconfig contains following configuration
-       - `certificate-authority-data`
-       - `client-certificate-data`
-       - `client-key-data`
-
-   - set configuration to prepare to install Erda and execute the `prepare.sh` script
-
-     - The script will do the following tasks:
-       - generate etc SSL
-       - set node labels which use for Erda Application
-       - set Erda installer configuration   
-
-     ```shell
-     # specify the Kubernetes namespace to install Erda components, the default value is default and the Erda components are only support the default namespace
-     export ERDA_NAMESPACE="default"
-     
-     # specify the generic domain name like *.erda.io to visit the erda application, default values is erda.io, you can set owner generic domain name in here
-     export ERDA_GENERIC_DOMAIN="erda.io"
-     
-     # The ERDA_CLUSTER_NAME specified for Erda which will be used in cluster creating
-     export ERDA_CLUSTER_NAME="erda-demo"
-     
-     # Execute the script to apply Erda necessary configuration
-     bash scripts/prepare.sh
-     ```
+   - make sure the **kubeconfig** file on the ~/.kube/config, can use `kubectl` to visit kubernetes api
 
    - update `insecure-registries` in the config of the docker daemon 
 
@@ -86,16 +69,17 @@
 
 3. Install the Erda with helm package and waiting all Erda components are ready
 
+   > **Note:** The current version of Erda only supports installation under `default namespace` 
+
    ```shell
-   # Install erda-base, involving some dependent operators
-   helm install erda-base package/erda-base-$(cat VERSION).tgz 
+   cd erda-helm
    
-   # Install erda-addons, the middleware that the erda platform relies on
-   helm install erda-addons package/erda-addons-$(cat VERSION).tgz 
-   
-   # install erda
-   helm install erda package/erda-$(cat VERSION).tgz 
+   # Specify Erda cluster name, erda.clusterName=erda-test
+   # Specify the pan-domain name of the Erda platform, erda.domain=erda.io
+   helm install erda erda-$(cat VERSION).tgz --set erda.clusterName="erda-demo",erda.domain="erda.io"
    ```
+
+   > **Note:**  If you cannot directly access the Kubernetes internal domain name (for example, *kubernetes.default.svc.cluster.local*) on the Kubernetes node, you need to specify a Node when installing Erda to install the Registry with `hostNework`, and `--set registry.custom. nodeIP="",registry.custom.nodeName=""` parameter, otherwise you will not be able to use the pipeline function
 
 4. After Installed Erda
 
@@ -119,10 +103,8 @@
      10.0.0.1 openapi.erda.io
      10.0.0.1 uc.erda.io
      10.0.0.1 erda.io
-     # Note: The org-name of this example is erda-test
-     10.0.0.1 erda-test-org.erda.io
      ```
-
+     
    - set your Kubernetes nodes label with your created organization name（organization is a name for a group in Erda）
 
      ```shell
@@ -137,15 +119,6 @@
 
    ```shell
    helm uninstall erda 
-   
-   helm uninstall erda-addons 
-   
-   helm uninstall erda-base 
    ```
-
-2. Delete the job of initializing the database
-
-   ```shell
-   # Configure the namespace specified during the previous installation
-   kubectl delete job dice-init-image -n ${ERDA_NAMESPACE}
-   ```
+   
+2. By default, uninstalling via Helm will not delete the `pvc` of the middleware that Erda relies on, please clean it up manually as needed
