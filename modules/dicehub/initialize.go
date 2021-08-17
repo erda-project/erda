@@ -83,7 +83,7 @@ func ReleaseGC(rl *release.Release) error {
 }
 
 func InitExtension(ex *extension.Extension) {
-	err := ex.InitExtension("/app/extension")
+	err := ex.InitExtension("/app/extensions")
 	if err != nil {
 		panic(err)
 	}
