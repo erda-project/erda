@@ -228,9 +228,10 @@ func testAllPackages(base string) error {
 			_, err = copyFile(cacheCoverageTmp, "coverage.txt")
 			if err != nil {
 				fmt.Println("failed to copy coverage.txt:", err)
+			} else {
+				os.Rename(cacheCoverageTmp, cachedCoverage)
+				fmt.Println("save coverage.txt ->", cachedCoverage)
 			}
-			os.Rename(cacheCoverageTmp, cachedCoverage)
-			fmt.Println("save coverage.txt ->", cachedCoverage)
 		}
 	}
 	return writeTestSum(pkgSum)
@@ -325,6 +326,20 @@ func readBasePath() (string, error) {
 	return "", errors.New("not found module path")
 }
 
+func copyFile(dstName, srcName string) (written int64, err error) {
+	src, err := os.Open(srcName)
+	if err != nil {
+		return
+	}
+	defer src.Close()
+	dst, err := os.OpenFile(dstName, os.O_WRONLY|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return
+	}
+	defer dst.Close()
+	return io.Copy(dst, src)
+}
+
 func runTest(file string) (profiles []*cover.Profile, err error) {
 	var coverage = "coverage.txt"
 	if file != "./..." {
@@ -343,20 +358,6 @@ func runTest(file string) (profiles []*cover.Profile, err error) {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	return
-}
-
-func copyFile(dstName, srcName string) (written int64, err error) {
-	src, err := os.Open(srcName)
-	if err != nil {
-		return
-	}
-	defer src.Close()
-	dst, err := os.OpenFile(dstName, os.O_WRONLY|os.O_CREATE, os.ModePerm)
-	if err != nil {
-		return
-	}
-	defer dst.Close()
-	return io.Copy(dst, src)
 }
 
 func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming map[string]map[string]struct{}, coverage map[string][]*cover.Profile) error {
