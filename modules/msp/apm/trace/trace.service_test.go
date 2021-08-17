@@ -15,11 +15,14 @@ package trace
 
 import (
 	"context"
-	"reflect"
-	"testing"
-
+	"encoding/json"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	uuid "github.com/satori/go.uuid"
+	"reflect"
+	"testing"
+	"time"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {
@@ -416,6 +419,85 @@ func Test_traceService_GetTraceDebugHistoryStatusByRequestID(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("traceService.GetTraceDebugHistoryStatusByRequestID() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_composeTraceRequestHistory(t *testing.T) {
+	key := uuid.NewV4().String()
+	req := pb.CreateTraceDebugRequest{
+		Method:    "GET",
+		Url:       "http://erda.cloud",
+		Body:      "",
+		Query:     map[string]string{},
+		Header:    map[string]string{},
+		ScopeID:   key,
+		ProjectID: "1",
+	}
+
+	queryString, err := json.Marshal(req.Query)
+	if err != nil {
+		return
+	}
+	headerString, err := json.Marshal(req.Header)
+	if err != nil {
+		return
+	}
+	bodyValid := json.Valid([]byte(req.Body))
+	if req.Body != "" && !bodyValid {
+		return
+	}
+	if req.CreateTime == "" || req.UpdateTime == "" {
+		req.CreateTime = time.Now().Format(layout)
+		req.UpdateTime = time.Now().Format(layout)
+	}
+	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
+	if err != nil {
+		return
+	}
+	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
+	if err != nil {
+		return
+	}
+	h := &db.TraceRequestHistory{
+		TerminusKey:    req.ScopeID,
+		Url:            req.Url,
+		QueryString:    string(queryString),
+		Header:         string(headerString),
+		Body:           req.Body,
+		Method:         req.Method,
+		Status:         int(req.Status),
+		ResponseBody:   req.ResponseBody,
+		ResponseStatus: int(req.ResponseCode),
+		CreateTime:     createTime,
+		UpdateTime:     updateTime,
+	}
+	type args struct {
+		req *pb.CreateTraceDebugRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *db.TraceRequestHistory
+		wantErr bool
+	}{
+		{"case-1", args{&req}, h, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := composeTraceRequestHistory(tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("composeTraceRequestHistory() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got == nil {
+				t.Errorf("composeTraceRequestHistory() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			tt.want.RequestId = got.RequestId
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("composeTraceRequestHistory() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
