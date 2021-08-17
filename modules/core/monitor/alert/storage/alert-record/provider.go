@@ -14,13 +14,13 @@
 package alert_record
 
 import (
+	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
-
-	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
 )
 
 type define struct{}

@@ -120,12 +120,8 @@ func (r *Reconciler) reconcileAgain(pipelineID uint64) {
 func (r *Reconciler) updateStatusBeforeReconcile(p spec.Pipeline) error {
 	if !p.Status.IsRunningStatus() {
 		oldStatus := p.Status
-		if err := r.updatePipelineStatus(&spec.Pipeline{
-			PipelineBase: spec.PipelineBase{
-				ID:     p.ID,
-				Status: apistructs.PipelineStatusRunning,
-			},
-		}); err != nil {
+		p.Status = apistructs.PipelineStatusRunning
+		if err := r.updatePipelineStatus(&p); err != nil {
 			return err
 		}
 		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, apistructs.PipelineStatusRunning)

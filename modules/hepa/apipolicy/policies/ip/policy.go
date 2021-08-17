@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/erda-project/erda/modules/hepa/apipolicy"
-	"github.com/erda-project/erda/modules/hepa/k8s"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/hepa/apipolicy"
+	"github.com/erda-project/erda/modules/hepa/k8s"
 )
 
 type Policy struct {

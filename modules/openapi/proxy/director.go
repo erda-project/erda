@@ -19,11 +19,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/openapi/api"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/sirupsen/logrus"
 )
 
 const defautlFQDN string = "default.svc.cluster.local"

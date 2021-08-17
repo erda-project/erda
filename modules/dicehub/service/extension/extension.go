@@ -16,6 +16,7 @@ package extension
 import (
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/Masterminds/semver"
 	"github.com/jinzhu/gorm"
@@ -88,27 +89,49 @@ func (i *Extension) Create(req *apistructs.ExtensionCreateRequest) (*apistructs.
 
 // SearchExtensions 批量查询扩展
 func (i *Extension) SearchExtensions(req apistructs.ExtensionSearchRequest) (map[string]*apistructs.ExtensionVersion, error) {
-	result := map[string]*apistructs.ExtensionVersion{}
+	result := struct {
+		mp map[string]*apistructs.ExtensionVersion
+		sync.RWMutex
+	}{mp: make(map[string]*apistructs.ExtensionVersion)}
+	var wg sync.WaitGroup
+	wg.Add(len(req.Extensions))
 	for _, fullName := range req.Extensions {
-		splits := strings.Split(fullName, "@")
-		name := splits[0]
-		version := ""
-		if len(splits) > 1 {
-			version = splits[1]
-		}
-		if version == "" {
-			extVersion, _ := i.GetExtensionDefaultVersion(name, req.YamlFormat)
-			result[fullName] = extVersion
-		} else {
-			extensionVersion, err := i.GetExtensionVersion(name, version, req.YamlFormat)
-			if err != nil {
-				result[fullName] = nil
-			} else {
-				result[fullName] = extensionVersion
+		go func(fnm string) {
+			defer wg.Done()
+			splits := strings.SplitN(fnm, "@", 2)
+			name := splits[0]
+			version := ""
+			if len(splits) > 1 {
+				version = splits[1]
 			}
-		}
+			if version == "" {
+				extVersion, _ := i.GetExtensionDefaultVersion(name, req.YamlFormat)
+				result.Lock()
+				result.mp[fnm] = extVersion
+				result.Unlock()
+			} else if strings.HasPrefix(version, "https://") || strings.HasPrefix(version, "http://") {
+				extensionVersion, err := i.GetExtensionByGit(name, version, "spec.yml", "dice.yml", "README.md")
+				result.Lock()
+				if err != nil {
+					result.mp[fnm] = nil
+				} else {
+					result.mp[fnm] = extensionVersion
+				}
+				result.Unlock()
+			} else {
+				extensionVersion, err := i.GetExtensionVersion(name, version, req.YamlFormat)
+				result.Lock()
+				if err != nil {
+					result.mp[fnm] = nil
+				} else {
+					result.mp[fnm] = extensionVersion
+				}
+				result.Unlock()
+			}
+		}(fullName)
 	}
-	return result, nil
+	wg.Wait()
+	return result.mp, nil
 }
 
 // QueryExtensions 查询Extension列表

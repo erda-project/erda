@@ -90,6 +90,18 @@ func TestNewScripts(t *testing.T) {
 	}
 }
 
+func TestNewScripts2(t *testing.T) {
+	var p = parameter{
+		workdir:      "..",
+		migrationDir: "testdata/new_scripts_test_data2",
+	}
+
+	_, err := migrator.NewScripts(p)
+	if err == nil {
+		t.Fatal("fails")
+	}
+}
+
 func TestScripts_AlterPermissionLint(t *testing.T) {
 	var p = parameter{
 		workdir:      "..",

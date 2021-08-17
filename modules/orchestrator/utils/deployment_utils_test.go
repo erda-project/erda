@@ -17,10 +17,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestApplyOverlay(t *testing.T) {

@@ -36,18 +36,18 @@ func (l *NotNullLinter) Enter(in ast.Node) (out ast.Node, skip bool) {
 		l.text = in.Text()
 	}
 
-	// AlterTableAlterColumn is always valid, return
-	if spec, ok := in.(*ast.AlterTableSpec); ok && spec.Tp == ast.AlterTableAlterColumn {
+	// if not CreateTableStmt, always valid, return and skip
+	switch in.(type) {
+	case *ast.CreateTableStmt:
+		return in, false
+	case *ast.ColumnDef:
+		out = in
+		skip = true
+	default:
 		return in, true
 	}
 
-	out = in
-
-	col, skip := in.(*ast.ColumnDef)
-	if !skip {
-		return
-	}
-
+	col, _ := in.(*ast.ColumnDef)
 	for _, opt := range col.Options {
 		switch opt.Tp {
 		case ast.ColumnOptionNotNull, ast.ColumnOptionPrimaryKey:

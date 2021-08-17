@@ -14,11 +14,12 @@
 package adapter
 
 import (
-	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
 func Test_adapterService_GetAdapters(t *testing.T) {

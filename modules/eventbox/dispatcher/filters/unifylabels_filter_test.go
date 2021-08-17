@@ -16,9 +16,9 @@ package filters
 import (
 	"testing"
 
-	"github.com/erda-project/erda/modules/eventbox/types"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/eventbox/types"
 )
 
 func TestUnifyLabels(t *testing.T) {

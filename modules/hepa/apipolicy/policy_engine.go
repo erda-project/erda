@@ -14,11 +14,11 @@
 package apipolicy
 
 import (
-	"github.com/erda-project/erda/modules/hepa/repository/orm"
-	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/hepa/repository/orm"
+	db "github.com/erda-project/erda/modules/hepa/repository/service"
 )
 
 type IngressAnnotation struct {

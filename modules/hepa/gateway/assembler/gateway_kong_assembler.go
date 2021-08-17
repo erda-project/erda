@@ -17,14 +17,14 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
 	kongConst "github.com/erda-project/erda/modules/hepa/kong"
 	kong "github.com/erda-project/erda/modules/hepa/kong/dto"
 	db "github.com/erda-project/erda/modules/hepa/repository/orm"
-
-	"github.com/pkg/errors"
 )
 
 type GatewayKongAssemblerImpl struct {

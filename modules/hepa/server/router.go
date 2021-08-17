@@ -27,11 +27,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/modules/hepa/common"
-
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/hepa/common"
 )
 
 var (

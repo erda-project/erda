@@ -18,6 +18,9 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+	"gopkg.in/igm/sockjs-go.v2/sockjs"
+
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/conf"
@@ -42,9 +45,6 @@ import (
 	"github.com/erda-project/erda/modules/eventbox/websocket"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
-
-	"github.com/sirupsen/logrus"
-	"gopkg.in/igm/sockjs-go.v2/sockjs"
 )
 
 type Dispatcher interface {

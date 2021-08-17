@@ -23,11 +23,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/pkg/jsonstore/js_util"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/jsonstore/js_util"
+	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
 type elem struct {

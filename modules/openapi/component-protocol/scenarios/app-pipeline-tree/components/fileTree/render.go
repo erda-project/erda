@@ -30,6 +30,16 @@ import (
 
 const (
 	OperationKeyClickBranchExpandChildren = "branchExpandChildren"
+
+	I18nLocalePrefixKey                = "wb.content.pipeline.file.tree."
+	defaultPipelineI18nKey             = "defaultPipeline"
+	addDefaultPipelineI18nKey          = "addDefaultPipeline"
+	deleteI18nKey                      = "delete"
+	isDeleteI18nKey                    = "isDelete"
+	addDefaultI18nKey                  = "addDefault"
+	canNotDeleteDefaultPipelineI18nKey = "canNotDeleteDefaultPipeline"
+	addPipelineI18nKey                 = "addPipeline"
+	openI18nKey                        = "open"
 )
 
 // GetUserPermission  check Guest permission
@@ -144,6 +154,8 @@ func (a *ComponentFileTree) handlerAddNodeResult(NodeFormModalAddNode NodeFormMo
 }
 
 func (a *ComponentFileTree) getNodeByResult(result apistructs.UnifiedFileTreeNode) Data {
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
 	var node Data
 	node.Title = result.Name
 	node.Icon = "dm"
@@ -151,8 +163,8 @@ func (a *ComponentFileTree) getNodeByResult(result apistructs.UnifiedFileTreeNod
 	node.Key = result.Inode
 	var deleteOperation = DeleteOperation{
 		Key:     "delete",
-		Text:    "删除",
-		Confirm: "是否确认删除",
+		Text:    i18nLocale.Get(I18nLocalePrefixKey + deleteI18nKey),
+		Confirm: i18nLocale.Get(I18nLocalePrefixKey + isDeleteI18nKey),
 		Reload:  true,
 		Meta: DeleteOperationData{
 			Key: result.Inode,
@@ -226,7 +238,7 @@ func (a *ComponentFileTree) handlerAddDefault(ctxBdl protocol.ContextBundle, inP
 		return fmt.Errorf("add node key can not be empty: %s", key)
 	}
 
-	decodeInode, err := base64.StdEncoding.DecodeString(key)
+	decodeInode, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return fmt.Errorf("decode key error: %s", key)
 	}
@@ -238,7 +250,7 @@ func (a *ComponentFileTree) handlerAddDefault(ctxBdl protocol.ContextBundle, inP
 
 	pinode := strings.ReplaceAll(inode, "/pipeline.yml", "")
 
-	result, err := createDefault(ctxBdl, inParams.ProjectId, base64.StdEncoding.EncodeToString([]byte(pinode)), project.OrgID)
+	result, err := createDefault(ctxBdl, inParams.ProjectId, base64.URLEncoding.EncodeToString([]byte(pinode)), project.OrgID)
 	if err != nil {
 		return err
 	}
@@ -289,7 +301,7 @@ func (a *ComponentFileTree) handlerDelete(ctxBdl protocol.ContextBundle, inParam
 		return fmt.Errorf("delete node key can not be empty: %s", key)
 	}
 
-	decodeInode, err := base64.StdEncoding.DecodeString(key)
+	decodeInode, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		return fmt.Errorf("decode key error: %s", key)
 	}
@@ -376,7 +388,7 @@ func (a *ComponentFileTree) handlerDefaultValue(ctxBdl protocol.ContextBundle, i
 	//				// 假如是默认流水线 且是虚的就创建
 	//				if child.Key == key && child.Icon == "tj1" {
 	//					node := a.Data[index].Children[childKey]
-	//					pinode := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s/tree/%s", inParams.ProjectId, inParams.AppId, v.Title)))
+	//					pinode := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s/tree/%s", inParams.ProjectId, inParams.AppId, v.Title)))
 	//					_, err := createDefault(a.CtxBdl, inParams.ProjectId, pinode, project.OrgID)
 	//					if err != nil {
 	//						return fmt.Errorf("create default pipeline error: %v", err)
@@ -407,7 +419,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
-	req.Pinode = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s", inParams.ProjectId, inParams.AppId)))
+	req.Pinode = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s", inParams.ProjectId, inParams.AppId)))
 	req.UserID = "1"
 	branchSlice, err := ctxBdl.Bdl.ListFileTreeNodes(req, project.OrgID)
 	if err != nil {
@@ -520,21 +532,22 @@ func findSelectedKeysExpandedKeys(fileTreeData []Data, selectedKeys string) ([]s
 }
 
 func (a *ComponentFileTree) getOtherFolderChild(bdl *bundle.Bundle, inParams InParams, orgId uint64, parsedBranchInode string) []*Data {
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	// 查询分支下的 .dice/pipelines 下的 yml 文件
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
 	req.UserID = "1"
 	parsedBranchInode += "/.dice/pipelines"
-	req.Pinode = base64.StdEncoding.EncodeToString([]byte(parsedBranchInode))
+	req.Pinode = base64.URLEncoding.EncodeToString([]byte(parsedBranchInode))
 	ymls, _ := bdl.ListFileTreeNodes(req, orgId)
 
 	var childSlice = make([]*Data, 0)
 	for _, v := range ymls {
 		var deleteOperation = DeleteOperation{
 			Key:     "delete",
-			Text:    "删除",
-			Confirm: "是否确认删除",
+			Text:    i18nLocale.Get(I18nLocalePrefixKey + deleteI18nKey),
+			Confirm: i18nLocale.Get(I18nLocalePrefixKey + isDeleteI18nKey),
 			Reload:  true,
 			Meta: DeleteOperationData{
 				Key: v.Inode,
@@ -573,19 +586,19 @@ func (a *ComponentFileTree) getDefaultChild(bdl *bundle.Bundle, inParams InParam
 			break
 		}
 	}
-	branchInodeDecode, err := base64.StdEncoding.DecodeString(branchInode)
+	branchInodeDecode, err := base64.URLEncoding.DecodeString(branchInode)
 	if err != nil {
 		return Data{}, err
 	}
 
 	var defaultKey = string(branchInodeDecode) + "/pipeline.yml"
 
-	return a.getDefaultYmlByPipelineYmlNode(defaultNode, base64.StdEncoding.EncodeToString([]byte(defaultKey))), nil
+	return a.getDefaultYmlByPipelineYmlNode(defaultNode, base64.URLEncoding.EncodeToString([]byte(defaultKey))), nil
 }
 
 func decodeInode(inode string) (string, error) {
 	// 解析出inode
-	pinodeBytes, err := base64.StdEncoding.DecodeString(inode)
+	pinodeBytes, err := base64.URLEncoding.DecodeString(inode)
 	if err != nil {
 		return "", fmt.Errorf("decode inode %s error: %v", inode, err)
 	}
@@ -593,6 +606,8 @@ func decodeInode(inode string) (string, error) {
 	return branchInode, nil
 }
 func (a *ComponentFileTree) getDefaultYmlByPipelineYmlNode(defaultNode *apistructs.UnifiedFileTreeNode, defaultKey string) Data {
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
 	var node Data
 	node.IsLeaf = true
 	node.Operations = map[string]interface{}{}
@@ -600,10 +615,10 @@ func (a *ComponentFileTree) getDefaultYmlByPipelineYmlNode(defaultNode *apistruc
 		node.Icon = "tj1"
 		node.Selectable = true
 		node.Key = defaultKey
-		node.Title = "添加默认流水线"
+		node.Title = i18nLocale.Get(I18nLocalePrefixKey + addDefaultPipelineI18nKey)
 		var addDefaultOperations = AddDefaultOperations{
 			Key:    "addDefault",
-			Text:   "添加默认",
+			Text:   i18nLocale.Get(I18nLocalePrefixKey + addDefaultI18nKey),
 			Reload: true,
 			Show:   false,
 			Meta: AddDefaultOperationData{
@@ -614,14 +629,14 @@ func (a *ComponentFileTree) getDefaultYmlByPipelineYmlNode(defaultNode *apistruc
 		node.Operations["click"] = addDefaultOperations
 	} else {
 		node.Selectable = true
-		node.Title = "默认流水线"
+		node.Title = i18nLocale.Get(I18nLocalePrefixKey + defaultPipelineI18nKey)
 		node.Icon = "dm"
 		node.Key = defaultNode.Inode
 		var deleteOperation = DeleteOperation{
 			Key:         "delete",
-			Text:        "删除",
+			Text:        i18nLocale.Get(I18nLocalePrefixKey + deleteI18nKey),
 			Disabled:    true,
-			DisabledTip: "默认流水线无法删除",
+			DisabledTip: i18nLocale.Get(I18nLocalePrefixKey + canNotDeleteDefaultPipelineI18nKey),
 		}
 		node.Operations["delete"] = deleteOperation
 	}
@@ -629,6 +644,8 @@ func (a *ComponentFileTree) getDefaultYmlByPipelineYmlNode(defaultNode *apistruc
 }
 
 func (a *ComponentFileTree) getNodeByBranch(branch apistructs.UnifiedFileTreeNode) Data {
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
 	var node Data
 	node.Key = branch.Inode
 	node.Icon = "fz"
@@ -638,7 +655,7 @@ func (a *ComponentFileTree) getNodeByBranch(branch apistructs.UnifiedFileTreeNod
 	node.Selectable = false
 	var addNode = AddNodeOperation{
 		Key:    "addNode",
-		Text:   "添加流水线",
+		Text:   i18nLocale.Get(I18nLocalePrefixKey + addPipelineI18nKey),
 		Reload: false,
 		Command: AddNodeOperationCommand{
 			Key:    "set",
@@ -654,7 +671,7 @@ func (a *ComponentFileTree) getNodeByBranch(branch apistructs.UnifiedFileTreeNod
 	}
 	var clickToExpand = ClickBranchNodeOperation{
 		Key:    OperationKeyClickBranchExpandChildren,
-		Text:   "展开",
+		Text:   i18nLocale.Get(I18nLocalePrefixKey + openI18nKey),
 		Reload: true,
 		Show:   false,
 		Meta: ClickBranchNodeOperationMeta{

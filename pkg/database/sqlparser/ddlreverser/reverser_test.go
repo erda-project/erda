@@ -20,12 +20,11 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/pkg/database/sqlparser/ddlreverser"
-
-	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 const createTable = `

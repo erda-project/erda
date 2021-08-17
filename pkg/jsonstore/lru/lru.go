@@ -19,10 +19,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/pkg/jsonstore/js_util"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
-
-	"github.com/pkg/errors"
 )
 
 type LruStore struct {

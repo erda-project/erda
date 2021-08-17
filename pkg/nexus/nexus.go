@@ -14,8 +14,6 @@
 package nexus
 
 import (
-	"time"
-
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -43,7 +41,9 @@ func New(server Server, ops ...Option) *Nexus {
 	}
 	if n.hc == nil {
 		n.hc = httpclient.New(
-			httpclient.WithTimeout(time.Second, time.Second*3),
+		// 3 seconds is too short, temporarily change to the default 60 seconds
+		// Decouple the connection between publisher and nexsus in the future
+		// httpclient.WithTimeout(time.Second, time.Second*3),
 		)
 	}
 	if n.blobNetdataDir == "" {

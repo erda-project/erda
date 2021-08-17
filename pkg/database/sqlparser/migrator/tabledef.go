@@ -77,7 +77,7 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 			return d.CreateStmt.Cols[i].Name.String() < d.CreateStmt.Cols[j].Name.String()
 		})
 		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
-			return d.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
+			return o.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
 		})
 		return &Equal{
 			equal: false,

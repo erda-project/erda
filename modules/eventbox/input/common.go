@@ -17,11 +17,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/eventbox/dispatcher/errors"
 	"github.com/erda-project/erda/modules/eventbox/types"
 	"github.com/erda-project/erda/pkg/dlock"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Handler func(*types.Message) *errors.DispatchError

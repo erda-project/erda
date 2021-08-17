@@ -14,11 +14,12 @@
 package release
 
 import (
-	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 )
 
 func Test_releaseService_CreateRelease(t *testing.T) {
