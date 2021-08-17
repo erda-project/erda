@@ -16,13 +16,15 @@ package trace
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace/db"
-	uuid "github.com/satori/go.uuid"
 	"reflect"
 	"testing"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
 func Test_traceService_GetSpans(t *testing.T) {
