@@ -14,7 +14,6 @@
 package adapt
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -318,11 +317,10 @@ func (e *AlertExpression) ToModel(orgName string, alert *Alert, rule *AlertRule)
 		}
 		if tag == clusterNameTag || tag == applicationIdTag {
 			v, ok := value.(string)
-			if !ok {
-				return nil, fmt.Errorf("assert cluster_name or application_id is failed")
-			}
-			if !strings.HasPrefix(v, "$") {
-				continue
+			if ok {
+				if !strings.HasPrefix(v, "$") {
+					continue
+				}
 			}
 		}
 		if attr, ok := attributes[tag]; ok {
