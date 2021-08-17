@@ -1,0 +1,31 @@
+{
+  "zh-CN": {
+    "wb.content.pipeline.file.tree.defaultPipeline": "默认流水线",
+    "wb.content.pipeline.file.tree.addDefaultPipeline": "添加默认流水线",
+    "wb.content.pipeline.file.tree.delete": "删除",
+    "wb.content.pipeline.file.tree.isDelete": "是否确认删除",
+    "wb.content.pipeline.file.tree.addDefault": "添加默认",
+    "wb.content.pipeline.file.tree.canNotDeleteDefaultPipeline": "默认流水线无法删除",
+    "wb.content.pipeline.file.tree.addPipeline": "添加流水线",
+    "wb.content.pipeline.file.tree.open": "展开",
+
+    "wb.content.pipeline.file.tree.node.form.addPipeline": "添加流水线",
+    "wb.content.pipeline.file.tree.node.form.branch": "分支",
+    "wb.content.pipeline.file.tree.node.form.pipelineName": "流水线名称"
+  },
+  "en-US": {
+    "wb.content.pipeline.file.tree.defaultPipeline": "default pipeline",
+    "wb.content.pipeline.file.tree.addDefaultPipeline": "add default pipeline",
+    "wb.content.pipeline.file.tree.delete": "delete",
+    "wb.content.pipeline.file.tree.isDelete": "are you sure to delete",
+    "wb.content.pipeline.file.tree.addDefault": "add default",
+    "wb.content.pipeline.file.tree.canNotDeleteDefaultPipeline": "the default pipeline yml cannot be deleted",
+    "wb.content.pipeline.file.tree.addPipeline": "add pipeline",
+    "wb.content.pipeline.file.tree.open": "open",
+
+    "wb.content.pipeline.file.tree.node.form.addPipeline": "add pipeline",
+    "wb.content.pipeline.file.tree.node.form.branch": "branch",
+    "wb.content.pipeline.file.tree.node.form.pipelineName": "pipeline name"
+  }
+}
+
