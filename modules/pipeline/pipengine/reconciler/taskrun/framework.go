@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	sessionNotFoundError = "failed to find Session"
+	sessionNotFoundError = "failed to find session"
 )
 
 func (tr *TaskRun) Do(itr TaskOp) error {
@@ -196,5 +196,5 @@ func (tr *TaskRun) LogStep(taskOp Op, step string) {
 }
 
 func (tr *TaskRun) IsSessionNotFound(err error) bool {
-	return strings.Contains(err.Error(), sessionNotFoundError)
+	return strings.Contains(strings.ToLower(err.Error()), sessionNotFoundError)
 }

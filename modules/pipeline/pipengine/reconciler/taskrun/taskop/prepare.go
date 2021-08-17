@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -171,7 +172,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams),
 	)
 	if err != nil {
-		return false, apierrors.ErrParsePipelineYml.InternalError(err)
+		return false, errorsx.UserErrorf(err.Error())
 	}
 
 	// 从 extension marketplace 获取 image 和 resource limit
@@ -435,7 +436,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		// only k8sjob support create job volume
 		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
 		if !ok {
-			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
+			return false, errorsx.UserErrorf("failed to createJobVolume, err: invalid task executor kind")
 		}
 		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
 		if err != nil {
