@@ -63,7 +63,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			))
 	}
 	go func() {
-		err := p.extensionService.InitExtension("/app/extension")
+		err := p.extensionService.InitExtension("/app/extensions")
 		if err != nil {
 			panic(err)
 		}
