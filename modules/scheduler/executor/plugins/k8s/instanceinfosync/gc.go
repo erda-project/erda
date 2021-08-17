@@ -22,12 +22,15 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 )
 
-// gcDeadInstancesInDB Recover the instance of phase=Dead 15 days ago
-func gcDeadInstancesInDB(dbclient *instanceinfo.Client) error {
+// gcDeadInstancesInDB Recover the instance of phase=Dead 7 days ago
+func gcDeadInstancesInDB(dbclient *instanceinfo.Client, clusterName string) error {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 
-	instances, err := r.ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(7).Do()
+	// list instance info in database with limit 3000
+	r.Limit(3000)
+
+	instances, err := r.ByCluster(clusterName).ByPhase(instanceinfo.InstancePhaseDead).ByFinishedTime(7).Do()
 	if err != nil {
 		return err
 	}
