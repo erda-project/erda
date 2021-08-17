@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	gitignore "github.com/sabhiram/go-gitignore"
 )
 
 var (
@@ -42,20 +44,41 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.`, year)
 )
 
-func checkCopyright(dir string) ([]string, error) {
+func checkCopyright() ([]string, error) {
 	var files []string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			// Skip directories like ".git".
-			if strings.HasPrefix(info.Name(), ".") {
+			if name := info.Name(); name != "." && strings.HasPrefix(name, ".") {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		needsCopyright, err := checkFile(dir, path)
+
+		// Skip git ignore files
+		if err == nil && ignoreMatcher != nil && ignoreMatcher.MatchesPath(path) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		// Only check Go files.
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		// Don't check testdata files.
+		if strings.Contains("/"+path, "/testdata/") {
+			return nil
+		}
+		// Don't check ingore files.
+		if isIgnoreFile(path) {
+			return nil
+		}
+
+		needsCopyright, err := checkFile(path)
 		if err != nil {
 			return err
 		}
@@ -67,21 +90,7 @@ func checkCopyright(dir string) ([]string, error) {
 	return files, err
 }
 
-func checkFile(dir, filename string) (bool, error) {
-	// Only check Go files.
-	if !strings.HasSuffix(filename, ".go") {
-		return false, nil
-	}
-	// Don't check testdata files.
-	normalized := strings.TrimPrefix(filepath.ToSlash(filename), filepath.ToSlash(dir))
-	if strings.Contains(normalized, "/testdata/") {
-		return false, nil
-	}
-	// Don't check ingore files.
-	if isIgnoreFile(normalized) {
-		return false, nil
-	}
-
+func checkFile(filename string) (bool, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false, err
@@ -127,8 +136,8 @@ func isGenerated(fset *token.FileSet, file *ast.File) bool {
 	return false
 }
 
-func loadIgnoreFiles(dir string) []string {
-	cfgfile := filepath.Join(dir, ".licenserc.json")
+func loadIgnoreFiles() []string {
+	const cfgfile = ".licenserc.json"
 	byts, err := ioutil.ReadFile(cfgfile)
 	if err != nil {
 		return nil
@@ -145,9 +154,9 @@ func loadIgnoreFiles(dir string) []string {
 }
 
 var ignoreFiles []string
+var ignoreMatcher *gitignore.GitIgnore
 
 func isIgnoreFile(filename string) bool {
-	filename = strings.TrimLeft(filename, "/")
 	for _, file := range ignoreFiles {
 		file = strings.TrimLeft(file, "/")
 		if strings.HasPrefix(filename, file) {
@@ -158,20 +167,25 @@ func isIgnoreFile(filename string) bool {
 }
 
 func init() {
-	wd, _ := os.Getwd()
-	ignoreFiles = loadIgnoreFiles(wd)
+	ignoreFiles = loadIgnoreFiles()
+	ign, err := gitignore.CompileIgnoreFile(".gitignore")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			fmt.Println("[WARN] .gitignore: ", err)
+		}
+	}
+	ignoreMatcher = ign
 }
 
 func main() {
-	wd, _ := os.Getwd()
-	files, err := checkCopyright(wd)
+	files, err := checkCopyright()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
 	if len(files) > 0 {
-		fmt.Println("invalid copyright files:")
+		fmt.Printf("[ERROR] invalid copyright files (%d):\n", len(files))
 		fmt.Println(strings.Join(files, "\n"))
 		os.Exit(1)
 		return

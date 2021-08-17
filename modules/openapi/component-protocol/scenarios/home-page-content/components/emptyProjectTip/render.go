@@ -103,14 +103,8 @@ func (t *EmptyProjectTip) Render(ctx context.Context, c *apistructs.Component, s
 	t.Type = "LRContainer"
 	t.Props.WhiteBg = true
 	t.Props.StartAlign = true
-	if t.ctxBdl.Identity.OrgID != "" {
-		prosNum, err := t.getProjectsNum(t.ctxBdl.Identity.OrgID)
-		if err != nil {
-			return err
-		}
-		if prosNum == 0 {
-			t.Props.Visible = true
-		}
+	if t.ctxBdl.Identity.OrgID != "" && t.State.ProsNum == 0 {
+		t.Props.Visible = true
 	}
 	t.Props.ContentSetting = "start"
 	return nil

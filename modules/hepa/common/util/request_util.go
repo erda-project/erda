@@ -19,11 +19,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/erda-project/erda/modules/hepa/common/wrapper"
-	"github.com/erda-project/erda/modules/hepa/config"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/hepa/common/wrapper"
+	"github.com/erda-project/erda/modules/hepa/config"
 )
 
 func DoCommonRequest(client *http.Client, method, url string, data interface{}, headers ...map[string]string) (int, []byte, error) {

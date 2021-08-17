@@ -18,11 +18,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/pkg/errors"
 )
 
 // GenRedeployPipelineYaml gen pipeline.yml for redeploy

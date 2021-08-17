@@ -16,8 +16,9 @@ package endpoints
 import (
 	"testing"
 
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func Test_GenOverlayDataForAudit(t *testing.T) {

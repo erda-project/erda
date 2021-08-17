@@ -1,0 +1,30 @@
+{
+  "zh-CN": {
+    "project.list.all.project.public": "公开项目",
+    "project.list.all.project.private": "私有项目",
+    "project.list.all.app.number": "应用数",
+    "project.list.all.joined": "已加入",
+    "project.list.all.unblocking": "解封处理中，请稍等",
+    "project.list.all.unblocked": "已解封",
+    "project.list.all.year.ago": "年前",
+    "project.list.all.month.ago": "月前",
+    "project.list.all.day.ago": "天前",
+    "project.list.all.hour.ago": "小时前",
+    "project.list.all.minute.ago": "分钟前",
+    "project.list.all.second.ago": "几秒前"
+  },
+  "en-US": {
+    "project.list.all.project.public": "Public project",
+    "project.list.all.project.private": "Private project",
+    "project.list.all.app.number": "Number of applications",
+    "project.list.all.joined": "Joined",
+    "project.list.all.unblocking": "Unblocking, please wait",
+    "project.list.all.unblocked": "Unblocked",
+    "project.list.all.year.ago": "years ago",
+    "project.list.all.month.ago": "months ago",
+    "project.list.all.day.ago": "days ago",
+    "project.list.all.hour.ago": "hours ago",
+    "project.list.all.minute.ago": "minutes ago",
+    "project.list.all.second.ago": "seconds ago"
+  }
+}

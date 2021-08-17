@@ -18,12 +18,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/xormplus/xorm"
+
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/config"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
-
-	"github.com/pkg/errors"
-	"github.com/xormplus/xorm"
 )
 
 type GatewayKongInfoServiceImpl struct {

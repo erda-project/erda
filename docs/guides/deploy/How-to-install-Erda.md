@@ -87,14 +87,14 @@
 3. Install the Erda with helm package and waiting all Erda components are ready
 
    ```shell
-   # install erda-base
-   helm install package/erda-base-$(cat VERSION).tgz --generate-name
+   # Install erda-base, involving some dependent operators
+   helm install erda-base package/erda-base-$(cat VERSION).tgz 
    
-   # install erda-addons
-   helm install package/erda-addons-$(cat VERSION).tgz --generate-name
+   # Install erda-addons, the middleware that the erda platform relies on
+   helm install erda-addons package/erda-addons-$(cat VERSION).tgz 
    
    # install erda
-   helm install package/erda-$(cat VERSION).tgz --generate-name
+   helm install erda package/erda-$(cat VERSION).tgz 
    ```
 
 4. After Installed Erda
@@ -130,3 +130,15 @@
      ```
 
 5. Finally, you can visit `http://erda.io` through your browser and start your Erda journey
+
+### Uninstall Erda
+
+Uninstall Erda via Helm
+
+   ```shell
+   helm uninstall erda 
+   
+   helm uninstall erda-addons 
+   
+   helm uninstall erda-base 
+   ```

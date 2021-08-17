@@ -22,6 +22,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common"
@@ -32,9 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/hepa/kong"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type GatewayGlobalServiceImpl struct {
@@ -297,7 +297,8 @@ func md5V(str string) string {
 }
 
 func (impl *GatewayGlobalServiceImpl) GenTenantGroup(projectId, env, clusterName string) string {
-	tenant, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String())
+	tenantGroup := md5V(projectId + "_" + strings.ToUpper(env) + "_" + clusterName + config.ServerConf.TenantGroupKey)
+	tenant, err := bundle.Bundle.CreateMSPTenant(projectId, env, pb.Type_DOP.String(), tenantGroup)
 	if err != nil {
 		return ""
 	}

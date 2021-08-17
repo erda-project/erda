@@ -22,10 +22,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
@@ -131,7 +134,41 @@ func (a *Aggregator) Add(clusterInfo *apistructs.ClusterInfo) {
 		}
 		a.servers.Store(clusterInfo.Name, g)
 		logrus.Infof("steve server for cluster %s started", clusterInfo.Name)
+
+		if err = a.createPredefinedResource(clusterInfo.Name); err != nil {
+			logrus.Errorf("failed to create predefined resource for cluster %s, %v", clusterInfo.Name, err)
+			a.servers.Delete(clusterInfo.Name)
+		}
 	}()
+}
+
+func (a *Aggregator) createPredefinedResource(clusterName string) error {
+	client, err := k8sclient.New(clusterName)
+	if err != nil {
+		return err
+	}
+
+	for _, sa := range predefinedServiceAccount {
+		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
+		if _, err = saClient.Create(a.ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+
+	crClient := client.ClientSet.RbacV1().ClusterRoles()
+	for _, cr := range predefinedClusterRole {
+		if _, err = crClient.Create(a.ctx, cr, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+
+	crbClient := client.ClientSet.RbacV1().ClusterRoleBindings()
+	for _, crb := range predefinedClusterRoleBinding {
+		if _, err = crbClient.Create(a.ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete closes a steve server for k8s cluster with clusterName and delete it from aggregator
@@ -156,7 +193,7 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	if clusterName == "" {
 		rw.WriteHeader(http.StatusNotFound)
-		rw.Write([]byte("cluster name is required\n"))
+		rw.Write(apistructs.NewSteveError(apistructs.NotFound, "cluster name is required").JSON())
 		return
 	}
 
@@ -168,17 +205,19 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			if apiErr.HttpCode() != http.StatusNotFound {
 				logrus.Errorf("failed to get cluster %s, %s", clusterName, apiErr.Error())
 				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte("Internal server error"))
+				rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
 				return
 			}
 			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte(fmt.Sprintf("cluster %s not found\n", clusterName)))
+			rw.Write(apistructs.NewSteveError(apistructs.NotFound,
+				fmt.Sprintf("cluster %s not found", clusterName)).JSON())
 			return
 		}
 
 		if cluster.Type != "k8s" {
 			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write([]byte(fmt.Sprintf("cluster %s is not a k8s cluster\n", clusterName)))
+			rw.Write(apistructs.NewSteveError(apistructs.BadRequest,
+				fmt.Sprintf("cluster %s is not a k8s cluster", clusterName)).JSON())
 			return
 		}
 
@@ -186,14 +225,20 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		a.Add(cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte("Internal server error"))
+			rw.Write(apistructs.SteveError{
+				SteveErrorCode: apistructs.ServerError,
+				Type:           "error",
+				Message:        "Internal server error",
+			}.JSON())
+			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
 		}
 	}
 
 	group, _ := s.(*group)
 	if !group.ready {
-		rw.WriteHeader(http.StatusAccepted)
-		rw.Write([]byte(fmt.Sprintf("k8s API for cluster %s is not ready, please wait\n", clusterName)))
+		rw.WriteHeader(http.StatusInternalServerError)
+		rw.Write(apistructs.NewSteveError(apistructs.ServerError,
+			fmt.Sprintf("k8s API for cluster %s is not ready, please wait", clusterName)).JSON())
 		return
 	}
 	group.server.ServeHTTP(rw, req)
@@ -212,8 +257,9 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 	ctx, cancel := context.WithCancel(a.ctx)
 	prefix := GetURLPrefix(clusterInfo.Name)
 	server, err := New(ctx, restConfig, &Options{
-		Router:    RoutesWrapper(prefix),
-		URLPrefix: prefix,
+		AuthMiddleware: emptyMiddleware,
+		Router:         RoutesWrapper(prefix),
+		URLPrefix:      prefix,
 	})
 	if err != nil {
 		cancel()
@@ -221,4 +267,10 @@ func (a *Aggregator) createSteve(clusterInfo *apistructs.ClusterInfo) (*Server, 
 	}
 
 	return server, cancel, nil
+}
+
+func emptyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		next.ServeHTTP(resp, req)
+	})
 }

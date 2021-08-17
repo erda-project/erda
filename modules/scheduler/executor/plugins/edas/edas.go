@@ -76,7 +76,7 @@ var deleteOptions = &k8sapi.CascadingDeleteOptions{
 	// 'Foreground' - a cascading policy that deletes all dependents in the foreground
 	// e.g. if you delete a deployment, this option would delete related replicaSets and pods
 	// See more: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#delete-24
-	PropagationPolicy: "Foreground",
+	PropagationPolicy: string(metav1.DeletePropagationBackground),
 }
 
 // EDAS plugin's configure
@@ -1136,6 +1136,11 @@ func (e *EDAS) getAppID(name string) (string, error) {
 		return "", errors.Errorf("failed to list app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
+	if len(resp.ApplicationList.Application) == 0 {
+		errMsg := fmt.Sprintf("[EDAS] application list count is 0")
+		logrus.Errorf(errMsg)
+		return "", fmt.Errorf(errMsg)
+	}
 	for _, app := range resp.ApplicationList.Application {
 		if name == app.Name {
 			logrus.Infof("[EDAS] Successfully to get app id: %s, name: %s", app.AppId, name)

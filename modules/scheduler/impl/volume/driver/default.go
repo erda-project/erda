@@ -18,10 +18,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/modules/scheduler/impl/volume"
 	"github.com/erda-project/erda/pkg/jsonstore"
-
-	"github.com/pkg/errors"
 )
 
 var (

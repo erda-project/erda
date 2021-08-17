@@ -17,14 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda/modules/hepa/common"
-	"github.com/erda-project/erda/modules/hepa/config"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	. "github.com/sirupsen/logrus"
 	"github.com/xormplus/core"
 	"github.com/xormplus/xorm"
+
+	"github.com/erda-project/erda/modules/hepa/common"
+	"github.com/erda-project/erda/modules/hepa/config"
 )
 
 type OrmEngineInterface interface {

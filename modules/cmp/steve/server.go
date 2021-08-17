@@ -66,13 +66,13 @@ type Options struct {
 	Controllers                *steveserver.Controllers
 	ClientFactory              *client.Factory
 	AccessSetLookup            accesscontrol.AccessSetLookup
-	AuthMiddleware             auth.Middleware // 鉴权中间件
+	AuthMiddleware             auth.Middleware
 	Next                       http.Handler
-	Router                     router.RouterFunc // 路由函数
+	Router                     router.RouterFunc
 	AggregationSecretNamespace string
 	AggregationSecretName      string
 	ClusterRegistry            string
-	URLPrefix                  string // URL前缀
+	URLPrefix                  string
 }
 
 // New create a steve server
@@ -156,11 +156,9 @@ func setup(ctx context.Context, server *Server) error {
 
 	sf := schema.NewCollection(ctx, server.BaseSchemas, asl)
 
-	if err = DefaultSchemas(ctx, server.BaseSchemas, server.ClientFactory, sf); err != nil {
-		return err
-	}
+	DefaultSchemas(server.BaseSchemas)
 
-	for _, template := range DefaultSchemaTemplates(cf, server.BaseSchemas, server.controllers.K8s.Discovery()) {
+	for _, template := range DefaultSchemaTemplates(cf, server.controllers.K8s.Discovery(), asl) {
 		sf.AddTemplate(template)
 	}
 

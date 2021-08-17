@@ -17,6 +17,9 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/modules/hepa/common"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/gateway/assembler"
@@ -25,9 +28,6 @@ import (
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
-
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type GatewayConsumerApiServiceImpl struct {

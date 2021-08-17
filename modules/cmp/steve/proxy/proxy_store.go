@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/attributes"
 	"github.com/rancher/steve/pkg/stores/proxy"
 	"github.com/rancher/wrangler/pkg/data"
@@ -37,6 +38,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
 var (
@@ -52,10 +55,14 @@ type Store struct {
 	clientGetter proxy.ClientGetter
 }
 
-func NewProxyStore(clientGetter proxy.ClientGetter) types.Store {
+func NewProxyStore(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
 	return &errorStore{
-		Store: &Store{
-			clientGetter: clientGetter,
+		Store: &cacheStore{
+			Store: &Store{
+				clientGetter: clientGetter,
+			},
+			cache: cache.New(1<<30, 256),
+			asl:   asl,
 		},
 	}
 }

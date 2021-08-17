@@ -14,9 +14,9 @@
 package dbclient
 
 import (
-	"github.com/erda-project/erda/modules/pipeline/spec"
-
 	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 func (client *Client) GetBuildCache(clusterName, imageName string) (cache spec.CIV3BuildCache, err error) {

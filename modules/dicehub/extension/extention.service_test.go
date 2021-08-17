@@ -14,11 +14,12 @@
 package extension
 
 import (
-	context "context"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
-	reflect "reflect"
-	testing "testing"
+	"context"
+	"reflect"
+	"testing"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
 )
 
 func Test_extensionService_SearchExtensions(t *testing.T) {

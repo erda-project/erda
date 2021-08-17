@@ -27,7 +27,7 @@ var CMP_STEVE_CREATE = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
-	Doc:          "获取某种类型k8s资源集合",
+	Doc:          "create a k8s resource",
 	RequestType:  apistructs.K8SResource{},
 	ResponseType: apistructs.SteveCollection{},
 	IsOpenAPI:    true,

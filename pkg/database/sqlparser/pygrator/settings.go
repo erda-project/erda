@@ -37,6 +37,7 @@ django_settings.configure(**{
             "HOST": "{{.Host}}",
             "PORT": {{.Port}},
             'NAME': "{{.Name}}",
+            "CHARSET":'utf8mb4,utf8',
         },
     },
     "DEBUG": True,

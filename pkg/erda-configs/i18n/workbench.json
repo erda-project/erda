@@ -35,6 +35,7 @@
     "wb.sidebar.component.org.browsePublic": "浏览公开组织信息",
     "wb.sidebar.component.org.addFirstOr": "请先加入组织或者",
     "wb.sidebar.component.org.addFirst": "请先加入组织",
+    "wb.sidebar.component.org.create.regexp": "由小写字母、数字，-组成(不允许纯数字)",
 
     "wb.content.component.admin": "管理员",
     "wb.content.component.newMember": "新成员",
@@ -65,7 +66,7 @@
     "wb.content.component.org.left.pro.browse": "可以在左侧项目下公开项目信息进行浏览",
     "wb.content.component.org.public.browse": "你当前正在浏览公开组织",
     "wb.content.component.pro.create": "* 创建项目",
-    "wb.content.component.pro.createBy": "通过左上角菜单快读创建或者进入",
+    "wb.content.component.pro.createBy": "通过左上角菜单快速创建或者进入",
     "wb.content.component.pro.createByCenter": "选择管理中心后, 进行项目的创建",
     "wb.content.component.pro.join": "* 加入项目",
     "wb.content.component.pro.joinMsg": "当前都是受邀机制，需要线下联系项目管理员进行邀请加入",
@@ -118,6 +119,7 @@
     "wb.sidebar.component.org.browsePublic": "Browse public organization information",
     "wb.sidebar.component.org.addFirstOr": "Please join the organization first or",
     "wb.sidebar.component.org.addFirst": "Please join the organization first",
+    "wb.sidebar.component.org.create.regexp": "Consists of lowercase letters, numbers, and-(no pure numbers are allowed)",
 
     "wb.content.component.admin": "Administrator",
     "wb.content.component.newMember": "New Member",

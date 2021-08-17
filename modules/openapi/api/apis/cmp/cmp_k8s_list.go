@@ -27,7 +27,7 @@ var CMP_STEVE_LIST = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
-	Doc:          "获取某种类型k8s资源集合",
+	Doc:          "list a type of k8s resource",
 	ResponseType: apistructs.SteveCollection{},
 	IsOpenAPI:    true,
 }

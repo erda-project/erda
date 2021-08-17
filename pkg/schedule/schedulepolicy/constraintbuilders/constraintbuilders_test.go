@@ -16,13 +16,13 @@ package constraintbuilders
 import (
 	"testing"
 
-	constraints2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
-	k8s2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/k8s"
-	marathon2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/marathon"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	constraints2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
+	k8s2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/k8s"
+	marathon2 "github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/marathon"
 )
 
 func TestBuildConstraints(t *testing.T) {

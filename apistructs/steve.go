@@ -14,6 +14,9 @@
 package apistructs
 
 import (
+	"encoding/json"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/pkg/strutil"
@@ -37,12 +40,44 @@ type SteveCollection struct {
 	Data []SteveResource `json:"data"`
 }
 
+var (
+	BadRequest         = SteveErrorCode{"BadRequest", 400}
+	Unauthorized       = SteveErrorCode{"Unauthorized", 401}
+	PermissionDenied   = SteveErrorCode{"PermissionDenied", 403}
+	NotFound           = SteveErrorCode{"NotFound", 404}
+	MethodNotAllowed   = SteveErrorCode{"MethodNotAllowed", 405}
+	Conflict           = SteveErrorCode{"Conflict", 409}
+	InvalidBodyContent = SteveErrorCode{"InvalidBodyContent", 422}
+	ServerError        = SteveErrorCode{"ServerError", 500}
+)
+
+type SteveErrorCode struct {
+	Code   string `json:"code,omitempty"`
+	Status int    `json:"status,omitempty"`
+}
+
 // SteveError is an error returned from steve server.
 type SteveError struct {
+	SteveErrorCode
 	Type    string `json:"type,omitempty"`
-	Code    string `json:"code,omitempty"`
 	Message string `json:"message,omitempty"`
-	Status  int    `json:"status,omitempty"`
+}
+
+func NewSteveError(errorCode SteveErrorCode, msg string) *SteveError {
+	return &SteveError{
+		SteveErrorCode: errorCode,
+		Type:           "error",
+		Message:        msg,
+	}
+}
+
+func (s *SteveError) Error() string {
+	return fmt.Sprintf("code: %s, status: %d, message: %s", s.Code, s.Status, s.Message)
+}
+
+func (s SteveError) JSON() []byte {
+	data, _ := json.Marshal(s)
+	return data
 }
 
 // SteveResource is a steve resource returned from steve server.

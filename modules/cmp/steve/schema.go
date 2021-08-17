@@ -14,19 +14,17 @@
 package steve
 
 import (
-	"context"
 	"strings"
 
 	"github.com/rancher/apiserver/pkg/store/apiroot"
 	"github.com/rancher/apiserver/pkg/subscribe"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/steve/pkg/accesscontrol"
 	"github.com/rancher/steve/pkg/attributes"
 	"github.com/rancher/steve/pkg/client"
 	"github.com/rancher/steve/pkg/resources/apigroups"
-	"github.com/rancher/steve/pkg/resources/cluster"
 	"github.com/rancher/steve/pkg/resources/formatters"
 	"github.com/rancher/steve/pkg/schema"
-	steveschema "github.com/rancher/steve/pkg/schema"
 	"github.com/rancher/steve/pkg/stores/proxy"
 	"github.com/rancher/wrangler/pkg/slice"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,19 +35,15 @@ import (
 	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
 
-func DefaultSchemas(ctx context.Context, baseSchema *types.APISchemas, cg proxy.ClientGetter,
-	schemaFactory steveschema.Factory) error {
+func DefaultSchemas(baseSchema *types.APISchemas) {
 	subscribe.Register(baseSchema)
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
-	cluster.Register(ctx, baseSchema, cg, schemaFactory)
-	return nil
 }
 
 func DefaultSchemaTemplates(cf *client.Factory,
-	baseSchemas *types.APISchemas,
-	discovery discovery.DiscoveryInterface) []schema.Template {
+	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup) []schema.Template {
 	return []schema.Template{
-		DefaultTemplate(cf),
+		DefaultTemplate(cf, asl),
 		apigroups.Template(discovery),
 		{
 			ID:        "configmap",
@@ -63,18 +57,12 @@ func DefaultSchemaTemplates(cf *client.Factory,
 			ID:        "pod",
 			Formatter: formatters.Pod,
 		},
-		{
-			ID: "management.cattle.io.cluster",
-			Customize: func(apiSchema *types.APISchema) {
-				cluster.AddApply(baseSchemas, apiSchema)
-			},
-		},
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter) schema.Template {
+func DefaultTemplate(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(clientGetter),
+		Store:     cmpproxy.NewProxyStore(clientGetter, asl),
 		Formatter: formatter(),
 	}
 }

@@ -26,6 +26,6 @@ var CMP_STEVE_DELETE = apis.ApiSpec{
 	Scheme:      "http",
 	Audit:       nil,
 	CheckLogin:  true,
-	Doc:         "删除某个k8s资源",
+	Doc:         "delete a k8s resource",
 	IsOpenAPI:   true,
 }

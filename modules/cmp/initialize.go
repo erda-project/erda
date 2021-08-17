@@ -151,10 +151,12 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 	server.RegisterEndpoint(append(ep.Routes()))
 
 	authenticator := middleware.NewAuthenticator(bdl)
+	shellHandler := middleware.NewShellHandler(ctx)
 	auditor := middleware.NewAuditor(bdl)
 
 	middlewares := middleware.Chain{
 		authenticator.AuthMiddleware,
+		shellHandler.HandleShell,
 		auditor.AuditMiddleWare,
 	}
 	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))

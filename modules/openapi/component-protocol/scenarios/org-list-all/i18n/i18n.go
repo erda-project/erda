@@ -11,13 +11,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cpuTable
+package i18n
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
+const (
+	I18nPublicOrg = "org.list.all.org.public"
+	I18nOrgJoined = "org.list.all.org.joined"
 )
-
-type CpuInfoTable struct {
-	table.Table
-	Data []table.RowItem
-}

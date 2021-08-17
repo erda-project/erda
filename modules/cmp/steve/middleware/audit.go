@@ -14,21 +14,24 @@
 package middleware
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/steve/websocket"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -42,7 +45,7 @@ const (
 	auditUpdateResource = "updateK8SResource"
 	auditCreateResource = "createK8SResource"
 	auditDeleteResource = "deleteK8SResource"
-	auditKubectlShell   = "kubectlShell" // TODO
+	auditKubectlShell   = "kubectlShell"
 
 	// audit template params
 	auditClusterName  = "clusterName"
@@ -50,7 +53,9 @@ const (
 	auditResourceType = "resourceType"
 	auditResourceName = "name"
 	auditTargetLabel  = "targetLabel"
-	auditCommands     = "commands" // TODO
+	auditCommands     = "commands"
+
+	maxAuditLength = 40000
 )
 
 type Auditor struct {
@@ -66,6 +71,7 @@ func NewAuditor(bdl *bundle.Bundle) *Auditor {
 // AuditMiddleWare audit for steve server by bundle.
 func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		vars, _ := req.Context().Value(varsKey).(map[string]string)
 		var body []byte
 		if req.Body != nil {
 			body, _ = ioutil.ReadAll(req.Body)
@@ -81,16 +87,13 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		if body == nil {
 			return
 		}
-		if writer.statusCode/100 != 2 {
+		if writer.statusCode < 200 || writer.statusCode >= 300 {
 			return
 		}
 
-		vars := parseVars(req)
 		clusterName := vars["clusterName"]
 		typ := vars["type"]
-		if typ == "" {
-			return
-		}
+
 		namespace := vars["namespace"]
 		name := vars["name"]
 		isInternal := req.Header.Get(httputil.InternalHeader) != ""
@@ -98,8 +101,6 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		orgID := req.Header.Get(httputil.OrgHeader)
 		scopeID, _ := strconv.ParseUint(orgID, 10, 64)
 		now := strconv.FormatInt(time.Now().Unix(), 10)
-
-		//logrus.Infof("Get request. User-ID: %s, Org-ID: %s", userID, orgID)
 
 		auditReq := apistructs.AuditCreateRequest{
 			Audit: apistructs.Audit{
@@ -116,75 +117,92 @@ func (a *Auditor) AuditMiddleWare(next http.Handler) http.Handler {
 		}
 
 		ctx := make(map[string]interface{})
-		switch req.Method {
-		case http.MethodPatch:
-			if isInternal && strutil.Equal(typ, "nodes", true) {
+
+		if vars["kubectl-shell"] == "true" {
+			auditReq.TemplateName = auditKubectlShell
+			var cmds []string
+			for _, cwt := range writer.wc.cmds {
+				cmd := fmt.Sprintf("%s: %s", cwt.start.Format(time.RFC3339), cwt.cmd)
+				cmds = append(cmds, cmd)
+			}
+			res := strings.Join(cmds, "\n")
+			if len(res) > maxAuditLength {
+				res = res[:maxAuditLength] + "..."
+			}
+			ctx[auditCommands] = res
+		} else {
+			if typ == "" {
+				return
+			}
+			switch req.Method {
+			case http.MethodPatch:
+				if isInternal && strutil.Equal(typ, "nodes", true) {
+					var rb reqBody
+					if err := json.Unmarshal(body, &rb); err != nil {
+						logrus.Errorf("failed to unmarshal in steve audit")
+						return
+					}
+
+					// audit for label/unlabel node
+					if rb.Metadata != nil && rb.Metadata["labels"] != nil {
+						labels, _ := rb.Metadata["labels"].(map[string]interface{})
+						var (
+							k string
+							v interface{}
+						)
+						for k, v = range labels {
+						} // there can only be one piece of k/v
+						if v == nil {
+							auditReq.Audit.TemplateName = auditUnLabelNode
+							ctx[auditTargetLabel] = k
+						} else {
+							auditReq.Audit.TemplateName = auditLabelNode
+							ctx[auditTargetLabel] = fmt.Sprintf("%s=%s", k, v.(string))
+						}
+						break
+					}
+
+					// audit for cordon/uncordon node
+					if rb.Spec != nil && rb.Spec["unschedulable"] != nil {
+						v, _ := rb.Spec["unschedulable"].(bool)
+						if v {
+							auditReq.Audit.TemplateName = auditCordonNode
+						} else {
+							auditReq.Audit.TemplateName = auditUncordonNode
+						}
+					}
+					break
+				}
+				fallthrough
+			case http.MethodPut:
+				auditReq.Audit.TemplateName = auditUpdateResource
+			case http.MethodPost:
+				auditReq.Audit.TemplateName = auditCreateResource
 				var rb reqBody
 				if err := json.Unmarshal(body, &rb); err != nil {
 					logrus.Errorf("failed to unmarshal in steve audit")
 					return
 				}
-
-				// audit for label/unlabel node
-				if rb.Metadata != nil && rb.Metadata["labels"] != nil {
-					labels, _ := rb.Metadata["labels"].(map[string]interface{})
-					var (
-						k string
-						v interface{}
-					)
-					for k, v = range labels {
-					} // there can only be one piece of k/v
-					if v == nil {
-						auditReq.Audit.TemplateName = auditUnLabelNode
-						ctx[auditTargetLabel] = k
-					} else {
-						auditReq.Audit.TemplateName = auditLabelNode
-						ctx[auditTargetLabel] = fmt.Sprintf("%s=%s", k, v.(string))
-					}
-					break
+				data := rb.Metadata["name"]
+				if n, ok := data.(string); ok && n != "" {
+					name = n
 				}
-
-				// audit for cordon/uncordon node
-				if rb.Spec != nil && rb.Spec["unschedulable"] != nil {
-					v, _ := rb.Spec["unschedulable"].(bool)
-					if v {
-						auditReq.Audit.TemplateName = auditCordonNode
-					} else {
-						auditReq.Audit.TemplateName = auditUncordonNode
-					}
+				data = rb.Metadata["namespace"]
+				if ns, ok := data.(string); ok && namespace != "" {
+					namespace = ns
 				}
-				break
-			}
-			fallthrough
-		case http.MethodPut:
-			auditReq.Audit.TemplateName = auditUpdateResource
-		case http.MethodPost:
-			auditReq.Audit.TemplateName = auditCreateResource
-			var rb reqBody
-			if err := json.Unmarshal(body, &rb); err != nil {
-				logrus.Errorf("failed to unmarshal in steve audit")
+			case http.MethodDelete:
+				auditReq.Audit.TemplateName = auditDeleteResource
+			default:
 				return
 			}
-			data := rb.Metadata["name"]
-			if n, ok := data.(string); ok && n != "" {
-				name = n
-			}
-			data = rb.Metadata["namespace"]
-			if ns, ok := data.(string); ok && namespace != "" {
-				namespace = ns
-			}
-		case http.MethodDelete:
-			auditReq.Audit.TemplateName = auditDeleteResource
-		default:
-			return
+
+			ctx[auditClusterName] = clusterName
+			ctx[auditResourceName] = name
+			ctx[auditNamespace] = namespace
+			ctx[auditResourceType] = typ
+			auditReq.Context = ctx
 		}
-
-		ctx[auditClusterName] = clusterName
-		ctx[auditResourceName] = name
-		ctx[auditNamespace] = namespace
-		ctx[auditResourceType] = typ
-		auditReq.Context = ctx
-
 		if err := a.bdl.CreateAuditEvent(&auditReq); err != nil {
 			logrus.Errorf("faild to audit in steve audit, %v", err)
 		}
@@ -200,6 +218,7 @@ type wrapWriter struct {
 	http.ResponseWriter
 	statusCode int
 	buf        bytes.Buffer
+	wc         *wrapConn
 }
 
 func (w *wrapWriter) WriteHeader(statusCode int) {
@@ -212,6 +231,65 @@ func (w *wrapWriter) Write(body []byte) (int, error) {
 	return w.ResponseWriter.Write(body)
 }
 
+func (w *wrapWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("upstream ResponseWriter of type %v does not implement http.Hijacker", reflect.TypeOf(w.ResponseWriter))
+	}
+	conn, rw, err := hijacker.Hijack()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	wc := &wrapConn{
+		Conn: conn,
+	}
+	w.wc = wc
+	return wc, rw, nil
+}
+
+type wrapConn struct {
+	net.Conn
+	buf  []byte
+	cmds []*cmdWithTimestamp
+}
+
+type cmdWithTimestamp struct {
+	start time.Time
+	cmd   string
+}
+
+func (w *wrapConn) Read(p []byte) (n int, err error) {
+	n, err = w.Conn.Read(p)
+	data := websocket.DecodeFrame(p)
+	if len(data) <= 1 {
+		return
+	}
+	decoded, _ := base64.StdEncoding.DecodeString(string(data[1:]))
+	if err != nil || len(decoded) == 0 {
+		return
+	}
+
+	w.buf = append(w.buf, decoded...)
+	cmds := strings.Split(string(w.buf), "\n")
+	w.buf = nil
+	length := len(cmds)
+	if decoded[len(decoded)-1] != '\n' {
+		w.buf = append(w.buf, cmds[length-1]...)
+		length--
+	}
+	for i := 0; i < length; i++ {
+		if len(cmds[i]) == 0 {
+			continue
+		}
+		w.cmds = append(w.cmds, &cmdWithTimestamp{
+			start: time.Now(),
+			cmd:   cmds[i],
+		})
+	}
+	return
+}
+
 func getRealIP(request *http.Request) string {
 	ra := request.RemoteAddr
 	if ip := request.Header.Get("X-Forwarded-For"); ip != "" {
@@ -222,21 +300,4 @@ func getRealIP(request *http.Request) string {
 		ra, _, _ = net.SplitHostPort(ra)
 	}
 	return ra
-}
-
-func parseVars(req *http.Request) map[string]string {
-	var match mux.RouteMatch
-	m := mux.NewRouter().PathPrefix("/api/k8s/clusters/{clusterName}")
-	s := m.Subrouter()
-	s.Path("/v1/{type}")
-	s.Path("/v1/{type}/{name}")
-	s.Path("/v1/{type}/{namespace}/{name}")
-	s.Path("/v1/{type}/{namespace}/{name}/{link}")
-	s.Path("/api/v1/namespaces/{namespace}/{type}/{name}/{link}")
-
-	vars := make(map[string]string)
-	if s.Match(req, &match) {
-		vars = match.Vars
-	}
-	return vars
 }

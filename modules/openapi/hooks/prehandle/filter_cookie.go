@@ -19,10 +19,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-redis/redis"
+
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/openapi/conf"
-
-	"github.com/go-redis/redis"
 )
 
 var filterCookieLock sync.Once

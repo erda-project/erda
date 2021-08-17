@@ -11,13 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cpuTable
+package cmp
 
 import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
+	"net/http"
+
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type MemInfoTable struct {
-	table.Table
-	Data []table.RowItem
+var APIDocWebsocket = apis.ApiSpec{
+	Path:         "/api/k8s/clusters/<*>",
+	BackendPath:  "/api/k8s/clusters/<*>",
+	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
+	Scheme:       "ws",
+	Method:       http.MethodGet,
+	CheckLogin:   true,
+	CheckToken:   true,
+	RequestType:  nil,
+	ResponseType: nil,
+	Doc:          "k8s shell and logs",
 }
