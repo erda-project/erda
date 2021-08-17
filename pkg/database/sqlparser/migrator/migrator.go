@@ -330,10 +330,6 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 					return errors.Wrapf(err, "failed to migrate in sandbox:  module name: %s, filename: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
-				if err := mig.patchSQLAfterInstalling(script, mig.SandBox()); err != nil {
-					return errors.Wrapf(err, "failed to migrate patch in sandbox, module name: %s, filename: %s, type: %s",
-						moduleName, script.GetName(), ScriptTypeSQL)
-				}
 			case ScriptTypePython:
 				if err := mig.installPy(script, module, mig.sandboxSettings, true); err != nil {
 					return errors.Wrapf(err, "failed to migrate in sandbox: %+v",
@@ -403,10 +399,6 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 					return errors.Wrapf(err, "failed to migrate: %+v",
 						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
 				}
-				if err := mig.patchSQLAfterInstalling(script, mig.DB()); err != nil {
-					return errors.Wrapf(err, "failed to patch after migrating, module name: %s, script name: %s, type: %s",
-						moduleName, script.GetName(), ScriptTypeSQL)
-				}
 
 			case ScriptTypePython:
 				if err := mig.installPy(script, mod, mig.dbSettings, true); err != nil {
@@ -471,10 +463,12 @@ func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, files []string) error {
 		switch script.Type {
 		case ScriptTypeSQL:
 			logrus.WithField("script name", script.GetName()).Infoln("patch it before all migrating")
-			logrus.Infof("script Rawtext: %s", string(script.Rawtext))
-			if err := db.Exec(string(script.Rawtext)).Error; err != nil {
-				return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
-					mod.Name, script.GetName(), ScriptTypeSQL)
+			logrus.Infof("script Rawtext: %s", string(script.GetData()))
+			if len(script.GetData()) > 0 {
+				if err := db.Exec(string(script.GetData())).Error; err != nil {
+					return errors.Wrapf(err, "failed to patch, module name: %s, script name: %s, type: %s",
+						mod.Name, script.GetName(), ScriptTypeSQL)
+				}
 			}
 
 			// correct the checksum
@@ -493,14 +487,6 @@ func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, files []string) error {
 	}
 
 	return nil
-}
-
-func (mig *Migrator) patchSQLAfterInstalling(s *Script, exec *gorm.DB) (err error) {
-	script, ok := mig.LocalScripts.Patches.GetScriptByFilename(patchPrefix + s.GetName())
-	if !ok {
-		return nil
-	}
-	return exec.Raw(string(script.Rawtext)).Error
 }
 
 func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, tx *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
