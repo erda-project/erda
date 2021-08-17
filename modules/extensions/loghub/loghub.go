@@ -28,7 +28,7 @@ func Init() {
 	if !ok {
 		val, ok := os.LookupEnv("MONITOR_LOG_OUTPUT")
 		if ok {
-			os.Setenv("CONFIG_NAME", "output/"+val)
+			os.Setenv("CONFIG_NAME", "conf/monitor/extensions/loghub/output/"+val)
 		}
 	}
 }
