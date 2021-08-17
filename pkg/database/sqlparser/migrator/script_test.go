@@ -34,3 +34,15 @@ func TestNewScript(t *testing.T) {
 		}
 	}
 }
+
+func TestScript_IsEmpty(t *testing.T) {
+	var s = new(migrator.Script)
+	if !s.IsEmpty() {
+		t.Fatal("the script is empty")
+	}
+
+	s.Rawtext = []byte("select 1 from t;")
+	if s.IsEmpty() {
+		t.Fatal("the script is not empty")
+	}
+}

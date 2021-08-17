@@ -174,3 +174,7 @@ func (s *Script) GetName() string {
 func (s *Script) GetData() []byte {
 	return s.Rawtext
 }
+
+func (s *Script) IsEmpty() bool {
+	return len(s.GetData()) == 0
+}
