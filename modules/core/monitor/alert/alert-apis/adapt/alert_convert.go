@@ -14,7 +14,6 @@
 package adapt
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -468,11 +467,10 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		}
 		if tag == ClusterName || tag == ApplicationId {
 			v, ok := value.(string)
-			if !ok {
-				return nil, fmt.Errorf("assert cluster_name or application_id is failed")
-			}
-			if !strings.HasPrefix(v, "$") {
-				continue
+			if ok {
+				if !strings.HasPrefix(v, "$") {
+					continue
+				}
 			}
 		}
 		if attr, ok := attributes[tag]; ok {
