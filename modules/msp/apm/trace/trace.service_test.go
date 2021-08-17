@@ -462,6 +462,78 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 	if err != nil {
 		return
 	}
+
+	key2 := uuid.NewV4().String()
+	req2 := pb.CreateTraceDebugRequest{
+		Method:    "GET",
+		Url:       "http://erda.cloud",
+		Body:      "{'name':'test'}",
+		Query:     map[string]string{},
+		Header:    map[string]string{},
+		ScopeID:   key2,
+		ProjectID: "1",
+	}
+
+	queryString2, err := json.Marshal(req2.Query)
+	if err != nil {
+		return
+	}
+	headerString2, err := json.Marshal(req2.Header)
+	if err != nil {
+		return
+	}
+	bodyValid2 := json.Valid([]byte(req2.Body))
+	if req2.Body != "" && !bodyValid2 {
+		return
+	}
+	if req2.CreateTime == "" || req2.UpdateTime == "" {
+		req2.CreateTime = time.Now().Format(layout)
+		req2.UpdateTime = time.Now().Format(layout)
+	}
+	createTime2, err := time.ParseInLocation(layout, req2.CreateTime, time.Local)
+	if err != nil {
+		return
+	}
+	updateTime2, err := time.ParseInLocation(layout, req2.UpdateTime, time.Local)
+	if err != nil {
+		return
+	}
+
+	key3 := uuid.NewV4().String()
+	req3 := pb.CreateTraceDebugRequest{
+		Method:    "GET",
+		Url:       "http://erda.cloud",
+		Body:      "{fd'namdfasdfe'fasdx:fadsf'test'ad}",
+		Query:     map[string]string{},
+		Header:    map[string]string{},
+		ScopeID:   key3,
+		ProjectID: "1",
+	}
+
+	queryString3, err := json.Marshal(req3.Query)
+	if err != nil {
+		return
+	}
+	headerString3, err := json.Marshal(req3.Header)
+	if err != nil {
+		return
+	}
+	bodyValid3 := json.Valid([]byte(req3.Body))
+	if req3.Body != "" && !bodyValid3 {
+		return
+	}
+	if req3.CreateTime == "" || req3.UpdateTime == "" {
+		req3.CreateTime = time.Now().Format(layout)
+		req3.UpdateTime = time.Now().Format(layout)
+	}
+	createTime3, err := time.ParseInLocation(layout, req3.CreateTime, time.Local)
+	if err != nil {
+		return
+	}
+	updateTime3, err := time.ParseInLocation(layout, req3.UpdateTime, time.Local)
+	if err != nil {
+		return
+	}
 	h := &db.TraceRequestHistory{
 		TerminusKey:    req.ScopeID,
 		Url:            req.Url,
@@ -475,6 +547,34 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		CreateTime:     createTime,
 		UpdateTime:     updateTime,
 	}
+
+	h2 := &db.TraceRequestHistory{
+		TerminusKey:    req2.ScopeID,
+		Url:            req2.Url,
+		QueryString:    string(queryString2),
+		Header:         string(headerString2),
+		Body:           req2.Body,
+		Method:         req2.Method,
+		Status:         int(req2.Status),
+		ResponseBody:   req2.ResponseBody,
+		ResponseStatus: int(req2.ResponseCode),
+		CreateTime:     createTime2,
+		UpdateTime:     updateTime2,
+	}
+
+	h3 := &db.TraceRequestHistory{
+		TerminusKey:    req3.ScopeID,
+		Url:            req3.Url,
+		QueryString:    string(queryString3),
+		Header:         string(headerString3),
+		Body:           req3.Body,
+		Method:         req3.Method,
+		Status:         int(req3.Status),
+		ResponseBody:   req3.ResponseBody,
+		ResponseStatus: int(req3.ResponseCode),
+		CreateTime:     createTime3,
+		UpdateTime:     updateTime3,
+	}
 	type args struct {
 		req *pb.CreateTraceDebugRequest
 	}
@@ -485,6 +585,8 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		wantErr bool
 	}{
 		{"case-1", args{&req}, h, false},
+		{"case-2", args{&req2}, h2, false},
+		{"case-3", args{&req3}, h3, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
