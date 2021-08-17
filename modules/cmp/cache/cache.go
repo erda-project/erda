@@ -43,18 +43,20 @@ const (
 	ByteType
 	ByteSliceType
 
-	minCacheSize = 1 << 18
+	minCacheSize = 2
 )
 
 var (
 	EvictError              = errors.New("cache memory evicted")
 	NilPtrError             = errors.New("nil ptr error")
+	ParamIllegalError       = errors.New("size of segments illegal")
 	EntryTypeDifferentError = errors.New("entry and cacheValues type different")
 	WrongEntryKeyError      = errors.New("entry key is wrong")
 	InitEntryFailedError    = errors.New("entry initialized failed")
 	ValueNotFoundError      = errors.New("cacheValues not found")
 	KeyNotFoundError        = errors.New("key not found")
 	KeyTooLongError         = errors.New("key too long")
+	SizeTooSmallError       = errors.New("total size too small")
 	ValueTypeNotFoundError  = errors.New("cacheValues type not found")
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
@@ -76,9 +78,29 @@ type segment struct {
 	nextIdx int64
 }
 
+func lowBit(x int) int {
+	return x & (-x)
+}
+
+func getSegSize(size int, log *logrus.Logger) int {
+	if lowBit(size) != 0 {
+		i := 1
+		for 1<<i < size {
+			i++
+		}
+		log.Warnf("%d is not an idempotent of 2. reset size to %d", size, 1<<i)
+		return 1 << i
+	}
+	return size
+}
 func newPairs(maxSize int64, segNum int) []*segment {
+
 	ps := make([]*segment, segNum)
-	pairLen := maxSize >> 12
+	// suppose average value size is 16B.
+	// max length of pairs can not be larger than 1024.
+	// if each size of values all less than 16B ,such as bool value,
+	// memory can not be totally used
+	pairLen := maxSize >> 4
 	for i := 0; i < segNum; i++ {
 		p := make([]*pair, mathutil.Min(int(pairLen), 1024))
 		for j := range p {
@@ -106,10 +128,11 @@ type pair struct {
 
 // store implement LRU strategy
 type store struct {
-	segs  []*segment
-	locks []*sync.RWMutex
-	log   *logrus.Logger
-	key   []byte
+	segs   []*segment
+	locks  []*sync.RWMutex
+	log    *logrus.Logger
+	key    []byte
+	segNum int
 }
 
 func (seg *segment) Len() int {
@@ -144,12 +167,13 @@ func newLocks() []*sync.RWMutex {
 	return ls
 }
 
-func newStore(maxSize int64, segNum int, logger *logrus.Logger) *store {
+func newStore(maxSize int64, num int, logger *logrus.Logger) *store {
 	return &store{
-		log:   logger,
-		segs:  newPairs(maxSize, segNum),
-		locks: newLocks(),
-		key:   make([]byte, 1024),
+		log:    logger,
+		segs:   newPairs(maxSize, num),
+		locks:  newLocks(),
+		key:    make([]byte, 1024),
+		segNum: num,
 	}
 }
 
@@ -390,28 +414,33 @@ func (b BoolValue) Value() interface{} {
 
 // New returns cache.
 // parma size means memory cache can use.
-func New(size int64, segNum int) *Cache {
+func New(size, segSize int64) (*Cache, error) {
 	log := logrus.New()
-	if size < minCacheSize {
-		log.Errorf("cache size too small, 256KB at least")
-		return nil
+	segNum := int(size / segSize)
+	if segNum <= 0 {
+		return nil, ParamIllegalError
 	}
+	segSize = int64(getSegSize(segNum, log))
+	segNum = int(size / segSize)
+	if segNum <= 0 {
+		return nil, SizeTooSmallError
+	}
+
+	s := newStore(size, segNum, log)
 	cache := &Cache{
-		store: newStore(size, segNum, log),
+		store: s,
 		log:   log,
 		k:     newKeyBuilder(),
 	}
-	return cache
+	log.Infof("cache init finished,total size = %d, segs = %d", size, segNum)
+	return cache, nil
 }
 
 // Set write key, cacheValues, overdueTimestamp into cache.
 // whether update or add cache, remove is first.
 func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
 	var err error
-	id, err := c.k.getKeyId(key)
-	if err != nil {
-		return err
-	}
+	id := c.k.getKeyId(key, c.store.segNum)
 	seg := c.store.segs[id]
 	lock := c.store.locks[id]
 	lock.Lock()
@@ -434,14 +463,14 @@ func (c *Cache) Set(key string, value Values, overdueTimestamp int64) error {
 
 // Remove remove cache
 func (c *Cache) Remove(key string) (Values, error) {
-	keyId, err := c.k.getKeyId(key)
-	if err != nil {
-		return nil, err
-	}
+	keyId := c.k.getKeyId(key, c.store.segNum)
 	lock := c.store.locks[keyId]
 	lock.Lock()
 	defer lock.Unlock()
 	remove, err := c.store.remove(keyId, key)
+	if err != nil {
+		return nil, err
+	}
 	return remove.value, nil
 }
 
@@ -457,16 +486,14 @@ func (c *Cache) Len() int {
 }
 
 // Get returns cache from key whether key is expired.
+// nil will return if key dose not hit.
 func (c *Cache) Get(key string) (Values, bool, error) {
 	var (
 		err       error
 		keyId     int
 		freshPair *pair
 	)
-	keyId, err = c.k.getKeyId(key)
-	if err != nil {
-		return nil, false, err
-	}
+	keyId = c.k.getKeyId(key, c.store.segNum)
 	lock := c.store.locks[keyId]
 	seg := c.store.segs[keyId]
 	lock.Lock()
@@ -474,7 +501,7 @@ func (c *Cache) Get(key string) (Values, bool, error) {
 	if p, err := c.store.remove(keyId, key); err == nil {
 		freshPair = p
 	} else {
-		return nil, false, ValueNotFoundError
+		return nil, false, nil
 	}
 	err = seg.updatePair(key, freshPair.value, freshPair.overdueTimestamp)
 	if err != nil {
@@ -485,7 +512,6 @@ func (c *Cache) Get(key string) (Values, bool, error) {
 		return nil, false, err
 	}
 	if freshPair.overdueTimestamp < int64(time.Now().Nanosecond()) {
-		c.log.Warnf("%v has expired ", key)
 		return freshPair.value, true, nil
 	}
 	return freshPair.value, false, nil
@@ -509,16 +535,13 @@ func newKeyBuilder() *keyBuilder {
 	return &keyBuilder{b: make([]byte, 1024), mtx: &sync.Mutex{}}
 }
 
-func (k *keyBuilder) getKeyId(str string) (int, error) {
-	if len(str) > 1024 {
-		return -1, KeyTooLongError
-	}
+func (k *keyBuilder) getKeyId(str string, segNum int) int {
 	k.mtx.Lock()
 	defer k.mtx.Unlock()
 	for i := range str {
 		k.b[i] = str[i]
 	}
-	return int(xxhash.Sum64(k.b[:len(str)]) & 255), nil
+	return int(xxhash.Sum64(k.b[:len(str)]) & uint64(segNum-1))
 }
 
 func GenerateKey(keys []string) string {
