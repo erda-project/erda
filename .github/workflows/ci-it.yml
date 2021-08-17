@@ -67,7 +67,7 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ env.action-name }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-go-${{ env.action-name }}-
       - name: Go generate files
         run: make prepare
       - name: Check Go Imports
