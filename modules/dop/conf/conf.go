@@ -38,8 +38,8 @@ type Conf struct {
 	CMDBAddr          string `env:"CMDB_ADDR"`
 	PipelineAddr      string `env:"PIPELINE_ADDR"`
 	NexusAddr         string `env:"NEXUS_ADDR" required:"true"`
-	NexusUsername     string `env:"NEXUS_USERNAME" required:"true"`
-	NexusPassword     string `env:"NEXUS_PASSWORD" required:"true"`
+	NexusUsername     string `env:"NEXUS_USERNAME" required:"false"`
+	NexusPassword     string `env:"NEXUS_PASSWORD" required:"false"`
 	SonarAddr         string `env:"SONAR_ADDR" required:"true"`
 	SonarPublicURL    string `env:"SONAR_PUBLIC_URL" required:"true"`
 	SonarAdminToken   string `env:"SONAR_ADMIN_TOKEN" required:"true"` // dice.yml 里依赖了 sonar，由工具链注入 SONAR_ADMIN_TOKEN
@@ -53,8 +53,8 @@ type Conf struct {
 
 	CentralNexusPublicURL string `env:"NEXUS_PUBLIC_URL" required:"true"`
 	CentralNexusAddr      string `env:"NEXUS_ADDR" required:"true"`
-	CentralNexusUsername  string `env:"NEXUS_USERNAME" required:"true"`
-	CentralNexusPassword  string `env:"NEXUS_PASSWORD" required:"true"`
+	CentralNexusUsername  string `env:"NEXUS_USERNAME" required:"false"`
+	CentralNexusPassword  string `env:"NEXUS_PASSWORD" required:"false"`
 
 	// rsa
 	Base64EncodedRsaPublicKey  string `env:"BASE64_ENCODED_RSA_PUBLIC_KEY" default:"LS0tLS1CRUdJTiBwdWJsaWMga2V5LS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUFrOCtVK3QyeHhoM1hpREJnRjM2dApxWU5UZmN2NDA4aTdsZnFZRG9TRHMxbDA5bitsLzFOZTQ5b0xxZ0h1ZTQ5MmJHNFI0T0ZHZW1IMktIZmUya3BnCjZpd2tFM0xrZW5KMm56NFdPQWNnOUhiWlA0TFpReGxoeUVwNlE2aHQyekgxZ25Uc2p0QUlzMEZxbXJXZmlVVkQKdFdib1lmSDMvNWZReSs3V00yWkU3bzdnWWxIM1RLR2M5amEvWmgwOTBUZXdULzV3TVhPb1llcFRsWVBmTDVoTwo0em9GeGFpbzltanhpQmVveDNrUkM5RlZsSFM4ZDVlYWRHNkttR2cydjlTaE96SThDaGErRkJHSm83b3E4UEZEClRFMUFuZnBjZml5ckVxVVpzbDZTckl1TjVZUTREM3h1clZnY1RkcG9MV1dpallJbVZ0bytJU3FScW9QemxqVWQKTzdDa2NVRXUvVno2UCt2Vjc4b1JWRktYM0E0aG9vYlFFSkphNlFISmlzN1JQRW5TTjZXS2k4RXkzSlFhT3hXWAppejR3aDk3VmIyZDU4c3l1M0pJSTFOWVlyemtqTitEd1RLV1dqcjVYaVhHSGVCRDFtMmpaMytxV1RCTW1oNC9QCmtWc2M0T29lOG40ZXFoYVc1d2QyaU5jUlRHUS9sUmY4ekNSRlhCN1lvbWJrVlQwc1hVcllXQWFkWURFUEFmazUKTncvUjJaTXkyNGVhd0ZCcTVmYVB6VVJWRUY4WC9uUm5kL1YwUFZBSGgySG9CeFJaZzFkSGJrSWQ3SUo5R2cxbwpKVzJZOTlobzRpK0QvTDl2cWNPOVRyOXN0dStWcG1UQ1BRdFZqWHlpY0FuZmN4MWxhOEI0Q2Y4azhWN1RBSmJWCm14SjdaUTJEbGs3TTdBYzNTamVEUmJrQ0F3RUFBUT09Ci0tLS0tRU5EIHB1YmxpYyBrZXktLS0tLQo="`
