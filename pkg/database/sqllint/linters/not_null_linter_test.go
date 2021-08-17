@@ -14,8 +14,6 @@
 package linters_test
 
 import (
-	"bufio"
-	"bytes"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
@@ -26,7 +24,15 @@ const notNullLinterTest = `
 create table some_table (
 	name varchar(101)
 );
+`
 
+const notNullLinterTest2 = `
+create table t (
+	name varchar(225) not null
+);
+`
+
+const notNullLinterTestAlterTable = `
 ALTER TABLE dice_api_access
     ADD default_sla_id BIGINT COMMENT 'default SLA id';
 `
@@ -34,7 +40,7 @@ ALTER TABLE dice_api_access
 func TestNewNotNullLinter(t *testing.T) {
 	linter := sqllint.New(linters.NewNotNullLinter)
 	if err := linter.Input([]byte(notNullLinterTest), "notNullLinterTest"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	errors := linter.Errors()
 	t.Logf("errors: %v", errors)
@@ -42,13 +48,23 @@ func TestNewNotNullLinter(t *testing.T) {
 		t.Fatal("failed")
 	}
 
-	scanner := bufio.NewScanner(bytes.NewBufferString(notNullLinterTest))
-	var firstLine string
-	if scanner.Scan() {
-		firstLine = scanner.Text()
+	linter = sqllint.New(linters.NewNotNullLinter)
+	if err := linter.Input([]byte(notNullLinterTestAlterTable), "notNullLinterTestAlterTable"); err != nil {
+		t.Fatal(err)
 	}
-	t.Logf("firstLine: %s", firstLine)
-	for scanner.Scan() {
-		t.Log(scanner.Text())
+	errors = linter.Errors()
+	t.Logf("errors: %v", errors)
+	if len(errors) > 0 {
+		t.Fatal("failed")
+	}
+
+	linter = sqllint.New(linters.NewNotNullLinter)
+	if err := linter.Input([]byte(notNullLinterTest2), "notNullLinterTest2"); err != nil {
+		t.Fatal(err)
+	}
+	errors = linter.Errors()
+	t.Logf("errors: %v", errors)
+	if len(errors) > 0 {
+		t.Fatal("failed")
 	}
 }
