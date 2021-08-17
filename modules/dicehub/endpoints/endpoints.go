@@ -105,6 +105,11 @@ func (e *Endpoints) Release() *release.Release {
 	return e.release
 }
 
+// Extension 获取 extension service
+func (e *Endpoints) Extension() *extension.Extension {
+	return e.extension
+}
+
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
