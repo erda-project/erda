@@ -225,3 +225,12 @@ func (client *DBClient) GetExtensionVersionCount(name string) (int64, error) {
 		Count(&count).Error
 	return count, err
 }
+
+func (client *DBClient) QueryAllExtensions() ([]ExtensionVersion, error) {
+	var result []ExtensionVersion
+	err := client.Model(&ExtensionVersion{}).Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

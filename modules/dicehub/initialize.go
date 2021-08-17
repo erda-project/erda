@@ -49,6 +49,9 @@ func Initialize(p *provider) error {
 		return err
 	}
 
+	// extension init
+	go InitExtension(ep.Extension())
+
 	// 启动 release 定时清理任务
 	if err := ReleaseGC(ep.Release()); err != nil {
 		return err
@@ -77,6 +80,14 @@ func ReleaseGC(rl *release.Release) error {
 		recycle.ImageGCCron(rl, etcdStore.GetClient())
 	}
 	return nil
+}
+
+func InitExtension(ex *extension.Extension) {
+	err := ex.InitExtension("/app/extension")
+	if err != nil {
+		panic(err)
+	}
+	logrus.Infoln("End init extension")
 }
 
 // 初始化 Endpoints
