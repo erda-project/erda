@@ -39,7 +39,7 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/conf/common"
 
 # use for dicehub
-COPY --from=build "/tmp/dicehub-extension" "/app/dicehub-extension"
+COPY --from=build "/tmp/dicehub-extension" "/app/extensions"
 
 # use for gittar
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"
