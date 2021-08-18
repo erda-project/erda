@@ -18,6 +18,7 @@
 package loop
 
 import (
+	"context"
 	"math"
 	"time"
 )
@@ -29,6 +30,7 @@ type Loop struct {
 	declineLimit  time.Duration
 	interval      time.Duration
 	lastSleepTime time.Duration
+	ctx           context.Context
 }
 
 // Option 定义 Loop 对象的参数配置选项.
@@ -52,9 +54,28 @@ func New(options ...Option) *Loop {
 	return loop
 }
 
+// sleepUntilCtxDone return error when ctx is done during waiting
+func sleepUntilCtxDone(d time.Duration, ctx context.Context) error {
+	if ctx == nil {
+		time.Sleep(d)
+		return nil
+	}
+
+	select {
+	case <-time.After(d):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // Do 循环的执行一个方法
 // 这个被循环执行的方法有两个返回值，第一个返回值控制是否需要退出循环，第二为任务执行的错误信息.
 func (l *Loop) Do(f func() (bool, error)) error {
+	if l.ctx != nil && l.ctx.Err() != nil {
+		return nil
+	}
+
 	var i uint64
 	for i = 0; i < l.maxTimes; i++ {
 		abort, err := f()
@@ -67,13 +88,20 @@ func (l *Loop) Do(f func() (bool, error)) error {
 			if l.declineLimit > 0 && l.lastSleepTime > l.declineLimit {
 				l.lastSleepTime = l.declineLimit
 			}
-			time.Sleep(l.lastSleepTime)
+
+			if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+				return nil
+			}
+
 			continue
 		}
 
 		// 成功执行 reset 暂停时间
 		l.lastSleepTime = l.interval
-		time.Sleep(l.lastSleepTime)
+
+		if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+			return nil
+		}
 	}
 	return nil
 }
@@ -112,5 +140,12 @@ func WithInterval(t time.Duration) Option {
 			return
 		}
 		l.interval = t
+	}
+}
+
+// WithContext set the context to cancel loop
+func WithContext(ctx context.Context) Option {
+	return func(loop *Loop) {
+		loop.ctx = ctx
 	}
 }

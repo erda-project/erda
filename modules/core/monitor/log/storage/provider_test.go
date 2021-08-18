@@ -14,6 +14,7 @@
 package storage
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -41,6 +42,10 @@ func Test_provider_Init(t *testing.T) {
 
 type mockContext struct {
 	l logs.Logger
+}
+
+func (m *mockContext) AddTask(task func(context.Context) error, options ...servicehub.TaskOption) {
+	panic("implement me")
 }
 
 func (m *mockContext) Hub() *servicehub.Hub {
