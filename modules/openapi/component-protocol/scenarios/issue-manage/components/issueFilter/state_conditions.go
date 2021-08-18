@@ -15,6 +15,7 @@ package issueFilter
 
 import (
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type FrontendConditionProps []filter.PropCondition
@@ -65,6 +66,9 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 				onceProjectMemberQueried = true
 			}
 			cond.Options = onceProjectMemberOptions
+			if userIDs := f.State.FrontendConditionValues.CreatorIDs; userIDs != nil {
+				cond.Options = reorderMemberOption(onceProjectMemberOptions, userIDs)
+			}
 
 		case PropConditionKeyAssigneeIDs:
 			if !onceProjectMemberQueried {
@@ -76,6 +80,9 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 				onceProjectMemberQueried = true
 			}
 			cond.Options = onceProjectMemberOptions
+			if userIDs := f.State.FrontendConditionValues.AssigneeIDs; userIDs != nil {
+				cond.Options = reorderMemberOption(onceProjectMemberOptions, userIDs)
+			}
 
 		case PropConditionKeyOwnerIDs:
 			if f.InParams.FrontendFixedIssueType == "TASK" || f.InParams.FrontendFixedIssueType == "REQUIREMENT" {
@@ -91,6 +98,9 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 				onceProjectMemberQueried = true
 			}
 			cond.Options = onceProjectMemberOptions
+			if userIDs := f.State.FrontendConditionValues.OwnerIDs; userIDs != nil {
+				cond.Options = reorderMemberOption(onceProjectMemberOptions, userIDs)
+			}
 
 		case PropConditionKeyBugStages:
 			if f.InParams.FrontendFixedIssueType == "REQUIREMENT" || f.InParams.FrontendFixedIssueType == "ALL" {
@@ -115,4 +125,17 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 	}
 
 	return newConditions, nil
+}
+
+func reorderMemberOption(options []filter.PropConditionOption, userIDs []string) []filter.PropConditionOption {
+	var selected []filter.PropConditionOption
+	var result []filter.PropConditionOption
+	for _, option := range options {
+		if strutil.Exist(userIDs, option.Value.(string)) {
+			selected = append(selected, option)
+		} else {
+			result = append(result, option)
+		}
+	}
+	return append(selected, result...)
 }
