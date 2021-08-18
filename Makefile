@@ -164,7 +164,7 @@ build-push-image: prepare
 	./build/scripts/docker_image.sh ${MODULE_PATH} build-push ${EXTENSION_ZIP_ADDRS}
 
 build-push-all:
-	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push ${EXTENSION_ZIP_ADDRS}
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
