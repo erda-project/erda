@@ -184,7 +184,7 @@ ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
   execute "git" "fetch" "--force" "origin"
   execute "git" "fetch" "--force" "--tags" "origin"
 
-  execute "git" "reset" "--hard" "v1.2.0"
+  execute "git" "reset" "--hard" "e932fd7"
 
 ) || exit 1
 
