@@ -1,7 +1,7 @@
 version: "3"
 services:
   ui:
-    image: erdaproject/ui:1.1-20210721-725137a
+    image: erdaproject/ui-ce:1.2-20210817-5d66ecb574e42ffc1b5e8b7c413fffcbf4254ef2
     container_name: erda-ui
     depends_on:
       - openapi
@@ -93,7 +93,7 @@ services:
       - default
 
   action-runner-scheduler:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/action-runner-scheduler
     container_name: erda-action-runner-scheduler
     env_file:
@@ -106,7 +106,7 @@ services:
   #cluster-agent:
 
   admin:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/admin
     container_name: erda-admin
     env_file:
@@ -121,7 +121,7 @@ services:
     platform: linux/amd64
 
   cluster-dialer:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/cluster-dialer
     container_name: erda-cluster-dialer
     env_file:
@@ -135,7 +135,7 @@ services:
     platform: linux/amd64
 
   cluster-manager:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/cluster-manager
     container_name: erda-cluster-manager
     env_file:
@@ -150,7 +150,7 @@ services:
     platform: linux/amd64
 
   cmp:
-    image: erdaproject/cmp:1.1-20210727-57f03b18
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/cmp
     container_name: erda-cmp
     env_file:
@@ -168,7 +168,7 @@ services:
     platform: linux/amd64
 
   collector:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/collector
     container_name: erda-collector
     env_file:
@@ -184,7 +184,7 @@ services:
     platform: linux/amd64
 
   core-services:
-    image: erdaproject/core-services:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/core-services
     container_name: erda-core-services
     depends_on:
@@ -204,6 +204,7 @@ services:
       - LISTEN_ADDR=:9526
       - UC_CLIENT_ID=dice
       - UC_CLIENT_SECRET=secret
+      - LICENSE_KEY=XWoPm8I3FZuDclhuOhZ+qRPVHjXKCwSgZEOTyrMgtJg6f0Kz7QR0CyVN1ZWgbiou/OyABe7HyK1yVxDdeP1JuXcfOoGOdChTyiQfP5sdXUbferq5UkK7S44lMjNmzURlbdX8smSa13+8FQyDqz2BpDcBKMRfn2kKuF4n6n9Ls7HyVV7oWSKreEyIH3991Ug2grNEpcKip3ISVY7eGJ3uoahC9zs4fla1dzR47e5dgppHtf5WBjFgiSS+5qRi2mYa
     volumes:
       - type: volume
         source: erda-files
@@ -221,7 +222,7 @@ services:
     platform: linux/amd64
 
   dicehub:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/dicehub
     container_name: erda-dicehub
     depends_on:
@@ -240,7 +241,7 @@ services:
     platform: linux/amd64
 
   dop:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/dop
     container_name: erda-dop
     depends_on:
@@ -257,7 +258,7 @@ services:
     platform: linux/amd64
 
   ecp:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/ecp
     container_name: erda-ecp
     env_file:
@@ -270,7 +271,7 @@ services:
     platform: linux/amd64
 
   eventbox:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/eventbox
     container_name: erda-eventbox
     depends_on:
@@ -285,7 +286,7 @@ services:
     platform: linux/amd64
 
   gittar:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/gittar
     container_name: erda-gittar
     depends_on:
@@ -313,7 +314,7 @@ services:
     platform: linux/amd64
 
   hepa:
-    image: erdaproject/hepa:1.1-20210727-57f03b18
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/hepa
     container_name: erda-hepa
     depends_on:
@@ -328,7 +329,7 @@ services:
     platform: linux/amd64
 
   monitor:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/monitor
     container_name: erda-monitor
     env_file:
@@ -341,7 +342,7 @@ services:
     platform: linux/amd64
 
   msp:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/msp
     container_name: erda-msp
     depends_on:
@@ -360,7 +361,7 @@ services:
     platform: linux/amd64
 
   openapi:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/openapi
     container_name: erda-openapi
     depends_on:
@@ -390,7 +391,7 @@ services:
     platform: linux/amd64
 
   orchestrator:
-    image: erdaproject/orchestrator:1.1-20210728-57f03b18
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/orchestrator
     container_name: erda-orchestrator
     depends_on:
@@ -410,7 +411,7 @@ services:
     platform: linux/amd64
 
   pipeline:
-    image: erdaproject/erda:1.1-20210721-725137a
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/pipeline
     container_name: erda-pipeline
     depends_on:
@@ -431,7 +432,7 @@ services:
     platform: linux/amd64
 
   scheduler:
-    image: erdaproject/scheduler:1.1-20210728-57f03b18
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/scheduler
     container_name: erda-scheduler
     depends_on:
@@ -451,7 +452,7 @@ services:
     platform: linux/amd64
 
   streaming:
-    image: erdaproject/streaming:1.1-20210731-07fea0c1
+    image: registry.erda.cloud/erda/erda:1.2-20210817-5a37c6b
     command: /app/streaming
     container_name: erda-streaming
     env_file:
@@ -542,9 +543,19 @@ services:
     restart: always
     platform: linux/amd64
 
+  sysctl-init:
+    image: busybox
+    container_name: sysctl-init
+    command: /bin/sh -c 'if [ $$(sysctl vm.max_map_count | cut -f2 -d=) -lt 262144 ]; then sysctl -w vm.max_map_count=262144; fi'
+    privileged: true
+    restart: on-failure
+    platform: linux/amd64
+
   elasticsearch:
     image: bitnami/elasticsearch:6-debian-10
-    container_name: erda-elasticsearch 
+    container_name: erda-elasticsearch
+    depends_on:
+      - sysctl-init
     environment:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
@@ -587,7 +598,7 @@ services:
     platform: linux/amd64
 
   erda-migration:
-    image: erdaproject/erda-mysql-migration-action:20210805-8119373
+    image: registry.erda.cloud/erda/init-image:20210817-d9577bb
     container_name: erda-migration
     depends_on:
       - mysql
