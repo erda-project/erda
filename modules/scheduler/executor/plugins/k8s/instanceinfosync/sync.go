@@ -93,7 +93,7 @@ func (s *Syncer) watchSync(ctx context.Context) {
 }
 
 func (s *Syncer) gc(ctx context.Context) {
-	go s.gcDeadInstances(ctx)
+	go s.gcDeadInstances(ctx, s.clustername)
 	go s.gcServices(ctx)
 }
 
@@ -268,17 +268,17 @@ func (s *Syncer) watchSyncEvent(ctx context.Context) {
 	}
 }
 
-func (s *Syncer) gcDeadInstances(ctx context.Context) {
-	if err := gcDeadInstancesInDB(s.dbupdater); err != nil {
+func (s *Syncer) gcDeadInstances(ctx context.Context, clusterName string) {
+	if err := gcDeadInstancesInDB(s.dbupdater, clusterName); err != nil {
 		logrus.Errorf("failed to gcInstancesInDB: %v", err)
 	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Duration(24) * time.Hour):
+		case <-time.After(time.Duration(1) * time.Hour):
 		}
-		if err := gcDeadInstancesInDB(s.dbupdater); err != nil {
+		if err := gcDeadInstancesInDB(s.dbupdater, clusterName); err != nil {
 			logrus.Errorf("failed to gcInstancesInDB: %v", err)
 		}
 	}

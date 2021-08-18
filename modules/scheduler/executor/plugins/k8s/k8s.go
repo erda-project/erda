@@ -127,7 +127,6 @@ func init() {
 
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
-
 		go func() {
 			for {
 				select {
