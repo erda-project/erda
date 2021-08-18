@@ -206,6 +206,7 @@ do
 done
 
 execute "docker-compose" "up" "erda-migration" || exit 1
+execute "docker-compose" "up" "sysctl-init" || exit 1
 execute "docker-compose" "up" "-d" "elasticsearch" || exit 1
 execute "docker-compose" "up" "-d" "cassandra" || exit 1
 execute "docker-compose" "up" "-d" "kafka" || exit 1

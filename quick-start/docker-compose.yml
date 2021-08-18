@@ -543,9 +543,19 @@ services:
     restart: always
     platform: linux/amd64
 
+  sysctl-init:
+    image: busybox
+    container_name: sysctl-init
+    command: /bin/sh -c 'if [ $$(sysctl vm.max_map_count | cut -f2 -d=) -lt 262144 ]; then sysctl -w vm.max_map_count=262144; fi'
+    privileged: true
+    restart: on-failure
+    platform: linux/amd64
+
   elasticsearch:
     image: bitnami/elasticsearch:6-debian-10
-    container_name: erda-elasticsearch 
+    container_name: erda-elasticsearch
+    depends_on:
+      - sysctl-init
     environment:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
