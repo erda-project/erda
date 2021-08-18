@@ -38,6 +38,8 @@ const (
 	HeaderContentLength      = "Content-Length" // The Content-Length entity header indicates the size of the entity-body, in bytes, sent to the recipient.
 )
 
+var FileTypesCanCarryActiveContent = []string{".html", ".js", ".xml"}
+
 // DownloadFile write file to writer `w`,  return corresponding file http response headers.
 func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[string]string, err error) {
 	// check path
@@ -88,7 +90,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 
 	headers = map[string]string{
-		headerContentDisposition: headerValueDispositionInline(file.DisplayName),
+		headerContentDisposition: headerValueDispositionInline(file.Ext, file.DisplayName),
 		HeaderContentLength:      strconv.FormatInt(file.ByteSize, 10),
 	}
 

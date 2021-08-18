@@ -35,7 +35,10 @@ import (
 )
 
 var (
-	headerValueDispositionInline = func(filename string) string {
+	headerValueDispositionInline = func(fileType, filename string) string {
+		if !conf.FileTypeCarryActiveContentAllowed() && strutil.Exist(FileTypesCanCarryActiveContent, fileType) {
+			return fmt.Sprintf("attachment; filename=%s", filename)
+		}
 		return fmt.Sprintf("inline; filename=%s", filename)
 	}
 )
