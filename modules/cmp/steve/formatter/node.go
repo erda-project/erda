@@ -1,0 +1,153 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// This program is free software: you can use, redistribute, and/or modify
+// it under the terms of the GNU Affero General Public License, version 3
+// or later ("AGPL"), as published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package formatter
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/rancher/apiserver/pkg/types"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/erda-project/erda/modules/cmp/cache"
+)
+
+type NodeFormatter struct {
+	ctx       context.Context
+	podClient corev1.PodInterface
+	podsCache *cache.Cache
+}
+
+type res struct {
+	cpu    int64
+	memory int64
+	pods   int64
+}
+
+type cacheKey struct {
+	nodeName string
+}
+
+func (c *cacheKey) getKey() string {
+	return fmt.Sprintf("nodeAllocatedResCache-%s", c.nodeName)
+}
+
+func NewNodeFormatter(ctx context.Context, cache *cache.Cache, k8sInterface kubernetes.Interface) *NodeFormatter {
+	return &NodeFormatter{
+		ctx:       ctx,
+		podClient: k8sInterface.CoreV1().Pods(""),
+		podsCache: cache,
+	}
+}
+
+func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.RawResource) {
+	allocatableRes := parseRes(resource, "allocatable")
+	capacityRes := parseRes(resource, "capacity")
+	unallocatableRes := &res{
+		cpu:    capacityRes.cpu - allocatableRes.cpu,
+		memory: capacityRes.memory - allocatableRes.memory,
+		pods:   capacityRes.pods - capacityRes.pods,
+	}
+	parsedRes := map[string]*res{
+		"unallocatable": unallocatableRes,
+		"capacity": capacityRes,
+	}
+
+	nodeName := resource.ID
+	key := &cacheKey{nodeName}
+	data := resource.APIObject.Data()
+	value, _, err := n.podsCache.Get(key.getKey())
+	if value == nil || err != nil {
+		allocatedRes, err := n.getNodeAllocatedRes(request.Context(), nodeName)
+		if err != nil {
+			logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
+			return
+		}
+		val, _ := cache.MarshalValue(allocatedRes)
+		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+
+		parsedRes["allocated"] = allocatedRes
+		data.SetNested(parsedRes, "extra", "parsedResource")
+		return
+	}
+
+	go func() {
+		allocatedRes, err := n.getNodeAllocatedRes(n.ctx, nodeName)
+		if err != nil {
+			logrus.Errorf("failed to get allocated resource for node %s, %v", nodeName, err)
+			return
+		}
+		val, _ := cache.MarshalValue(allocatedRes)
+		n.podsCache.Set(key.getKey(), val, time.Minute.Nanoseconds())
+	}()
+
+	var allocatedRes res
+	if err = json.Unmarshal(value[0].Value().([]byte), &allocatedRes); err != nil {
+		logrus.Errorf("failed to unmarshal allocatedResource, %v", err)
+	}
+	parsedRes["allocated"] = &allocatedRes
+	data.SetNested(parsedRes, "extra", "parsedResource")
+}
+
+func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string) (*res, error) {
+	fieldSelector := fmt.Sprintf("spec.nodeName=%s,status.phase!=Failed,status.phase!=Succeeded", nodeName)
+	pods, err := n.podClient.List(ctx, v1.ListOptions{
+		FieldSelector: fieldSelector,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cpu := resource.NewQuantity(0, resource.DecimalSI)
+	mem := resource.NewQuantity(0, resource.BinarySI)
+	for _, pod := range pods.Items {
+		for _, container := range pod.Spec.Containers {
+			requestedCPU := container.Resources.Requests.Cpu()
+			if requestedCPU != nil {
+				cpu.Add(*requestedCPU)
+			}
+			requestedMem := container.Resources.Requests.Memory()
+			if requestedMem != nil {
+				mem.Add(*requestedMem)
+			}
+		}
+	}
+	return &res{
+		cpu:    cpu.MilliValue(),
+		memory: mem.Value(),
+		pods:   int64(len(pods.Items)),
+	}, nil
+}
+
+func parseRes(raw *types.RawResource, resType string) *res {
+	cpu := raw.APIObject.Data().String("status", resType, "cpu")
+	mem := raw.APIObject.Data().String("status", resType, "memory")
+	pods := raw.APIObject.Data().String("status", resType, "pods")
+
+	parsedCPU, _ := resource.ParseQuantity(cpu)
+	parsedMem, _ := resource.ParseQuantity(mem)
+	parsedPods, _ := resource.ParseQuantity(pods)
+
+	return &res{
+		cpu:    parsedCPU.MilliValue(),
+		memory: parsedMem.Value(),
+		pods:   parsedPods.Value(),
+	}
+}

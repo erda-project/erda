@@ -45,6 +45,11 @@ type Conf struct {
 	ErdaHelmChartVersion string `default:"0.1.0" env:"ERDA_HELM_CHART_VERSION"`
 	ReleaseRepo          string `default:"registry.erda.cloud/erda" env:"RELEASE_REPO"`
 	DialerPublicAddr     string `env:"CLUSTER_DIALER_PUBLIC_ADDR"`
+
+	// size of steve server cache, default 1Gi
+	CacheSize    int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
+	// size of each cache segment, default 16Mi
+	CacheSegSize int64 `default:"16777216" env:"CMP_CACHE_SEG_SIZE"`
 }
 
 var cfg Conf
@@ -150,4 +155,12 @@ func ReleaseRepo() string {
 
 func DialerPublicAddr() string {
 	return cfg.DialerPublicAddr
+}
+
+func CacheSize() int64 {
+	return cfg.CacheSize
+}
+
+func CacheSegSize() int64 {
+	return cfg.CacheSegSize
 }
