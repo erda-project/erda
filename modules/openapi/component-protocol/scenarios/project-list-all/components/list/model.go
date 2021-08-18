@@ -79,7 +79,7 @@ type PageSizeNo struct {
 type Meta struct {
 	ID          uint64     `json:"id,omitempty"`
 	PageSize    PageSizeNo `json:"pageSize,omitempty"`
-	PageNo      uint64     `json:"pageNo,omitempty"`
+	PageNo      PageSizeNo `json:"pageNo,omitempty"`
 	ProjectId   uint64     `json:"projectId,omitempty"`
 	ProjectName string     `json:"projectName,omitempty"`
 }
