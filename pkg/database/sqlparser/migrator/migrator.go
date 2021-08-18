@@ -281,7 +281,7 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 		logrus.Infoln(tableName)
 	}
 
-	if mig.installingType == firstTimeUpdate {
+	if mig.needCompare() {
 		modules := mig.LocalScripts.FreshBaselineModules(mig.DB())
 		reason, ok := compareSchemas(mig.SandBox(), modules)
 		if !ok {
@@ -345,7 +345,7 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 func (mig *Migrator) migrate(ctx context.Context) error {
 	now := time.Now()
 
-	if mig.installingType == firstTimeUpdate {
+	if mig.needCompare() {
 		modules := mig.LocalScripts.FreshBaselineModules(mig.DB())
 		reason, ok := compareSchemas(mig.DB(), modules)
 		if !ok {
@@ -553,6 +553,10 @@ func (mig *Migrator) destructiveLint() error {
 	}
 
 	return nil
+}
+
+func (mig *Migrator) needCompare() bool {
+	return mig.installingType == firstTimeUpdate
 }
 
 func compareSchemas(db *gorm.DB, modules map[string]*Module) (string, bool) {
