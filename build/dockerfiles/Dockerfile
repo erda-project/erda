@@ -9,7 +9,7 @@ WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 ARG MODULE_PATH
 ARG EXTENSION_ZIP_ADDRS
 RUN mkdir -p /tmp/dicehub-extension
-RUN if [ ${MODULE_PATH} = dicehub ] ; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
+RUN if [ ${MODULE_PATH} = dicehub ] || [ -z ${MODULE_PATH} ]; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
 
 ARG CONFIG_PATH
 ARG DOCKER_IMAGE
