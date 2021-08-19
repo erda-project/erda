@@ -26,6 +26,12 @@ import (
 	"github.com/erda-project/erda/pkg/loop"
 )
 
+var (
+	defaultRetryDeclineRatio    = 2
+	defaultRetryIntervalSec     = 30
+	defaultRetryDeclineLimitSec = 600
+)
+
 func reconcileTask(tr *taskrun.TaskRun) error {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "start reconcile task")
 	defer rlog.TDebugf(tr.P.ID, tr.Task.ID, "end reconcile task")
@@ -114,6 +120,12 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 			loop.WithInterval(time.Second*time.Duration(strategy.IntervalSec)),
 			loop.WithDeclineRatio(strategy.DeclineRatio),
 			loop.WithDeclineLimit(time.Second*time.Duration(strategy.DeclineLimitSec)),
+		).CalculateInterval(uint64(abnormalErrRetryTimes))
+	} else {
+		interval = loop.New(
+			loop.WithInterval(time.Second*time.Duration(defaultRetryIntervalSec)),
+			loop.WithDeclineRatio(float64(defaultRetryDeclineRatio)),
+			loop.WithDeclineLimit(time.Second*time.Duration(defaultRetryDeclineLimitSec)),
 		).CalculateInterval(uint64(abnormalErrRetryTimes))
 	}
 	if interval < defaultInterval {

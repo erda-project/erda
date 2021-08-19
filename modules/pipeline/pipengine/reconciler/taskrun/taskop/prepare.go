@@ -75,7 +75,7 @@ func (pre *prepare) WhenDone(data interface{}) error {
 	// no need retry
 	if err != nil {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		pre.Task.Result.Errors = append(pre.Task.Result.Errors, apistructs.ErrorResponse{Msg: err.Error()})
+		pre.Task.Result.Errors = pre.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{Msg: err.Error()})
 		return nil
 	}
 
@@ -752,16 +752,14 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Err != nil {
 		task.Status = apistructs.PipelineStatusFailed
 		if sign.Err != nil {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Err.Error(),
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Msg,
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Msg,
 			})
 		}
 		return true
@@ -771,16 +769,14 @@ func condition(task *spec.PipelineTask) bool {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
 		task.Extra.AllowFailure = true
 		if sign.Err != nil {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Err.Error(),
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Msg,
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Msg,
 			})
 		}
 		return true
