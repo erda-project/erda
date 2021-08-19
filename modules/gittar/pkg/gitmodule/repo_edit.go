@@ -200,6 +200,14 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		return nil, err
 	}
 
+	var parentPath string
+	for _, action := range request.Actions {
+		if action.Action == EDIT_ACTION_DELETE {
+			parentPath = isPathExit(newTree, action.Path)
+			break
+		}
+	}
+
 	newOid, err := rawRepo.CreateCommit(BRANCH_PREFIX+branch, sig, sig, message, newTree, parentCommits...)
 	if err != nil {
 		return nil, err
@@ -211,5 +219,22 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		}
 	}
 
-	return repo.GetCommit(newOid.String())
+	commit, err := repo.GetCommit(newOid.String())
+	if err != nil {
+		return nil, err
+	}
+	commit.ParentPath = parentPath
+	return commit, nil
+}
+
+// isPathExit check the path exist or not
+func isPathExit(tree *git.Tree, path string) string {
+	_, err := tree.EntryByPath(path)
+	if err == nil {
+		return path
+	}
+	if !strings.Contains(path, "/") {
+		return ""
+	}
+	return isPathExit(tree, path[:strings.LastIndex(path, "/")])
 }

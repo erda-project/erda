@@ -40,6 +40,7 @@ type Commit struct {
 	TreeSha        string     `json:"-"`
 	Parents        []string   `json:"parents"`
 	submoduleCache *objectCache
+	ParentPath     string `json:"parentPath"`
 }
 
 func (c *Commit) Git2Oid() *git.Oid {
