@@ -401,8 +401,12 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 			t.addWorkbenchData(workDatas, orgName, orgDisplayName)
 		}
 	}
-	t.State.ProsNum = t.State.Total
-	if t.State.ProsNum == 0 {
+	projectNum, err := t.getProjectsNum(t.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	t.State.ProsNum = projectNum
+	if t.State.Total == 0 {
 		t.Props.Visible = false
 	}
 	return nil
