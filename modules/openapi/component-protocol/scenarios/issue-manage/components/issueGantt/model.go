@@ -167,10 +167,8 @@ func (g *Gantt) genData(issues []apistructs.Issue, edgeMinTime, edgeMaxTime *tim
 	//edgeMinTime = &nowDatedice-openapi-56979f5cb8-vm6pc
 	// ===
 
-	aIssues := make(map[string][]apistructs.Issue)
 	var uids []string
 	for _, v := range issues {
-		aIssues[v.Assignee] = append(aIssues[v.Assignee], v)
 		uids = append(uids, v.Assignee)
 	}
 	uInfos := genUserInfo(uids)
@@ -178,18 +176,16 @@ func (g *Gantt) genData(issues []apistructs.Issue, edgeMinTime, edgeMaxTime *tim
 	// range by assignee
 	var data []gantt.DataItem
 	autoID := uint64(10000000000000)
-	for k, v := range aIssues {
-		uInfo := uInfos[k]
-		for _, i := range v {
-			t := gantt.DataTask{RenderType: "string-list"}
-			r := gantt.DateRange{RenderType: "gantt"}
-			tInfo := genTaskInfo(i)
-			rInfo := genRangeInfo(edgeMinTime, edgeMaxTime, i)
-			t.Value = append(t.Value, tInfo)
-			r.Value = append(r.Value, rInfo)
-			item := gantt.DataItem{ID: autoID + uint64(i.ID), User: *uInfo, Tasks: t, DateRange: r}
-			data = append(data, item)
-		}
+	for _, v := range issues {
+		uInfo := uInfos[v.Assignee]
+		t := gantt.DataTask{RenderType: "string-list"}
+		r := gantt.DateRange{RenderType: "gantt"}
+		tInfo := genTaskInfo(v)
+		rInfo := genRangeInfo(edgeMinTime, edgeMaxTime, v)
+		t.Value = append(t.Value, tInfo)
+		r.Value = append(r.Value, rInfo)
+		item := gantt.DataItem{ID: autoID + uint64(v.ID), User: *uInfo, Tasks: t, DateRange: r}
+		data = append(data, item)
 	}
 	g.setData(data)
 	return nil

@@ -17,8 +17,12 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"testing"
 	"time"
 
+	"github.com/alecthomas/assert"
+
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/gantt"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -120,3 +124,50 @@ func rend(req *apistructs.ComponentProtocolRequest) (cont *apistructs.ComponentP
 //	}
 //	t.Logf("issue board:%v", ib)
 //}
+
+// genData() results are the same every time
+func TestGenData(t *testing.T) {
+	p := Gantt{}
+	issues := []apistructs.Issue{
+		{
+			ID:       1,
+			Assignee: "1",
+		},
+		{
+			ID:       2,
+			Assignee: "1",
+		},
+		{
+			ID:       3,
+			Assignee: "1",
+		},
+		{
+			ID:       4,
+			Assignee: "2",
+		},
+		{
+			ID:       5,
+			Assignee: "2",
+		},
+		{
+			ID:       6,
+			Assignee: "3",
+		},
+		{
+			ID:       6,
+			Assignee: "3",
+		},
+	}
+	t1 := time.Now()
+	t2 := time.Now()
+	res := map[int]interface{}{}
+	for i := 0; i < 10; i++ {
+		p.Data = gantt.Data{}
+		err := p.genData(issues, &t1, &t2)
+		assert.NoError(t, err)
+		res[i] = p.Data
+		if i > 0 {
+			assert.Equal(t, res[i-1], res[i])
+		}
+	}
+}
