@@ -36,6 +36,8 @@
 * Optimize pipeline log style. [#802](https://github.com/erda-project/erda-ui/pull/802)
 * Optimize pipeline notification content. [#1189](https://github.com/erda-project/erda/pull/1189)
 * Optimize the execution logic of automation test cases. [#1103](https://github.com/erda-project/erda/pull/1103)
+* Support filtering test case executor by unassigned person in the test plan. [#732](https://github.com/erda-project/erda/pull/732)
+* Add precheck for existence of package-lock.json before packaging front-end applicaiton. [#1116](https://github.com/erda-project/erda/pull/1116)
 
 ### Bug Fixes
 
@@ -82,11 +84,12 @@
 * Fix the bug that the search box does not display when the data is empty. [#906](https://github.com/erda-project/erda-ui/pull/906)
 * Migrate Affix and InputNumber from Nusi to Antd.[#779](https://github.com/erda-project/erda-ui/pull/779)
 * Change the grouping rules to mandatory when creating custom alarm rules. [#752](https://github.com/erda-project/erda-ui/pull/752)
+* Fix the issue that the setting of runtime rollback number does not take effect.
 
 ### Refactor
 
 * The interfaces of msp and monitor modules are all defined by proto.
-* Optimize Quick-Start for one-click deployment of Erda Standalone mode on the local machine. [#1242]https://github.com/erda-project/erda/pull/1242
+* Optimize Quick-Start for one-click deployment of Erda Standalone mode on the local machine. [#1242](https://github.com/erda-project/erda/pull/1242)
 
 # v1.1.1
 
