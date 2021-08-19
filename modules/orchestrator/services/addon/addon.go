@@ -1365,7 +1365,7 @@ func (a *Addon) DeleteTenant(userID, addonTenantID string) error {
 			return err
 		}
 		if !permissionResult.Access {
-			return errors.New("权限不足")
+			return errors.New("access denied")
 		}
 	}
 
@@ -1401,7 +1401,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 			return err
 		}
 		if !permissionResult.Access {
-			return errors.New("权限不足")
+			return errors.New("access denied")
 		}
 	}
 	// 若引用关系存在，不能删除
@@ -1411,7 +1411,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 		return err
 	}
 	if count > 0 {
-		return errors.New("addon正在被引用，无法删除")
+		return errors.New("addon is being referenced,can't delete")
 	}
 
 	routingInstance, err := a.db.GetInstanceRouting(routingInstanceID)
