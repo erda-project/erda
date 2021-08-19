@@ -185,6 +185,7 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
+	pt.Result.ConvertErrors()
 	task := apistructs.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,

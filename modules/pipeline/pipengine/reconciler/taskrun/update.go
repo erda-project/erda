@@ -68,7 +68,7 @@ func (tr *TaskRun) AppendLastMsg(msg string) error {
 	if err := tr.fetchLatestTask(); err != nil {
 		return err
 	}
-	tr.Task.Result.Errors = append(tr.Task.Result.Errors, apistructs.ErrorResponse{Msg: msg})
+	tr.Task.Result.Errors = tr.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
 	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
 		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q append last message failed, err: %v",
 			tr.P.ID, tr.Task.Name, err)
