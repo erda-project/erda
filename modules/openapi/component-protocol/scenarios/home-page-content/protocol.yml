@@ -76,6 +76,8 @@ rendering:
       state:
         - name: "prosNum"
           value: "{{ tableGroup.prosNum }}"
+        - name: "total"
+          value: "{{ tableGroup.total }}"
     - name: title
       state:
         - name: "prosNum"

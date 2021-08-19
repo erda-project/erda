@@ -397,8 +397,8 @@ func (p *Project) GetModelProjectsMap(projectIDs []uint64) (map[int64]*model.Pro
 	}
 
 	projectMap := make(map[int64]*model.Project)
-	for _, p := range projects {
-		projectMap[p.ID] = &p
+	for i, p := range projects {
+		projectMap[p.ID] = &projects[i]
 	}
 	return projectMap, nil
 }
