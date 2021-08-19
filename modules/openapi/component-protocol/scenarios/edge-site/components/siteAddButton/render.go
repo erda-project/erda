@@ -17,12 +17,18 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	edgesite "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
 )
 
 func (c *ComponentSiteAddButton) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
+	if err := c.SetBundle(bdl); err != nil {
+		return err
+	}
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if component.State == nil {
 		component.State = make(map[string]interface{})
 	}
@@ -34,7 +40,7 @@ func (c *ComponentSiteAddButton) Render(ctx context.Context, component *apistruc
 
 	component.Props = edgesite.StructToMap(apistructs.EdgeButtonProps{
 		Type: "primary",
-		Text: "新建站点",
+		Text: i18nLocale.Get(i18n.I18nKeyCreateSite),
 	})
 	component.Operations = apistructs.EdgeOperations{
 		"click": apistructs.EdgeOperation{

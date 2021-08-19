@@ -14,12 +14,23 @@
 package siteaddbutton
 
 import (
+	"fmt"
+
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 type ComponentSiteAddButton struct {
+	ctxBundle protocol.ContextBundle
 }
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentSiteAddButton{}
+}
+
+func (c *ComponentSiteAddButton) SetBundle(ctxBundle protocol.ContextBundle) error {
+	if ctxBundle.Bdl == nil {
+		return fmt.Errorf("invalie bundle")
+	}
+	c.ctxBundle = ctxBundle
+	return nil
 }

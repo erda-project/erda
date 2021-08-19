@@ -18,8 +18,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 type EdgeViewGroupState struct {
@@ -33,7 +34,6 @@ func (c ComponentViewGroup) Render(ctx context.Context, component *apistructs.Co
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -62,16 +62,16 @@ func (c ComponentViewGroup) Render(ctx context.Context, component *apistructs.Co
 	return nil
 }
 
-func getProps(total, success, processing, error int) apistructs.EdgeRadioProps {
+func getProps(total, success, processing, error int, lr *i18r.LocaleResource) apistructs.EdgeRadioProps {
 	return apistructs.EdgeRadioProps{
 		RadioType:   "button",
 		ButtonStyle: "outline",
 		Size:        "small",
 		Options: []apistructs.EdgeButtonOption{
-			{Text: fmt.Sprintf("全部(%d)", total), Key: "total"},
-			{Text: fmt.Sprintf("成功(%d)", success), Key: "success"},
-			{Text: fmt.Sprintf("部署中(%d)", processing), Key: "processing"},
-			{Text: fmt.Sprintf("失败(%d)", error), Key: "error"},
+			{Text: fmt.Sprintf("%s(%d)", lr.Get(i18n.I18nKeyAll), total), Key: "total"},
+			{Text: fmt.Sprintf("%s(%d)", lr.Get(i18n.I18nKeySuccess), success), Key: "success"},
+			{Text: fmt.Sprintf("%s(%d)", lr.Get(i18n.I18nKeyDeploying), processing), Key: "processing"},
+			{Text: fmt.Sprintf("%s(%d)", lr.Get(i18n.I18nKeyFailed), error), Key: "error"},
 		},
 	}
 }

@@ -21,9 +21,10 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -62,7 +63,7 @@ func (c *ComponentFormModal) OperateSubmit(orgID int64, identity apistructs.Iden
 		createRequest *apistructs.EdgeAppCreateRequest
 		updateRequest *apistructs.EdgeAppUpdateRequest
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if _, ok := c.component.State["formData"]; !ok {
 		return fmt.Errorf("must provide formdata")
 	}
@@ -77,7 +78,7 @@ func (c *ComponentFormModal) OperateSubmit(orgID int64, identity apistructs.Iden
 		return err
 	}
 
-	if err = validateSubmitData(appSubmitReq); err != nil {
+	if err = validateSubmitData(appSubmitReq, i18nLocale); err != nil {
 		return err
 	}
 
@@ -273,7 +274,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 		appState  = apistructs.EdgeAppState{}
 		formModal apistructs.EdgeFormModalPointProps
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return fmt.Errorf("marshal component state error: %v", err)
@@ -292,7 +293,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 			return fmt.Errorf("get avaliable edge clusters error: %v", err)
 		}
 
-		c.component.Props = getProps(edgeClusters, nil, nil, nil, appState.OperationType, "")
+		c.component.Props = getProps(edgeClusters, nil, nil, nil, appState.OperationType, "", i18nLocale)
 		return nil
 	}
 
@@ -372,7 +373,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 				return fmt.Errorf("list avaliable apps error: %v", err)
 			}
 
-			c.component.Props = getProps(nil, sites, configSets, apps, appState.OperationType, "")
+			c.component.Props = getProps(nil, sites, configSets, apps, appState.OperationType, "", i18nLocale)
 
 		} else if appObj.Type == ADDON {
 			formData := Application{
@@ -385,7 +386,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 			}
 
 			c.component.State["formData"] = formData
-			c.component.Props = getProps(nil, sites, nil, nil, appState.OperationType, MIDDLEWARE)
+			c.component.Props = getProps(nil, sites, nil, nil, appState.OperationType, MIDDLEWARE, i18nLocale)
 		}
 	}
 
@@ -446,7 +447,7 @@ func convert2PortMap(request Application) []apistructs.PortMap {
 	return portMaps
 }
 
-func validateSubmitData(reqData Application) error {
+func validateSubmitData(reqData Application, lr *i18r.LocaleResource) error {
 	if err := strutil.Validate(reqData.AppName, strutil.MaxRuneCountValidator(ApplicationNameLength)); err != nil {
 		return err
 	}
@@ -457,7 +458,7 @@ func validateSubmitData(reqData Application) error {
 	}
 
 	if !isRight {
-		return fmt.Errorf(AppNameRegexpError)
+		return fmt.Errorf(lr.Get(i18n.I18nKeyInputApplicationNameTip))
 	}
 
 	if reqData.DeployResource == MIRROR {
