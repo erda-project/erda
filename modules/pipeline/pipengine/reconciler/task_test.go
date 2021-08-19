@@ -43,5 +43,5 @@ func TestResetTaskForAbnormalRetry(t *testing.T) {
 	})
 	defer tm.Unpatch()
 	resetTaskForAbnormalRetry(tr, 1)
-	assert.Equal(t, apistructs.PipelineStatusAnalyzed, tr.Task.Status)
+	assert.Equal(t, apistructs.PipelineStatusAnalyzeFailed, tr.Task.Status)
 }

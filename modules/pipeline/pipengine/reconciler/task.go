@@ -135,7 +135,5 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "sleep %s before retry abnormal retry", interval.String())
 	time.Sleep(interval)
 
-	// 更新状态
-	tr.Task.Status = apistructs.PipelineStatusAnalyzed
 	tr.Update()
 }

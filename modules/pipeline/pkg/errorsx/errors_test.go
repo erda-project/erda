@@ -16,6 +16,7 @@ package errorsx
 import (
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,4 +39,13 @@ func TestIsContainUserError(t *testing.T) {
 	uErr := UserErrorf("failed to do")
 	assert.Equal(t, false, IsContainUserError(pErr))
 	assert.Equal(t, true, IsContainUserError(uErr))
+}
+
+func TestIsNetworkError(t *testing.T) {
+	sessionErr := errors.New("failed to find Session for client xxx")
+	timeoutErr := errors.New("Get http://xxx.com: net/http TLS handshake timeout")
+	normalErr := errors.New("failed to do")
+	assert.Equal(t, true, IsNetworkError(sessionErr))
+	assert.Equal(t, true, IsNetworkError(timeoutErr))
+	assert.Equal(t, false, IsNetworkError(normalErr))
 }

@@ -18,6 +18,10 @@ import (
 	"strings"
 )
 
+const (
+	sessionNotFoundError = "failed to find session"
+)
+
 type errType string
 
 var (
@@ -84,4 +88,16 @@ func IsUserError(err error) bool {
 
 func IsContainUserError(err error) bool {
 	return strings.Contains(err.Error(), fmt.Sprintf("errType: %s", userAbnormalError))
+}
+
+func IsSessionNotFound(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), sessionNotFoundError)
+}
+
+func IsTimeoutError(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "timeout") || strings.Contains(strings.ToLower(err.Error()), "time out")
+}
+
+func IsNetworkError(err error) bool {
+	return IsSessionNotFound(err) || IsTimeoutError(err)
 }
