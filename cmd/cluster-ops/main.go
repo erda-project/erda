@@ -18,11 +18,11 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/cluster-init"
+	_ "github.com/erda-project/erda/modules/cluster-ops"
 )
 
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/cluster-init/cluster-init.yaml",
+		ConfigFile: "conf/cluster-ops/cluster-ops.yaml",
 	})
 }

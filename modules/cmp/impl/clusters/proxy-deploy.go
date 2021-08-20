@@ -20,13 +20,13 @@ var ProxyDeployTemplate = `
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{.ErdaSystem}}
+  name: {{ .ErdaNamespace }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cluster-agent
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -55,7 +55,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cluster-agent
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -63,7 +63,7 @@ metadata:
   labels:
     job-name: erda-cluster-init
   name: erda-cluster-init
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 spec:
   backoffLimit: 0
   selector:
@@ -79,28 +79,14 @@ spec:
       containers:
         - name: init
           env:
-            - name: "DEBUG"
-              value: "true"
-            - name: "ERDA_CHART_VERSION"
-              value: "{{.ErdaHelmChartVersion}}"
-            - name: "INSTALL_MODE"
-              value: "local"
-            - name: "REPO_MODE"
-              value: "local"
-            - name: "HELM_NAMESPACE"
-              value: {{.ErdaSystem}}
-            - name: "NODE_LABELS"
-              value: "dice/org-{{.OrgName}}=true"
-            - name: "CHART_ERDA_BASE_VALUES"
-              value: "configmap.clustername={{.ClusterName}},configmap.domain={{.CustomDomain}}"
-            - name: "CHART_ERDA_ADDONS_VALUES"
-              value: "registry.networkMode=''"
-            - name: "CHART_ERDA_VALUES"
-              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},masterCluster.domain={{.MasterClusterDomain}},masterCluster.protocol={{.MasterClusterProtocol}}"
+            {{- range .Envs }}
+            - name: {{ .Name }}
+              value: "{{ .Value }}"
+            {{- end }}
           command:
             - sh
             - -c
-            - /app/cluster-init
-          image: {{.InitJobImage}}
+            - /app/cluster-ops
+          image: {{ .JobImage }}
           imagePullPolicy: Always
 `

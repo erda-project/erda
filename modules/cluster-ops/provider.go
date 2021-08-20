@@ -20,8 +20,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/cluster-init/client"
-	"github.com/erda-project/erda/modules/cluster-init/config"
+	"github.com/erda-project/erda/modules/cluster-ops/client"
+	"github.com/erda-project/erda/modules/cluster-ops/config"
 )
 
 type provider struct {
@@ -43,9 +43,9 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func init() {
-	servicehub.Register("cluster-init", &servicehub.Spec{
-		Services:    []string{"cluster-init"},
-		Description: "cluster init",
+	servicehub.Register("cluster-ops", &servicehub.Spec{
+		Services:    []string{"cluster-ops"},
+		Description: "cluster ops",
 		ConfigFunc: func() interface{} {
 			return &config.Config{}
 		},
