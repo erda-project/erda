@@ -67,7 +67,7 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 	}
 	parsedRes := map[string]*res{
 		"unallocatable": unallocatableRes,
-		"capacity": capacityRes,
+		"capacity":      capacityRes,
 	}
 
 	nodeName := resource.ID

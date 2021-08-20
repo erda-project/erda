@@ -47,7 +47,7 @@ type Conf struct {
 	DialerPublicAddr     string `env:"CLUSTER_DIALER_PUBLIC_ADDR"`
 
 	// size of steve server cache, default 1Gi
-	CacheSize    int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
+	CacheSize int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
 	// size of each cache segment, default 16Mi
 	CacheSegSize int64 `default:"16777216" env:"CMP_CACHE_SEG_SIZE"`
 }
