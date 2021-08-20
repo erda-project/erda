@@ -83,7 +83,7 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 // stdoutTailHandler 以 tail 方式处理 stdout
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		replace(agent.BlackList, &line)
+		desensitizeLine(agent.TextBlackList, &line)
 		fmt.Printf("%s\n", line)
 
 		// meta
@@ -101,7 +101,7 @@ func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 // stderrTailHandler 以 tail 方式处理 stderr
 func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		replace(agent.BlackList, &line)
+		desensitizeLine(agent.TextBlackList, &line)
 		fmt.Errorf("%s\n", line)
 
 		// meta
@@ -120,9 +120,9 @@ func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	}
 }
 
-func replace(blackList []string, line *string) {
+func desensitizeLine(txtBlackList []string, line *string) {
 	values := make([]string, 0)
-	for _, v := range blackList {
+	for _, v := range txtBlackList {
 		if strings.Contains(*line, v) {
 			values = append(values, v)
 		}

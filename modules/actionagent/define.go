@@ -51,7 +51,7 @@ type Agent struct {
 
 	StdErrRegexpList []*regexp.Regexp
 
-	BlackList []string // enciphered data will Replaced by '******' when log output
+	TextBlackList []string // enciphered data will Replaced by '******' when log output
 }
 
 type AgentArg struct {

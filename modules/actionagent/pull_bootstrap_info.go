@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda/pkg/retry"
 )
 
-const EncryptedValueLen = "ACTIONAGENT_ENCRYPTED_VAlUE_LEN"
+const EncryptedValueMinLen = "ACTIONAGENT_ENCRYPTED_VAlUE_MIN_LEN"
 
 func (agent *Agent) pullBootstrapInfo() {
 	if !agent.Arg.PullBootstrapInfo {
@@ -79,15 +79,15 @@ func (agent *Agent) pullBootstrapInfo() {
 	agent.Arg.PrivateEnvs = bootstrapArg.PrivateEnvs
 	agent.Arg.EncryptSecretKeys = bootstrapArg.EncryptSecretKeys
 
-	valueLen, err := strconv.Atoi(os.Getenv(EncryptedValueLen))
-	if err != nil || valueLen == 0 {
+	valueLen, err := strconv.Atoi(os.Getenv(EncryptedValueMinLen))
+	if err != nil || valueLen < 6 {
 		valueLen = 6
 	}
 
 	for _, v := range agent.Arg.EncryptSecretKeys {
 		// the value's len >= EncryptedValueLen will be appended to BlackList
 		if value, ok := agent.Arg.PrivateEnvs[strings.ToUpper(v)]; ok && len(value) >= valueLen {
-			agent.BlackList = append(agent.BlackList, value)
+			agent.TextBlackList = append(agent.TextBlackList, value)
 		}
 	}
 
