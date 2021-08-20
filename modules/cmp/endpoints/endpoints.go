@@ -104,7 +104,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
 		{Path: "/api/org-cluster-info", Method: http.MethodGet, Handler: auth(i18nPrinter(e.OrgClusterInfo))},
-		{Path: "/api/clusterhook", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ClusterHook))},
 
 		// officer apis
 		{Path: "/api/clusters/{clusterName}/registry/readonly", Method: http.MethodGet, Handler: e.RegistryReadonly},

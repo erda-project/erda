@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cluster-init/config"
+	"github.com/erda-project/erda/modules/cluster-ops/config"
 	erdahelm "github.com/erda-project/erda/pkg/helm"
 	kc "github.com/erda-project/erda/pkg/k8sclient/config"
 )
@@ -33,11 +33,6 @@ import (
 const (
 	defaultRepoName   = "stable"
 	InstallModeRemote = "REMOTE"
-	RepoModeRemote    = "REMOTE"
-	RepoModeLocal     = "LOCAL"
-	LocalRepoPath     = "/app/charts"
-	ErdaBaseCharts    = "erda-base"
-	ErdaAddonsCharts  = "erda-addons"
 	ErdaCharts        = "erda"
 )
 
@@ -65,7 +60,7 @@ func WithConfig(cfg *config.Config) Option {
 func (c *Client) Execute() error {
 	logrus.Debugf("load config: %+v", c.config)
 
-	opts, err := c.newHelmClientOptions()
+	opts, err := c.genHelmClientOptions()
 	if err != nil {
 		return fmt.Errorf("get helm client error: %v", err)
 	}
@@ -75,14 +70,16 @@ func (c *Client) Execute() error {
 		return err
 	}
 
-	switch strings.ToUpper(c.config.RepoMode) {
-	case RepoModeRemote:
-		// TODO: support repo auth info.
-		e := &repo.Entry{Name: defaultRepoName, URL: c.config.RepoURL}
+	// TODO: support repo auth info.
+	e := &repo.Entry{
+		Name:     defaultRepoName,
+		URL:      c.config.RepoURL,
+		Username: c.config.RepoUsername,
+		Password: c.config.RepoPassword,
+	}
 
-		if err = hc.AddOrUpdateRepo(e); err != nil {
-			return err
-		}
+	if err = hc.AddOrUpdateRepo(e); err != nil {
+		return err
 	}
 
 	if c.config.Reinstall {
@@ -96,7 +93,8 @@ func (c *Client) Execute() error {
 			LocalRepoName: defaultRepoName,
 		}
 
-		if err := m.Execute(); err != nil {
+		if err = m.Execute(); err != nil {
+			logrus.Errorf("execute uninstall error: %v", err)
 			return err
 		}
 	}
@@ -107,13 +105,14 @@ func (c *Client) Execute() error {
 		LocalRepoName: defaultRepoName,
 	}
 
-	if err := m.Execute(); err != nil {
+	if err = m.Execute(); err != nil {
+		logrus.Errorf("execute error: %v", err)
 		return err
 	}
 
 	// Label node only local mode
 	// TODO: support label remote with rest.config
-	if strings.ToUpper(c.config.RepoMode) != InstallModeRemote {
+	if strings.ToUpper(c.config.InstallMode) != InstallModeRemote {
 		rc, err := rest.InClusterConfig()
 		if err != nil {
 			logrus.Errorf("get incluster rest config error: %v", err)
@@ -153,8 +152,8 @@ func (c *Client) Execute() error {
 	return nil
 }
 
-// newHelmClientOptions create helm client options
-func (c *Client) newHelmClientOptions() ([]erdahelm.Option, error) {
+// genHelmClientOptions create helm client options
+func (c *Client) genHelmClientOptions() ([]erdahelm.Option, error) {
 	opts := make([]erdahelm.Option, 0)
 
 	switch strings.ToUpper(c.config.InstallMode) {
@@ -173,36 +172,17 @@ func (c *Client) newHelmClientOptions() ([]erdahelm.Option, error) {
 		opts = append(opts, erdahelm.WithRESTClientGetter(erdahelm.NewRESTClientGetterImpl(rc)))
 	}
 
-	switch strings.ToUpper(c.config.RepoMode) {
-	case RepoModeLocal:
-		opts = append(opts, erdahelm.WithLocalChartDiscoverDir(LocalRepoPath))
-	}
-
 	return opts, nil
 }
 
 func (c *Client) getInitCharts() []*erdahelm.ChartSpec {
 	return []*erdahelm.ChartSpec{
 		{
-			ReleaseName: ErdaBaseCharts,
-			ChartName:   ErdaBaseCharts,
-			Version:     c.config.Version,
-			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaBaseValues,
-		},
-		{
-			ReleaseName: ErdaAddonsCharts,
-			ChartName:   ErdaAddonsCharts,
-			Version:     c.config.Version,
-			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaAddonsValues,
-		},
-		{
 			ReleaseName: ErdaCharts,
 			ChartName:   ErdaCharts,
 			Version:     c.config.Version,
 			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaValues,
+			Values:      c.config.SetValues,
 		},
 	}
 }

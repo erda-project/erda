@@ -29,17 +29,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
-	"github.com/erda-project/erda/modules/cmp/services/kubernetes"
 )
 
 type Clusters struct {
 	db  *dbclient.DBClient
 	bdl *bundle.Bundle
-	k8s *kubernetes.Kubernetes
 }
 
 func New(db *dbclient.DBClient, bdl *bundle.Bundle) *Clusters {
-	return &Clusters{db: db, bdl: bdl, k8s: &kubernetes.Kubernetes{}}
+	return &Clusters{db: db, bdl: bdl}
 }
 
 // status:
