@@ -55,7 +55,7 @@ func (k *Kubernetes) createDeployment(service *apistructs.Service, sg *apistruct
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Name, deployment.Namespace, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
@@ -123,7 +123,7 @@ func (k *Kubernetes) putDeployment(deployment *appsv1.Deployment, service *apist
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
 		return nil
 	}
-	err = k.deploy.Patch(deployment.Name, deployment.Namespace, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
+	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
