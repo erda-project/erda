@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -46,7 +47,7 @@ type Object struct {
 	Services     Services          `yaml:"services" json:"services,omitempty"`
 	Jobs         Jobs              `yaml:"jobs,omitempty" json:"jobs,omitempty"`
 	AddOns       AddOns            `yaml:"addons" json:"addons,omitempty"`
-	Environments EnvObjects        `yaml:"environments,omitempty" json:"-"`
+	Environments EnvObjects        `yaml:"environments,omitempty" json:"environments,omitempty"`
 	Values       ValueObjects      `yaml:"values" json:"values,omitempty"`
 }
 type EnvMap map[string]string
@@ -135,7 +136,10 @@ type Service struct {
 	MeshEnable      *bool                    `yaml:"mesh_enable,omitempty" json:"mesh_enable,omitempty"`
 	TrafficSecurity TrafficSecurity          `yaml:"traffic_security,omitempty" json:"traffic_security,omitempty"`
 	Endpoints       []Endpoint               `yaml:"endpoints,omitempty" json:"endpoints,omitempty"`
+	K8SSnippet      *ContainerSnippet        `yaml:"k8s_snippet,omitempty" json:"k8s_snippet,omitempty"`
 }
+
+type ContainerSnippet v1.Container
 
 type ServicePort struct {
 	Port       int            `yaml:"port" json:"port"`
@@ -519,6 +523,7 @@ type DiceYmlVisitor interface {
 	VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)
 	VisitDeployments(v DiceYmlVisitor, obj *Deployments)
 	VisitBinds(v DiceYmlVisitor, obj *Binds)
+	VisitK8SSnippet(v DiceYmlVisitor, obj *ContainerSnippet)
 }
 
 func (obj *Object) Accept(v DiceYmlVisitor) {
@@ -558,6 +563,7 @@ func (obj *Service) Accept(v DiceYmlVisitor) {
 	obj.Deployments.Accept(v)
 	obj.HealthCheck.Accept(v)
 	obj.Binds.Accept(v)
+	obj.K8SSnippet.Accept(v)
 }
 func (obj *Services) Accept(v DiceYmlVisitor) {
 	v.VisitServices(v, obj)
@@ -607,6 +613,10 @@ func (obj *Binds) Accept(v DiceYmlVisitor) {
 	v.VisitBinds(v, obj)
 }
 
+func (obj *ContainerSnippet) Accept(v DiceYmlVisitor) {
+	v.VisitK8SSnippet(v, obj)
+}
+
 type DefaultVisitor struct {
 	// used when iter on Object.Services
 	currentService string
@@ -631,12 +641,13 @@ func (o *DefaultVisitor) VisitJobs(v DiceYmlVisitor, obj *Jobs) {
 	}
 	o.currentJob = ""
 }
-func (o *DefaultVisitor) VisitJob(v DiceYmlVisitor, obj *Job)               {}
-func (*DefaultVisitor) VisitAddOn(v DiceYmlVisitor, obj *AddOn)             {}
-func (*DefaultVisitor) VisitAddOns(v DiceYmlVisitor, obj *AddOns)           {}
-func (*DefaultVisitor) VisitResources(v DiceYmlVisitor, obj *Resources)     {}
-func (*DefaultVisitor) VisitHealthCheck(v DiceYmlVisitor, obj *HealthCheck) {}
-func (*DefaultVisitor) VisitHTTPCheck(v DiceYmlVisitor, obj *HTTPCheck)     {}
-func (*DefaultVisitor) VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)     {}
-func (*DefaultVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments) {}
-func (*DefaultVisitor) VisitBinds(v DiceYmlVisitor, obj *Binds)             {}
+func (o *DefaultVisitor) VisitJob(v DiceYmlVisitor, obj *Job)                   {}
+func (*DefaultVisitor) VisitAddOn(v DiceYmlVisitor, obj *AddOn)                 {}
+func (*DefaultVisitor) VisitAddOns(v DiceYmlVisitor, obj *AddOns)               {}
+func (*DefaultVisitor) VisitResources(v DiceYmlVisitor, obj *Resources)         {}
+func (*DefaultVisitor) VisitHealthCheck(v DiceYmlVisitor, obj *HealthCheck)     {}
+func (*DefaultVisitor) VisitHTTPCheck(v DiceYmlVisitor, obj *HTTPCheck)         {}
+func (*DefaultVisitor) VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)         {}
+func (*DefaultVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments)     {}
+func (*DefaultVisitor) VisitBinds(v DiceYmlVisitor, obj *Binds)                 {}
+func (*DefaultVisitor) VisitK8SSnippet(v DiceYmlVisitor, obj *ContainerSnippet) {}

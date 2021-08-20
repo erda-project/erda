@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
@@ -58,6 +59,37 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 		d.addr = addr
 		d.client = client
 	}
+}
+
+// Patch patchs the k8s deployment object
+func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet v1.Container) error {
+	snippet.Name = containerName
+	spec := appsv1.DeploymentSpec{
+		Template: v1.PodTemplateSpec{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					snippet,
+				},
+			},
+		},
+	}
+	var b bytes.Buffer
+	resp, err := d.client.Patch(d.addr).
+		Path("/apis/apps/v1/namespaces/"+namespace+"/deployments/"+deploymentName).
+		JSONBody(spec).
+		Header("Content-Type", "application/strategic-merge-patch+json").
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return errors.Errorf("failed to patch deployment, name: %s, (%v)", deploymentName, err)
+	}
+
+	if !resp.IsOK() {
+		return errors.Errorf("failed to patch deployment, name: %s, statuscode: %v, body: %v",
+			deploymentName, resp.StatusCode(), b.String())
+	}
+	return nil
 }
 
 // Create creates a k8s deployment object
