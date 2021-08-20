@@ -132,7 +132,3 @@ var (
 	}
 )
 
-type ChartDataItem struct {
-	Value float64 `json:"value"`
-	Time  int64   `json:"time"`
-}

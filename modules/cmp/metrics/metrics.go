@@ -15,50 +15,98 @@ package metrics
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	v1 "k8s.io/api/core/v1"
+	"time"
 
-	lru "github.com/hashicorp/golang-lru"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/pkg/common"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
-type Metrics struct {
-	ctx    context.Context
-	Metric pb.MetricServiceServer
-	Cache  *lru.Cache
+type ResourceType string
+
+const (
+	CpuUsageSelectStatement = `SELECT cpu_cores_usage ,n_cpus ,cpu_usage_active FROM status_page 
+	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname
+	ORDER BY TIMESTAMP DESC`
+	MemoryUsageSelectStatement = `SELECT mem_used ,mem_available,mem_free, mem_total  FROM status_page 
+	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname
+	ORDER BY TIMESTAMP DESC`
+)
+
+type Metric struct {
+	cache   *cache.Cache
+	Metricq pb.MetricServiceServer
 }
 
-func New() *Metrics {
-	c := &Metrics{}
-	c.Metric = common.Hub.Service("metric-query-example").(pb.MetricServiceServer)
-	return c
-}
+func (m *Metric) doQuery(ctx context.Context, key string, c *cache.Cache, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+	v, err := m.Metricq.QueryWithInfluxFormat(ctx, req)
 
-func reqKey(req *pb.QueryWithInfluxFormatRequest, tag string) string {
-	key := tag
-	for _, v := range req.Params {
-		key += v.String()
-	}
-	key = key + req.Start + req.End
-	return key
-}
-
-func (c *Metrics) Query(req *pb.QueryWithInfluxFormatRequest, tag string) (*pb.QueryWithInfluxFormatResponse, error) {
-	var (
-		resp  *pb.QueryWithInfluxFormatResponse
-		value interface{}
-		ok    bool
-		key   = reqKey(req, tag)
-	)
-	value, ok = c.Cache.Get(key)
-	if ok {
-		resp = value.(*pb.QueryWithInfluxFormatResponse)
-		return resp, nil
-	}
-	format, err := c.Metric.QueryWithInfluxFormat(c.ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	c.Cache.Add(key, format)
-	return format, nil
+	values, err := cache.MarshalValue(v)
+	if err != nil {
+		if err := c.Set(key, values, time.Now().UnixNano()+int64(time.Second*30)); err != nil {
+			return nil, err
+		}
+	}
+	return v, nil
+
+}
+
+func (m *Metric) DoQuery(ctx context.Context, req apistructs.MetricsRequest) (*pb.QueryWithInfluxFormatResponse, error) {
+	var (
+		expired  bool
+		v        cache.Values
+		err      error
+		queryReq pb.QueryWithInfluxFormatRequest
+		resp     *pb.QueryWithInfluxFormatResponse
+		res     []*pb.QueryWithInfluxFormatResponse
+	)
+	start := time.Now().UnixNano()
+	switch req.ResourceType {
+	case v1.ResourceCPU:
+		queryReq.Statement = CpuUsageSelectStatement
+	case v1.ResourceMemory:
+		queryReq.Statement = MemoryUsageSelectStatement
+	default:
+		return nil, nil
+	}
+	queryReq.Start = fmt.Sprintf("%d", start-int64(30*time.Second))
+	queryReq.End = fmt.Sprintf("%d", start)
+	for _, name := range req.HostName {
+
+		queryReq.Params = map[string]*structpb.Value{
+			"cluster_name": structpb.NewStringValue(req.ClusterName),
+			"hostname":     structpb.NewStringValue(name),
+		}
+
+		key := cache.GenerateKey([]string{name, req.ClusterName, string(req.ResourceType)})
+
+		if v, expired, err = m.cache.Get(key); v != nil {
+			resp = &pb.QueryWithInfluxFormatResponse{}
+			err := json.Unmarshal(v[0].(cache.ByteSliceValue).Value().([]byte), &resp)
+			if err != nil {
+				return nil, err
+			}
+			if expired {
+				go func(ctx context.Context, key string, queryReq *pb.QueryWithInfluxFormatRequest, c *cache.Cache) {
+					m.doQuery(ctx, key, m.cache, queryReq)
+				}(ctx, key, &queryReq, m.cache)
+			}
+		} else {
+			resp, err = m.doQuery(ctx, key, m.cache, &queryReq)
+			if err != nil {
+				return nil, err
+			}
+		}
+		res = append(res, resp)
+	}
+
+	return resp, nil
 }

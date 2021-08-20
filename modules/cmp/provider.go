@@ -16,18 +16,29 @@ package cmp
 
 import (
 	"context"
-
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 )
 
-type provider struct{}
+type provider struct{
+	server pb.MetricServiceServer
+
+	Metrics *metrics.Metric
+}
 
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Info("cmp provider is running...")
 	return initialize(ctx)
+}
+
+func (p *provider)Init(){
+	p.Metrics = &metrics.Metric{
+		Metricq: p.server,
+	}
 }
 
 func init() {

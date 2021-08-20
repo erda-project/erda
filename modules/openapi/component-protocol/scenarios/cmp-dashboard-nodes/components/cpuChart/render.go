@@ -15,17 +15,17 @@ package cpuChart
 
 import (
 	"context"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
+	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/chart"
 )
 
 var (
@@ -35,57 +35,96 @@ var (
 	ORDER BY TIMESTAMP DESC`
 )
 
-func (chart *CpuChart) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	chart.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+func (cht *CpuChart) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	cht.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	var (
-		resp *pb.QueryWithInfluxFormatResponse
-		err  error
+		resp      *pb.QueryWithInfluxFormatResponse
+		nodesResp *apistructs.SteveCollection
+		nodesReq  *apistructs.SteveRequest
+		nodes     []apistructs.SteveResource
+		names     []string
+		err       error
 	)
-	if err = common.Transfer(c.State, &chart.State); err != nil {
+	err = common.Transfer(c.State, &cht.State)
+	if err != nil {
 		return err
+	}
+	orgId := cht.CtxBdl.Identity.OrgID
+	userId := cht.CtxBdl.Identity.UserID
+	clusterName := cht.CtxBdl.InParams["clusterName"].(string)
+	nodesReq = &apistructs.SteveRequest{
+		UserID:      orgId,
+		OrgID:       userId,
+		Type:        apistructs.K8SNode,
+		ClusterName: clusterName,
+	}
+	nodesResp, err = cht.CtxBdl.Bdl.ListSteveResource(nodesReq)
+	if err != nil {
+		return err
+	}
+	for _, res := range nodesResp.Data {
+		nodes = append(nodes, res)
 	}
 	switch event.Operation {
 	case apistructs.InitializeOperation:
-		chart.State.Start = time.Now().Truncate(defaultDuration)
-		chart.State.End = time.Now()
-	case apistructs.CMPDashboardChart:
-		break
-	default:
-		logrus.Warnf("operation [%s] not support, scenario:%v, event:%v", event.Operation, s, event)
-	}
-	req := &pb.QueryWithInfluxFormatRequest{
-		Start:     chart.State.Start.String(),
-		End:       time.Now().String(),
-		Filters:   nil,
-		Options:   nil,
-		Statement: sqlStatement,
-		Params: map[string]*structpb.Value{
-			"cluster_name": structpb.NewStringValue(chart.State.ClusterName),
-			"hostname":     structpb.NewStringValue(chart.State.Name),
-		},
-	}
-	if resp, err = chart.Metric.Query(req, string(v1.ResourceCPU)); err != nil {
-		return err
-	}
-	var items []common.ChartDataItem
-	for _, res := range resp.Results {
-		for _, serie := range res.Series {
-			for _, row := range serie.Rows {
-				v := row.Values[0].GetNumberValue()
-				t := row.Values[1].GetNumberValue()
-				items = append(items, common.ChartDataItem{
-					Value: v,
-					Time:  int64(t),
-				})
+	case apistructs.CMPDashboardFilterOperationKey:
+		for i := len(nodes) - 1; i >= 0; i-- {
+			node := nodes[i]
+		Next:
+			for k, _ := range node.Metadata.Labels {
+				for _, f := range filter.PropsInstance.Fields {
+					for _, opt := range f.Options {
+						if strings.Contains(k, opt.Value) {
+							names = append(names, node.ID)
+							break Next
+						}
+					}
+				}
 			}
 		}
 	}
-	chart.Data = items
+
+	req := apistructs.MetricsRequest{
+		ClusterName:  clusterName,
+		HostName:     names,
+		ResourceType: v1.ResourceCPU,
+		OrgID:        orgId,
+		UserID:       userId,
+	}
+	if resp, err = cht.CtxBdl.Bdl.GetMetrics(req); err != nil {
+		return err
+	}
+	items := getDataItem(resp)
+	cht.Data = chart.ChartData{Results: chart.Result{Data: items}}
 	return nil
 }
 
+func getDataItem(response *pb.QueryWithInfluxFormatResponse) []chart.ChartDataItem {
+	v := response.Results[0].Series[0].Rows[0].Values
+	mem_used := v[0].GetNumberValue()
+	mem_available := v[1].GetNumberValue()
+	mem_free := v[2].GetNumberValue()
+	mem_total := v[3].GetNumberValue()
+	return []chart.ChartDataItem{{
+		Value: mem_used + mem_available,
+		Name:  chart.Distributed_Desc,
+	}, {
+		Value: mem_free,
+		Name:  chart.Free_Desc,
+	}, {
+		Value: mem_total - mem_free - mem_available - mem_available,
+		Name:  chart.Locked_Desc,
+	}}
+}
+func getProps() chart.Props {
+	return chart.Props{
+		ChartType:  "pie",
+		LegendData: []string{"剩余分配", "已分配", "不可分配"},
+	}
+}
 func RenderCreator() protocol.CompRender {
 	cc := &CpuChart{}
-	cc.Metric = metrics.New()
+	cc.Type = "Chart"
+	cc.Props = getProps()
 	return cc
 }

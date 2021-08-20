@@ -15,6 +15,7 @@ package endpoints
 
 import (
 	"context"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"net/http"
 
 	"github.com/erda-project/erda/bundle"
@@ -39,6 +40,7 @@ type Endpoints struct {
 	nodes           *nodes.Nodes
 	labels          *labels.Labels
 	clusters        *clusters.Clusters
+	metrics        *metrics.Metric
 	orgResource     *org_resource.OrgResource
 	Mns             *mns.Mns
 	Ess             *ess.Ess
@@ -214,5 +216,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// task list
 		{Path: "/api/org/actions/list-running-tasks", Method: http.MethodGet, Handler: i18nPrinter(e.ListOrgRunningTasks)},
 		{Path: "/api/tasks", Method: http.MethodPost, Handler: i18nPrinter(e.DealTaskEvent)},
+
+		// metrics
+		{Path: "/api/metrics", Method: http.MethodPost, Handler: i18nPrinter(e.MetricsQuery)},
 	}
 }

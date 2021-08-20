@@ -23,8 +23,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/metrics"
-	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
@@ -105,15 +103,15 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *apistructs.Component, s a
 
 func (ct *CpuInfoTable) RenderList(component *apistructs.Component, event apistructs.ComponentEvent, resName v1.ResourceName) error {
 	var (
-		nodeList     []apistructs.SteveResource
-		nodes        []apistructs.SteveResource
-		resp         *apistructs.SteveCollection
-		err          error
-		filter       string
-		sortColumn   string
-		clusterNames []apistructs.ClusterInfo
-		orgID        int64
-		asc          bool
+		nodeList   []apistructs.SteveResource
+		nodes      []apistructs.SteveResource
+		resp       *apistructs.SteveCollection
+		err        error
+		filter     string
+		sortColumn string
+		orgID      string
+		userID     string
+		asc        bool
 	)
 	if ct.State.PageNo == 0 {
 		ct.State.PageNo = DefaultPageNo
@@ -126,26 +124,19 @@ func (ct *CpuInfoTable) RenderList(component *apistructs.Component, event apistr
 	filter = ct.State.Query["title"].(string)
 	sortColumn = ct.State.SortColumnName
 	asc = ct.State.Asc
-
-	if ct.State.ClusterName != "" {
-		clusterNames = append([]apistructs.ClusterInfo{}, apistructs.ClusterInfo{Name: ct.State.ClusterName})
-	} else {
-		clusterNames, err = bdl.Bdl.ListClusters("", uint64(orgID))
-		if err != nil {
-			return err
-		}
+	clusterName := ct.CtxBdl.InParams["clusterName"].(string)
+	orgID = ct.CtxBdl.Identity.OrgID
+	userID = ct.CtxBdl.Identity.UserID
+	nodeReq := &apistructs.SteveRequest{}
+	nodeReq.ClusterName = clusterName
+	nodeReq.Type = apistructs.K8SNode
+	nodeReq.OrgID = orgID
+	nodeReq.UserID = userID
+	resp, err = ct.CtxBdl.Bdl.ListSteveResource(nodeReq)
+	if err != nil {
+		return err
 	}
-	// Get all nodes by cluster name
-	for _, clusterName := range clusterNames {
-		nodeReq := &apistructs.SteveRequest{}
-		nodeReq.ClusterName = clusterName.Name
-		nodeReq.Type = apistructs.K8SNode
-		resp, err = ct.CtxBdl.Bdl.ListSteveResource(nodeReq)
-		if err != nil {
-			return err
-		}
-		nodeList = append(nodeList, resp.Data...)
-	}
+	nodeList = append(nodeList, resp.Data...)
 	if filter == "" {
 		nodes = nodeList
 	} else {
@@ -278,7 +269,6 @@ func (ct *CpuInfoTable) GetRowItem(c apistructs.SteveResource, resName v1.Resour
 func RenderCreator() protocol.CompRender {
 	ci := CpuInfoTable{}
 	ci.Type = "Table"
-	ci.Metric = metrics.New()
 	ci.Props = getProps()
 	ci.Operations = getTableOperation()
 	ci.State = table.State{}

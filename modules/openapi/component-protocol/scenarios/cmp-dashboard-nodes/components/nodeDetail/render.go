@@ -54,7 +54,7 @@ func (nd *NodeDetail) RenderDetail() error {
 	req := apistructs.SteveRequest{
 		Type:        apistructs.K8SNode,
 		ClusterName: nd.State.ClusterName,
-		Name:        nd.State.Name,
+		Name:        "GET",
 	}
 	if node, err = nd.CtxBdl.Bdl.GetSteveResource(&req); err != nil {
 		return err

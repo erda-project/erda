@@ -11,16 +11,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package memChart
+package cpuTable
 
 import (
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/chart"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/table"
 )
 
-type MemChart struct {
-	CtxBdl  protocol.ContextBundle
-	chart.Chart
-	filter.State
+type CpuInfoTable struct {
+	table.Table
+	Data []table.RowItem
 }

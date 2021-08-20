@@ -11,16 +11,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package memChart
+package metrics
 
 import (
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/chart"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
+	"context"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
 
-type MemChart struct {
-	CtxBdl  protocol.ContextBundle
-	chart.Chart
-	filter.State
+type MetricsImpl struct {
+	Metric pb.MetricServiceServer
+	ctx context.Context
+}
+
+type provider struct {
+	Metric pb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
+	MetricsImpl *MetricsImpl
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	p.MetricsImpl = &MetricsImpl{
+		Metric: p.Metric,
+		ctx: context.Background(),
+	}
+	return nil
 }

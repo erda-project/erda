@@ -13,44 +13,88 @@
 
 package filter
 
-type CommonFilter struct {
-	Version    string                 `json:"version,omitempty"`
-	Name       string                 `json:"name,omitempty"`
-	Type       string                 `json:"type"`
-	Props      Props                  `json:"props,omitempty"`
-	State      State                  `json:"state,omitempty"`
-	Operations map[string]interface{} `json:"operations,omitempty"`
+var PropsInstance = Props{
+	LabelWidth: 40,
+	Fields: []Field{
+		{
+			Label: "env",
+			Key:   "env",
+			Type:  "select",
+			Options: []Option{
+				{Label: "开发环境", Value: "dev"},
+				{Label: "测试环境", Value: "test"},
+				{Label: "预发环境", Value: "staging"},
+				{Label: "生产环境", Value: "prod"},
+			},
+		},
+		{
+			Key:   "service",
+			Label: "服务",
+			Type:  "select",
+			Options: []Option{
+				{Label: "有状态服务", Value: "stateful"},
+				{Label: "无状态服务", Value: "stateless"},
+			},
+		},
+		{
+			Key:   "packjob",
+			Label: "构建",
+			Type:  "select",
+			Options: []Option{
+				{Label: "pack-job", Value: "packJob"},
+			},
+		},
+		{
+			Key:   "other",
+			Label: "其他",
+			Type:  "select",
+			Options: []Option{
+				{Label: "集群服务", Value: "cluster-service"},
+				{Label: "自定义", Value: "custom"},
+				{Label: "独占", Value: "mono"},
+				{Label: "锁住节点", Value: "cordon"},
+				{Label: "驱逐节点", Value: "drain"},
+				{Label: "平台组件", Value: "platform"},
+			},
+		},
+
+	},
 }
 
-type Operation struct {
-	Reload bool   `json:"reload"`
-	Key    string `json:"key"`
-}
-
-type Options struct {
-	Label    string    `json:"label"`
-	Value    string    `json:"value"`
-	Children []Options `json:"children"`
-}
-
-type Props struct {
-	Delay uint64 `json:"delay"`
-}
-
-type StateCondition struct {
-	Key         string    `json:"key"`
-	Label       string    `json:"label"`
-	EmptyText   string    `json:"emptyText"`
-	Fixed       bool      `json:"fixed"`
-	ShowIndex   uint64    `json:"showIndex"`
-	Placeholder string    `json:"placeholder"`
-	Type        string    `json:"type"`
-	Options     []Options `json:"options"`
+type Filter struct {
+	Type       string                     `json:"type"`
+	Operations map[string]FilterOperation `json:"operations"`
+	State      State                      `json:"state"`
+	Props      Props                      `json:"props"`
 }
 
 type State struct {
-	Values map[string]interface{} `json:"values"`
-	// 0: input 1: select
-	Conditions    []StateCondition `json:"conditions"`
-	IsFirstFilter bool             `json:"isFirstFilter"`
+	Values Values `json:"values"`
+}
+
+type Props struct {
+	LabelWidth int     `json:"label_width"`
+	Fields     []Field `json:"fields"`
+}
+
+type FilterOperation struct {
+	Key    string `json:"key"`
+	Reload bool   `json:"reload"`
+}
+
+type Values struct {
+	keys map[string][]string
+}
+
+type Field struct {
+	Label       string   `json:"label"`
+	Type        string   `json:"type"`
+	Options     []Option `json:"options"`
+	Key         string   `json:"key"`
+	Placeholder string   `json:"placeholder"`
+}
+
+type Option struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
 }

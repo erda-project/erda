@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package cpuTable
+package memTable
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
@@ -54,11 +53,12 @@ var tableProperties = map[string]interface{}{
 
 func (mt *MemInfoTable) Render(ctx context.Context, c *apistructs.Component, s apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	var state table.State
-	mt.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	err := common.Transfer(c.State, &state)
-	if err != nil {
-		return err
+	if v := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String());v == nil{
+		return common.ResourceEmptyErr
+	}else{
+		mt.CtxBdl = v.(protocol.ContextBundle)
 	}
+	common.Transfer(c.State, &state)
 	mt.State = state
 	if event.Operation != apistructs.InitializeOperation {
 		// Tab name not equal this component name
@@ -308,7 +308,6 @@ func getItemStatus(node *v1.Node) (*common.SteveStatus, error) {
 
 func RenderCreator() protocol.CompRender {
 	mt := MemInfoTable{}
-	mt.Metric = metrics.New()
 	mt.Type = "Table"
 	mt.Props = getProps()
 	mt.Operations = getTableOperation()
