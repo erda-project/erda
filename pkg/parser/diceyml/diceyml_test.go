@@ -52,11 +52,12 @@ services:
         l4_protocol: "UDP"
         default: true
     k8s_snippet:
-      stdin: true
-      workingDir: aaa
-      imagePullPolicy: Always
-      securityContext:
-        privileged: true
+      container:
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
     health_check:
       exec:
         cmd: "echo 1"
@@ -115,12 +116,13 @@ services:
       cpu: 0.1
       mem: 512
     k8s_snippet:
-      name: abc
-      stdin: true
-      workingDir: aaa
-      imagePullPolicy: Always
-      securityContext:
-        privileged: true
+      container:
+        name: abc
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
 `
 
 func TestDiceYmlObj(t *testing.T) {
@@ -144,9 +146,9 @@ func TestDicalYmlK8SSnippet(t *testing.T) {
 	d, err := New([]byte(yml), true)
 	assert.Nil(t, err)
 	assert.NotNil(t, d.obj.Services["web"].K8SSnippet)
-	assert.NotNil(t, d.obj.Services["web"].K8SSnippet.SecurityContext)
-	assert.Equal(t, true, *d.obj.Services["web"].K8SSnippet.SecurityContext.Privileged)
-	assert.EqualValues(t, "Always", d.obj.Services["web"].K8SSnippet.ImagePullPolicy)
+	assert.NotNil(t, d.obj.Services["web"].K8SSnippet.Container.SecurityContext)
+	assert.Equal(t, true, *d.obj.Services["web"].K8SSnippet.Container.SecurityContext.Privileged)
+	assert.EqualValues(t, "Always", d.obj.Services["web"].K8SSnippet.Container.ImagePullPolicy)
 	_, err = New([]byte(wrongSnippetYml), true)
 	assert.NotNil(t, err)
 }
