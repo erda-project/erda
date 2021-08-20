@@ -66,7 +66,7 @@ func (e *Endpoints) UploadFile(ctx context.Context, r *http.Request, vars map[st
 	defer formFile.Close()
 
 	fileExtension := filepath.Ext(fileHeader.Filename)
-	if !conf.FileTypeCarryActiveContentAllowed() && strutil.Exist(filesvc.FileTypesCanCarryActiveContent, fileExtension) {
+	if !conf.FileTypeCarryActiveContentAllowed() && strutil.Exist(conf.FileTypesCanCarryActiveContent(), strutil.TrimPrefixes(fileExtension, ".")) {
 		return nil, apierrors.ErrUploadFile.InvalidParameter(errors.Errorf("cannot upload file with type: %s", fileExtension))
 	}
 	// get params
