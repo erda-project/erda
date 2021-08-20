@@ -18,15 +18,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site/i18n"
 )
 
 func (c ComponentBreadCrumb) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 
 	if err := c.SetComponent(component); err != nil {
 		return err
@@ -40,7 +40,7 @@ func (c ComponentBreadCrumb) Render(ctx context.Context, component *apistructs.C
 		"list": []map[string]interface{}{
 			{
 				"key":  "appName",
-				"item": "站点列表",
+				"item": i18nLocale.Get(i18n.I18nKeySiteList),
 			},
 		},
 	}

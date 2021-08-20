@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	siteiplist "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site-ip/components/siteIpList"
 )
@@ -91,7 +90,7 @@ func (c *ComponentViewGroup) Operation(orgID int64, identity apistructs.Identity
 		failureTotal int
 		inParam      = EdgeAppSiteIPInParam{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.ctxBundle.InParams)
 	if err != nil {
 		return fmt.Errorf("marshal id from inparams error: %v", err)
@@ -114,7 +113,7 @@ func (c *ComponentViewGroup) Operation(orgID int64, identity apistructs.Identity
 		}
 	}
 
-	c.component.Props = getProps(len(res), successTotal, failureTotal)
+	c.component.Props = getProps(len(res), successTotal, failureTotal, i18nLocale)
 
 	return nil
 }

@@ -17,8 +17,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -27,7 +28,7 @@ func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistru
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistru
 
 	c.component.Operations = getOperations()
 	c.component.Props = getProps()
-	c.component.State["conditions"] = getStateConditions()
+	c.component.State["conditions"] = getStateConditions(i18nLocale)
 	return nil
 }
 
@@ -57,14 +58,14 @@ func getOperations() apistructs.EdgeOperations {
 		},
 	}
 }
-func getStateConditions() []apistructs.EdgeConditions {
+func getStateConditions(lr *i18r.LocaleResource) []apistructs.EdgeConditions {
 	return []apistructs.EdgeConditions{
 		{
 			Fixed:       true,
 			Key:         "condition",
-			Label:       "名称",
+			Label:       lr.Get(i18n.I18nKeyName),
 			Type:        "input",
-			Placeholder: "按名称模糊搜索",
+			Placeholder: lr.Get(i18n.I18nKeySearchbyname),
 		},
 	}
 }

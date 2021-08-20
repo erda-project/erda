@@ -19,9 +19,8 @@ import (
 	"regexp"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -59,7 +58,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 	var (
 		siteState = apistructs.EdgeSiteState{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return err
@@ -76,13 +75,13 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 		if err != nil {
 			return fmt.Errorf("get avaliable edge clusters error: %v", err)
 		}
-		c.component.Props = getProps(edgeClusters, false)
+		c.component.Props = getProps(edgeClusters, false, i18nLocale)
 	} else if siteState.SiteID != 0 {
 		siteInfo, err := c.ctxBundle.Bdl.GetEdgeSite(siteState.SiteID, identity)
 		if err != nil {
 			return err
 		}
-		c.component.Props = getProps(nil, true)
+		c.component.Props = getProps(nil, true, i18nLocale)
 		c.component.State["formData"] = map[string]interface{}{
 			"id":             siteInfo.ID,
 			"siteName":       siteInfo.Name,

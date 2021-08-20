@@ -19,13 +19,13 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 const (
 	SiteNameMatchPattern = "^[a-z][a-z0-9-]*[a-z0-9]$"
-	SitNameRegexpError   = "可输入小写字母、数字、中划线; 必须以小写字母开头, 以小写字母或数字结尾"
 )
 
 var (
@@ -98,17 +98,17 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps(relatedCluster []map[string]interface{}, modeEdit bool) apistructs.EdgeFormModalProps {
+func getProps(relatedCluster []map[string]interface{}, modeEdit bool, lr *i18r.LocaleResource) apistructs.EdgeFormModalProps {
 
 	siteNameField := apistructs.EdgeFormModalField{
 		Key:       "siteName",
-		Label:     "站点名称",
+		Label:     lr.Get(i18n.I18nKeySiteName),
 		Component: "input",
 		Required:  true,
 		Rules: []apistructs.EdgeFormModalFieldRule{
 			{
 				Pattern: SiteNameMatchRegexp,
-				Message: SitNameRegexpError,
+				Message: lr.Get(i18n.I18nKeyInputSiteNameTip),
 			},
 		},
 		ComponentProps: map[string]interface{}{
@@ -118,18 +118,18 @@ func getProps(relatedCluster []map[string]interface{}, modeEdit bool) apistructs
 
 	clusterField := apistructs.EdgeFormModalField{
 		Key:       "relatedCluster",
-		Label:     "关联集群",
+		Label:     lr.Get(i18n.I18nKeyAssociatedCluster),
 		Component: "select",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择关联集群",
+			"placeholder": lr.Get(i18n.I18nKeySelectCluster),
 			"options":     relatedCluster,
 		},
 	}
 
 	descField := apistructs.EdgeFormModalField{
 		Key:       "desc",
-		Label:     "站点描述",
+		Label:     lr.Get(i18n.I18nKeySiteDescription),
 		Component: "textarea",
 		Required:  false,
 		ComponentProps: map[string]interface{}{
@@ -141,7 +141,7 @@ func getProps(relatedCluster []map[string]interface{}, modeEdit bool) apistructs
 	clusterField.Disabled = modeEdit
 
 	props := apistructs.EdgeFormModalProps{
-		Title: "新建站点",
+		Title: lr.Get(i18n.I18nKeyCreateSite),
 		Fields: []apistructs.EdgeFormModalField{
 			siteNameField,
 			clusterField,
@@ -150,7 +150,7 @@ func getProps(relatedCluster []map[string]interface{}, modeEdit bool) apistructs
 	}
 
 	if modeEdit {
-		props.Title = "编辑站点"
+		props.Title = lr.Get(i18n.I18nKeyEditSite)
 	}
 
 	return props

@@ -49,7 +49,7 @@ func (c *ComponentConfigsetList) OperateChangePage(orgID int64, reList bool, ide
 		reqPageSize = apistructs.EdgeDefaultPageSize
 		cfgSetState apistructs.EdgePageState
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (c *ComponentConfigsetList) OperateChangePage(orgID int64, reList bool, ide
 		item := EdgeConfigsetItem{
 			ConfigsetName:  data.Name,
 			RelatedCluster: data.ClusterName,
-			Operate:        getConfigsetItem(data.ID, data.Name),
+			Operate:        getConfigsetItem(data.ID, data.Name, i18nLocale),
 		}
 
 		resList = append(resList, item)

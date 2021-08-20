@@ -66,7 +66,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, identity apistructs.Ident
 		inParam     = EdgeAppSiteIPInParam{}
 		stateEntity = EdgeAppSiteIPState{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.ctxBundle.InParams)
 	if err != nil {
 		return fmt.Errorf("marshal id from inparams error: %v", err)
@@ -107,7 +107,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, identity apistructs.Ident
 			Address:   data.HostIP,
 			CreatedAt: data.StartedAt.Format("2006-01-02 15:04:05"),
 			Status:    getStatus(data.Phase),
-			Operate:   getItemOperations(data.ContainerID, data.ContainerIP, data.Cluster),
+			Operate:   getItemOperations(data.ContainerID, data.ContainerIP, data.Cluster, i18nLocale),
 		}
 
 		switch selectScope {

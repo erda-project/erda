@@ -19,8 +19,9 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-configSet/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 func (c ComponentFormModal) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -29,7 +30,7 @@ func (c ComponentFormModal) Render(ctx context.Context, component *apistructs.Co
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func (c ComponentFormModal) Render(ctx context.Context, component *apistructs.Co
 		return fmt.Errorf("get avaliable edge clusters error: %v", err)
 	}
 
-	c.component.Props = getProps(edgeClusters)
+	c.component.Props = getProps(edgeClusters, i18nLocale)
 	c.component.Operations = getOperations()
 	c.component.State = map[string]interface{}{
 		"visible": false,
@@ -71,13 +72,13 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps(cluster []map[string]interface{}) apistructs.EdgeFormModalProps {
+func getProps(cluster []map[string]interface{}, lr *i18r.LocaleResource) apistructs.EdgeFormModalProps {
 	return apistructs.EdgeFormModalProps{
-		Title: "新建配置集",
+		Title: lr.Get(i18n.I18nKeyCreateConfigSet),
 		Fields: []apistructs.EdgeFormModalField{
 			{
 				Key:       "name",
-				Label:     "名称",
+				Label:     lr.Get(i18n.I18nKeyName),
 				Component: "input",
 				Required:  true,
 				Rules: []apistructs.EdgeFormModalFieldRule{
@@ -92,11 +93,11 @@ func getProps(cluster []map[string]interface{}) apistructs.EdgeFormModalProps {
 			},
 			{
 				Key:       "cluster",
-				Label:     "集群",
+				Label:     lr.Get(i18n.I18nKeyCluster),
 				Component: "select",
 				Required:  true,
 				ComponentProps: map[string]interface{}{
-					"placeholder": "请选择关联集群",
+					"placeholder": lr.Get(i18n.I18nKeySelectCluster),
 					"options":     cluster,
 				},
 			},

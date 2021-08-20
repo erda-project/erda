@@ -20,8 +20,9 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site-ip/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 const (
@@ -54,7 +55,7 @@ func (c *ComponentList) Render(ctx context.Context, component *apistructs.Compon
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (c *ComponentList) Render(ctx context.Context, component *apistructs.Compon
 		}
 	}
 
-	c.component.Props = getProps()
+	c.component.Props = getProps(i18nLocale)
 	c.component.Operations = getOperations()
 
 	return nil
@@ -98,27 +99,27 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps() apistructs.EdgeTableProps {
+func getProps(lr *i18r.LocaleResource) apistructs.EdgeTableProps {
 	return apistructs.EdgeTableProps{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",
 		Columns: []apistructs.EdgeColumns{
-			{Title: "实例IP", DataIndex: "ip", Width: 150},
-			{Title: "主机地址", DataIndex: "address", Width: 150},
-			{Title: "状态", DataIndex: "status", Width: 150},
-			{Title: "创建时间", DataIndex: "createdAt", Width: 150},
-			{Title: "操作", DataIndex: "operate", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyInstanceIp), DataIndex: "ip", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyHostAddress), DataIndex: "address", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyStatus), DataIndex: "status", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyCreateTime), DataIndex: "createdAt", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyOperator), DataIndex: "operate", Width: 150},
 		},
 	}
 }
 
-func getItemOperations(containerID, ip, clusterName string) apistructs.EdgeItemOperations {
+func getItemOperations(containerID, ip, clusterName string, lr *i18r.LocaleResource) apistructs.EdgeItemOperations {
 	return apistructs.EdgeItemOperations{
 		RenderType: "tableOperation",
 		Operations: map[string]apistructs.EdgeItemOperation{
 			"viewTerminal": {
 				Key:    "viewTerminal",
-				Text:   "控制台",
+				Text:   lr.Get(i18n.I18nKeyConsole),
 				Reload: false,
 				Meta: map[string]interface{}{
 					"clusterName": clusterName,
@@ -133,7 +134,7 @@ func getItemOperations(containerID, ip, clusterName string) apistructs.EdgeItemO
 			},
 			"viewMonitor": {
 				Key:    "viewMonitor",
-				Text:   "容器监控",
+				Text:   lr.Get(i18n.I18nKeyContinerMonitor),
 				Reload: false,
 				Meta: map[string]interface{}{
 					"api": "/api/orgCenter/metrics",
@@ -151,7 +152,7 @@ func getItemOperations(containerID, ip, clusterName string) apistructs.EdgeItemO
 			},
 			"viewLog": {
 				Key:    "viewLog",
-				Text:   "日志",
+				Text:   lr.Get(i18n.I18nKeyLogging),
 				Reload: false,
 				Meta: map[string]interface{}{
 					"fetchApi": "/api/orgCenter/logs",
