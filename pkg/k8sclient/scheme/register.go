@@ -16,7 +16,7 @@ package scheme
 import (
 	sparkoperatorv1beta2 "github.com/GoogleCloudPlatform/spark-on-k8s-operator/pkg/apis/sparkoperator.k8s.io/v1beta2"
 	elasticsearchv1 "github.com/elastic/cloud-on-k8s/pkg/apis/elasticsearch/v1"
-	flinkoperatoryv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
+	//flinkoperatoryv1beta1 "github.com/googlecloudplatform/flink-operator/api/v1beta1"
 	istioconfigv1alpha2 "istio.io/client-go/pkg/apis/config/v1alpha2"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -40,6 +40,6 @@ var LocalSchemeBuilder = runtime.SchemeBuilder{
 	istionetworkingv1alpha3.AddToScheme,
 	istiorbacv1alpha1.AddToScheme,
 	istiosecv1beta1.AddToScheme,
-	flinkoperatoryv1beta1.AddToScheme,
+	//flinkoperatoryv1beta1.AddToScheme,
 	apiextensions.AddToScheme,
 }
