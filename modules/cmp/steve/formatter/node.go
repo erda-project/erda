@@ -36,9 +36,9 @@ type NodeFormatter struct {
 }
 
 type res struct {
-	cpu    int64
-	memory int64
-	pods   int64
+	CPU    int64
+	Memory int64
+	Pods   int64
 }
 
 type cacheKey struct {
@@ -61,9 +61,9 @@ func (n *NodeFormatter) Formatter(request *types.APIRequest, resource *types.Raw
 	allocatableRes := parseRes(resource, "allocatable")
 	capacityRes := parseRes(resource, "capacity")
 	unallocatableRes := &res{
-		cpu:    capacityRes.cpu - allocatableRes.cpu,
-		memory: capacityRes.memory - allocatableRes.memory,
-		pods:   capacityRes.pods - capacityRes.pods,
+		CPU:    capacityRes.CPU - allocatableRes.CPU,
+		Memory: capacityRes.Memory - allocatableRes.Memory,
+		Pods:   capacityRes.Pods - capacityRes.Pods,
 	}
 	parsedRes := map[string]*res{
 		"unallocatable": unallocatableRes,
@@ -130,9 +130,9 @@ func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string
 		}
 	}
 	return &res{
-		cpu:    cpu.MilliValue(),
-		memory: mem.Value(),
-		pods:   int64(len(pods.Items)),
+		CPU:    cpu.MilliValue(),
+		Memory: mem.Value(),
+		Pods:   int64(len(pods.Items)),
 	}, nil
 }
 
@@ -146,8 +146,8 @@ func parseRes(raw *types.RawResource, resType string) *res {
 	parsedPods, _ := resource.ParseQuantity(pods)
 
 	return &res{
-		cpu:    parsedCPU.MilliValue(),
-		memory: parsedMem.Value(),
-		pods:   parsedPods.Value(),
+		CPU:    parsedCPU.MilliValue(),
+		Memory: parsedMem.Value(),
+		Pods:   parsedPods.Value(),
 	}
 }

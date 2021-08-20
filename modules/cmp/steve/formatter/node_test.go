@@ -98,13 +98,13 @@ func TestGetNodeAllocatedRes(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if res.cpu != "1100m" {
-		t.Errorf("test failed, expected cpm 1100m, actual %s", res.cpu)
+	if res.CPU != 1100 {
+		t.Errorf("test failed, expected cpm 1100, actual %d", res.CPU)
 	}
-	if res.memory != "1524Mi" {
-		t.Errorf("test failed, expected  , actual %s", res.memory)
+	if res.Memory != 1598029824 {
+		t.Errorf("test failed, expected 1598029824, actual %d", res.Memory)
 	}
-	if res.pods != "2" {
-		t.Errorf("test failed, expected pods 200, actual %s", res.pods)
+	if res.Pods != 2 {
+		t.Errorf("test failed, expected Pods 200, actual %d", res.Pods)
 	}
 }
