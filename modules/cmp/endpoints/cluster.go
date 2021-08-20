@@ -535,18 +535,3 @@ func (e *Endpoints) InitCluster(ctx context.Context, w http.ResponseWriter, r *h
 
 	return nil
 }
-
-func (e *Endpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
-	req := apistructs.ClusterEvent{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("decode clusterhook request fail: %v", err)
-		logrus.Error(errstr)
-		return httpserver.HTTPResponse{Status: http.StatusBadRequest, Content: errstr}, nil
-	}
-	if err := e.clusters.Hook(&req); err != nil {
-		errstr := fmt.Sprintf("failed to handle cluster event: %v", err)
-		logrus.Error(errstr)
-		return httpserver.HTTPResponse{Status: http.StatusInternalServerError, Content: errstr}, nil
-	}
-	return httpserver.HTTPResponse{Status: http.StatusOK}, nil
-}
