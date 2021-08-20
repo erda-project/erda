@@ -71,6 +71,12 @@ func (e *Endpoints) CloudResourceSetTag(ctx context.Context, r *http.Request, va
 		return
 	}
 
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return
+	}
+
 	// get cloud resource context: ak/sk...
 	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
 	if resp != nil {

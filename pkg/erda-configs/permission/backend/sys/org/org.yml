@@ -54,15 +54,15 @@
   scope: org
   resource: cloudresource
   action: GET
-- role: Manager,Ops,Support
+- role: Manager,Ops
   scope: org
   resource: cloudresource
   action: CREATE
-- role: Manager,Ops,Support
+- role: Manager,Ops
   scope: org
   resource: cloudresource
   action: UPDATE
-- role: Manager,Ops,Support
+- role: Manager,Ops
   scope: org
   resource: cloudresource
   action: DELETE

@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/overview"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 func (e *Endpoints) CreateAccount(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -42,7 +43,19 @@ func (e *Endpoints) CreateAccount(ctx context.Context, r *http.Request, vars map
 		})
 	}
 
-	err := e.CloudAccount.Create(orgid, req.Vendor, req.AccessKey, req.Secret, req.Description)
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.CreateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	err = e.CloudAccount.Create(orgid, req.Vendor, req.AccessKey, req.Secret, req.Description)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to create accountlist: %v, org: %s", err, orgid)
 		return mkResponse(apistructs.CreateCloudAccountResponse{
@@ -80,6 +93,19 @@ func (e *Endpoints) DeleteAccount(ctx context.Context, r *http.Request, vars map
 			},
 		})
 	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.DeleteAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	if err := e.CloudAccount.Delete(orgid, req.Vendor, req.AccessKey); err != nil {
 		errstr := fmt.Sprintf("failed to delete account: %v, org: %s, ak: %s", err, orgid, req.AccessKey)
 		return mkResponse(apistructs.DeleteCloudAccountResponse{

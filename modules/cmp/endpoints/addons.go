@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // Get Addon config
@@ -99,12 +100,19 @@ func (e *Endpoints) UpdateAddonConfig(ctx context.Context, r *http.Request, vars
 		})
 	}
 
-	_, resp := e.GetIdentity(r)
+	i, resp := e.GetIdentity(r)
 	if resp != nil {
-		return resp, nil
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
 	}
 
-	err := e.Addons.UpdateAddonConfig(req)
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	err = e.Addons.UpdateAddonConfig(req)
 
 	if err != nil {
 		logrus.Errorf("update addon config failed, request:%+v, error:%v", req, err)
@@ -132,10 +140,17 @@ func (e *Endpoints) AddonScale(ctx context.Context, r *http.Request, vars map[st
 
 	i, resp := e.GetIdentity(r)
 	if resp != nil {
-		return resp, nil
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
 	}
 
-	err := e.Addons.AddonScale(i, req)
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	err = e.Addons.AddonScale(i, req)
 	if err != nil {
 		logrus.Errorf("addon scale failed, request:%+v, error:%v", req, err)
 		return apierrors.ErrUpdateAddonConfig.InternalError(err).ToResp(), nil

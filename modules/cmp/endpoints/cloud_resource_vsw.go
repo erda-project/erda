@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/vswitch"
 	libzone "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/zone"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -49,6 +50,19 @@ func (e *Endpoints) CreateVSW(ctx context.Context, r *http.Request, vars map[str
 			},
 		})
 	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	ak_ctx.Region = req.Region
 	vswid, err := vswitch.Create(ak_ctx, vswitch.VSwitchCreateRequest{
 		RegionID:  req.Region,
