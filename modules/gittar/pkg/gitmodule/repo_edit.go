@@ -200,10 +200,10 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		return nil, err
 	}
 
-	var parentPath string
+	var parentDirPath string
 	for _, action := range request.Actions {
 		if action.Action == EDIT_ACTION_DELETE {
-			parentPath = isPathExit(newTree, action.Path)
+			parentDirPath = isPathExist(newTree, action.Path)
 			break
 		}
 	}
@@ -223,12 +223,12 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 	if err != nil {
 		return nil, err
 	}
-	commit.ParentPath = parentPath
+	commit.ParentDirPath = parentDirPath
 	return commit, nil
 }
 
-// isPathExit check the path exist or not
-func isPathExit(tree *git.Tree, path string) string {
+// isPathExist check the path exist or not
+func isPathExist(tree *git.Tree, path string) string {
 	_, err := tree.EntryByPath(path)
 	if err == nil {
 		return path
@@ -236,5 +236,5 @@ func isPathExit(tree *git.Tree, path string) string {
 	if !strings.Contains(path, "/") {
 		return ""
 	}
-	return isPathExit(tree, path[:strings.LastIndex(path, "/")])
+	return isPathExist(tree, path[:strings.LastIndex(path, "/")])
 }
