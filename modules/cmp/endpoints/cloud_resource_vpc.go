@@ -29,16 +29,12 @@ import (
 	libregion "github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/region"
 	"github.com/erda-project/erda/modules/cmp/impl/aliyun-resources/vpc"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (e *Endpoints) CreateVPC(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
-	orgid := r.Header.Get("Org-ID")
-	ak_ctx, resp := e.mkCtx(ctx, orgid)
-	if resp != nil {
-		return resp, nil
-	}
 	req := apistructs.CreateCloudResourceVPCRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errstr := fmt.Sprintf("failed to decode CreateCloudResourceVPCRequest: %v", err)
@@ -48,6 +44,24 @@ func (e *Endpoints) CreateVPC(ctx context.Context, r *http.Request, vars map[str
 				Error:   apistructs.ErrorResponse{Msg: errstr},
 			},
 		})
+	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	orgid := r.Header.Get("Org-ID")
+	ak_ctx, resp := e.mkCtx(ctx, orgid)
+	if resp != nil {
+		return resp, nil
 	}
 	ak_ctx.Region = req.Region
 	vpcid, err := vpc.Create(ak_ctx, vpc.VPCCreateRequest{
@@ -172,6 +186,19 @@ func (e *Endpoints) VPCTagCluster(ctx context.Context, r *http.Request, vars map
 			},
 		})
 	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err := e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	ak_ctx.Region = req.Region
 	if err := vpc.TagResource(ak_ctx, req.Cluster, req.VPCIDs, aliyun_resources.TagResourceTypeVpc); err != nil {
 		errstr := fmt.Sprintf("failed to tag cluster on vpc: %v", err)
