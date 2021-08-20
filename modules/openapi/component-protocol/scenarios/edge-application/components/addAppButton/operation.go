@@ -13,11 +13,26 @@
 
 package addappbutton
 
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+)
 
 type ComponentAddAppButton struct {
+	ctxBundle protocol.ContextBundle
+	component *apistructs.Component
 }
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentAddAppButton{}
+}
+
+func (c *ComponentAddAppButton) SetBundle(ctxBundle protocol.ContextBundle) error {
+	if ctxBundle.Bdl == nil {
+		return fmt.Errorf("invalie bundle")
+	}
+	c.ctxBundle = ctxBundle
+	return nil
 }

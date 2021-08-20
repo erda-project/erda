@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
 )
 
 type DrawerRendering struct {
@@ -29,6 +31,12 @@ func (c *ComponentAddAppDrawer) Render(ctx context.Context, component *apistruct
 	var (
 		drawer DrawerRendering
 	)
+
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if err := c.SetBundle(bdl); err != nil {
+		return err
+	}
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 
 	if component.State == nil {
 		component.State = map[string]interface{}{}
@@ -55,16 +63,16 @@ func (c *ComponentAddAppDrawer) Render(ctx context.Context, component *apistruct
 
 		switch drawer.OperationType {
 		case apistructs.EdgeOperationUpdate:
-			edgeProps.Title = "编辑边缘应用"
+			edgeProps.Title = i18nLocale.Get(i18n.I18nKeyEditedgeApplication)
 			break
 		case apistructs.EdgeOperationViewDetail:
-			edgeProps.Title = "边缘应用详情"
+			edgeProps.Title = i18nLocale.Get(i18n.I18nKeyEdgeApplicationDetail)
 			break
 		case apistructs.EdgeOperationAddApp:
-			edgeProps.Title = "发布边缘应用"
+			edgeProps.Title = i18nLocale.Get(i18n.I18nKeyCreateEdgeApplication)
 			break
 		default:
-			edgeProps.Title = "边缘应用"
+			edgeProps.Title = i18nLocale.Get(i18n.I18nKeyEdgeApplication)
 		}
 
 		component.Props = edgeProps

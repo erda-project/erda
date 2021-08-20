@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -97,7 +96,7 @@ func (c *ComponentViewGroup) Operation(identity apistructs.Identity) error {
 	if err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err = json.Marshal(c.component.State)
 	if err != nil {
 		return err
@@ -129,7 +128,7 @@ func (c *ComponentViewGroup) Operation(identity apistructs.Identity) error {
 		}
 	}
 
-	c.component.Props = getProps(len(appSiteStatus), successTotal, deployingTotal, failureTotal)
+	c.component.Props = getProps(len(appSiteStatus), successTotal, deployingTotal, failureTotal, i18nLocale)
 
 	return nil
 }

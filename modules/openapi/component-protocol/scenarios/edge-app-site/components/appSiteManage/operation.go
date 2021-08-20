@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site/i18n"
 )
 
 type ComponentList struct {
@@ -71,6 +71,7 @@ func (c *ComponentList) OperateChangePage(isRestart bool, restartSiteName string
 		reqPageNo   = apistructs.EdgeDefaultPageNo
 		reqPageSize = apistructs.EdgeDefaultPageSize
 	)
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 
 	jsonData, err := json.Marshal(c.ctxBundle.InParams)
 	if err != nil {
@@ -137,17 +138,17 @@ func (c *ComponentList) OperateChangePage(isRestart bool, restartSiteName string
 
 		if data.STATUS == "deploying" {
 			item.DeployStatus.Status = "processing"
-			item.DeployStatus.Value = "部署中"
+			item.DeployStatus.Value = i18nLocale.Get(i18n.I18nKeyDeploying)
 		} else if data.STATUS == "succeed" {
 			item.DeployStatus.Status = "success"
-			item.DeployStatus.Value = "成功"
+			item.DeployStatus.Value = i18nLocale.Get(i18n.I18nKeySuccess)
 			isAllOperate = true
 		} else {
 			item.DeployStatus.Status = "error"
-			item.DeployStatus.Value = "失败"
+			item.DeployStatus.Value = i18nLocale.Get(i18n.I18nKeyFailed)
 		}
 
-		item.Operate = getSiteItemOperate(inParam, data.SITE, isAllOperate)
+		item.Operate = getSiteItemOperate(inParam, data.SITE, isAllOperate, i18nLocale)
 
 		switch selectScope {
 		case "success":
