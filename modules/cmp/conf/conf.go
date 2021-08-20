@@ -41,15 +41,23 @@ type Conf struct {
 	OryKratosAddr        string `default:"kratos:4433" env:"KRATOS_ADDR"`
 	OryKratosPrivateAddr string `default:"kratos:4434" env:"KRATOS_PRIVATE_ADDR"`
 
-	ErdaNamespace        string `default:"erda-system" env:"ERDA_NAMESPACE"`
-	ErdaHelmChartVersion string `default:"0.1.0" env:"ERDA_HELM_CHART_VERSION"`
-	ReleaseRepo          string `default:"registry.erda.cloud/erda" env:"RELEASE_REPO"`
-	DialerPublicAddr     string `env:"CLUSTER_DIALER_PUBLIC_ADDR"`
-
 	// size of steve server cache, default 1Gi
 	CacheSize int64 `default:"1073741824" env:"CMP_CACHE_SIZE"`
 	// size of each cache segment, default 16Mi
 	CacheSegSize int64 `default:"16777216" env:"CMP_CACHE_SEG_SIZE"`
+
+	ReleaseRegistry    string `env:"RELEASE_REGISTRY" default:"registry.erda.cloud/erda"`
+	ClusterInitVersion string `env:"CLUSTER_INIT_VERSION" default:"0.1"`
+
+	HelmChartRepoURL      string `env:"HELM_REPO_URL"`
+	HelmChartRepoUserName string `env:"HELM_REPO_USERNAME"`
+	HelmChartRepoPassword string `env:"HELM_REPO_PASSWORD"`
+
+	ErdaNamespace   string `env:"DICE_NAMESPACE" default:"erda-system"`
+	ErdaVersion     string `env:"DICE_VERSION"`
+	ErdaProtocol    string `env:"DICE_PROTOCOL"`
+	ErdaClusterName string `env:"DICE_CLUSTER_NAME"`
+	ErdaDomain      string `env:"DICE_ROOT_DOMAIN"`
 }
 
 var cfg Conf
@@ -62,16 +70,6 @@ func Load() {
 // ListenAddr return the address of listen.
 func ListenAddr() string {
 	return cfg.ListenAddr
-}
-
-// SoldierAddr return the address of soldier.
-func SoldierAddr() string {
-	return cfg.SoldierAddr
-}
-
-// SchedulerAddr Return the address of scheduler.
-func SchedulerAddr() string {
-	return cfg.SchedulerAddr
 }
 
 // Debug Return the switch of debug.
@@ -141,26 +139,50 @@ func OryCompatibleClientSecret() string {
 	return ""
 }
 
-func ErdaNamespace() string {
-	return cfg.ErdaNamespace
-}
-
-func ErdaHelmChartVersion() string {
-	return cfg.ErdaHelmChartVersion
-}
-
-func ReleaseRepo() string {
-	return cfg.ReleaseRepo
-}
-
-func DialerPublicAddr() string {
-	return cfg.DialerPublicAddr
-}
-
 func CacheSize() int64 {
 	return cfg.CacheSize
 }
 
 func CacheSegSize() int64 {
 	return cfg.CacheSegSize
+}
+
+func ReleaseRegistry() string {
+	return cfg.ReleaseRegistry
+}
+
+func ClusterInitVersion() string {
+	return cfg.ClusterInitVersion
+}
+
+func HelmRepoURL() string {
+	return cfg.HelmChartRepoURL
+}
+
+func HelmRepoUsername() string {
+	return cfg.HelmChartRepoUserName
+}
+
+func HelmRepoPassword() string {
+	return cfg.HelmChartRepoPassword
+}
+
+func ErdaNamespace() string {
+	return cfg.ErdaNamespace
+}
+
+func ErdaVersion() string {
+	return cfg.ErdaVersion
+}
+
+func ErdaProtocol() string {
+	return cfg.ErdaProtocol
+}
+
+func ErdaClusterName() string {
+	return cfg.ErdaClusterName
+}
+
+func ErdaDomain() string {
+	return cfg.ErdaDomain
 }

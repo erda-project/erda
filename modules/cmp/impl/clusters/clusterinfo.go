@@ -18,14 +18,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/conf"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -36,12 +36,12 @@ const (
 	statusInitializing    = "initializing"
 	statusInitializeError = "initialize error"
 	statusUnknown         = "unknown"
-	diceOperator          = "/apis/dice.terminus.io/v1beta1/namespaces/default/dices/dice"
-	erdaOperator          = "/apis/erda.terminus.io/v1beta1/namespaces/default/erdas/erda"
 )
 
 var (
-	checkCRDs = []string{erdaOperator, diceOperator}
+	diceOperator = "/apis/dice.terminus.io/v1beta1/namespaces/%s/dices/dice"
+	erdaOperator = "/apis/erda.terminus.io/v1beta1/namespaces/%s/erdas/erda"
+	checkCRDs    = []string{erdaOperator, diceOperator}
 )
 
 func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames []string) ([]map[string]map[string]apistructs.NameValue, error) {
@@ -89,29 +89,8 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 			urlInfo["nexus"] = apistructs.NameValue{Name: "nexus", Value: ci.Get(apistructs.NEXUS_ADDR)}
 		}
 
-		cs, err := c.k8s.GetInClusterClient()
+		kc, err := k8sclient.NewWithTimeOut(clusterName, getClusterTimeout)
 		if err != nil {
-			logrus.Error(err)
-		} else {
-			pod, err := cs.CoreV1().Pods(getPlatformNamespace()).List(context.Background(), metav1.ListOptions{
-				LabelSelector: labels.Set(map[string]string{"job-name": generateInitJobName(orgID, clusterName)}).String(),
-			})
-			if err == nil {
-				if len(pod.Items) > 0 {
-					containerInfoPart := strings.Split(pod.Items[0].Status.ContainerStatuses[0].ContainerID, "://")
-					if len(containerInfoPart) >= 2 {
-						baseInfo["clusterInitContainerID"] = apistructs.NameValue{
-							Name:  i18n.Sprintf("cluster init container id"),
-							Value: containerInfoPart[1],
-						}
-					}
-				}
-			} else {
-				logrus.Error(err)
-			}
-		}
-
-		if kc, err := c.k8s.GetClient(clusterName); err != nil {
 			logrus.Errorf("get k8sclient error: %v", err)
 			result := map[string]map[string]apistructs.NameValue{
 				"basic": baseInfo,
@@ -120,15 +99,15 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 			resultList = append(resultList, result)
 			continue
-		} else {
-			nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-			if err != nil {
-				logrus.Error(err)
-			}
-			baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
 		}
 
-		if status, err := c.getClusterStatus(clusterMetaData); err != nil {
+		nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			logrus.Error(err)
+		}
+		baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
+
+		if status, err := c.getClusterStatus(kc, clusterMetaData); err != nil {
 			logrus.Errorf("get cluster status error: %v", err)
 		} else {
 			baseInfo["clusterStatus"] = apistructs.NameValue{Name: i18n.Sprintf("cluster status"), Value: status}
@@ -144,10 +123,14 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 	return resultList, nil
 }
 
-func (c *Clusters) getClusterStatus(meta *apistructs.ClusterInfo) (string, error) {
+func (c *Clusters) getClusterStatus(kc *k8sclient.K8sClient, meta *apistructs.ClusterInfo) (string, error) {
+	if kc == nil || kc.ClientSet == nil {
+		return "", fmt.Errorf("kubernetes client is nil")
+	}
+
 	// if manage config is nil, cluster import with inet or other
 	if meta.ManageConfig == nil {
-		return statusUnknown, nil
+		return statusOffline, nil
 	}
 
 	switch meta.ManageConfig.Type {
@@ -165,27 +148,33 @@ func (c *Clusters) getClusterStatus(meta *apistructs.ClusterInfo) (string, error
 		}
 	}
 
-	client, err := c.k8s.GetClient(meta.Name)
-	if err != nil {
-		return statusUnknown, err
-	}
-
 	ec := &apistructs.DiceCluster{}
-	var res []byte
+
+	var (
+		res           []byte
+		err           error
+		resourceExist bool
+	)
 
 	for _, selfLink := range checkCRDs {
-		res, err = client.ClientSet.RESTClient().Get().
-			AbsPath(selfLink).
+		res, err = kc.ClientSet.RESTClient().Get().
+			AbsPath(fmt.Sprintf(selfLink, conf.ErdaNamespace())).
 			DoRaw(context.Background())
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
+		resourceExist = true
 		break
 	}
 
-	if err = json.Unmarshal(res, &ec); err != nil {
+	if !resourceExist {
 		return statusUnknown, nil
+	}
+
+	if err = json.Unmarshal(res, &ec); err != nil {
+		logrus.Errorf("unmarsharl data error, data: %v", string(res))
+		return statusUnknown, err
 	}
 
 	switch ec.Status.Phase {
@@ -214,13 +203,4 @@ func parseManageType(mc *apistructs.ManageConfig) string {
 	default:
 		return "create"
 	}
-}
-
-func getPlatformNamespace() string {
-	diceNs := os.Getenv("DICE_NAMESPACE")
-	if diceNs == "" {
-		diceNs = metav1.NamespaceDefault
-	}
-
-	return diceNs
 }
