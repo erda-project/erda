@@ -94,6 +94,7 @@ type K8SResource struct {
 	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec     interface{}       `json:"spec,omitempty"`
 	Status   interface{}       `json:"status,omitempty"`
+	Extra    interface{}       `json:"extra,omitempty"`
 }
 
 // Pagination used to paging query.
@@ -150,4 +151,17 @@ func (k *SteveRequest) URLQueryString() map[string][]string {
 		query["fieldSelector"] = []string{fields}
 	}
 	return query
+}
+
+func GetValue(obj interface{}, keys ...string) (interface{}, bool) {
+	data, _ := obj.(map[string]interface{})
+	for i, key := range keys {
+		if i == len(keys)-1 {
+			val, ok := data[key]
+			return val, ok
+		}
+		data, _ = data[key].(map[string]interface{})
+	}
+
+	return nil, false
 }

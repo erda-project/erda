@@ -64,14 +64,14 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	values, _, err := c.cache.Get(key.getKey())
-	if err != nil {
+	if values == nil || err != nil {
 		if apiOp.Namespace != "" {
 			key := cacheKey{
 				gvk:       gvk.String(),
 				namespace: "",
 			}
 			allNsValues, expired, err := c.cache.Get(key.getKey())
-			if err == nil && !expired {
+			if allNsValues != nil && err == nil && !expired {
 				var list types.APIObjectList
 				if err = json.Unmarshal(allNsValues[0].Value().([]byte), &list); err == nil {
 					return getByNamespace(list, apiOp.Namespace), nil
@@ -88,7 +88,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return types.APIObjectList{}, apierror.NewAPIError(validation.ServerError, "internal error")
 		}
-		c.cache.Set(key.getKey(), vals, int64(time.Now().Add(time.Second*30).Nanosecond()))
+		c.cache.Set(key.getKey(), vals, time.Second.Nanoseconds()*30)
 		return list, nil
 	}
 
@@ -103,7 +103,7 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 			logrus.Errorf("failed to marshal cache data for %s, %v", gvk.Kind, err)
 			return
 		}
-		c.cache.Set(key.getKey(), data, int64(time.Now().Add(time.Second*30).Nanosecond()))
+		c.cache.Set(key.getKey(), data, time.Second.Nanoseconds()*30)
 	}()
 
 	var list types.APIObjectList

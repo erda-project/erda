@@ -24,8 +24,22 @@ import (
 	"modernc.org/mathutil"
 )
 
+func TestCache_Init(t *testing.T) {
+	_, err := New(1<<32, 1<<32+1)
+	if err == nil {
+		t.Fail()
+	}
+	_, err = New(1<<32, 1<<4-1)
+	if err == nil {
+		t.Fail()
+	}
+}
+
 func TestCache_DecrementSize(t *testing.T) {
-	cache := New(1<<30, 256)
+	cache, err := New(1<<32, 1<<22)
+	if err != nil {
+		t.Fatal(err)
+	}
 	type args struct {
 		size int64
 	}
@@ -59,7 +73,10 @@ func TestCache_DecrementSize(t *testing.T) {
 }
 
 func TestCache_Get(t *testing.T) {
-	cache := New(256*1024, 256)
+	cache, err := New(256*1024, 24)
+	if err != nil {
+		t.Fatal(err)
+	}
 	type args struct {
 		key string
 	}
@@ -93,7 +110,7 @@ func TestCache_Get(t *testing.T) {
 
 			got, _, err = cache.Get("metrics2")
 
-			if err == nil {
+			if err != nil {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if reflect.DeepEqual(got, tt.want) {
@@ -104,7 +121,10 @@ func TestCache_Get(t *testing.T) {
 }
 
 func TestCache_IncreaseSize(t *testing.T) {
-	cache := New(256*1024, 256)
+	cache, err := New(256*1024, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
 	type args struct {
 		size int64
 	}
@@ -126,7 +146,10 @@ func TestCache_IncreaseSize(t *testing.T) {
 }
 
 func TestCache_Remove(t *testing.T) {
-	cache := New(256*1024, 256)
+	cache, err := New(256*1024, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
 	type args struct {
 		key string
 	}
@@ -154,7 +177,10 @@ func TestCache_Remove(t *testing.T) {
 }
 
 func TestCache_Write(t *testing.T) {
-	cache := New(1024*256, 256)
+	cache, err := New(1024*256, 256)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if cache == nil {
 		t.Fail()
 		return
@@ -321,7 +347,10 @@ func TestCache_Write(t *testing.T) {
 }
 
 func BenchmarkLRU_Rand(b *testing.B) {
-	l := New(256*1024, 256)
+	l, err := New(256*1024, 256)
+	if err != nil {
+		b.Fatal(err)
+	}
 	l.log.SetLevel(logrus.ErrorLevel)
 	trace := make([]string, b.N*2)
 	for i := 0; i < b.N*2; i++ {
@@ -347,8 +376,8 @@ func BenchmarkLRU_Rand(b *testing.B) {
 }
 
 func BenchmarkLRU_Freq1(b *testing.B) {
-	c := New(1024*1024, 256)
-	if c == nil {
+	c, err := New(1024*1024, 256)
+	if err != nil {
 		b.Fail()
 		return
 	}
@@ -382,10 +411,9 @@ func BenchmarkLRU_Freq1(b *testing.B) {
 }
 
 func BenchmarkLRU_FreqParallel(b *testing.B) {
-	c := New(256*1024, 256)
-	if c == nil {
-		b.Fail()
-		return
+	c, err := New(256*1024, 256)
+	if err != nil {
+		b.Fatal(err)
 	}
 	c.log.SetLevel(logrus.ErrorLevel)
 	trace := make([]string, b.N*2)
@@ -412,11 +440,9 @@ func BenchmarkLRU_FreqParallel(b *testing.B) {
 }
 
 func TestLRU(t *testing.T) {
-
-	c := New(256*1024, 256)
-	if c == nil {
-		t.Fail()
-		return
+	c, err := New(256*1024, 255)
+	if err != nil {
+		t.Fatal(err)
 	}
 	for i := 0; i < 1024; i++ {
 		err := c.Set(fmt.Sprintf("%d", i), Values{IntValue{
@@ -446,13 +472,13 @@ func TestLRU(t *testing.T) {
 		if err != nil {
 			t.Fatalf("should be deleted")
 		}
-		_, _, err = c.Get(fmt.Sprintf("%d", i))
-		if err == nil {
+		v, _, err := c.Get(fmt.Sprintf("%d", i))
+		if v != nil {
 			t.Fatalf("should be deleted")
 		}
 	}
 
-	_, _, err := c.Get(fmt.Sprintf("%d", 192))
+	_, _, err = c.Get(fmt.Sprintf("%d", 192))
 	if err != nil {
 		return
 	} // expect 192 to be last key in c.Keys()
@@ -464,18 +490,21 @@ func TestLRU(t *testing.T) {
 		t.Fatalf("should contain nothing")
 	}
 
+	//ma := make(map[int][]string)
 	for i := 0; i < 10240; i++ {
-
-		err := c.Set(fmt.Sprintf("%d", i), Values{IntValue{
+		k := fmt.Sprintf("%d", i)
+		err := c.Set(k, Values{IntValue{
 			value: int64(i),
 		}}, int64(i))
+		//slice := ma[int(xxhash.Sum64([]byte(k))&uint64(c.store.segNum-1))]
+		//slice = append(slice, k)
 		if err != nil {
 			t.Fatalf("cache insert error %v", err)
 		}
 	}
 	for i := 0; i < 10240; i++ {
-		v, _, ok := c.Get(fmt.Sprintf("%d", i))
-		if ok == nil && int(v[0].(IntValue).value) != i {
+		v, _, _ := c.Get(fmt.Sprintf("%d", i))
+		if v != nil && int(v[0].(IntValue).value) != i {
 			t.Fatalf("bad key: %v", i)
 		}
 	}

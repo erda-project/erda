@@ -319,11 +319,15 @@ func (s *store) Delete(_ *types.APIRequest, _ *types.APISchema, _ string) (types
 
 func TestCacheStoreMethods(t *testing.T) {
 	ctx := context.Background()
+	cache, err := cache.New(256<<10, 256)
+	if err != nil {
+		t.Error(err)
+	}
 	cs := cacheStore{
 		Store:   &store{},
 		ctx:     ctx,
 		asl:     accesscontrol.NewAccessStore(ctx, true, &rbacInterface{}),
-		cache:   cache.New(256<<10, 256),
+		cache:   cache,
 		cancels: sync.Map{},
 	}
 
@@ -362,12 +366,12 @@ func TestCacheStoreMethods(t *testing.T) {
 		gvk:       gvk.String(),
 		namespace: "",
 	}
-	if _, _, err = cs.cache.Get(key.getKey()); err != nil {
+	if res, _, err := cs.cache.Get(key.getKey()); res == nil || err != nil {
 		t.Error("test failed, expected pods in cache, actual not")
 	}
 
 	_, err = cs.Create(apiOp, schema, types.APIObject{})
-	if _, _, err = cs.cache.Get(key.getKey()); err == nil {
+	if res, _, err := cs.cache.Get(key.getKey()); res != nil && err == nil {
 		t.Error("test failed, expected no pods in cache, actual have")
 	}
 
@@ -376,7 +380,7 @@ func TestCacheStoreMethods(t *testing.T) {
 		t.Error(err)
 	}
 	_, err = cs.Update(apiOp, schema, types.APIObject{}, "")
-	if _, _, err = cs.cache.Get(key.getKey()); err == nil {
+	if res, _, err := cs.cache.Get(key.getKey()); res != nil && err == nil {
 		t.Error("test failed, expected no pods in cache, actual have")
 	}
 
@@ -385,7 +389,7 @@ func TestCacheStoreMethods(t *testing.T) {
 		t.Error(err)
 	}
 	_, err = cs.Delete(apiOp, schema, "")
-	if _, _, err = cs.cache.Get(key.getKey()); err == nil {
+	if res, _, err := cs.cache.Get(key.getKey()); res != nil && err == nil {
 		t.Error("test failed, expected no pods in cache, actual have")
 	}
 }
