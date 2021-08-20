@@ -16,7 +16,6 @@ package cmp
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -216,20 +215,5 @@ func registerWebHook(bdl *bundle.Bundle) {
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register pipeline tasks event, (%v)", err)
-	}
-
-	clusterEv := apistructs.CreateHookRequest{
-		Name:   "cmp-clusterhook",
-		Events: []string{"cluster"},
-		URL:    fmt.Sprintf("http://%s/api/clusterhook", discover.CMP()),
-		Active: true,
-		HookLocation: apistructs.HookLocation{
-			Org:         "-1",
-			Project:     "-1",
-			Application: "-1",
-		},
-	}
-	if err := bdl.CreateWebhook(clusterEv); err != nil {
-		logrus.Warnf("failed to register cluster event, (%v)", err)
 	}
 }
