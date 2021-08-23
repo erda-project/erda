@@ -28,7 +28,7 @@ type CacheStatus struct {
 	CurrentSize int
 }
 
-//this is a interface which defines some filter functions
+//this is a interface which defines some common functions
 type Cache interface {
 	Set(key string, value interface{}) error
 	Get(key string, outValue interface{}) error

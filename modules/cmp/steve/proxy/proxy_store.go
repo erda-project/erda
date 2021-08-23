@@ -55,13 +55,13 @@ type Store struct {
 	clientGetter proxy.ClientGetter
 }
 
-func NewProxyStore(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
+func NewProxyStore(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup, cache *cache.Cache) types.Store {
 	return &errorStore{
 		Store: &cacheStore{
 			Store: &Store{
 				clientGetter: clientGetter,
 			},
-			cache: cache.New(1<<30, 256),
+			cache: cache,
 			asl:   asl,
 		},
 	}

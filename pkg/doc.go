@@ -11,6 +11,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// some filter library in this package
+// some common library in this package
 
 package pkg

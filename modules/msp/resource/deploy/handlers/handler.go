@@ -518,7 +518,7 @@ func (h *DefaultDeployHandler) DoApplyTmcInstanceTenant(req *ResourceDeployReque
 }
 
 func (h *DefaultDeployHandler) BuildServiceGroupRequest(resourceInfo *ResourceInfo, tmcInstance *db.Instance, clusterConfig map[string]string) interface{} {
-	// create filter labels
+	// create common labels
 	labels := map[string]string{
 		"SERVICE_TYPE":             "ADDONS",
 		"DICE_ADDON":               tmcInstance.ID,

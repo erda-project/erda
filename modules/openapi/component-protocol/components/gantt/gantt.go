@@ -100,7 +100,7 @@ type DataTaskValue struct {
 	Text        string               `json:"text,omitempty"`
 	ID          int64                `json:"id,omitempty"`
 	Type        apistructs.IssueType `json:"type,omitempty"`
-	IterationID int64                `json:"iterationID,omitempty"` // TODO not in filter
+	IterationID int64                `json:"iterationID,omitempty"` // TODO not in common
 	LinkStyle   bool                 `json:"linkStyle,omitempty"`
 }
 

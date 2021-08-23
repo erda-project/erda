@@ -50,8 +50,8 @@ cassandra:
 
 i18n:
   common:
-    - conf/filter/i18n/filter.yml
-    - conf/filter/i18n/apis.yml
+    - conf/common/i18n/common.yml
+    - conf/common/i18n/apis.yml
     - conf/msp/i18n/msp-i18n.yaml
 
 metric-report-client:

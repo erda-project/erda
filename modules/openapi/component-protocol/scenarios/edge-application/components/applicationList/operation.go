@@ -74,7 +74,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, identity apistructs.Ident
 	}
 
 	res, err := c.ctxBundle.Bdl.ListEdgeApp(req, identity)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err != nil {
 		return fmt.Errorf("list edge application error: %v", err)
 	}
@@ -98,7 +98,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, identity apistructs.Ident
 			ApplicationName: renderAppName(data.Name, int64(data.ID)),
 			Cluster:         clusterInfo.Name,
 			DeployResource:  deployResource,
-			Operate:         getAPPItemOperate(data.Name, appconfigform.ConvertDeployResource(data.Type), int64(data.ID)),
+			Operate:         getAPPItemOperate(data.Name, appconfigform.ConvertDeployResource(data.Type), int64(data.ID), i18nLocale),
 		}
 		resList = append(resList, item)
 	}

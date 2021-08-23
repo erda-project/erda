@@ -67,9 +67,8 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 
 	// do filter
-	if len(c.filters) <= 0 {
-		return nil
-	}
+	// allow no filter
+	// todo support filter by es index existence
 	for k, v := range c.filters {
 		val, ok := data.Tags[k]
 		if !ok {

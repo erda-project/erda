@@ -611,7 +611,7 @@ func (j *Jar) domainAndType(host, domain string) (string, bool, error) {
 	if isIP(host) {
 		// According to RFC 6265 domain-matching includes not being
 		// an IP address.
-		// TODO: This might be relaxed as in filter browsers.
+		// TODO: This might be relaxed as in common browsers.
 		return "", false, errNoHostname
 	}
 

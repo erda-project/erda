@@ -466,7 +466,7 @@ type PersistentVolumeClaim struct {
 	Status PersistentVolumeClaimStatus `json:"status,omitempty"`
 }
 
-// PersistentVolumeClaimSpec describes the filter attributes of storage devices
+// PersistentVolumeClaimSpec describes the common attributes of storage devices
 // and allows a Source for provider-specific attributes
 type PersistentVolumeClaimSpec struct {
 	// AccessModes contains the desired access modes the volume should have.

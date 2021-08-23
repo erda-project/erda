@@ -80,8 +80,14 @@ func (s *PipelineSvc) appendPipelineTaskResult(p *spec.Pipeline, task *spec.Pipe
 	}
 	// metadata
 	task.Result.Metadata = append(task.Result.Metadata, cb.Metadata...)
-	// error
-	task.Result.Errors = append(task.Result.Errors, cb.Errors...)
+	// TODO action agent should add err start time and end time
+	newTaskErrors := make([]*apistructs.PipelineTaskErrResponse, 0)
+	for _, e := range cb.Errors {
+		newTaskErrors = append(newTaskErrors, &apistructs.PipelineTaskErrResponse{
+			Msg: e.Msg,
+		})
+	}
+	task.Result.Errors = task.Result.AppendError(newTaskErrors...)
 	// machine stat
 	if cb.MachineStat != nil {
 		task.Result.MachineStat = cb.MachineStat

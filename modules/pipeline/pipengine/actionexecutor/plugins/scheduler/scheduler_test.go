@@ -40,13 +40,13 @@ var (
 
 func init() {
 	clusters = map[string]apistructs.ClusterInfo{
-		"terminus-dev": {
+		"terminus-dev": apistructs.ClusterInfo{
 			Type: "k8s",
 		},
-		"dcos-cluster": {
+		"dcos-cluster": apistructs.ClusterInfo{
 			Type: "dcos",
 		},
-		"edas-cluster": {
+		"edas-cluster": apistructs.ClusterInfo{
 			Type: "edas",
 		},
 	}

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -369,10 +370,13 @@ type PodStatus struct {
 	Message string
 }
 
-func (p *Pod) GetNamespacedPodsStatus(pods []apiv1.Pod) ([]PodStatus, error) {
+func (p *Pod) GetNamespacedPodsStatus(pods []apiv1.Pod, serviceName string) ([]PodStatus, error) {
 
 	r := []PodStatus{}
 	for _, pod := range pods {
+		if serviceName == "" || !strings.Contains(pod.Name, serviceName) {
+			continue
+		}
 		reason, message := p.UnreadyPodReason(&pod)
 		switch reason {
 		case None:

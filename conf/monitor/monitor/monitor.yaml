@@ -131,8 +131,8 @@ template:
 
 i18n:
   common:
-    - conf/filter/i18n/filter.yml
-    - conf/filter/i18n/apis.yml
+    - conf/common/i18n/common.yml
+    - conf/common/i18n/apis.yml
   files:
     - ${CONFIG_PATH}/i18n/settings.yml
     - ${CONFIG_PATH}/i18n/org-resource.yml

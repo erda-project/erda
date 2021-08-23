@@ -18,12 +18,20 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 type ComponentKVListTitle struct {
+	ctxBundle protocol.ContextBundle
 	component *apistructs.Component
+}
+
+func (c *ComponentKVListTitle) SetBundle(ctxBundle protocol.ContextBundle) error {
+	if ctxBundle.Bdl == nil {
+		return fmt.Errorf("invalie bundle")
+	}
+	c.ctxBundle = ctxBundle
+	return nil
 }
 
 type EdgeKVListStateTitle struct {
@@ -42,7 +50,7 @@ func (c *ComponentKVListTitle) OperationRendering() error {
 	var (
 		titleState = EdgeKVListStateTitle{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return fmt.Errorf("marshal component state error: %v", err)
@@ -53,7 +61,7 @@ func (c *ComponentKVListTitle) OperationRendering() error {
 		return fmt.Errorf("unmarshal state json data error: %v", err)
 	}
 
-	c.component.Props = getProps(titleState.Visible)
+	c.component.Props = getProps(titleState.Visible, i18nLocale)
 
 	return nil
 }

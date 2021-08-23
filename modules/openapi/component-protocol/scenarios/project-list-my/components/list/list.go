@@ -224,7 +224,8 @@ func (i *ComponentList) RenderChangePageNo(ops interface{}) error {
 	if err != nil {
 		return err
 	}
-	i.State.PageNo = mate.PageNo
+	i.State.PageNo = mate.PageNo.PageNo
+	i.State.PageSize = mate.PageNo.PageSize
 	return nil
 }
 

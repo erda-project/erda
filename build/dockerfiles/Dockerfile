@@ -9,7 +9,7 @@ WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 ARG MODULE_PATH
 ARG EXTENSION_ZIP_ADDRS
 RUN mkdir -p /tmp/dicehub-extension
-RUN if [ ${MODULE_PATH} = dicehub ] ; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
+RUN if [ ${MODULE_PATH} = dicehub ] || [ -z ${MODULE_PATH} ]; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
 
 ARG CONFIG_PATH
 ARG DOCKER_IMAGE
@@ -39,7 +39,7 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/conf/common"
 
 # use for dicehub
-COPY --from=build "/tmp/dicehub-extension" "/app/dicehub-extension"
+COPY --from=build "/tmp/dicehub-extension" "/app/extensions-init"
 
 # use for gittar
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"

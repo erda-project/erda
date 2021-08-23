@@ -21,6 +21,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-configSet/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 type EdgeConfigsetItem struct {
@@ -37,7 +39,7 @@ func (c *ComponentConfigsetList) Render(ctx context.Context, component *apistruc
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -67,7 +69,7 @@ func (c *ComponentConfigsetList) Render(ctx context.Context, component *apistruc
 		}
 	}
 
-	c.component.Props = getProps()
+	c.component.Props = getProps(i18nLocale)
 	c.component.Operations = getOperations()
 
 	return nil
@@ -86,26 +88,26 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps() apistructs.EdgeTableProps {
+func getProps(lr *i18r.LocaleResource) apistructs.EdgeTableProps {
 	return apistructs.EdgeTableProps{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",
 		Columns: []apistructs.EdgeColumns{
-			{Title: "配置集名称", DataIndex: "configSetName", Width: 150},
-			{Title: "关联集群", DataIndex: "relatedCluster", Width: 150},
-			{Title: "操作", DataIndex: "operate", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyConfigSetName), DataIndex: "configSetName", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyAssociatedCluster), DataIndex: "relatedCluster", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyOperator), DataIndex: "operate", Width: 150},
 		},
 	}
 }
 
-func getConfigsetItem(id int64, configSetName string) apistructs.EdgeItemOperations {
+func getConfigsetItem(id int64, configSetName string, lr *i18r.LocaleResource) apistructs.EdgeItemOperations {
 	return apistructs.EdgeItemOperations{
 		RenderType: "tableOperation",
 		Operations: map[string]apistructs.EdgeItemOperation{
 			"viewDetail": {
 				ShowIndex: 1,
 				Key:       "viewDetail",
-				Text:      "详情",
+				Text:      lr.Get(i18n.I18nKeyDetail),
 				Reload:    false,
 				Meta: map[string]interface{}{
 					"id":            id,
@@ -128,10 +130,10 @@ func getConfigsetItem(id int64, configSetName string) apistructs.EdgeItemOperati
 			apistructs.EdgeOperationDelete: {
 				ShowIndex:   2,
 				Key:         apistructs.EdgeOperationDelete,
-				Text:        "删除",
-				Confirm:     "此操作会导致配置集下的所有配置删除，是否确认删除",
+				Text:        lr.Get(i18n.I18nKeyDelete),
+				Confirm:     lr.Get(i18n.I18nKeyDeleteConfigSetTip),
 				Disabled:    false,
-				DisabledTip: "无法删除",
+				DisabledTip: lr.Get(i18n.I18nKeyNotDelete),
 				Reload:      true,
 				Meta:        map[string]interface{}{"id": id},
 			},

@@ -31,7 +31,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// ServiceGroup is the filter resource based on which deployments are created
+// ServiceGroup is the common resource based on which deployments are created
 // projectId, git branch and working dev determine a runtime
 type Runtime struct {
 	dbengine.BaseModel

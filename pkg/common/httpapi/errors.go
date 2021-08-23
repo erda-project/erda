@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 )
 
-// I18n set by filter package
+// I18n set by common package
 var I18n i18n.I18n
 
 func init() {
@@ -100,7 +100,7 @@ func (e *TemplatedError) Clone(args ...interface{}) *TemplatedError {
 	return &TemplatedError{e.status, e.code, e.fmt, args}
 }
 
-// filter errors
+// common errors
 var (
 	InvalidParameterError = &TemplatedError{http.StatusBadRequest, "Invalid Parameter", `${Invalid Parameter}: %s`, nil}
 	MissingParameterError = &TemplatedError{http.StatusBadRequest, "MissingParameter", `${Missing Parameter}: %s`, nil}

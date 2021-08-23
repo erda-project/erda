@@ -40,7 +40,7 @@ type HTTPResponse struct {
 	Status     int
 	Error      *ErrorResponse
 	Content    interface{}
-	Compose    bool // compose response with filter structure
+	Compose    bool // compose response with common structure
 	RawContent bool // return raw Content
 }
 

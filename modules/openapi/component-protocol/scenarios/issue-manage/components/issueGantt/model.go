@@ -37,7 +37,7 @@ type Gantt struct {
 }
 
 type State struct {
-	// filter state
+	// common state
 	gantt.State
 
 	IssuePagingRequest apistructs.IssuePagingRequest `json:"issuePagingRequest,omitempty"`

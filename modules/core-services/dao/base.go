@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// BaseModel filter info for all models
+// BaseModel common info for all models
 type BaseModel struct {
 	ID        int64     `json:"id" gorm:"primary_key"`
 	CreatedAt time.Time `json:"createdAt"`

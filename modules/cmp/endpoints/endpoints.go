@@ -15,7 +15,6 @@ package endpoints
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/cmp/metrics"
 	"net/http"
 
 	"github.com/erda-project/erda/bundle"
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/impl/mns"
 	"github.com/erda-project/erda/modules/cmp/impl/nodes"
 	org_resource "github.com/erda-project/erda/modules/cmp/impl/org-resource"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -110,7 +110,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
 		{Path: "/api/org-cluster-info", Method: http.MethodGet, Handler: auth(i18nPrinter(e.OrgClusterInfo))},
-		{Path: "/api/clusterhook", Method: http.MethodPost, Handler: auth(i18nPrinter(e.ClusterHook))},
 
 		// officer apis
 		{Path: "/api/clusters/{clusterName}/registry/readonly", Method: http.MethodGet, Handler: e.RegistryReadonly},

@@ -18,29 +18,16 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-<<<<<<< HEAD:modules/openapi/api/apis/cmp/cmp_k8s_create.go
-var CMP_STEVE_CREATE = apis.ApiSpec{
-	Path:         "/api/k8s/clusters/<*>",
-	BackendPath:  "/api/k8s/clusters/<*>",
-	Method:       "POST",
-=======
 var CMP_STEVE_GET = apis.ApiSpec{
 	Path:         "/api/k8s/clusters/<*>",
 	BackendPath:  "/api/k8s/clusters/<*>",
 	Method:       "GET",
->>>>>>> upstream/master:modules/openapi/api/apis/cmp/cmp_k8s_get.go
 	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
 	K8SHost:      "cmp:9027",
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
-<<<<<<< HEAD:modules/openapi/api/apis/cmp/cmp_k8s_create.go
-	Doc:          "获取某种类型k8s资源集合",
-	RequestType:  apistructs.K8SResource{},
-	ResponseType: apistructs.SteveCollection{},
-=======
 	Doc:          "get a k8s resource",
 	ResponseType: apistructs.SteveResource{},
->>>>>>> upstream/master:modules/openapi/api/apis/cmp/cmp_k8s_get.go
 	IsOpenAPI:    true,
 }

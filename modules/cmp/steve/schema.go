@@ -14,6 +14,7 @@
 package steve
 
 import (
+	"context"
 	"strings"
 
 	"github.com/rancher/apiserver/pkg/store/apiroot"
@@ -31,7 +32,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
 
+	"github.com/erda-project/erda/modules/cmp/cache"
+	"github.com/erda-project/erda/modules/cmp/conf"
+	fm "github.com/erda-project/erda/modules/cmp/steve/formatter"
 	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
 
@@ -40,10 +45,12 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 	apiroot.Register(baseSchema, []string{"v1"}, "proxy:/apis")
 }
 
-func DefaultSchemaTemplates(cf *client.Factory,
-	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup) []schema.Template {
+func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
+	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
+	cache, _ := cache.New(conf.CacheSize(), conf.CacheSegSize())
+	nodeFormatter := fm.NewNodeFormatter(ctx, cache, k8sInterface)
 	return []schema.Template{
-		DefaultTemplate(cf, asl),
+		DefaultTemplate(cf, asl, cache),
 		apigroups.Template(discovery),
 		{
 			ID:        "configmap",
@@ -57,12 +64,16 @@ func DefaultSchemaTemplates(cf *client.Factory,
 			ID:        "pod",
 			Formatter: formatters.Pod,
 		},
+		{
+			ID:        "node",
+			Formatter: nodeFormatter.Formatter,
+		},
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
+func DefaultTemplate(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup, cache *cache.Cache) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(clientGetter, asl),
+		Store:     cmpproxy.NewProxyStore(clientGetter, asl, cache),
 		Formatter: formatter(),
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	edgesite "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
 )
 
 type InfoData struct {
@@ -64,7 +65,7 @@ func (c *ComponentSitePreview) OperationRendering(identity apistructs.Identity) 
 		siteName  string
 		shell     string
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return fmt.Errorf("marshal component state error: %v", err)
@@ -94,13 +95,13 @@ func (c *ComponentSitePreview) OperationRendering(identity apistructs.Identity) 
 	c.component.Data = edgesite.StructToMap(InfoData{
 		Info: map[string]interface{}{
 			"siteName":      siteName,
-			"firstStep":     "使用root账号登陆到待添加节点中",
-			"secondStep":    "拷贝如下命令在节点中执行",
+			"firstStep":     i18nLocale.Get(i18n.I18nKeyAddNodeTip),
+			"secondStep":    i18nLocale.Get(i18n.I18nKeyAddNodeCommandTip),
 			"operationCode": shell,
 		},
 	})
 
-	c.component.Props = getProps()
+	c.component.Props = getProps(i18nLocale)
 	return nil
 }
 

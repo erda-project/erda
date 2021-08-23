@@ -140,8 +140,23 @@ EOABORT
 )"
 fi
 
+if ! command -v docker-compose >/dev/null; then
+    abort "$(cat <<EOABORT
+You must install Docker-Compose before installing Erda.
+EOABORT
+)"
+fi
+
+if ! command -v netcat >/dev/null; then
+    abort "$(cat <<EOABORT
+You must install netcat before installing Erda.
+EOABORT
+)"
+fi
+
 INSTALL_LOCATION="/opt/erda-quickstart"
 ERDA_REPOSITORY="https://github.com/erda-project/erda.git"
+ERDA_VERSION="23936e9"
 
 # shellcheck disable=SC2016
 ohai 'Checking for `sudo` access (which may request your password).'
@@ -170,7 +185,7 @@ ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
   execute "git" "fetch" "--force" "origin"
   execute "git" "fetch" "--force" "--tags" "origin"
 
-  execute "git" "reset" "--hard" "origin/master"
+  execute "git" "reset" "--hard" "${ERDA_VERSION}"
 
 ) || exit 1
 
@@ -192,6 +207,7 @@ do
 done
 
 execute "docker-compose" "up" "erda-migration" || exit 1
+execute "docker-compose" "up" "sysctl-init" || exit 1
 execute "docker-compose" "up" "-d" "elasticsearch" || exit 1
 execute "docker-compose" "up" "-d" "cassandra" || exit 1
 execute "docker-compose" "up" "-d" "kafka" || exit 1

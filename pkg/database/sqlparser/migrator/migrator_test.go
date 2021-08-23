@@ -11,18 +11,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package migrator
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "testing"
 
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/cluster-init"
-)
+func TestMigrator_needCompare(t *testing.T) {
+	mig := new(Migrator)
+	mig.installingType = firstTimeInstall
+	if mig.needCompare() {
+		t.Fatal(firstTimeInstall, "need not to compare")
+	}
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/cluster-init/cluster-init.yaml",
-	})
+	mig.installingType = normalUpdate
+	if mig.needCompare() {
+		t.Fatal(normalUpdate, "need not to compare")
+	}
+
+	mig.installingType = firstTimeUpdate
+	if !mig.needCompare() {
+		t.Fatal(firstTimeUpdate, "need to compare")
+	}
 }

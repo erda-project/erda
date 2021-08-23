@@ -11,11 +11,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-<<<<<<< Updated upstream:modules/openapi/component-protocol/scenarios/project-list-my/i18n/i18n.go
 package i18n
-=======
-package memTable
->>>>>>> Stashed changes:modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/components/memTable/model.go
 
 const (
 	I18nProjectNotJoined    = "project.list.my.project.not.joined"
