@@ -31,8 +31,8 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210729162038-a2e798d921de
-	github.com/erda-project/erda-proto-go v0.0.0-20210805063629-d4e8ac75e06d
+	github.com/erda-project/erda-infra v0.0.0-20210824080310-eb60ec8285b0
+	github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -47,7 +47,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
+	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c
@@ -128,11 +128,11 @@ require (
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
+	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
-	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210729151513-df9385d47c1b
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
+	golang.org/x/text v0.3.7
+	google.golang.org/genproto v0.0.0-20210821163610-241b8fcbd6c8
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

@@ -4,3 +4,21 @@ core-services:
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.cms-client:
+
+
+# new api with proto style
+http-server:
+  addr: ":9536"
+grpc-server:
+  addr: ":9537"
+permission:
+service-register:
+
+mysql:
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
+
+erda.core.services.accesskey:
