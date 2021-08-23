@@ -75,3 +75,20 @@ func TestMatchStdErrLine(t *testing.T) {
 	assert.False(t, matchStdErrLine(regexpList, "failed to open file test.text"))
 	assert.True(t, matchStdErrLine(regexpList, "can't open '/jfoejfoijlkjlj/jflejwf.txt': No such file or directory"))
 }
+
+func TestDesensitizeLine(t *testing.T) {
+	var txtBlackList = []string{"abcdefg", "kskdudh&"}
+	tt := []struct {
+		line, want string
+	}{
+		{"admin", "admin"},
+		{"abcdefg", "******"},
+		{"admin123", "admin123"},
+		{"docker login -u abcdefg -p kskdudh&", "docker login -u ****** -p ******"},
+	}
+	for _, v := range tt {
+		desensitizeLine(txtBlackList, &v.line)
+		assert.Equal(t, v.want, v.line)
+	}
+
+}

@@ -31,8 +31,8 @@ func (agent *Agent) logic() {
 	}
 
 	actionRun := exec.Command(agent.EasyUse.RunScript)
-	actionRun.Stdout = io.MultiWriter(os.Stdout, agent.EasyUse.RunMultiStdout)
-	actionRun.Stderr = io.MultiWriter(os.Stderr, agent.EasyUse.RunMultiStderr)
+	actionRun.Stdout = io.MultiWriter(agent.EasyUse.RunMultiStdout)
+	actionRun.Stderr = io.MultiWriter(agent.EasyUse.RunMultiStderr)
 	if err := actionRun.Start(); err != nil {
 		agent.AppendError(err)
 		return

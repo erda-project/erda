@@ -105,9 +105,10 @@ func (e *Endpoints) taskBootstrapInfo(ctx context.Context, r *http.Request, vars
 	}
 	// bootstrapInfoData
 	bootstrapInfo := actionagent.AgentArg{
-		Commands:    task.Extra.Action.Commands,
-		Context:     task.Context,
-		PrivateEnvs: task.Extra.PrivateEnvs,
+		Commands:          task.Extra.Action.Commands,
+		Context:           task.Context,
+		PrivateEnvs:       task.Extra.PrivateEnvs,
+		EncryptSecretKeys: task.Extra.EncryptSecretKeys,
 	}
 	b, err := json.Marshal(&bootstrapInfo)
 	if err != nil {
