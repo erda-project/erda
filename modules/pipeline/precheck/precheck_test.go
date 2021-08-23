@@ -65,3 +65,38 @@ services:
 	_, _ = PreCheck(ctx, yamlByte, items)
 	assert.False(t, prechecktype.GetContextResult(ctx, prechecktype.CtxResultKeyCrossCluster).(bool))
 }
+
+func TestPrecheckRelease(t *testing.T) {
+	ctx := prechecktype.InitContext()
+	yamlByte := []byte(`version: 1.1
+stages:
+- stage:
+  - release:
+      params:
+        cross_cluster: false
+`)
+	items := prechecktype.ItemsForCheck{
+		PipelineYml: "",
+		Files: map[string]string{
+			"dice.yml": `
+version: 2
+services:
+  apm-demo-ui:
+    testabc: abc
+`,
+		},
+		ActionSpecs: map[string]apistructs.ActionSpec{
+			"release": {
+				Params: []apistructs.ActionSpecParam{
+					{
+						Name:     "cross_cluster",
+						Required: false,
+						Default:  true,
+					},
+				},
+			},
+		},
+	}
+	_, m := PreCheck(ctx, yamlByte, items)
+	assert.Equal(t, m.Stacks[0], "taskName: release, message: failed to parse dice.yml, err: [\n  \"[apm-demo-ui] field 'testabc' not one of [image, cmd, ports, envs, hosts, labels, resources, volumes, deployments, depends_on, expose, health_check, binds, sidecars，init, traffic_security, endpoints, mesh_enable, k8s_snippet]\"\n]")
+}

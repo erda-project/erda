@@ -173,6 +173,7 @@ func initialize() {
 	initOnce.Do(func() {
 		// diceyml prechecker
 		diceymlPreCheckers = append(diceymlPreCheckers, diceymlchecker.New())
+		diceymlPreCheckers = append(diceymlPreCheckers, release.New())
 
 		// action prechecker map
 		actionPreCheckers := []prechecktype.ActionPreChecker{
