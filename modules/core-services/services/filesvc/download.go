@@ -88,7 +88,7 @@ func (svc *FileService) DownloadFile(w io.Writer, file dao.File) (headers map[st
 	}
 
 	headers = map[string]string{
-		headerContentDisposition: headerValueDispositionInline(file.DisplayName),
+		headerContentDisposition: headerValueDispositionInline(file.Ext, file.DisplayName),
 		HeaderContentLength:      strconv.FormatInt(file.ByteSize, 10),
 	}
 

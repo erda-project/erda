@@ -88,6 +88,11 @@ type Conf struct {
 	OSSAccessSecret string `env:"OSS_ACCESS_SECRET"`
 	OSSBucket       string `env:"OSS_BUCKET"`
 	OSSPathPrefix   string `env:"OSS_PATH_PREFIX" default:"/dice/cmdb/files"`
+
+	// If we allow uploaded file types that can carry active content
+	FileTypeCarryActiveContentAllowed bool `env:"FILETYPE_CARRY_ACTIVE_CONTENT_ALLOWED" default:"false"`
+	// File types can carry active content, separated by comma, can add more types like jsp
+	FileTypesCanCarryActiveContent string `env:"FILETYPES_CAN_CARRY_ACTIVE_CONTENT" default:"html,js,xml,htm"`
 	// --- 文件管理 end ---
 }
 
@@ -442,4 +447,12 @@ func StorageMountPointInContainer() string {
 // DisableFileDownloadPermissionValidate return switch for file download permission check.
 func DisableFileDownloadPermissionValidate() bool {
 	return cfg.DisableFileDownloadPermissionValidate
+}
+
+func FileTypeCarryActiveContentAllowed() bool {
+	return cfg.FileTypeCarryActiveContentAllowed
+}
+
+func FileTypesCanCarryActiveContent() []string {
+	return strutil.Split(cfg.FileTypesCanCarryActiveContent, ",")
 }
