@@ -169,6 +169,9 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 	var newResponseOrder orderedResponses
 	now := time.Now()
 	for index, g := range newResponses {
+		if g.Ctx.StartTime.IsZero() {
+			g.Ctx.StartTime = now.Add(time.Duration(index) * time.Millisecond)
+		}
 		if g.Ctx.EndTime.IsZero() {
 			g.Ctx.EndTime = now.Add(time.Duration(index) * time.Millisecond)
 		}
@@ -210,11 +213,9 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 
 func (t *PipelineTaskResult) ConvertErrors() {
 	for _, response := range t.Errors {
-		if !response.Ctx.StartTime.IsZero() {
-			response.Msg = fmt.Sprintf("%s, startTime: %s, endTIme: %s, count: %d",
-				response.Msg, response.Ctx.StartTime.Format("2006-01-02 15:04:05"),
-				response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
-		}
+		response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTIme: %s\ncount: %d",
+			response.Msg, response.Ctx.StartTime.Format("2006-01-02 15:04:05"),
+			response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
 	}
 }
 
