@@ -163,7 +163,7 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		logrus.Errorf("reconciler: pipelineID: %d, task %q %s received error (%v)", tr.P.ID, tr.Task.Name, itr.Op(), err)
 		if errorsx.IsNetworkError(err) {
 			// convert network error
-			errs = append(errs, fmt.Sprintf("Network issue for cluster: %s (%v)", tr.Task.Extra.ClusterName, err))
+			errs = append(errs, fmt.Sprintf("Network issue for cluster: %s\nDetail: %v", tr.Task.Extra.ClusterName, err))
 		} else {
 			errs = append(errs, err.Error())
 		}

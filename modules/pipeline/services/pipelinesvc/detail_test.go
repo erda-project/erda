@@ -153,3 +153,12 @@ func TestIsEventsContainWarn(t *testing.T) {
 	assert.Equal(t, true, isEventsContainWarn(warnEvents))
 	assert.Equal(t, false, isEventsContainWarn(shortEvents))
 }
+
+func TestIsEventsLatestNormal(t *testing.T) {
+	normalEvents := "Events:\n Type    Reason     Age   From               Message\n ----    ------     ----  ----               -------\n Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200\n Normal  Pulled     6s    kubelet            Container image \"registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495\" already present on machine"
+	warnEvents := "Events:\n Type    Reason     Age   From               Message\n ----    ------     ----  ----               -------\n Warning  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200\n Normal  Pulled     6s    kubelet            Container image \"registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495\" already present on machine"
+	shortEvents := "Events:\nType    Reason     Age   From               Message\n----    ------     ----  ----               -------"
+	assert.Equal(t, true, isEventsLatestNormal(normalEvents))
+	assert.Equal(t, false, isEventsLatestNormal(warnEvents))
+	assert.Equal(t, true, isEventsLatestNormal(shortEvents))
+}
