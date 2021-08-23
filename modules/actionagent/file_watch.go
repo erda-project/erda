@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -83,8 +84,8 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 // stdoutTailHandler 以 tail 方式处理 stdout
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		// add your logic here
-		// logrus.Printf("stdout tailed a line: %s\n", line)
+		desensitizeLine(agent.TextBlackList, &line)
+		fmt.Fprintf(os.Stdout, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
@@ -101,8 +102,8 @@ func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 // stderrTailHandler 以 tail 方式处理 stderr
 func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		// add your logic here
-		// logrus.Printf("stderr tailed a line: %s\n", line)
+		desensitizeLine(agent.TextBlackList, &line)
+		fmt.Fprintf(os.Stderr, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
@@ -117,6 +118,18 @@ func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 		}
 
 		return nil
+	}
+}
+
+func desensitizeLine(txtBlackList []string, line *string) {
+	values := make([]string, 0)
+	for _, v := range txtBlackList {
+		if strings.Contains(*line, v) {
+			values = append(values, v)
+		}
+	}
+	for _, v := range values {
+		*line = strings.Replace(*line, v, "******", -1)
 	}
 }
 

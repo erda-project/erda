@@ -146,6 +146,9 @@ type Snapshot struct {
 
 	// Events stores pipeline level k8s-like events
 	Events []*apistructs.PipelineEvent `json:"events,omitempty"`
+
+	// EncryptSecretKeys the encrypt envs' key list
+	EncryptSecretKeys []string `json:"encryptSecretKeys"`
 }
 
 // FromDB 兼容 Snapshot 老数据
