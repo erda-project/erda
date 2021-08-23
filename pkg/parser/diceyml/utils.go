@@ -17,7 +17,7 @@ import (
 	"reflect"
 	"regexp"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 func assignWithoutEmpty(p interface{}, src interface{}) {
