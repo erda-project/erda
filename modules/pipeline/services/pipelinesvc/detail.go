@@ -98,7 +98,7 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 				task.Result.Metadata = make([]apistructs.MetadataField, 0)
 			}
 			// add task events to result metadata if task status isn`t success and events it`s failed
-			if !task.Status.IsSuccessStatus() && task.Result.Events != "" && isEventsContainWarn(task.Result.Events) {
+			if !task.Status.IsSuccessStatus() && task.Result.Events != "" && !isEventsLatestNormal(task.Result.Events) {
 				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
 					Name:  "task-events",
 					Value: task.Result.Events,
@@ -479,12 +479,12 @@ func findRunningStageID(p spec.Pipeline, tasks []spec.PipelineTask) uint64 {
 	return runningStageID
 }
 
-// isEventsContainWarn return k8s events is contain warn
-// Events:
-//  Type    Reason     Age   From               Message
-//  ----    ------     ----  ----               -------
-//  Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200
-//  Normal  Pulled     6s    kubelet            Container image "registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495" already present on machine
+//isEventsContainWarn return k8s events is contain warn
+//Events:
+// Type    Reason     Age   From               Message
+// ----    ------     ----  ----               -------
+// Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200
+// Normal  Pulled     6s    kubelet            Container image "registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495" already present on machine
 func isEventsContainWarn(events string) bool {
 	eventLst := strings.Split(events, "\n")
 	if len(eventLst) <= 3 {
@@ -496,4 +496,13 @@ func isEventsContainWarn(events string) bool {
 		}
 	}
 	return false
+}
+
+// isEventsLatestNormal judge k8s events latest event is normal
+func isEventsLatestNormal(events string) bool {
+	eventLst := strings.Split(events, "\n")
+	if len(eventLst) <= 3 {
+		return true
+	}
+	return strings.Contains(eventLst[len(eventLst)-2], corev1.EventTypeNormal)
 }
