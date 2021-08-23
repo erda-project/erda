@@ -220,7 +220,7 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 			return nil, nil, nil, nil, err
 		}
 		for _, c := range configs.Data {
-			if c.EncryptInDB && c.Type == "kv" {
+			if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
 				encryptSecretKeys = append(encryptSecretKeys, c.Key)
 			}
 			secrets[c.Key] = c.Value
