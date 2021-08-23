@@ -117,7 +117,7 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 			if s.IsBaseline() {
 				continue
 			}
-			return nil, errors.Errorf("only support DDL and DML, SQL: %s", node.Text())
+			return nil, errors.Errorf("only support DDL and DML, filename: %s, SQL: %s", s.GetName(), node.Text())
 		}
 	}
 
@@ -173,4 +173,8 @@ func (s *Script) GetName() string {
 
 func (s *Script) GetData() []byte {
 	return s.Rawtext
+}
+
+func (s *Script) IsEmpty() bool {
+	return len(s.GetData()) == 0
 }

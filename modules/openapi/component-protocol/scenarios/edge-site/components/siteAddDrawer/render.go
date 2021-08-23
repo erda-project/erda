@@ -17,6 +17,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
 )
 
 func (c *ComponentSiteAddDrawer) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -24,7 +26,12 @@ func (c *ComponentSiteAddDrawer) Render(ctx context.Context, component *apistruc
 		ok      bool
 		visible bool
 	)
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
+	if err := c.SetBundle(bdl); err != nil {
+		return err
+	}
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if event.Operation == apistructs.RenderingOperation {
 		if _, ok = component.State["visible"]; !ok {
 			return nil
@@ -37,7 +44,7 @@ func (c *ComponentSiteAddDrawer) Render(ctx context.Context, component *apistruc
 		if visible {
 			component.Props = apistructs.EdgeDrawerProps{
 				Size:  "l",
-				Title: "添加节点",
+				Title: i18nLocale.Get(i18n.I18nKeyAddNode),
 			}
 		}
 	}

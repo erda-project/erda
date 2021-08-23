@@ -644,7 +644,6 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 
 		if diceworkspace.IsRefPatternMatch(gitEvent.Content.TargetBranch, pipelineYml.Spec().On.Merge.Branches) {
 			exist = true
-			break
 		}
 
 		if !exist {

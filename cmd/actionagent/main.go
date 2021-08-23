@@ -60,9 +60,10 @@ func realMain(args string) {
 	agent := &actionagent.Agent{
 		Errs:              make([]error, 0),
 		PushedMetaFileMap: make(map[string]string),
-		TextBlackList:         make([]string, 0), // enciphered data will Replaced by '******' when log output
-		Ctx:               ctx,
-		Cancel:            cancel,
+		// enciphered data will Replaced by '******' when log output
+		TextBlackList: make([]string, 0),
+		Ctx:           ctx,
+		Cancel:        cancel,
 	}
 	agent.Execute(bytes.NewBufferString(args))
 	agent.Teardown()

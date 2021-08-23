@@ -127,7 +127,6 @@ func init() {
 
 		parentctx, cancelSyncInstanceinfo := context.WithCancel(context.Background())
 		k.instanceinfoSyncCancelFunc = cancelSyncInstanceinfo
-
 		go func() {
 			for {
 				select {
@@ -277,11 +276,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	if err != nil {
 		logrus.Errorf("get cluster error: %v", cluster)
 		return nil, err
-	}
-
-	// credential config
-	if cluster.ManageConfig == nil {
-		return nil, fmt.Errorf("cluster %s manage config is nil", clusterName)
 	}
 
 	addr, client, err := util.GetClient(clusterName, cluster.ManageConfig)
@@ -992,7 +986,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 			isReady = false
 			resultStatus.Status = apistructs.StatusProgressing
 			sg.Services[i].Status = apistructs.StatusProgressing
-			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items)
+			podstatuses, err := k.pod.GetNamespacedPodsStatus(pods.Items, sg.Services[i].Name)
 			if err != nil {
 				logrus.Errorf("failed to get pod unready reasons, namespace: %v, name: %s, %v",
 					sg.Services[i].Namespace,

@@ -6,8 +6,12 @@ RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
 
-ARG CONFIG_PATH
 ARG MODULE_PATH
+ARG EXTENSION_ZIP_ADDRS
+RUN mkdir -p /tmp/dicehub-extension
+RUN if [ ${MODULE_PATH} = dicehub ] || [ -z ${MODULE_PATH} ]; then ./build/scripts/dicehub/extension-push.sh "${EXTENSION_ZIP_ADDRS}" ; fi
+
+ARG CONFIG_PATH
 ARG DOCKER_IMAGE
 ARG MAKE_BUILD_CMD
 RUN --mount=type=cache,target=/root/.cache/go-build\
@@ -33,6 +37,9 @@ COPY --from=build "$GOPATH/src/github.com/erda-project/erda/bin/${APP_NAME}" "/a
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/${CONFIG_PATH}" "/app/conf/${CONFIG_PATH}"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/pkg/erda-configs" "/app/erda-configs"
 COPY --from=build "$GOPATH/src/github.com/erda-project/erda/conf/common" "/app/conf/common"
+
+# use for dicehub
+COPY --from=build "/tmp/dicehub-extension" "/app/extensions-init"
 
 # use for gittar
 COPY --from=build "/go/src/github.com/erda-project/erda/build/dockerfiles/gittar-resource/.gitconfig" "/root/.gitconfig"

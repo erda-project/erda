@@ -99,3 +99,10 @@ func TestMapAppend(t *testing.T) {
 		t.Error("append should be in-place")
 	}
 }
+
+func TestNewDefaultHandler(t *testing.T) {
+	instance := NewDefaultHandler(nil, nil)
+	if instance.Bdl == nil {
+		t.Errorf("DefaultHandler.Bdl should not nil")
+	}
+}

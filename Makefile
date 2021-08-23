@@ -130,12 +130,13 @@ normalize:
 		MODULE_PATH=.; \
 	fi; \
 	cd $${MODULE_PATH}; \
+	golint -set_exit_status=1 ./...; \
+	go vet ./...; \
 	go test -test.timeout=10s ./...; \
 	GOFILES=$$(find . -name "*.go"); \
 	for path in $${GOFILES}; do \
 	 	gofmt -w -l $${path}; \
 	  	goimports -w -l $${path}; \
-	  	golint -set_exit_status=1 $${path}; \
 	done;
 
 # check copyright header
@@ -146,16 +147,24 @@ check-copyright:
 check-imports:
 	go run tools/gotools/go-imports-order/main.go
 
+# test and generate go.test.sum
+run-test:
+	go run tools/gotools/go-test-sum/main.go
+
+full-test:
+	docker run --rm -ti -v $$(pwd):/go/src/output letmein7788/letmein:golangci-lint \
+		bash -c 'cd /go/src && git clone https://github.com/recallsong/erda && cd erda && git checkout feature/quick-test && build/scripts/test_in_container.sh'
+
 # docker image
 build-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build
+	./build/scripts/docker_image.sh ${MODULE_PATH} build ${EXTENSION_ZIP_ADDRS}
 push-image:
 	./build/scripts/docker_image.sh ${MODULE_PATH} push
 build-push-image: prepare
-	./build/scripts/docker_image.sh ${MODULE_PATH} build-push
+	./build/scripts/docker_image.sh ${MODULE_PATH} build-push ${EXTENSION_ZIP_ADDRS}
 
 build-push-all:
-	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push
+	MAKE_BUILD_CMD=build-all ./build/scripts/docker_image.sh / build-push ${EXTENSION_ZIP_ADDRS}
 build-push-base-image:
 	./build/scripts/base_image.sh build-push
 
@@ -175,5 +184,5 @@ cli-linux:
 
 .PHONY: upload-cli
 upload-cli: cli cli-linux
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
-	go run build/scripts/upload_cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"
+	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/mac/erda "${PROJ_PATH}/bin/erda-cli"
+	go run tools/upload-cli/main.go ${ACCESS_KEY_ID} ${ACCESS_KEY_SECRET} cli/linux/erda "${PROJ_PATH}/bin/erda-cli-linux"

@@ -2,10 +2,14 @@
 
 <table>
 <tr>
-  <th title="Current">1.1<sup>Current</sup></th>
+  <th title="Current">1.2<sup>Current</sup></th>
+  <th title="Current">1.1</th>
   <th title="Current">1.0</th>
 </tr>
 <tr>
+  <td valign="top">
+    <b><a href="#v120">1.2.0</a></b><br/>
+  </td>
   <td valign="top">
     <b><a href="#v111">1.1.1</a></b><br/>
     <a href="#v110">1.1.0</a><br/>
@@ -16,6 +20,76 @@
   </td>
 </tr>
 </table>
+
+# v1.2.0
+
+`2021-08-16`
+
+### New Features
+
+* Optimize overview and project list in MSP. [#809](https://github.com/erda-project/erda-ui/pull/809)
+* Support sending test messages when configuring DingTalk notifications. [#777](https://github.com/erda-project/erda-ui/pull/777)
+* Support importing and exporting automation test sets. [#749](https://github.com/erda-project/erda-ui/pull/749)
+* Enable more features of multi-cloud management platform for free users. [#759](https://github.com/erda-project/erda-ui/pull/759)
+* Optimize the way to add EDAS clusters. [#750](https://github.com/erda-project/erda-ui/pull/750)
+* Optimize markdown editor interaction and style. [#853](https://github.com/erda-project/erda-ui/pull/853)
+* Optimize pipeline log style. [#802](https://github.com/erda-project/erda-ui/pull/802)
+* Optimize pipeline notification content. [#1189](https://github.com/erda-project/erda/pull/1189)
+* Optimize the execution logic of automation test cases. [#1103](https://github.com/erda-project/erda/pull/1103)
+* Support filtering test case executor by unassigned person in the test plan. [#732](https://github.com/erda-project/erda/pull/732)
+* Add precheck for existence of package-lock.json before packaging front-end applicaiton. [#1116](https://github.com/erda-project/erda/pull/1116)
+
+### Bug Fixes
+
+* Fix a bug of cluster parameter in the project pipeline. [#737](https://github.com/erda-project/erda-ui/pull/737)
+* Fix the bug of data duplication in repo file comparison. [#744](https://github.com/erda-project/erda-ui/pull/744)
+* Modify markdown editor style. [#763](https://github.com/erda-project/erda-ui/pull/763)
+* Fix a bug of env parameter in the project pipeline. [#765](https://github.com/erda-project/erda-ui/pull/765)
+* Fix the style issue when dragging and droppping Nusi component tree. [#769](https://github.com/erda-project/erda-ui/pull/769)
+* Fix the error of operation key value in action form. [#771](https://github.com/erda-project/erda-ui/pull/771)
+* Fix the mandatory verification error of custom labels in the form. [#778](https://github.com/erda-project/erda-ui/pull/778)
+* Fix the button style issue of markdown editor. [#782](https://github.com/erda-project/erda-ui/pull/782)
+* Fix the issue of yml editor add node disappearance and actionForm componentization data error. [#781](https://github.com/erda-project/erda-ui/pull/781)
+* Fix the bug of the drop-down width when selecting artifact ID in deployment center.[#827](https://github.com/erda-project/erda-ui/pull/827)
+* Add registration command and retry initialization operations for EDAS cluster. [#840](https://github.com/erda-project/erda-ui/pull/840)
+* Fix the bug of extension service form in project. [#863](https://github.com/erda-project/erda-ui/pull/863)
+* Fix the possible crash bug when adding members using nicknames with special characters. [#862](https://github.com/erda-project/erda-ui/pull/862)
+* Fix the bug that projectId is missing in the request application list. [#873](https://github.com/erda-project/erda-ui/pull/873)
+* Fix the bug that Git repositories can be cloned without account password.[#877](https://github.com/erda-project/erda-ui/pull/877)
+* Fix the bug that the text prompt is incomplete caused by invalid form in trace debugging. [#857](https://github.com/erda-project/erda-ui/pull/857)
+* Fix the data error of related issues after changing issue to backlog. [#902](https://github.com/erda-project/erda-ui/pull/902)
+* Fix the bug that two scroll bars appear when scrolling the item in backlog table. [#839](https://github.com/erda-project/erda-ui/pull/839)
+* Fix the API error reported after deleting files in repo. [#910](https://github.com/erda-project/erda-ui/pull/910)
+* Fix the error occured when initializing pipeline action form. [#912](https://github.com/erda-project/erda-ui/pull/912)
+* Fix some table issues: column width too long or insufficient, table exceeds the page and uniform overflow omission. [#736](https://github.com/erda-project/erda-ui/pull/736)
+* Fix the style issue that the item name of extended query column is too long. [#739](https://github.com/erda-project/erda-ui/pull/739)
+* Fix the bug that required fields in project collaboration are not marked as required.[#746](https://github.com/erda-project/erda-ui/pull/746)
+* Add width to the table in OrgCenter > Projects. [#755](https://github.com/erda-project/erda-ui/pull/755)
+* Fix the bug of style validation occured when adding issue in Issues > Backlog. [#757](https://github.com/erda-project/erda-ui/pull/757)
+* Fix the bug that in Multi-Cloud Management Platform > Alarm Record, click a record for details, then all list items are expanded when clicking the expand button before the list items.[#754](https://github.com/erda-project/erda-ui/pull/754)
+* Fix the bug that when editing issues, the month in datepicker cannot be changed.[#761](https://github.com/erda-project/erda-ui/pull/761)
+* Increase the width of the member table. [#767](https://github.com/erda-project/erda-ui/pull/767)
+* Fix the bug that the row representing the folder in the test case table shows an extra column for the interface pass rate. [#768](https://github.com/erda-project/erda-ui/pull/768)
+* Increase the width of the test case table. [#774](https://github.com/erda-project/erda-ui/pull/774)
+* Add a mouse-over style to tables with row click events. [#766](https://github.com/erda-project/erda-ui/pull/766)
+* Adjust the width of the related issue table. [#775](https://github.com/erda-project/erda-ui/pull/775)
+* Fix the loop refresh issue when the path is /-. [#780](https://github.com/erda-project/erda-ui/pull/780)
+* Fix the bug that the left arrow faces wrongly when the tree on the left side of the test case is expanded, and the parent node occasionally collapses when the child node is clicked.[#773](https://github.com/erda-project/erda-ui/pull/773)
+* Fix the bug that some rows in the test case table go beyond the right side. [#790](https://github.com/erda-project/erda-ui/pull/790)
+* Fix the incorrect address of application repository in application settings. [#797](https://github.com/erda-project/erda-ui/pull/797)
+* Fix the issue that the color of alert list icon is black. [#808](https://github.com/erda-project/erda-ui/pull/808)
+* Fix the issue that error occured when editing custom addon of extended service. [#812](https://github.com/erda-project/erda-ui/pull/812)
+* Fix the issue that the text field of trace debugging body is too long to see the tabs above. [#820](https://github.com/erda-project/erda-ui/pull/820)
+* Fix the bug that logs cannot be downloaded when using the default duration. [#842](https://github.com/erda-project/erda-ui/pull/842)
+* Fix the bug that the search box does not display when the data is empty. [#906](https://github.com/erda-project/erda-ui/pull/906)
+* Migrate Affix and InputNumber from Nusi to Antd.[#779](https://github.com/erda-project/erda-ui/pull/779)
+* Change the grouping rules to mandatory when creating custom alarm rules. [#752](https://github.com/erda-project/erda-ui/pull/752)
+* Fix the issue that the setting of runtime rollback number does not take effect.
+
+### Refactor
+
+* The interfaces of msp and monitor modules are all defined by proto.
+* Optimize Quick-Start for one-click deployment of Erda Standalone mode on the local machine. [#1242](https://github.com/erda-project/erda/pull/1242)
 
 # v1.1.1
 

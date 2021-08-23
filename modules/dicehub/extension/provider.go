@@ -17,6 +17,7 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
@@ -33,6 +34,8 @@ type config struct {
 	ExtensionMenu map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
 }
 
+const FilePath = "/app/extensions-init"
+
 // +provider
 type provider struct {
 	Cfg              *config
@@ -43,12 +46,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.extensionService = &extensionService{
-		p:             p,
-		db:            &db.ExtensionConfigDB{DB: p.DB},
-		bdl:           bundle.New(bundle.WithCoreServices()),
-		extensionMenu: p.Cfg.ExtensionMenu,
-	}
+	p.newExtensionService()
 	if p.Register != nil {
 		pb.RegisterExtensionServiceImp(p.Register, p.extensionService, apis.Options(),
 			transport.WithHTTPOptions(
@@ -61,7 +59,23 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				}),
 			))
 	}
+	go func() {
+		err := p.extensionService.InitExtension(FilePath)
+		if err != nil {
+			panic(err)
+		}
+		logrus.Infoln("End init extension")
+	}()
 	return nil
+}
+
+func (p *provider) newExtensionService() {
+	p.extensionService = &extensionService{
+		p:             p,
+		db:            &db.ExtensionConfigDB{DB: p.DB},
+		bdl:           bundle.New(bundle.WithCoreServices()),
+		extensionMenu: p.Cfg.ExtensionMenu,
+	}
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

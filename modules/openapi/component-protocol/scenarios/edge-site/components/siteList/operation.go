@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -55,7 +54,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, reList bool, identity api
 		reqPageSize = apistructs.EdgeDefaultPageSize
 		stateEntity = EdgeSiteState{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return err
@@ -117,7 +116,7 @@ func (c *ComponentList) OperateChangePage(orgID int64, reList bool, identity api
 			NodeNum:        data.NodeCount,
 			SiteName:       renderSiteName(data.ClusterName, data.Name, data.ID),
 			RelatedCluster: data.ClusterName,
-			Operate:        getSiteItemOperate(data),
+			Operate:        getSiteItemOperate(data, i18nLocale),
 		}
 
 		resList = append(resList, item)

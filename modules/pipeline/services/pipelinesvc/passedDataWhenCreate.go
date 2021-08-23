@@ -14,6 +14,8 @@
 package pipelinesvc
 
 import (
+	"sync"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -25,8 +27,8 @@ import (
 // passedDataWhenCreate stores data passed recursively when create graph.
 type passedDataWhenCreate struct {
 	extMarketSvc     *extmarketsvc.ExtMarketSvc
-	actionJobDefines map[string]*diceyml.Job
-	actionJobSpecs   map[string]*apistructs.ActionSpec
+	actionJobDefines *sync.Map
+	actionJobSpecs   *sync.Map
 }
 
 func (that *passedDataWhenCreate) getActionJobDefine(actionTypeVersion string) *diceyml.Job {
@@ -36,17 +38,30 @@ func (that *passedDataWhenCreate) getActionJobDefine(actionTypeVersion string) *
 	if that.actionJobDefines == nil {
 		return nil
 	}
-	return that.actionJobDefines[actionTypeVersion]
+
+	if value, ok := that.actionJobDefines.Load(actionTypeVersion); ok {
+		if job, ok := value.(*diceyml.Job); ok {
+			return job
+		}
+	}
+	return nil
 }
 
 func (that *passedDataWhenCreate) getActionJobSpecs(actionTypeVersion string) *apistructs.ActionSpec {
+
 	if that == nil {
 		return nil
 	}
 	if that.actionJobDefines == nil {
 		return nil
 	}
-	return that.actionJobSpecs[actionTypeVersion]
+
+	if value, ok := that.actionJobSpecs.Load(actionTypeVersion); ok {
+		if spec, ok := value.(*apistructs.ActionSpec); ok {
+			return spec
+		}
+	}
+	return nil
 }
 
 func (that *passedDataWhenCreate) initData(extMarketSvc *extmarketsvc.ExtMarketSvc) {
@@ -55,10 +70,10 @@ func (that *passedDataWhenCreate) initData(extMarketSvc *extmarketsvc.ExtMarketS
 	}
 
 	if that.actionJobDefines == nil {
-		that.actionJobDefines = make(map[string]*diceyml.Job)
+		that.actionJobDefines = &sync.Map{}
 	}
 	if that.actionJobSpecs == nil {
-		that.actionJobSpecs = make(map[string]*apistructs.ActionSpec)
+		that.actionJobSpecs = &sync.Map{}
 	}
 	that.extMarketSvc = extMarketSvc
 }
@@ -77,7 +92,7 @@ func (that *passedDataWhenCreate) putPassedDataByPipelineYml(pipelineYml *pipeli
 				}
 				extItem := extmarketsvc.MakeActionTypeVersion(action)
 				// extension already searched, skip
-				if _, ok := that.actionJobDefines[extItem]; ok {
+				if _, ok := that.actionJobDefines.Load(extItem); ok {
 					continue
 				}
 				extItems = append(extItems, extmarketsvc.MakeActionTypeVersion(action))
@@ -90,11 +105,12 @@ func (that *passedDataWhenCreate) putPassedDataByPipelineYml(pipelineYml *pipeli
 	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
+
 	for extItem, actionJobDefine := range actionJobDefines {
-		that.actionJobDefines[extItem] = actionJobDefine
+		that.actionJobDefines.Store(extItem, actionJobDefine)
 	}
 	for extItem, actionJobSpec := range actionJobSpecs {
-		that.actionJobSpecs[extItem] = actionJobSpec
+		that.actionJobSpecs.Store(extItem, actionJobSpec)
 	}
 	return nil
 }

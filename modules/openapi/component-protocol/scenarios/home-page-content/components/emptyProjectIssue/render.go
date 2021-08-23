@@ -42,6 +42,7 @@ type Props struct {
 }
 
 type State struct {
+	Total   int `json:"total"`
 	ProsNum int `json:"prosNum"`
 }
 
@@ -109,14 +110,8 @@ func (e *EmptyProjectIssue) Render(ctx context.Context, c *apistructs.Component,
 	e.Props.WhiteBg = true
 	e.Props.Relative = true
 	e.Props.PaddingY = true
-	if e.ctxBdl.Identity.OrgID != "" && e.State.ProsNum == 0 {
-		prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
-		if err != nil {
-			return err
-		}
-		if prosNum != 0 {
-			e.Props.Visible = true
-		}
+	if e.ctxBdl.Identity.OrgID != "" && e.State.Total == 0 && e.State.ProsNum != 0 {
+		e.Props.Visible = true
 	}
 	return nil
 }

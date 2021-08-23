@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
@@ -157,37 +158,43 @@ func (e *Endpoints) ListLabels(ctx context.Context, r *http.Request, vars map[st
 	})
 }
 
-func (e *Endpoints) UpdateLabels(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) UpdateLabels(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
 	var req apistructs.UpdateLabelsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to unmarshal to apistructs.UpdateLabelsRequest: %v", err)
-		return mkResponse(apistructs.UpdateLabelsResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to unmarshal to apistructs.UpdateLabelsRequest: %v", err)
+		return
 	}
-	userid := r.Header.Get("User-ID")
-	if userid == "" {
-		errstr := fmt.Sprintf("failed to get user-id in http header")
-		return mkResponse(apistructs.UpdateLabelsResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
 	}
-	recordID, err := e.labels.UpdateLabels(req, userid)
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
 	if err != nil {
-		errstr := fmt.Sprintf("failed to updatelabels: %v", err)
-		return mkResponse(apistructs.UpdateLabelsResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+		return
 	}
+
+	recordID, err := e.labels.UpdateLabels(req, i.UserID)
+	if err != nil {
+		err = fmt.Errorf("failed to updatelabels: %v", err)
+		return
+	}
+
 	return mkResponse(apistructs.UpdateLabelsResponse{
 		Header: apistructs.Header{
 			Success: true,
