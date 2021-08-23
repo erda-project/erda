@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -84,7 +85,7 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
 		desensitizeLine(agent.TextBlackList, &line)
-		fmt.Printf("%s\n", line)
+		fmt.Fprintf(os.Stdout, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
@@ -102,7 +103,7 @@ func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
 		desensitizeLine(agent.TextBlackList, &line)
-		fmt.Errorf("%s\n", line)
+		fmt.Fprintf(os.Stderr, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
