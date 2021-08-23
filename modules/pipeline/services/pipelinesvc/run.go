@@ -61,7 +61,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	}
 
 	// cms
-	secrets, cmsDiceFiles, holdOnKeys, err := s.FetchSecrets(&p)
+	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(&p)
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
@@ -103,6 +103,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, err
 	}
 	p.Snapshot.RunPipelineParams = runParams.ToPipelineRunParamsWithValue()
+	p.Snapshot.EncryptSecretKeys = encryptSecretKeys
 
 	now := time.Now()
 	p.TimeBegin = &now
