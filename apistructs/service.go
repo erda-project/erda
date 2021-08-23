@@ -291,6 +291,8 @@ type Service struct {
 
 	// ProjectServiceName means use service name with servicegroup id when create k8s service
 	ProjectServiceName string `json:"projectServiceName,omitempty"`
+	// K8s Container Snippet
+	K8SSnippet *diceyml.K8SSnippet `json:"k8sSnippet,omitempty"`
 
 	StatusDesc
 }

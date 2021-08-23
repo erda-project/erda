@@ -51,6 +51,13 @@ services:
         protocol: "DNS"
         l4_protocol: "UDP"
         default: true
+    k8s_snippet:
+      container:
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
     health_check:
       exec:
         cmd: "echo 1"
@@ -89,6 +96,35 @@ values:
   
 `
 
+var wrongSnippetYml = `version: 2.0
+services:
+  web:
+    ports:
+      - 8080
+      - port: 20880
+      - port: 1234
+        protocol: "UDP"
+      - port: 4321
+        protocol: "HTTP"
+      - port: 53
+        protocol: "DNS"
+        l4_protocol: "UDP"
+        default: true
+    deployments:
+      replicas: 1
+    resources:
+      cpu: 0.1
+      mem: 512
+    k8s_snippet:
+      container:
+        name: abc
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+`
+
 func TestDiceYmlObj(t *testing.T) {
 	d, err := New([]byte(yml), true)
 	assert.Nil(t, err)
@@ -104,6 +140,17 @@ func TestDiceYmlObj(t *testing.T) {
 	assert.Equal(t, "DNS", string(obj.Services["web"].Ports[4].Protocol))
 	assert.Equal(t, "UDP", string(obj.Services["web"].Ports[4].L4Protocol))
 	assert.Equal(t, true, obj.Services["web"].Ports[4].Default)
+}
+
+func TestDicalYmlK8SSnippet(t *testing.T) {
+	d, err := New([]byte(yml), true)
+	assert.Nil(t, err)
+	assert.NotNil(t, d.obj.Services["web"].K8SSnippet)
+	assert.NotNil(t, d.obj.Services["web"].K8SSnippet.Container.SecurityContext)
+	assert.Equal(t, true, *d.obj.Services["web"].K8SSnippet.Container.SecurityContext.Privileged)
+	assert.EqualValues(t, "Always", d.obj.Services["web"].K8SSnippet.Container.ImagePullPolicy)
+	_, err = New([]byte(wrongSnippetYml), true)
+	assert.NotNil(t, err)
 }
 
 func TestDiceYmlFieldnameValidate(t *testing.T) {

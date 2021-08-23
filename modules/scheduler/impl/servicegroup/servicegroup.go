@@ -285,6 +285,7 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 			InitContainer:    service.Init,
 			MeshEnable:       service.MeshEnable,
 			TrafficSecurity:  service.TrafficSecurity,
+			K8SSnippet:       service.K8SSnippet,
 		}
 		sgServices = append(sgServices, sgService)
 	}
