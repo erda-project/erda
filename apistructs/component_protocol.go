@@ -222,7 +222,7 @@ const (
 	// cmp bashboard table
 	CMPDashboardChangePageNoOperationKey   OperationKey = "changePageNo"
 	CMPDashboardChangePageSizeOperationKey OperationKey = "changePageSize"
-	CMPDashboardSortByColumnOperationKey   OperationKey = "sort"
+	CMPDashboardSortByColumnOperationKey   OperationKey = "changeSort"
 
 	// cmp bashboard clusterFilter
 	CMPDashboardFilterOperationKey OperationKey = "filter"

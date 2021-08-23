@@ -40,7 +40,7 @@ type Endpoints struct {
 	nodes           *nodes.Nodes
 	labels          *labels.Labels
 	clusters        *clusters.Clusters
-	metrics        *metrics.Metric
+	metrics         *metrics.Metric
 	orgResource     *org_resource.OrgResource
 	Mns             *mns.Mns
 	Ess             *ess.Ess
@@ -69,8 +69,8 @@ func New(ctx context.Context, db *dbclient.DBClient, js jsonstore.JsonStore, cac
 	e.Addons = addons.New(db, e.bdl)
 	e.JS = js
 	e.CachedJS = cachedJS
+	e.metrics = ctx.Value("metrics").(*metrics.Metric)
 	e.SteveAggregator = steve.NewAggregator(ctx, e.bdl)
-
 	return e
 }
 

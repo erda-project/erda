@@ -114,6 +114,8 @@ const (
 	K8SReplicaSet  K8SResType = "apps.replicasets"
 	K8SDaemonSet   K8SResType = "apps.daemonsets"
 	K8SStatefulSet K8SResType = "apps.statefulsets"
+	K8SJOB        K8SResType = "batch.cronjobs"
+	K8SCRONJOB    K8SResType = "batch.jobs"
 	K8SEvent       K8SResType = "events"
 )
 

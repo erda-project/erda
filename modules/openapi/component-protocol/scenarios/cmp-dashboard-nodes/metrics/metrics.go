@@ -16,6 +16,7 @@ package metrics
 import (
 	"context"
 
+<<<<<<< Updated upstream:modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/metrics/metrics.go
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 )
@@ -23,6 +24,15 @@ import (
 type MetricsImpl struct {
 	Metric pb.MetricServiceServer
 	ctx context.Context
+=======
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
+	"github.com/erda-project/erda/pkg/common"
+)
+
+type Log struct {
+	ctx   context.Context
+	Log   pb.LogQueryServiceServer
+>>>>>>> Stashed changes:modules/cmp/log/log.go
 }
 
 type provider struct {

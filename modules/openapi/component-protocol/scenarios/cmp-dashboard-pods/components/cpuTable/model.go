@@ -11,22 +11,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package memTable
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
-	_ "github.com/erda-project/erda/modules/cmp"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/registercenter"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-pods/common/table"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/cmp/cmp.yaml",
-	})
+type PodCpuTable struct {
+	table.Table
 }

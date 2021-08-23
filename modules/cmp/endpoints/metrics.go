@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -28,14 +30,19 @@ var permissionFailErr = fmt.Errorf("failed to get User-ID or Org-ID from request
 // MetricsQuery handle query request
 func (e *Endpoints) MetricsQuery(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
-		req               apistructs.MetricsRequest
-		err               error
+		req apistructs.MetricsRequest
+		err error
 	)
 
 	// get identity info
 	i, resp := e.GetIdentity(r)
 	if resp != nil {
-		return nil, permissionFailErr
+		return mkResponse(apistructs.RmNodesResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: permissionFailErr.Error()},
+			},
+		})
 	}
 	// permission check
 	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.GetAction)
@@ -43,12 +50,23 @@ func (e *Endpoints) MetricsQuery(ctx context.Context, r *http.Request, vars map[
 		return nil, permissionFailErr
 	}
 	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
-		err = fmt.Errorf("failed to unmarshal request: %+v", err)
-		return nil, err
+		logrus.Errorf("failed to unmarshal request: %+v", err)
+		return mkResponse(apistructs.RmNodesResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
 	}
-	res, err := e.metrics.DoQuery(ctx,req)
+	logrus.Infof("query metrics :%s %s %v", req.ClusterName, req.ResourceType, req.HostName)
+	res, err := e.metrics.DoQuery(ctx, req)
 	if err != nil {
-		return nil, err
+		return mkResponse(apistructs.RmNodesResponse{
+			Header: apistructs.Header{
+				Success: false,
+				Error:   apistructs.ErrorResponse{Msg: err.Error()},
+			},
+		})
 	}
 	return mkResponse(res)
 }

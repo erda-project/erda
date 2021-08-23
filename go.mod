@@ -27,6 +27,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60

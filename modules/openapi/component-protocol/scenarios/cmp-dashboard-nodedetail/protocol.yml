@@ -1,0 +1,15 @@
+scenario: cmp-Dashboard
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - header
+      - statusTitle
+      - statusBadge
+      - infoTitle
+      - infoDetail
+      - infoMapTable
+    header:
+      - nodeTitle
+      - nodeStatus

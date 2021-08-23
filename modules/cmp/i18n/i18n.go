@@ -286,8 +286,8 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "Total", "共")
 
 	message.SetString(language.SimplifiedChinese, "IndependentNaming", "独立命名空间")
-	message.SetString(language.SimplifiedChinese, "Tcp Endpoint", "TCP 协议客户端接入点")
-	message.SetString(language.SimplifiedChinese, "Http Endpoint", "HTTP 协议客户端接入点")
+	message.SetString(language.SimplifiedChinese, "TCP Endpoint", "TCP 协议客户端接入点")
+	message.SetString(language.SimplifiedChinese, "HTTP Endpoint", "HTTP 协议客户端接入点")
 	message.SetString(language.SimplifiedChinese, "Private Host", "内网连接地址")
 	message.SetString(language.SimplifiedChinese, "Public Host", "公网连接地址")
 	message.SetString(language.SimplifiedChinese, "true", "是")

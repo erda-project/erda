@@ -17,25 +17,37 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common/filter"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+var (
+	CpuUsageSelectStatement = `SELECT cpu_cores_usage ,n_cpus ,cpu_usage_active FROM status_page 
+	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname
+	ORDER BY TIMESTAMP DESC`
+	MemoryUsageSelectStatement = `SELECT mem_used , mem_total , mem_used_percent FROM status_page 
+	WHERE cluster_name::tag=$cluster_name && hostname::tag=$hostname
+	ORDER BY TIMESTAMP DESC`
+)
 
 type Table struct {
 	TableInterface
 	Ctx        context.Context
+	Metric     *metrics.Metrics
 	CtxBdl     protocol.ContextBundle
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
@@ -43,9 +55,10 @@ type Table struct {
 	State      State                  `json:"state"`
 }
 
-type MetricsImpl struct {
-	Metric pb.MetricServiceServer
-	ctx    context.Context
+func (t *Table) Init(ctx servicehub.Context) error { return nil }
+
+func (t *Table) Run(ctx context.Context) error {
+	return nil
 }
 
 type TableInterface interface {
@@ -139,14 +152,25 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 		resp *pb.QueryWithInfluxFormatResponse
 		err  error
 	)
-	req := apistructs.MetricsRequest{
-		ClusterName:  node.ClusterName,
-		HostName:     []string{node.Name},
-		ResourceType: resName,
-		OrgID:        t.CtxBdl.Identity.OrgID,
-		UserID:       t.CtxBdl.Identity.UserID,
+	start := time.Now().Nanosecond()
+	req := &pb.QueryWithInfluxFormatRequest{
+		Start:   strconv.Itoa(start),
+		End:     strconv.Itoa(start),
+		Filters: nil,
+		Options: nil,
+		Params: map[string]*structpb.Value{
+			"cluster_name": structpb.NewStringValue(node.ClusterName),
+			"hostname":     structpb.NewStringValue(node.Name),
+		},
 	}
-
+	switch resName {
+	case v1.ResourceCPU:
+		req.Statement = CpuUsageSelectStatement
+	case v1.ResourceMemory:
+		req.Statement = MemoryUsageSelectStatement
+	default:
+		return nil, common.ResourceNotFoundErr
+	}
 	ctx, cancel := context.WithDeadline(t.Ctx, time.Now().Add(3*time.Second))
 	defer cancel()
 	select {
@@ -154,7 +178,7 @@ func (t *Table) GetUsageValue(node *v1.Node, resName v1.ResourceName) (*Distribu
 		logrus.Warningf("metrics service is busy")
 		break
 	default:
-		if resp, err = t.CtxBdl.Bdl.GetMetrics(req); err != nil {
+		if resp, err = t.Metric.Query(req, string(resName)); err != nil {
 			return nil, err
 		}
 	}
@@ -395,5 +419,4 @@ type State struct {
 	Namespace       string                 `json:"namespace,omitempty"`
 	SortColumnName  string                 `json:"sorter,omitempty"`
 	Asc             bool                   `json:"asc,omitempty"`
-	FilterValues          filter.Values          `json:"values"`
 }

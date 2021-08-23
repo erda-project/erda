@@ -1,0 +1,14 @@
+scenario: cmp-Dashboard
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - tableTabs
+      - filter
+      - podTitle
+      - podDistribution
+      - workflowTable
+    tableTabs:
+      - cpuTable
+      - workflowTable

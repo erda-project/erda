@@ -11,22 +11,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package podDistribution
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
-	_ "github.com/erda-project/erda/modules/cmp"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/registercenter"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-pods/common/table"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/cmp/cmp.yaml",
-	})
+type PodDistribution struct {
+	CtxBdl protocol.ContextBundle
+	Type   string `json:"type"`
+	Data   map[string]interface{} `json:"data"`
+	State  table.State `json:"state"`
+}
+
+type Data struct {
+	Value int    `json:"value"`
+	Label string `json:"label"`
+	Color string `json:"color"`
+	Tip   string `json:"tip"`
 }
