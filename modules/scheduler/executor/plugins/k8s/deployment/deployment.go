@@ -61,14 +61,32 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	}
 }
 
+type PatchStruct struct {
+	Spec DeploymentSpec `json:"spec"`
+}
+
+type DeploymentSpec struct {
+	Template PodTemplateSpec `json:"template"`
+}
+
+type PodTemplateSpec struct {
+	Spec PodSpec `json:"spec"`
+}
+
+type PodSpec struct {
+	Containers []v1.Container `json:"containers"`
+}
+
 // Patch patchs the k8s deployment object
 func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet v1.Container) error {
 	snippet.Name = containerName
-	spec := appsv1.DeploymentSpec{
-		Template: v1.PodTemplateSpec{
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
-					snippet,
+	spec := PatchStruct{
+		Spec: DeploymentSpec{
+			Template: PodTemplateSpec{
+				Spec: PodSpec{
+					Containers: []v1.Container{
+						snippet,
+					},
 				},
 			},
 		},
