@@ -110,4 +110,4 @@ If you have any questions, please feel free to contact us.
 
 ## License
 
-Erda is under the AGPL 3.0 license. See the [LICENSE](LICENSE) file for details.
+Erda is under the Apache 2.0 license. See the [LICENSE](LICENSE) file for details.
