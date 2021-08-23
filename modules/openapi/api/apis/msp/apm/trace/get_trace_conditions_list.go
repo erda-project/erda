@@ -15,7 +15,7 @@ package trace
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var GET_TRACE_CONDISTIONS = apis.ApiSpec{
+var GET_TRACE_CONDITIONS_LIST = apis.ApiSpec{
 	Path:        "/api/msp/apm/trace/conditions",
 	BackendPath: "/api/msp/apm/trace/conditions",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
@@ -23,5 +23,5 @@ var GET_TRACE_CONDISTIONS = apis.ApiSpec{
 	Method:      "GET",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "Query apm trace Conditions",
+	Doc:         "Query apm traces Conditions.",
 }
