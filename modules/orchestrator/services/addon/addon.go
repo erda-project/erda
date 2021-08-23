@@ -1411,7 +1411,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 		return err
 	}
 	if count > 0 {
-		return errors.New("addon is being referenced,can't delete")
+		return errors.New("addon is being referenced, can't delete")
 	}
 
 	routingInstance, err := a.db.GetInstanceRouting(routingInstanceID)
