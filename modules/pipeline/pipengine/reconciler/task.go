@@ -22,7 +22,14 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun/taskop"
+	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/pkg/loop"
+)
+
+var (
+	defaultRetryDeclineRatio    = 2
+	defaultRetryIntervalSec     = 30
+	defaultRetryDeclineLimitSec = 600
 )
 
 func reconcileTask(tr *taskrun.TaskRun) error {
@@ -41,10 +48,10 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "end do task aop")
 
 	// 系统异常时重试3次
-	const abnormalErrMaxRetryTimes = 3
+	//const abnormalErrMaxRetryTimes = 3
 
 	var platformErrRetryTimes int
-	var sessionNotFoundTimes int
+	//var sessionNotFoundTimes int
 
 	for {
 		// stop reconciler task if pipeline stopping reconcile
@@ -83,24 +90,15 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 			// Do 没有 err 才是正常的，即使失败也是 status=Failed，没有 error
 			abnormalErr := tr.Do(taskOp)
 			if abnormalErr != nil {
-				rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry", taskOp.Op(), abnormalErr)
-				// if abnormalErr like failed to find Session for client xxx, don`t add platformErrRetryTimes
-				// continue retry until find session
-				if tr.IsSessionNotFound(abnormalErr) {
-					sessionNotFoundTimes++
-					rlog.TWarnf(tr.P.ID, tr.Task.ID, "continue retry task, err: %v, session not found times: %d", abnormalErr, sessionNotFoundTimes)
-					resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
-					continue
+				if errorsx.IsContainUserError(abnormalErr) {
+					rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, user abnormalErr: %v, don't need retry", taskOp.Op(), abnormalErr)
+					return abnormalErr
 				}
-				// 小于异常重试次数，继续重试
-				if platformErrRetryTimes < abnormalErrMaxRetryTimes {
-					resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
-					platformErrRetryTimes++
-					continue
-				}
-				// 大于重试次数仍有异常，返回异常
-				rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, reach max retry times, return abnormalErr", taskOp.Op(), abnormalErr)
-				return abnormalErr
+				// don't contain user error mean err is platform error, should retry always
+				rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry, retry times: %d", taskOp.Op(), abnormalErr, platformErrRetryTimes)
+				resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
+				platformErrRetryTimes++
+				continue
 			}
 			// 没有异常，执行后续逻辑
 		}
@@ -123,6 +121,12 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 			loop.WithDeclineRatio(strategy.DeclineRatio),
 			loop.WithDeclineLimit(time.Second*time.Duration(strategy.DeclineLimitSec)),
 		).CalculateInterval(uint64(abnormalErrRetryTimes))
+	} else {
+		interval = loop.New(
+			loop.WithInterval(time.Second*time.Duration(defaultRetryIntervalSec)),
+			loop.WithDeclineRatio(float64(defaultRetryDeclineRatio)),
+			loop.WithDeclineLimit(time.Second*time.Duration(defaultRetryDeclineLimitSec)),
+		).CalculateInterval(uint64(abnormalErrRetryTimes))
 	}
 	if interval < defaultInterval {
 		interval = defaultInterval
@@ -131,7 +135,5 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "sleep %s before retry abnormal retry", interval.String())
 	time.Sleep(interval)
 
-	// 更新状态
-	tr.Task.Status = apistructs.PipelineStatusAnalyzed
 	tr.Update()
 }

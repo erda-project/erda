@@ -95,6 +95,8 @@ type PipelineTaskExtra struct {
 	LoopOptions *apistructs.PipelineTaskLoopOptions `json:"loopOptions,omitempty"` // 开始执行后保证不为空
 
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
+
+	EncryptSecretKeys []string `json:"encryptSecretKeys"` // the encrypt envs' key list
 }
 
 type FlinkSparkConf struct {
@@ -185,6 +187,7 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 	if pt == nil {
 		return nil
 	}
+	pt.Result.ConvertErrors()
 	task := apistructs.PipelineTaskDTO{
 		ID:         pt.ID,
 		PipelineID: pt.PipelineID,

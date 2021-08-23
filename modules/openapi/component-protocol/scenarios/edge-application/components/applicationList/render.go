@@ -20,8 +20,9 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 type EdgeAPPItem struct {
@@ -42,7 +43,7 @@ func (c ComponentList) Render(ctx context.Context, component *apistructs.Compone
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (c ComponentList) Render(ctx context.Context, component *apistructs.Compone
 
 	c.component.State["keyValueListVisible"] = isKeyValueListVisible
 	c.component.State["keyValueListTitleVisible"] = isKeyValueListVisible
-	c.component.Props = getProps()
+	c.component.Props = getProps(i18nLocale)
 	c.component.Operations = getOperations()
 
 	return nil
@@ -112,27 +113,27 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps() apistructs.EdgeTableProps {
+func getProps(lr *i18r.LocaleResource) apistructs.EdgeTableProps {
 	return apistructs.EdgeTableProps{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",
 		Columns: []apistructs.EdgeColumns{
-			{Title: "应用名称", DataIndex: "appName", Width: 150},
-			{Title: "所属集群", DataIndex: "cluster", Width: 150},
-			{Title: "部署来源", DataIndex: "deployResource", Width: 150},
-			{Title: "操作", DataIndex: "operate", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyApplacationName), DataIndex: "appName", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyClusterBelonging), DataIndex: "cluster", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyDeploySource), DataIndex: "deployResource", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyOperator), DataIndex: "operate", Width: 150},
 		},
 	}
 }
 
-func getAPPItemOperate(appName, deployResource string, id int64) apistructs.EdgeItemOperations {
+func getAPPItemOperate(appName, deployResource string, id int64, lr *i18r.LocaleResource) apistructs.EdgeItemOperations {
 	return apistructs.EdgeItemOperations{
 		RenderType: "tableOperation",
 		Operations: map[string]apistructs.EdgeItemOperation{
 			apistructs.EdgeOperationViewDetail: {
 				ShowIndex: 1,
 				Key:       apistructs.EdgeOperationViewDetail,
-				Text:      "详情",
+				Text:      lr.Get(i18n.I18nKeyDetail),
 				Reload:    true,
 				Meta:      map[string]interface{}{"id": id},
 				Command: apistructs.EdgeJumpCommand{
@@ -150,7 +151,7 @@ func getAPPItemOperate(appName, deployResource string, id int64) apistructs.Edge
 			apistructs.EdgeOperationUpdate: {
 				ShowIndex: 2,
 				Key:       apistructs.EdgeOperationUpdate,
-				Text:      "编辑",
+				Text:      lr.Get(i18n.I18nKeyEdit),
 				Reload:    true,
 				Meta:      map[string]interface{}{"id": id},
 				Command: apistructs.EdgeJumpCommand{
@@ -168,10 +169,10 @@ func getAPPItemOperate(appName, deployResource string, id int64) apistructs.Edge
 			apistructs.EdgeOperationDelete: {
 				ShowIndex:   3,
 				Key:         apistructs.EdgeOperationDelete,
-				Text:        "删除",
-				Confirm:     "是否确认删除",
+				Text:        lr.Get(i18n.I18nKeyDelete),
+				Confirm:     lr.Get(i18n.I18nKeyDeleteConfirm),
 				Disabled:    false,
-				DisabledTip: "无法删除",
+				DisabledTip: lr.Get(i18n.I18nKeyNotDelete),
 				Reload:      true,
 				Meta:        map[string]interface{}{"id": id},
 			},

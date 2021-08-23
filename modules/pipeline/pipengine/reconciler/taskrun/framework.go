@@ -16,7 +16,6 @@ package taskrun
 import (
 	"fmt"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,12 +25,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
-)
-
-const (
-	sessionNotFoundError = "failed to find Session"
 )
 
 func (tr *TaskRun) Do(itr TaskOp) error {
@@ -101,6 +97,8 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		errs []string
 		// resultErrMsg 仅记录到 task.result.errors，不表示任务异常
 		resultErrMsg []string
+		oldStatus    = tr.Task.Status
+		startTime    = time.Now()
 	)
 	defer func() {
 		if r := recover(); r != nil {
@@ -109,7 +107,14 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		}
 		resultErrMsg = append(resultErrMsg, errs...)
 		if len(resultErrMsg) > 0 {
-			tr.Task.Result.Errors = append(tr.Task.Result.Errors, apistructs.ErrorResponse{Msg: strutil.Join(resultErrMsg, "\n", true)})
+			tr.Task.Result.Errors = tr.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: strutil.Join(resultErrMsg, "\n", true),
+				Ctx: apistructs.PipelineTaskErrCtx{
+					StartTime: startTime,
+					EndTime:   time.Now(),
+					Count:     1,
+				},
+			})
 		}
 
 		// loop
@@ -118,13 +123,19 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 			errs = append(errs, fmt.Sprintf("%v", err))
 		}
 
+		if len(errs) > 0 {
+			result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
+
+		}
+
+		// if result only contain platform error, task will retry, so don't set status changed
+		if result != nil && !errorsx.IsContainUserError(result) {
+			tr.Task.Status = oldStatus
+		}
+
 		// if we invoke `tr.fetchLatestTask` method here before `update`,
 		// we will lost changes made by `WhenXXX` methods.
 		tr.Update()
-
-		if len(errs) > 0 {
-			result = errors.Errorf("failed to %s task, err: %s", itr.Op(), strutil.Join(errs, "\n", true))
-		}
 	}()
 
 	// timeout cancel might be nil
@@ -150,8 +161,9 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 
 	case err := <-o.ErrCh:
 		logrus.Errorf("reconciler: pipelineID: %d, task %q %s received error (%v)", tr.P.ID, tr.Task.Name, itr.Op(), err)
-		if tr.IsSessionNotFound(err) {
-			errs = append(errs, "Failed to find Session")
+		if errorsx.IsNetworkError(err) {
+			// convert network error
+			errs = append(errs, fmt.Sprintf("Network issue for cluster: %s\nDetail: %v", tr.Task.Extra.ClusterName, err))
 		} else {
 			errs = append(errs, err.Error())
 		}
@@ -193,8 +205,4 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 func (tr *TaskRun) LogStep(taskOp Op, step string) {
 	logrus.Debugf("reconciler: pipelineID: %d, taskID: %d, taskName: %s, taskOp: %s, step: %s",
 		tr.P.ID, tr.Task.ID, tr.Task.Name, string(taskOp), step)
-}
-
-func (tr *TaskRun) IsSessionNotFound(err error) bool {
-	return strings.Contains(err.Error(), sessionNotFoundError)
 }

@@ -14,12 +14,25 @@
 package siteadddrawer
 
 import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 type ComponentAddAppDrawer struct {
+	ctxBundle protocol.ContextBundle
+	component *apistructs.Component
 }
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentAddAppDrawer{}
+}
+
+func (c *ComponentAddAppDrawer) SetBundle(ctxBundle protocol.ContextBundle) error {
+	if ctxBundle.Bdl == nil {
+		return fmt.Errorf("invalie bundle")
+	}
+	c.ctxBundle = ctxBundle
+	return nil
 }

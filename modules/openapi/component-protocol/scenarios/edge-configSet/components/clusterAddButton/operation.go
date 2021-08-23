@@ -13,11 +13,25 @@
 
 package clusteraddbutton
 
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+)
 
 type ComponentConfigsetAddButton struct {
+	ctxBundle protocol.ContextBundle
+	component *apistructs.Component
 }
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentConfigsetAddButton{}
+}
+func (c *ComponentConfigsetAddButton) SetBundle(ctxBundle protocol.ContextBundle) error {
+	if ctxBundle.Bdl == nil {
+		return fmt.Errorf("invalie bundle")
+	}
+	c.ctxBundle = ctxBundle
+	return nil
 }

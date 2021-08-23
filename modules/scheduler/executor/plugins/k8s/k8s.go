@@ -797,7 +797,7 @@ func (k *Kubernetes) updateOneByOne(sg *apistructs.ServiceGroup) error {
 				if err != nil {
 					return err
 				}
-				if err = k.putDeployment(desiredDeployment); err != nil {
+				if err = k.putDeployment(desiredDeployment, &svc); err != nil {
 					logrus.Debugf("failed to update deployment in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}

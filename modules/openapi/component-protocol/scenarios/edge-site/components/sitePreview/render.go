@@ -18,8 +18,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 func (c *ComponentSitePreview) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -46,12 +47,12 @@ func (c *ComponentSitePreview) Render(ctx context.Context, component *apistructs
 	return nil
 }
 
-func getProps() map[string]interface{} {
+func getProps(lr *i18r.LocaleResource) map[string]interface{} {
 	return map[string]interface{}{
 		"render": []PropsRender{
-			{Type: "Desc", DataIndex: "siteName", Props: map[string]interface{}{"title": "站点"}},
-			{Type: "Desc", DataIndex: "firstStep", Props: map[string]interface{}{"title": "步骤一"}},
-			{Type: "Desc", DataIndex: "secondStep", Props: map[string]interface{}{"title": "步骤二"}},
+			{Type: "Desc", DataIndex: "siteName", Props: map[string]interface{}{"title": lr.Get(i18n.I18nKeySite)}},
+			{Type: "Desc", DataIndex: "firstStep", Props: map[string]interface{}{"title": lr.Get(i18n.I18nKeyStep1)}},
+			{Type: "Desc", DataIndex: "secondStep", Props: map[string]interface{}{"title": lr.Get(i18n.I18nKeyStep2)}},
 			{Type: "FileEditor", DataIndex: "operationCode", Props: map[string]interface{}{"actions": map[string]interface{}{"copy": true}}},
 		},
 	}

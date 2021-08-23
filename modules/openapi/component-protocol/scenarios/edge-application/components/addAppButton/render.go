@@ -17,9 +17,17 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 func (c ComponentAddAppButton) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if err := c.SetBundle(bdl); err != nil {
+		return err
+	}
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if component.State == nil {
 		component.State = make(map[string]interface{})
 	}
@@ -33,16 +41,15 @@ func (c ComponentAddAppButton) Render(ctx context.Context, component *apistructs
 		component.State["operationType"] = event.Operation
 	}
 
-	component.Props = getProps()
+	component.Props = getProps(i18nLocale)
 	component.Operations = getOperations()
-
 	return nil
 }
 
-func getProps() apistructs.EdgeButtonProps {
+func getProps(lr *i18r.LocaleResource) apistructs.EdgeButtonProps {
 	return apistructs.EdgeButtonProps{
 		Type: "primary",
-		Text: "发布应用",
+		Text: lr.Get(i18n.I18nKeyCreateApplication),
 	}
 }
 
