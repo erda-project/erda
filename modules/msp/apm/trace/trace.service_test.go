@@ -141,6 +141,63 @@ func Test_traceService_GetTraces(t *testing.T) {
 	}
 }
 
+func Test_traceService_GetTraceQueryConditions(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetTraceQueryConditionsRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetTraceQueryConditionsResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTraceQueryConditionsRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTraceQueryConditionsResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.GetTraceQueryConditions(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.GetTraceQueryConditions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.GetTraceQueryConditions() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
 func Test_traceService_GetTraceDebugHistories(t *testing.T) {
 	type args struct {
 		ctx context.Context

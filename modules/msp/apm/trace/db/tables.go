@@ -21,6 +21,7 @@ const (
 
 type TraceRequestHistory struct {
 	RequestId      string    `gorm:"column:request_id" db:"request_id" json:"request_id" form:"request_id"`
+	Name           string    `gorm:"column:name" db:"name" json:"name" form:"name"`
 	TerminusKey    string    `gorm:"column:terminus_key" db:"terminus_key" json:"terminus_key" form:"terminus_key"`
 	Url            string    `gorm:"column:url" db:"url" json:"url" form:"url"`
 	QueryString    string    `gorm:"column:query_string" db:"query_string" json:"query_string" form:"query_string"`
