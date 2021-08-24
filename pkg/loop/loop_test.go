@@ -14,25 +14,27 @@
 
 package loop
 
-//import (
-//	"errors"
-//	"fmt"
-//	"testing"
-//	"time"
-//
-//	"github.com/stretchr/testify/assert"
-//)
-//
-//func TestLoopMaxTimes(t *testing.T) {
-//	count := 0
-//	l := New(WithMaxTimes(20))
-//	l.Do(func() (bool, error) {
-//		count += 1
-//		return false, nil
-//	})
-//	assert.Equal(t, 20, count)
-//}
-//
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLoopMaxTimes(t *testing.T) {
+	count := 0
+	l := New(WithMaxTimes(20))
+	l.interval = 1 * time.Microsecond
+	l.Do(func() (bool, error) {
+		count += 1
+		return false, nil
+	})
+	assert.Equal(t, 20, count)
+}
+
 //func TestLoopInterval(t *testing.T) {
 //	l := New(WithMaxTimes(10), WithInterval(time.Second*2))
 //
@@ -56,3 +58,28 @@ package loop
 //		return false, errors.New("effect")
 //	})
 //}
+
+func TestWithContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	l := New(WithContext(ctx), WithMaxTimes(10))
+	executed := 0
+	l.Do(func() (bool, error) {
+		executed += 1
+		return false, errors.New("error")
+	})
+
+	assert := require.New(t)
+	assert.Equal(0, executed)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Millisecond)
+	defer cancel()
+
+	l = New(WithContext(ctx), WithInterval(10*time.Millisecond), WithMaxTimes(3))
+	l.Do(func() (bool, error) {
+		executed += 1
+		return false, errors.New("error")
+	})
+
+	assert.Equal(2, executed)
+}
