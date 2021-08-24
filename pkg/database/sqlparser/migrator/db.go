@@ -32,18 +32,26 @@ func (mig *Migrator) DB() *gorm.DB {
 	}
 
 	var (
-		err  error
-		dsn  = mig.MySQLParameters().Format(false)
-		stmt = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+		err         error
+		timeout     = time.Second * 360
+		dsn         = mig.MySQLParameters().Format(false)
+		showSchemas = "SHOW SCHEMAS LIKE ?"
+		stmt        = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 	)
-	open, err := sql.Open("mysql", dsn)
-	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
-	}
-	defer open.Close()
 
-	if _, err = open.Exec(stmt); err != nil {
-		logrus.WithError(err).Fatalf("failed to Exec stmt %s", stmt)
+	// initF shows schemas like the database, if the database is not exists, create it
+	initF := func(db *sql.DB) error {
+		row := db.QueryRow(showSchemas, mig.MySQLParameters().Database)
+		if row != nil {
+			return nil
+		}
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err = mig.initConnToDB(dsn, timeout, initF); err != nil {
+		logrus.WithError(err).Fatalln("failed to init connection to MySQL Server")
 	}
 
 	dsn = mig.MySQLParameters().Format(true)
@@ -81,46 +89,25 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	}
 
 	var (
-		open           *sql.DB
 		err            error
 		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 		dropDatabase   = "DROP SCHEMA IF EXISTS " + mig.sandboxSettings.Name
-	)
-	defer func() {
-		if open != nil {
-			_ = open.Close()
-		}
-	}()
-
-	var (
-		timeout = time.Second * 150
-		dsn     = mig.SandboxParameters().Format(false)
+		timeout        = time.Second * 150
+		dsn            = mig.SandboxParameters().Format(false)
 	)
 
-	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
-		waiting := timeout.Seconds() - time.Since(now).Seconds()
-		open, err = sql.Open("mysql", dsn)
-		if err != nil {
-			logrus.WithError(err).WithField("DSN", dsn).
-				Warnf("failed to connect to sandbox, may it is not working yet, wait it for %.1f seconds", waiting)
-			continue
+	initF := func(db *sql.DB) error {
+		if _, err := db.Exec(dropDatabase); err != nil {
+			return err
 		}
-
-		if _, err = open.Exec(dropDatabase); err != nil {
-			logrus.WithError(err).WithField("SQL", dropDatabase).
-				Warnf("failed to Exec, may the sandbox it not working yet, wait it for %.1f seconds", waiting)
-			continue
+		if _, err := db.Exec(createDatabase); err != nil {
+			return err
 		}
-
-		if _, err = open.Exec(createDatabase); err != nil {
-			logrus.WithError(err).WithField("SQL", createDatabase).Fatalln("failed to Exec")
-			continue
-		}
-
-		break
+		return nil
 	}
-	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial MySQL sandbox")
+	if err = mig.initConnToDB(dsn, timeout, initF); err != nil {
+		logrus.WithError(err).Fatalln("failed to init connection to the sandbox")
+		return nil
 	}
 
 	dsn = mig.SandboxParameters().Format(true)
@@ -138,4 +125,35 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	}
 
 	return mig.sandbox
+}
+
+func (mig *Migrator) initConnToDB(dsn string, timeout time.Duration, initF func(db *sql.DB) error) (err error) {
+	var (
+		open *sql.DB
+	)
+	defer func() {
+		if open != nil {
+			_ = open.Close()
+		}
+	}()
+
+	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
+		open, err = sql.Open("mysql", dsn)
+		if err != nil {
+			logrus.WithError(err).WithField("DSN", dsn).WithField("left time", timeout.Seconds()-time.Since(now).Seconds()).
+				Warnln("failed to connect to the MySQL Server, it will try again in 3 seconds")
+			continue
+		}
+		if err := open.Ping(); err != nil {
+			continue
+		}
+		if err = initF(open); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial the MySQL Server")
+	return err
 }
