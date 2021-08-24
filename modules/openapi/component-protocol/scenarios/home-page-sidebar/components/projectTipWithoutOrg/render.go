@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	
+
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
