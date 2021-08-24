@@ -217,7 +217,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State, bdl prot
 	if fixedIssueType == apistructs.IssueTypeBug.String() {
 		conditionProps = append(conditionProps, filter.PropCondition{
 			Key:         PropConditionKeyClosed,
-			Label:       bdl.I18nPrinter.Sprintf("Closed at"),
+			Label:       bdl.I18nPrinter.Sprintf("Closed At"),
 			EmptyText:   "",
 			Fixed:       false,
 			ShowIndex:   0,
