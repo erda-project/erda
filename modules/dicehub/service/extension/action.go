@@ -118,7 +118,7 @@ func (s *Extension) RunExtensionsPush(dir string, extensionVersionMap, extension
 		}
 	}
 	if !needCreate {
-		return "", "", errors.New("extension is existed")
+		return specData.Name, specData.Version, errors.New("extension is existed")
 	}
 
 	var request = &apistructs.ExtensionVersionCreateRequest{
@@ -136,7 +136,7 @@ func (s *Extension) RunExtensionsPush(dir string, extensionVersionMap, extension
 
 	_, err = s.CreateExtensionVersion(request)
 	if err != nil {
-		return "", "", err
+		return request.Name, request.Version, err
 	}
 
 	return request.Name, request.Version, err
@@ -209,7 +209,7 @@ func (repo *Repo) locate(dirname string, deep int) {
 
 	for _, cur := range infos {
 		// only find path /repoName/actions/actionsName
-		if deep == 1 && (cur.Name() != "actions" || !cur.IsDir()) {
+		if deep == 1 && cur.Name() != "actions" && cur.Name() != "addons" {
 			continue
 		}
 		repo.locate(filepath.Join(dirname, cur.Name()), deep+1)
