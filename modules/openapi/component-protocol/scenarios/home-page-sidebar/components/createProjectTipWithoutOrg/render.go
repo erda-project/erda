@@ -20,11 +20,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/home-page-sidebar/i18n"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type CreateProjectTipWithoutOrg struct {
@@ -76,7 +74,7 @@ func (p *CreateProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.C
 		"toJoinOrgDoc": map[string]interface{}{
 			"command": map[string]interface{}{
 				"key":     "gogo",
-				"target":  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E7%BB%84%E7%BB%87"),
+				"target":  "doc-org-intro",
 				"jumpOut": true,
 				"visible": visible,
 			},
