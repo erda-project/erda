@@ -76,7 +76,7 @@ func (p *CreateProjectTipWithoutOrg) Render(ctx context.Context, c *apistructs.C
 		"toJoinOrgDoc": map[string]interface{}{
 			"command": map[string]interface{}{
 				"key":     "gogo",
-				"target":  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E7%A7%9F%E6%88%B7-%E7%BB%84%E7%BB%87"),
+				"target":  "doc-org-intro",
 				"jumpOut": true,
 				"visible": visible,
 			},

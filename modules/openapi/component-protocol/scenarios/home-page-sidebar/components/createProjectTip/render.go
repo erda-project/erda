@@ -140,7 +140,7 @@ func (p *CreateProjectTip) Render(ctx context.Context, c *apistructs.Component, 
 		"createProjectDoc": {
 			Command: Command{
 				Key:     "goto",
-				Target:  strutil.Concat("https://docs.erda.cloud/", version.Version, "/manual/platform-design.html#%E9%A1%B9%E7%9B%AE%E5%92%8C%E5%BA%94%E7%94%A8"),
+				Target:  "doc-project-intro",
 				JumpOut: true,
 				Visible: visible,
 			},
