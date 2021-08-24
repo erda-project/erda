@@ -39,7 +39,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	config := map[string]string{}
 	config["MSP_ENV"] = tenant.ID
-	config["MSP_LOG_SERVICE"] = "els1.0"
+	config["MSP_LOG_ATTACH"] = "true"
 
 	params := map[string]string{
 		"tenantId":    tenant.ID,
