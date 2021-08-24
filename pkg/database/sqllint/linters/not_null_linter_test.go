@@ -1,21 +1,20 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package linters_test
 
 import (
-	"bufio"
-	"bytes"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
@@ -26,7 +25,15 @@ const notNullLinterTest = `
 create table some_table (
 	name varchar(101)
 );
+`
 
+const notNullLinterTest2 = `
+create table t (
+	name varchar(225) not null
+);
+`
+
+const notNullLinterTestAlterTable = `
 ALTER TABLE dice_api_access
     ADD default_sla_id BIGINT COMMENT 'default SLA id';
 `
@@ -34,7 +41,7 @@ ALTER TABLE dice_api_access
 func TestNewNotNullLinter(t *testing.T) {
 	linter := sqllint.New(linters.NewNotNullLinter)
 	if err := linter.Input([]byte(notNullLinterTest), "notNullLinterTest"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	errors := linter.Errors()
 	t.Logf("errors: %v", errors)
@@ -42,13 +49,23 @@ func TestNewNotNullLinter(t *testing.T) {
 		t.Fatal("failed")
 	}
 
-	scanner := bufio.NewScanner(bytes.NewBufferString(notNullLinterTest))
-	var firstLine string
-	if scanner.Scan() {
-		firstLine = scanner.Text()
+	linter = sqllint.New(linters.NewNotNullLinter)
+	if err := linter.Input([]byte(notNullLinterTestAlterTable), "notNullLinterTestAlterTable"); err != nil {
+		t.Fatal(err)
 	}
-	t.Logf("firstLine: %s", firstLine)
-	for scanner.Scan() {
-		t.Log(scanner.Text())
+	errors = linter.Errors()
+	t.Logf("errors: %v", errors)
+	if len(errors) > 0 {
+		t.Fatal("failed")
+	}
+
+	linter = sqllint.New(linters.NewNotNullLinter)
+	if err := linter.Input([]byte(notNullLinterTest2), "notNullLinterTest2"); err != nil {
+		t.Fatal(err)
+	}
+	errors = linter.Errors()
+	t.Logf("errors: %v", errors)
+	if len(errors) > 0 {
+		t.Fatal("failed")
 	}
 }

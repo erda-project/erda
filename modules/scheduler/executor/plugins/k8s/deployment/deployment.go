@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package deployment manipulates the k8s api of deployment object
 package deployment
@@ -25,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
@@ -58,6 +60,55 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 		d.addr = addr
 		d.client = client
 	}
+}
+
+type PatchStruct struct {
+	Spec DeploymentSpec `json:"spec"`
+}
+
+type DeploymentSpec struct {
+	Template PodTemplateSpec `json:"template"`
+}
+
+type PodTemplateSpec struct {
+	Spec PodSpec `json:"spec"`
+}
+
+type PodSpec struct {
+	Containers []v1.Container `json:"containers"`
+}
+
+// Patch patchs the k8s deployment object
+func (d *Deployment) Patch(namespace, deploymentName, containerName string, snippet v1.Container) error {
+	snippet.Name = containerName
+	spec := PatchStruct{
+		Spec: DeploymentSpec{
+			Template: PodTemplateSpec{
+				Spec: PodSpec{
+					Containers: []v1.Container{
+						snippet,
+					},
+				},
+			},
+		},
+	}
+	var b bytes.Buffer
+	resp, err := d.client.Patch(d.addr).
+		Path("/apis/apps/v1/namespaces/"+namespace+"/deployments/"+deploymentName).
+		JSONBody(spec).
+		Header("Content-Type", "application/strategic-merge-patch+json").
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return errors.Errorf("failed to patch deployment, name: %s, (%v)", deploymentName, err)
+	}
+
+	if !resp.IsOK() {
+		return errors.Errorf("failed to patch deployment, name: %s, statuscode: %v, body: %v",
+			deploymentName, resp.StatusCode(), b.String())
+	}
+	return nil
 }
 
 // Create creates a k8s deployment object

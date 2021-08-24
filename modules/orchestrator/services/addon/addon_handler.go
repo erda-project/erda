@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package addon
 
@@ -24,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
@@ -430,7 +432,12 @@ func (a *Addon) buildRealCreate(addonSpec *apistructs.AddonExtension, params *ap
 	} else {
 		params.ShareScope = addonSpec.ShareScopes[0]
 	}
-	params.Options["tenantGroup"] = md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
+	tenantGroup := md5V(params.ProjectID + "_" + params.Workspace + "_" + params.ClusterName + conf.TenantGroupKey())
+	tenantID, err := a.bdl.CreateMSPTenant(params.ProjectID, params.Workspace, pb.Type_DOP.String(), tenantGroup)
+	if err != nil {
+		return err
+	}
+	params.Options["tenantGroup"] = tenantID
 	return nil
 }
 
@@ -1155,16 +1162,8 @@ func (a *Addon) getRandomId() string {
 
 // CreateAddonProvider 请求addon provider，获取新的addon实例
 func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonName, providerDomain, userId string) (int, *apistructs.AddonProviderResponse, error) {
-	clusterInfo, err := a.bdl.QueryClusterInfo(conf.MainClusterName())
-	if err != nil {
-		logrus.Errorf("拉取cluster接口失败")
-		return 0, nil, err
-	}
-	// 若为 kubernetes 集群
-	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = discover.MSP()
-		}
+	if strings.Contains(providerDomain, "tmc.") {
+		providerDomain = discover.MSP()
 	}
 	req.Callback = "http://" + discover.Orchestrator()
 	logrus.Infof("start creating addon provider, url: %v, body: %+v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath, req)
@@ -1197,19 +1196,11 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 func (a *Addon) DeleteAddonProvider(req *apistructs.AddonProviderRequest, uuid, addonName, providerDomain string) (*apistructs.AddonProviderDeleteResponse, error) {
 	logrus.Infof("deleting addon provider request: %+v", req)
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(conf.MainClusterName())
-	if err != nil {
-		logrus.Errorf("拉取cluster接口失败")
-		return nil, err
-	}
-	if clusterInfo[apistructs.DICE_CLUSTER_TYPE] == apistructs.AddonMainClusterDefaultName {
-		if strings.Contains(providerDomain, "pandora") {
-			providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
-		}
-		if strings.Contains(providerDomain, "tmc") {
-			providerDomain = discover.MSP()
-			//providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
-		}
+	if strings.Contains(providerDomain, "pandora.") {
+		providerDomain = strings.Replace(providerDomain, "pandora.marathon.l4lb.thisdcos.directory:8050", "pandora.default.svc.cluster.local:8050", -1)
+	} else if strings.Contains(providerDomain, "tmc.") {
+		providerDomain = discover.MSP()
+		//providerDomain = strings.Replace(providerDomain, "tmc.marathon.l4lb.thisdcos.directory:8050", "tmc.default.svc.cluster.local:8050", -1)
 	}
 	logrus.Infof("start delete addon provider, url: %v", providerDomain+"/"+addonName+apistructs.AddonGetResourcePath+"/"+uuid)
 

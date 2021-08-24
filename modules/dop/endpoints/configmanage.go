@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -21,8 +22,11 @@ import (
 	"strconv"
 	"strings"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -68,12 +72,12 @@ func (e *Endpoints) createOrUpdateCmsNsConfigs(ctx context.Context, r *http.Requ
 	}
 
 	// bundle req
-	var req = apistructs.PipelineCmsUpdateConfigsRequest{}
-	var valueMap = make(map[string]apistructs.PipelineCmsConfigValue, len(oriReq.Configs))
+	var req = &cmspb.CmsNsConfigsUpdateRequest{Ns: namespace}
+	var valueMap = make(map[string]*cmspb.PipelineCmsConfigValue, len(oriReq.Configs))
 	for _, config := range oriReq.Configs {
-		var operations = &apistructs.PipelineCmsConfigOperations{}
-		switch apistructs.PipelineCmsConfigType(config.Type) {
-		case apistructs.PipelineCmsConfigTypeDiceFile:
+		var operations = &cmspb.PipelineCmsConfigOperations{}
+		switch config.Type {
+		case cms.ConfigTypeDiceFile:
 			operations.CanDelete = true
 			operations.CanDownload = true
 			operations.CanEdit = true
@@ -82,10 +86,10 @@ func (e *Endpoints) createOrUpdateCmsNsConfigs(ctx context.Context, r *http.Requ
 			operations.CanDownload = false
 			operations.CanEdit = true
 		}
-		valueMap[config.Key] = apistructs.PipelineCmsConfigValue{
+		valueMap[config.Key] = &cmspb.PipelineCmsConfigValue{
 			Value:       config.Value,
 			EncryptInDB: encrypt,
-			Type:        apistructs.PipelineCmsConfigType(config.Type),
+			Type:        config.Type,
 			Operations:  operations,
 			Comment:     config.Comment,
 		}
@@ -99,7 +103,7 @@ func (e *Endpoints) createOrUpdateCmsNsConfigs(ctx context.Context, r *http.Requ
 		return apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err = e.bdl.CreateOrUpdatePipelineCmsNsConfigs(namespace, req); err != nil {
+	if _, err = e.pipelineCms.UpdateCmsNsConfigs(utils.WithInternalClientContext(ctx), req); err != nil {
 		return apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err).ToResp(), nil
 	}
 
@@ -136,7 +140,8 @@ func (e *Endpoints) deleteCmsNsConfigs(ctx context.Context, r *http.Request, var
 	}
 
 	// bundle req
-	var req = apistructs.PipelineCmsDeleteConfigsRequest{
+	var req = &cmspb.CmsNsConfigsDeleteRequest{
+		Ns:         namespace,
 		DeleteKeys: []string{key},
 	}
 
@@ -146,7 +151,7 @@ func (e *Endpoints) deleteCmsNsConfigs(ctx context.Context, r *http.Request, var
 		return apierrors.ErrDeletePipelineCmsConfigs.InvalidParameter(err).ToResp(), nil
 	}
 
-	if err = e.bdl.DeletePipelineCmsNsConfigs(namespace, req); err != nil {
+	if _, err = e.pipelineCms.DeleteCmsNsConfigs(utils.WithInternalClientContext(ctx), req); err != nil {
 		return apierrors.ErrDeletePipelineCmsNs.InternalError(err).ToResp(), nil
 	}
 
@@ -181,7 +186,7 @@ func (e *Endpoints) getCmsNsConfigs(ctx context.Context, r *http.Request, vars m
 	}
 
 	// keys
-	var req = apistructs.PipelineCmsGetConfigsRequest{}
+	var req = &cmspb.CmsNsConfigsGetRequest{}
 	// get pipelineSource
 	req.PipelineSource, err = e.getPipelineSource(appID)
 	if err != nil {
@@ -191,19 +196,20 @@ func (e *Endpoints) getCmsNsConfigs(ctx context.Context, r *http.Request, vars m
 	var configsResp = make(map[string][]apistructs.EnvConfig, len(oriReq.NamespaceParams))
 	for _, ns := range oriReq.NamespaceParams {
 		var envConfig = make([]apistructs.EnvConfig, 0)
-		kvs, err := e.bdl.GetPipelineCmsNsConfigs(ns.NamespaceName, req)
+		req.Ns = ns.NamespaceName
+		kvs, err := e.pipelineCms.GetCmsNsConfigs(utils.WithInternalClientContext(ctx), req)
 		if err != nil {
 			return errorresp.ErrResp(err)
 		}
-		for _, k := range kvs {
+		for _, k := range kvs.Data {
 			envConfig = append(envConfig, apistructs.EnvConfig{
 				Key:        k.Key,
 				Value:      k.Value,
-				Type:       string(k.Type),
+				Type:       k.Type,
 				Comment:    k.Comment,
 				Encrypt:    k.EncryptInDB,
-				CreateTime: *k.TimeCreated,
-				UpdateTime: *k.TimeUpdated,
+				CreateTime: k.TimeCreated.AsTime(),
+				UpdateTime: k.TimeUpdated.AsTime(),
 				Operations: k.Operations,
 				Source:     k.From,
 			})
@@ -214,7 +220,7 @@ func (e *Endpoints) getCmsNsConfigs(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp(configsResp)
 }
 
-func (e *Endpoints) getPipelineSource(appID uint64) (apistructs.PipelineSource, error) {
+func (e *Endpoints) getPipelineSource(appID uint64) (string, error) {
 	// 获取 app 类型
 	appInfo, err := e.bdl.GetApp(appID)
 	if err != nil {
@@ -223,9 +229,9 @@ func (e *Endpoints) getPipelineSource(appID uint64) (apistructs.PipelineSource, 
 
 	switch appInfo.Mode {
 	case string(apistructs.ApplicationModeBigdata):
-		return apistructs.PipelineSourceBigData, nil
+		return apistructs.PipelineSourceBigData.String(), nil
 	default:
-		return apistructs.PipelineSourceDice, nil
+		return apistructs.PipelineSourceDice.String(), nil
 	}
 }
 
@@ -319,7 +325,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 	}
 
 	// default
-	defaultSecretNs := fmt.Sprintf("%s-%d-default", apistructs.PipelineAppConfigNameSpacePreFix, appID)
+	defaultSecretNs := fmt.Sprintf("%s-%d-default", cms.PipelineAppConfigNameSpacePrefix, appID)
 	configNs.Namespaces = append(configNs.Namespaces, apistructs.PipelineConfigNamespaceItem{ID: gitflowutil.DEFAULT, Namespace: defaultSecretNs})
 
 	app, err := e.bdl.GetApp(appID)
@@ -347,12 +353,14 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 			return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 		}
 		if branchPrefix == gitflowutil.HOTFIX_WITHOUT_SLASH || branchPrefix == gitflowutil.SUPPORT_WITHOUT_SLASH {
-			ns := fmt.Sprintf("%s-%d-%s", apistructs.PipelineAppConfigNameSpacePreFix, appID, branchPrefix)
-			configs, err := e.bdl.GetPipelineCmsNsConfigs(ns, apistructs.PipelineCmsGetConfigsRequest{
-				PipelineSource: "dice",
-			})
+			ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
+			configs, err := e.pipelineCms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
+				&cmspb.CmsNsConfigsGetRequest{
+					Ns:             ns,
+					PipelineSource: apistructs.PipelineSourceDice.String(),
+				})
 			if err == nil {
-				if len(configs) > 0 {
+				if len(configs.Data) > 0 {
 					configNs.Namespaces = append(configNs.Namespaces,
 						apistructs.PipelineConfigNamespaceItem{
 							ID:          branchPrefix + "/",
@@ -370,7 +378,7 @@ func (e *Endpoints) generatorPipelineNS(appID uint64) (*apistructs.PipelineConfi
 		if ok {
 			branchStr = strings.Join(branches, ",")
 		}
-		ns := fmt.Sprintf("%s-%d-%s", apistructs.PipelineAppConfigNameSpacePreFix, appID, branchPrefix)
+		ns := fmt.Sprintf("%s-%d-%s", cms.PipelineAppConfigNameSpacePrefix, appID, branchPrefix)
 		configNs.Namespaces = append(configNs.Namespaces,
 			apistructs.PipelineConfigNamespaceItem{
 				ID:        item.Workspace,

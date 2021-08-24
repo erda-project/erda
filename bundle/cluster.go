@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package bundle
 
@@ -53,6 +54,36 @@ func (b *Bundle) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
 
 // ListClusters 返回 org 下所有集群; 当 orgID == "" 时，返回所有集群.
 func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs.ClusterInfo, error) {
+	clusters, err := b.ListClustersWithType(clusterType)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if len(orgID) == 0 || (len(orgID) > 0 && orgID[0] == 0) {
+		return clusters, nil
+	}
+
+	clusterRelation, err := b.GetOrgClusterRelationsByOrg(orgID[0])
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	clusterRes := make([]apistructs.ClusterInfo, 0)
+
+	for _, dto := range clusterRelation {
+		for _, cluster := range clusters {
+			if uint64(cluster.ID) == dto.ClusterID {
+				clusterRes = append(clusterRes, cluster)
+				break
+			}
+		}
+	}
+
+	return clusterRes, nil
+}
+
+// ListClustersWithType List clusters with cluster type
+func (b *Bundle) ListClustersWithType(clusterType string) ([]apistructs.ClusterInfo, error) {
 	host, err := b.urls.ClusterManager()
 	if err != nil {
 		return nil, err
@@ -60,9 +91,7 @@ func (b *Bundle) ListClusters(clusterType string, orgID ...uint64) ([]apistructs
 	hc := b.hc
 
 	req := hc.Get(host).Path("/api/clusters").Header("Internal-Client", "bundle")
-	if len(orgID) > 0 {
-		req.Param("orgID", fmt.Sprintf("%d", orgID[0]))
-	}
+
 	if clusterType != "" {
 		req.Param("clusterType", fmt.Sprintf("%s", clusterType))
 	}

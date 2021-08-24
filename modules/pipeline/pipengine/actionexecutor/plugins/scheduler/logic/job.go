@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package logic
 
@@ -26,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
@@ -114,6 +116,10 @@ func WhichStorageClass(tp string) string {
 	default:
 		return "dice-local-volume"
 	}
+}
+
+func MakeJobName(task *spec.PipelineTask) string {
+	return strutil.Concat(task.Extra.Namespace, ".", task_uuid.MakeJobID(task))
 }
 
 func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser, err error) {
@@ -237,4 +243,24 @@ func GetCLusterInfo(clusterName string) (map[string]string, error) {
 	}
 
 	return clusterInfoRes.Data, nil
+}
+
+// GetPullImagePolicy specify Image Pull Policy with IfNotPresent,Always,Never
+func GetPullImagePolicy() corev1.PullPolicy {
+	var imagePullPolicy corev1.PullPolicy
+	switch corev1.PullPolicy(conf.SpecifyImagePullPolicy()) {
+	case corev1.PullAlways:
+		imagePullPolicy = corev1.PullAlways
+	case corev1.PullNever:
+		imagePullPolicy = corev1.PullNever
+	default:
+		imagePullPolicy = corev1.PullIfNotPresent
+	}
+
+	return imagePullPolicy
+}
+
+// MakeJobLabelSelector return LabelSelector like job-name=pipeline-1.pipeline-task-1
+func MakeJobLabelSelector(task *spec.PipelineTask) string {
+	return fmt.Sprintf("job-name=%s", MakeJobName(task))
 }

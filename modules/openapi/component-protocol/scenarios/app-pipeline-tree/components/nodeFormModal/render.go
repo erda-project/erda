@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package nodeFormModal
 
@@ -22,6 +23,14 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/app-pipeline-tree/components/fileTree"
+)
+
+var (
+	I18nLocalePrefixKey = "wb.content.pipeline.file.tree.node.form."
+
+	addPipeline  = "addPipeline"
+	branch       = "branch"
+	pipelineName = "pipelineName"
 )
 
 func (a *ComponentNodeFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) (err error) {
@@ -68,6 +77,30 @@ func (a *ComponentNodeFormModal) Render(ctx context.Context, c *apistructs.Compo
 			return err
 		}
 	}
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+
+	a.Props = map[string]interface{}{
+		"title": i18nLocale.Get(I18nLocalePrefixKey + addPipeline),
+		"fields": []map[string]interface{}{
+			{
+				"key":       "branch",
+				"label":     i18nLocale.Get(I18nLocalePrefixKey + branch),
+				"component": "input",
+				"required":  true,
+				"disabled":  true,
+			},
+			{
+				"key":       "name",
+				"label":     i18nLocale.Get(I18nLocalePrefixKey + pipelineName),
+				"component": "input",
+				"required":  true,
+				"componentProps": map[string]interface{}{
+					"maxLength": 30,
+				},
+			},
+		},
+	}
+
 	return nil
 }
 

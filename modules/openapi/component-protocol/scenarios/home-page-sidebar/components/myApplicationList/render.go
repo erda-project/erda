@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package myApplicationList
 
@@ -146,7 +147,7 @@ func RenItem(app apistructs.ApplicationDTO, orgName string) AppItem {
 		AppId:       strconv.Itoa(int(app.ID)),
 		Title:       fmt.Sprintf("%s/%s", app.ProjectDisplayName, app.DisplayName),
 		Description: "",
-		PrefixImg:   "/images/default-app-icon.svg",
+		PrefixImg:   "frontImg_default_app_icon",
 		Operations: map[string]Operation{
 			"click": {
 				Key:    "click",
@@ -202,6 +203,7 @@ func (m *MyApplicationList) getAppDTO(orgID string, queryStr string) (*apistruct
 		PageNo:   m.State.PageNo,
 		Query:    queryStr,
 		OrderBy:  "name",
+		IsSimple: true,
 	}
 	appsDTO, err := m.ctxBdl.Bdl.GetAllMyApps(m.ctxBdl.Identity.UserID, uint64(orgIDInt), req)
 	if err != nil {

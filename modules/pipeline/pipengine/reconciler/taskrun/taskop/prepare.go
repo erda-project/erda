@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package taskop
 
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -74,7 +76,7 @@ func (pre *prepare) WhenDone(data interface{}) error {
 	// no need retry
 	if err != nil {
 		pre.Task.Status = apistructs.PipelineStatusAnalyzeFailed
-		pre.Task.Result.Errors = append(pre.Task.Result.Errors, apistructs.ErrorResponse{Msg: err.Error()})
+		pre.Task.Result.Errors = pre.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{Msg: err.Error()})
 		return nil
 	}
 
@@ -171,7 +173,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams),
 	)
 	if err != nil {
-		return false, apierrors.ErrParsePipelineYml.InternalError(err)
+		return false, errorsx.UserErrorf(err.Error())
 	}
 
 	// 从 extension marketplace 获取 image 和 resource limit
@@ -205,6 +207,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.Action = *action
 	// --- uuid ---
 	task.Extra.UUID = fmt.Sprintf("pipeline-task-%d", task.ID)
+	task.Extra.EncryptSecretKeys = p.Snapshot.EncryptSecretKeys
 
 	const (
 		TerminusDefineTag = "TERMINUS_DEFINE_TAG"
@@ -435,7 +438,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		// only k8sjob support create job volume
 		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
 		if !ok {
-			return false, fmt.Errorf("failed to createJobVolume, err: invalid task executor kind")
+			return false, errorsx.UserErrorf("failed to createJobVolume, err: invalid task executor kind")
 		}
 		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
 		if err != nil {
@@ -751,16 +754,14 @@ func condition(task *spec.PipelineTask) bool {
 	if sign.Err != nil {
 		task.Status = apistructs.PipelineStatusFailed
 		if sign.Err != nil {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Err.Error(),
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Msg,
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Msg,
 			})
 		}
 		return true
@@ -770,16 +771,14 @@ func condition(task *spec.PipelineTask) bool {
 		task.Status = apistructs.PipelineStatusNoNeedBySystem
 		task.Extra.AllowFailure = true
 		if sign.Err != nil {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Err.Error(),
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Err.Error(),
 			})
 		}
 
 		if sign.Msg != "" {
-			task.Result.Errors = append(task.Result.Errors, apistructs.ErrorResponse{
-				Code: "",
-				Msg:  sign.Msg,
+			task.Result.Errors = task.Result.AppendError(&apistructs.PipelineTaskErrResponse{
+				Msg: sign.Msg,
 			})
 		}
 		return true

@@ -1,24 +1,27 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
@@ -92,6 +95,16 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 				needApproval = true
 			}
 			task.CostTimeSec = costtimeutil.CalculateTaskCostTimeSec(&task)
+			if task.Result.Metadata == nil {
+				task.Result.Metadata = make([]apistructs.MetadataField, 0)
+			}
+			// add task events to result metadata if task status isn`t success and events it`s failed
+			if !task.Status.IsSuccessStatus() && task.Result.Events != "" && !isEventsLatestNormal(task.Result.Events) {
+				task.Result.Metadata = append(task.Result.Metadata, apistructs.MetadataField{
+					Name:  "task-events",
+					Value: task.Result.Events,
+				})
+			}
 			taskDTOs = append(taskDTOs, *task.Convert2DTO())
 		}
 		stageDetailDTO = append(stageDetailDTO,
@@ -465,4 +478,32 @@ func findRunningStageID(p spec.Pipeline, tasks []spec.PipelineTask) uint64 {
 		}
 	}
 	return runningStageID
+}
+
+//isEventsContainWarn return k8s events is contain warn
+//Events:
+// Type    Reason     Age   From               Message
+// ----    ------     ----  ----               -------
+// Normal  Scheduled  7s    default-scheduler  Successfully assigned pipeline-4152/pipeline-4152.pipeline-task-8296-tgxd7 to node-010000006200
+// Normal  Pulled     6s    kubelet            Container image "registry.erda.cloud/erda-actions/action-agent:1.2-20210804-75232495" already present on machine
+func isEventsContainWarn(events string) bool {
+	eventLst := strings.Split(events, "\n")
+	if len(eventLst) <= 3 {
+		return false
+	}
+	for _, ev := range eventLst {
+		if strings.Contains(ev, corev1.EventTypeWarning) {
+			return true
+		}
+	}
+	return false
+}
+
+// isEventsLatestNormal judge k8s events latest event is normal
+func isEventsLatestNormal(events string) bool {
+	eventLst := strings.Split(events, "\n")
+	if len(eventLst) <= 3 {
+		return true
+	}
+	return strings.Contains(eventLst[len(eventLst)-2], corev1.EventTypeNormal)
 }

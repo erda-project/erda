@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package terminal
 
@@ -19,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -165,9 +167,10 @@ func Terminal(w http.ResponseWriter, r *http.Request) {
 	k8spodname, ok2 := instance.Metadata("k8spodname")
 	k8scontainername, ok3 := instance.Metadata("k8scontainername")
 	clustername := instance.Cluster
+
 	if !ok1 || !ok2 || !ok3 {
 		// If there is no corresponding namespace, name, containername in the meta, it is considered to be the dcos path, and the original soldier is taken
-		SoldierTerminal(r, message, conn)
+		logrus.Errorf("get terminial info failed, namespace %v, pod name %v, container name %v", ok1, ok2, ok3)
 		return
 	}
 
@@ -245,6 +248,10 @@ func SoldierTerminal(r *http.Request, initmessage []byte, upperConn *websocket.C
 
 func K8STerminal(clustername, namespace, podname, containername string, upperConn *websocket.Conn) {
 	executorname := clusterutil.GenerateExecutorByClusterName(clustername)
+	logrus.Infof("terminal get executor name %s", executorname)
+	if strings.Contains(executorname, "EDAS") {
+		executorname = "K8SFOR" + strings.ToUpper(strings.Replace(clustername, "-", "", -1))
+	}
 	executor, err := executor.GetManager().Get(executortypes.Name(executorname))
 	if err != nil {
 		logrus.Errorf("failed to get executor by executorname(%s)", executorname)

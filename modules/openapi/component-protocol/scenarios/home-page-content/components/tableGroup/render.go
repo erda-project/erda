@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package tableGroup
 
@@ -30,7 +31,7 @@ import (
 
 const (
 	DefaultPageNo    = 1
-	DefaultPageSize  = 5
+	DefaultPageSize  = 3
 	DefaultIssueSize = 5
 )
 
@@ -156,7 +157,7 @@ func (t *TableGroup) addWorkbenchData(datas *apistructs.WorkbenchResponse, orgNa
 	i18nLocale := t.ctxBdl.Bdl.GetLocale(t.ctxBdl.Locale)
 	for _, v := range datas.Data.List {
 		pro := ProItem{}
-		image := "/images/default-project-icon.png"
+		image := "frontImg_default_project_icon"
 		if v.ProjectDTO.Logo != "" {
 			image = v.ProjectDTO.Logo
 		}
@@ -350,7 +351,7 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 	}
 
 	t.setBaseComponentValue()
-	if t.ctxBdl.Identity.OrgID == "" || t.State.ProsNum == 0 {
+	if t.ctxBdl.Identity.OrgID == "" {
 		t.Props.Visible = false
 		return nil
 	}
@@ -400,6 +401,14 @@ func (t *TableGroup) Render(ctx context.Context, c *apistructs.Component, scenar
 			t.State.Total = workDatas.Data.TotalProject
 			t.addWorkbenchData(workDatas, orgName, orgDisplayName)
 		}
+	}
+	projectNum, err := t.getProjectsNum(t.ctxBdl.Identity.OrgID)
+	if err != nil {
+		return err
+	}
+	t.State.ProsNum = projectNum
+	if t.State.Total == 0 {
+		t.Props.Visible = false
 	}
 	return nil
 }

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package clusters
 
@@ -18,15 +19,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -37,12 +37,12 @@ const (
 	statusInitializing    = "initializing"
 	statusInitializeError = "initialize error"
 	statusUnknown         = "unknown"
-	diceOperator          = "/apis/dice.terminus.io/v1beta1/namespaces/default/dices/dice"
-	erdaOperator          = "/apis/erda.terminus.io/v1beta1/namespaces/default/erdas/erda"
 )
 
 var (
-	checkCRDs = []string{erdaOperator, diceOperator}
+	diceOperator = "/apis/dice.terminus.io/v1beta1/namespaces/%s/dices/dice"
+	erdaOperator = "/apis/erda.terminus.io/v1beta1/namespaces/%s/erdas/erda"
+	checkCRDs    = []string{erdaOperator, diceOperator}
 )
 
 func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames []string) ([]map[string]map[string]apistructs.NameValue, error) {
@@ -63,6 +63,14 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 			"initJobClusterName": {Name: i18n.Sprintf("init job cluster name"), Value: os.Getenv("DICE_CLUSTER_NAME")},
 		}
 
+		if clusterMetaData.ManageConfig != nil && (clusterMetaData.ManageConfig.Type == apistructs.ManageProxy &&
+			clusterMetaData.ManageConfig.AccessKey == "") {
+			baseInfo["registered"] = apistructs.NameValue{
+				Name:  i18n.Sprintf("cluster agent registered"),
+				Value: true,
+			}
+		}
+
 		urlInfo := map[string]apistructs.NameValue{}
 
 		if ci, err := c.bdl.QueryClusterInfo(clusterName); err != nil {
@@ -73,14 +81,6 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 			baseInfo["clusterVersion"] = apistructs.NameValue{Name: i18n.Sprintf("cluster version"), Value: ci.Get(apistructs.DICE_VERSION)}
 			baseInfo["rootDomain"] = apistructs.NameValue{Name: i18n.Sprintf("root domain"), Value: ci.Get(apistructs.DICE_ROOT_DOMAIN)}
 			baseInfo["edgeCluster"] = apistructs.NameValue{Name: i18n.Sprintf("edge cluster"), Value: ci.Get(apistructs.DICE_IS_EDGE) == "true"}
-			baseInfo["masterNum"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("master num"),
-				Value: len(strutil.Split(ci.Get(apistructs.MASTER_ADDR), ",", true)),
-			}
-			baseInfo["lbNum"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("lb num"),
-				Value: len(strutil.Split(ci.Get(apistructs.LB_ADDR), ",", true)),
-			}
 			baseInfo["httpsEnabled"] = apistructs.NameValue{
 				Name:  i18n.Sprintf("https enabled"),
 				Value: strutil.Contains(ci.Get(apistructs.DICE_PROTOCOL), "https"),
@@ -88,33 +88,10 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 			urlInfo["registry"] = apistructs.NameValue{Name: "registry", Value: ci.Get(apistructs.REGISTRY_ADDR)}
 			urlInfo["nexus"] = apistructs.NameValue{Name: "nexus", Value: ci.Get(apistructs.NEXUS_ADDR)}
-			urlInfo["masters"] = apistructs.NameValue{Name: "masters", Value: ci.Get(apistructs.MASTER_ADDR)}
-			urlInfo["lb"] = apistructs.NameValue{Name: "lb", Value: ci.Get(apistructs.LB_ADDR)}
 		}
 
-		cs, err := c.k8s.GetInClusterClient()
+		kc, err := k8sclient.NewWithTimeOut(clusterName, getClusterTimeout)
 		if err != nil {
-			logrus.Error(err)
-		} else {
-			pod, err := cs.CoreV1().Pods(conf.ErdaNamespace()).List(context.Background(), metav1.ListOptions{
-				LabelSelector: labels.Set(map[string]string{"job-name": generateInitJobName(orgID, clusterName)}).String(),
-			})
-			if err == nil {
-				if len(pod.Items) > 0 {
-					containerInfoPart := strings.Split(pod.Items[0].Status.ContainerStatuses[0].ContainerID, "://")
-					if len(containerInfoPart) >= 2 {
-						baseInfo["clusterInitContainerID"] = apistructs.NameValue{
-							Name:  i18n.Sprintf("cluster init container id"),
-							Value: containerInfoPart[1],
-						}
-					}
-				}
-			} else {
-				logrus.Error(err)
-			}
-		}
-
-		if kc, err := c.k8s.GetClient(clusterName); err != nil {
 			logrus.Errorf("get k8sclient error: %v", err)
 			result := map[string]map[string]apistructs.NameValue{
 				"basic": baseInfo,
@@ -123,15 +100,15 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 
 			resultList = append(resultList, result)
 			continue
-		} else {
-			nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-			if err != nil {
-				logrus.Error(err)
-			}
-			baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
 		}
 
-		if status, err := c.getClusterStatus(clusterMetaData); err != nil {
+		nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			logrus.Error(err)
+		}
+		baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
+
+		if status, err := c.getClusterStatus(kc, clusterMetaData); err != nil {
 			logrus.Errorf("get cluster status error: %v", err)
 		} else {
 			baseInfo["clusterStatus"] = apistructs.NameValue{Name: i18n.Sprintf("cluster status"), Value: status}
@@ -147,10 +124,14 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 	return resultList, nil
 }
 
-func (c *Clusters) getClusterStatus(meta *apistructs.ClusterInfo) (string, error) {
+func (c *Clusters) getClusterStatus(kc *k8sclient.K8sClient, meta *apistructs.ClusterInfo) (string, error) {
+	if kc == nil || kc.ClientSet == nil {
+		return "", fmt.Errorf("kubernetes client is nil")
+	}
+
 	// if manage config is nil, cluster import with inet or other
 	if meta.ManageConfig == nil {
-		return statusUnknown, nil
+		return statusOffline, nil
 	}
 
 	switch meta.ManageConfig.Type {
@@ -168,27 +149,33 @@ func (c *Clusters) getClusterStatus(meta *apistructs.ClusterInfo) (string, error
 		}
 	}
 
-	client, err := c.k8s.GetClient(meta.Name)
-	if err != nil {
-		return statusUnknown, err
-	}
-
 	ec := &apistructs.DiceCluster{}
-	var res []byte
+
+	var (
+		res           []byte
+		err           error
+		resourceExist bool
+	)
 
 	for _, selfLink := range checkCRDs {
-		res, err = client.ClientSet.RESTClient().Get().
-			AbsPath(selfLink).
+		res, err = kc.ClientSet.RESTClient().Get().
+			AbsPath(fmt.Sprintf(selfLink, conf.ErdaNamespace())).
 			DoRaw(context.Background())
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
+		resourceExist = true
 		break
 	}
 
-	if err = json.Unmarshal(res, &ec); err != nil {
+	if !resourceExist {
 		return statusUnknown, nil
+	}
+
+	if err = json.Unmarshal(res, &ec); err != nil {
+		logrus.Errorf("unmarsharl data error, data: %v", string(res))
+		return statusUnknown, err
 	}
 
 	switch ec.Status.Phase {

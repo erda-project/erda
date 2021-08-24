@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package clusters
 
@@ -20,13 +21,13 @@ var ProxyDeployTemplate = `
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{.ErdaSystem}}
+  name: {{ .ErdaNamespace }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cluster-agent
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -55,7 +56,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cluster-agent
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -63,7 +64,7 @@ metadata:
   labels:
     job-name: erda-cluster-init
   name: erda-cluster-init
-  namespace: {{.ErdaSystem}}
+  namespace: {{ .ErdaNamespace }}
 spec:
   backoffLimit: 0
   selector:
@@ -79,28 +80,14 @@ spec:
       containers:
         - name: init
           env:
-            - name: "DEBUG"
-              value: "true"
-            - name: "ERDA_CHART_VERSION"
-              value: "{{.ErdaHelmChartVersion}}"
-            - name: "INSTALL_MODE"
-              value: "local"
-            - name: "REPO_MODE"
-              value: "local"
-            - name: "HELM_NAMESPACE"
-              value: {{.ErdaSystem}}
-            - name: "NODE_LABELS"
-              value: "dice/org-{{.OrgName}}=true"
-            - name: "CHART_ERDA_BASE_VALUES"
-              value: "configmap.clustername={{.ClusterName}},configmap.domain={{.CustomDomain}}"
-            - name: "CHART_ERDA_ADDONS_VALUES"
-              value: "registry.networkMode=''"
-            - name: "CHART_ERDA_VALUES"
-              value: "domain={{.CustomDomain}},clusterName={{.ClusterName}},masterClusterDomain={{.MasterClusterDomain}}"
+            {{- range .Envs }}
+            - name: {{ .Name }}
+              value: "{{ .Value }}"
+            {{- end }}
           command:
             - sh
             - -c
-            - /app/cluster-init
-          image: {{.InitJobImage}}
+            - /app/cluster-ops
+          image: {{ .JobImage }}
           imagePullPolicy: Always
 `

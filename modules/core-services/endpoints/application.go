@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -526,18 +527,38 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
 	unpinedAppDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
 
+	projectIDs := make([]uint64, 0, len(applications))
+	for _, app := range applications {
+		projectIDs = append(projectIDs, uint64(app.ProjectID))
+	}
+
+	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
+	if err != nil {
+		return apierrors.ErrListApplication.InternalError(err).ToResp(), nil
+	}
+
 	for i := range applications {
+		var projectName string
+		var projectDisplayName string
+		if project, ok := projectMap[applications[i].ProjectID]; ok {
+			projectName = project.Name
+			projectDisplayName = project.DisplayName
+		}
+
 		if params.IsSimple {
 			appDTO := apistructs.ApplicationDTO{
-				Pined:       applications[i].Pined,
-				Name:        applications[i].Name,
-				Desc:        applications[i].Desc,
-				Creator:     applications[i].UserID,
-				CreatedAt:   applications[i].CreatedAt,
-				UpdatedAt:   applications[i].UpdatedAt,
-				ID:          uint64(applications[i].ID),
-				DisplayName: applications[i].DisplayName,
-				IsPublic:    applications[i].IsPublic,
+				Pined:              applications[i].Pined,
+				Name:               applications[i].Name,
+				Desc:               applications[i].Desc,
+				Creator:            applications[i].UserID,
+				CreatedAt:          applications[i].CreatedAt,
+				UpdatedAt:          applications[i].UpdatedAt,
+				ID:                 uint64(applications[i].ID),
+				DisplayName:        applications[i].DisplayName,
+				IsPublic:           applications[i].IsPublic,
+				ProjectID:          uint64(applications[i].ProjectID),
+				ProjectName:        projectName,
+				ProjectDisplayName: projectDisplayName,
 			}
 			if appDTO.Pined {
 				pinedAppDTOs = append(pinedAppDTOs, appDTO)
@@ -552,16 +573,6 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 			appDTO.MemberRoles = roles
 		}
 
-		// 填充项目名称
-		var projectName string
-		var projectDisplayName string
-		project, err := e.project.Get(applications[i].ProjectID)
-		if err == nil {
-			projectName = project.Name
-			projectDisplayName = project.DisplayName
-		} else {
-			logrus.Error(err)
-		}
 		appDTO.ProjectName = projectName
 		appDTO.ProjectDisplayName = projectDisplayName
 		if appDTO.Pined {

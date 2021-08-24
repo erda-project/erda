@@ -1,25 +1,26 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
 import (
+	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/cmsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
@@ -32,7 +33,6 @@ import (
 
 type PipelineSvc struct {
 	appSvc          *appsvc.AppSvc
-	cmSvc           *cmsvc.CMSvc
 	crondSvc        *crondsvc.CrondSvc
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
@@ -48,9 +48,12 @@ type PipelineSvc struct {
 
 	js      jsonstore.JsonStore
 	etcdctl *etcd.Store
+
+	// providers
+	cmsService pb.CmsServiceServer
 }
 
-func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
+func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineCronSvc *pipelinecronsvc.PipelineCronSvc, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
@@ -59,7 +62,6 @@ func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
-	s.cmSvc = cmSvc
 	s.crondSvc = crondSvc
 	s.actionAgentSvc = actionAgentSvc
 	s.extMarketSvc = extMarketSvc
@@ -73,4 +75,8 @@ func New(appSvc *appsvc.AppSvc, cmSvc *cmsvc.CMSvc, crondSvc *crondsvc.CrondSvc,
 	s.js = js
 	s.etcdctl = etcd
 	return &s
+}
+
+func (s *PipelineSvc) WithCmsService(cmsService pb.CmsServiceServer) {
+	s.cmsService = cmsService
 }

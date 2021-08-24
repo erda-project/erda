@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package webhook
 
@@ -17,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/discover"
 )
 
 // 如果不存在相同名字的 webhook 则创建
@@ -47,19 +47,7 @@ func createIfNotExist(impl *WebHookImpl, req *CreateHookRequest) error {
 
 // MakeSureBuiltinHooks 创建默认 webhook (如果不存在)
 func MakeSureBuiltinHooks(impl *WebHookImpl) error {
-	hooks := []CreateHookRequest{
-		{
-			Name:   "scheduler-clusterhook",
-			Events: []string{"cluster"},
-			URL:    fmt.Sprintf("http://%s/clusterhook", discover.Scheduler()),
-			Active: true,
-			HookLocation: apistructs.HookLocation{
-				Org:         "-1",
-				Project:     "-1",
-				Application: "-1",
-			},
-		},
-	}
+	hooks := make([]CreateHookRequest, 0)
 
 	for i := range hooks {
 		if err := createIfNotExist(impl, &hooks[i]); err != nil {

@@ -8,7 +8,7 @@ CREATE TABLE `dice_api_test`
     `usecase_id`    int(11) DEFAULT NULL COMMENT '所属用例 ID',
     `usecase_order` int(11) DEFAULT NULL COMMENT '接口顺序',
     `status`        varchar(16) DEFAULT NULL COMMENT '接口执行状态',
-    `api_info`      text COMMENT 'API 信息',
+    `api_info`      longtext COMMENT 'API 信息',
     `api_request`   longtext COMMENT 'API 请求体',
     `api_response`  longtext COMMENT 'API 响应',
     `assert_result` text COMMENT '断言接口',

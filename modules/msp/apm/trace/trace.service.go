@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package trace
 
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	mathpkg "github.com/erda-project/erda/pkg/math"
 )
 
 type traceService struct {
@@ -110,28 +112,37 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 type void struct{}
 
 func (s *traceService) handleSpanResponse(spanTree SpanTree) (*pb.GetSpansResponse, error) {
-	var spans []*pb.Span
+	var (
+		spans          []*pb.Span
+		traceStartTime int64 = 0
+		traceEndTime   int64 = 0
+		depth          int64 = 0
+	)
+
 	spanCount := int64(len(spanTree))
-	durationTotal := int64(0)
-	depth := int64(0)
 	if spanCount > 0 {
 		depth = 1
 	}
 	services := map[string]void{}
-	for id, span := range spanTree {
+	for _, span := range spanTree {
 		services[span.Tags["service_name"]] = void{}
 		tempDepth := calculateDepth(depth, span, spanTree)
 		if tempDepth > depth {
 			depth = tempDepth
 		}
-		span.Duration = (span.EndTime - span.StartTime) - childSpanDuration(id, spanTree)
-		durationTotal += span.Duration
+		if traceStartTime == 0 || traceStartTime > span.StartTime {
+			traceStartTime = span.StartTime
+		}
+		if traceEndTime == 0 || traceEndTime < span.EndTime {
+			traceEndTime = span.EndTime
+		}
+		span.Duration = mathpkg.AbsInt64(span.EndTime - span.StartTime)
 		spans = append(spans, span)
 	}
 
 	serviceCount := int64(len(services))
 
-	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: durationTotal, SpanCount: spanCount}, nil
+	return &pb.GetSpansResponse{Spans: spans, ServiceCount: serviceCount, Depth: depth, Duration: mathpkg.AbsInt64(traceEndTime - traceStartTime), SpanCount: spanCount}, nil
 }
 
 func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
@@ -140,16 +151,6 @@ func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
 		calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
 	}
 	return depth
-}
-
-func childSpanDuration(id string, spanTree SpanTree) int64 {
-	duration := int64(0)
-	for _, span := range spanTree {
-		if span.ParentSpanId == id {
-			duration += span.EndTime - span.StartTime
-		}
-	}
-	return duration
 }
 
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
@@ -280,45 +281,14 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 }
 
 func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
-	req.RequestID = uuid.NewV4().String()
+	bodyValid := bodyCheck(req.Body)
+	if !bodyValid {
+		return nil, errors.NewParameterTypeError("body")
+	}
 
-	queryString, err := json.Marshal(req.Query)
+	history, err := composeTraceRequestHistory(req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
-	}
-	headerString, err := json.Marshal(req.Header)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	bodyString, err := json.Marshal(req.Body)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	if req.CreateTime == "" || req.UpdateTime == "" {
-		req.CreateTime = time.Now().Format(layout)
-		req.UpdateTime = time.Now().Format(layout)
-	}
-	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	history := &db.TraceRequestHistory{
-		RequestId:      req.RequestID,
-		TerminusKey:    req.ScopeID,
-		Url:            req.Url,
-		QueryString:    string(queryString),
-		Header:         string(headerString),
-		Body:           string(bodyString),
-		Method:         req.Method,
-		Status:         int(req.Status),
-		ResponseBody:   req.ResponseBody,
-		ResponseStatus: int(req.ResponseCode),
-		CreateTime:     createTime,
-		UpdateTime:     updateTime,
 	}
 	insertHistory, err := s.traceRequestHistoryDB.InsertHistory(*history)
 	if err != nil {
@@ -336,7 +306,6 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewInternalServerError(err)
 	}
 	responseCode := response.StatusCode
-	responseBody, err := ioutil.ReadAll(response.Body)
 
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -345,11 +314,59 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		}
 	}(response.Body)
 
-	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode, string(responseBody))
+	_, err = s.traceRequestHistoryDB.UpdateDebugResponseByRequestID(req.ScopeID, req.RequestID, responseCode)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.CreateTraceDebugResponse{Data: &statusInfo}, nil
+}
+
+func bodyCheck(body string) bool {
+	if body == "" {
+		return true
+	}
+	return json.Valid([]byte(body))
+}
+
+func composeTraceRequestHistory(req *pb.CreateTraceDebugRequest) (*db.TraceRequestHistory, error) {
+	req.RequestID = uuid.NewV4().String()
+
+	queryString, err := json.Marshal(req.Query)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	headerString, err := json.Marshal(req.Header)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if req.CreateTime == "" || req.UpdateTime == "" {
+		req.CreateTime = time.Now().Format(layout)
+		req.UpdateTime = time.Now().Format(layout)
+	}
+	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	history := &db.TraceRequestHistory{
+		RequestId:      req.RequestID,
+		TerminusKey:    req.ScopeID,
+		Url:            req.Url,
+		QueryString:    string(queryString),
+		Header:         string(headerString),
+		Body:           req.Body,
+		Method:         req.Method,
+		Status:         int(req.Status),
+		ResponseBody:   req.ResponseBody,
+		ResponseStatus: int(req.ResponseCode),
+		CreateTime:     createTime,
+		UpdateTime:     updateTime,
+	}
+	return history, nil
 }
 
 func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {

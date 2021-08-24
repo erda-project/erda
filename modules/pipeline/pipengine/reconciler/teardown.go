@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package reconciler
 
@@ -29,17 +30,24 @@ import (
 	"github.com/erda-project/erda/pkg/loop"
 )
 
+func (r *Reconciler) teardownCurrentReconcile(ctx context.Context, pipelineID uint64) {
+	closePipelineExitChannel(ctx, pipelineID)
+	r.deleteEtcdWatchKey(context.Background(), pipelineID)
+	r.teardownPipelines.Delete(pipelineID)
+	r.QueueManager.PopOutPipelineFromQueue(pipelineID)
+}
+
 func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithTasks) {
+	if !p.Pipeline.Status.IsEndStatus() {
+		return
+	}
+
 	if _, ing := r.teardownPipelines.LoadOrStore(p.Pipeline.ID, true); ing {
 		return
 	}
-	defer closePipelineExitChannel(ctx, p.Pipeline)
-	defer r.doCronCompensate(ctx, p.Pipeline.ID)
-	defer r.deleteEtcdWatchKey(context.Background(), p.Pipeline.ID)
-	defer r.teardownPipelines.Delete(p.Pipeline.ID)
-	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
-	defer r.WaitDBGC(p.Pipeline.ID, *p.Pipeline.Extra.GC.DatabaseGC.Finished.TTLSecond, *p.Pipeline.Extra.GC.DatabaseGC.Finished.NeedArchive)
 	logrus.Infof("reconciler: begin teardown pipeline, pipelineID: %d", p.Pipeline.ID)
+	defer r.doCronCompensate(ctx, p.Pipeline.ID)
+	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
 	defer func() {
 		// // metrics
 		// go metrics.PipelineCounterTotalAdd(*p.Pipeline, 1)
@@ -48,7 +56,6 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 		// aop
 		_ = aop.Handle(aop.NewContextForPipeline(*p.Pipeline, aoptypes.TuneTriggerPipelineAfterExec))
 	}()
-	defer r.QueueManager.PopOutPipelineFromQueue(p.Pipeline.ID)
 	defer logrus.Infof("reconciler: pipelineID: %d, pipeline is completed", p.Pipeline.ID)
 	for _, task := range p.Tasks {
 		if task.Status == apistructs.PipelineStatusAnalyzed || task.Status == apistructs.PipelineStatusBorn {
@@ -82,12 +89,12 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 }
 
 // closePipelineExitChannel send signal to pipeline exit channel to stop other related things.
-func closePipelineExitChannel(ctx context.Context, p *spec.Pipeline) {
-	rlog.PDebugf(p.ID, "pipeline exit, begin send signal to exit channel to stop other related things")
-	defer rlog.PDebugf(p.ID, "pipeline exit, end send signal to exit channel to stop other related things")
+func closePipelineExitChannel(ctx context.Context, pipelineID uint64) {
+	rlog.PDebugf(pipelineID, "pipeline exit, begin send signal to exit channel to stop other related things")
+	defer rlog.PDebugf(pipelineID, "pipeline exit, end send signal to exit channel to stop other related things")
 	defer func() {
 		if err := recover(); err != nil {
-			rlog.PErrorf(p.ID, "pipeline trigger panic, err: %v", err)
+			rlog.PErrorf(pipelineID, "pipeline occurred a panic when closePipelineExitChannel, err: %v", err)
 		}
 	}()
 	exitCh, ok := ctx.Value(ctxKeyPipelineExitCh).(chan struct{})

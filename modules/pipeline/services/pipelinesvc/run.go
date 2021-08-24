@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
@@ -18,10 +19,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/pipeline/commonutil/linkutil"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
@@ -60,7 +62,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	}
 
 	// cms
-	secrets, cmsDiceFiles, holdOnKeys, err := s.FetchSecrets(&p)
+	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(&p)
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
@@ -102,6 +104,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, err
 	}
 	p.Snapshot.RunPipelineParams = runParams.ToPipelineRunParamsWithValue()
+	p.Snapshot.EncryptSecretKeys = encryptSecretKeys
 
 	now := time.Now()
 	p.TimeBegin = &now
@@ -218,20 +221,11 @@ func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
 		return apierrors.ErrParallelRunPipeline.InternalError(err)
 	}
 	if len(runningPipelineIDs) > 0 {
-		pipelines, err := s.dbClient.ListPipelinesByIDs(runningPipelineIDs)
-		if err != nil {
-			return apierrors.ErrParallelRunPipeline.InternalError(err)
+		ctxMap := map[string]interface{}{
+			apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", runningPipelineIDs[0]),
 		}
-		var links []string
-		for _, p := range pipelines {
-			valid, link := linkutil.GetPipelineLink(s.bdl, p)
-			if valid {
-				links = append(links, fmt.Sprintf("URL: %s", link))
-			} else {
-				links = append(links, fmt.Sprintf("runningPipelineID: %d", p.ID))
-			}
-		}
-		return apierrors.ErrParallelRunPipeline.InvalidState(strutil.Join(links, "\n"))
+		logrus.Infof("start run pipeline %d", runningPipelineIDs[0])
+		return apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(ctxMap)
 	}
 	return nil
 }

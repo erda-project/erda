@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package dop
 
@@ -65,6 +66,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
+	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
@@ -77,7 +79,7 @@ import (
 )
 
 // Initialize 初始化应用启动服务.
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -93,7 +95,7 @@ func Initialize() error {
 	}
 	defer dbclient.Close()
 
-	ep, err := initEndpoints((*dao.DBClient)(dbclient.DB))
+	ep, err := p.initEndpoints((*dao.DBClient)(dbclient.DB))
 	if err != nil {
 		return err
 	}
@@ -182,7 +184,7 @@ func Initialize() error {
 	return server.ListenAndServe()
 }
 
-func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
+func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	var (
 		etcdStore *etcd.Store
 		ossClient *oss.Client
@@ -248,7 +250,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	)
 	testCaseSvc.CreateTestSetFn = testSetSvc.Create
 
-	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl))
+	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl), autotest.WithPipelineCms(p.PipelineCms))
 
 	sceneset := sceneset.New(
 		sceneset.WithDBClient(db),
@@ -260,6 +262,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		atv2.WithBundle(bdl.Bdl),
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
+		atv2.WithPipelineCms(p.PipelineCms),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
@@ -368,6 +371,11 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		testplan.WithIssueState(issueState),
 	)
 
+	workBench := workbench.New(
+		workbench.WithBundle(bdl.Bdl),
+		workbench.WithIssue(issue),
+	)
+
 	rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 		PublicKey:          conf.Base64EncodedRsaPublicKey(),
 		PublicKeyDataType:  encryption.Base64,
@@ -381,6 +389,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		nexussvc.WithDBClient(db),
 		nexussvc.WithBundle(bdl.Bdl),
 		nexussvc.WithRsaCrypt(rsaCrypt),
+		nexussvc.WithPipelineCms(p.PipelineCms),
 	)
 
 	// init publisher service
@@ -402,6 +411,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		appcertificate.WithDBClient(db),
 		appcertificate.WithBundle(bdl.Bdl),
 		appcertificate.WithCertificate(cer),
+		appcertificate.WithPipelineCms(p.PipelineCms),
 	)
 
 	libReference := libreference.New(
@@ -421,7 +431,13 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(pipeline.WithBundle(bdl.Bdl), pipeline.WithBranchRuleSvc(branchRule), pipeline.WithPublisherSvc(pub))),
+		endpoints.WithPipeline(pipeline.New(
+			pipeline.WithBundle(bdl.Bdl),
+			pipeline.WithBranchRuleSvc(branchRule),
+			pipeline.WithPublisherSvc(pub),
+			pipeline.WithPipelineCms(p.PipelineCms),
+		)),
+		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
 		endpoints.WithPermission(perm),
@@ -438,6 +454,7 @@ func initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error) {
 		endpoints.WithTestSet(testSetSvc),
 		endpoints.WithSonarMetricRule(sonarMetricRule),
 		endpoints.WithTestplan(testPlan),
+		endpoints.WithWorkbench(workBench),
 		endpoints.WithCQ(cq.New(cq.WithBundle(bdl.Bdl), cq.WithBranchRule(branchRule))),
 		endpoints.WithAutoTest(autotest),
 		endpoints.WithAutoTestV2(autotestV2),
@@ -498,6 +515,21 @@ func registerWebHook(bdl *bundle.Bundle) {
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
 		logrus.Warnf("failed to register approval status changed event, %v", err)
+	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "pipeline_yml_update",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/cicd-crons/actions/hook-for-update"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register pipeline yml event, %v", err)
 	}
 }
 

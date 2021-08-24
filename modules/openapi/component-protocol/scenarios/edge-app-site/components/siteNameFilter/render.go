@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package sitenamefilter
 
@@ -17,8 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-app-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
@@ -27,7 +29,7 @@ func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistru
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -45,7 +47,7 @@ func (c *ComponentSiteNameFilter) Render(ctx context.Context, component *apistru
 
 	c.component.Operations = getOperations()
 	c.component.Props = getProps()
-	c.component.State["conditions"] = getStateConditions()
+	c.component.State["conditions"] = getStateConditions(i18nLocale)
 	return nil
 }
 
@@ -57,14 +59,14 @@ func getOperations() apistructs.EdgeOperations {
 		},
 	}
 }
-func getStateConditions() []apistructs.EdgeConditions {
+func getStateConditions(lr *i18r.LocaleResource) []apistructs.EdgeConditions {
 	return []apistructs.EdgeConditions{
 		{
 			Fixed:       true,
 			Key:         "condition",
-			Label:       "名称",
+			Label:       lr.Get(i18n.I18nKeyName),
 			Type:        "input",
-			Placeholder: "按名称模糊搜索",
+			Placeholder: lr.Get(i18n.I18nKeySearchbyname),
 		},
 	}
 }

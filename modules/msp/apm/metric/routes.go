@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package metric
 
@@ -46,6 +47,7 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.POST(apiPathPrefix+"/metrics/:metric", p.metricQuery, checkByTerminusKeys)
 	routes.GET(apiPathPrefix+"/metrics/:metric/:aggregate", p.metricQuery, checkByTerminusKeys)
 	routes.POST(apiPathPrefix+"/metrics/:metric/:aggregate", p.metricQuery, checkByTerminusKeys)
+	routes.POST(apiPathPrefix+"/metrics/tenant/project/overview", p.metricQueryByQLForProjectOverview)
 
 	checkByScopeID := permission.Intercepter(
 		permission.ScopeProject, p.MPerm.TerminusKeyToProjectIDForHTTP("scopeId"),
@@ -57,6 +59,14 @@ func (p *provider) initRoutes(routes httpserver.Router) error {
 	routes.Any(apiPathPrefix+"/dashboard/blocks", p.proxyBlocks, checkByScopeID)
 	routes.Any(apiPathPrefix+"/dashboard/blocks/:id", p.proxyBlock, checkByScopeID)
 	return nil
+}
+
+func (p *provider) metricQueryByQLForProjectOverview(rw http.ResponseWriter, r *http.Request) interface{} {
+	metric := p.getMetricFromSQL(r)
+	if len(metric) <= 0 {
+		return api.Errors.InvalidParameter("not found metric name")
+	}
+	return p.proxyMonitor("/api/query", nil, rw, r)
 }
 
 func (p *provider) metricQueryByQL(rw http.ResponseWriter, r *http.Request) interface{} {

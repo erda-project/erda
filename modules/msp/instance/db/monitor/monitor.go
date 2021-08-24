@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package monitor
 
@@ -26,8 +27,12 @@ type MonitorDB struct {
 	*gorm.DB
 }
 
+func (db *MonitorDB) query() *gorm.DB {
+	return db.Table(TableMonitor).Where("is_delete=0")
+}
+
 func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error) {
-	query := db.Table(TableMonitor)
+	query := db.query()
 	query, err := gormutil.GetQueryFilterByFields(query, monitorFieldColumns, fields)
 	if err != nil {
 		return nil, err
@@ -45,7 +50,7 @@ func (db *MonitorDB) GetByFields(fields map[string]interface{}) (*Monitor, error
 // GetByTerminusKey .
 func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 	var monitor Monitor
-	result := db.Table(TableMonitor).
+	result := db.query().
 		Where("`terminus_key`=?", terminusKey).
 		Limit(1).
 		Last(&monitor)
@@ -59,6 +64,30 @@ func (db *MonitorDB) GetByTerminusKey(terminusKey string) (*Monitor, error) {
 type CompatibleTerminusKey struct {
 	TerminusKey        string `gorm:"column:terminus_key"`
 	TerminusKeyRuntime string `gorm:"column:terminus_key_runtime"`
+}
+
+func (db *MonitorDB) GetMonitorByProjectId(projectID int64) ([]*Monitor, error) {
+	var monitors []*Monitor
+	err := db.Where("`project_id` = ?", projectID).Where("`is_delete` = ?", 0).Find(&monitors).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return monitors, nil
+}
+
+func (db *MonitorDB) GetMonitorByProjectIdAndWorkspace(projectID int64, workspace string) (*Monitor, error) {
+	monitor := Monitor{}
+	err := db.Where("`project_id` = ?", projectID).Where("`workspace` = ?", workspace).Where("`is_delete` = ?", 0).Find(&monitor).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &monitor, nil
 }
 
 func (db *MonitorDB) ListCompatibleTKs() ([]*CompatibleTerminusKey, error) {

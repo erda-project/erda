@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package executor
 
@@ -112,6 +113,24 @@ func (m *Manager) GetCluster(clusterName string) (apistructs.ClusterInfo, error)
 	return cluster, nil
 }
 
+// TryGetExecutor if can`t get executor, manager try to make new executor by cluster info and return new executor
+func (m *Manager) TryGetExecutor(name types.Name, cluster apistructs.ClusterInfo) (bool, types.TaskExecutor, error) {
+	taskExecutor, err := m.Get(name)
+	if err != nil {
+		logrus.Warnf("failed to get executor: %s, err: %v, try to make executors...", name, err)
+		if updateErr := m.updateClusterExecutor(cluster); updateErr != nil {
+			return false, nil, updateErr
+		}
+		newExecutor, nErr := m.Get(name)
+		if nErr != nil {
+			logrus.Errorf("try to get executor failed, err: %v", nErr)
+			return false, nil, nErr
+		}
+		return false, newExecutor, nil
+	}
+	return false, taskExecutor, nil
+}
+
 func (m *Manager) deleteExecutor(cluster apistructs.ClusterInfo) {
 	m.Lock()
 	defer m.Unlock()
@@ -158,46 +177,49 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 		k8sjobCreate, ok := m.factory[k8sjob.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sjob.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
-			}
 			k8sjobExecutor, err = k8sjobCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
+				}
+				m.executors[name] = k8sjobExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
-			m.executors[name] = k8sjobExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 
 		k8sflinkCreate, ok := m.factory[k8sflink.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sflink.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
-			}
 			k8sflinkExecutor, err = k8sflinkCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
 				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
+				}
+				m.executors[name] = k8sflinkExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sflink.Kind, name)
 			}
-			m.executors[name] = k8sflinkExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 
 		k8ssparkCreate, ok := m.factory[k8sspark.Kind]
 		if ok {
 			name := types.Name(fmt.Sprintf("%sfor%s", cluster.Name, k8sspark.Kind))
-			if _, exist := m.executors[name]; exist {
-				delete(m.executors, name)
-			}
 			k8ssparkExecutor, err = k8ssparkCreate(name, cluster.Name, cluster)
 			if err != nil {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
 				return err
+			} else {
+				if _, exist := m.executors[name]; exist {
+					delete(m.executors, name)
+				}
+				m.executors[name] = k8ssparkExecutor
+				logrus.Infof("=> kind [%s], name [%s], created", k8sspark.Kind, name)
 			}
-			m.executors[name] = k8ssparkExecutor
-			logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 		}
 	default:
 
@@ -224,8 +246,8 @@ func (m *Manager) batchUpdateExecutors() error {
 
 func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan apistructs.ClusterEvent, triggerChan <-chan struct{}) {
 	var err error
-	interval := time.Duration(conf.ExecutorRefreshIntervalHour())
-	ticker := time.NewTicker(time.Hour * interval)
+	interval := time.Duration(conf.ExecutorRefreshIntervalMinute())
+	ticker := time.NewTicker(time.Minute * interval)
 	for {
 		select {
 		case <-ctx.Done():

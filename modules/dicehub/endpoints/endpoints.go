@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package endpoints 定义所有的 route handle.
 package endpoints
@@ -22,7 +23,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
-	"github.com/erda-project/erda/modules/dicehub/service/image"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
@@ -34,7 +34,6 @@ type Endpoints struct {
 	db                 *dbclient.DBClient
 	bdl                *bundle.Bundle
 	release            *release.Release
-	image              *image.Image
 	extension          *extension.Extension
 	publishItem        *publish_item.PublishItem
 	pipelineTemplate   *template.PipelineTemplate
@@ -72,13 +71,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithRelease(release *release.Release) Option {
 	return func(e *Endpoints) {
 		e.release = release
-	}
-}
-
-// WithImage 配置 image service
-func WithImage(image *image.Image) Option {
-	return func(e *Endpoints) {
-		e.image = image
 	}
 }
 
@@ -131,10 +123,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/releases/actions/get-latest", Method: http.MethodGet, Handler: e.GetLatestReleases},
 
 		{Path: "/gc", Method: http.MethodPost, Handler: e.ReleaseGC},
-
-		// 镜像相关
-		{Path: "/api/images/{imageIdOrImage}", Method: http.MethodGet, Handler: e.GetImage},
-		{Path: "/api/images", Method: http.MethodGet, Handler: e.ListImage},
 
 		//插件市场
 		{Path: "/api/extensions/actions/search", Method: http.MethodPost, Handler: e.SearchExtensions},

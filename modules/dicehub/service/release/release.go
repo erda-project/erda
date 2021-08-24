@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package release
 
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/conf"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/event"
+	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -41,8 +43,9 @@ const (
 
 // Release Release操作封装
 type Release struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
+	db      *dbclient.DBClient
+	bdl     *bundle.Bundle
+	imageDB *imagedb.ImageConfigDB
 }
 
 // Option 定义 Release 对象的配置选项
@@ -61,6 +64,13 @@ func New(options ...Option) *Release {
 func WithDBClient(db *dbclient.DBClient) Option {
 	return func(a *Release) {
 		a.db = db
+	}
+}
+
+// WithDBClient 配置 db client
+func WithImageDBClient(db *imagedb.ImageConfigDB) Option {
+	return func(a *Release) {
+		a.imageDB = db
 	}
 }
 
@@ -113,7 +123,7 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 	images := r.GetImages(req)
 	for _, v := range images {
 		v.ReleaseID = release.ReleaseID
-		if err := r.db.CreateImage(v); err != nil {
+		if err := r.imageDB.CreateImage(v); err != nil {
 			return "", err
 		}
 	}
@@ -203,7 +213,7 @@ func (r *Release) Delete(orgID int64, releaseID string) error {
 		return errors.Errorf("reference > 0")
 	}
 
-	images, err := r.db.GetImagesByRelease(releaseID)
+	images, err := r.imageDB.GetImagesByRelease(releaseID)
 	if err != nil {
 		return err
 	}
@@ -221,7 +231,7 @@ func (r *Release) Delete(orgID int64, releaseID string) error {
 
 	// delete images from db
 	for _, v := range images {
-		if err := r.db.DeleteImage(int64(v.ID)); err != nil {
+		if err := r.imageDB.DeleteImage(int64(v.ID)); err != nil {
 			logrus.Errorf("[alert] delete image: %s fail, err: %v", v.Image, err)
 		}
 		logrus.Infof("deleted image: %s", v.Image)
@@ -248,7 +258,7 @@ func (r *Release) Get(orgID int64, releaseID string) (*apistructs.ReleaseGetResp
 		return nil, errors.Errorf("release not found")
 	}
 
-	images, err := r.db.GetImagesByRelease(releaseID)
+	images, err := r.imageDB.GetImagesByRelease(releaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +301,7 @@ func (r *Release) GetDiceYAML(orgID int64, releaseID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if orgID != 0 && release.OrgID != orgID { // 内部调用时，orgID为0
+	if orgID != 0 && release.OrgID != orgID { // when calling internally，orgID is 0
 		return "", errors.Errorf("release not found")
 	}
 
@@ -304,7 +314,7 @@ func (r *Release) GetIosPlist(orgID int64, releaseID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if orgID != 0 && release.OrgID != orgID { // 内部调用时，orgID为0
+	if orgID != 0 && release.OrgID != orgID { // when calling internally，orgID is 0
 		return "", errors.Errorf("release not found")
 	}
 
@@ -407,7 +417,7 @@ func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
 			continue
 		}
 
-		images, err := r.db.GetImagesByRelease(release.ReleaseID)
+		images, err := r.imageDB.GetImagesByRelease(release.ReleaseID)
 		if err != nil {
 			logrus.Warnf(err.Error())
 			continue
@@ -416,7 +426,7 @@ func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
 		deletable := true // 若release下的image manifest删除失败，release不可删除
 		for _, image := range images {
 			// 若有其他release引用此镜像，镜像manifest不可删，只删除DB元信息(多次构建，存在镜像相同的情况)
-			count, err := r.db.GetImageCount(release.ReleaseID, image.Image)
+			count, err := r.imageDB.GetImageCount(release.ReleaseID, image.Image)
 			if err != nil {
 				logrus.Errorf(err.Error())
 				continue
@@ -430,7 +440,7 @@ func (r *Release) RemoveDeprecatedsReleases(now time.Time) error {
 			}
 
 			// Delete image info
-			if err := r.db.DeleteImage(int64(image.ID)); err != nil {
+			if err := r.imageDB.DeleteImage(int64(image.ID)); err != nil {
 				logrus.Errorf("[alert] delete image: %s fail, err: %v", image.Image, err)
 			}
 			logrus.Infof("deleted image: %s", image.Image)
@@ -527,15 +537,15 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 }
 
 // GetImages 从ReleaseRequest中提取Image信息
-func (r *Release) GetImages(req *apistructs.ReleaseCreateRequest) []*dbclient.Image {
+func (r *Release) GetImages(req *apistructs.ReleaseCreateRequest) []*imagedb.Image {
 	var dice diceyml.Object
 	err := yaml.Unmarshal([]byte(req.Dice), &dice)
 	if err != nil {
-		return make([]*dbclient.Image, 0)
+		return make([]*imagedb.Image, 0)
 	}
 
 	// Get images from dice.yml
-	images := make([]*dbclient.Image, 0)
+	images := make([]*imagedb.Image, 0)
 	for key, service := range dice.Services {
 		// Check service if contain any image
 		if service.Image == "" {
@@ -543,7 +553,7 @@ func (r *Release) GetImages(req *apistructs.ReleaseCreateRequest) []*dbclient.Im
 			continue
 		}
 		repoName, tag := parseImage(service.Image)
-		image := &dbclient.Image{
+		image := &imagedb.Image{
 			Image:     service.Image,
 			ImageName: repoName,
 			ImageTag:  tag,
@@ -557,7 +567,7 @@ func (r *Release) GetImages(req *apistructs.ReleaseCreateRequest) []*dbclient.Im
 			continue
 		}
 		repoName, tag := parseImage(job.Image)
-		image := &dbclient.Image{
+		image := &imagedb.Image{
 			Image:     job.Image,
 			ImageName: repoName,
 			ImageTag:  tag,

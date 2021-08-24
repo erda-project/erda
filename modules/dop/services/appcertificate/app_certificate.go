@@ -1,20 +1,22 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package appcertificate 封装AppCertificate资源相关操作
 package appcertificate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -23,11 +25,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/dop/services/certificate"
+	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 )
 
 // AppCertificate 资源对象操作封装
@@ -35,6 +40,7 @@ type AppCertificate struct {
 	db          *dao.DBClient
 	bdl         *bundle.Bundle
 	certificate *certificate.Certificate
+	cms         cmspb.CmsServiceServer
 }
 
 // Option 定义 AppCertificate 对象的配置选项
@@ -67,6 +73,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithCertificate(cer *certificate.Certificate) Option {
 	return func(a *AppCertificate) {
 		a.certificate = cer
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(a *AppCertificate) {
+		a.cms = cms
 	}
 }
 
@@ -189,8 +201,8 @@ func (c *AppCertificate) Delete(appID, certificateID int64) error {
 		return errors.Errorf("failed to unmarshal certificate push config, (%v)", err)
 	}
 
-	var deleteCmsReq = apistructs.PipelineCmsDeleteConfigsRequest{
-		PipelineSource: apistructs.PipelineSourceDice,
+	var deleteCmsReq = cmspb.CmsNsConfigsDeleteRequest{
+		PipelineSource: apistructs.PipelineSourceDice.String(),
 		DeleteForce:    true,
 	}
 	for _, env := range oriPushConfig.Envs {
@@ -213,9 +225,8 @@ func (c *AppCertificate) Delete(appID, certificateID int64) error {
 				oriPushConfig.AndroidKey.ReleaseKeyStoreAlias,
 			}
 		}
-		if err = c.bdl.DeletePipelineCmsNsConfigs(fmt.Sprintf("app-%d-%s",
-			certificate.AppID, strings.ToLower(string(env))),
-			deleteCmsReq); err != nil {
+		deleteCmsReq.Ns = fmt.Sprintf("app-%d-%s", certificate.AppID, strings.ToLower(string(env)))
+		if _, err = c.cms.DeleteCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &deleteCmsReq); err != nil {
 			return err
 		}
 	}
@@ -250,10 +261,10 @@ func (c *AppCertificate) ListAllAppCertificates(params *apistructs.AppCertificat
 // PushConfigs 推送Certificate配置到配置管理
 func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertificateConfigsRequest) error {
 	var (
-		pushReq = apistructs.PipelineCmsUpdateConfigsRequest{
-			PipelineSource: apistructs.PipelineSourceDice,
+		pushReq = &cmspb.CmsNsConfigsUpdateRequest{
+			PipelineSource: apistructs.PipelineSourceDice.String(),
 		}
-		valueMap = make(map[string]apistructs.PipelineCmsConfigValue)
+		valueMap = make(map[string]*cmspb.PipelineCmsConfigValue)
 	)
 
 	// 先删除四大环境的 key
@@ -275,8 +286,8 @@ func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertific
 	}
 
 	// 删除四大环境旧的配置
-	var deleteCmsReq = apistructs.PipelineCmsDeleteConfigsRequest{
-		PipelineSource: apistructs.PipelineSourceDice,
+	var deleteCmsReq = cmspb.CmsNsConfigsDeleteRequest{
+		PipelineSource: apistructs.PipelineSourceDice.String(),
 		DeleteForce:    true,
 	}
 	for _, env := range oriPushConfig.Envs {
@@ -299,9 +310,8 @@ func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertific
 				oriPushConfig.AndroidKey.ReleaseKeyStoreAlias,
 			}
 		}
-		if err = c.bdl.DeletePipelineCmsNsConfigs(fmt.Sprintf("app-%d-%s",
-			certificatePushReq.AppID, strings.ToLower(string(env))),
-			deleteCmsReq); err != nil {
+		deleteCmsReq.Ns = fmt.Sprintf("app-%d-%s", certificatePushReq.AppID, strings.ToLower(string(env)))
+		if _, err := c.cms.DeleteCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &deleteCmsReq); err != nil {
 			return err
 		}
 	}
@@ -314,13 +324,13 @@ func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertific
 			certificatePushReq.CertificateID, err)
 	}
 
-	fileConfigOperations := &apistructs.PipelineCmsConfigOperations{
+	fileConfigOperations := &cmspb.PipelineCmsConfigOperations{
 		CanDelete:   false,
 		CanDownload: true,
 		CanEdit:     false,
 	}
 
-	kvConfigOperations := &apistructs.PipelineCmsConfigOperations{
+	kvConfigOperations := &cmspb.PipelineCmsConfigOperations{
 		CanDelete:   false,
 		CanDownload: false,
 		CanEdit:     false,
@@ -329,117 +339,117 @@ func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertific
 	switch certificatePushReq.CertificateType {
 	case apistructs.IOSCertificateType:
 		// KeyChainP12
-		valueMap[certificatePushReq.IOSKey.KeyChainP12File] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.IOSKey.KeyChainP12File] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.IOSInfo.KeyChainP12.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
 
 		// KeyChainP12Password
-		valueMap[certificatePushReq.IOSKey.KeyChainP12Password] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.IOSKey.KeyChainP12Password] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.IOSInfo.KeyChainP12.Password,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// ReleaseMobileProvision
-		valueMap[certificatePushReq.IOSKey.ReleaseMobileProvision] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.IOSKey.ReleaseMobileProvision] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.IOSInfo.ReleaseProvisionFile.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
 
 		// DebugMobileProvision
-		valueMap[certificatePushReq.IOSKey.DebugMobileProvision] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.IOSKey.DebugMobileProvision] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.IOSInfo.DebugProvisionFile.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
 	case apistructs.AndroidCertificateType:
 		// DebugKeyStoreFile
-		valueMap[certificatePushReq.AndroidKey.DebugKeyStoreFile] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.DebugKeyStoreFile] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.DebugKeyStore.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
 
 		// DebugKeyPassword
-		valueMap[certificatePushReq.AndroidKey.DebugKeyPassword] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.DebugKeyPassword] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.DebugKeyStore.KeyPassword,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// DebugStorePassword
-		valueMap[certificatePushReq.AndroidKey.DebugStorePassword] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.DebugStorePassword] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.DebugKeyStore.StorePassword,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// DebugStoreAlias
-		valueMap[certificatePushReq.AndroidKey.DebugKeyStoreAlias] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.DebugKeyStoreAlias] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.DebugKeyStore.Alias,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// ReleaseKeyStoreFile
-		valueMap[certificatePushReq.AndroidKey.ReleaseKeyStoreFile] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.ReleaseKeyStoreFile] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.ReleaseKeyStore.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
 
 		// ReleaseKeyPassword
-		valueMap[certificatePushReq.AndroidKey.ReleaseKeyPassword] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.ReleaseKeyPassword] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.ReleaseKeyStore.KeyPassword,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// ReleaseStorePassword
-		valueMap[certificatePushReq.AndroidKey.ReleaseStorePassword] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.ReleaseStorePassword] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.ReleaseKeyStore.StorePassword,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 
 		// ReleaseStoreAlias
-		valueMap[certificatePushReq.AndroidKey.ReleaseKeyStoreAlias] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.AndroidKey.ReleaseKeyStoreAlias] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.AndroidInfo.ManualInfo.ReleaseKeyStore.Alias,
 			EncryptInDB: true,
-			Type:        apistructs.PipelineCmsConfigTypeKV,
+			Type:        cms.ConfigTypeKV,
 			From:        "certificate",
 			Operations:  kvConfigOperations,
 		}
 	case apistructs.MessageCertificateType:
-		valueMap[certificatePushReq.MessageKey.Key] = apistructs.PipelineCmsConfigValue{
+		valueMap[certificatePushReq.MessageKey.Key] = &cmspb.PipelineCmsConfigValue{
 			Value:       cerInfo.MessageInfo.UUID,
 			EncryptInDB: false,
-			Type:        apistructs.PipelineCmsConfigTypeDiceFile,
+			Type:        cms.ConfigTypeDiceFile,
 			From:        "certificate",
 			Operations:  fileConfigOperations,
 		}
@@ -448,9 +458,8 @@ func (c *AppCertificate) PushConfigs(certificatePushReq *apistructs.PushCertific
 	pushReq.KVs = valueMap
 
 	for _, env := range certificatePushReq.Envs {
-		if err = c.bdl.CreateOrUpdatePipelineCmsNsConfigs(fmt.Sprintf("app-%d-%s",
-			certificatePushReq.AppID, strings.ToLower(string(env))),
-			pushReq); err != nil {
+		pushReq.Ns = fmt.Sprintf("app-%d-%s", certificatePushReq.AppID, strings.ToLower(string(env)))
+		if _, err := c.cms.UpdateCmsNsConfigs(utils.WithInternalClientContext(context.Background()), pushReq); err != nil {
 			return err
 		}
 	}

@@ -1,21 +1,23 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 
 	"bou.ke/monkey"
@@ -53,8 +55,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 			args: args{
 				pipelineYml: "version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout\n          description: 代码仓库克隆\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          version: \"1.0\"\n          params:\n            build_type: maven\n            container_type: spring-boot\n            jdk_version: \"11\"\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n",
 			},
-			wantActionJobDefines: []string{"git-checkout@1.0", "java@1.0", "release@1.0", "dice@1.0"},
-			wantActionJobSpecs:   []string{"git-checkout@1.0", "java@1.0", "release@1.0", "dice@1.0"},
+			wantActionJobDefines: []string{"git-checkout", "java@1.0", "release", "dice"},
+			wantActionJobSpecs:   []string{"git-checkout", "java@1.0", "release", "dice"},
 		},
 		{
 			name: "want_error",
@@ -108,9 +110,21 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			var actionJobDefines = sync.Map{}
+			var actionJobSpecs = sync.Map{}
+
+			for key, value := range tt.fields.actionJobDefines {
+				actionJobDefines.Store(key, value)
+			}
+
+			for key, value := range tt.fields.actionJobSpecs {
+				actionJobSpecs.Store(key, value)
+			}
+
 			that := &passedDataWhenCreate{
-				actionJobDefines: tt.fields.actionJobDefines,
-				actionJobSpecs:   tt.fields.actionJobSpecs,
+				actionJobDefines: &actionJobDefines,
+				actionJobSpecs:   &actionJobSpecs,
 			}
 			yml, err := pipelineyml.New([]byte(tt.args.pipelineYml))
 			assert.NoError(t, err)
@@ -137,14 +151,30 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 				t.Errorf("putPassedDataByPipelineYml() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			assert.Equal(t, len(that.actionJobDefines), len(tt.wantActionJobDefines), "wantActionJobDefines")
-			assert.Equal(t, len(that.actionJobSpecs), len(tt.wantActionJobSpecs), "wantActionJobSpecs")
+			var actionJobDefinesLen int
+			that.actionJobDefines.Range(func(key, value interface{}) bool {
+				actionJobDefinesLen += 1
+				return true
+			})
+
+			var actionJobSpecsLen int
+			that.actionJobSpecs.Range(func(key, value interface{}) bool {
+				actionJobSpecsLen += 1
+				return true
+			})
+
+			assert.Equal(t, actionJobDefinesLen, len(tt.wantActionJobDefines), "wantActionJobDefines")
+			assert.Equal(t, actionJobSpecsLen, len(tt.wantActionJobSpecs), "wantActionJobSpecs")
 
 			for _, v := range tt.wantActionJobSpecs {
-				assert.NotEmpty(t, that.actionJobSpecs[v])
+				value, ok := that.actionJobSpecs.Load(v)
+				assert.True(t, ok)
+				assert.NotEmpty(t, value)
 			}
 			for _, v := range tt.wantActionJobDefines {
-				assert.NotEmpty(t, that.actionJobDefines[v])
+				value, ok := that.actionJobDefines.Load(v)
+				assert.True(t, ok)
+				assert.NotEmpty(t, value)
 			}
 		})
 	}

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package dbclient
 
@@ -144,7 +145,7 @@ func (client *Client) DeletePipelineCron(id interface{}) error {
 }
 
 //更新cron的enable = false，cronExpr = new_.CronExpr
-func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
+func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) (cronID uint64, err error) {
 
 	var disable = false
 	var updateCron = &spec.PipelineCron{}
@@ -157,7 +158,7 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 	}
 	v1Exist, err := client.Get(queryV1)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if queryV1.Extra.Version == "v2" {
 		v1Exist = false
@@ -167,7 +168,7 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 		updateCron.Enable = &disable
 		updateCron.ID = queryV1.ID
 		updateCron.CronExpr = new_.CronExpr
-		return client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
 	}
 
 	//------------------------ v2
@@ -179,17 +180,17 @@ func (client *Client) DisablePipelineCron(new_ *spec.PipelineCron) error {
 	}
 	v2Exist, err := client.Get(queryV2)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	//只更新enable为false
 	if v2Exist {
 		updateCron.Enable = &disable
 		updateCron.ID = queryV2.ID
 		updateCron.CronExpr = new_.CronExpr
-		return client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
+		return updateCron.ID, client.UpdatePipelineCronWillUseDefault(updateCron.ID, updateCron, columns)
 	}
 
-	return nil
+	return 0, nil
 }
 
 func (client *Client) UpdatePipelineCron(id interface{}, cron *spec.PipelineCron) error {

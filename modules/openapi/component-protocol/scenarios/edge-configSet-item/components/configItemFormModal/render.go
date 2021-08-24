@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package configitemformmodal
 
@@ -20,13 +21,13 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-configSet-item/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 const (
 	CfgItemKeyMatchPattern = "^[a-zA-Z-._][a-zA-Z0-9-._]*$"
-	CfgItemKeyRegexpError  = "可输入英文字母、数字、中划线、下划线或点, 不能以数字开头"
 )
 
 var (
@@ -95,20 +96,20 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps(sites []map[string]interface{}, modeEdit bool) apistructs.EdgeFormModalProps {
+func getProps(sites []map[string]interface{}, modeEdit bool, lr *i18r.LocaleResource) apistructs.EdgeFormModalProps {
 	edgeFormModal := apistructs.EdgeFormModalProps{
-		Title: "新建配置项",
+		Title: lr.Get(i18n.I18nKeyCreateConfigItem),
 		Fields: []apistructs.EdgeFormModalField{
 			{
 				Key:       "key",
-				Label:     "键",
+				Label:     lr.Get(i18n.I18nKeyKey),
 				Component: "input",
 				Disabled:  modeEdit,
 				Required:  true,
 				Rules: []apistructs.EdgeFormModalFieldRule{
 					{
 						Pattern: CfgItemKeyRegexp,
-						Message: CfgItemKeyRegexpError,
+						Message: lr.Get(i18n.I18nKeyInputConfigItemTip),
 					},
 				},
 				ComponentProps: map[string]interface{}{
@@ -117,7 +118,7 @@ func getProps(sites []map[string]interface{}, modeEdit bool) apistructs.EdgeForm
 			},
 			{
 				Key:       "value",
-				Label:     "值",
+				Label:     lr.Get(i18n.I18nKeyValue),
 				Component: "input",
 				Required:  true,
 				ComponentProps: map[string]interface{}{
@@ -126,28 +127,28 @@ func getProps(sites []map[string]interface{}, modeEdit bool) apistructs.EdgeForm
 			},
 			{
 				Key:          "scope",
-				Label:        "范围",
+				Label:        lr.Get(i18n.I18nKeyScope),
 				Component:    "select",
 				Disabled:     modeEdit,
 				Required:     true,
 				InitialValue: ScopeCommon,
 				ComponentProps: map[string]interface{}{
-					"placeholder": "请选择范围",
+					"placeholder": lr.Get(i18n.I18nKeySelectScope),
 					"options": []map[string]interface{}{
-						{"name": "通用", "value": ScopeCommon},
-						{"name": "站点", "value": ScopeSite},
+						{"name": lr.Get(i18n.I18nKeyUniversal), "value": ScopeCommon},
+						{"name": lr.Get(i18n.I18nKeySite), "value": ScopeSite},
 					},
 				},
 			},
 			{
 				Key:       "sites",
-				Label:     "站点",
+				Label:     lr.Get(i18n.I18nKeySite),
 				Component: "select",
 				Disabled:  modeEdit,
 				Required:  true,
 				ComponentProps: map[string]interface{}{
 					"mode":        "multiple",
-					"placeholder": "请选择范围",
+					"placeholder": lr.Get(i18n.I18nKeySelectScope),
 					"options":     sites,
 					"selectAll":   true,
 				},
@@ -161,7 +162,7 @@ func getProps(sites []map[string]interface{}, modeEdit bool) apistructs.EdgeForm
 	}
 
 	if modeEdit {
-		edgeFormModal.Title = "编辑配置项"
+		edgeFormModal.Title = lr.Get(i18n.I18nKeyEditConfigItem)
 	}
 
 	return edgeFormModal

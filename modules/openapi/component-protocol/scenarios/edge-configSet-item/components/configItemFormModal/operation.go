@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package configitemformmodal
 
@@ -20,9 +21,10 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-configSet-item/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -74,7 +76,7 @@ func (c *ComponentFormModal) OperateRendering(orgID, configSetID int64, identity
 	var (
 		cfgSetState = apistructs.EdgeCfgSetState{}
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return fmt.Errorf("marshal component state error: %v", err)
@@ -97,7 +99,7 @@ func (c *ComponentFormModal) OperateRendering(orgID, configSetID int64, identity
 		if err != nil {
 			return fmt.Errorf("get avaliable edge clusters error: %v", err)
 		}
-		c.component.Props = getProps(sites, false)
+		c.component.Props = getProps(sites, false, i18nLocale)
 
 	} else if cfgSetState.ConfigSetItemID != 0 {
 
@@ -119,7 +121,7 @@ func (c *ComponentFormModal) OperateRendering(orgID, configSetID int64, identity
 			}
 		}
 		c.component.State["formData"] = formData
-		c.component.Props = getProps(nil, true)
+		c.component.Props = getProps(nil, true, i18nLocale)
 		return nil
 
 	}
@@ -141,7 +143,7 @@ func (c *ComponentFormModal) OperateSubmit(configSetID int64, identity apistruct
 		isPublic           bool
 		err                error
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if data, ok := c.component.State["formData"]; ok {
 		formDataJson, err = json.Marshal(data)
 		if err != nil {
@@ -203,7 +205,7 @@ func (c *ComponentFormModal) OperateSubmit(configSetID int64, identity apistruct
 			sites = createSiteObject.Sites
 		}
 
-		if err = validateSubmitData(itemKey, itemValue); err != nil {
+		if err = validateSubmitData(itemKey, itemValue, i18nLocale); err != nil {
 			return err
 		}
 
@@ -242,7 +244,7 @@ func deConvertScope(scope string) string {
 	return ""
 }
 
-func validateSubmitData(itemKey, itemValue string) error {
+func validateSubmitData(itemKey, itemValue string, lr *i18r.LocaleResource) error {
 	if err := strutil.Validate(itemKey, strutil.MaxRuneCountValidator(apistructs.EdgeDefaultNameMaxLength)); err != nil {
 		return err
 	}
@@ -256,7 +258,7 @@ func validateSubmitData(itemKey, itemValue string) error {
 	}
 
 	if !isRight {
-		return fmt.Errorf(CfgItemKeyRegexpError)
+		return fmt.Errorf(lr.Get(i18n.I18nKeyInputConfigItemTip))
 	}
 
 	return nil

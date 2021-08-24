@@ -1,19 +1,21 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package autotestv2
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -28,10 +30,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -58,11 +62,7 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		return 0, apierrors.ErrCreateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
-	count, err := svc.db.CountSceneBySetAndName(req.SetID, req.Name)
-	if err != nil {
-		return 0, err
-	}
-	if count > 0 {
+	if ok := svc.checkSceneSetSameNameScene(req.SetID, req.Name, 0); !ok {
 		return 0, apierrors.ErrCreateAutoTestScene.AlreadyExists()
 	}
 
@@ -171,7 +171,7 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 		return 0, err
 	}
 	if ok, _ := regexp.MatchString("^[a-zA-Z\u4e00-\u9fa50-9_-]*$", req.Name); !ok {
-		return 0, apierrors.ErrCreateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
+		return 0, apierrors.ErrUpdateAutoTestScene.InvalidState("只可输入中文、英文、数字、中划线或下划线")
 	}
 
 	scene, err := svc.db.GetAutotestScene(req.SceneID)
@@ -179,11 +179,7 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 		return 0, err
 	}
 
-	count, err := svc.db.CountSceneBySetAndName(req.SetID, req.Name)
-	if err != nil {
-		return 0, err
-	}
-	if count > 1 || count == 1 && req.Name != scene.Name {
+	if ok := svc.checkSceneSetSameNameScene(req.SetID, req.Name, scene.ID); !ok {
 		return 0, apierrors.ErrUpdateAutoTestScene.AlreadyExists()
 	}
 
@@ -208,13 +204,11 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	var preID uint64
 	// 移动到另一scene set
 	if req.GroupID > 0 {
-		count, err := svc.db.CountSceneBySetAndName(uint64(req.GroupID), req.Name)
-		if err != nil {
-			return 0, err
-		}
-		if count > 0 {
+
+		if ok := svc.checkSceneSetSameNameScene(uint64(req.GroupID), req.Name, req.ID); !ok {
 			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
 		}
+
 		_, scenes, err := svc.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: uint64(req.GroupID)})
 		if err != nil {
 			return 0, err
@@ -236,6 +230,10 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 		}
 		preID = id
 		req.GroupID = int64(setID)
+
+		if ok := svc.checkSceneSetSameNameScene(uint64(req.GroupID), req.Name, req.ID); !ok {
+			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
+		}
 	}
 	err := svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID))
 	if err != nil {
@@ -243,6 +241,28 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 	}
 
 	return req.ID, nil
+}
+
+func (svc *Service) checkSceneSetSameNameScene(sceneSetID uint64, sceneName string, sceneID uint64) bool {
+	dbScenes, err := svc.db.FindSceneBySetAndName(sceneSetID, sceneName)
+	if err != nil {
+		return false
+	}
+	var checkExistScenes []dao.AutoTestScene
+	for _, rangeScene := range dbScenes {
+		// mysql not case sensitive
+		if rangeScene.Name != sceneName {
+			continue
+		}
+		if rangeScene.ID == sceneID {
+			continue
+		}
+		checkExistScenes = append(checkExistScenes, rangeScene)
+	}
+	if len(checkExistScenes) >= 1 {
+		return false
+	}
+	return true
 }
 
 // GetAutotestScene 获取场景
@@ -450,14 +470,15 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		return nil, fmt.Errorf("no api is referenced")
 	}
 
-	var pipelineCmsGetConfigsRequest apistructs.PipelineCmsGetConfigsRequest
-	pipelineCmsGetConfigsRequest.PipelineSource = apistructs.PipelineSourceAutoTest
+	var pipelineCmsGetConfigsRequest cmspb.CmsNsConfigsGetRequest
+	pipelineCmsGetConfigsRequest.PipelineSource = apistructs.PipelineSourceAutoTest.String()
 	pipelineCmsGetConfigsRequest.GlobalDecrypt = true
-	configs, _ := svc.bdl.GetPipelineCmsNsConfigs(req.ConfigManageNamespaces, pipelineCmsGetConfigsRequest)
+	pipelineCmsGetConfigsRequest.Ns = req.ConfigManageNamespaces
+	configs, _ := svc.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &pipelineCmsGetConfigsRequest)
 
 	caseParams := make(map[string]*apistructs.CaseParams)
 	apiTestEnvData := &apistructs.APITestEnvData{}
-	for _, conf := range configs {
+	for _, conf := range configs.Data {
 		switch conf.Key {
 		case autotest.CmsCfgKeyAPIGlobalConfig:
 			var apiConfig apistructs.AutoTestAPIConfig
@@ -507,7 +528,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
 
-	for _, conf := range configs {
+	for _, conf := range configs.Data {
 		switch conf.Key {
 		case autotest.CmsCfgKeyAPIGlobalConfig:
 			var apiConfig apistructs.AutoTestAPIConfig
@@ -712,6 +733,9 @@ func StepToAction(step apistructs.AutoTestSceneStep) (map[pipelineyml.ActionType
 		action.Type = "api-test"
 		action.Version = "2.0"
 		action.Params = value.ApiSpec
+		if value.Loop != nil && value.Loop.Strategy != nil && value.Loop.Strategy.MaxTimes > 0 {
+			action.Loop = value.Loop
+		}
 	case apistructs.StepTypeWait:
 		var value apistructs.AutoTestRunWait
 		err := json.Unmarshal([]byte(step.Value), &value)

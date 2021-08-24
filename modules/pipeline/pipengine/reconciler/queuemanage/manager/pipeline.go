@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package manager
 
@@ -21,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/queue"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
@@ -145,4 +147,26 @@ func (mgr *defaultManager) ensureQueryPipelineQueueDetail(p *spec.Pipeline) *api
 	}
 
 	return pq
+}
+
+func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *apistructs.PipelineQueue, pipelineIDs []uint64) error {
+	mgr.qLock.RLock()
+	defer mgr.qLock.RUnlock()
+
+	queueID := queue.New(pq).ID()
+	q, ok := mgr.queueByID[queueID]
+	if !ok {
+		return fmt.Errorf("failed to query queue: %s", queueID)
+	}
+
+	pipelines := make([]*spec.Pipeline, 0, len(pipelineIDs))
+	for _, pipelineID := range pipelineIDs {
+		p := mgr.ensureQueryPipelineDetail(pipelineID)
+		if p == nil {
+			return fmt.Errorf("failed to query pipeline: %d", pipelineID)
+		}
+		pipelines = append(pipelines, p)
+	}
+
+	return q.BatchUpdatePipelinePriorityInQueue(pipelines)
 }

@@ -39,6 +39,9 @@
 /.env
 /.env.*
 /conf/**/*.local.yaml
+modules/local/
+cmd/local
+conf/local
 
 # generated files
 # openapi

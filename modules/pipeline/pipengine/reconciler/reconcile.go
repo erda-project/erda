@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package reconciler
 
@@ -51,55 +52,11 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 	p := pipelineWithTasks.Pipeline
 	tasks := pipelineWithTasks.Tasks
 
-	if p.Status.IsEndStatus() {
-		if p.Extra.CompleteReconcilerTeardown {
-			return nil
-		}
-		// teardown pipeline
-		r.teardownPipeline(ctx, pipelineWithTasks)
-	}
-	defer func() {
-		// already end status, no need reconcile, return
-		if p.Status.IsEndStatus() {
-			if p.Extra.CompleteReconcilerTeardown {
-				return
-			}
-			r.teardownPipeline(ctx, pipelineWithTasks)
-		}
-	}()
-
 	// delay gc if have
 	r.delayGC(p.Extra.Namespace, p.ID)
 
 	// calculate pipeline status by tasks
 	calcPStatus := statusutil.CalculatePipelineStatusV2(tasks)
-	// 所有状态都为终止状态的时候
-	if statusutil.CalculatePipelineTaskAllDone(tasks) {
-		if p.Status != calcPStatus && !p.Status.IsEndStatus() {
-			oldStatus := p.Status
-			p.Status = calcPStatus
-			if err := r.updatePipelineStatus(p); err != nil {
-				return err
-			}
-			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, oldStatus, calcPStatus)
-		}
-	} else {
-		// 直接更新为 running 状态
-		if p.Status == apistructs.PipelineStatusAnalyzed || p.Status == apistructs.PipelineStatusQueue {
-			oldStatus := p.Status
-			p.Status = apistructs.PipelineStatusRunning
-			if err := r.updatePipelineStatus(p); err != nil {
-				return err
-			}
-			logrus.Infof("reconciler: pipelineID: %d, update pipeline status (%s -> %s)", p.ID, oldStatus, apistructs.PipelineStatusRunning)
-			// go metrics.PipelineGaugeProcessingAdd(*p, 1)
-		}
-	}
-
-	if p.Status.IsEndStatus() {
-		return nil
-	}
-
 	logrus.Infof("reconciler: pipelineID: %d, pipeline is not completed, continue reconcile, currentStatus: %s",
 		p.ID, p.Status)
 
@@ -159,6 +116,10 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 						return
 					}
 				}
+				if err := r.updateStatusBeforeReconcile(*sp); err != nil {
+					rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
+					return
+				}
 				// 更新 task 状态为 running
 				task.Status = apistructs.PipelineStatusRunning
 				if err = r.dbClient.UpdatePipelineTaskStatus(task.ID, task.Status); err != nil {
@@ -174,7 +135,14 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				}
 				// make context for snippet
 				snippetCtx := makeContextForPipelineReconcile(sp.ID)
-				if err = r.reconcile(snippetCtx, sp.ID); err != nil {
+				err = r.reconcile(snippetCtx, sp.ID)
+				defer func() {
+					r.teardownCurrentReconcile(snippetCtx, sp.ID)
+					if err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
+						logrus.Errorf("snippet pipeline: %d, failed to update status after reconcile, err: %v", sp.ID, err)
+					}
+				}()
+				if err != nil {
 					return
 				}
 				// 查询最新 task

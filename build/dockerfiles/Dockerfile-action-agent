@@ -1,0 +1,22 @@
+ARG BASE_DOCKER_IMAGE
+FROM ${BASE_DOCKER_IMAGE} as build
+
+# disable CGO for ALL THE THINGS (to help ensure no libc)
+ENV CGO_ENABLED 0
+
+ENV BUILD_FLAGS="-v -ldflags '-d -s -w' -a -tags netgo -installsuffix netgo"
+COPY . /go/src/github.com/erda-project/erda/
+
+WORKDIR /go/src/github.com/erda-project/erda/
+
+RUN set -x \
+	&& eval "GOOS=linux GOARCH=amd64 go build -mod=vendor $BUILD_FLAGS -o /opt/action/agent ./cmd/actionagent"
+
+RUN md5sum /opt/action/agent | cut -d ' ' -f1 > /opt/action/action-agent-md5 && cat /opt/action/action-agent-md5
+
+FROM busybox
+
+COPY --from=build /opt/action/agent /opt/action/agent
+COPY --from=build /opt/action/action-agent-md5 /opt/action/action-agent-md5
+
+ENTRYPOINT cp -afp /opt/action/. /opt/emptydir

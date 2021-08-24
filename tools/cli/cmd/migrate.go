@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package cmd
 
@@ -89,12 +90,6 @@ var Migrate = command.Command{
 			Doc:          "[Lint] Erda MySQL Lint config file",
 			DefaultValue: "",
 		},
-		command.BoolFlag{
-			Short:        "",
-			Name:         "skip-lint",
-			Doc:          "[Lint] don't do Erda MySQL Lint",
-			DefaultValue: false,
-		},
 		command.StringListFlag{
 			Short:        "",
 			Name:         "modules",
@@ -107,12 +102,36 @@ var Migrate = command.Command{
 			Doc:          "[Migrate] print SQLs",
 			DefaultValue: false,
 		},
+		command.BoolFlag{
+			Short:        "",
+			Name:         "skip-lint",
+			Doc:          "[Lint] don't do Erda MySQL Lint",
+			DefaultValue: false,
+		},
+		command.BoolFlag{
+			Short:        "",
+			Name:         "skip-sandbox",
+			Doc:          "[Migrate] skip doing migration in sandbox",
+			DefaultValue: false,
+		},
+		command.BoolFlag{
+			Short:        "",
+			Name:         "skip-pre-mig",
+			Doc:          "[Migrate] skip doing pre-migration",
+			DefaultValue: false,
+		},
+		command.BoolFlag{
+			Short:        "",
+			Name:         "skip-mig",
+			Doc:          "[Migrate] skip doing pre-migration and real migration",
+			DefaultValue: false,
+		},
 	),
 	Run: RunMigrate,
 }
 
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
-	lintConfig string, skipLint bool, modules []string, debugSQL bool) error {
+	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool) error {
 	logrus.Infoln("Erda Migrator is working")
 
 	var p = parameters{
@@ -134,12 +153,15 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 			ParseTime: true,
 			Timeout:   time.Second * 150,
 		},
-		migrationDir:      ".",
-		modules:           nil,
-		workdir:           "",
-		debugSQL:          debugSQL,
-		needErdaMySQLLint: !skipLint,
-		rules:             configuration.DefaultRulers(),
+		migrationDir:   ".",
+		modules:        nil,
+		workdir:        "",
+		debugSQL:       debugSQL,
+		rules:          configuration.DefaultRulers(),
+		skipLint:       skipLint,
+		skipSandbox:    skipSandbox,
+		skipPreMigrate: skipPreMig,
+		skipMigrate:    skipMig,
 	}
 
 	for _, module := range modules {
@@ -150,20 +172,21 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 
 	lintCfg, err := configuration.FromLocal(lintConfig)
 	if err != nil {
-		logrus.Warnln("failed to load lint config from local config file. use default!")
+		logrus.WithError(err).Warnln("failed to load lint config from local config file. use default!")
 	} else {
 		p.rules, err = lintCfg.Rulers()
 		if err != nil {
 			return errors.Wrap(err, "failed to load lint config from local config file")
 		}
 	}
-
-	go func() {
-		if err := StartSandbox(sandboxPort, sandboxContainerName); err != nil {
-			logrus.WithField("err", err).Fatalln("failed to start sandbox")
-		}
-	}()
-	defer StopSandbox(sandboxContainerName)
+	if !skipSandbox {
+		go func() {
+			if err := StartSandbox(sandboxPort, sandboxContainerName); err != nil {
+				logrus.WithField("err", err).Fatalln("failed to start sandbox")
+			}
+		}()
+		defer StopSandbox(sandboxContainerName)
+	}
 
 	mig, err := migrator.New(p)
 	if err != nil {
@@ -222,22 +245,26 @@ func RmSandbox(name string) error {
 }
 
 type parameters struct {
-	mySQLParams       *migrator.DSNParameters
-	sandboxParams     *migrator.DSNParameters
-	migrationDir      string
-	modules           []string
-	workdir           string
-	debugSQL          bool
-	needErdaMySQLLint bool
-	rules             []rules.Ruler
+	mySQLParams   *migrator.DSNParameters
+	sandboxParams *migrator.DSNParameters
+	migrationDir  string
+	modules       []string
+	workdir       string
+	debugSQL      bool
+	rules         []rules.Ruler
+
+	skipLint       bool
+	skipSandbox    bool
+	skipPreMigrate bool
+	skipMigrate    bool
 }
 
-// DSN gets MySQL DSN
+// MySQLParameters gets MySQL DSN
 func (p parameters) MySQLParameters() *migrator.DSNParameters {
 	return p.mySQLParams
 }
 
-// SandboxDSN gets sandbox DSN
+// SandboxParameters gets sandbox DSN
 func (p parameters) SandboxParameters() *migrator.DSNParameters {
 	return p.sandboxParams
 }
@@ -263,8 +290,20 @@ func (p parameters) DebugSQL() bool {
 	return p.debugSQL
 }
 
-func (p parameters) NeedErdaMySQLLint() bool {
-	return p.needErdaMySQLLint
+func (p parameters) SkipMigrationLint() bool {
+	return p.skipLint
+}
+
+func (p parameters) SkipSandbox() bool {
+	return p.skipSandbox
+}
+
+func (p parameters) SkipPreMigrate() bool {
+	return p.skipPreMigrate
+}
+
+func (p parameters) SkipMigrate() bool {
+	return p.skipMigrate
 }
 
 func (p parameters) Rules() []rules.Ruler {

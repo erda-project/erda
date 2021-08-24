@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package appconfigform
 
@@ -19,8 +20,9 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 const (
@@ -28,7 +30,6 @@ const (
 	MIDDLEWARE = "MIDDLEWARE"
 
 	AppNameMatchPattern = "^[a-z][a-z0-9-]*[a-z0-9]$"
-	AppNameRegexpError  = "可输入小写字母、数字、中划线; 必须以小写字母开头, 以小写字母或数字结尾"
 )
 
 var (
@@ -96,7 +97,7 @@ func (c ComponentFormModal) Render(ctx context.Context, component *apistructs.Co
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func (c ComponentFormModal) Render(ctx context.Context, component *apistructs.Co
 		}
 		break
 	default:
-		c.component.Props = getProps(nil, nil, nil, nil, "", "")
+		c.component.Props = getProps(nil, nil, nil, nil, "", "", i18nLocale)
 	}
 
 	c.component.Operations = getOperations()
@@ -157,13 +158,13 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-// Operation:
+// GenerateOperation:
 // - viewDetail->all disabled;
 // - update: deployResource:
 //           - mirror disabled: appName, deployResource, cluster;
 //           - middleware disabled: appName, deployResource, middlewareType, cluster;
 // Param: cluster, sites, configSets； select part.
-func getProps(clusters, sites, configSets, depends []map[string]interface{}, operation, deployResource string) apistructs.EdgeFormModalPointProps {
+func getProps(clusters, sites, configSets, depends []map[string]interface{}, operation, deployResource string, lr *i18r.LocaleResource) apistructs.EdgeFormModalPointProps {
 	formModal := apistructs.EdgeFormModalPointProps{
 		Fields:      []*apistructs.EdgeFormModalField{},
 		FooterAlign: "right",
@@ -171,13 +172,13 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	appNameField := apistructs.EdgeFormModalField{
 		Key:       "appName",
-		Label:     "应用名",
+		Label:     lr.Get(i18n.I18nKeyApplicationName),
 		Component: "input",
 		Required:  true,
 		Rules: []apistructs.EdgeFormModalFieldRule{
 			{
 				Pattern: AppNameMatchRegexp,
-				Message: AppNameRegexpError,
+				Message: lr.Get(i18n.I18nKeyInputApplicationNameTip),
 			},
 		},
 		ComponentProps: map[string]interface{}{
@@ -186,19 +187,19 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	}
 	deployResourceField := apistructs.EdgeFormModalField{
 		Key:          "deployResource",
-		Label:        "部署源",
+		Label:        lr.Get(i18n.I18nKeyDeploySource),
 		Component:    "select",
 		Required:     true,
 		DefaultValue: MIDDLEWARE,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择部署源",
+			"placeholder": lr.Get(i18n.I18nKeySelectDeploySource),
 			"options": []map[string]interface{}{
 				{
-					"name":  "镜像",
+					"name":  lr.Get(i18n.I18nKeyImage),
 					"value": MIRROR,
 				},
 				{
-					"name":  "中间件",
+					"name":  lr.Get(i18n.I18nKeyAddon),
 					"value": MIDDLEWARE,
 				},
 			},
@@ -213,11 +214,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	middleWareTypeField := apistructs.EdgeFormModalField{
 		Key:       "middlewareType",
-		Label:     "中间件类型",
+		Label:     lr.Get(i18n.I18nKeyAddonType),
 		Component: "select",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择中间件类型",
+			"placeholder": lr.Get(i18n.I18nKeyPleaseSelectAddonType),
 			"options": []map[string]interface{}{
 				{
 					"name":  MysqlAddonName,
@@ -238,11 +239,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	clusterField := apistructs.EdgeFormModalField{
 		Key:       "cluster",
-		Label:     "集群",
+		Label:     lr.Get(i18n.I18nKeyCluster),
 		Component: "select",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择集群",
+			"placeholder": lr.Get(i18n.I18nKeyPleaseSelectCluster),
 			"options":     clusters,
 		},
 		Operations: map[string]interface{}{
@@ -255,11 +256,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	sitesField := apistructs.EdgeFormModalField{
 		Key:       "sites",
-		Label:     "站点",
+		Label:     lr.Get(i18n.I18nKeySite),
 		Component: "select",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择对应集群下的站点",
+			"placeholder": lr.Get(i18n.I18nKeySelectSite),
 			"mode":        "multiple",
 			"options":     sites,
 			"selectAll":   true,
@@ -267,11 +268,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	}
 	cfgSets := apistructs.EdgeFormModalField{
 		Key:       "configSets",
-		Label:     "配置集",
+		Label:     lr.Get(i18n.I18nKeyConfigSet),
 		Component: "select",
 		Required:  false,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择配置集",
+			"placeholder": lr.Get(i18n.I18nKeySelectSite),
 			"allowClear":  true,
 			"options":     configSets,
 		},
@@ -287,11 +288,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	}
 	dependApps := apistructs.EdgeFormModalField{
 		Key:       "depends",
-		Label:     "依赖",
+		Label:     lr.Get(i18n.I18nKeyDepend),
 		Component: "select",
 		Required:  false,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择依赖",
+			"placeholder": lr.Get(i18n.I18nKeySelectDepend),
 			"mode":        "multiple",
 			"allowClear":  true,
 			"options":     depends,
@@ -309,11 +310,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	replicaField := apistructs.EdgeFormModalField{
 		Key:       "copyNum",
-		Label:     "副本数",
+		Label:     lr.Get(i18n.I18nKeyReplica),
 		Component: "inputNumber",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入副本数",
+			"placeholder": lr.Get(i18n.I18nKeyInputReplica),
 			"className":   "full-width",
 			"precision":   0,
 			"min":         0,
@@ -337,7 +338,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 		ComponentProps: map[string]interface{}{
 			"indentation": true,
 			"showDivider": false,
-			"title":       "CPU和内存",
+			"title":       lr.Get(i18n.I18nKeyCpuAndMemory),
 			"direction":   "row",
 		},
 		RemoveWhen: [][]map[string]interface{}{
@@ -353,11 +354,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	cpuRequestField := apistructs.EdgeFormModalField{
 		Key:       "storage.cpuRequest",
 		Group:     "storage",
-		Label:     "CPU需求(核)",
+		Label:     lr.Get(i18n.I18nKeyRequestCpu),
 		Component: "inputNumber",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入CPU需求",
+			"placeholder": lr.Get(i18n.I18nKeyInputRequestCpu),
 			"className":   "full-width",
 			"precision":   1,
 		},
@@ -365,23 +366,23 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	cpuLimitField := apistructs.EdgeFormModalField{
 		Key:       "storage.cpuLimit",
 		Group:     "storage",
-		Label:     "CPU限制(核)",
+		Label:     lr.Get(i18n.I18nKeyCpuLimit),
 		Component: "inputNumber",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入CPU限制",
+			"placeholder": lr.Get(i18n.I18nKeyInputCpuLimit),
 			"className":   "full-width",
 			"precision":   1,
 		},
 	}
 	memRequestField := apistructs.EdgeFormModalField{
 		Key:       "storage.memoryRequest",
-		Label:     "内存需求(MB)",
+		Label:     lr.Get(i18n.I18nKeyRequestMemory),
 		Component: "inputNumber",
 		Required:  true,
 		Group:     "storage",
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入内存需求",
+			"placeholder": lr.Get(i18n.I18nKeyInputRequestMemory),
 			"className":   "full-width",
 			"precision":   0,
 		},
@@ -389,11 +390,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	memLimitField := apistructs.EdgeFormModalField{
 		Key:       "storage.memoryLimit",
 		Group:     "storage",
-		Label:     "内存限制(MB)",
+		Label:     lr.Get(i18n.I18nKeyLimitMemory),
 		Component: "inputNumber",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入内存限制",
+			"placeholder": lr.Get(i18n.I18nKeyInputLimitMemory),
 			"className":   "full-width",
 			"precision":   0,
 		},
@@ -406,7 +407,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 		Group:     "mirror",
 		ComponentProps: map[string]interface{}{
 			"indentation": true,
-			"title":       "镜像配置",
+			"title":       lr.Get(i18n.I18nKeyImageSetting),
 			"direction":   "row",
 		},
 		RemoveWhen: [][]map[string]interface{}{
@@ -422,7 +423,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	mirrorAddrField := apistructs.EdgeFormModalField{
 		Key:       "mirror.mirrorAddress",
 		Group:     "mirror",
-		Label:     "镜像地址",
+		Label:     lr.Get(i18n.I18nKeyImageAddress),
 		Component: "input",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
@@ -432,7 +433,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	mirrorUser := apistructs.EdgeFormModalField{
 		Key:       "mirror.registryUser",
 		Group:     "mirror",
-		Label:     "镜像仓库用户名",
+		Label:     lr.Get(i18n.I18nKeyImageRepoUsername),
 		Component: "input",
 		Required:  false,
 		ComponentProps: map[string]interface{}{
@@ -442,7 +443,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	mirrorPassword := apistructs.EdgeFormModalField{
 		Key:        "mirror.registryPassword",
 		Group:      "mirror",
-		Label:      "镜像仓库密码",
+		Label:      lr.Get(i18n.I18nKeyImageRepoPassword),
 		Component:  "input",
 		Required:   false,
 		IsPassword: true,
@@ -460,7 +461,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 			"indentation": true,
 			"showDivider": false,
 			"direction":   "row",
-			"title":       "健康检查配置",
+			"title":       lr.Get(i18n.I18nKeyConfigHealthCheck),
 		},
 		RemoveWhen: [][]map[string]interface{}{
 			{
@@ -475,12 +476,12 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	healthCheckType := apistructs.EdgeFormModalField{
 		Key:          "healthCheckConfig.healthCheckType",
 		Group:        "healthCheckConfig",
-		Label:        "检查方式",
+		Label:        lr.Get(i18n.I18nKeyCheckType),
 		Component:    "select",
 		Required:     true,
 		DefaultValue: "HTTP",
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请选择健康检查方式",
+			"placeholder": lr.Get(i18n.I18nKeySelectCheckType),
 			"options": []map[string]interface{}{
 				{
 					"name":  "HTTP",
@@ -496,11 +497,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	healthCheckExec := apistructs.EdgeFormModalField{
 		Key:       "healthCheckConfig.HealthCheckExec",
 		Group:     "healthCheckConfig",
-		Label:     "检查命令",
+		Label:     lr.Get(i18n.I18nKeyCheckCommand),
 		Component: "input",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入健康检查命令",
+			"placeholder": lr.Get(i18n.I18nKeyInputCheckCommand),
 		},
 		RemoveWhen: [][]map[string]interface{}{
 			{
@@ -515,11 +516,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	healthCheckPath := apistructs.EdgeFormModalField{
 		Key:       "healthCheckConfig.path",
 		Group:     "healthCheckConfig",
-		Label:     "检查路径",
+		Label:     lr.Get(i18n.I18nKeyCheckUrl),
 		Component: "input",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入健康检查路径",
+			"placeholder": lr.Get(i18n.I18nKeyInputCheckUrl),
 			"maxLength":   apistructs.EdgeDefaultValueMaxLength,
 		},
 		RemoveWhen: [][]map[string]interface{}{
@@ -535,7 +536,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 	healthCheckPort := apistructs.EdgeFormModalField{
 		Key:       "healthCheckConfig.port",
 		Group:     "healthCheckConfig",
-		Label:     "端口",
+		Label:     lr.Get(i18n.I18nKeyPort),
 		Component: "inputNumber",
 		Required:  true,
 		ComponentProps: map[string]interface{}{
@@ -565,7 +566,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 			"defaultExpand": false,
 			"showDivider":   false,
 			"indentation":   true,
-			"title":         "端口映射",
+			"title":         lr.Get(i18n.I18nKeyPortMapping),
 		},
 		RemoveWhen: [][]map[string]interface{}{
 			{
@@ -591,10 +592,10 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 
 	portMapDataField := apistructs.EdgeFormModalField{
 		Key:       "portMap.data",
-		Label:     "映射规则 (协议-容器端口-服务端口)",
+		Label:     lr.Get(i18n.I18nKeyPortMappingRule),
 		Group:     "portMap",
 		Component: "arrayObj",
-		LabelTip:  "请依次填写协议，容器端口和服务端口，容器端口为容器内应用程序监听的端口，服务端口建议与容器端口一致",
+		LabelTip:  lr.Get(i18n.I18nKeyPortMappingInputTip),
 		Required:  true,
 		ComponentProps: map[string]interface{}{
 			"direction": "row",
@@ -603,11 +604,11 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 				{
 					"key":       "protocol",
 					"component": "select",
-					"labelTip":  "请选择协议",
+					"labelTip":  lr.Get(i18n.I18nKeySelectProtocol),
 					"required":  true,
 					"options":   "k1:TCP",
 					"componentProps": map[string]interface{}{
-						"placeholder": "请选择协议",
+						"placeholder": lr.Get(i18n.I18nKeySelectProtocol),
 						"disabled":    portMapFieldDisabled,
 					},
 				},
@@ -620,7 +621,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 						"precision":   0,
 						"min":         1,
 						"max":         65535,
-						"placeholder": "请输入容器端口",
+						"placeholder": lr.Get(i18n.I18nKeyInputContinerPort),
 						"disabled":    portMapFieldDisabled,
 					},
 				},
@@ -633,7 +634,7 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 						"precision":   0,
 						"min":         1,
 						"max":         65535,
-						"placeholder": "请输入服务端口",
+						"placeholder": lr.Get(i18n.I18nKeyInputServicePort),
 						"disabled":    portMapFieldDisabled,
 					},
 				},
@@ -645,13 +646,13 @@ func getProps(clusters, sites, configSets, depends []map[string]interface{}, ope
 		appNameField.Disabled = true
 		deployResourceField.Disabled = true
 		clusterField.Disabled = true
-		sitesField.Label = "站点 (新增的站点会部署对应的实例, 被删除的站点上应用对应的实例会被销毁)"
-		cfgSets.Label = "配置集 (全站点影响)"
-		dependApps.Label = "依赖 (全站点影响)"
-		replicaField.Label = "副本数 (全站点影响)"
-		storageGroup.Label = "CPU和内存 (全站点影响)"
-		mirrorGroup.Label = "镜像配置 (全站点影响)"
-		healthCheckGroup.Label = "健康检查配置 (全站点影响)"
+		sitesField.Label = lr.Get(i18n.I18nKeySiteChange)
+		cfgSets.Label = lr.Get(i18n.I18nKeyConfigSetChange)
+		dependApps.Label = lr.Get(i18n.I18nKeyDependChange)
+		replicaField.Label = lr.Get(i18n.I18nKeyReplicaChange)
+		storageGroup.Label = lr.Get(i18n.I18nKeyCpuAndMemoryChange)
+		mirrorGroup.Label = lr.Get(i18n.I18nKeyImageSettingChange)
+		healthCheckGroup.Label = lr.Get(i18n.I18nKeyHealthCheckChange)
 		if deployResource == MIDDLEWARE {
 			middleWareTypeField.Disabled = true
 		}

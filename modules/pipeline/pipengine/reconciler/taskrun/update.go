@@ -1,19 +1,21 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package taskrun
 
 import (
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -67,13 +69,40 @@ func (tr *TaskRun) AppendLastMsg(msg string) error {
 	if err := tr.fetchLatestTask(); err != nil {
 		return err
 	}
-	tr.Task.Result.Errors = append(tr.Task.Result.Errors, apistructs.ErrorResponse{Msg: msg})
+	tr.Task.Result.Errors = tr.Task.Result.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
 	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
 		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q append last message failed, err: %v",
 			tr.P.ID, tr.Task.Name, err)
 		return err
 	}
 	return nil
+}
+
+// UpdateTaskInspect update task inspect, and get events from inspect
+func (tr *TaskRun) UpdateTaskInspect(inspect string) error {
+	if inspect == "" {
+		return nil
+	}
+	if err := tr.fetchLatestTask(); err != nil {
+		return err
+	}
+	events := getEventsFromInspect(inspect)
+	tr.Task.Result.Inspect = inspect
+	tr.Task.Result.Events = events
+	if err := tr.DBClient.UpdatePipelineTaskResult(tr.Task.ID, tr.Task.Result); err != nil {
+		logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q update inspect failed, err: %v",
+			tr.P.ID, tr.Task.Name, err)
+		return err
+	}
+	return nil
+}
+
+func getEventsFromInspect(inspect string) string {
+	eventsIdx := strings.LastIndex(inspect, "Events")
+	if eventsIdx == -1 {
+		return ""
+	}
+	return inspect[eventsIdx:]
 }
 
 func (tr *TaskRun) fetchLatestPipelineStatus() error {

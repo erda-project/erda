@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package emptyProjectIssue
 
@@ -42,6 +43,7 @@ type Props struct {
 }
 
 type State struct {
+	Total   int `json:"total"`
 	ProsNum int `json:"prosNum"`
 }
 
@@ -109,14 +111,8 @@ func (e *EmptyProjectIssue) Render(ctx context.Context, c *apistructs.Component,
 	e.Props.WhiteBg = true
 	e.Props.Relative = true
 	e.Props.PaddingY = true
-	if e.ctxBdl.Identity.OrgID != "" && e.State.ProsNum == 0 {
-		prosNum, err := e.getProjectsNum(e.ctxBdl.Identity.OrgID)
-		if err != nil {
-			return err
-		}
-		if prosNum != 0 {
-			e.Props.Visible = true
-		}
+	if e.ctxBdl.Identity.OrgID != "" && e.State.Total == 0 && e.State.ProsNum != 0 {
+		e.Props.Visible = true
 	}
 	return nil
 }

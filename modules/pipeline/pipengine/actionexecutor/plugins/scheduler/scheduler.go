@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package scheduler
 
@@ -117,11 +118,7 @@ func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *s
 			}
 		}
 		name := fmt.Sprintf("%sfor%s", clusterName, executorName)
-		taskExecutor, err := s.taskManager.Get(tasktypes.Name(name))
-		if err != nil {
-			return false, nil, err
-		}
-		return false, taskExecutor, nil
+		return s.taskManager.TryGetExecutor(tasktypes.Name(name), cluster)
 	default:
 		return false, nil, errors.Errorf("invalid cluster type: %s", cluster.Type)
 	}
@@ -358,8 +355,21 @@ func (s *Sched) Status(ctx context.Context, action *spec.PipelineTask) (desc api
 	}, nil
 }
 
-func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (interface{}, error) {
-	return nil, errors.New("scheduler(job) not support inspect operation")
+func (s *Sched) Inspect(ctx context.Context, action *spec.PipelineTask) (apistructs.TaskInspect, error) {
+	var (
+		taskExecutor   tasktypes.TaskExecutor
+		shouldDispatch bool
+		err            error
+	)
+	shouldDispatch, taskExecutor, err = s.GetTaskExecutor(action.Type, action.Extra.ClusterName, action)
+	if err != nil {
+		return apistructs.TaskInspect{}, err
+	}
+	if !shouldDispatch {
+		logrus.Infof("task executor %s execute inspect", taskExecutor.Name())
+		return taskExecutor.Inspect(ctx, action)
+	}
+	return apistructs.TaskInspect{}, errors.New("scheduler(job) not support inspect operation")
 }
 
 func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
@@ -377,6 +387,9 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 	}
 	if !shouldDispatch {
 		logrus.Infof("task executor %s execute cancel", taskExecutor.Name())
+		// TODO move all makeJobID to framework
+		// now move makeJobID to framework may change task uuid in database
+		action.Extra.UUID = task_uuid.MakeJobID(action)
 		return taskExecutor.Remove(ctx, action)
 	}
 	var body bytes.Buffer
@@ -414,6 +427,9 @@ func (s *Sched) Remove(ctx context.Context, action *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !shouldDispatch {
+		// TODO move all makeJobID to framework
+		// now move makeJobID to framework may change task uuid in database
+		action.Extra.UUID = task_uuid.MakeJobID(action)
 		logrus.Infof("task executor %s execute remove", taskExecutor.Name())
 		return taskExecutor.Remove(ctx, action)
 	}

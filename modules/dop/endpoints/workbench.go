@@ -1,26 +1,27 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -42,26 +43,15 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
 
-	stateBelongs := []apistructs.IssueStateBelong{
-		apistructs.IssueStateBelongReopen,
-		apistructs.IssueStateBelongWontfix,
-		apistructs.IssueStateBelongResloved,
-		apistructs.IssueStateBelongWorking,
-		apistructs.IssueStateBelongOpen,
-	}
 	stateMap := make(map[int64]dao.IssueState)
 	stateReq := apistructs.IssuePagingRequest{
 		OrgID:    int64(workReq.OrgID),
 		PageNo:   uint64(workReq.PageNo),
 		PageSize: uint64(workReq.PageSize),
 		IssueListRequest: apistructs.IssueListRequest{
-			StateBelongs: stateBelongs,
+			StateBelongs: workbench.StateBelongs,
 			Assignees:    []string{userID.String()},
-			Type: []apistructs.IssueType{
-				apistructs.IssueTypeRequirement,
-				apistructs.IssueTypeBug,
-				apistructs.IssueTypeTask,
-			},
+			Type:         workbench.IssueTypes,
 		},
 	}
 	if err := e.issue.FilterByStateBelongForPros(stateMap, projectIDs, &stateReq); err != nil {
@@ -77,103 +67,17 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 	}
 	proTotal, unDonePros := resp.Total, resp.List
 	res.Data.TotalProject = proTotal
+	res.Data.List = make([]*apistructs.WorkbenchProjectItem, 0)
 
-	nowTime := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	tomorrow := nowTime.Add(time.Hour * time.Duration(24))
-	twoDay := nowTime.Add(time.Hour * time.Duration(24*2))
-	sevenDay := nowTime.Add(time.Hour * time.Duration(24*7))
-	thirtyDay := nowTime.Add(time.Hour * time.Duration(24*30))
-	timeList := [][]int64{
-		{0, 0}, // not specified
-		{1, nowTime.Add(time.Second * time.Duration(-1)).Unix()},                 // expired
-		{nowTime.Unix(), tomorrow.Add(time.Second * time.Duration(-1)).Unix()},   // today expired
-		{tomorrow.Unix(), twoDay.Add(time.Second * time.Duration(-1)).Unix()},    // tomorrow expired
-		{twoDay.Unix(), sevenDay.Add(time.Second * time.Duration(-1)).Unix()},    // seven day expired
-		{sevenDay.Unix(), thirtyDay.Add(time.Second * time.Duration(-1)).Unix()}, // thirty day expired
-		{thirtyDay.Unix(), 0}, //feature expired
-	}
-	expireDays := []string{"unspecified", "expired", "oneDay", "tomorrow", "sevenDay", "thirtyDay", "feature"}
-
-	res.Data.List = make([]apistructs.WorkbenchProjectItem, 0)
 	for _, v := range unDonePros {
-		var issueItem apistructs.WorkbenchProjectItem
-		issueItem.IssueList = make([]apistructs.Issue, 0)
-		issueReq := apistructs.IssuePagingRequest{
-			OrgID:    int64(workReq.OrgID),
-			PageNo:   1,
-			PageSize: uint64(workReq.IssueSize),
-			IssueListRequest: apistructs.IssueListRequest{
-				ProjectID:    uint64(v.ID),
-				StateBelongs: stateBelongs,
-				Assignees:    []string{userID.String()},
-				External:     true,
-				OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
-				Priority: []apistructs.IssuePriority{
-					apistructs.IssuePriorityUrgent,
-					apistructs.IssuePriorityHigh,
-					apistructs.IssuePriorityNormal,
-					apistructs.IssuePriorityLow,
-				},
-				Type: []apistructs.IssueType{
-					apistructs.IssueTypeRequirement,
-					apistructs.IssueTypeBug,
-					apistructs.IssueTypeTask,
-				},
-				Asc: true,
-			},
-		}
-		issues, total, err := e.issue.Paging(issueReq)
+		issueItem, err := e.workBench.GetUndoneProjectItem(userID.String(), workReq.IssueSize, v)
 		if err != nil {
 			return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 		}
-		issueItem.TotalIssueNum = int(total)
-		issueItem.IssueList = issues
-		issueItem.ProjectDTO = v
-
-		for index, et := range expireDays {
-			etIssueReq := apistructs.IssuePagingRequest{}
-			etIssueReq.OrgID = int64(workReq.OrgID)
-			etIssueReq.StartFinishedAt = timeList[index][0] * 1000
-			if et == "unspecified" {
-				etIssueReq.IsEmptyPlanFinishedAt = true
-			} else {
-				if timeList[index][1] != 0 {
-					etIssueReq.EndFinishedAt = timeList[index][1] * 1000
-				}
-			}
-			etIssueReq.StateBelongs = stateBelongs
-			etIssueReq.ProjectID = uint64(v.ID)
-			etIssueReq.PageNo = 1
-			etIssueReq.PageSize = 1
-			etIssueReq.External = true
-			etIssueReq.Type = []apistructs.IssueType{
-				apistructs.IssueTypeRequirement,
-				apistructs.IssueTypeBug,
-				apistructs.IssueTypeTask,
-			}
-			etIssueReq.Assignees = []string{userID.String()}
-			_, total, err := e.issue.Paging(etIssueReq)
-			if err != nil {
-				return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
-			}
-			switch et {
-			case "unspecified":
-				issueItem.UnSpecialIssueNum = int(total)
-			case "expired":
-				issueItem.ExpiredIssueNum = int(total)
-			case "oneDay":
-				issueItem.ExpiredOneDayNum = int(total)
-			case "tomorrow":
-				issueItem.ExpiredTomorrowNum = int(total)
-			case "sevenDay":
-				issueItem.ExpiredSevenDayNum = int(total)
-			case "thirtyDay":
-				issueItem.ExpiredThirtyDayNum = int(total)
-			case "feature":
-				issueItem.FeatureDayNum = int(total)
-			}
-		}
 		res.Data.List = append(res.Data.List, issueItem)
+	}
+	if err := e.workBench.SetDiffFinishedIssueNum(stateReq, res.Data.List); err != nil {
+		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp(res.Data)
 }

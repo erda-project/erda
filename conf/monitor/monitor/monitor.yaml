@@ -59,6 +59,9 @@ erda.core.monitor.metric:
        - "${CONFIG_PATH}/metricmeta/groups/org.yml"
        - "${CONFIG_PATH}/metricmeta/groups/micro_service.yml"
      metric_meta_path: "${CONFIG_PATH}/metricmeta/metrics"
+
+erda.core.monitor.alertdetail:
+
 metric-query-example:
   _enable: ${METRIC_QUERY_EXAMPLE_ENABLE:false}
 metrics-query-compatibility:
@@ -67,8 +70,8 @@ metrics-query-compatibility:
     path: ${CONFIG_PATH}/charts
     reload_interval: "30s"
 
-logs-query:
-  _enable: ${LOGS_QUERY_ENABLE:true}
+erda.core.monitor.log.query:
+  _enable: ${LOG_QUERY_ENABLE:true}
   cassandra:
     keyspace:
       name: "spot_prod"
@@ -80,15 +83,6 @@ logs-query:
 logs-index-query:
   query_back_es: ${LOGS_QUERY_BACK_ES:false}
 log-metric-rules:
-trace-query:
-  _enable: ${LOGS_QUERY_ENABLE:true}
-  cassandra:
-    keyspace:
-      name: "spot_prod"
-      auto: true # 自动创建 keyspace
-      replication:
-        class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
-        factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 node-topo:
 #apm providers
 apm-runtime:
@@ -100,8 +94,6 @@ apm-topology:
         class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
         factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
 apm-report:
-#apm-alert:
-apm-trace:
 
 erda.core.monitor.alert:
 #  micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:metric_name,_metric_name,metric_scope,_metric_scope,metric_scope_id,_metric_scope_id,cluster_name,host_ip,org_id,org_name,project_id,project_name,application_id,application_name,runtime_id,runtime_name,service_id,service_name,component_name,addon_name,workspace,cpu_request,cpu_limit,cpu_origin,mem_request,mem_limit,mem_origin,job_id,addon_id,instance_id,instance_type,edas_app_id,edas_app_name,edas_group_id,pod_name,pod_namespace,pod_ip,terminus_key}"
@@ -115,7 +107,6 @@ erda.core.monitor.alert:
       keyspace:
         name: "spot_prod"
     gc_grace_seconds: 86400
-alert-details-apis:
 
 report-apis:
   pipeline:
@@ -133,9 +124,9 @@ org-apis:
   offline_sleep: "${DASHBOARD_OFFLINE_SLEEP:3m}"
 runtime-apis:
 project-apis:
-global-settings:
-chart-block:
-  preset_dashboards: "${CONFIG_PATH}/preset-dashboards"
+erda.core.monitor.settings:
+erda.core.monitor.dataview:
+dataview-v1:
 template:
 
 i18n:

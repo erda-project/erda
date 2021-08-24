@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apis
 
@@ -19,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"runtime"
 	"strconv"
 
 	validator "github.com/mwitkow/go-proto-validators"
@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/pkg/common"
@@ -37,6 +38,7 @@ import (
 type Response struct {
 	Success bool        `json:"success,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
+	UserIDs []string    `json:"userIDs,omitempty"`
 	Err     *Error      `json:"err,omitempty"`
 }
 
@@ -94,16 +96,32 @@ func encodeError(w http.ResponseWriter, r *http.Request, err error) {
 	} else {
 		msg = err.Error()
 	}
-	w.WriteHeader(status)
-	byts, _ := json.Marshal(&Response{
+	w = &responseWriter{status: status, ResponseWriter: w}
+
+	resp := &Response{
 		Success: false,
 		Err: &Error{
 			Code: strconv.Itoa(status),
 			Msg:  msg,
 			Ctx:  r.URL.String(),
 		},
-	})
-	w.Write(byts)
+	}
+	err = encoding.EncodeResponse(w, r, resp)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		byts, _ := json.Marshal(resp)
+		w.Write(byts)
+	}
+}
+
+type responseWriter struct {
+	status int
+	http.ResponseWriter
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	w.ResponseWriter.WriteHeader(w.status)
+	return w.ResponseWriter.Write(b)
 }
 
 func wrapResponse(h interceptor.Handler) interceptor.Handler {
@@ -112,6 +130,7 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 		if err != nil {
 			return resp, err
 		}
+		var userIDs []string
 		if resp != nil {
 			val := reflect.ValueOf(resp)
 			for val.Kind() == reflect.Ptr {
@@ -125,10 +144,22 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 						fields++
 					}
 				}
-				if fields == 1 {
-					field := val.FieldByName("Data")
-					if field.IsValid() {
+				switch fields {
+				case 1:
+					if field := val.FieldByName("Data"); field.IsValid() {
 						resp = field.Interface()
+					} else if field := val.FieldByName("UserIDs"); field.IsValid() && field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.String {
+						resp = nil
+						userIDs = field.Interface().([]string)
+					}
+				case 2:
+					field1 := val.FieldByName("Data")
+					if field1.IsValid() {
+						field2 := val.FieldByName("UserIDs")
+						if field2.IsValid() && field2.Kind() == reflect.Slice && field2.Type().Elem().Kind() == reflect.String {
+							resp = field1.Interface()
+							userIDs = field2.Interface().([]string)
+						}
 					}
 				}
 			}
@@ -136,6 +167,7 @@ func wrapResponse(h interceptor.Handler) interceptor.Handler {
 		return &Response{
 			Success: true,
 			Data:    resp,
+			UserIDs: userIDs,
 		}, nil
 	}
 }
@@ -159,20 +191,4 @@ func Options() transport.ServiceOption {
 		transport.WithHTTPOptions(transhttp.WithInterceptor(wrapResponse))(opts)
 		transport.WithHTTPOptions(transhttp.WithErrorEncoder(encodeError))(opts)
 	})
-}
-
-func getMethodFullName(method interface{}) string {
-	if method == nil {
-		return ""
-	}
-	name, ok := method.(string)
-	if ok {
-		return name
-	}
-	val := reflect.ValueOf(method)
-	if val.Kind() != reflect.Func {
-		panic(fmt.Errorf("method %V not function", method))
-	}
-	fn := runtime.FuncForPC(val.Pointer())
-	return fn.Name()
 }

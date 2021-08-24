@@ -28,7 +28,23 @@
     "wb.content.autotest.scene.date": "随机当前日期格式 2006-01-02",
     "wb.content.autotest.scene.date_day": "随机1天前日期格式 2006-01-01",
     "wb.content.autotest.scene.datetime": "随机当前带时间的格式 2006-01-02 15:04:05",
-    "wb.content.autotest.scene.datetime_hour": "随机1小时前带时间的格式 2006-01-02 15:04:05"
+    "wb.content.autotest.scene.datetime_hour": "随机1小时前带时间的格式 2006-01-02 15:04:05",
+
+    "wb.content.autotest.space.import": "导入",
+    "wb.content.autotest.space.export": "导出",
+    "wb.content.autotest.space.status.success": "成功",
+    "wb.content.autotest.space.status.failed": "失败",
+    "wb.content.autotest.space.status.pending": "排队中",
+    "wb.content.autotest.space.status.processing": "进行中",
+    "wb.content.autotest.space.download.file": "下载文件",
+    "wb.content.autotest.space.import.export.record": "导入导出记录",
+    "wb.content.autotest.space.import.export.table": "导入导出记录表",
+    "wb.content.autotest.space.table.title.type": "类型",
+    "wb.content.autotest.space.table.title.operator": "操作人",
+    "wb.content.autotest.space.table.title.time": "时间",
+    "wb.content.autotest.space.table.title.desc": "描述",
+    "wb.content.autotest.space.table.title.status": "状态",
+    "wb.content.autotest.space.table.title.result": "结果"
   },
   "en-US": {
     "wb.content.autotest.scene.string": "random string like abc",
@@ -59,7 +75,23 @@
     "wb.content.autotest.scene.date": "random current date format like 2006-01-02",
     "wb.content.autotest.scene.date_day": "random 1 day ago date format like 2006-01-01",
     "wb.content.autotest.scene.datetime": "random current format with time like 2006-01-02 15:04:05",
-    "wb.content.autotest.scene.datetime_hour": "random format with time 1 hour before like 2006-01-02 15:04:05"
+    "wb.content.autotest.scene.datetime_hour": "random format with time 1 hour before like 2006-01-02 15:04:05",
+
+    "wb.content.autotest.space.import": "Import",
+    "wb.content.autotest.space.export": "Export",
+    "wb.content.autotest.space.status.success": "Success",
+    "wb.content.autotest.space.status.failed": "Failed",
+    "wb.content.autotest.space.status.pending": "Pending",
+    "wb.content.autotest.space.status.processing": "Processing",
+    "wb.content.autotest.space.download.file": "Download File",
+    "wb.content.autotest.space.import.export.record": "Import and export records",
+    "wb.content.autotest.space.import.export.table": "Import and export records table",
+    "wb.content.autotest.space.table.title.type": "Type",
+    "wb.content.autotest.space.table.title.operator": "Operator",
+    "wb.content.autotest.space.table.title.time": "Time",
+    "wb.content.autotest.space.table.title.desc": "Description",
+    "wb.content.autotest.space.table.title.status": "Status",
+    "wb.content.autotest.space.table.title.result": "Result"
   }
 }
 

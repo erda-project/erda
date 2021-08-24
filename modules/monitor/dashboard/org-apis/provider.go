@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package orgapis
 
@@ -26,19 +27,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
-
-type define struct{}
-
-func (d *define) Services() []string     { return []string{"org-apis"} }
-func (d *define) Dependencies() []string { return []string{"http-server", "metrics-query", "i18n"} }
-func (d *define) Summary() string        { return "org apis" }
-func (d *define) Description() string    { return d.Summary() }
-func (d *define) Config() interface{}    { return &config{} }
-func (d *define) Creator() servicehub.Creator {
-	return func() servicehub.Provider {
-		return &provider{}
-	}
-}
 
 type config struct {
 	OfflineTimeout time.Duration `file:"offline_timeout"`
@@ -61,6 +49,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(
 		bundle.WithHTTPClient(hc),
 		bundle.WithCoreServices(),
+		bundle.WithClusterManager(),
 	)
 	p.cmdb = cmdb.New(cmdb.WithHTTPClient(hc))
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
@@ -70,5 +59,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.RegisterProvider("org-apis", &define{})
+	servicehub.Register("org-apis", &servicehub.Spec{
+		Services:     []string{"org-apis"},
+		Dependencies: []string{"http-server", "metrics-query", "i18n"},
+		Description:  "org apis",
+		ConfigFunc:   func() interface{} { return &config{} },
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

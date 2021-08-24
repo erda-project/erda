@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package edas
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	eventapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -75,7 +77,7 @@ var deleteOptions = &k8sapi.CascadingDeleteOptions{
 	// 'Foreground' - a cascading policy that deletes all dependents in the foreground
 	// e.g. if you delete a deployment, this option would delete related replicaSets and pods
 	// See more: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#delete-24
-	PropagationPolicy: "Foreground",
+	PropagationPolicy: string(metav1.DeletePropagationBackground),
 }
 
 // EDAS plugin's configure
@@ -121,18 +123,15 @@ func init() {
 			DisableCompression: true,
 		}
 
-		kubeAddr, ok := options["KUBEADDR"]
-		if !ok {
-			return nil, errors.Errorf("not found edas k8s addr in env variables")
+		bdl := bundle.New(bundle.WithClusterManager())
+		clusterInfo, err := bdl.GetCluster(clustername)
+		if err != nil {
+			return nil, errors.Errorf("get clustername %s cluster info err %v", clustername, err)
 		}
 
-		kubeClient := httpclient.New()
-		kubeBasicAuth, ok := options["KUBEBASICAUTH"]
-		if !ok {
-			userPasswd := strings.Split(kubeBasicAuth, ":")
-			if len(userPasswd) == 2 {
-				kubeClient.BasicAuth(userPasswd[0], userPasswd[1])
-			}
+		kubeAddr, kubeClient, err := util.GetClient(clustername, clusterInfo.ManageConfig)
+		if err != nil {
+			return nil, errors.Errorf("get http client err %v", err)
 		}
 
 		regAddr, ok := options["REGADDR"]
@@ -537,6 +536,7 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 				var service *apistructs.Service
 
 				service = s
+				logrus.Infof("[EDAS] run app flow to create service %s", s.Name)
 				if err = e.createService(ctx, runtime, service); err != nil {
 					logrus.Errorf("[EDAS] failed to create service: %s, error: %v", group+"-"+s.Name, err)
 				}
@@ -548,16 +548,8 @@ func (e *EDAS) runAppFlow(ctx context.Context, flows [][]*apistructs.Service, ru
 			return errors.Wrap(err, "wait service flow on batch")
 		}
 	}
+	logrus.Infof("[EDAS] run app flow %s finished", group)
 	return nil
-}
-
-func (e *EDAS) removeAndCreateService(ctx context.Context, runtime *apistructs.ServiceGroup, service *apistructs.Service) error {
-	group := runtime.Type + "-" + runtime.ID
-
-	// TODO: how to handle the error
-	_ = e.removeService(ctx, group, service)
-
-	return e.createService(ctx, runtime, service)
 }
 
 func (e *EDAS) createService(ctx context.Context, runtime *apistructs.ServiceGroup, s *apistructs.Service) error {
@@ -636,12 +628,6 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 	} else {
-		// Query the latest release order, and terminate if it is running
-		orderList, _ := e.listRecentChangeOrderInfo(appID)
-		if len(orderList.ChangeOrder) > 0 && orderList.ChangeOrder[0].Status == 1 {
-			e.abortChangeOrder(orderList.ChangeOrder[0].ChangeOrderId)
-		}
-
 		svcSpec, err := e.fillServiceSpec(s, runtime, true)
 		if err != nil {
 			return errors.Wrap(err, "fill service spec")
@@ -664,7 +650,6 @@ func (e *EDAS) updateService(ctx context.Context, runtime *apistructs.ServiceGro
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -730,9 +715,9 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 
 				svcName := newSvc.Name
 				appName := group + "-" + svcName
-
 				// add service
 				if ok, oldSvc = isServiceInRuntime(svcName, oldRuntime); !ok || oldSvc == nil {
+					logrus.Infof("[EDAS] cyclicupdate to create service %s", svcName)
 					if err = e.createService(ctx, newRuntime, newSvc); err != nil {
 						logrus.Errorf("[EDAS] Failed to create service: %s, error: %v", appName, err)
 						errChan <- err
@@ -742,7 +727,7 @@ func (e *EDAS) cyclicUpdateService(ctx context.Context, newRuntime, oldRuntime *
 				}
 				if e.isServiceToScale(newSvc, oldRuntime) {
 					// scale services
-					logrus.Errorf("[EDAS] Begin to scale service: %s", appName)
+					logrus.Infof("[EDAS] Begin to scale service: %s", appName)
 					if err = e.scaleApp(appName, newSvc.Scale); err != nil {
 						logrus.Errorf("[EDAS] Failed to scale service: %s, error: %v", appName, err)
 						errChan <- err
@@ -1152,6 +1137,11 @@ func (e *EDAS) getAppID(name string) (string, error) {
 		return "", errors.Errorf("failed to list app, edasCode: %d, message: %s", resp.Code, resp.Message)
 	}
 
+	if len(resp.ApplicationList.Application) == 0 {
+		errMsg := fmt.Sprintf("[EDAS] application list count is 0")
+		logrus.Errorf(errMsg)
+		return "", fmt.Errorf(errMsg)
+	}
 	for _, app := range resp.ApplicationList.Application {
 		if name == app.Name {
 			logrus.Infof("[EDAS] Successfully to get app id: %s, name: %s", app.AppId, name)

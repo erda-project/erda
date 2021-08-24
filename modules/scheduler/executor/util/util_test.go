@@ -1,22 +1,27 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package util
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestParsePreserveProjects(t *testing.T) {
@@ -116,4 +121,48 @@ func TestCombineLabels(t *testing.T) {
 		"C": "v3",
 		"B": "v4",
 	}))
+}
+
+func TestGetClient(t *testing.T) {
+	clusterName := "fake-clusterName"
+	fakeAddress := "fake-address"
+	fakeToken := "fake-token"
+
+	_, _, err := GetClient(clusterName, nil)
+	assert.Equal(t, err, fmt.Errorf("cluster %s manage config is nil", clusterName))
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{
+		Type:    apistructs.ManageProxy,
+		Address: fakeAddress,
+	})
+	assert.Equal(t, err, fmt.Errorf("token or address is empty"))
+
+	mc1 := &apistructs.ManageConfig{
+		Type:    apistructs.ManageProxy,
+		Address: fakeAddress,
+		Token:   fakeToken,
+	}
+	address, _, err := GetClient(clusterName, mc1)
+	assert.Equal(t, strings.Contains(address, "inet://"), true)
+	assert.Equal(t, err, nil)
+
+	mc1.Type = apistructs.ManageToken
+	address, _, err = GetClient(clusterName, mc1)
+	assert.Equal(t, strings.Contains(address, "inet://"), false)
+	assert.Equal(t, err, nil)
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{
+		Type: apistructs.ManageCert,
+	})
+	assert.Equal(t, err, fmt.Errorf("cert or key is empty"))
+
+	_, _, err = GetClient(clusterName, &apistructs.ManageConfig{})
+	assert.Equal(t, err, fmt.Errorf("manage type is not support"))
+
+	m2 := &apistructs.ManageConfig{
+		Type: apistructs.ManageCert,
+	}
+
+	_, _, err = GetClient(clusterName, m2)
+	assert.Equal(t, err, fmt.Errorf("cert or key is empty"))
 }

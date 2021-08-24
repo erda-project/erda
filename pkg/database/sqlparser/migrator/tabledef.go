@@ -1,20 +1,23 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package migrator
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -65,11 +68,22 @@ func (d *TableDefinition) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
+	var (
+		reasons string
+		eq      = true
+	)
+
 	if len(d.CreateStmt.Cols) != len(o.CreateStmt.Cols) {
+		sort.Slice(d.CreateStmt.Cols, func(i, j int) bool {
+			return d.CreateStmt.Cols[i].Name.String() < d.CreateStmt.Cols[j].Name.String()
+		})
+		sort.Slice(o.CreateStmt.Cols, func(i, j int) bool {
+			return o.CreateStmt.Cols[i].Name.String() < o.CreateStmt.Cols[j].Name.String()
+		})
 		return &Equal{
 			equal: false,
-			reason: fmt.Sprintf("%s left columns: %v, right columns: %v",
-				d.CreateStmt.Table.Name.String(), len(o.CreateStmt.Cols), len(d.CreateStmt.Cols)),
+			reason: fmt.Sprintf("The number of columns in the two tables is inconsistent, expected: %v, actual: %v, ",
+				o.CreateStmt.Cols, d.CreateStmt.Cols),
 		}
 	}
 
@@ -87,18 +101,18 @@ func (d *TableDefinition) Equal(o *TableDefinition) *Equal {
 	for name, dCol := range dCols {
 		oCol, ok := oCols[name]
 		if !ok {
-			return &Equal{
-				equal:  false,
-				reason: fmt.Sprintf("%s.%s not in left", d.CreateStmt.Table.Name.String(), name),
-			}
+			eq = false
+			reasons += fmt.Sprintf("the column is missing in actual, column name: %s, ", name)
+			continue
 		}
 		if equal := FieldTypeEqual(dCol.Tp, oCol.Tp); !equal.Equal() {
-			return equal
+			eq = false
+			reasons += fmt.Sprintf("column: %s, %s, ", name, equal.Reason())
 		}
 	}
 
 	return &Equal{
-		equal:  true,
-		reason: "",
+		equal:  eq,
+		reason: strings.TrimRight(reasons, ", "),
 	}
 }

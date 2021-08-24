@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package utils
 
@@ -18,11 +19,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/pkg/errors"
 )
 
 // GenRedeployPipelineYaml gen pipeline.yml for redeploy
@@ -164,41 +165,52 @@ func FindCreatingRuntimesByRelease(appID uint64, envs map[string][]string, ymlNa
 	}
 
 	for _, v := range resp.Pipelines {
-		branchSlice := strings.SplitN(v.YmlName, "-", -1)
+		if !strings.Contains(v.YmlName, "dice-deploy-release") {
+			// not the target pipeline
+			continue
+		}
+
+		branchSlice := strings.SplitN(v.YmlName, "-", 4)
 		if len(branchSlice) != 4 {
 			return nil, errors.Errorf("Invalid yaml name %s", v.YmlName)
 		}
 		branch := branchSlice[3]
 		runtimeBranchs, ok := envs[strings.ToLower(v.Extra.DiceWorkspace)]
-		// first condition means user have permission
-		// second condition means the pipeline is used to deploy runtime by release
-		// third condition means that the runtime data of db has higher priority
-		// And one branch corresponds to only one rutime
-		if ok && strings.Contains(v.YmlName, "dice-deploy-release") && !strutil.Exist(runtimeBranchs, branch) {
-			// get pipeline detail to confirm whether the runtime has been created
-			piplineDetail, err := bdl.GetPipeline(v.ID)
-			if err != nil {
-				return nil, err
-			}
-			if isUndoneTaskOFDeployByRelease(piplineDetail) {
-				result = append(result, apistructs.RuntimeSummaryDTO{
-					RuntimeInspectDTO: apistructs.RuntimeInspectDTO{
-						Name:         v.FilterLabels["branch"],
-						Source:       apistructs.RELEASE,
-						Status:       "Init",
-						DeployStatus: apistructs.DeploymentStatusDeploying,
-						ClusterName:  v.ClusterName,
-						Extra: map[string]interface{}{"applicationId": v.FilterLabels["appID"], "buildId": v.ID,
-							"workspace": v.Extra.DiceWorkspace, "commitId": v.Commit, "fakeRuntime": true},
-						TimeCreated: *v.TimeBegin,
-						CreatedAt:   *v.TimeBegin,
-						UpdatedAt:   *v.TimeBegin,
-					},
-					LastOperateTime: *v.TimeBegin,
-					LastOperator:    fmt.Sprintf("%v", v.Extra.RunUser.ID),
-				})
-			}
+
+		if !ok || strutil.Exist(runtimeBranchs, branch) {
+			// first condition means user have permission
+			// second condition means that the runtime data of db has higher priority
+			// And one branch corresponds to only one rutime
+			continue
 		}
+
+		// get pipeline detail to confirm whether the runtime has been created
+		piplineDetail, err := bdl.GetPipeline(v.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isUndoneTaskOFDeployByRelease(piplineDetail) {
+			// Task has been completed
+			continue
+		}
+
+		result = append(result, apistructs.RuntimeSummaryDTO{
+			RuntimeInspectDTO: apistructs.RuntimeInspectDTO{
+				Name:         v.FilterLabels["branch"],
+				Source:       apistructs.RELEASE,
+				Status:       "Init",
+				DeployStatus: apistructs.DeploymentStatusDeploying,
+				ClusterName:  v.ClusterName,
+				Extra: map[string]interface{}{"applicationId": v.FilterLabels["appID"], "buildId": v.ID,
+					"workspace": v.Extra.DiceWorkspace, "commitId": v.Commit, "fakeRuntime": true},
+				TimeCreated: *v.TimeBegin,
+				CreatedAt:   *v.TimeBegin,
+				UpdatedAt:   *v.TimeBegin,
+			},
+			LastOperateTime: *v.TimeBegin,
+			LastOperator:    fmt.Sprintf("%v", v.Extra.RunUser.ID),
+		})
 	}
 
 	return result, nil

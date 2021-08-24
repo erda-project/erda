@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package reconciler
 
@@ -31,7 +32,6 @@ import (
 func TestReconciler_getNeedGCPipeline(t *testing.T) {
 	type args struct {
 		pipelines []spec.Pipeline
-		total     int64
 		err       error
 	}
 
@@ -50,7 +50,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			name: "test_empty",
 			args: args{
 				pipelines: nil,
-				total:     0,
 				err:       nil,
 			},
 			wantLen: 0,
@@ -60,7 +59,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			name: "test_return_error",
 			args: args{
 				pipelines: nil,
-				total:     0,
 				err:       fmt.Errorf("have error"),
 			},
 			wantLen: 0,
@@ -92,7 +90,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -123,7 +120,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -154,7 +150,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 1,
@@ -185,7 +180,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -216,7 +210,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 1,
@@ -247,7 +240,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -272,7 +264,6 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 						},
 					},
 				},
-				total: 11,
 			},
 			wantErr: false,
 			wantLen: 0,
@@ -286,24 +277,20 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 
 		var db *dbclient.Client
 		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
-			return tt.args.pipelines, nil, tt.args.total, 0, tt.args.err
+			return tt.args.pipelines, nil, 1, 0, tt.args.err
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Reconciler{
 				dbClient: db,
 			}
-			got, got1, err := r.getNeedGCPipelines(0, true)
+			got, _, err := r.getNeedGCPipelines(0, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNeedGCPipeline() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			assert.Equal(t, tt.wantLen, len(got))
-
-			if got1 != tt.args.total {
-				t.Errorf("getNeedGCPipeline() got1 = %v, want %v", got1, tt.args.total)
-			}
 		})
 
 	}

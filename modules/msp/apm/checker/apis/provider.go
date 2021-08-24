@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apis
 
@@ -22,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -34,13 +36,14 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	Log      logs.Logger
-	Register transport.Register           `autowired:"service-register" optional:"true"`
-	Metric   metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-	Redis    *redis.Client                `autowired:"redis-client"`
-	DB       *gorm.DB                     `autowired:"mysql-client"`
-	Perm     perm.Interface               `autowired:"permission"`
+	Cfg           *config
+	Log           logs.Logger
+	Register      transport.Register             `autowired:"service-register" optional:"true"`
+	Metric        metricpb.MetricServiceServer   `autowired:"erda.core.monitor.metric.MetricService"`
+	ProjectServer projectpb.ProjectServiceServer `autowired:"erda.msp.tenant.project.ProjectService"`
+	Redis         *redis.Client                  `autowired:"redis-client"`
+	DB            *gorm.DB                       `autowired:"mysql-client"`
+	Perm          perm.Interface                 `autowired:"permission"`
 
 	// implements
 	checkerService   *checkerService
@@ -52,15 +55,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.checkerService = &checkerService{p}
 	p.checkerV1Service = &checkerV1Service{
-		metricq:   p.Metric,
-		projectDB: &db.ProjectDB{DB: p.DB},
-		metricDB:  &db.MetricDB{DB: p.DB},
-		cache:     cache,
+		metricq:       p.Metric,
+		projectServer: p.ProjectServer,
+		projectDB:     &db.ProjectDB{DB: p.DB},
+		metricDB:      &db.MetricDB{DB: p.DB},
+		cache:         cache,
 	}
 	if p.Register != nil {
 		pb.RegisterCheckerServiceImp(p.Register, p.checkerService, apis.Options())
 
-		type CheckerServiceV1 pb.CheckerV1ServiceServer
+		type CheckerServiceV1 = pb.CheckerV1ServiceServer
 		pb.RegisterCheckerV1ServiceImp(p.Register, p.checkerV1Service, apis.Options(),
 			p.Perm.Check(
 				perm.Method(CheckerServiceV1.CreateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionCreate, perm.FieldValue("Data.ProjectID")),

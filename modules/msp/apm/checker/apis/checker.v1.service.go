@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apis
 
@@ -25,35 +26,35 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type checkerV1Service struct {
-	projectDB *db.ProjectDB
-	metricDB  *db.MetricDB
-	cache     *cache.Cache
-	metricq   metricpb.MetricServiceServer
+	projectDB     *db.ProjectDB
+	metricDB      *db.MetricDB
+	cache         *cache.Cache
+	metricq       metricpb.MetricServiceServer
+	projectServer projectpb.ProjectServiceServer
 }
 
 func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCheckerV1Request) (*pb.CreateCheckerV1Response, error) {
 	if req.Data == nil {
 		return nil, errors.NewMissingParameterError("data")
 	}
-	proj, err := s.projectDB.GetByProjectID(req.Data.ProjectID)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+	if req.Data.ProjectID <= 0 {
+		return nil, errors.NewMissingParameterError("projectId")
 	}
-	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.Data.ProjectID))
-	}
+	extra := strconv.FormatInt(req.Data.ProjectID, 10)
 	now := time.Now()
 	m := &db.Metric{
-		ProjectID:  proj.ID,
+		ProjectID:  req.Data.ProjectID,
 		Env:        req.Data.Env,
 		Name:       req.Data.Name,
 		Mode:       req.Data.Mode,
+		Extra:      extra,
 		URL:        req.Data.Url,
 		CreateTime: now,
 		UpdateTime: now,
@@ -61,11 +62,61 @@ func (s *checkerV1Service) CreateCheckerV1(ctx context.Context, req *pb.CreateCh
 	if err := s.metricDB.Create(m); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.metricDB.ConvertToChecker(m, req.Data.ProjectID)
+	checker := s.ConvertToChecker(ctx, m, req.Data.ProjectID)
 	if checker != nil {
-		s.cache.Put(checker)
+		err := s.cache.Put(checker)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &pb.CreateCheckerV1Response{Data: m.ID}, nil
+}
+
+func (s *checkerV1Service) ConvertToChecker(ctx context.Context, m *db.Metric, projectID int64) *pb.Checker {
+	ck := &pb.Checker{
+		Id:   m.ID,
+		Name: m.Name,
+		Type: m.Mode,
+		Config: map[string]string{
+			"url": m.URL,
+		},
+		Tags: map[string]string{
+			"_metric_scope": "micro_service",
+			"project_id":    strconv.FormatInt(projectID, 10),
+			"env":           m.Env,
+			"metric":        strconv.FormatInt(m.ID, 10),
+			"metric_name":   m.Name,
+		},
+	}
+	response, err := s.projectServer.GetProject(ctx, &projectpb.GetProjectRequest{ProjectID: strconv.FormatInt(projectID, 10)})
+	if err == nil && response != nil {
+		project := response.Data
+		if project != nil && len(project.Relationship) > 0 {
+			var relationship *projectpb.TenantRelationship
+			for _, r := range project.Relationship {
+				if r.Workspace == m.Env {
+					relationship = r
+				}
+			}
+			if relationship != nil {
+				s.addTenantTags(ck, relationship.TenantID, project.Name)
+				return ck
+			}
+		}
+		return nil
+	}
+
+	scopeInfo, err := s.metricDB.QueryScopeInfo(projectID, m.Env)
+	if err == nil && scopeInfo != nil {
+		s.addTenantTags(ck, scopeInfo.ScopeID, scopeInfo.ProjectName)
+	}
+	return ck
+}
+
+func (s *checkerV1Service) addTenantTags(ck *pb.Checker, tenantId, projectName string) {
+	ck.Tags["_metric_scope_id"] = tenantId
+	ck.Tags["terminus_key"] = tenantId
+	ck.Tags["project_name"] = projectName
 }
 
 func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCheckerV1Request) (*pb.UpdateCheckerV1Response, error) {
@@ -84,9 +135,12 @@ func (s *checkerV1Service) UpdateCheckerV1(ctx context.Context, req *pb.UpdateCh
 	if err := s.metricDB.Update(metric); err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	checker := s.metricDB.ConvertToChecker(metric, -1)
+	checker := s.ConvertToChecker(ctx, metric, metric.ProjectID)
 	if checker != nil {
-		s.cache.Put(checker)
+		err := s.cache.Put(checker)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &pb.UpdateCheckerV1Response{Data: req.Id}, nil
 }
@@ -113,7 +167,10 @@ func (s *checkerV1Service) DeleteCheckerV1(ctx context.Context, req *pb.DeleteCh
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	s.cache.Remove(req.Id)
+	err = s.cache.Remove(req.Id)
+	if err != nil {
+		return nil, err
+	}
 
 	return &pb.DeleteCheckerV1Response{Data: &pb.CheckerV1{
 		Name:      metric.Name,
@@ -132,19 +189,12 @@ func (s *checkerV1Service) GetCheckerV1(ctx context.Context, req *pb.GetCheckerV
 	if metric == nil {
 		return &pb.GetCheckerV1Response{}, nil
 	}
-	proj, err := s.projectDB.GetByID(metric.ProjectID)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
-	if proj == nil {
-		return &pb.GetCheckerV1Response{}, nil
-	}
 	return &pb.GetCheckerV1Response{
 		Data: &pb.CheckerV1{
 			Name:      metric.Name,
 			Mode:      metric.Mode,
 			Url:       metric.URL,
-			ProjectID: proj.ProjectID,
+			ProjectID: metric.ProjectID,
 			Env:       metric.Env,
 		},
 	}, nil
@@ -155,13 +205,40 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	if proj == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("project/%d", req.ProjectID))
+	var list []*db.Metric
+	if proj != nil {
+		// history record
+		oldCheckers, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
+		for _, checker := range oldCheckers {
+			if checker.Extra == "" {
+				list = append(list, checker)
+			}
+		}
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		newCheckers, err := s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		for _, checker := range newCheckers {
+			if checker.Extra != "" {
+				extra, err := strconv.ParseInt(checker.Extra, 10, 64)
+				if err != nil {
+					return nil, errors.NewDatabaseError(err)
+				}
+				if checker.ProjectID == extra {
+					list = append(list, checker)
+				}
+			}
+		}
+	} else {
+		list, err = s.metricDB.ListByProjectIDAndEnv(req.ProjectID, req.Env)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
 	}
-	list, err := s.metricDB.ListByProjectIDAndEnv(proj.ID, req.Env)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
+
 	results := make(map[int64]*pb.DescribeItemV1)
 	for _, item := range list {
 		result := &pb.DescribeItemV1{

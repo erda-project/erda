@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package i18n
 
@@ -50,8 +51,6 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "cluster version", "集群版本")
 	message.SetString(language.SimplifiedChinese, "root domain", "泛域名")
 	message.SetString(language.SimplifiedChinese, "edge cluster", "边缘集群")
-	message.SetString(language.SimplifiedChinese, "master num", "master 数")
-	message.SetString(language.SimplifiedChinese, "lb num", "lb 数")
 	message.SetString(language.SimplifiedChinese, "basic", "基本信息")
 	message.SetString(language.SimplifiedChinese, "init", "初始化")
 	message.SetString(language.SimplifiedChinese, "plan", "执行计划")
@@ -63,8 +62,8 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "manage type", "管理方式")
 	message.SetString(language.SimplifiedChinese, "node count", "节点数")
 	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
-	message.SetString(language.SimplifiedChinese, "cluster display name", "集群名称")
 	message.SetString(language.SimplifiedChinese, "cluster init container id", "集群初始化任务容器ID")
+	message.SetString(language.SimplifiedChinese, "cluster agent registered", "Agent 注册")
 	// cloud resource type
 	message.SetString(language.SimplifiedChinese, "Compute", "计算")
 	message.SetString(language.SimplifiedChinese, "Network", "网络")

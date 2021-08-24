@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package testcase
 
@@ -74,14 +75,14 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	return svc.db.UpdateRecord(r)
 }
 
-func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, error) {
+func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, map[string]int, error) {
 	if req.ProjectID == 0 {
-		return nil, nil, apierrors.ErrListFileRecord.MissingParameter("projectID")
+		return nil, nil, nil, apierrors.ErrListFileRecord.MissingParameter("projectID")
 	}
 
-	recordDtos, err := svc.db.ListRecordsByProject(req)
+	recordDtos, count, err := svc.db.ListRecordsByProject(req)
 	if err != nil {
-		return nil, nil, apierrors.ErrListFileRecord.InternalError(err)
+		return nil, nil, nil, apierrors.ErrListFileRecord.InternalError(err)
 	}
 
 	records := make([]apistructs.TestFileRecord, 0)
@@ -95,7 +96,7 @@ func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsR
 		records = append(records, *mapping(&i, project, testSet))
 		operators = append(operators, i.OperatorID)
 	}
-	return records, operators, nil
+	return records, operators, count, nil
 }
 
 func (svc *Service) GetFirstFileReady(actionType ...apistructs.FileActionType) (bool, *dao.TestFileRecord, error) {
@@ -138,13 +139,16 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 			}
 			return 0
 		}(),
-		Type:       s.Type,
-		State:      s.State,
-		CreatedAt:  s.CreatedAt,
-		UpdatedAt:  s.UpdatedAt,
-		OperatorID: s.OperatorID,
+		Description: s.Description,
+		Type:        s.Type,
+		State:       s.State,
+		CreatedAt:   s.CreatedAt,
+		UpdatedAt:   s.UpdatedAt,
+		OperatorID:  s.OperatorID,
 	}
 
-	record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	if record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport {
+		record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
+	}
 	return record
 }

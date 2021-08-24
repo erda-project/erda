@@ -1,6 +1,6 @@
 cluster-agent:
   debug: ${DEBUG:false}
-  clusterDialEndpoint: "wss://${CLUSTER_DIALER_PUBLIC_ADDR}/clusteragent/connect"
+  clusterDialEndpoint: "${CLUSTER_DIALER_PUBLIC_URL}/clusteragent/connect"
   clusterKey: "${DICE_CLUSTER_NAME}"
   secretKey: "${SECRET_KEY}"
   k8sApiServerAddr: "${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"

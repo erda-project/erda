@@ -1,27 +1,40 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package browsePublicProjects
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/i18n"
 )
+
+func (i *ComponentBrowsePublic) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
+		return fmt.Errorf("invalid context bundle")
+	}
+	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
+	i.ctxBdl = bdl
+	return nil
+}
 
 // GenComponentState 获取state
 func (i *ComponentBrowsePublic) GenComponentState(c *apistructs.Component) error {
@@ -47,6 +60,9 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 	if err := i.GenComponentState(c); err != nil {
 		return err
 	}
+	if err := i.SetCtxBundle(ctx); err != nil {
+		return err
+	}
 
 	// 如果list组件的数据不为空，则直接返回
 	if !i.State.IsEmpty {
@@ -54,6 +70,7 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 		return nil
 	}
 
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = Props{
 		Visible:    true,
 		RenderType: "linkText",
@@ -64,7 +81,7 @@ func (i *ComponentBrowsePublic) Render(ctx context.Context, c *apistructs.Compon
 		Value: map[string]interface{}{
 			"text": []interface{}{
 				map[string]interface{}{
-					"text":         "浏览该组织下的公开项目",
+					"text":         i18nLocale.Get(i18n.I18nProjectPublicBrowse),
 					"operationKey": "toPublicProject",
 					"styleConfig":  map[string]interface{}{"bold": true},
 				},

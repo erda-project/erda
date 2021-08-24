@@ -1,26 +1,30 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package runtime 应用实例相关操作
 package runtime
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -76,4 +80,26 @@ func TestFillRuntimeDataWithServiceGroup(t *testing.T) {
 	assert.Equal(t, 0, data.Services["fake-service"].Resources.Disk)
 	assert.Equal(t, "Healthy", data.Services["fake-service"].Status)
 	assert.Equal(t, 2, data.Services["fake-service"].Deployments.Replicas)
+}
+
+func TestGetRollbackConfig(t *testing.T) {
+	var bdl *bundle.Bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAllProjects",
+		func(*bundle.Bundle) ([]apistructs.ProjectDTO, error) {
+			return []apistructs.ProjectDTO{
+				apistructs.ProjectDTO{ID: 1, RollbackConfig: map[string]int{"DEV": 3, "TEST": 5, "STAGING": 4, "PROD": 6}},
+				apistructs.ProjectDTO{ID: 2, RollbackConfig: map[string]int{"DEV": 4, "TEST": 6, "STAGING": 5, "PROD": 7}},
+				apistructs.ProjectDTO{ID: 3, RollbackConfig: map[string]int{"DEV": 5, "TEST": 7, "STAGING": 6, "PROD": 8}},
+			}, nil
+		},
+	)
+	defer monkey.UnpatchAll()
+
+	r := New(WithBundle(bdl))
+	cfg, err := r.getRollbackConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, cfg[1]["DEV"])
+	assert.Equal(t, 6, cfg[2]["TEST"])
+	assert.Equal(t, 6, cfg[3]["STAGING"])
+	assert.Equal(t, 8, cfg[3]["PROD"])
 }

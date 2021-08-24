@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package k8sflink
 
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 )
 
 const (
@@ -132,7 +134,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 		Spec: flinkoperatorv1beta1.FlinkClusterSpec{
 			Image: flinkoperatorv1beta1.ImageSpec{
 				Name:       data.Spec.Image,
-				PullPolicy: corev1.PullAlways,
+				PullPolicy: logic.GetPullImagePolicy(),
 				PullSecrets: []corev1.LocalObjectReference{
 					{
 						Name: apistructs.AliyunRegistry,
@@ -218,6 +220,7 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 		flinkoperatorv1beta1.ClusterStatePartiallyStopped,
 		flinkoperatorv1beta1.ClusterStateStopped:
 		statusDesc.Status = apistructs.StatusStopped
+		return statusDesc
 	}
 	if status.Components.Job == nil {
 		return statusDesc
@@ -227,9 +230,20 @@ func composeStatusDesc(status flinkoperatorv1beta1.FlinkClusterStatus) apistruct
 		statusDesc.Status = apistructs.StatusStoppedOnOK
 	case flinkoperatorv1beta1.JobStateFailed:
 		statusDesc.Status = apistructs.StatusStoppedOnFailed
+		return statusDesc
 	case flinkoperatorv1beta1.JobStateCancelled:
 		statusDesc.Status = apistructs.StatusStoppedByKilled
+		return statusDesc
 	}
+	switch status.Components.TaskManagerStatefulSet.State {
+	case flinkoperatorv1beta1.ComponentStateReady,
+		flinkoperatorv1beta1.ComponentStateNotReady,
+		flinkoperatorv1beta1.ComponentStateUpdating:
+		statusDesc.Status = apistructs.StatusRunning
+	case flinkoperatorv1beta1.ComponentStateDeleted:
+		statusDesc.Status = apistructs.StatusStoppedByKilled
+	}
+
 	return statusDesc
 }
 

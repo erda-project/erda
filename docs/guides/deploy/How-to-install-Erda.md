@@ -5,13 +5,11 @@
 - Kubernetes 1.16 - 1.18
   - At least 4 Nodes (1 Master and 3 Workers)
   - Each node needs at least 4 core CPU, 16G memory
-  - **Don't Install the ingress-controller-manager component**
+  - Install the [ingress controller](https://kubernetes.io/zh/docs/concepts/services-networking/ingress-controllers/) component
 - Docker 19.03 +
 - CentOS 7.4 +
 - Helm 3 +
-- Generic Domain Name (Optional, which is used to visit the Erda cluster，e.g. *.erda.io)
-
-
+- Generic Domain Name (Optional, configure the domain name through Kubernetes Ingress to access the Erda platform，e.g. *.erda.io)
 
 ### Install Erda
 
@@ -24,8 +22,6 @@
    cd erda
    ```
 
-
-
 2. Apply Erda necessary configurations on the **Kubernetes Master Node**.
 
    - make sure the **kubeconfig** file on the ~/.kube/config.
@@ -35,13 +31,10 @@
        - `client-certificate-data`
        - `client-key-data`
 
-     
-
    - set configuration to prepare to install Erda and execute the `prepare.sh` script
 
      - The script will do the following tasks:
        - generate etc SSL
-       - generate multi-cluster manager SSL
        - set node labels which use for Erda Application
        - set Erda installer configuration   
 
@@ -59,8 +52,6 @@
      bash scripts/prepare.sh
      ```
 
-     
-
    - update `insecure-registries` in the config of the docker daemon 
 
      ```shell
@@ -75,8 +66,6 @@
      systemctl restart docker
      ```
 
-     
-
    - set NFS share storage as network storage to each node. 
 
      - if you already have share storage like AliCloud NAS, you need to set them to **each node** with command like:
@@ -89,42 +78,24 @@
        mount -t nfs -o vers=4,minorversion=0,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport file-system-id.region.nas.aliyuncs.com:/ /netdata
        ```
 
-       
-
      - if not, you need to execute the script. It will install NFS utils, create a directory `/netdata` to the current machine, and mount `/netdata` to each node
 
        ```shell
        bash scripts/storage_prepare.sh
        ```
 
-       
-
-    - you need to open the 80, 443 ports of the **LB machine** , which will receivers all outside traffic
-
-      ```shell
-      # you can find the LB machine on your Kubernetes cluster with the command：
-      
-      kubectl get node -o wide --show-labels | grep dice/lb
-      ```
-
-      - keep the node IP， you will use it when  you set the **generic domain name**
-
-     
-
 3. Install the Erda with helm package and waiting all Erda components are ready
 
    ```shell
-   # install erda-base
-   helm install package/erda-base-$(cat VERSION).tgz --generate-name
+   # Install erda-base, involving some dependent operators
+   helm install erda-base package/erda-base-$(cat VERSION).tgz 
    
-   # install erda-addons
-   helm install package/erda-addons-$(cat VERSION).tgz --generate-name
+   # Install erda-addons, the middleware that the erda platform relies on
+   helm install erda-addons package/erda-addons-$(cat VERSION).tgz 
    
    # install erda
-   helm install package/erda-$(cat VERSION).tgz --generate-name
+   helm install erda package/erda-$(cat VERSION).tgz 
    ```
-
-   
 
 4. After Installed Erda
 
@@ -137,17 +108,11 @@
      bash scripts/push-ext.sh
      ```
 
-     
+   - If you have a real generic domain name, you need to configure the domain name and import the access traffic of the domain name into the Ingress Controller of the Kubernetes cluster, so that the Ingress domain name configured in the cluster can be used normally.
 
-   - If you have a real generic domain name, you need to set the generic domain name with the LB Node IP.
+   - If not, you need to write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> below with the entry IP of the Ingress Controller of the Kubernetes cluster.
 
-     > For example, suppose the IP of the LB node is 10.0.0.1 and the generic domain name( ERDA_GENERIC_DOMAIN ) is *.erda.io. you need to bind the two together on the specified resolver like DNS or F5 Server.
-
-     
-
-   - If not, you need to write the following URLs to `/etc/hosts` on the **machine where the browser is located**, replace the <IP> with IP of the **LB machine**
-
-     > For example, suppose the IP of the LB node is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda.io`, org-name is `erda-test`. so you need to write the following info to `/etc/hosts` 
+     > For example, suppose the IP of the ingress controller is `10.0.0.1`, ERDA_GENERIC_DOMAIN is `erda.io`, org-name is `erda-test`, write the following info to `/etc/hosts` 
 
      ```shell
      10.0.0.1 collector.erda.io
@@ -158,14 +123,22 @@
      10.0.0.1 erda-test-org.erda.io
      ```
 
-     
-
    - set your Kubernetes nodes label with your created organization name（organization is a name for a group in Erda）
 
      ```shell
      kubectl label node <node_name> dice/org-<orgname>=true --overwrite
      ```
 
-     
+5. Finally, you can visit `http://erda.io` through your browser and start your Erda journey
 
-5. Visit the URL `http://erda.io` on your browser machine which set the `/etc/hosts`
+### Uninstall Erda
+
+Uninstall Erda via Helm
+
+   ```shell
+   helm uninstall erda 
+   
+   helm uninstall erda-addons 
+   
+   helm uninstall erda-base 
+   ```

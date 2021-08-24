@@ -78,13 +78,13 @@ zh-CN:
     - 信息：{{message}}
   notify.pipeline.pipeline_success: 流水线运行成功
   notify.pipeline.pipeline_success.markdown_template: |-
-    ### {{projectName}}/{{appName}} 流水线{{pipelineID}}运行成功
+    ### {{projectName}}/{{appName}} 流水线 {{pipelineID}} 运行成功 {{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}}
   notify.pipeline.pipeline_running: 流水线开始运行
   notify.pipeline.pipeline_running.markdown_template: |-
     ### {{projectName}}/{{appName}} 流水线{{pipelineID}}开始运行
   notify.pipeline.pipeline_failed: 流水线运行失败
   notify.pipeline.pipeline_failed.markdown_template: |-
-    ### {{projectName}}/{{appName}} 流水线{{pipelineID}}运行失败
+    ### {{projectName}}/{{appName}} 流水线 {{pipelineID}} 运行失败 {{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}}
     {{failedDetail}}
   notify.issue.issue_create: 创建任务事件
   notify.issue.issue_create.markdown_template: "事件【{{issue_title}}】{{content}}"
@@ -134,7 +134,7 @@ zh-CN:
   notify.model.model: 模型数据量监控
   # 个人消息
   notify.issue_create.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} 项目]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} 项目]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>事件 {{issueType}}-{{issueTitle}} 已创建</p>
     <p>[查看详情]({{issueEmailLink}})</p>
@@ -260,14 +260,14 @@ en-US:
   notify.model.model: Model Data Monitoring
   # 个人消息
   notify.issue_create.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} project]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} project]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>The issue {{issueType}}-{{issueTitle}} has been creaed</p>
     <p>[see details]({{issueEmailLink}})</p>
   notify.issue_create.personal_message.markdown: |-
     {{issueEmailLink}}
   notify.issue_update.personal_message.email: |-
-    <p>[{{orgName}} / {{projectName}} project]({{projectLink}})</p>
+    <p>[{{orgName}} / {{projectName}} project]({{projectEmailLink}})</p>
     <h1>{{issueType}}-{{issueTitle}}</h1>
     <p>{{issueEmailContent}}</p>
     <p>[see details]({{issueEmailLink}})</p>

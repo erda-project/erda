@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package endpoints 定义所有的 route handle.
 package endpoints
@@ -23,6 +24,7 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -60,6 +62,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/testplan"
 	"github.com/erda-project/erda/modules/dop/services/testset"
 	"github.com/erda-project/erda/modules/dop/services/ticket"
+	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -214,6 +217,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicd-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
 		{Path: "/api/cicd-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
 		{Path: "/api/cicd-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
+		// eventBox call back only support post method
+		{Path: "/api/cicd-crons/actions/hook-for-update", Method: http.MethodPost, Handler: e.pipelineCronUpdate},
 		{Path: "/api/cicd-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 
 		// project pipeline
@@ -608,6 +613,7 @@ type Endpoints struct {
 	permission         *permission.Permission
 	fileTree           *filetree.GittarFileTree
 	pFileTree          *projectpipelinefiletree.FileTree
+	pipelineCms        cmspb.CmsServiceServer
 
 	db              *dao.DBClient
 	testcase        *testcase.Service
@@ -634,6 +640,7 @@ type Endpoints struct {
 	issueProperty  *issueproperty.IssueProperty
 	issueState     *issuestate.IssueState
 	issuePanel     *issuepanel.IssuePanel
+	workBench      *workbench.Workbench
 	uc             *ucauth.UCClient
 	iteration      *iteration.Iteration
 	publisher      *publisher.Publisher
@@ -694,6 +701,12 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithPipeline(p *pipeline.Pipeline) Option {
 	return func(e *Endpoints) {
 		e.pipeline = p
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(e *Endpoints) {
+		e.pipelineCms = cms
 	}
 }
 
@@ -789,6 +802,12 @@ func WithSonarMetricRule(sonarMetricRule *sonar_metric_rule.Service) Option {
 func WithTestplan(testPlan *testplan.TestPlan) Option {
 	return func(e *Endpoints) {
 		e.testPlan = testPlan
+	}
+}
+
+func WithWorkbench(w *workbench.Workbench) Option {
+	return func(e *Endpoints) {
+		e.workBench = w
 	}
 }
 

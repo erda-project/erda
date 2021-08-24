@@ -1,29 +1,36 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package actionagent
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/filehelper"
+)
+
+const (
+	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -86,6 +93,22 @@ func (agent *Agent) prepare() {
 		logrus.Printf("failed to create multi stderr, err: %v\n", err)
 	} else {
 		agent.EasyUse.RunMultiStderr = f
+	}
+
+	// 5. set stderr regexp list
+	envStdErrRegexpStr := os.Getenv(EnvStdErrRegexpList)
+	regexpStrList := []string{}
+	if err := json.Unmarshal([]byte(envStdErrRegexpStr), &regexpStrList); err != nil {
+		agent.AppendError(err)
+		return
+	}
+	for i := range regexpStrList {
+		reg, err := regexp.Compile(regexpStrList[i])
+		if err != nil {
+			agent.AppendError(err)
+		} else {
+			agent.StdErrRegexpList = append(agent.StdErrRegexpList, reg)
+		}
 	}
 }
 

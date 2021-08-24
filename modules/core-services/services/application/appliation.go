@@ -1,20 +1,22 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package application 应用逻辑封装
 package application
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -26,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -33,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -43,6 +47,7 @@ type Application struct {
 	db  *dao.DBClient
 	uc  *ucauth.UCClient
 	bdl *bundle.Bundle
+	cms cmspb.CmsServiceServer
 }
 
 // Option 定义 Appliction 对象的配置选项
@@ -75,6 +80,12 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(a *Application) {
 		a.bdl = bdl
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(a *Application) {
+		a.cms = cms
 	}
 }
 
@@ -769,11 +780,11 @@ func (a *Application) UpdatePublishItemRelations(request *apistructs.UpdateAppPu
 func (a *Application) PipelineCmsConfigRequest(request *apistructs.UpdateAppPublishItemRelationRequest) error {
 	for workspace, mk := range request.AKAIMap {
 		// bundle req
-		if err := a.bdl.CreateOrUpdatePipelineCmsNsConfigs(a.BuildItemMonitorPipelineCmsNs(request.AppID, workspace.String()),
-			apistructs.PipelineCmsUpdateConfigsRequest{
-				KVs: map[string]apistructs.PipelineCmsConfigValue{"AI": {Value: mk.AI},
-					"AK": {Value: mk.AK}},
-				PipelineSource: apistructs.PipelineSourceDice,
+		if _, err := a.cms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "core-services"),
+			&cmspb.CmsNsConfigsUpdateRequest{
+				Ns:             a.BuildItemMonitorPipelineCmsNs(request.AppID, workspace.String()),
+				PipelineSource: apistructs.PipelineSourceDice.String(),
+				KVs:            map[string]*cmspb.PipelineCmsConfigValue{"AI": {Value: mk.AI}, "AK": {Value: mk.AK}},
 			}); err != nil {
 			return err
 		}

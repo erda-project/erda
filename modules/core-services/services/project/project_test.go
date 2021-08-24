@@ -1,26 +1,30 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package project
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 )
 
@@ -83,4 +87,23 @@ func TestInitRollbackConfig(t *testing.T) {
 	assert.Equal(t, 5, rollbackConfig["TEST"])
 	assert.Equal(t, 5, rollbackConfig["STAGING"])
 	assert.Equal(t, 5, rollbackConfig["PROD"])
+}
+
+func TestGetModelProjectsMap(t *testing.T) {
+	db := &dao.DBClient{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectsByIDs",
+		func(db *dao.DBClient, projectIDs []uint64, params *apistructs.ProjectListRequest) (int, []model.Project, error) {
+			return 3, []model.Project{
+				{BaseModel: model.BaseModel{ID: 1}},
+				{BaseModel: model.BaseModel{ID: 2}},
+				{BaseModel: model.BaseModel{ID: 3}},
+			}, nil
+		})
+	defer m.Unpatch()
+
+	p := &Project{}
+	projectIDs := []uint64{1, 2, 3}
+	projectMap, err := p.GetModelProjectsMap(projectIDs)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(projectMap))
 }

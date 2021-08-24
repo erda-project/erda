@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package reconciler
 
@@ -22,7 +23,14 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun/taskop"
+	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/pkg/loop"
+)
+
+var (
+	defaultRetryDeclineRatio    = 2
+	defaultRetryIntervalSec     = 30
+	defaultRetryDeclineLimitSec = 600
 )
 
 func reconcileTask(tr *taskrun.TaskRun) error {
@@ -41,9 +49,10 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "end do task aop")
 
 	// 系统异常时重试3次
-	const abnormalErrMaxRetryTimes = 3
+	//const abnormalErrMaxRetryTimes = 3
 
 	var platformErrRetryTimes int
+	//var sessionNotFoundTimes int
 
 	for {
 		// stop reconciler task if pipeline stopping reconcile
@@ -82,16 +91,15 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 			// Do 没有 err 才是正常的，即使失败也是 status=Failed，没有 error
 			abnormalErr := tr.Do(taskOp)
 			if abnormalErr != nil {
-				rlog.TWarnf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry", taskOp.Op(), abnormalErr)
-				// 小于异常重试次数，继续重试
-				if platformErrRetryTimes < abnormalErrMaxRetryTimes {
-					resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
-					platformErrRetryTimes++
-					continue
+				if errorsx.IsContainUserError(abnormalErr) {
+					rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, user abnormalErr: %v, don't need retry", taskOp.Op(), abnormalErr)
+					return abnormalErr
 				}
-				// 大于重试次数仍有异常，返回异常
-				rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, reach max retry times, return abnormalErr", taskOp.Op(), abnormalErr)
-				return abnormalErr
+				// don't contain user error mean err is platform error, should retry always
+				rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle taskOp: %s, abnormalErr: %v, continue retry, retry times: %d", taskOp.Op(), abnormalErr, platformErrRetryTimes)
+				resetTaskForAbnormalRetry(tr, platformErrRetryTimes)
+				platformErrRetryTimes++
+				continue
 			}
 			// 没有异常，执行后续逻辑
 		}
@@ -114,6 +122,12 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 			loop.WithDeclineRatio(strategy.DeclineRatio),
 			loop.WithDeclineLimit(time.Second*time.Duration(strategy.DeclineLimitSec)),
 		).CalculateInterval(uint64(abnormalErrRetryTimes))
+	} else {
+		interval = loop.New(
+			loop.WithInterval(time.Second*time.Duration(defaultRetryIntervalSec)),
+			loop.WithDeclineRatio(float64(defaultRetryDeclineRatio)),
+			loop.WithDeclineLimit(time.Second*time.Duration(defaultRetryDeclineLimitSec)),
+		).CalculateInterval(uint64(abnormalErrRetryTimes))
 	}
 	if interval < defaultInterval {
 		interval = defaultInterval
@@ -122,7 +136,5 @@ func resetTaskForAbnormalRetry(tr *taskrun.TaskRun, abnormalErrRetryTimes int) {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "sleep %s before retry abnormal retry", interval.String())
 	time.Sleep(interval)
 
-	// 更新状态
-	tr.Task.Status = apistructs.PipelineStatusAnalyzed
 	tr.Update()
 }

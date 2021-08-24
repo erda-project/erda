@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -18,6 +19,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -53,7 +55,7 @@ func (e *Endpoints) AddConfigs(ctx context.Context, r *http.Request, vars map[st
 			req.Configs[i].ConfigType = map[string]string{"kv": "ENV", "dice-file": "FILE"}[req.Configs[i].Type]
 		}
 		if req.Configs[i].Operations == nil {
-			req.Configs[i].Operations = &apistructs.PipelineCmsConfigOperations{
+			req.Configs[i].Operations = &cmspb.PipelineCmsConfigOperations{
 				CanDownload: false,
 				CanEdit:     true,
 				CanDelete:   true,
@@ -150,7 +152,7 @@ func (e *Endpoints) GetConfigs(ctx context.Context, r *http.Request, vars map[st
 			envConfigs[i].Type = map[string]string{"FILE": "dice-file", "ENV": "kv"}[envConfigs[i].Type]
 		}
 		if envConfigs[i].Operations == nil {
-			envConfigs[i].Operations = &apistructs.PipelineCmsConfigOperations{
+			envConfigs[i].Operations = &cmspb.PipelineCmsConfigOperations{
 				CanDownload: false,
 				CanEdit:     true,
 				CanDelete:   true,

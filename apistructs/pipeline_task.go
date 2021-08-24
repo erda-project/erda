@@ -1,19 +1,23 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apistructs
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -48,9 +52,11 @@ type PipelineTaskExtra struct {
 }
 
 type PipelineTaskResult struct {
-	Metadata    Metadata                 `json:"metadata,omitempty"`
-	Errors      []ErrorResponse          `json:"errors,omitempty"`
-	MachineStat *PipelineTaskMachineStat `json:"machineStat,omitempty"`
+	Metadata    Metadata                   `json:"metadata,omitempty"`
+	Errors      []*PipelineTaskErrResponse `json:"errors,omitempty"`
+	MachineStat *PipelineTaskMachineStat   `json:"machineStat,omitempty"`
+	Inspect     string                     `json:"inspect,omitempty"`
+	Events      string                     `json:"events,omitempty"`
 }
 
 type PipelineTaskSnippetDetail struct {
@@ -132,6 +138,88 @@ type PipelineTaskLoopOptions struct {
 type PipelineTaskLoop struct {
 	Break    string        `json:"break" yaml:"break"`
 	Strategy *LoopStrategy `json:"strategy,omitempty" yaml:"strategy,omitempty"`
+}
+
+type PipelineTaskErrResponse struct {
+	Code string             `json:"code"`
+	Msg  string             `json:"msg"`
+	Ctx  PipelineTaskErrCtx `json:"ctx"`
+}
+
+type PipelineTaskErrCtx struct {
+	StartTime time.Time `json:"startTime"`
+	EndTime   time.Time `json:"endTime"`
+	Count     uint64    `json:"count"`
+}
+
+type orderedResponses []*PipelineTaskErrResponse
+
+func (o orderedResponses) Len() int           { return len(o) }
+func (o orderedResponses) Less(i, j int) bool { return o[i].Ctx.EndTime.Before(o[j].Ctx.EndTime) }
+func (o orderedResponses) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
+
+func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrResponse) []*PipelineTaskErrResponse {
+	if len(newResponses) == 0 {
+		return t.Errors
+	}
+	var orderd orderedResponses
+	for _, g := range t.Errors {
+		orderd = append(orderd, g)
+	}
+
+	var newResponseOrder orderedResponses
+	now := time.Now()
+	for index, g := range newResponses {
+		if g.Ctx.StartTime.IsZero() {
+			g.Ctx.StartTime = now.Add(time.Duration(index) * time.Millisecond)
+		}
+		if g.Ctx.EndTime.IsZero() {
+			g.Ctx.EndTime = now.Add(time.Duration(index) * time.Millisecond)
+		}
+		if g.Ctx.Count == 0 {
+			g.Ctx.Count = 1
+		}
+		newResponseOrder = append(newResponseOrder, g)
+	}
+	sort.Sort(newResponseOrder)
+
+	var lastResponse *PipelineTaskErrResponse
+	if len(orderd) != 0 {
+		lastResponse = orderd[len(orderd)-1]
+	}
+
+	for _, g := range newResponseOrder {
+		if lastResponse == nil {
+			orderd = append(orderd, g)
+			lastResponse = g
+			continue
+		}
+
+		if strings.EqualFold(lastResponse.Msg, g.Msg) {
+			if !g.Ctx.StartTime.IsZero() && g.Ctx.StartTime.Before(lastResponse.Ctx.StartTime) {
+				lastResponse.Ctx.StartTime = g.Ctx.StartTime
+			}
+			if g.Ctx.EndTime.After(lastResponse.Ctx.EndTime) {
+				lastResponse.Ctx.EndTime = g.Ctx.EndTime
+			}
+			lastResponse.Ctx.Count++
+			continue
+		} else {
+			orderd = append(orderd, g)
+			lastResponse = g
+		}
+	}
+	return orderd
+}
+
+func (t *PipelineTaskResult) ConvertErrors() {
+	for _, response := range t.Errors {
+		if response.Ctx.Count > 1 {
+			response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTIme: %s\ncount: %d",
+				response.Msg, response.Ctx.StartTime.Format("2006-01-02 15:04:05"),
+				response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
+		}
+	}
 }
 
 func (l *PipelineTaskLoop) Duplicate() *PipelineTaskLoop {

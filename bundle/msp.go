@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package bundle
 
@@ -17,8 +18,12 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // PutRuntimeService 部署runtime之后，orchestrator需要将服务域名信息通过此接口提交给hepa
@@ -118,7 +123,7 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 	hc := b.hc
 
 	var resp apistructs.Header
-	r, err := hc.Post(host).
+	r, err := hc.Post(host, httpclient.NoRetry).
 		Path("/api/gateway/tenants").
 		JSONBody(req).
 		Do().
@@ -130,4 +135,34 @@ func (b *Bundle) CreateGatewayTenant(req *apistructs.GatewayTenantRequest) error
 		return toAPIError(r.StatusCode(), resp.Error)
 	}
 	return nil
+}
+
+func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType, tenantGroup string) (string, error) {
+	host := discover.MSP()
+	hc := b.hc
+
+	req := pb.CreateTenantRequest{
+		ProjectID:  projectID,
+		TenantType: tenantType,
+		Workspaces: []string{workspace},
+	}
+	var resp apistructs.MSPTenantResponse
+	r, err := hc.Post(host).
+		Path("/api/msp/tenant").
+		Header(httputil.InternalHeader, "bundle").
+		JSONBody(&req).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return "", toAPIError(r.StatusCode(), resp.Error)
+	}
+	if len(resp.Data) <= 0 {
+		// history project
+		return tenantGroup, nil
+	}
+	return resp.Data[0].Id, nil
 }

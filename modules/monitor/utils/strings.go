@@ -1,56 +1,24 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package utils
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"math/rand"
-	"unsafe"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-var (
-	APPLICATION_CONFIG_PATH = "conf/application.yml"
-	TEMPLATE_JSON_PATH      = "conf/template.json"
-	IPDB_PATH               = "conf/ipdata.dat"
-	TA_JS_PATH              = "static/ta.js"
-	TRANSLATE_PATH          = "conf/translate.yml"
-)
-
-func UUID() (string, error) {
-	u := uuid.NewV4()
-	return u.String(), nil
-}
-
-func GetMD5Base64(bytes []byte) string {
-	md5Ctx := sha256.New()
-	md5Ctx.Write(bytes)
-	md5Value := md5Ctx.Sum(nil)
-	return base64.RawURLEncoding.EncodeToString(md5Value)
-}
-
-func GetMD5Base64WithLegth(bytes []byte, maxLength int) string {
-	res := GetMD5Base64(bytes)
-	if len(res) > maxLength {
-		res = res[:maxLength]
-	}
-	return res
-}
 
 func RandomString(n int) string {
 	b := make([]byte, n)
@@ -58,8 +26,4 @@ func RandomString(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func StringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
 }

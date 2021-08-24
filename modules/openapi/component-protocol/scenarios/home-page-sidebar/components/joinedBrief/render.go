@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package joinedBrief
 
@@ -17,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -48,6 +48,7 @@ type State struct {
 	//HavePros bool `json:"havePros"`
 	//HaveApps bool `json:"haveApps"`
 	ProsNum int `json:"prosNum"`
+	AppsNum int `json:"appsNum"`
 }
 
 type column struct {
@@ -153,13 +154,7 @@ func (this *JoinedBrief) setProps() {
 func (this *JoinedBrief) setData(orgID string) error {
 	i18nLocale := this.ctxBdl.Bdl.GetLocale(this.ctxBdl.Locale)
 	this.Data.List = make([]bItem, 0)
-	projectNum, err := this.getProjectsNum(orgID)
-	if err != nil {
-		return err
-	}
-	//if projectNum > 0 {
-	//	this.State.HavePros = true
-	//}
+	projectNum := this.State.ProsNum
 	this.Data.List = append(this.Data.List, bItem{
 		Id: 1, Category: category{
 			RenderType:     "textWithIcon",
@@ -167,13 +162,7 @@ func (this *JoinedBrief) setData(orgID string) error {
 			Value:          i18nLocale.Get(i18n.I18nKeyProjectNum),
 			ColorClassName: "color-primary"},
 		Number: projectNum})
-	appNum, err := this.getAppsNum(orgID)
-	if err != nil {
-		return err
-	}
-	//if appNum > 0 {
-	//	this.State.HaveApps = true
-	//}
+	appNum := this.State.AppsNum
 	this.Data.List = append(this.Data.List, bItem{
 		Id: 1, Category: category{
 			RenderType:     "textWithIcon",
@@ -182,41 +171,4 @@ func (this *JoinedBrief) setData(orgID string) error {
 			ColorClassName: "color-primary"},
 		Number: appNum})
 	return nil
-}
-
-func (this *JoinedBrief) getProjectsNum(orgID string) (int, error) {
-	orgIntId, err := strconv.Atoi(orgID)
-	if err != nil {
-		return 0, err
-	}
-	req := apistructs.ProjectListRequest{
-		OrgID:    uint64(orgIntId),
-		PageNo:   1,
-		PageSize: 1,
-	}
-
-	projectDTO, err := this.ctxBdl.Bdl.ListMyProject(this.ctxBdl.Identity.UserID, req)
-	if err != nil {
-		return 0, err
-	}
-	if projectDTO == nil {
-		return 0, nil
-	}
-	return projectDTO.Total, nil
-}
-
-func (this *JoinedBrief) getAppsNum(orgID string) (int, error) {
-	orgIntId, err := strconv.Atoi(orgID)
-	if err != nil {
-		return 0, err
-	}
-	req := apistructs.ApplicationListRequest{PageSize: 1, PageNo: 1}
-	appsDTO, err := this.ctxBdl.Bdl.GetAllMyApps(this.ctxBdl.Identity.UserID, uint64(orgIntId), req)
-	if err != nil {
-		return 0, err
-	}
-	if appsDTO == nil {
-		return 0, nil
-	}
-	return appsDTO.Total, nil
 }

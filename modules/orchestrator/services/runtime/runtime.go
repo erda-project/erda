@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package runtime 应用实例相关操作
 package runtime
@@ -21,7 +22,13 @@ import (
 	"net/url"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/gorilla/schema"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -36,11 +43,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/gorilla/schema"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 // Runtime 应用实例对象封装
@@ -163,10 +165,11 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 			apistructs.LabelAppName:       app.Name,
 			apistructs.LabelProjectName:   app.ProjectName,
 		},
-		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s", branch),
-		ClusterName:     releaseResp.ClusterName,
-		PipelineSource:  apistructs.PipelineSourceDice,
-		AutoRunAtOnce:   true,
+		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s-%d-%s", releaseReq.Workspace,
+			releaseReq.ApplicationID, branch),
+		ClusterName:    releaseResp.ClusterName,
+		PipelineSource: apistructs.PipelineSourceDice,
+		AutoRunAtOnce:  true,
 	})
 	if err != nil {
 		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
@@ -1688,7 +1691,12 @@ func (r *Runtime) FullGC() {
 		}
 	}()
 
-	keep := 5
+	rollbackCfg, err := r.getRollbackConfig()
+	if err != nil {
+		logrus.Errorf("[alert] failed to get all rollback config: %v", err)
+		return
+	}
+
 	bulk := 100
 	lastRuntimeID := uint64(0)
 	for {
@@ -1698,11 +1706,11 @@ func (r *Runtime) FullGC() {
 			break
 		}
 		for i := range runtimes {
-			if runtimes[i].Workspace == string(apistructs.ProdWorkspace) {
-				r.fullGCForSingleRuntime(runtimes[i].ID, keep)
-			} else {
-				r.fullGCForSingleRuntime(runtimes[i].ID, 1)
+			keep, ok := rollbackCfg[runtimes[i].ProjectID][strings.ToUpper(runtimes[i].Workspace)]
+			if !ok || keep <= 0 || keep > 100 {
+				keep = 5
 			}
+			r.fullGCForSingleRuntime(runtimes[i].ID, keep)
 		}
 		if len(runtimes) < bulk {
 			// ended
@@ -1710,6 +1718,21 @@ func (r *Runtime) FullGC() {
 		}
 		lastRuntimeID = runtimes[len(runtimes)-1].ID
 	}
+}
+
+// getRollbackConfig return the number of rollback record for each project and workspace
+// key1: project_id, key2: workspace, value: the limit of rollback record
+func (r *Runtime) getRollbackConfig() (map[uint64]map[string]int, error) {
+	result := make(map[uint64]map[string]int, 0)
+	// TODO: use cache to get project info
+	projects, err := r.bdl.GetAllProjects()
+	if err != nil {
+		return nil, err
+	}
+	for _, prj := range projects {
+		result[prj.ID] = prj.RollbackConfig
+	}
+	return result, nil
 }
 
 func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {

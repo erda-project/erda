@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apis
 
@@ -19,7 +20,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
-	block "github.com/erda-project/erda/modules/monitor/dashboard/chart-block"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
@@ -33,7 +34,7 @@ const (
 type reportTask struct {
 	ID             uint64             `gorm:"primary_key" json:"id"`
 	Name           string             `gorm:"not null;type:varchar(32);unique_index: Name, Scope, ScopeID"  json:"name"`
-	Scope          string             `gorm:"unique_index: Name, Scope, ScopeID"json:"scope"`
+	Scope          string             `gorm:"unique_index: Name, Scope, ScopeID" json:"scope"`
 	ScopeID        string             `gorm:"unique_index: Name, Scope, ScopeID" json:"scopeId"`
 	Type           reportFrequency    `gorm:"not null"  json:"type"`
 	DashboardId    string             `gorm:"not null" json:"dashboardId" `

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package filetree
 
@@ -103,7 +104,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 		// 不是就根据 pinode 查询其在 gittar 的目录
 
 		// pinode 反base64 获取父类的路径
-		pinodeBytes, err := base64.StdEncoding.DecodeString(req.Pinode)
+		pinodeBytes, err := base64.URLEncoding.DecodeString(req.Pinode)
 		if err != nil {
 			return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 		}
@@ -206,7 +207,7 @@ func (svc *GittarFileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGet
 	}
 
 	// pinode 反base64 获取父类的路径
-	inodeBytes, err := base64.StdEncoding.DecodeString(req.Inode)
+	inodeBytes, err := base64.URLEncoding.DecodeString(req.Inode)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarFileTreeNode.InternalError(err)
 	}
@@ -317,7 +318,7 @@ func (svc *GittarFileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNode
 	}
 
 	// 解析
-	inodeBytes, err := base64.StdEncoding.DecodeString(req.Inode)
+	inodeBytes, err := base64.URLEncoding.DecodeString(req.Inode)
 	if err != nil {
 		return nil, apierrors.ErrDeleteGittarFileTreeNode.InvalidParameter(err)
 	}
@@ -408,7 +409,7 @@ func (svc *GittarFileTree) FuzzySearchFileTreeNodes(req apistructs.UnifiedFileTr
 			return nil, err
 		}
 	} else {
-		inodeBytes, err := base64.StdEncoding.DecodeString(req.FromPinode)
+		inodeBytes, err := base64.URLEncoding.DecodeString(req.FromPinode)
 		if err != nil {
 			return nil, apierrors.ErrGetGittarFileTreeNode.InternalError(err)
 		}
@@ -459,7 +460,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 	}
 
 	// 解析
-	pinodeBytes, err := base64.StdEncoding.DecodeString(node.Pinode)
+	pinodeBytes, err := base64.URLEncoding.DecodeString(node.Pinode)
 	if err != nil {
 		return nil, apierrors.ErrCreateGittarFileTreeNode.InvalidParameter(err)
 	}
@@ -572,7 +573,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 	if node.Type == apistructs.UnifiedFileTreeNodeTypeDir {
 		return &apistructs.UnifiedFileTreeNode{
 			Type:      apistructs.UnifiedFileTreeNodeTypeDir,
-			Inode:     base64.StdEncoding.EncodeToString([]byte(pinode + "/" + node.Name)),
+			Inode:     base64.URLEncoding.EncodeToString([]byte(pinode + "/" + node.Name)),
 			Pinode:    node.Pinode,
 			Name:      node.Name,
 			Scope:     node.Scope,
@@ -586,7 +587,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 	}
 
 	var treeNodeGetRequest = apistructs.UnifiedFileTreeNodeGetRequest{
-		Inode:   base64.StdEncoding.EncodeToString([]byte(pinode + "/" + node.Name)),
+		Inode:   base64.URLEncoding.EncodeToString([]byte(pinode + "/" + node.Name)),
 		ScopeID: node.ScopeID,
 		Scope:   node.Scope,
 	}
@@ -752,7 +753,7 @@ func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID ui
 	ymlName = strings.TrimPrefix(ymlName, "/")
 
 	inode := fmt.Sprintf("%s/%s/tree/%s/%s", projectID, appID, branch, ymlName)
-	base64Inode := base64.StdEncoding.EncodeToString([]byte(inode))
+	base64Inode := base64.URLEncoding.EncodeToString([]byte(inode))
 
 	var req apistructs.UnifiedFileTreeNodeGetRequest
 	req.Inode = base64Inode
@@ -796,7 +797,7 @@ func (svc *GittarFileTree) searchYmlContext(app apistructs.ApplicationDTO, orgID
 			results = append(results, apistructs.UnifiedFileTreeNode{
 				Name:  pathSplit[len(pathSplit)-1],
 				Type:  apistructs.UnifiedFileTreeNodeTypeFile,
-				Inode: base64.StdEncoding.EncodeToString([]byte(inode)),
+				Inode: base64.URLEncoding.EncodeToString([]byte(inode)),
 				Meta: map[string]interface{}{
 					apistructs.AutoTestFileTreeNodeMetaKeyPipelineYml: context,
 					apistructs.AutoTestFileTreeNodeMetaKeySnippetAction: apistructs.SnippetConfig{
@@ -828,7 +829,7 @@ func (svc *GittarFileTree) FindFileTreeNodeAncestors(req apistructs.UnifiedFileT
 	}
 
 	var results []apistructs.UnifiedFileTreeNode
-	inodeBytes, err := base64.StdEncoding.DecodeString(req.Inode)
+	inodeBytes, err := base64.URLEncoding.DecodeString(req.Inode)
 	if err != nil {
 		return nil, apierrors.ErrFindGittarFileTreeNodeAncestors.InvalidParameter(err)
 	}
@@ -847,7 +848,7 @@ func recursivelyFindAncestors(inode string, ancestors *[]apistructs.UnifiedFileT
 	}
 
 	// 解析
-	inodeBytes, err := base64.StdEncoding.DecodeString(inode)
+	inodeBytes, err := base64.URLEncoding.DecodeString(inode)
 	if err != nil {
 		return apierrors.ErrFindGittarFileTreeNodeAncestors.InvalidParameter(err)
 	}
@@ -860,7 +861,7 @@ func recursivelyFindAncestors(inode string, ancestors *[]apistructs.UnifiedFileT
 	var pinode = ""
 	// 把 a/b/tree 中的 tree 去除
 	if length == 3 {
-		inode = base64.StdEncoding.EncodeToString([]byte(inodeSplit[0] + "/" + inodeSplit[1]))
+		inode = base64.URLEncoding.EncodeToString([]byte(inodeSplit[0] + "/" + inodeSplit[1]))
 		length = 2
 	}
 	// 去除最后一个文件名或者文件夹名称
@@ -884,7 +885,7 @@ func recursivelyFindAncestors(inode string, ancestors *[]apistructs.UnifiedFileT
 
 	// 把分支用占位符替换回来
 	pinode = strings.Replace(pinode, "${branch}", branch, 1)
-	pinode = base64.StdEncoding.EncodeToString([]byte(pinode))
+	pinode = base64.URLEncoding.EncodeToString([]byte(pinode))
 	*ancestors = append(*ancestors, apistructs.UnifiedFileTreeNode{
 		Inode:  inode,
 		Pinode: pinode,
@@ -897,7 +898,7 @@ func branchConvertToUnifiedFileTreeNode(branch string, scope, scopeID, decodePIn
 
 	// 根据绝对路径base64下，转化成一个唯一id
 	inode := decodePInode + "/" + gittarEntryTreeType + "/" + branch
-	encryptINode := base64.StdEncoding.EncodeToString([]byte(inode))
+	encryptINode := base64.URLEncoding.EncodeToString([]byte(inode))
 
 	return &apistructs.UnifiedFileTreeNode{
 		Type:    apistructs.UnifiedFileTreeNodeTypeDir,
@@ -913,7 +914,7 @@ func entryConvertToUnifiedFileTreeNode(entry *apistructs.TreeEntry, scope, scope
 
 	// 根据绝对路径base64下，转化成一个唯一id
 	inode := decodePInode + "/" + entry.Name
-	encryptINode := base64.StdEncoding.EncodeToString([]byte(inode))
+	encryptINode := base64.URLEncoding.EncodeToString([]byte(inode))
 
 	node := &apistructs.UnifiedFileTreeNode{
 		Scope:   scope,
@@ -935,7 +936,7 @@ func appConvertToUnifiedFileTreeNode(app *apistructs.ApplicationDTO, scope, scop
 
 	// 根据绝对路径base64下，转化成一个唯一id
 	inode := projectID + "/" + strconv.Itoa(int(app.ID))
-	encryptINode := base64.StdEncoding.EncodeToString([]byte(inode))
+	encryptINode := base64.URLEncoding.EncodeToString([]byte(inode))
 
 	return &apistructs.UnifiedFileTreeNode{
 		Type:      apistructs.UnifiedFileTreeNodeTypeDir,

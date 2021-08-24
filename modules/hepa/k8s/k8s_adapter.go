@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package k8s
 
@@ -20,11 +21,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -32,6 +34,8 @@ import (
 
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
+	"github.com/erda-project/erda/pkg/k8s/interface_factory"
+	"github.com/erda-project/erda/pkg/k8s/union_interface"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
@@ -63,15 +67,9 @@ type RouteOptions struct {
 	LocationSnippet     *string
 }
 
-type IngressRoute struct {
-	Domain string
-	Path   string
-}
+type IngressRoute union_interface.IngressRoute
 
-type IngressBackend struct {
-	ServiceName string
-	ServicePort int
-}
+type IngressBackend union_interface.IngressBackend
 
 type K8SAdapter interface {
 	IsGatewaySupportHttps(namespace string) (bool, error)
@@ -90,8 +88,9 @@ type K8SAdapter interface {
 }
 
 type K8SAdapterImpl struct {
-	client *kubernetes.Clientset
-	pool   *util.GPool
+	client          *kubernetes.Clientset
+	ingressesHelper union_interface.IngressesHelper
+	pool            *util.GPool
 }
 
 const (
@@ -115,7 +114,8 @@ func (impl *K8SAdapterImpl) CountIngressController() (int, error) {
 		return 0, errors.WithStack(err)
 	}
 	if pods == nil || len(pods.Items) == 0 {
-		return 0, errors.New("can't find any ingress controllers")
+		logrus.Warnf("can't find any ingress controllers with label:%s, use default count:1", INGRESS_APP_LABEL)
+		return 1, nil
 	}
 	return len(pods.Items), nil
 }
@@ -279,112 +279,92 @@ func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
 	if !exist {
 		return nil
 	}
-	err = impl.client.ExtensionsV1beta1().Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
+	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
 	}
 	return nil
 }
-func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, backend IngressBackend, needTLS bool) *v1beta1.Ingress {
-	ingress := &v1beta1.Ingress{}
-	ingress.Name = strings.ToLower(name)
-	ingress.Namespace = ns
-	ingressBackend := v1beta1.IngressBackend{
-		ServiceName: backend.ServiceName,
-		ServicePort: intstr.FromInt(backend.ServicePort),
+
+func (impl *K8SAdapterImpl) newIngress(ns, name string, routes []IngressRoute, backend IngressBackend, needTLS bool) interface{} {
+	material := union_interface.IngressMaterial{
+		Name:      strings.ToLower(name),
+		Namespace: ns,
+		Routes:    *(*[]union_interface.IngressRoute)(unsafe.Pointer(&routes)),
+		Backend:   union_interface.IngressBackend(backend),
+		NeedTLS:   needTLS,
 	}
-	var domains []string
-	for _, route := range routes {
-		domains = append(domains, route.Domain)
-	}
-	if needTLS {
-		ingress.Spec.TLS = []v1beta1.IngressTLS{
-			{
-				Hosts: domains,
-			},
-		}
-	}
-	for _, route := range routes {
-		ingress.Spec.Rules = append(ingress.Spec.Rules, v1beta1.IngressRule{
-			Host: route.Domain,
-			IngressRuleValue: v1beta1.IngressRuleValue{
-				HTTP: &v1beta1.HTTPIngressRuleValue{
-					Paths: []v1beta1.HTTPIngressPath{
-						{
-							Path:    route.Path,
-							Backend: ingressBackend,
-						},
-					},
-				},
-			},
-		})
-	}
-	return ingress
+	return impl.ingressesHelper.NewIngress(material)
 
 }
 
-func (impl *K8SAdapterImpl) setOptionAnnotations(ingress *v1beta1.Ingress, options RouteOptions) error {
-	if ingress.Annotations == nil {
-		ingress.Annotations = map[string]string{}
-	}
+func (impl *K8SAdapterImpl) setOptionAnnotations(ingress interface{}, options RouteOptions) error {
+	annotations := map[string]string{}
 	if options.RewriteHost != nil {
-		ingress.Annotations[REWRITE_HOST_KEY] = *options.RewriteHost
+		annotations[REWRITE_HOST_KEY] = *options.RewriteHost
 	}
 	if options.RewritePath != nil {
-		ingress.Annotations[REWRITE_PATH_KEY] = *options.RewritePath
+		annotations[REWRITE_PATH_KEY] = *options.RewritePath
 	}
 	if options.UseRegex {
-		ingress.Annotations[USE_REGEX_KEY] = "true"
+		annotations[USE_REGEX_KEY] = "true"
 	}
 	if options.BackendProtocol != nil {
 		switch *options.BackendProtocol {
 		case HTTP:
-			ingress.Annotations[SERVICE_PROTOCOL] = "HTTP"
+			annotations[SERVICE_PROTOCOL] = "HTTP"
 		case HTTPS:
-			ingress.Annotations[SERVICE_PROTOCOL] = "HTTPS"
+			annotations[SERVICE_PROTOCOL] = "HTTPS"
 		case GRPC:
-			ingress.Annotations[SERVICE_PROTOCOL] = "GRPC"
+			annotations[SERVICE_PROTOCOL] = "GRPC"
 		case GRPCS:
-			ingress.Annotations[SERVICE_PROTOCOL] = "GRPCS"
+			annotations[SERVICE_PROTOCOL] = "GRPCS"
 		case FCGI:
-			ingress.Annotations[SERVICE_PROTOCOL] = "FCGI"
+			annotations[SERVICE_PROTOCOL] = "FCGI"
 		}
 	} else {
-		delete(ingress.Annotations, SERVICE_PROTOCOL)
+		impl.ingressesHelper.IngressAnnotationClear(ingress, SERVICE_PROTOCOL)
 	}
 	for key, value := range options.Annotations {
 		if value == nil {
-			delete(ingress.Annotations, key)
+			impl.ingressesHelper.IngressAnnotationClear(ingress, key)
 			continue
 		}
-		ingress.Annotations[key] = *value
+		annotations[key] = *value
 	}
 	if options.LocationSnippet != nil {
-		locationSnippet := ingress.Annotations[LOC_SNIPPET_KEY]
+		locationSnippet, err := impl.ingressesHelper.IngressAnnotationGet(ingress, LOC_SNIPPET_KEY)
+		if err != nil {
+			return err
+		}
 		newSnippet, err := impl.replaceSnippet(locationSnippet, *options.LocationSnippet)
 		if err != nil {
 			return err
 		}
-		ingress.Annotations[LOC_SNIPPET_KEY] = newSnippet
+		annotations[LOC_SNIPPET_KEY] = newSnippet
 
+	}
+	err := impl.ingressesHelper.IngressAnnotationBatchSet(ingress, annotations)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes []IngressRoute, backend IngressBackend, options ...RouteOptions) (bool, error) {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
+	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	exist, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
-	var ingress *v1beta1.Ingress
+	var ingress interface{}
 	routeOptions := RouteOptions{}
 	if len(options) > 0 {
 		routeOptions = options[0]
 	}
 	ingress = impl.newIngress(namespace, ingressName, routes, backend, routeOptions.EnableTLS)
-	if exist == nil || exist.Name == "" {
+	if k8serrors.IsNotFound(err) {
 		err := impl.setOptionAnnotations(ingress, routeOptions)
 		if err != nil {
 			return false, err
@@ -414,7 +394,14 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 			return false, nil
 		}
 	}
-	ingress.Annotations = exist.Annotations
+	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
+	if err != nil {
+		return true, err
+	}
+	err = impl.ingressesHelper.IngressAnnotationBatchSet(ingress, oldAnnotations)
+	if err != nil {
+		return true, err
+	}
 	err = impl.setOptionAnnotations(ingress, routeOptions)
 	if err != nil {
 		return true, err
@@ -430,19 +417,16 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 }
 
 func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
+	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil || ingress.Name == "" {
-		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/upstream-vhost", host)
+	if err != nil {
+		return err
 	}
-	if ingress.Annotations == nil {
-		ingress.Annotations = map[string]string{}
-	}
-	ingress.Annotations["nginx.ingress.kubernetes.io/upstream-vhost"] = host
 	_, err = ns.Update(context.Background(), ingress, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Errorf("set upstream host %s failed, name:%s, ns:%s, err:%s",
@@ -452,19 +436,16 @@ func (impl *K8SAdapterImpl) SetUpstreamHost(namespace, name, host string) error 
 }
 
 func (impl *K8SAdapterImpl) SetRewritePath(namespace, name, target string) error {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
+	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil || ingress.Name == "" {
-		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/rewrite-target", target)
+	if err != nil {
+		return err
 	}
-	if ingress.Annotations == nil {
-		ingress.Annotations = map[string]string{}
-	}
-	ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"] = target
 	_, err = ns.Update(context.Background(), ingress, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Errorf("set rewrite path %s failed, name:%s, ns:%s, err:%s",
@@ -474,19 +455,16 @@ func (impl *K8SAdapterImpl) SetRewritePath(namespace, name, target string) error
 }
 
 func (impl *K8SAdapterImpl) EnableRegex(namespace, name string) error {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
+	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
-	if ingress == nil || ingress.Name == "" {
-		return errors.Errorf("ingress %s not exists, ns:%s", ingressName, namespace)
+	err = impl.ingressesHelper.IngressAnnotationSet(ingress, "nginx.ingress.kubernetes.io/use-regex", "true")
+	if err != nil {
+		return err
 	}
-	if ingress.Annotations == nil {
-		ingress.Annotations = map[string]string{}
-	}
-	ingress.Annotations["nginx.ingress.kubernetes.io/use-regex"] = "true"
 	_, err = ns.Update(context.Background(), ingress, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Errorf("enable regex failed, name:%s, ns:%s, err:%s",
@@ -524,49 +502,42 @@ func (impl *K8SAdapterImpl) replaceSnippet(source, replace string) (string, erro
 }
 
 func (impl *K8SAdapterImpl) CheckIngressExist(namespace, name string) (bool, error) {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
-	ingress, err := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
+	ns := impl.ingressesHelper.Ingresses(namespace)
+	_, err := ns.Get(context.Background(), strings.ToLower(name), metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.WithStack(err)
 	}
-	if ingress == nil || ingress.Name == "" {
+	if k8serrors.IsNotFound(err) {
 		return false, nil
 	}
 	return true, nil
 }
 
 func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annotaion map[string]*string, snippet *string) error {
-	ns := impl.client.ExtensionsV1beta1().Ingresses(namespace)
+	ns := impl.ingressesHelper.Ingresses(namespace)
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
 	}
-	if ingress == nil || ingress.Name == "" {
-		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
-		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
-	}
 	for key, value := range annotaion {
 		if value == nil {
-			delete(ingress.Annotations, key)
+			impl.ingressesHelper.IngressAnnotationClear(ingress, key)
 			continue
 		}
-		if ingress.Annotations == nil {
-			ingress.Annotations = map[string]string{}
-		}
-		ingress.Annotations[key] = *value
+		impl.ingressesHelper.IngressAnnotationSet(ingress, key, *value)
 	}
 	if snippet != nil {
-		if ingress.Annotations == nil {
-			ingress.Annotations = map[string]string{}
+		locationSnippet, err := impl.ingressesHelper.IngressAnnotationGet(ingress, LOC_SNIPPET_KEY)
+		if err != nil {
+			return err
 		}
-		locationSnippet := ingress.Annotations[LOC_SNIPPET_KEY]
 		newSnippet, err := impl.replaceSnippet(locationSnippet, *snippet)
 		if err != nil {
 			return err
 		}
-		ingress.Annotations[LOC_SNIPPET_KEY] = newSnippet
+		impl.ingressesHelper.IngressAnnotationSet(ingress, LOC_SNIPPET_KEY, newSnippet)
 		log.Debugf("ns:%s ingress:%s new snippet:%s", namespace, ingressName, newSnippet)
 	}
 	_, err = ns.Update(context.Background(), ingress, metav1.UpdateOptions{})
@@ -641,9 +612,14 @@ func NewAdapter(clusterKey string) (K8SAdapter, error) {
 	if err != nil {
 		return nil, err
 	}
+	helper, err := interface_factory.CreateIngressesHelper(client.ClientSet)
+	if err != nil {
+		return nil, err
+	}
 	pool := util.NewGPool(1000)
 	return &K8SAdapterImpl{
-		client: client.ClientSet,
-		pool:   pool,
+		client:          client.ClientSet,
+		ingressesHelper: helper,
+		pool:            pool,
 	}, nil
 }
