@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -59,6 +60,9 @@ type Reconciler struct {
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineSvcFunc *PipelineSvcFunc
+
+	// aop
+	PluginsManage *plugins_manage.PluginsManage
 }
 
 // 该结构体为了解决假如 Reconciler 引入 pipelinesvc 导致循环依赖问题，所以将 svc 方法挂载进来
@@ -71,6 +75,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineSvcFunc *PipelineSvcFunc,
+	pluginsManage *plugins_manage.PluginsManage,
 ) (*Reconciler, error) {
 	r := Reconciler{
 		js:       js,
@@ -84,6 +89,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		actionAgentSvc:  actionAgentSvc,
 		extMarketSvc:    extMarketSvc,
 		pipelineSvcFunc: pipelineSvcFunc,
+		PluginsManage: pluginsManage,
 	}
 	if err := r.loadThrottler(); err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ import (
 // loadQueueManger
 func (r *Reconciler) loadQueueManger() error {
 	// init queue manager
-	r.QueueManager = manager.New(manager.WithDBClient(r.dbClient))
+	r.QueueManager = manager.New(r.PluginsManage,manager.WithDBClient(r.dbClient))
 
 	return nil
 }

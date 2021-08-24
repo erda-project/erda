@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
@@ -50,6 +51,7 @@ type PipelineSvc struct {
 
 	// providers
 	cmsService pb.CmsServiceServer
+	pluginsManage *plugins_manage.PluginsManage
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
@@ -57,7 +59,8 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	pipelineCronSvc *pipelinecronsvc.PipelineCronSvc, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine *pipengine.Engine, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
+	engine *pipengine.Engine, js jsonstore.JsonStore, etcd *etcd.Store,
+	pluginsManage *plugins_manage.PluginsManage) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
@@ -73,6 +76,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	s.engine = engine
 	s.js = js
 	s.etcdctl = etcd
+	s.pluginsManage = pluginsManage
 	return &s
 }
 

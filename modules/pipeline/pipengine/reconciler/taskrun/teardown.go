@@ -17,9 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/aop"
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/aoptypes"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -30,7 +29,7 @@ func (tr *TaskRun) Teardown() {
 	defer tr.TeardownConcurrencyCount()
 	defer tr.TeardownPriorityQueue()
 	// handle aop synchronously, then do subsequent tasks
-	_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
+	_ = tr.PluginsManage.Handle(tr.PluginsManage.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskAfterExec))
 
 	// invalidate openapi oauth2 token
 	tokens := strutil.DedupSlice([]string{

@@ -25,7 +25,7 @@ func (mgr *defaultManager) IdempotentAddQueue(pq *apistructs.PipelineQueue) type
 	defer mgr.qLock.Unlock()
 
 	// construct newQueue first for later use
-	newQueue := queue.New(pq, queue.WithDBClient(mgr.dbClient))
+	newQueue := queue.New(pq,mgr.pluginsManage, queue.WithDBClient(mgr.dbClient))
 
 	_, ok := mgr.queueByID[newQueue.ID()]
 	if ok {

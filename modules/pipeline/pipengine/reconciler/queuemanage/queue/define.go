@@ -17,11 +17,11 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/erda-project/erda/modules/pipeline/spec"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/enhancedqueue"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 // defaultQueue is used to implement Queue.
@@ -54,15 +54,19 @@ type defaultQueue struct {
 
 	// is updating pending queue
 	updatingPendingQueue bool
+
+	// aop
+	PluginsManage *plugins_manage.PluginsManage
 }
 
-func New(pq *apistructs.PipelineQueue, ops ...Option) *defaultQueue {
+func New(pq *apistructs.PipelineQueue, pm *plugins_manage.PluginsManage, ops ...Option) *defaultQueue {
 	newQueue := defaultQueue{
 		pq:                   pq,
 		eq:                   enhancedqueue.NewEnhancedQueue(pq.Concurrency),
 		doneChanByPipelineID: make(map[uint64]chan struct{}),
 		pipelineCaches:       make(map[uint64]*spec.Pipeline),
 		rangeAtOnceCh:        make(chan bool),
+		PluginsManage:        pm,
 	}
 
 	// apply options

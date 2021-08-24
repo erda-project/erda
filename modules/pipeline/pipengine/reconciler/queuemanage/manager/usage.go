@@ -22,7 +22,7 @@ import (
 func (mgr *defaultManager) QueryQueueUsage(pq *apistructs.PipelineQueue) *pb.QueueUsage {
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
-	q, ok := mgr.queueByID[queue.New(pq).ID()]
+	q, ok := mgr.queueByID[queue.New(pq,mgr.pluginsManage).ID()]
 	if !ok {
 		return nil
 	}

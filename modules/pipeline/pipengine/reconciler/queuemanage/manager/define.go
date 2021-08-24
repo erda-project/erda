@@ -18,6 +18,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
 )
 
 // defaultManager is the default manager.
@@ -30,15 +31,18 @@ type defaultManager struct {
 	//pCacheLock     sync.RWMutex
 
 	dbClient *dbclient.Client
+
+	// aop
+	pluginsManage *plugins_manage.PluginsManage
 }
 
 // New return a new queue manager.
-func New(ops ...Option) types.QueueManager {
+func New(pluginsManage *plugins_manage.PluginsManage, ops ...Option) types.QueueManager {
 	var mgr defaultManager
 
 	mgr.queueByID = make(map[string]types.Queue)
 	mgr.queueStopChanByID = make(map[string]chan struct{})
-
+	mgr.pluginsManage = pluginsManage
 	//mgr.pipelineCaches = make(map[uint64]*spec.Pipeline)
 
 	// apply options

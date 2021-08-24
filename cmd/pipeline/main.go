@@ -21,6 +21,18 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/mysqlxorm"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/pipeline"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/apitest_report"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/basic"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/echo"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/precheck_before_pop"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/project"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/scene_after"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/pipeline/scene_before"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/task/autotest_cookie_keep_after"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/task/autotest_cookie_keep_before"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/task/echo"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/aop/plugins/task/unit_test_report"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 )
 

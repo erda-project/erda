@@ -161,7 +161,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
 				r.TaskThrottler, executor, p, r.bdl, r.dbClient, r.js,
-				r.actionAgentSvc, r.extMarketSvc)
+				r.actionAgentSvc, r.extMarketSvc,r.PluginsManage)
 
 			// tear down task
 			defer func() {
@@ -193,7 +193,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 				return
 			}
 
-			err = reconcileTask(tr)
+			err = reconcileTask(tr,r.PluginsManage)
 			return
 		}()
 	}

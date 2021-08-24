@@ -24,7 +24,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/endpoints"
@@ -126,7 +125,7 @@ func (p *provider) do() (*httpserver.Server, error) {
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
+		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl, p.PluginsManage)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	pipelineFun := &reconciler.PipelineSvcFunc{
@@ -136,7 +135,7 @@ func (p *provider) do() (*httpserver.Server, error) {
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
 	clusterinfo.Initialize(bdl)
 
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
+	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.PluginsManage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init reconciler, err: %v", err)
 	}
@@ -181,9 +180,6 @@ func (p *provider) do() (*httpserver.Server, error) {
 
 	// 同步 pipeline 表拆分后的 commit 字段和 org_name 字段
 	go pipelineSvc.SyncAfterSplitTable()
-
-	// aop
-	aop.Initialize(bdl, dbClient, reportSvc)
 
 	// engine start after all dependencies done
 	engine.Start()

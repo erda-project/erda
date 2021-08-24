@@ -152,7 +152,7 @@ func (mgr *defaultManager) BatchUpdatePipelinePriorityInQueue(pq *apistructs.Pip
 	mgr.qLock.RLock()
 	defer mgr.qLock.RUnlock()
 
-	queueID := queue.New(pq).ID()
+	queueID := queue.New(pq, mgr.pluginsManage).ID()
 	q, ok := mgr.queueByID[queueID]
 	if !ok {
 		return fmt.Errorf("failed to query queue: %s", queueID)

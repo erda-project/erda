@@ -17,12 +17,12 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/aop"
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
 	"github.com/erda-project/erda/pkg/loop"
 )
 
@@ -32,7 +32,7 @@ var (
 	defaultRetryDeclineLimitSec = 600
 )
 
-func reconcileTask(tr *taskrun.TaskRun) error {
+func reconcileTask(tr *taskrun.TaskRun,pm *plugins_manage.PluginsManage) error {
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "start reconcile task")
 	defer rlog.TDebugf(tr.P.ID, tr.Task.ID, "end reconcile task")
 	// // do metric
@@ -42,7 +42,7 @@ func reconcileTask(tr *taskrun.TaskRun) error {
 	// }()
 	// do aop
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "start do task aop")
-	if err := aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskBeforeExec)); err != nil {
+	if err := pm.Handle(pm.NewContextForTask(*tr.Task, *tr.P, aoptypes.TuneTriggerTaskBeforeExec)); err != nil {
 		rlog.TErrorf(tr.P.ID, tr.Task.ID, "failed to handle aop, type: %s, err: %v", aoptypes.TuneTriggerTaskBeforeExec, err)
 	}
 	rlog.TDebugf(tr.P.ID, tr.Task.ID, "end do task aop")

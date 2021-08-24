@@ -19,10 +19,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
+	"github.com/erda-project/erda/modules/pipeline/providers/aop/plugins_manage"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -59,6 +60,9 @@ type TaskRun struct {
 	// svc
 	ActionAgentSvc *actionagentsvc.ActionAgentSvc
 	ExtMarketSvc   *extmarketsvc.ExtMarketSvc
+
+	// aop
+	PluginsManage *plugins_manage.PluginsManage
 }
 
 // New returns a TaskRun.
@@ -68,6 +72,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client, js jsonstore.JsonStore,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
+	PluginsManage *plugins_manage.PluginsManage,
 ) *TaskRun {
 	return &TaskRun{
 		Ctx:       ctx,
@@ -91,6 +96,8 @@ func New(ctx context.Context, task *spec.PipelineTask,
 
 		ActionAgentSvc: actionAgentSvc,
 		ExtMarketSvc:   extMarketSvc,
+
+		PluginsManage: PluginsManage,
 	}
 }
 

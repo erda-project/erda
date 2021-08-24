@@ -22,7 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
@@ -78,7 +77,7 @@ func (tr *TaskRun) Do(itr TaskOp) error {
 
 		// aop: before processing
 		if itr.TuneTriggers().BeforeProcessing != "" {
-			_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().BeforeProcessing))
+			_ = tr.PluginsManage.Handle(tr.PluginsManage.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().BeforeProcessing))
 		}
 
 		// processing op
@@ -157,7 +156,7 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 			errs = append(errs, err.Error())
 		}
 		// aop
-		_ = aop.Handle(aop.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().AfterProcessing))
+		_ = tr.PluginsManage.Handle(tr.PluginsManage.NewContextForTask(*tr.Task, *tr.P, itr.TuneTriggers().AfterProcessing))
 
 	case err := <-o.ErrCh:
 		logrus.Errorf("reconciler: pipelineID: %d, task %q %s received error (%v)", tr.P.ID, tr.Task.Name, itr.Op(), err)
