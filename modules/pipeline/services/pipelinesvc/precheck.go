@@ -98,7 +98,7 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
 	}
 
 	// secrets
-	secrets, _, holdOnKeys, err := s.FetchSecrets(p)
+	secrets, _, holdOnKeys, _, err := s.FetchSecrets(p)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
