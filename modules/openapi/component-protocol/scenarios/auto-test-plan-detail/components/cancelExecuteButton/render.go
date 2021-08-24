@@ -52,7 +52,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if _, ok := c.State["pipelineId"]; ok && visible {
 			pipelineId := uint64(c.State["pipelineId"].(float64))
 			if pipelineId > 0 {
-				rsp, err := bdl.Bdl.GetPipeline(pipelineId)
+				rsp, err := bdl.Bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+					PipelineID:               pipelineId,
+					SimplePipelineBaseResult: true,
+				})
 				if err != nil {
 					return err
 				}

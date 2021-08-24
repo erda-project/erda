@@ -95,7 +95,10 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		}
 	}()
 	if i.State.PipelineID > 0 {
-		rsp, err := i.CtxBdl.Bdl.GetPipeline(i.State.PipelineID)
+		rsp, err := i.CtxBdl.Bdl.GetPipelineV2(apistructs.PipelineDetailRequest{
+			PipelineID:               i.State.PipelineID,
+			SimplePipelineBaseResult: true,
+		})
 		if err != nil {
 			return err
 		}

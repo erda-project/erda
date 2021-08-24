@@ -48,10 +48,19 @@ func (s *PipelineSvc) SimplePipelineBaseDetail(pipelineID uint64) (*apistructs.P
 	if !find {
 		return nil, fmt.Errorf("not find this pipeline id %v", pipelineID)
 	}
-
+	// extra
+	extra, found, err := s.dbClient.GetPipelineExtraByPipelineID(base.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, errors.New("not found extra")
+	}
+	var p spec.Pipeline
+	p.PipelineBase = base
+	p.PipelineExtra = extra
 	var detail apistructs.PipelineDetailDTO
-	detail.PipelineDTO = s.convertPipelineBase(base)
-
+	detail.PipelineDTO = *s.ConvertPipeline(&p)
 	return &detail, nil
 }
 
