@@ -1,5 +1,5 @@
-#http-server:
-#    addr: ":7096"
+http-server:
+    addr: ":7099"
 health:
 pprof:
 
@@ -25,8 +25,8 @@ logs-exporter-base:
 elasticsearch@logs:
     urls: "${LOGS_ES_URL:http://localhost:9200}"
     security: ${LOGS_ES_SECURITY_ENABLE:false}
-    username: "${LOGS_ES_USERNAME}"
-    password: "${LOGS_ES_PASSWORD}"
+    username: "${LOGS_ES_SECURITY_USERNAME}"
+    password: "${LOGS_ES_SECURITY_USERNAME}"
 
 logs-exporter-elasticsearch:
     index:
@@ -77,7 +77,7 @@ logs-metrics-analysis:
         reload_interval: "3m"
     input:
         topics: "${LOG_TOPICS:spot-container-log}"
-        group: "${LOG_METRICS_GROUP_ID:spot-log-metrics-dev-0}"
+        group: "${LOG_METRICS_GROUP_ID:spot-log-metrics}"
         parallelism: ${LOG_METRICS_CONSUMERS:3}
     output:
         type: "${METRIC_OUTPUT_TYPE:kafka}"
