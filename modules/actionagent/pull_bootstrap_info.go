@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package actionagent
 
@@ -18,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +29,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/retry"
 )
+
+const EncryptedValueMinLen = "ACTIONAGENT_ENCRYPTED_VAlUE_MIN_LEN"
 
 func (agent *Agent) pullBootstrapInfo() {
 	if !agent.Arg.PullBootstrapInfo {
@@ -73,6 +78,19 @@ func (agent *Agent) pullBootstrapInfo() {
 	agent.Arg.Commands = bootstrapArg.Commands
 	agent.Arg.Context = bootstrapArg.Context
 	agent.Arg.PrivateEnvs = bootstrapArg.PrivateEnvs
+	agent.Arg.EncryptSecretKeys = bootstrapArg.EncryptSecretKeys
+
+	valueLen, err := strconv.Atoi(os.Getenv(EncryptedValueMinLen))
+	if err != nil || valueLen < 6 {
+		valueLen = 6
+	}
+
+	for _, v := range agent.Arg.EncryptSecretKeys {
+		// the value's len >= EncryptedValueLen will be appended to BlackList
+		if value, ok := agent.Arg.PrivateEnvs[strings.ToUpper(v)]; ok && len(value) >= valueLen {
+			agent.TextBlackList = append(agent.TextBlackList, value)
+		}
+	}
 
 	// set envs to current process, so `run` and other scripts can inherit
 	for k, v := range agent.Arg.PrivateEnvs {

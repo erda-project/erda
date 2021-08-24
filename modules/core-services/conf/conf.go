@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package conf 定义配置选项
 package conf
@@ -88,6 +89,11 @@ type Conf struct {
 	OSSAccessSecret string `env:"OSS_ACCESS_SECRET"`
 	OSSBucket       string `env:"OSS_BUCKET"`
 	OSSPathPrefix   string `env:"OSS_PATH_PREFIX" default:"/dice/cmdb/files"`
+
+	// If we allow uploaded file types that can carry active content
+	FileTypeCarryActiveContentAllowed bool `env:"FILETYPE_CARRY_ACTIVE_CONTENT_ALLOWED" default:"false"`
+	// File types can carry active content, separated by comma, can add more types like jsp
+	FileTypesCanCarryActiveContent string `env:"FILETYPES_CAN_CARRY_ACTIVE_CONTENT" default:"html,js,xml,htm"`
 	// --- 文件管理 end ---
 }
 
@@ -442,4 +448,12 @@ func StorageMountPointInContainer() string {
 // DisableFileDownloadPermissionValidate return switch for file download permission check.
 func DisableFileDownloadPermissionValidate() bool {
 	return cfg.DisableFileDownloadPermissionValidate
+}
+
+func FileTypeCarryActiveContentAllowed() bool {
+	return cfg.FileTypeCarryActiveContentAllowed
+}
+
+func FileTypesCanCarryActiveContent() []string {
+	return strutil.Split(cfg.FileTypesCanCarryActiveContent, ",")
 }

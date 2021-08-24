@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package sitelist
 
@@ -20,8 +21,9 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-site/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
 )
 
 type EdgeSiteItem struct {
@@ -39,7 +41,7 @@ func (c *ComponentList) Render(ctx context.Context, component *apistructs.Compon
 	if err := c.SetBundle(bdl); err != nil {
 		return err
 	}
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if err := c.SetComponent(component); err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func (c *ComponentList) Render(ctx context.Context, component *apistructs.Compon
 		}
 	}
 
-	c.component.Props = getProps()
+	c.component.Props = getProps(i18nLocale)
 	c.component.Operations = getOperations()
 
 	return nil
@@ -106,27 +108,27 @@ func getOperations() apistructs.EdgeOperations {
 	}
 }
 
-func getProps() apistructs.EdgeTableProps {
+func getProps(lr *i18r.LocaleResource) apistructs.EdgeTableProps {
 	return apistructs.EdgeTableProps{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",
 		Columns: []apistructs.EdgeColumns{
-			{Title: "站点名称", DataIndex: "siteName", Width: 150},
-			{Title: "节点数量", DataIndex: "nodeNum", Width: 150},
-			{Title: "关联集群", DataIndex: "relatedCluster", Width: 150},
-			{Title: "操作", DataIndex: "operate", Width: 150},
+			{Title: lr.Get(i18n.I18nKeySiteName), DataIndex: "siteName", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyNodeNumber), DataIndex: "nodeNum", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyAssociatedCluster), DataIndex: "relatedCluster", Width: 150},
+			{Title: lr.Get(i18n.I18nKeyOperator), DataIndex: "operate", Width: 150},
 		},
 	}
 }
 
-func getSiteItemOperate(info apistructs.EdgeSiteInfo) apistructs.EdgeItemOperations {
+func getSiteItemOperate(info apistructs.EdgeSiteInfo, lr *i18r.LocaleResource) apistructs.EdgeItemOperations {
 	return apistructs.EdgeItemOperations{
 		RenderType: "tableOperation",
 		Operations: map[string]apistructs.EdgeItemOperation{
 			apistructs.EdgeOperationUpdate: {
 				ShowIndex: 2,
 				Key:       apistructs.EdgeOperationUpdate,
-				Text:      "编辑",
+				Text:      lr.Get(i18n.I18nKeyEdit),
 				Reload:    true,
 				Meta: map[string]interface{}{
 					"id": info.ID,
@@ -142,7 +144,7 @@ func getSiteItemOperate(info apistructs.EdgeSiteInfo) apistructs.EdgeItemOperati
 			apistructs.EdgeOperationAdd: {
 				ShowIndex: 1,
 				Key:       apistructs.EdgeOperationAdd,
-				Text:      "添加节点",
+				Text:      lr.Get(i18n.I18nKeyAddNode),
 				Reload:    true,
 				Meta: map[string]interface{}{
 					"id": info.ID,
@@ -158,10 +160,10 @@ func getSiteItemOperate(info apistructs.EdgeSiteInfo) apistructs.EdgeItemOperati
 			apistructs.EdgeOperationDelete: {
 				ShowIndex:   3,
 				Key:         apistructs.EdgeOperationDelete,
-				Text:        "删除",
-				Confirm:     "此操作将会删除该站点下所有配置项，是否确认删除",
+				Text:        lr.Get(i18n.I18nKeyDelete),
+				Confirm:     lr.Get(i18n.I18nKeyDeleteSiteConfigSetTip),
 				Disabled:    false,
-				DisabledTip: "无法删除",
+				DisabledTip: lr.Get(i18n.I18nKeyNotDelete),
 				Reload:      true,
 				Meta: map[string]interface{}{
 					"id": info.ID,

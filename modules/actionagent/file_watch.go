@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package actionagent
 
@@ -17,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -83,8 +85,8 @@ func metaFileFullHandler(agent *Agent) filewatch.FullHandler {
 // stdoutTailHandler 以 tail 方式处理 stdout
 func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		// add your logic here
-		// logrus.Printf("stdout tailed a line: %s\n", line)
+		desensitizeLine(agent.TextBlackList, &line)
+		fmt.Fprintf(os.Stdout, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
@@ -101,8 +103,8 @@ func stdoutTailHandler(agent *Agent) filewatch.TailHandler {
 // stderrTailHandler 以 tail 方式处理 stderr
 func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 	return func(line string, allLines []string) error {
-		// add your logic here
-		// logrus.Printf("stderr tailed a line: %s\n", line)
+		desensitizeLine(agent.TextBlackList, &line)
+		fmt.Fprintf(os.Stderr, "%s\n", line)
 
 		// meta
 		tailHandlerForMeta(line, agent.EasyUse.ContainerMetaFile)
@@ -117,6 +119,18 @@ func stderrTailHandler(agent *Agent) filewatch.TailHandler {
 		}
 
 		return nil
+	}
+}
+
+func desensitizeLine(txtBlackList []string, line *string) {
+	values := make([]string, 0)
+	for _, v := range txtBlackList {
+		if strings.Contains(*line, v) {
+			values = append(values, v)
+		}
+	}
+	for _, v := range values {
+		*line = strings.Replace(*line, v, "******", -1)
 	}
 }
 

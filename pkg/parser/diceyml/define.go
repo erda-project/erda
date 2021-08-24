@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package diceyml
 
@@ -21,6 +22,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -46,7 +48,7 @@ type Object struct {
 	Services     Services          `yaml:"services" json:"services,omitempty"`
 	Jobs         Jobs              `yaml:"jobs,omitempty" json:"jobs,omitempty"`
 	AddOns       AddOns            `yaml:"addons" json:"addons,omitempty"`
-	Environments EnvObjects        `yaml:"environments,omitempty" json:"-"`
+	Environments EnvObjects        `yaml:"environments,omitempty" json:"environments,omitempty"`
 	Values       ValueObjects      `yaml:"values" json:"values,omitempty"`
 }
 type EnvMap map[string]string
@@ -135,6 +137,13 @@ type Service struct {
 	MeshEnable      *bool                    `yaml:"mesh_enable,omitempty" json:"mesh_enable,omitempty"`
 	TrafficSecurity TrafficSecurity          `yaml:"traffic_security,omitempty" json:"traffic_security,omitempty"`
 	Endpoints       []Endpoint               `yaml:"endpoints,omitempty" json:"endpoints,omitempty"`
+	K8SSnippet      *K8SSnippet              `yaml:"k8s_snippet,omitempty" json:"k8s_snippet,omitempty"`
+}
+
+type ContainerSnippet v1.Container
+
+type K8SSnippet struct {
+	Container *ContainerSnippet `yaml:"container,omitempty" json:"container,omitempty"`
 }
 
 type ServicePort struct {
@@ -519,6 +528,8 @@ type DiceYmlVisitor interface {
 	VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)
 	VisitDeployments(v DiceYmlVisitor, obj *Deployments)
 	VisitBinds(v DiceYmlVisitor, obj *Binds)
+	VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSnippet)
+	VisitContainerSnippet(v DiceYmlVisitor, obj *ContainerSnippet)
 }
 
 func (obj *Object) Accept(v DiceYmlVisitor) {
@@ -558,6 +569,9 @@ func (obj *Service) Accept(v DiceYmlVisitor) {
 	obj.Deployments.Accept(v)
 	obj.HealthCheck.Accept(v)
 	obj.Binds.Accept(v)
+	if obj.K8SSnippet != nil {
+		obj.K8SSnippet.Accept(v)
+	}
 }
 func (obj *Services) Accept(v DiceYmlVisitor) {
 	v.VisitServices(v, obj)
@@ -607,6 +621,17 @@ func (obj *Binds) Accept(v DiceYmlVisitor) {
 	v.VisitBinds(v, obj)
 }
 
+func (obj *K8SSnippet) Accept(v DiceYmlVisitor) {
+	v.VisitK8SSnippet(v, obj)
+	if obj.Container != nil {
+		obj.Container.Accept(v)
+	}
+}
+
+func (obj *ContainerSnippet) Accept(v DiceYmlVisitor) {
+	v.VisitContainerSnippet(v, obj)
+}
+
 type DefaultVisitor struct {
 	// used when iter on Object.Services
 	currentService string
@@ -631,12 +656,14 @@ func (o *DefaultVisitor) VisitJobs(v DiceYmlVisitor, obj *Jobs) {
 	}
 	o.currentJob = ""
 }
-func (o *DefaultVisitor) VisitJob(v DiceYmlVisitor, obj *Job)               {}
-func (*DefaultVisitor) VisitAddOn(v DiceYmlVisitor, obj *AddOn)             {}
-func (*DefaultVisitor) VisitAddOns(v DiceYmlVisitor, obj *AddOns)           {}
-func (*DefaultVisitor) VisitResources(v DiceYmlVisitor, obj *Resources)     {}
-func (*DefaultVisitor) VisitHealthCheck(v DiceYmlVisitor, obj *HealthCheck) {}
-func (*DefaultVisitor) VisitHTTPCheck(v DiceYmlVisitor, obj *HTTPCheck)     {}
-func (*DefaultVisitor) VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)     {}
-func (*DefaultVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments) {}
-func (*DefaultVisitor) VisitBinds(v DiceYmlVisitor, obj *Binds)             {}
+func (o *DefaultVisitor) VisitJob(v DiceYmlVisitor, obj *Job)                         {}
+func (*DefaultVisitor) VisitAddOn(v DiceYmlVisitor, obj *AddOn)                       {}
+func (*DefaultVisitor) VisitAddOns(v DiceYmlVisitor, obj *AddOns)                     {}
+func (*DefaultVisitor) VisitResources(v DiceYmlVisitor, obj *Resources)               {}
+func (*DefaultVisitor) VisitHealthCheck(v DiceYmlVisitor, obj *HealthCheck)           {}
+func (*DefaultVisitor) VisitHTTPCheck(v DiceYmlVisitor, obj *HTTPCheck)               {}
+func (*DefaultVisitor) VisitExecCheck(v DiceYmlVisitor, obj *ExecCheck)               {}
+func (*DefaultVisitor) VisitDeployments(v DiceYmlVisitor, obj *Deployments)           {}
+func (*DefaultVisitor) VisitBinds(v DiceYmlVisitor, obj *Binds)                       {}
+func (*DefaultVisitor) VisitK8SSnippet(v DiceYmlVisitor, obj *K8SSnippet)             {}
+func (*DefaultVisitor) VisitContainerSnippet(v DiceYmlVisitor, obj *ContainerSnippet) {}

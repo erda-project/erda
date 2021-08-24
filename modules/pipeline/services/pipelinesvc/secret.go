@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
@@ -182,7 +183,7 @@ func getCenterOrSaaSURL(diceCluster, requestCluster, center, sass string) string
 
 // FetchSecrets return secrets, cmsDiceFiles and error.
 // holdOnKeys: 声明 key 需要持有，不能被平台 secrets 覆盖，与 ignoreKeys 配合使用
-func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys []string, err error) {
+func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error) {
 	secrets = make(map[string]string)
 	cmsDiceFiles = make(map[string]string)
 
@@ -195,11 +196,11 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 		if orgIDStr := p.Labels[apistructs.LabelOrgID]; orgIDStr != "" {
 			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
 			if err != nil {
-				return nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
+				return nil, nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
 			}
 			org, err := s.bdl.GetOrg(orgID)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, nil, err
 			}
 			if org.EnableReleaseCrossCluster {
 				namespaces = append(namespaces, nexus.MakeOrgPipelineCmsNs(orgID))
@@ -217,9 +218,12 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 				GlobalDecrypt:  true,
 			})
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 		for _, c := range configs.Data {
+			if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
+				encryptSecretKeys = append(encryptSecretKeys, c.Key)
+			}
 			secrets[c.Key] = c.Value
 
 			// DiceFile 类型，value 为 diceFileUUID
@@ -241,5 +245,5 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 		)
 	}
 
-	return secrets, cmsDiceFiles, holdOnKeys, nil
+	return secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, nil
 }

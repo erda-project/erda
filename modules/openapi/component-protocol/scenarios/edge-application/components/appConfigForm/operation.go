@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package appconfigform
 
@@ -21,9 +22,10 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
-
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/edge-application/i18n"
+	i18r "github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -62,7 +64,7 @@ func (c *ComponentFormModal) OperateSubmit(orgID int64, identity apistructs.Iden
 		createRequest *apistructs.EdgeAppCreateRequest
 		updateRequest *apistructs.EdgeAppUpdateRequest
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	if _, ok := c.component.State["formData"]; !ok {
 		return fmt.Errorf("must provide formdata")
 	}
@@ -77,7 +79,7 @@ func (c *ComponentFormModal) OperateSubmit(orgID int64, identity apistructs.Iden
 		return err
 	}
 
-	if err = validateSubmitData(appSubmitReq); err != nil {
+	if err = validateSubmitData(appSubmitReq, i18nLocale); err != nil {
 		return err
 	}
 
@@ -273,7 +275,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 		appState  = apistructs.EdgeAppState{}
 		formModal apistructs.EdgeFormModalPointProps
 	)
-
+	i18nLocale := c.ctxBundle.Bdl.GetLocale(c.ctxBundle.Locale)
 	jsonData, err := json.Marshal(c.component.State)
 	if err != nil {
 		return fmt.Errorf("marshal component state error: %v", err)
@@ -292,7 +294,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 			return fmt.Errorf("get avaliable edge clusters error: %v", err)
 		}
 
-		c.component.Props = getProps(edgeClusters, nil, nil, nil, appState.OperationType, "")
+		c.component.Props = getProps(edgeClusters, nil, nil, nil, appState.OperationType, "", i18nLocale)
 		return nil
 	}
 
@@ -372,7 +374,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 				return fmt.Errorf("list avaliable apps error: %v", err)
 			}
 
-			c.component.Props = getProps(nil, sites, configSets, apps, appState.OperationType, "")
+			c.component.Props = getProps(nil, sites, configSets, apps, appState.OperationType, "", i18nLocale)
 
 		} else if appObj.Type == ADDON {
 			formData := Application{
@@ -385,7 +387,7 @@ func (c *ComponentFormModal) OperateRendering(orgID int64, identity apistructs.I
 			}
 
 			c.component.State["formData"] = formData
-			c.component.Props = getProps(nil, sites, nil, nil, appState.OperationType, MIDDLEWARE)
+			c.component.Props = getProps(nil, sites, nil, nil, appState.OperationType, MIDDLEWARE, i18nLocale)
 		}
 	}
 
@@ -446,7 +448,7 @@ func convert2PortMap(request Application) []apistructs.PortMap {
 	return portMaps
 }
 
-func validateSubmitData(reqData Application) error {
+func validateSubmitData(reqData Application, lr *i18r.LocaleResource) error {
 	if err := strutil.Validate(reqData.AppName, strutil.MaxRuneCountValidator(ApplicationNameLength)); err != nil {
 		return err
 	}
@@ -457,7 +459,7 @@ func validateSubmitData(reqData Application) error {
 	}
 
 	if !isRight {
-		return fmt.Errorf(AppNameRegexpError)
+		return fmt.Errorf(lr.Get(i18n.I18nKeyInputApplicationNameTip))
 	}
 
 	if reqData.DeployResource == MIRROR {

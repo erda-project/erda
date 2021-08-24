@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package clusters
 
@@ -20,7 +21,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -39,45 +39,35 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/conf"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
-	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 const (
-	KubeconfigType     = "KUBECONFIG"
-	SAType             = "SERVICEACCOUNT"
-	ProxyType          = "PROXY"
-	caKey              = "ca.crt"
-	tokenKey           = "token"
-	ModuleClusterInit  = "cluster-init"
-	ModuleClusterAgent = "cluster-agent"
-	ClusterAgentSA     = ModuleClusterAgent
-	ClusterAgentCR     = "cluster-agent-cr"
-	ClusterAgentCRB    = "cluster-agent-crb"
+	KubeconfigType   = "KUBECONFIG"
+	SAType           = "SERVICEACCOUNT"
+	ProxyType        = "PROXY"
+	caKey            = "ca.crt"
+	tokenKey         = "token"
+	ModuleClusterOps = "cluster-ops"
+	ClusterAgentSA   = "cluster-agent"
+	ClusterAgentCR   = "cluster-agent-cr"
+	ClusterAgentCRB  = "cluster-agent-crb"
 )
 
 var (
-	initRetryTimeout = 30 * time.Second
+	initRetryTimeout  = 30 * time.Second
+	getClusterTimeout = 2 * time.Second
 )
 
 type RenderDeploy struct {
-	ClusterName           string
-	MasterClusterDomain   string // Master cluster domain, collector or openapi public
-	MasterClusterProtocol string
-	PlateFormVersion      string
-	CustomDomain          string // Target cluster custom domain
-	InitJobImage          string
-	ClusterAgentImage     string
-	ErdaHelmChartVersion  string
-	DialerPublicAddr      string
-	ErdaSystem            string
-	OrgName               string
+	ErdaNamespace string
+	JobImage      string
+	Envs          []corev1.EnvVar
 }
 
 // importCluster import cluster
 func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) error {
-	var err error
-
 	mc, err := ParseManageConfigFromCredential(req.CredentialType, req.Credential)
 	if err != nil {
 		return err
@@ -110,143 +100,45 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return err
 	}
 
-	status, err := c.getClusterStatus(ci)
+	kc, err := k8sclient.NewWithTimeOut(req.ClusterName, getClusterTimeout)
 	if err != nil {
+		logrus.Errorf("get kubernetes client error, clusterName: [%s]", req.ClusterName)
 		return err
 	}
 
-	if !(status == statusOffline || status == statusUnknown) {
+	status, err := c.getClusterStatus(kc, ci)
+	if err != nil {
+		logrus.Errorf("get cluster status error: %v", err)
+		return err
+	}
+
+	if req.ClusterName == conf.ErdaClusterName() || !(status == statusOffline || status == statusUnknown) {
 		return nil
 	}
 
-	cs, err := c.k8s.GetInClusterClient()
-	if err != nil {
+	workNs := getWorkerNamespace()
+
+	// check resource before execute cluster init job
+	if err = c.importPreCheck(kc, workNs); err != nil {
 		return err
-	}
-
-	if err = c.checkNamespace(); err != nil {
-		return err
-	}
-
-	tc, err := c.k8s.GetClient(req.ClusterName)
-	if err != nil {
-		return err
-	}
-
-	orgDto, err := c.bdl.GetOrg(req.OrgID)
-	if err != nil {
-		return err
-	}
-
-	if _, err = tc.ClientSet.CoreV1().ServiceAccounts(conf.ErdaNamespace()).Get(context.Background(), ClusterAgentSA,
-		metav1.GetOptions{}); err != nil {
-		if !k8serrors.IsNotFound(err) {
-			logrus.Errorf("get cluster-agent serviceAccount error: %v", err)
-			return err
-		}
-		if _, err = tc.ClientSet.CoreV1().ServiceAccounts(conf.ErdaNamespace()).Create(context.Background(),
-			&corev1.ServiceAccount{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "ServiceAccount",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      ClusterAgentSA,
-					Namespace: conf.ErdaNamespace(),
-				},
-			}, metav1.CreateOptions{}); err != nil {
-			return err
-		}
-	}
-
-	if _, err = tc.ClientSet.RbacV1().ClusterRoles().Get(context.Background(), ClusterAgentCR,
-		metav1.GetOptions{}); err != nil {
-		if !k8serrors.IsNotFound(err) {
-			logrus.Errorf("get cluster-agent cluster role error: %v", err)
-			return err
-		}
-		allRole := []string{"*"}
-
-		if _, err = tc.ClientSet.RbacV1().ClusterRoles().Create(context.Background(),
-			&rbacv1.ClusterRole{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "rbac.authorization.k8s.io/v1",
-					Kind:       "ClusterRole",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: ClusterAgentCR,
-				},
-				Rules: []rbacv1.PolicyRule{
-					{
-						Verbs:     allRole,
-						APIGroups: allRole,
-						Resources: allRole,
-					},
-					{
-						Verbs:           allRole,
-						NonResourceURLs: allRole,
-					},
-				},
-			}, metav1.CreateOptions{}); err != nil {
-			return err
-		}
-	}
-
-	if _, err = tc.ClientSet.RbacV1().ClusterRoleBindings().Get(context.Background(), ClusterAgentCRB,
-		metav1.GetOptions{}); err != nil {
-		if !k8serrors.IsNotFound(err) {
-			logrus.Errorf("get cluster-agent cluster role binding error: %v", err)
-			return err
-		}
-
-		if _, err = tc.ClientSet.RbacV1().ClusterRoleBindings().Create(context.Background(),
-			&rbacv1.ClusterRoleBinding{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "rbac.authorization.k8s.io/v1",
-					Kind:       "ClusterRoleBinding",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: ClusterAgentCRB,
-				},
-				Subjects: []rbacv1.Subject{
-					{
-						Kind:      "ServiceAccount",
-						Name:      ClusterAgentSA,
-						Namespace: conf.ErdaNamespace(),
-					},
-				},
-				RoleRef: rbacv1.RoleRef{
-					APIGroup: "rbac.authorization.k8s.io",
-					Kind:     "ClusterRole",
-					Name:     ClusterAgentCR,
-				},
-			}, metav1.CreateOptions{}); err != nil {
-			return err
-		}
-	}
-
-	nodes, err := tc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, node := range nodes.Items {
-		node.Labels[fmt.Sprintf("dice/org-%s", orgDto.Name)] = "true"
-		if _, err = tc.ClientSet.CoreV1().Nodes().Update(context.Background(), &node,
-			metav1.UpdateOptions{}); err != nil {
-			return err
-		}
 	}
 
 	// check init job, if already exist, return
-	if _, err = cs.BatchV1().Jobs(getPlatformNamespace()).Get(context.Background(), generateInitJobName(req.OrgID, req.ClusterName),
-		metav1.GetOptions{}); err == nil {
+	if _, err = kc.ClientSet.BatchV1().Jobs(workNs).Get(context.Background(),
+		generateInitJobName(req.OrgID, req.ClusterName), metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
 	// create init job
-	if _, err = cs.BatchV1().Jobs(getPlatformNamespace()).Create(context.Background(), c.generateClusterInitJob(req.OrgID, req.ClusterName, false),
+	initJob, err := c.generateClusterInitJob(req.OrgID, req.ClusterName, false)
+	if err != nil {
+		logrus.Errorf("generate cluster init job error: %v", err)
+		return err
+	}
+
+	if _, err = kc.ClientSet.BatchV1().Jobs(workNs).Create(context.Background(), initJob,
 		metav1.CreateOptions{}); err != nil {
+		logrus.Errorf("create cluster init job error: %v", err)
 		return err
 	}
 
@@ -281,12 +173,15 @@ func (c *Clusters) ImportClusterWithRecord(userID string, req *apistructs.Import
 }
 
 func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRetry) error {
-	cs, err := c.k8s.GetInClusterClient()
+	cs, err := k8sclient.New(req.ClusterName)
 	if err != nil {
 		return err
 	}
 
-	if err = c.checkNamespace(); err != nil {
+	logrus.Infof("start retry init cluster %s", req.ClusterName)
+
+	workNs := getWorkerNamespace()
+	if err = c.importPreCheck(cs, workNs); err != nil {
 		return err
 	}
 
@@ -300,7 +195,7 @@ func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRet
 		default:
 			// delete old init job
 			propagationPolicy := metav1.DeletePropagationBackground
-			if err = cs.BatchV1().Jobs(getPlatformNamespace()).Delete(context.Background(), generateInitJobName(orgID,
+			if err = cs.ClientSet.BatchV1().Jobs(workNs).Delete(context.Background(), generateInitJobName(orgID,
 				req.ClusterName), metav1.DeleteOptions{
 				PropagationPolicy: &propagationPolicy,
 			}); err != nil {
@@ -309,9 +204,15 @@ func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRet
 					time.Sleep(500 * time.Millisecond)
 					continue
 				}
+				// generate init job
+				initJob, err := c.generateClusterInitJob(orgID, req.ClusterName, true)
+				if err != nil {
+					logrus.Errorf("generate retry cluster init job error: %v", err)
+					continue
+				}
 				// create job, if create error, tip retry again
-				if _, err = cs.BatchV1().Jobs(getPlatformNamespace()).Create(context.Background(),
-					c.generateClusterInitJob(orgID, req.ClusterName, true), metav1.CreateOptions{}); err != nil {
+				if _, err = cs.ClientSet.BatchV1().Jobs(workNs).Create(context.Background(),
+					initJob, metav1.CreateOptions{}); err != nil {
 					return fmt.Errorf("create retry job error: %v, please try again", err)
 				}
 				return nil
@@ -320,23 +221,113 @@ func (c *Clusters) ClusterInitRetry(orgID uint64, req *apistructs.ClusterInitRet
 	}
 }
 
-func (c *Clusters) checkNamespace() error {
-	cs, err := c.k8s.GetInClusterClient()
-	if err != nil {
-		return err
+// importPreCheck check before import cluster
+func (c *Clusters) importPreCheck(kc *k8sclient.K8sClient, ns string) error {
+	if kc == nil || kc.ClientSet == nil {
+		return fmt.Errorf("import cluster precheck error, kuberentes client is nil")
 	}
 
-	// check namespace
-	_, err = cs.CoreV1().Namespaces().Get(context.Background(), conf.ErdaNamespace(), metav1.GetOptions{})
-	if err != nil {
+	// check namespace, create if not exist
+	if _, err := kc.ClientSet.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{}); err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return err
 		}
-		if _, err = cs.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
+		if _, err = kc.ClientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: conf.ErdaNamespace(),
+				Name: ns,
 			},
 		}, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+	}
+
+	if _, err := kc.ClientSet.CoreV1().ServiceAccounts(ns).Get(context.Background(), ClusterAgentSA,
+		metav1.GetOptions{}); err != nil {
+		if !k8serrors.IsNotFound(err) {
+			logrus.Errorf("get cluster-agent serviceAccount error: %v", err)
+			return err
+		}
+		logrus.Infof("service account %s doesn't exist, create it", ClusterAgentSA)
+		if _, err = kc.ClientSet.CoreV1().ServiceAccounts(ns).Create(context.Background(),
+			&corev1.ServiceAccount{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "ServiceAccount",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ClusterAgentSA,
+					Namespace: conf.ErdaNamespace(),
+				},
+			}, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+	}
+
+	if _, err := kc.ClientSet.RbacV1().ClusterRoles().Get(context.Background(), ClusterAgentCR,
+		metav1.GetOptions{}); err != nil {
+		if !k8serrors.IsNotFound(err) {
+			logrus.Errorf("get cluster-agent cluster role error: %v", err)
+			return err
+		}
+		logrus.Infof("cluster role %s doesn't exist, create it", ClusterAgentCR)
+
+		allRole := []string{"*"}
+
+		if _, err = kc.ClientSet.RbacV1().ClusterRoles().Create(context.Background(),
+			&rbacv1.ClusterRole{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRole",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: ClusterAgentCR,
+				},
+				Rules: []rbacv1.PolicyRule{
+					{
+						Verbs:     allRole,
+						APIGroups: allRole,
+						Resources: allRole,
+					},
+					{
+						Verbs:           allRole,
+						NonResourceURLs: allRole,
+					},
+				},
+			}, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+	}
+
+	if _, err := kc.ClientSet.RbacV1().ClusterRoleBindings().Get(context.Background(), ClusterAgentCRB,
+		metav1.GetOptions{}); err != nil {
+		if !k8serrors.IsNotFound(err) {
+			logrus.Errorf("get cluster-agent cluster role binding error: %v", err)
+			return err
+		}
+		logrus.Infof("cluster role binding %s doesn't exist, create it", ClusterAgentCRB)
+
+		if _, err = kc.ClientSet.RbacV1().ClusterRoleBindings().Create(context.Background(),
+			&rbacv1.ClusterRoleBinding{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "rbac.authorization.k8s.io/v1",
+					Kind:       "ClusterRoleBinding",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: ClusterAgentCRB,
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind:      "ServiceAccount",
+						Name:      ClusterAgentSA,
+						Namespace: ns,
+					},
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind:     "ClusterRole",
+					Name:     ClusterAgentCR,
+				},
+			}, metav1.CreateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -446,33 +437,7 @@ func (c *Clusters) RenderInitContent(orgName, clusterName string, accessKey stri
 		return "", fmt.Errorf("accesskey is error")
 	}
 
-	masterCluster := os.Getenv(apistructs.MasterClusterKey)
-	if masterCluster == "" {
-		return "", fmt.Errorf("can't get master cluster info")
-	}
-
-	ci, err := c.bdl.QueryClusterInfo(masterCluster)
-	if err != nil {
-		return "", err
-	}
-
-	version := ci.Get("DICE_VERSION")
-	masterClusterDomain := ci.Get("DICE_ROOT_DOMAIN")
-	mcProtocol := parseClusterProtocol(ci.Get("DICE_PROTOCOL"))
-
-	rd := RenderDeploy{
-		ClusterName:           clusterName,
-		MasterClusterDomain:   masterClusterDomain,
-		MasterClusterProtocol: mcProtocol,
-		PlateFormVersion:      version,
-		CustomDomain:          cluster.WildcardDomain,
-		InitJobImage:          renderReleaseImageAddr(ModuleClusterInit, version),
-		ClusterAgentImage:     renderReleaseImageAddr(ModuleClusterAgent, version),
-		ErdaHelmChartVersion:  conf.ErdaHelmChartVersion(),
-		DialerPublicAddr:      conf.DialerPublicAddr(),
-		ErdaSystem:            conf.ErdaNamespace(),
-		OrgName:               orgName,
-	}
+	rd, err := c.renderCommonDeployConfig(orgName, clusterName)
 
 	tmpl := template.Must(template.New("render").Parse(ProxyDeployTemplate))
 	buf := new(bytes.Buffer)
@@ -549,72 +514,27 @@ func ParseManageConfigFromCredential(credentialType string, credential apistruct
 }
 
 // generateClusterInitJob generate cluster init job
-func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reInstall bool) *batchv1.Job {
-	jobName := generateInitJobName(orgID, clusterName)
-	var backOffLimit int32
+func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reInstall bool) (*batchv1.Job, error) {
+	var (
+		backOffLimit int32
+		jobName      = generateInitJobName(orgID, clusterName)
+	)
 
-	compClusterName := os.Getenv(apistructs.MasterClusterKey)
-	if compClusterName == "" {
-		return nil
-	}
-
-	cci, err := c.bdl.QueryClusterInfo(compClusterName)
+	orgDto, err := c.bdl.GetOrg(orgID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	eci, err := c.bdl.GetCluster(clusterName)
+	rd, err := c.renderCommonDeployConfig(orgDto.Name, clusterName)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	platformDomain := cci.Get("DICE_ROOT_DOMAIN")
-	platformVersion := cci.Get("DICE_VERSION")
-	mcProtocol := parseClusterProtocol(cci.Get("DICE_PROTOCOL"))
-
-	envs := []corev1.EnvVar{
-		{
-			Name:  "ERDA_CHART_VERSION",
-			Value: conf.ErdaHelmChartVersion(),
-		},
-		{
-			Name:  "TARGET_CLUSTER",
-			Value: clusterName,
-		},
-		{
-			Name:  "INSTALL_MODE",
-			Value: "remote",
-		},
-		{
-			Name:  "REPO_MODE",
-			Value: "local",
-		},
-		{
-			Name:  "HELM_NAMESPACE",
-			Value: conf.ErdaNamespace(),
-		},
-		{
-			Name: "CHART_ERDA_BASE_VALUES",
-			Value: fmt.Sprintf("configmap.clustername=%s,configmap.domain=%s",
-				clusterName, eci.WildcardDomain),
-		},
-		{
-			Name:  "CHART_ERDA_ADDONS_VALUES",
-			Value: "registry.networkMode=''",
-		},
-		{
-			Name: "CHART_ERDA_VALUES",
-			Value: fmt.Sprintf("domain=%s,clusterName=%s,masterCluster.domain=%s,masterCluster.protocol=%s",
-				eci.WildcardDomain, clusterName, platformDomain, mcProtocol),
-		},
-		{
-			Name:  "CLUSTER_MANAGER_ADDR",
-			Value: discover.ClusterManager(),
-		},
-		{
+	if reInstall {
+		rd.Envs = append(rd.Envs, corev1.EnvVar{
 			Name:  "REINSTALL",
-			Value: strconv.FormatBool(reInstall),
-		},
+			Value: "true",
+		})
 	}
 
 	return &batchv1.Job{
@@ -624,26 +544,65 @@ func (c *Clusters) generateClusterInitJob(orgID uint64, clusterName string, reIn
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
-			Namespace: getPlatformNamespace(),
+			Namespace: getWorkerNamespace(),
 		},
 		Spec: batchv1.JobSpec{
 			BackoffLimit: &backOffLimit,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					RestartPolicy: "Never",
+					ServiceAccountName: ClusterAgentSA,
+					RestartPolicy:      "Never",
 					Containers: []corev1.Container{
 						{
 							Name:            jobName,
-							Image:           renderReleaseImageAddr(ModuleClusterInit, platformVersion),
+							Image:           renderReleaseImageAddr(),
 							ImagePullPolicy: "Always",
-							Command:         []string{"sh", "-c", fmt.Sprintf("/app/%s", ModuleClusterInit)},
-							Env:             envs,
+							Command:         []string{"sh", "-c", fmt.Sprintf("/app/%s", ModuleClusterOps)},
+							Env:             rd.Envs,
 						},
 					},
 				},
 			},
 		},
+	}, nil
+}
+
+// renderCommonDeployConfig render deploy struct with common config
+func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*RenderDeploy, error) {
+	ci, err := c.bdl.GetCluster(clusterName)
+	if err != nil {
+		logrus.Errorf("render deploy config error: %v", err)
+		return nil, err
 	}
+
+	rd := RenderDeploy{
+		ErdaNamespace: getWorkerNamespace(),
+		JobImage:      renderReleaseImageAddr(),
+		Envs: []corev1.EnvVar{
+			{Name: "DEBUG", Value: "true"},
+			{Name: "ERDA_CHART_VERSION", Value: conf.ErdaVersion()},
+			{Name: "HELM_NAMESPACE", Value: getWorkerNamespace()},
+			{Name: "NODE_LABELS", Value: fmt.Sprintf("dice/org-%s=true", orgName)},
+			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci)},
+			{Name: "HELM_REPO_URL", Value: conf.HelmRepoURL()},
+			{Name: "HELM_REPO_USERNAME", Value: conf.HelmRepoUsername()},
+			{Name: "HELM_REPO_PASSWORD", Value: conf.HelmRepoPassword()},
+		},
+	}
+
+	return &rd, nil
+}
+
+// generateSetValues generate the values of helm chart install set
+func generateSetValues(ci *apistructs.ClusterInfo) string {
+	// current cluster type in database is k8s, dice-cluster-info need kubernetes
+	if ci.Type == "k8s" {
+		ci.Type = "kubernetes"
+	}
+	return "tags.work=true,tags.master=false," +
+		fmt.Sprintf("global.domain=%s,erda.clusterName=%s,", ci.WildcardDomain, ci.Name) +
+		fmt.Sprintf("erda.clusterConfig.clusterType=%s,", strings.ToLower(ci.Type)) +
+		fmt.Sprintf("erda.masterCluster.domain=%s,erda.masterCluster.protocol=%s", conf.ErdaDomain(), conf.ErdaProtocol())
 }
 
 // generateAccessKey generate accessKey
@@ -670,26 +629,19 @@ func generateAccessKey(customLen int) string {
 	return strings.Join(res, "")
 }
 
-func parseClusterProtocol(protocol string) string {
-	var (
-		protocolHttp  = "http"
-		protocolHttps = "https"
-	)
-
-	if strings.Contains(strings.ToLower(protocol), protocolHttps) {
-		return protocolHttps
-	}
-
-	return protocolHttp
-}
-
 // renderReleaseImageAddr render release image with module name and version
-// e.g. registry.erda.cloud/erda:v1.1
-func renderReleaseImageAddr(module string, version string) string {
-	return fmt.Sprintf("%s/%s:v%s", conf.ReleaseRepo(), module, version)
+// e.g. registry.erda.cloud/erda/cluster-init:v0.1
+func renderReleaseImageAddr() string {
+	return fmt.Sprintf("%s/%s:v%s", conf.ReleaseRegistry(), ModuleClusterOps, conf.ClusterInitVersion())
 }
 
 // generateInitJobName generate init job name with orgID and clusterName
 func generateInitJobName(orgID uint64, clusterName string) string {
 	return fmt.Sprintf("erda-cluster-init-%d-%s", orgID, clusterName)
+}
+
+// getWorkerNamespace get work node namespace
+func getWorkerNamespace() string {
+	// TODO: support different namespace of master and slave
+	return conf.ErdaNamespace()
 }

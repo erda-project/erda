@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -21,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda/apistructs"
@@ -177,36 +179,48 @@ func (e *Endpoints) ListECS(ctx context.Context, r *http.Request, vars map[strin
 	})
 }
 
-func (e *Endpoints) StopECS(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
+func (e *Endpoints) StopECS(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
 
-	orgid := r.Header.Get("Org-ID")
-	ak_ctx, resp := e.mkCtx(ctx, orgid)
+	req := apistructs.HandleCloudResourceEcsRequest{}
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to decode StopCloudResourceEcsRequest: %v", err)
+		return
+	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return
+	}
+
+	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
 	if resp != nil {
 		return resp, nil
-	}
-	req := apistructs.HandleCloudResourceEcsRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to decode StopCloudResourceEcsRequest: %v", err)
-		return mkResponse(apistructs.HandleCloudResourceECSResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
 	}
 
 	ak_ctx.Region = req.Region
 	var failedInstance []apistructs.HandleCloudResourceECSDataResult
 	response, err := ecs.Stop(ak_ctx, req.InstanceIds)
 	if err != nil {
-		errstr := fmt.Sprintf("failed to stop instance: %v", err)
-		return mkResponse(apistructs.HandleCloudResourceECSResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+		err = fmt.Errorf("failed to stop instance: %v", err)
+		return
 	}
 
 	for _, ins := range response.InstanceResponses.InstanceResponse {
@@ -231,23 +245,40 @@ func (e *Endpoints) StopECS(ctx context.Context, r *http.Request, vars map[strin
 	})
 }
 
-func (e *Endpoints) StartECS(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
+func (e *Endpoints) StartECS(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
 
-	orgid := r.Header.Get("Org-ID")
-	ak_ctx, resp := e.mkCtx(ctx, orgid)
+	req := apistructs.HandleCloudResourceEcsRequest{}
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to decode StartCloudResourceEcsRequest: %v", err)
+		return
+	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return
+	}
+
+	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
 	if resp != nil {
 		return resp, nil
-	}
-	req := apistructs.HandleCloudResourceEcsRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to decode StartCloudResourceEcsRequest: %v", err)
-		return mkResponse(apistructs.HandleCloudResourceECSResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
 	}
 
 	ak_ctx.Region = req.Region
@@ -285,23 +316,40 @@ func (e *Endpoints) StartECS(ctx context.Context, r *http.Request, vars map[stri
 	})
 }
 
-func (e *Endpoints) RestartECS(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
+func (e *Endpoints) RestartECS(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
 
-	orgid := r.Header.Get("Org-ID")
-	ak_ctx, resp := e.mkCtx(ctx, orgid)
+	req := apistructs.HandleCloudResourceEcsRequest{}
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to decode RestartCloudResourceEcsRequest: %v", err)
+		return
+	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return
+	}
+
+	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
 	if resp != nil {
 		return resp, nil
-	}
-	req := apistructs.HandleCloudResourceEcsRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to decode RestartCloudResourceEcsRequest: %v", err)
-		return mkResponse(apistructs.HandleCloudResourceECSResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
 	}
 
 	ak_ctx.Region = req.Region
@@ -339,23 +387,40 @@ func (e *Endpoints) RestartECS(ctx context.Context, r *http.Request, vars map[st
 	})
 }
 
-func (e *Endpoints) AutoRenewECS(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
+func (e *Endpoints) AutoRenewECS(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
 
-	orgid := r.Header.Get("Org-ID")
-	ak_ctx, resp := e.mkCtx(ctx, orgid)
+	req := apistructs.AutoRenewCloudResourceEcsRequest{}
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to decode StopCloudResourceEcsRequest: %v", err)
+		return
+	}
+
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
+	if err != nil {
+		return
+	}
+
+	ak_ctx, resp := e.mkCtx(ctx, i.OrgID)
 	if resp != nil {
 		return resp, nil
-	}
-	req := apistructs.AutoRenewCloudResourceEcsRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to decode StopCloudResourceEcsRequest: %v", err)
-		return mkResponse(apistructs.HandleCloudResourceECSResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
 	}
 
 	ak_ctx.Region = req.Region

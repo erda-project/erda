@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package client
 
@@ -25,7 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cluster-init/config"
+	"github.com/erda-project/erda/modules/cluster-ops/config"
 	erdahelm "github.com/erda-project/erda/pkg/helm"
 	kc "github.com/erda-project/erda/pkg/k8sclient/config"
 )
@@ -33,11 +34,6 @@ import (
 const (
 	defaultRepoName   = "stable"
 	InstallModeRemote = "REMOTE"
-	RepoModeRemote    = "REMOTE"
-	RepoModeLocal     = "LOCAL"
-	LocalRepoPath     = "/app/charts"
-	ErdaBaseCharts    = "erda-base"
-	ErdaAddonsCharts  = "erda-addons"
 	ErdaCharts        = "erda"
 )
 
@@ -65,7 +61,7 @@ func WithConfig(cfg *config.Config) Option {
 func (c *Client) Execute() error {
 	logrus.Debugf("load config: %+v", c.config)
 
-	opts, err := c.newHelmClientOptions()
+	opts, err := c.genHelmClientOptions()
 	if err != nil {
 		return fmt.Errorf("get helm client error: %v", err)
 	}
@@ -75,14 +71,16 @@ func (c *Client) Execute() error {
 		return err
 	}
 
-	switch strings.ToUpper(c.config.RepoMode) {
-	case RepoModeRemote:
-		// TODO: support repo auth info.
-		e := &repo.Entry{Name: defaultRepoName, URL: c.config.RepoURL}
+	// TODO: support repo auth info.
+	e := &repo.Entry{
+		Name:     defaultRepoName,
+		URL:      c.config.RepoURL,
+		Username: c.config.RepoUsername,
+		Password: c.config.RepoPassword,
+	}
 
-		if err = hc.AddOrUpdateRepo(e); err != nil {
-			return err
-		}
+	if err = hc.AddOrUpdateRepo(e); err != nil {
+		return err
 	}
 
 	if c.config.Reinstall {
@@ -96,7 +94,8 @@ func (c *Client) Execute() error {
 			LocalRepoName: defaultRepoName,
 		}
 
-		if err := m.Execute(); err != nil {
+		if err = m.Execute(); err != nil {
+			logrus.Errorf("execute uninstall error: %v", err)
 			return err
 		}
 	}
@@ -107,13 +106,14 @@ func (c *Client) Execute() error {
 		LocalRepoName: defaultRepoName,
 	}
 
-	if err := m.Execute(); err != nil {
+	if err = m.Execute(); err != nil {
+		logrus.Errorf("execute error: %v", err)
 		return err
 	}
 
 	// Label node only local mode
 	// TODO: support label remote with rest.config
-	if strings.ToUpper(c.config.RepoMode) != InstallModeRemote {
+	if strings.ToUpper(c.config.InstallMode) != InstallModeRemote {
 		rc, err := rest.InClusterConfig()
 		if err != nil {
 			logrus.Errorf("get incluster rest config error: %v", err)
@@ -153,8 +153,8 @@ func (c *Client) Execute() error {
 	return nil
 }
 
-// newHelmClientOptions create helm client options
-func (c *Client) newHelmClientOptions() ([]erdahelm.Option, error) {
+// genHelmClientOptions create helm client options
+func (c *Client) genHelmClientOptions() ([]erdahelm.Option, error) {
 	opts := make([]erdahelm.Option, 0)
 
 	switch strings.ToUpper(c.config.InstallMode) {
@@ -173,36 +173,17 @@ func (c *Client) newHelmClientOptions() ([]erdahelm.Option, error) {
 		opts = append(opts, erdahelm.WithRESTClientGetter(erdahelm.NewRESTClientGetterImpl(rc)))
 	}
 
-	switch strings.ToUpper(c.config.RepoMode) {
-	case RepoModeLocal:
-		opts = append(opts, erdahelm.WithLocalChartDiscoverDir(LocalRepoPath))
-	}
-
 	return opts, nil
 }
 
 func (c *Client) getInitCharts() []*erdahelm.ChartSpec {
 	return []*erdahelm.ChartSpec{
 		{
-			ReleaseName: ErdaBaseCharts,
-			ChartName:   ErdaBaseCharts,
-			Version:     c.config.Version,
-			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaBaseValues,
-		},
-		{
-			ReleaseName: ErdaAddonsCharts,
-			ChartName:   ErdaAddonsCharts,
-			Version:     c.config.Version,
-			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaAddonsValues,
-		},
-		{
 			ReleaseName: ErdaCharts,
 			ChartName:   ErdaCharts,
 			Version:     c.config.Version,
 			Action:      erdahelm.ActionInstall,
-			Values:      c.config.ChartErdaValues,
+			Values:      c.config.SetValues,
 		},
 	}
 }
