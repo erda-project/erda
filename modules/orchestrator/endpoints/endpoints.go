@@ -16,6 +16,7 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -357,13 +358,17 @@ func (e *Endpoints) PushOnDeletingRuntimes() (abort bool, err0 error) {
 	return
 }
 
-func (e *Endpoints) FullGCLoop() {
+func (e *Endpoints) FullGCLoop(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Hour)
-	go func() {
-		for t := range ticker.C {
+	defer ticker.Stop()
+	for {
+		select {
+		case t := <-ticker.C:
 			logrus.Infof("start full GC at: %v", t)
 			e.runtime.FullGC()
 			logrus.Infof("end full GC at: %v, started at: %v", time.Now(), t)
+		case <-ctx.Done():
+			return
 		}
-	}()
+	}
 }
