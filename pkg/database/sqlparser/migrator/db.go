@@ -16,6 +16,7 @@ package migrator
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -35,14 +36,17 @@ func (mig *Migrator) DB() *gorm.DB {
 		err         error
 		timeout     = time.Second * 360
 		dsn         = mig.MySQLParameters().Format(false)
-		showSchemas = "SHOW SCHEMAS LIKE ?"
+		showSchemas = fmt.Sprintf("SHOW SCHEMAS LIKE '%s'", mig.MySQLParameters().Database)
 		stmt        = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 	)
 
 	// initF shows schemas like the database, if the database is not exists, create it
 	initF := func(db *sql.DB) error {
-		row := db.QueryRow(showSchemas, mig.MySQLParameters().Database)
-		if row != nil {
+		rows, err := db.Query(showSchemas)
+		if err != nil {
+			return err
+		}
+		if rows.Next() {
 			return nil
 		}
 		if _, err := db.Exec(stmt); err != nil {
