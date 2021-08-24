@@ -17,10 +17,11 @@ package metastore
 import (
 	"encoding/json"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/msp/instance/db"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {
