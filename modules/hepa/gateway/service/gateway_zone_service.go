@@ -344,6 +344,7 @@ func (impl GatewayZoneServiceImpl) DeleteZone(zoneId string) error {
 		return err
 	}
 	if zone == nil {
+		log.Warnf("zone not found, id:%s", zoneId)
 		return nil
 	}
 	err = impl.DeleteZoneRoute(zoneId)

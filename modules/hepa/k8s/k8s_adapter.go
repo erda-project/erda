@@ -272,17 +272,20 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 }
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
+	name = strings.ToLower(name)
 	exist, err := impl.CheckIngressExist(namespace, name)
 	if err != nil {
 		return err
 	}
 	if !exist {
+		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, name)
 		return nil
 	}
-	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
+	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
 	}
+	logrus.Infof("ingress deleted, namespace:%s, name:%s", namespace, name)
 	return nil
 }
 
