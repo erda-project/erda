@@ -121,6 +121,7 @@ const (
 	OnCancel                  OperationKey = "cancel"
 	OnChangePageNoOperation   OperationKey = "changePageNo"
 	OnChangePageSizeOperation OperationKey = "changePageSize"
+	OnChangeSortOperation     OperationKey = "changeSort"
 	// Issue
 	MoveOutOperation        OperationKey = "MoveOut"
 	DragOperation           OperationKey = "drag"
