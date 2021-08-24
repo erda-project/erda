@@ -16,10 +16,18 @@
 package gitmodule
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"path"
 	"strings"
 
+	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	git "github.com/libgit2/git2go/v30"
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/gittar/conf"
 )
 
 type EditAction string
@@ -71,9 +79,56 @@ func (req *CreateCommit) Validate() error {
 	return nil
 }
 
-func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
-	repo.RwLock.RLock()
-	defer repo.RwLock.RUnlock()
+// waitDelete wait for the etcd key delete
+func waitDelete(key string, cli *clientv3.Client) {
+	wch := cli.Watch(context.Background(), key)
+	for wr := range wch {
+		for _, ev := range wr.Events {
+			switch ev.Type {
+			case mvccpb.DELETE:
+				return
+			}
+		}
+	}
+}
+
+func (repo *Repository) CreateCommit(request *CreateCommit, etcdClient *clientv3.Client) (*Commit, error) {
+	// check the key is exist or not
+	key := fmt.Sprintf("/gittar/repo/%d", repo.ID)
+	resp, err := etcdClient.Get(context.Background(), key)
+	if err != nil {
+		return nil, err
+	}
+	// if exist should wait
+	if len(resp.Kvs) > 0 {
+		waitDelete(key, etcdClient)
+	}
+
+	// minimum lease TTL is 5-second
+	grantResp, err := etcdClient.Grant(context.Background(), 5)
+	if err != nil {
+		return nil, err
+	}
+
+	// put key with lease
+	_, err = etcdClient.Put(context.Background(), key, "lock", clientv3.WithLease(grantResp.ID))
+	if err != nil {
+		return nil, err
+	}
+
+	// keep alive
+	_, err = etcdClient.KeepAlive(context.Background(), grantResp.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_, err = etcdClient.Revoke(context.Background(), grantResp.ID)
+		if err != nil {
+			logrus.Errorf("failed to revoke etcd, err: %v ", err)
+		}
+	}()
+
 	branch := request.Branch
 	message := request.Message
 	isInitCommit := false
@@ -224,6 +279,16 @@ func (repo *Repository) CreateCommit(request *CreateCommit) (*Commit, error) {
 		return nil, err
 	}
 	commit.ParentDirPath = parentDirPath
+
+	// 外置仓库推送代码过去
+	if repo.IsExternal {
+		repoPath := path.Join(conf.RepoRoot(), repo.Path)
+		err = PushExternalRepository(repoPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return commit, nil
 }
 

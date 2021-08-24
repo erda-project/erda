@@ -16,16 +16,23 @@ package gittar
 import (
 	"context"
 
+	"github.com/coreos/etcd/clientv3"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/etcd"
 )
 
-type provider struct{}
+type provider struct {
+	ETCD       etcd.Interface   // autowired
+	EtcdClient *clientv3.Client // autowired
+}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
 
 func init() {
 	servicehub.Register("gittar", &servicehub.Spec{
-		Services: []string{"gittar"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Services:     []string{"gittar"},
+		Dependencies: []string{"etcd"},
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,6 +43,7 @@ type Context struct {
 	Bundle      *bundle.Bundle
 	UCAuth      *ucauth.UCUserAuth
 	next        bool
+	EtcdClient  *clientv3.Client
 }
 
 type ContextHandlerFunc func(*Context)
@@ -49,6 +51,7 @@ type ContextHandlerFunc func(*Context)
 var dbClientInstance *models.DBClient
 var diceBundleInstance *bundle.Bundle
 var ucAuthInstance *ucauth.UCUserAuth
+var etcdClientInstance *clientv3.Client
 
 func WithDB(db *models.DBClient) {
 	dbClientInstance = db
@@ -60,6 +63,10 @@ func WithBundle(diceBundle *bundle.Bundle) {
 
 func WithUCAuth(ucAuth *ucauth.UCUserAuth) {
 	ucAuthInstance = ucAuth
+}
+
+func WithEtcdClient(client *clientv3.Client) {
+	etcdClientInstance = client
 }
 
 func WrapHandler(handlerFunc ContextHandlerFunc) echo.HandlerFunc {
@@ -134,6 +141,7 @@ func NewEchoContext(c echo.Context, db *models.DBClient) *Context {
 		DBClient:    db,
 		UCAuth:      ucAuthInstance,
 		Bundle:      diceBundleInstance,
+		EtcdClient:  etcdClientInstance,
 	}
 }
 

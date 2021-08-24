@@ -24,7 +24,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	git "github.com/libgit2/git2go/v30"
@@ -55,8 +54,6 @@ type Repository struct {
 	tree       *Tree   `json:"-"` //只有RefType是tree才有值
 	IsLocked   bool    `json:"-"`
 	IsExternal bool    // 是否是外置仓库
-	// to ensure sync operation precedes commit
-	RwLock *sync.RWMutex `json:"-"`
 }
 
 const (

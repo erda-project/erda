@@ -36,7 +36,7 @@ import (
 )
 
 // Initialize 初始化应用启动服务.
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -75,6 +75,7 @@ func Initialize() error {
 	webcontext.WithDB(dbClient)
 	webcontext.WithBundle(diceBundle)
 	webcontext.WithUCAuth(ucUserAuth)
+	webcontext.WithEtcdClient(p.EtcdClient)
 
 	e := echo.New()
 	systemGroup := e.Group("/_system")
