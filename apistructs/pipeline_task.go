@@ -214,7 +214,7 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 func (t *PipelineTaskResult) ConvertErrors() {
 	for _, response := range t.Errors {
 		if response.Ctx.Count > 1 {
-			response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTIme: %s\ncount: %d",
+			response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTime: %s\ncount: %d",
 				response.Msg, response.Ctx.StartTime.Format("2006-01-02 15:04:05"),
 				response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
 		}

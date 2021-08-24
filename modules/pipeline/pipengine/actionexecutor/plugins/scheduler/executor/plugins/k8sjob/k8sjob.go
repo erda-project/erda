@@ -224,14 +224,14 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 		logrus.Infof("finish to delete job %s", name)
 
 		for index := range job.Volumes {
-			pvcName := fmt.Sprintf("%s-%s-%d", namespace, name, index)
+			pvcName := fmt.Sprintf("%s-%d", name, index)
 			logrus.Infof("start to delete pvc %s", pvcName)
 			err = k.client.ClientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
 					return nil, errors.Wrapf(err, "failed to remove k8s pvc, name: %s", pvcName)
 				}
-				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", job.Name, pvcName, namespace)
+				logrus.Warningf("the job %s's pvc %s in namespace %s is not found", name, pvcName, namespace)
 			}
 			logrus.Infof("finish to delete pvc %s", pvcName)
 		}

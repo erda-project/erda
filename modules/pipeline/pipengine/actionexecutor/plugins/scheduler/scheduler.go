@@ -388,8 +388,12 @@ func (s *Sched) Cancel(ctx context.Context, action *spec.PipelineTask) (data int
 		logrus.Infof("task executor %s execute cancel", taskExecutor.Name())
 		// TODO move all makeJobID to framework
 		// now move makeJobID to framework may change task uuid in database
+		// Restore the task uuid after remove, because gc will make the job id, but cancel don't make the job id
+		oldUUID := action.Extra.UUID
 		action.Extra.UUID = task_uuid.MakeJobID(action)
-		return taskExecutor.Remove(ctx, action)
+		d, err := taskExecutor.Remove(ctx, action)
+		action.Extra.UUID = oldUUID
+		return d, err
 	}
 	var body bytes.Buffer
 	resp, err := httpclient.New().Post(s.addr).
