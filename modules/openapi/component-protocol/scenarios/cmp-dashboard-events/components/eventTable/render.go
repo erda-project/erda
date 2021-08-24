@@ -228,7 +228,7 @@ func (t *ComponentEventTable) RenderList() error {
 func (t *ComponentEventTable) SetComponentValue() {
 	t.Props = Props{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
-		Columns:      []Column{
+		Columns: []Column{
 			{
 				DataIndex: "lastSeen",
 				Title:     "Last Seen",
@@ -283,7 +283,7 @@ func (t *ComponentEventTable) SetComponentValue() {
 				Width:     "120",
 				Sorter:    true,
 			},
-		},   
+		},
 	}
 	t.Operations = make(map[string]interface{})
 	t.Operations[apistructs.OnChangePageNoOperation.String()] = Operation{
@@ -311,7 +311,7 @@ func contain(arr []string, target string) bool {
 
 func getRange(length, pageNo, pageSize int) (int, int) {
 	l := (pageNo - 1) * pageSize
-	if l > length {
+	if l >= length {
 		l = 0
 	}
 	r := l + pageSize
