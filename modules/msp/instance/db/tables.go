@@ -197,8 +197,8 @@ func (LogInstance) TableName() string {
 
 type LogServiceInstance struct {
 	ID         int    `gorm:"column:id;primary_key"`
-	InstanceID string `gorm:"column:service_id"`
-	EsUrls     string `gorm:"column:es_url"`
+	InstanceID string `gorm:"column:instance_id"`
+	EsUrls     string `gorm:"column:es_urls"`
 	EsConfig   string `gorm:"column:es_config"`
 }
 
