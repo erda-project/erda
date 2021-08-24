@@ -170,7 +170,7 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 	if (req.DurationMin != 0 && req.DurationMax == 0) || (req.DurationMax != 0 && req.DurationMin == 0) {
 		return nil, errors.NewInvalidParameterError("duration", "missing min or max duration")
 	}
-	if req.DurationMax != 0 && req.DurationMin != 0 && req.DurationMax <= req.DurationMax {
+	if req.DurationMax != 0 && req.DurationMin != 0 && req.DurationMax <= req.DurationMin {
 		return nil, errors.NewInvalidParameterError("duration", "duration min <= duration max")
 	}
 	if req.EndTime <= 0 || req.StartTime <= 0 {
