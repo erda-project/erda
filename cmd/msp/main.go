@@ -53,6 +53,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/loganalytics"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/loges"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/logexporter"
+	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/logservice"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitor"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitorcollector"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitorkafka"

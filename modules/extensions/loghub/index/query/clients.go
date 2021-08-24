@@ -68,6 +68,7 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		return p.getCenterESClients("sls-*")
 	} else if filters["origin"] == "dice" {
 		clients := p.getESClientsFromLogAnalytics(orgID)
+		clients = append(clients, p.GetESClientFromLogService(orgID, ""))
 		if len(clients) <= 0 {
 			return p.getCenterESClients("rlogs-*")
 		}
@@ -76,6 +77,7 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		return p.getCenterESClients("__not-exist__*")
 	}
 	clients := append(p.getCenterESClients("sls-*"), p.getESClientsFromLogAnalytics(orgID)...)
+	clients = append(clients, p.GetESClientFromLogService(orgID, ""))
 	return clients
 }
 
@@ -88,6 +90,49 @@ func (p *provider) getCenterESClients(indices ...string) []*ESClient {
 	}
 	return []*ESClient{
 		{Client: p.client, URLs: "-", Indices: indices},
+	}
+}
+
+func (p *provider) GetESClientFromLogService(orgID int64, addon string) *ESClient {
+	logServiceInstance, err := p.db.LogServiceInstanceDB.GetFirst()
+	if err != nil {
+		return nil
+	}
+
+	type ESConfig struct {
+		Security bool   `json:"securityEnable"`
+		Username string `json:"securityUsername"`
+		Password string `json:"securityPassword"`
+	}
+
+	if len(logServiceInstance.EsUrls) <= 0 {
+		return nil
+	}
+	options := []elastic.ClientOptionFunc{
+		elastic.SetURL(strings.Split(logServiceInstance.EsUrls, ",")...),
+		elastic.SetSniff(false),
+		elastic.SetHealthcheck(false),
+	}
+	if len(logServiceInstance.EsConfig) > 0 {
+		var cfg ESConfig
+		err := json.Unmarshal(reflectx.StringToBytes(logServiceInstance.EsConfig), &cfg)
+		if err == nil {
+			if cfg.Security && (cfg.Username != "" || cfg.Password != "") {
+				options = append(options, elastic.SetBasicAuth(cfg.Username, cfg.Password))
+			}
+		}
+	}
+
+	client, err := elastic.NewClient(options...)
+	if err != nil {
+		return nil
+	}
+
+	return &ESClient{
+		Client:     client,
+		LogVersion: LogVersion2,
+		URLs:       logServiceInstance.EsUrls,
+		Indices:    getLogIndices("rlogs-", addon),
 	}
 }
 

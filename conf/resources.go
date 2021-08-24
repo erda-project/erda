@@ -40,6 +40,10 @@ var (
 	MonitorStreamingDefaultConfig  string
 	MonitorStreamingConfigFilePath string = "conf/monitor/streaming/streaming.yaml"
 
+	//go:embed monitor/log-service/log-service.yaml
+	MonitorLogServiceDefaultConfig  string
+	MonitorLogServiceConfigFilePath string = "conf/monitor/log-service/log-service.yaml"
+
 	// extensions
 	//go:embed monitor/extensions/report-engine.yaml
 	MonitorReportEngineDefaultConfig string

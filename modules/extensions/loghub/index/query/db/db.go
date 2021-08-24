@@ -21,14 +21,16 @@ import (
 // DB .
 type DB struct {
 	*gorm.DB
-	LogDeployment LogDeploymentDB
+	LogDeployment        LogDeploymentDB
+	LogServiceInstanceDB LogServiceInstanceDB
 }
 
 // New .
 func New(db *gorm.DB) *DB {
 	return &DB{
-		DB:            db,
-		LogDeployment: LogDeploymentDB{db},
+		DB:                   db,
+		LogDeployment:        LogDeploymentDB{db},
+		LogServiceInstanceDB: LogServiceInstanceDB{db},
 	}
 }
 

@@ -23,15 +23,16 @@ import (
 
 // tables name
 const (
-	TableInstance        = "tb_tmc_instance"
-	TableInstanceTenant  = "tb_tmc_instance_tenant"
-	TableTmc             = "tb_tmc"
-	TableTmcVersion      = "tb_tmc_version"
-	TableRequestRelation = "tb_tmc_request_relation"
-	TableTmcIni          = "tb_tmc_ini"
-	TableProject         = "sp_project"
-	TableLogDeployment   = "sp_log_deployment"
-	TableLogInstance     = "sp_log_instance"
+	TableInstance           = "tb_tmc_instance"
+	TableInstanceTenant     = "tb_tmc_instance_tenant"
+	TableTmc                = "tb_tmc"
+	TableTmcVersion         = "tb_tmc_version"
+	TableRequestRelation    = "tb_tmc_request_relation"
+	TableTmcIni             = "tb_tmc_ini"
+	TableProject            = "sp_project"
+	TableLogDeployment      = "sp_log_deployment"
+	TableLogInstance        = "sp_log_instance"
+	TableLogServiceInstance = "sp_log_service_instance"
 )
 
 // InstanceTenant .
@@ -192,4 +193,15 @@ type LogInstance struct {
 
 func (LogInstance) TableName() string {
 	return TableLogInstance
+}
+
+type LogServiceInstance struct {
+	ID         int    `gorm:"column:id;primary_key"`
+	InstanceID string `gorm:"column:service_id"`
+	EsUrls     string `gorm:"column:es_url"`
+	EsConfig   string `gorm:"column:es_config"`
+}
+
+func (LogServiceInstance) TableName() string {
+	return TableLogServiceInstance
 }

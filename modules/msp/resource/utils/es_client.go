@@ -61,6 +61,44 @@ func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
 	return nil
 }
 
+func GetESClientFromLogService(logServiceInstance *db.LogServiceInstance, addon string) *ESClient {
+	type ESConfig struct {
+		Security bool   `json:"securityEnable"`
+		Username string `json:"securityUsername"`
+		Password string `json:"securityPassword"`
+	}
+
+	if len(logServiceInstance.EsUrls) <= 0 {
+		return nil
+	}
+	options := []elastic.ClientOptionFunc{
+		elastic.SetURL(strings.Split(logServiceInstance.EsUrls, ",")...),
+		elastic.SetSniff(false),
+		elastic.SetHealthcheck(false),
+	}
+	if len(logServiceInstance.EsConfig) > 0 {
+		var cfg ESConfig
+		err := json.Unmarshal(reflectx.StringToBytes(logServiceInstance.EsConfig), &cfg)
+		if err == nil {
+			if cfg.Security && (cfg.Username != "" || cfg.Password != "") {
+				options = append(options, elastic.SetBasicAuth(cfg.Username, cfg.Password))
+			}
+		}
+	}
+
+	client, err := elastic.NewClient(options...)
+	if err != nil {
+		return nil
+	}
+
+	return &ESClient{
+		Client:     client,
+		LogVersion: LogVersion2,
+		URLs:       logServiceInstance.EsUrls,
+		Indices:    getLogIndices("rlogs-", addon),
+	}
+}
+
 func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string) *ESClient {
 	type ESConfig struct {
 		Security bool   `json:"securityEnable"`
