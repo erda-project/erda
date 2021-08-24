@@ -16,6 +16,7 @@ package pipelineyml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -27,6 +28,8 @@ import (
 
 const (
 	RefOpOutput = "OUTPUT"
+
+	RefOpExQuote = "quote"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -35,6 +38,7 @@ type RefOp struct {
 	Ref string // ref: alias or namespace
 	Op  string // OPERATION
 	Key string // key
+	Ex  string // Executor
 
 	IsAlias           bool // 是否是 alias
 	IsNamespace       bool // 是否是 namespace
@@ -126,7 +130,7 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 		// 去除两边的空格
 		inner = strings.Trim(inner, " ")
 
-		ss := strings.SplitN(inner, ".", 3)
+		ss := strings.SplitN(inner, ".", 4)
 
 		if len(ss) < 2 {
 			return sub[0]
@@ -154,6 +158,9 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			// - outputs.alias.key
 			refOp.Op = RefOpOutput
 			refOp.Key = ss[2]
+			if len(ss) == 4 {
+				refOp.Ex = ss[3]
+			}
 			return v.handleOneRefOp(refOp)
 		case expression.Random:
 			typeValue := ss[1]
@@ -330,6 +337,11 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	// found output, return
 	if v.availableOutputs[ActionAlias(refOp.Ref)] != nil {
 		if output, ok := v.availableOutputs[ActionAlias(refOp.Ref)][refOp.Key]; ok {
+			// If the user specifies a special escape type， use the executor escape output
+			switch refOp.Ex {
+			case RefOpExQuote:
+				output = strconv.Quote(output)
+			}
 			return output
 		}
 	}
