@@ -78,10 +78,7 @@ To get started, see [Quick Start](./docs/guides/quickstart/quickstart-full.md).
 
 ## Installation
 
-Please refer to the following documentation to install Erda.
-
-- [English](./docs/guides/deploy/How-to-install-Erda.md)
-- [简体中文](./docs/guides/deploy/How-to-install-Erda-zh.md)
+Download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/1.2/manual/install/helm-install.html) to install Erda.
 
 ## User Manual
 
