@@ -1624,6 +1624,9 @@ func (impl GatewayOpenapiConsumerServiceImpl) GetConsumersOfPackage(packageId st
 		if err != nil {
 			return nil, err
 		}
+		if consumer == nil {
+			continue
+		}
 		consumers = append(consumers, *consumer)
 	}
 	return consumers, nil

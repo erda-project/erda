@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
+	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/orchestrator"
 )
 
