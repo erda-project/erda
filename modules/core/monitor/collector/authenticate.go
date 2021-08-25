@@ -21,13 +21,12 @@ import (
 	"sync"
 	"time"
 
+	akpb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/labstack/echo"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/validator"
 )
@@ -40,9 +39,10 @@ type signAuthConfig struct {
 }
 
 type Authenticator struct {
-	store  map[string]*model.AccessKey
-	mu     sync.RWMutex
-	logger logs.Logger
+	store            map[string]*akpb.AccessKeysItem
+	mu               sync.RWMutex
+	AccessKeyService akpb.AccessKeyServiceServer
+	logger           logs.Logger
 }
 
 func boolPointer(data bool) *bool {
@@ -50,26 +50,27 @@ func boolPointer(data bool) *bool {
 }
 
 func (a *Authenticator) syncAccessKey(ctx context.Context) error {
-	newStore := make(map[string]*model.AccessKey, len(a.store))
+	a.logger.Info("syncAccessKey stared...")
+	newStore := make(map[string]*akpb.AccessKeysItem, len(a.store))
 
-	objs, err := bdl.ListAccessKeys(apistructs.AccessKeyListQueryRequest{
-		IsSystem: boolPointer(true),
-		Status:   "ACTIVE",
+	resp, err := a.AccessKeyService.QueryAccessKeys(ctx, &akpb.QueryAccessKeysRequest{
+		Status: akpb.StatusEnum_ACTIVATE,
 	})
 	if err != nil {
-		return fmt.Errorf("syncAccessKey.ListAccessKeys failed. err: %w", err)
+		return fmt.Errorf("AccessKeyService.QueryAccessKeys failed. err: %w", err)
 	}
-	for _, obj := range objs {
-		newStore[obj.AccessKeyID] = &obj
+	for _, obj := range resp.Data {
+		newStore[obj.AccessKey] = obj
 	}
 
 	a.mu.Lock()
 	a.store = newStore
 	a.mu.Unlock()
+	a.logger.Infof("syncAccessKey successfully!")
 	return nil
 }
 
-func (a *Authenticator) getAccessKey(ak string) (*model.AccessKey, bool) {
+func (a *Authenticator) getAccessKey(ak string) (*akpb.AccessKeysItem, bool) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	v, ok := a.store[ak]

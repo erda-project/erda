@@ -118,6 +118,12 @@ services:
       - port: 9526
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 9536 # new http port
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9537 # new grpc port
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       AVATAR_STORAGE_URL: "file:///avatars"
       CMDB_CONTAINER_TOPIC: "spot-metaserver_container"

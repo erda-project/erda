@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
+	akpb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/hmac"
 )
@@ -37,10 +37,10 @@ func TestAccessKeyAuthenticate(t *testing.T) {
 
 	coll := &provider{
 		auth: &Authenticator{
-			store: map[string]*model.AccessKey{
+			store: map[string]*akpb.AccessKeysItem{
 				AccessKeyID: {
-					AccessKeyID: AccessKeyID,
-					SecretKey:   SecretKey,
+					AccessKey: AccessKeyID,
+					SecretKey: SecretKey,
 				},
 			},
 		},
