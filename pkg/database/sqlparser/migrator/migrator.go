@@ -570,9 +570,6 @@ func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Set
 	if len(p.Requirements) == 0 {
 		p.Requirements = []byte(pygrator.BaseRequirements)
 	}
-	if sqlCollectorName, ok := mig.Parameters.(SQLCollectorName); ok {
-		p.CollectorFilename = sqlCollectorName.SQLCollectorName()
-	}
 
 	if err := p.Make(); err != nil {
 		return err
