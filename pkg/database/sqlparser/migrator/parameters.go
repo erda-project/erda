@@ -68,3 +68,7 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 	params.Add("charset", "utf8mb4,utf8")
 	return dsn + "?" + params.Encode()
 }
+
+type SQLCollectorName interface {
+	SQLCollectorName() string
+}

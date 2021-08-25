@@ -25,6 +25,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
 func (mig *Migrator) DB() *gorm.DB {
@@ -72,6 +74,15 @@ func (mig *Migrator) DB() *gorm.DB {
 			LogLevel:                  logger.Silent,
 		},
 	)
+	// set the gorm logger SQL collector if the the filename is given
+	if sqlCollectorName, ok := mig.Parameters.(SQLCollectorName); ok && len(sqlCollectorName.SQLCollectorName()) > 0 {
+		mig.db.Logger, err = gormutil.NewSQLCollector(sqlCollectorName.SQLCollectorName(), nil)
+		if err != nil {
+			logrus.WithError(err).WithField("SQL collector filename", sqlCollectorName.SQLCollectorName()).
+				Fatalln("failed to set SQL collector")
+			return nil
+		}
+	}
 
 	if mig.Parameters.DebugSQL() {
 		mig.db = mig.db.Debug()
