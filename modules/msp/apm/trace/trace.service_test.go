@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
