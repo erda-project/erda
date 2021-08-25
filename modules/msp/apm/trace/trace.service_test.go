@@ -17,6 +17,8 @@ package trace
 import (
 	"context"
 	"encoding/json"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"reflect"
 	"testing"
 	"time"
@@ -683,6 +685,41 @@ func Test_bodyCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := bodyCheck(tt.args.body); got != tt.want {
 				t.Errorf("bodyCheck() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_traceService_getDebugStatus(t *testing.T) {
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+	}
+	type args struct {
+		lang       i18n.LanguageCodes
+		statusCode debug.Status
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{"case1", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Success}, ""},
+		{"case2", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Init}, ""},
+		{"case3", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Fail}, ""},
+		{"case4", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Stop}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     tt.fields.p,
+				i18n:                  tt.fields.i18n,
+				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
+			}
+			if got := s.getDebugStatus(tt.args.lang, tt.args.statusCode); got != tt.want {
+				t.Errorf("getDebugStatus() = %v, want %v", got, tt.want)
 			}
 		})
 	}
