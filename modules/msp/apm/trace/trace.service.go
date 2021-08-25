@@ -368,7 +368,7 @@ func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTrace
 		return nil, errors.NewParameterTypeError("body")
 	}
 	if req.Name == "" {
-		return nil, errors.NewMissingParameterError("name")
+		req.Name = "no name"
 	}
 
 	history, err := composeTraceRequestHistory(req)
