@@ -189,3 +189,27 @@ func Test_getDashboardId(t *testing.T) {
 		})
 	}
 }
+
+func Test_queryConditions(t *testing.T) {
+	type args struct {
+		indexType string
+		params    Vo
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"case1", args{indexType: MQDBCacheIndexType, params: Vo{Tags: []string{"service:apm-demo-api"}}}, false},
+		{"case1", args{indexType: HttpRecMircoIndexType, params: Vo{Tags: []string{"application:apm-demo"}}}, false},
+		{"case1", args{indexType: ServiceNodeIndexType, params: Vo{Tags: nil}}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := queryConditions(tt.args.indexType, tt.args.params)
+			if got == nil {
+				t.Errorf("queryConditions() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
