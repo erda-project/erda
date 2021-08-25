@@ -259,7 +259,7 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 	// sort condition
 	sort := s.sortConditionStrategy(req.Sort)
 
-	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,components::field,"+
+	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,service_names::field,"+
 		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
 		"%s LIMIT %s", where.String(), sort, strconv.FormatInt(req.Limit, 10))
 	return queryParams, statement
