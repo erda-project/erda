@@ -8,10 +8,11 @@
 </tr>
 <tr>
   <td valign="top">
-    <b><a href="#v120">1.2.0</a></b><br/>
+    <b><a href="#v121">1.2.1</a></b><br/>
+    <a href="#v120">1.2.0</a><br/>
   </td>
   <td valign="top">
-    <b><a href="#v111">1.1.1</a></b><br/>
+    <a href="#v111">1.1.1</a><br/>
     <a href="#v110">1.1.0</a><br/>
   </td>
   <td valign="top">
@@ -20,6 +21,23 @@
   </td>
 </tr>
 </table>
+
+# v1.2.1
+
+### Bug Fixes
+
+`2021-08-23`
+
+* Fix the issue of table style for manual test case. [#953](https://github.com/erda-project/erda-ui/pull/953)
+* Fix the bug that occured when switching the source type for the first time after resetting the form while adding tags. [#957](https://github.com/erda-project/erda-ui/pull/957)
+* Fix the bug of regular expression of repository address field. [#958](https://github.com/erda-project/erda-ui/pull/958)
+* Fix the issue of purple label without background color. [#962](https://github.com/erda-project/erda-ui/pull/962)
+* Fix the bug that the empty page icon is not displayed when there is no branch on the API design page. [#970](https://github.com/erda-project/erda-ui/pull/970)
+* Fix the bug of tracking details type.[#975](https://github.com/erda-project/erda-ui/pull/975)
+* Fix the bug that cluster_name and application_id do not take effect when they exist in custom filter rules. [#1459](https://github.com/erda-project/erda/pull/1459)
+* Fix the issue that the ES index of log analysis is not scrolling.[#1464](https://github.com/erda-project/erda/pull/1464)[#1465](https://github.com/erda-project/erda/pull/1465)
+* Fix the issue of memory leak when getting the instance list.[#1493](https://github.com/erda-project/erda/pull/1493)
+* Support getting the specified pod when obtaining the pod status list.[#1495](https://github.com/erda-project/erda/pull/1495)
 
 # v1.2.0
 

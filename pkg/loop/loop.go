@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package loop 提供了一个循环执行某个方法的功能，可以自定义执行时间等。
 // 用法：
@@ -18,6 +19,7 @@
 package loop
 
 import (
+	"context"
 	"math"
 	"time"
 )
@@ -29,6 +31,7 @@ type Loop struct {
 	declineLimit  time.Duration
 	interval      time.Duration
 	lastSleepTime time.Duration
+	ctx           context.Context
 }
 
 // Option 定义 Loop 对象的参数配置选项.
@@ -52,9 +55,28 @@ func New(options ...Option) *Loop {
 	return loop
 }
 
+// sleepUntilCtxDone return error when ctx is done during waiting
+func sleepUntilCtxDone(d time.Duration, ctx context.Context) error {
+	if ctx == nil {
+		time.Sleep(d)
+		return nil
+	}
+
+	select {
+	case <-time.After(d):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // Do 循环的执行一个方法
 // 这个被循环执行的方法有两个返回值，第一个返回值控制是否需要退出循环，第二为任务执行的错误信息.
 func (l *Loop) Do(f func() (bool, error)) error {
+	if l.ctx != nil && l.ctx.Err() != nil {
+		return nil
+	}
+
 	var i uint64
 	for i = 0; i < l.maxTimes; i++ {
 		abort, err := f()
@@ -67,13 +89,20 @@ func (l *Loop) Do(f func() (bool, error)) error {
 			if l.declineLimit > 0 && l.lastSleepTime > l.declineLimit {
 				l.lastSleepTime = l.declineLimit
 			}
-			time.Sleep(l.lastSleepTime)
+
+			if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+				return nil
+			}
+
 			continue
 		}
 
 		// 成功执行 reset 暂停时间
 		l.lastSleepTime = l.interval
-		time.Sleep(l.lastSleepTime)
+
+		if err = sleepUntilCtxDone(l.lastSleepTime, l.ctx); err != nil {
+			return nil
+		}
 	}
 	return nil
 }
@@ -112,5 +141,12 @@ func WithInterval(t time.Duration) Option {
 			return
 		}
 		l.interval = t
+	}
+}
+
+// WithContext set the context to cancel loop
+func WithContext(ctx context.Context) Option {
+	return func(loop *Loop) {
+		loop.ctx = ctx
 	}
 }

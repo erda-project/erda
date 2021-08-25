@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 /* 由于要实现 多个eventbox实例同时watch相同目录，并且只处理一次，而etcd库中提供的分布式锁在etcd断开连接时候有问题，
 eventbox中用事务来实现, 但是需要一个 etcd client， 所以在这个文件实现一下 NewEtcdClient

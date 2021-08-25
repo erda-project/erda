@@ -147,7 +147,7 @@ EOABORT
 )"
 fi
 
-if ! command -v netcat >/dev/null; then
+if ! command -v nc >/dev/null; then
     abort "$(cat <<EOABORT
 You must install netcat before installing Erda.
 EOABORT
