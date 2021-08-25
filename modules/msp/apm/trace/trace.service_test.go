@@ -17,8 +17,6 @@ package trace
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"reflect"
 	"testing"
 	"time"
@@ -26,8 +24,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
