@@ -38,7 +38,7 @@ func (l *DestructLinter) Enter(in ast.Node) (ast.Node, bool) {
 		l.text = in.Text()
 	}
 
-	switch in.(type) {
+	switch spec := in.(type) {
 	case *ast.DropTableStmt, *ast.DropDatabaseStmt, *ast.DropUserStmt,
 		*ast.TruncateTableStmt, *ast.RenameTableStmt:
 		l.err = linterror.New(l.s, l.text, "destructive operation: can not drop database, drop table, drop user, truncate table, rename table ...",
@@ -49,7 +49,6 @@ func (l *DestructLinter) Enter(in ast.Node) (ast.Node, bool) {
 			})
 		return in, true
 	case *ast.AlterTableSpec:
-		spec := in.(*ast.AlterTableSpec)
 		if spec.Tp == ast.AlterTableRenameColumn {
 			l.err = linterror.New(l.s, l.text, "break compatibility: AlterTableRenameColumn",
 				func(line []byte) bool {

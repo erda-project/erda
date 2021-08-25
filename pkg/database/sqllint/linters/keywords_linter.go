@@ -192,9 +192,8 @@ func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 		l.text = in.Text()
 	}
 
-	switch in.(type) {
+	switch stmt := in.(type) {
 	case *ast.CreateTableStmt:
-		stmt := in.(*ast.CreateTableStmt)
 		name := ddlconv.ExtractCreateName(stmt)
 		if name == "" {
 			return in, false
@@ -207,8 +206,7 @@ func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 			return in, true
 		}
 	case *ast.ColumnDef:
-		col := in.(*ast.ColumnDef)
-		name := ddlconv.ExtractColName(col)
+		name := ddlconv.ExtractColName(stmt)
 		if name == "" {
 			return in, false
 		}

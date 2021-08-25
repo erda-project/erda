@@ -16,6 +16,7 @@ package migrator
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -24,6 +25,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
 func (mig *Migrator) DB() *gorm.DB {
@@ -32,18 +35,28 @@ func (mig *Migrator) DB() *gorm.DB {
 	}
 
 	var (
-		err  error
-		dsn  = mig.MySQLParameters().Format(false)
-		stmt = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+		err         error
+		dsn         = mig.MySQLParameters().Format(false)
+		showSchemas = fmt.Sprintf("SHOW SCHEMAS LIKE '%s'", mig.MySQLParameters().Database)
+		stmt        = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 	)
-	open, err := sql.Open("mysql", dsn)
-	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
-	}
-	defer open.Close()
 
-	if _, err = open.Exec(stmt); err != nil {
-		logrus.WithError(err).Fatalf("failed to Exec stmt %s", stmt)
+	// initF shows schemas like the database, if the database is not exists, create it
+	initF := func(db *sql.DB) error {
+		rows, err := db.Query(showSchemas)
+		if err != nil {
+			return err
+		}
+		if rows.Next() {
+			return nil
+		}
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err = mig.initConnToDB(dsn, RetryTimeout(mig.RetryTimeout()), initF); err != nil {
+		logrus.WithError(err).Fatalln("failed to init connection to MySQL Server")
 	}
 
 	dsn = mig.MySQLParameters().Format(true)
@@ -51,15 +64,13 @@ func (mig *Migrator) DB() *gorm.DB {
 	if err != nil {
 		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
 	}
-	mig.db.Logger = logger.New(
-		log.New(os.Stdout, "\r\n", log.Ltime),
-		logger.Config{
-			SlowThreshold:             200 * time.Millisecond,
-			Colorful:                  true,
-			IgnoreRecordNotFoundError: true,
-			LogLevel:                  logger.Silent,
-		},
-	)
+	// set the gorm logger SQL collector
+	mig.db.Logger, err = gormutil.NewSQLCollector(mig.collectorFilename, nil)
+	if err != nil {
+		logrus.WithError(err).WithField("SQL collector filename", mig.collectorFilename).
+			Fatalln("failed to set SQL collector")
+		return nil
+	}
 
 	if mig.Parameters.DebugSQL() {
 		mig.db = mig.db.Debug()
@@ -81,46 +92,24 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	}
 
 	var (
-		open           *sql.DB
 		err            error
 		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 		dropDatabase   = "DROP SCHEMA IF EXISTS " + mig.sandboxSettings.Name
-	)
-	defer func() {
-		if open != nil {
-			_ = open.Close()
-		}
-	}()
-
-	var (
-		timeout = time.Second * 150
-		dsn     = mig.SandboxParameters().Format(false)
+		dsn            = mig.SandboxParameters().Format(false)
 	)
 
-	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
-		waiting := timeout.Seconds() - time.Since(now).Seconds()
-		open, err = sql.Open("mysql", dsn)
-		if err != nil {
-			logrus.WithError(err).WithField("DSN", dsn).
-				Warnf("failed to connect to sandbox, may it is not working yet, wait it for %.1f seconds", waiting)
-			continue
+	initF := func(db *sql.DB) error {
+		if _, err := db.Exec(dropDatabase); err != nil {
+			return err
 		}
-
-		if _, err = open.Exec(dropDatabase); err != nil {
-			logrus.WithError(err).WithField("SQL", dropDatabase).
-				Warnf("failed to Exec, may the sandbox it not working yet, wait it for %.1f seconds", waiting)
-			continue
+		if _, err := db.Exec(createDatabase); err != nil {
+			return err
 		}
-
-		if _, err = open.Exec(createDatabase); err != nil {
-			logrus.WithError(err).WithField("SQL", createDatabase).Fatalln("failed to Exec")
-			continue
-		}
-
-		break
+		return nil
 	}
-	if err != nil {
-		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial MySQL sandbox")
+	if err = mig.initConnToDB(dsn, RetryTimeout(mig.RetryTimeout()), initF); err != nil {
+		logrus.WithError(err).Fatalln("failed to init connection to the sandbox")
+		return nil
 	}
 
 	dsn = mig.SandboxParameters().Format(true)
@@ -138,4 +127,35 @@ func (mig *Migrator) SandBox() *gorm.DB {
 	}
 
 	return mig.sandbox
+}
+
+func (mig *Migrator) initConnToDB(dsn string, timeout time.Duration, initF func(db *sql.DB) error) (err error) {
+	var (
+		open *sql.DB
+	)
+	defer func() {
+		if open != nil {
+			_ = open.Close()
+		}
+	}()
+
+	for now := time.Now(); time.Since(now) < timeout; time.Sleep(time.Second * 3) {
+		open, err = sql.Open("mysql", dsn)
+		if err != nil {
+			logrus.WithError(err).WithField("DSN", dsn).WithField("left time", timeout.Seconds()-time.Since(now).Seconds()).
+				Warnln("failed to connect to the MySQL Server, it will try again in 3 seconds")
+			continue
+		}
+		if err := open.Ping(); err != nil {
+			continue
+		}
+		if err = initF(open); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to dial the MySQL Server")
+	return err
 }
