@@ -87,19 +87,19 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "dev",
+		Label: "workspace-dev",
 		Value: "dev",
 	}
 	testNs := Option{
-		Label: "test",
+		Label: "workspace-test",
 		Value: "test",
 	}
 	stagingNs := Option{
-		Label: "staging",
+		Label: "workspace-staging",
 		Value: "staging",
 	}
 	productionNs := Option{
-		Label: "production",
+		Label: "workspace-production",
 		Value: "production",
 	}
 	addonNs := Option{
