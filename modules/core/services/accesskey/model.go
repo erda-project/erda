@@ -17,9 +17,10 @@ package accesskey
 import (
 	"time"
 
-	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/jinzhu/gorm"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
+
+	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 )
 
 // store secret key pair

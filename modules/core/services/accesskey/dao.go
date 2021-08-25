@@ -17,9 +17,10 @@ package accesskey
 import (
 	"context"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/erda-project/erda/pkg/secret"
-	"github.com/jinzhu/gorm"
 )
 
 type dao struct {

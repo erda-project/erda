@@ -15,13 +15,14 @@
 package accesskey
 
 import (
+	"github.com/jinzhu/gorm"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	pb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
-	"github.com/jinzhu/gorm"
 )
 
 type config struct {

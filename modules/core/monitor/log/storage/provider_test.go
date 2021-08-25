@@ -42,6 +42,7 @@ func Test_provider_Init(t *testing.T) {
 }
 
 type mockContext struct {
+	context.Context
 	l logs.Logger
 }
 

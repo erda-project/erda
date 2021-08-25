@@ -18,9 +18,10 @@ import (
 	context "context"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	pb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type accessKeyService struct {
