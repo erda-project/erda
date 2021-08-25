@@ -22,20 +22,14 @@ func TestDepthCopyQueryConditions(t *testing.T) {
 			}
 			// got point
 			gotPoint := getMemoryPoint(got)
-			gotPointServiceName := getMemoryPoint(got.ServiceName)
-			gotPointTraceID := getMemoryPoint(got.TraceID)
-			gotPointDubboMethod := getMemoryPoint(got.DubboMethod)
-			gotPointHttpPath := getMemoryPoint(got.HttpPath)
+			gotPointOthers := getMemoryPoint(got.Others)
 			gotPointLimit := getMemoryPoint(got.Limit)
 			gotPointSort := getMemoryPoint(got.Sort)
 			gotPointTraceStatus := getMemoryPoint(got.TraceStatus)
 
 			// TraceQueryConditions point
 			wantPoint := getMemoryPoint(tt.want)
-			wantPointServiceName := getMemoryPoint(tt.want.ServiceName)
-			wantPointTraceID := getMemoryPoint(tt.want.TraceID)
-			wantPointDubboMethod := getMemoryPoint(tt.want.DubboMethod)
-			wantPointHttpPath := getMemoryPoint(tt.want.HttpPath)
+			wantPointOthers := getMemoryPoint(tt.want.Others)
 			wantPointLimit := getMemoryPoint(tt.want.Limit)
 			wantPointSort := getMemoryPoint(tt.want.Sort)
 			wantPointTraceStatus := getMemoryPoint(tt.want.TraceStatus)
@@ -43,17 +37,8 @@ func TestDepthCopyQueryConditions(t *testing.T) {
 			if gotPoint == wantPoint {
 				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPoint, wantPoint)
 			}
-			if gotPointServiceName == wantPointServiceName {
-				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointServiceName, wantPointServiceName)
-			}
-			if gotPointTraceID == wantPointTraceID {
-				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointTraceID, wantPointTraceID)
-			}
-			if gotPointDubboMethod == wantPointDubboMethod {
-				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointDubboMethod, wantPointDubboMethod)
-			}
-			if gotPointHttpPath == wantPointHttpPath {
-				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointHttpPath, wantPointHttpPath)
+			if gotPointOthers == wantPointOthers {
+				t.Errorf("gotPointOthers = %v, wantPointOthers %v", gotPointOthers, wantPointOthers)
 			}
 			if gotPointLimit == wantPointLimit {
 				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointLimit, wantPointLimit)
