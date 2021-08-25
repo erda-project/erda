@@ -84,7 +84,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	if req.Limit <= 0 || req.Limit > 1000 {
 		req.Limit = 1000
 	}
-	iter := s.p.cassandraSession.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
+	iter := s.p.cassandraSession.Session().Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
 	spanTree := make(SpanTree)
 	for {
 		row := make(map[string]interface{})
@@ -155,7 +155,7 @@ func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
 
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
 	count := 0
-	s.p.cassandraSession.Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&count)
+	s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&count)
 	return int64(count), nil
 }
 
