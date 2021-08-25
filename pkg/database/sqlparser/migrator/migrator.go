@@ -17,6 +17,7 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -56,6 +57,8 @@ type Migrator struct {
 	sandboxSettings *pygrator.Settings // sandbox settings
 	db              *gorm.DB
 	sandbox         *gorm.DB
+
+	collectorFilename string
 }
 
 func New(parameters Parameters) (mig *Migrator, err error) {
@@ -89,6 +92,12 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 		Port:     mig.SandboxParameters().Port,
 		Name:     mig.SandboxParameters().Database,
 		TimeZone: pygrator.TimeZoneAsiaShanghai,
+	}
+
+	// set the SQLs collector filename
+	mig.collectorFilename = SQLCollectorFilename()
+	if collectDir, ok := mig.Parameters.(SQLCollectorDir); ok {
+		mig.collectorFilename = filepath.Join(collectDir.SQLCollectorDir(), mig.collectorFilename)
 	}
 
 	// load scripts
@@ -552,16 +561,14 @@ func (mig *Migrator) installDMLBlocks(s *Script, i int, tx *gorm.DB, after func(
 
 func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Settings, commit bool) error {
 	var p = pygrator.Package{
-		DeveloperScript: s,
-		Requirements:    module.PythonRequirementsText,
-		Settings:        *settings,
-		Commit:          commit,
+		DeveloperScript:   s,
+		Requirements:      module.PythonRequirementsText,
+		Settings:          *settings,
+		Commit:            commit,
+		CollectorFilename: mig.collectorFilename,
 	}
 	if len(p.Requirements) == 0 {
 		p.Requirements = []byte(pygrator.BaseRequirements)
-	}
-	if sqlCollectorName, ok := mig.Parameters.(SQLCollectorName); ok {
-		p.CollectorFilename = sqlCollectorName.SQLCollectorName()
 	}
 
 	if err := p.Make(); err != nil {

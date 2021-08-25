@@ -16,6 +16,7 @@ package gormutil
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -47,11 +48,12 @@ func NewSQLCollector(filename string, baseLogger logger.Interface) (*SQLCollecto
 func (c SQLCollector) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	c.Interface.Trace(ctx, begin, fc, err)
 	sql, _ := fc()
-	c.collect(sql)
+	c.collect(begin, sql)
 }
 
-func (c SQLCollector) collect(sql string) {
+func (c SQLCollector) collect(begin time.Time, sql string) {
 	if file, err := os.OpenFile(c.filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644); err == nil {
+		_, _ = fmt.Fprintf(file, "/*-BEGIN: %s-*/\n", begin.Format(time.RFC3339))
 		_, _ = file.WriteString(sql + "  /*-LINE END-*/\n")
 	}
 }

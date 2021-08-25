@@ -36,7 +36,6 @@ func (mig *Migrator) DB() *gorm.DB {
 
 	var (
 		err         error
-		timeout     = time.Second * 360
 		dsn         = mig.MySQLParameters().Format(false)
 		showSchemas = fmt.Sprintf("SHOW SCHEMAS LIKE '%s'", mig.MySQLParameters().Database)
 		stmt        = "CREATE DATABASE IF NOT EXISTS " + mig.dbSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
@@ -56,7 +55,7 @@ func (mig *Migrator) DB() *gorm.DB {
 		}
 		return nil
 	}
-	if err = mig.initConnToDB(dsn, timeout, initF); err != nil {
+	if err = mig.initConnToDB(dsn, RetryTimeout(mig.RetryTimeout()), initF); err != nil {
 		logrus.WithError(err).Fatalln("failed to init connection to MySQL Server")
 	}
 
@@ -65,23 +64,12 @@ func (mig *Migrator) DB() *gorm.DB {
 	if err != nil {
 		logrus.WithError(err).WithField("DSN", dsn).Fatalln("failed to open MySQL connection")
 	}
-	mig.db.Logger = logger.New(
-		log.New(os.Stdout, "\r\n", log.Ltime),
-		logger.Config{
-			SlowThreshold:             200 * time.Millisecond,
-			Colorful:                  true,
-			IgnoreRecordNotFoundError: true,
-			LogLevel:                  logger.Silent,
-		},
-	)
-	// set the gorm logger SQL collector if the the filename is given
-	if sqlCollectorName, ok := mig.Parameters.(SQLCollectorName); ok && len(sqlCollectorName.SQLCollectorName()) > 0 {
-		mig.db.Logger, err = gormutil.NewSQLCollector(sqlCollectorName.SQLCollectorName(), nil)
-		if err != nil {
-			logrus.WithError(err).WithField("SQL collector filename", sqlCollectorName.SQLCollectorName()).
-				Fatalln("failed to set SQL collector")
-			return nil
-		}
+	// set the gorm logger SQL collector
+	mig.db.Logger, err = gormutil.NewSQLCollector(mig.collectorFilename, nil)
+	if err != nil {
+		logrus.WithError(err).WithField("SQL collector filename", mig.collectorFilename).
+			Fatalln("failed to set SQL collector")
+		return nil
 	}
 
 	if mig.Parameters.DebugSQL() {
@@ -107,7 +95,6 @@ func (mig *Migrator) SandBox() *gorm.DB {
 		err            error
 		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
 		dropDatabase   = "DROP SCHEMA IF EXISTS " + mig.sandboxSettings.Name
-		timeout        = time.Second * 150
 		dsn            = mig.SandboxParameters().Format(false)
 	)
 
@@ -120,7 +107,7 @@ func (mig *Migrator) SandBox() *gorm.DB {
 		}
 		return nil
 	}
-	if err = mig.initConnToDB(dsn, timeout, initF); err != nil {
+	if err = mig.initConnToDB(dsn, RetryTimeout(mig.RetryTimeout()), initF); err != nil {
 		logrus.WithError(err).Fatalln("failed to init connection to the sandbox")
 		return nil
 	}

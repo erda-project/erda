@@ -321,3 +321,7 @@ func (p parameters) Rules() []rules.Ruler {
 func (p parameters) SQLCollectorName() string {
 	return p.output
 }
+
+func (p parameters) RetryTimeout() uint64 {
+	return 150
+}
