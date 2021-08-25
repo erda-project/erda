@@ -344,6 +344,7 @@ func (c *Cron) run() {
 			// and stop requests.
 			timer = time.NewTimer(100000 * time.Hour)
 		} else {
+			now = c.now()
 			timer = time.NewTimer(c.entries[0].Next.Sub(now))
 		}
 
