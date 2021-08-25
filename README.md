@@ -52,7 +52,7 @@ It is a lightweight microservices framework implements by golang. It provides ma
 
 ### **[erda-actions](https://github.com/erda-project/erda-actions)**
 
-It holds the definition for the official Pipeline Actions of the Erda Action Marketplace as found at https://www.erda.cloud/market/action. A Pipeline Action plays as a mininal runnable unit in [Erda Pipelines](https://docs.erda.cloud/1.2/manual/dop/concepts/pipeline.html) such as checking out source code in github, buiding a docker image, creating a deployment in a Kubernetes cluster etc.
+It holds the definition for the official Pipeline Actions of the Erda Action Marketplace as found at https://www.erda.cloud/market/action. A Pipeline Action plays as a mininal runnable unit in [Erda Pipelines](https://docs.erda.cloud/latest/manual/dop/concepts/pipeline.html) such as checking out source code in github, buiding a docker image, creating a deployment in a Kubernetes cluster etc.
 
 ### **[erda-addons](https://github.com/erda-project/erda-addons)** 
 
@@ -70,13 +70,13 @@ There are some extra repositories that plays as customized third-partiy independ
 
 ## Quick Start
 
-To get started, see [Local installation](https://docs.erda.cloud/1.2/manual/install/docker-install.html).
+To get started, see [Local installation](https://docs.erda.cloud/latest/manual/install/docker-install.html).
 
 ## Installation
 
 Erda can be deployed in either a single node or multi-node setup. Please download binaries of [Erda release](https://github.com/erda-project/erda/releases) and refer to the following for guides on how to get Erda up and running.
-- [Single Node Install](https://docs.erda.cloud/1.2/manual/install/helm-install.html)
-- [High Availability (HA) Install](https://docs.erda.cloud/1.2/manual/install/high-availability.html)
+- [Single Node Install](https://docs.erda.cloud/latest/manual/install/helm-install.html)
+- [High Availability (HA) Install](https://docs.erda.cloud/latest/manual/install/high-availability.html)
 
 ## User Manual
 
