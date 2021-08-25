@@ -10,6 +10,19 @@ en:
   workspace_default: "DEFAULT"
   project_type_dop: "DevOps Project"
   project_type_msp: "MSP Project"
+  span_count_desc: Span Count DESC
+  span_count_asc: Span Count ASC
+  trace_duration_desc: Trace Duration DESC
+  trace_duration_asc: Trace Duration ASC
+  trace_time_desc: Trace Time DESC
+  trace_time_asc: Trace Time ASC
+  service_name: Service Name
+  trace_id: Trace ID
+  dubbo_method: Dubbo Method
+  http_path: HTTP Path
+  trace_success: SUCCESS
+  trace_error: ERROR
+  trace_all: ALL
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -22,3 +35,16 @@ zh:
   workspace_default: "默认"
   project_type_dop: "DevOps 项目"
   project_type_msp: "微服务治理项目"
+  span_count_desc: Span 数量倒序
+  span_count_asc: Span 数量正序
+  trace_duration_desc: 追踪持续时间倒序
+  trace_duration_asc: 追踪持续时间正序
+  trace_time_desc: 追踪发生时间倒序
+  trace_time_asc: 追踪发生时间正序
+  service_name: 服务名
+  trace_id: 追踪 ID
+  dubbo_method: Dubbo Method
+  http_path: HTTP Path
+  trace_success: 成功
+  trace_error: 错误
+  trace_all: 所有

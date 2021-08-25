@@ -24,7 +24,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
+	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 )
 
@@ -137,6 +140,63 @@ func Test_traceService_GetTraces(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
 				t.Errorf("traceService.GetTraces() = %v, want %v", got, tt.wantResp)
+			}
+		})
+	}
+}
+
+func Test_traceService_GetTraceQueryConditions(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.GetTraceQueryConditionsRequest
+	}
+	tests := []struct {
+		name     string
+		service  string
+		config   string
+		args     args
+		wantResp *pb.GetTraceQueryConditionsResponse
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		//		{
+		//			"case 1",
+		//			"erda.msp.apm.trace.TraceService",
+		//			`
+		//erda.msp.apm.trace:
+		//`,
+		//			args{
+		//				context.TODO(),
+		//				&pb.GetTraceQueryConditionsRequest{
+		//					// TODO: setup fields
+		//				},
+		//			},
+		//			&pb.GetTraceQueryConditionsResponse{
+		//				// TODO: setup fields.
+		//			},
+		//			false,
+		//		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hub := servicehub.New()
+			events := hub.Events()
+			go func() {
+				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
+			}()
+			err := <-events.Started()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			srv := hub.Service(tt.service).(pb.TraceServiceServer)
+			got, err := srv.GetTraceQueryConditions(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("traceService.GetTraceQueryConditions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantResp) {
+				t.Errorf("traceService.GetTraceQueryConditions() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -452,14 +512,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req.CreateTime == "" || req.UpdateTime == "" {
-		req.CreateTime = time.Now().Format(layout)
-		req.UpdateTime = time.Now().Format(layout)
+		req.CreateTime = time.Now().Format(common.Layout)
+		req.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
+	createTime, err := time.ParseInLocation(common.Layout, req.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
+	updateTime, err := time.ParseInLocation(common.Layout, req.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
@@ -488,14 +548,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req2.CreateTime == "" || req2.UpdateTime == "" {
-		req2.CreateTime = time.Now().Format(layout)
-		req2.UpdateTime = time.Now().Format(layout)
+		req2.CreateTime = time.Now().Format(common.Layout)
+		req2.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime2, err := time.ParseInLocation(layout, req2.CreateTime, time.Local)
+	createTime2, err := time.ParseInLocation(common.Layout, req2.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime2, err := time.ParseInLocation(layout, req2.UpdateTime, time.Local)
+	updateTime2, err := time.ParseInLocation(common.Layout, req2.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
@@ -524,14 +584,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req3.CreateTime == "" || req3.UpdateTime == "" {
-		req3.CreateTime = time.Now().Format(layout)
-		req3.UpdateTime = time.Now().Format(layout)
+		req3.CreateTime = time.Now().Format(common.Layout)
+		req3.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime3, err := time.ParseInLocation(layout, req3.CreateTime, time.Local)
+	createTime3, err := time.ParseInLocation(common.Layout, req3.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime3, err := time.ParseInLocation(layout, req3.UpdateTime, time.Local)
+	updateTime3, err := time.ParseInLocation(common.Layout, req3.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
@@ -625,6 +685,41 @@ func Test_bodyCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := bodyCheck(tt.args.body); got != tt.want {
 				t.Errorf("bodyCheck() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_traceService_getDebugStatus(t *testing.T) {
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+	}
+	type args struct {
+		lang       i18n.LanguageCodes
+		statusCode debug.Status
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{"case1", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Success}, ""},
+		{"case2", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Init}, ""},
+		{"case3", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Fail}, ""},
+		{"case4", fields{p: nil, i18n: nil, traceRequestHistoryDB: nil}, args{lang: nil, statusCode: debug.Stop}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &traceService{
+				p:                     tt.fields.p,
+				i18n:                  tt.fields.i18n,
+				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
+			}
+			if got := s.getDebugStatus(tt.args.lang, tt.args.statusCode); got != tt.want {
+				t.Errorf("getDebugStatus() = %v, want %v", got, tt.want)
 			}
 		})
 	}
