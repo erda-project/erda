@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package action_info
 
 import (
 	"fmt"
-	"reflect"
 	"sync"
 	"testing"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -122,18 +122,14 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 				actionJobSpecs.Store(key, value)
 			}
 
-			that := &passedDataWhenCreate{
+			that := &PassedDataWhenCreate{
 				actionJobDefines: &actionJobDefines,
 				actionJobSpecs:   &actionJobSpecs,
 			}
 			yml, err := pipelineyml.New([]byte(tt.args.pipelineYml))
 			assert.NoError(t, err)
 
-			var svc *extmarketsvc.ExtMarketSvc
-			var guard *monkey.PatchGuard
-			guard = monkey.PatchInstanceMethod(reflect.TypeOf(svc), "SearchActions", func(svc *extmarketsvc.ExtMarketSvc, items []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
-				guard.Unpatch()
-				defer guard.Restore()
+			patch := monkey.Patch(searchActions, func(bdl *bundle.Bundle, items []string) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
 				actionJobMap := make(map[string]*diceyml.Job)
 				actionSpecMap := make(map[string]*apistructs.ActionSpec)
 				for _, item := range items {
@@ -145,9 +141,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 				}
 				return actionJobMap, actionSpecMap, nil
 			})
-			that.extMarketSvc = svc
 
-			if err := that.putPassedDataByPipelineYml(yml); (err != nil) != tt.wantErr {
+			if err := that.PutPassedDataByPipelineYml(yml); (err != nil) != tt.wantErr {
 				t.Errorf("putPassedDataByPipelineYml() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -176,6 +171,8 @@ func Test_passedDataWhenCreate_putPassedDataByPipelineYml(t *testing.T) {
 				assert.True(t, ok)
 				assert.NotEmpty(t, value)
 			}
+
+			patch.Unpatch()
 		})
 	}
 }

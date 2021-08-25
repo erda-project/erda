@@ -539,9 +539,10 @@ type PipelineOperateRequest struct {
 }
 
 type PipelineTaskOperateRequest struct {
-	TaskID  uint64 `json:"taskID"`
-	Disable *bool  `json:"disable,omitempty"`
-	Pause   *bool  `json:"pause,omitempty"`
+	TaskID    uint64 `json:"taskID"`
+	TaskAlias string `json:"taskAlias"` // the task will not be created until the pipeline is executed, so you must use alias to disable the task later
+	Disable   *bool  `json:"disable,omitempty"`
+	Pause     *bool  `json:"pause,omitempty"`
 }
 
 type PipelineOperateResponse struct {

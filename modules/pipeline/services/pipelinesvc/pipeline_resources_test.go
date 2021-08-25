@@ -19,38 +19,29 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func genTaskWithLimitCPUMem(limitCPU, limitMem float64) *spec.PipelineTask {
-	return &spec.PipelineTask{
-		Extra: spec.PipelineTaskExtra{
-			AppliedResources: apistructs.PipelineAppliedResources{
-				Limits: apistructs.PipelineAppliedResource{
-					CPU:      limitCPU,
-					MemoryMB: limitMem,
-				},
-			},
+func genTaskWithLimitCPUMem(limitCPU, limitMem float64) *apistructs.PipelineAppliedResources {
+	return &apistructs.PipelineAppliedResources{
+		Limits: apistructs.PipelineAppliedResource{
+			CPU:      limitCPU,
+			MemoryMB: limitMem,
 		},
 	}
 }
 
-func genTaskWithRequestCPUMem(limitCPU, limitMem float64) *spec.PipelineTask {
-	return &spec.PipelineTask{
-		Extra: spec.PipelineTaskExtra{
-			AppliedResources: apistructs.PipelineAppliedResources{
-				Requests: apistructs.PipelineAppliedResource{
-					CPU:      limitCPU,
-					MemoryMB: limitMem,
-				},
-			},
+func genTaskWithRequestCPUMem(limitCPU, limitMem float64) *apistructs.PipelineAppliedResources {
+	return &apistructs.PipelineAppliedResources{
+		Requests: apistructs.PipelineAppliedResource{
+			CPU:      limitCPU,
+			MemoryMB: limitMem,
 		},
 	}
 }
 
 func Test_calculatePipelineLimitResource(t *testing.T) {
 	type args struct {
-		allStagedTasks [][]*spec.PipelineTask
+		allStagedTasksResources [][]*apistructs.PipelineAppliedResources
 	}
 	tests := []struct {
 		name string
@@ -70,7 +61,7 @@ func Test_calculatePipelineLimitResource(t *testing.T) {
 			// => max((5+4), (1+3), (8)) = 9
 			name: "enough cpu",
 			args: args{
-				allStagedTasks: [][]*spec.PipelineTask{
+				allStagedTasksResources: [][]*apistructs.PipelineAppliedResources{
 					{genTaskWithLimitCPUMem(1, 5), genTaskWithLimitCPUMem(2, 4)},
 					{genTaskWithLimitCPUMem(2, 1), genTaskWithLimitCPUMem(3, 3)},
 					{genTaskWithLimitCPUMem(4, 8)},
@@ -84,7 +75,7 @@ func Test_calculatePipelineLimitResource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calculatePipelineLimitResource(tt.args.allStagedTasks); !reflect.DeepEqual(got, tt.want) {
+			if got := calculatePipelineLimitResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("calculatePipelineLimitResource() = %v, want %v", got, tt.want)
 			}
 		})
@@ -93,7 +84,7 @@ func Test_calculatePipelineLimitResource(t *testing.T) {
 
 func Test_calculatePipelineRequestResource(t *testing.T) {
 	type args struct {
-		allStagedTasks [][]*spec.PipelineTask
+		allStagedTasksResources [][]*apistructs.PipelineAppliedResources
 	}
 	tests := []struct {
 		name string
@@ -114,7 +105,7 @@ func Test_calculatePipelineRequestResource(t *testing.T) {
 			// => max(5,4,4,1,7) = 7
 			name: "minimal resource",
 			args: args{
-				allStagedTasks: [][]*spec.PipelineTask{
+				allStagedTasksResources: [][]*apistructs.PipelineAppliedResources{
 					{genTaskWithRequestCPUMem(1, 5), genTaskWithRequestCPUMem(2, 4)},
 					{genTaskWithRequestCPUMem(2, 4), genTaskWithRequestCPUMem(3, 1)},
 					{genTaskWithRequestCPUMem(4, 7)},
@@ -128,7 +119,7 @@ func Test_calculatePipelineRequestResource(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				allStagedTasks: [][]*spec.PipelineTask{
+				allStagedTasksResources: [][]*apistructs.PipelineAppliedResources{
 					{genTaskWithRequestCPUMem(1, 1024), genTaskWithRequestCPUMem(1, 1024)},
 					{genTaskWithRequestCPUMem(2, 2049)},
 				},
@@ -141,7 +132,7 @@ func Test_calculatePipelineRequestResource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calculatePipelineRequestResource(tt.args.allStagedTasks); !reflect.DeepEqual(got, tt.want) {
+			if got := calculatePipelineRequestResource(tt.args.allStagedTasksResources); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("calculatePipelineRequestResource() = %v, want %v", got, tt.want)
 			}
 		})

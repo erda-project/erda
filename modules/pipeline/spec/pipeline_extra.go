@@ -113,6 +113,8 @@ type PipelineExtraInfo struct {
 	SnippetChain []uint64 `json:"snippetChain,omitempty"`
 
 	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
+
+	TaskOperates []apistructs.PipelineTaskOperateRequest `json:"taskTaskOperates,omitempty"`
 }
 
 type QueueInfo struct {
