@@ -17,10 +17,10 @@ package migrator
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/parser/ast"
 	"strings"
 	"time"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
