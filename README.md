@@ -32,7 +32,7 @@ Erda is mainly composed of the following parts:
 
 ![](./docs/assets/arch.png)
 
-The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons), [docs](https://github.com/erda-project/docs).
+The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons).
 
 ### **[erda](https://github.com/erda-project/erda)** 
 
