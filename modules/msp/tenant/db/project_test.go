@@ -18,21 +18,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jinzhu/gorm"
 )
 
-func dbMockInit() (*gorm.DB, sqlmock.Sqlmock, error) {
-	db, mock, err := sqlmock.New()
-	if nil != err {
-		return nil, nil, nil
-	}
-	mydb, err := gorm.Open("mysql", db)
-	return mydb, mock, err
-}
-
 func TestMSPProjectDB_Query(t *testing.T) {
-	mydb, _, _ := dbMockInit()
+	mysqldb, _, _ := MockInit(MYSQL)
 	type fields struct {
 		DB *gorm.DB
 	}
@@ -46,7 +36,7 @@ func TestMSPProjectDB_Query(t *testing.T) {
 		want    *MSPProject
 		wantErr bool
 	}{
-		{name: "case1", fields: fields{DB: mydb}, args: args{id: "1"}, want: nil, wantErr: true},
+		{name: "case1", fields: fields{DB: mysqldb}, args: args{id: "1"}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,7 +56,7 @@ func TestMSPProjectDB_Query(t *testing.T) {
 }
 
 func TestMSPProjectDB_Delete(t *testing.T) {
-	mydb, _, _ := dbMockInit()
+	mysqldb, _, _ := MockInit(MYSQL)
 	type fields struct {
 		DB *gorm.DB
 	}
@@ -80,7 +70,7 @@ func TestMSPProjectDB_Delete(t *testing.T) {
 		want    *MSPProject
 		wantErr bool
 	}{
-		{name: "case1", fields: fields{DB: mydb}, args: args{id: "1"}, want: nil, wantErr: true},
+		{name: "case1", fields: fields{DB: mysqldb}, args: args{id: "1"}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -100,7 +90,7 @@ func TestMSPProjectDB_Delete(t *testing.T) {
 }
 
 func TestMSPProjectDB_Update(t *testing.T) {
-	mydb, _, _ := dbMockInit()
+	mysqldb, _, _ := MockInit(MYSQL)
 	type fields struct {
 		DB *gorm.DB
 	}
@@ -114,7 +104,7 @@ func TestMSPProjectDB_Update(t *testing.T) {
 		want    *MSPProject
 		wantErr bool
 	}{
-		{name: "case1", fields: fields{DB: mydb}, args: args{project: nil}, want: nil, wantErr: true},
+		{name: "case1", fields: fields{DB: mysqldb}, args: args{project: nil}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,7 +124,7 @@ func TestMSPProjectDB_Update(t *testing.T) {
 }
 
 func TestMSPProjectDB_Create(t *testing.T) {
-	mydb, _, _ := dbMockInit()
+	mysqldb, _, _ := MockInit(MYSQL)
 	type fields struct {
 		DB *gorm.DB
 	}
@@ -148,7 +138,7 @@ func TestMSPProjectDB_Create(t *testing.T) {
 		want    *MSPProject
 		wantErr bool
 	}{
-		{name: "case1", fields: fields{DB: mydb}, args: args{project: nil}, want: nil, wantErr: true},
+		{name: "case1", fields: fields{DB: mysqldb}, args: args{project: nil}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
