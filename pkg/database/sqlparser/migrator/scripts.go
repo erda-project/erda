@@ -209,12 +209,12 @@ func (s *Scripts) AlterPermissionLint() error {
 		tableNames := make(map[string]bool, 0)
 		for _, script := range module.Scripts {
 			for _, ddl := range script.DDLNodes() {
-				switch ddl.(type) {
+				switch stmt := ddl.(type) {
 				case *ast.CreateTableStmt:
-					tableName := ddl.(*ast.CreateTableStmt).Table.Name.String()
+					tableName := stmt.Table.Name.String()
 					tableNames[tableName] = true
 				case *ast.AlterTableStmt:
-					tableName := ddl.(*ast.AlterTableStmt).Table.Name.String()
+					tableName := stmt.Table.Name.String()
 					if _, ok := tableNames[tableName]; !ok {
 						return errors.Errorf("the table you tried to alter is not exists, may it not created in this module directory. filename: %s, text:\n%s",
 							filepath.Join(s.Dirname, moduleName, script.GetName()), ddl.Text())
@@ -318,13 +318,13 @@ func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
 				continue
 			}
 			for _, node := range script.Nodes {
-				switch node.(type) {
+				switch stmt := node.(type) {
 				case *ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.TruncateTableStmt:
 					s.destructive = 1
 					s.destructiveText = node.Text()
 					return s.destructiveText, true
 				case *ast.AlterTableStmt:
-					for _, spec := range node.(*ast.AlterTableStmt).Specs {
+					for _, spec := range stmt.Specs {
 						switch spec.Tp {
 						case ast.AlterTableDropColumn:
 							s.destructive = 1

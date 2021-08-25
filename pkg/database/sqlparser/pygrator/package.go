@@ -39,11 +39,13 @@ type TextFile interface {
 }
 
 type Package struct {
-	DeveloperScript TextFile
-	Requirements    []byte
-	Settings        Settings
-	entrypoint      Entrypoint
-	Commit          bool
+	DeveloperScript   TextFile
+	Requirements      []byte
+	Settings          Settings
+	Commit            bool
+	CollectorFilename string
+
+	entrypoint Entrypoint
 }
 
 func (p *Package) Make() (err error) {
@@ -60,7 +62,7 @@ func (p *Package) Make() (err error) {
 
 	msg := "failed to make python file for migration"
 
-	p.entrypoint = Entrypoint{DeveloperScriptFilename: p.DeveloperScript.GetName()}
+	p.entrypoint = Entrypoint{DeveloperScriptFilename: p.DeveloperScript.GetName(), CollectorFilename: p.CollectorFilename}
 
 	if err = p.writeDeveloperScript(); err != nil {
 		return errors.Wrap(err, msg)

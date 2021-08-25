@@ -156,7 +156,7 @@ func (l *AllowedStmt) Enter(in ast.Node) (ast.Node, bool) {
 		l.text = in.Text()
 	}
 
-	switch in.(type) {
+	switch stmt := in.(type) {
 	case *ast.CreateDatabaseStmt:
 		if l.allowedDDL&CreateDatabaseStmt == 0 {
 			l.err = linterror.New(l.s, l.text, "not allowed CreateDatabaseStmt", func([]byte) bool {
@@ -285,7 +285,7 @@ func (l *AllowedStmt) Enter(in ast.Node) (ast.Node, bool) {
 			})
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range in.(*ast.AlterTableStmt).Specs {
+		for _, spec := range stmt.Specs {
 			switch spec.Tp {
 			case ast.AlterTableOption:
 				if l.allowedDDL&AlterTableOption == 0 {

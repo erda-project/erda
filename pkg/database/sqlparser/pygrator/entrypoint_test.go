@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename}
+	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename, CollectorFilename: "collector.py.sql"}
 )
 
 func TestGenEntrypoint(t *testing.T) {

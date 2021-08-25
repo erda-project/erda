@@ -33,19 +33,17 @@ func NewSchema() *Schema {
 }
 
 func (s *Schema) Enter(in ast.Node) (ast.Node, bool) {
-	switch in.(type) {
+	switch stmt := in.(type) {
 	case *ast.CreateTableStmt:
-		tableStmt := in.(*ast.CreateTableStmt)
-		s.TableDefinitions[tableStmt.Table.Name.String()] = NewTableDefinition(tableStmt)
+		s.TableDefinitions[stmt.Table.Name.String()] = NewTableDefinition(stmt)
 
 	case *ast.DropTableStmt:
-		for _, table := range in.(*ast.DropTableStmt).Tables {
+		for _, table := range stmt.Tables {
 			delete(s.TableDefinitions, table.Name.String())
 		}
 
 	case *ast.AlterTableStmt:
-		alter := in.(*ast.AlterTableStmt)
-		tableDefinition, ok := s.TableDefinitions[alter.Table.Name.String()]
+		tableDefinition, ok := s.TableDefinitions[stmt.Table.Name.String()]
 		if ok {
 			in.Accept(tableDefinition)
 		}

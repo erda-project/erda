@@ -34,8 +34,7 @@ create table t (
 `
 
 const notNullLinterTestAlterTable = `
-ALTER TABLE dice_api_access
-    ADD default_sla_id BIGINT COMMENT 'default SLA id';
+ALTER TABLE dice_audit_history ADD COLUMN fdp_project_id varchar(128) DEFAULT "" COMMENT 'fdp project id';
 `
 
 func TestNewNotNullLinter(t *testing.T) {

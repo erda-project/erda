@@ -45,18 +45,16 @@ func (l *ManualTimeSetterLinter) Enter(in ast.Node) (out ast.Node, skipChildren 
 		return bytes.Contains(line, []byte(createAt)) || bytes.Contains(line, []byte(updatedAt))
 	}
 
-	switch in.(type) {
+	switch stmt := in.(type) {
 	case *ast.InsertStmt:
-		columns := in.(*ast.InsertStmt).Columns
-		for _, col := range columns {
+		for _, col := range stmt.Columns {
 			if colName := col.Name.String(); strings.EqualFold(colName, createAt) || strings.EqualFold(colName, updatedAt) {
 				l.err = linterror.New(l.s, l.text, "can not set created_at or updated_at in INSERT statement", getLint)
 				return in, true
 			}
 		}
 	case *ast.UpdateStmt:
-		columns := in.(*ast.UpdateStmt).List
-		for _, col := range columns {
+		for _, col := range stmt.List {
 			if colName := col.Column.String(); strings.EqualFold(colName, createAt) || strings.EqualFold(colName, updatedAt) {
 				l.err = linterror.New(l.s, l.text, "can not set created_at or updated_at in UPDATE statement", getLint)
 				return in, true

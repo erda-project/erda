@@ -23,6 +23,10 @@ const EntrypointPattern = `# encoding: utf8
 
 from django.db import connection
 import feature
+import datetime
+
+
+collector_filename = "{{.CollectorFilename}}"
 
 
 if __name__ == "__main__":
@@ -30,7 +34,17 @@ if __name__ == "__main__":
     for task in feature.entries:
         print("run task: {{.DeveloperScriptFilename}}.%s" % (task.__name__))
         task()
+
     [print(query) for query in connection.queries]
+    if len(collector_filename) > 0:
+        with open(collector_filename, "a+") as collector:
+            for query in connection.queries:
+                try:
+                    collector.write('/*-Python BEGIN: {}-*/\n'.format(datetime.datetime.now(datetime.timezone.utc).isoformat()))
+                    collector.write(query["sql"])
+                    collector.write("  /*-LINE END-*/\n")
+                except Exception as e:
+                    print(e)
 
 `
 
@@ -60,6 +74,7 @@ if __name__ == "__main__":
 
 type Entrypoint struct {
 	DeveloperScriptFilename string
+	CollectorFilename       string
 }
 
 // GenEntrypoint generates python module entrypoint text and write it to  rw

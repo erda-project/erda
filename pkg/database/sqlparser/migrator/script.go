@@ -48,6 +48,7 @@ type Script struct {
 	Rawtext   []byte
 	Reversing []string
 	Nodes     []ast.StmtNode
+	Blocks    []Block
 	Pending   bool
 	Record    *HistoryModel
 	Workdir   string
@@ -111,9 +112,13 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 		}
 		node.SetText(text)
 
-		switch node.(type) {
-		case ast.DDLNode, ast.DMLNode, *ast.SetStmt:
+		switch n := node.(type) {
+		case ast.DDLNode:
 			s.Nodes = append(s.Nodes, node)
+			s.Blocks = AppendBlock(s.Blocks, n, DDL)
+		case ast.DMLNode, *ast.SetStmt:
+			s.Nodes = append(s.Nodes, node)
+			s.Blocks = AppendBlock(s.Blocks, n, DML)
 		default:
 			if s.IsBaseline() {
 				continue
