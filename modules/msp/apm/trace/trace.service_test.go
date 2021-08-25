@@ -509,14 +509,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req.CreateTime == "" || req.UpdateTime == "" {
-		req.CreateTime = time.Now().Format(layout)
-		req.UpdateTime = time.Now().Format(layout)
+		req.CreateTime = time.Now().Format(common.Layout)
+		req.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime, err := time.ParseInLocation(layout, req.CreateTime, time.Local)
+	createTime, err := time.ParseInLocation(common.Layout, req.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime, err := time.ParseInLocation(layout, req.UpdateTime, time.Local)
+	updateTime, err := time.ParseInLocation(common.Layout, req.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
@@ -545,14 +545,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req2.CreateTime == "" || req2.UpdateTime == "" {
-		req2.CreateTime = time.Now().Format(layout)
-		req2.UpdateTime = time.Now().Format(layout)
+		req2.CreateTime = time.Now().Format(common.Layout)
+		req2.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime2, err := time.ParseInLocation(layout, req2.CreateTime, time.Local)
+	createTime2, err := time.ParseInLocation(common.Layout, req2.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime2, err := time.ParseInLocation(layout, req2.UpdateTime, time.Local)
+	updateTime2, err := time.ParseInLocation(common.Layout, req2.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
@@ -581,14 +581,14 @@ func Test_composeTraceRequestHistory(t *testing.T) {
 		return
 	}
 	if req3.CreateTime == "" || req3.UpdateTime == "" {
-		req3.CreateTime = time.Now().Format(layout)
-		req3.UpdateTime = time.Now().Format(layout)
+		req3.CreateTime = time.Now().Format(common.Layout)
+		req3.UpdateTime = time.Now().Format(common.Layout)
 	}
-	createTime3, err := time.ParseInLocation(layout, req3.CreateTime, time.Local)
+	createTime3, err := time.ParseInLocation(common.Layout, req3.CreateTime, time.Local)
 	if err != nil {
 		return
 	}
-	updateTime3, err := time.ParseInLocation(layout, req3.UpdateTime, time.Local)
+	updateTime3, err := time.ParseInLocation(common.Layout, req3.UpdateTime, time.Local)
 	if err != nil {
 		return
 	}
