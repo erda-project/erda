@@ -41,6 +41,7 @@ const (
 	Params  = "params"
 	Globals = "globals"
 	Configs = "configs"
+	Base64  = "base64"
 )
 
 const (
@@ -230,4 +231,8 @@ func GenRandomRef(key string) string {
 
 func GenOutputRef(alias, outputName string) string {
 	return fmt.Sprintf("%s %s.%s.%s %s", LeftPlaceholder, Outputs, alias, outputName, RightPlaceholder)
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
 }

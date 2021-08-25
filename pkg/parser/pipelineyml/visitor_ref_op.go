@@ -15,8 +15,8 @@
 package pipelineyml
 
 import (
+	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -166,6 +166,18 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			typeValue := ss[1]
 			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
+		case expression.Base64:
+			// - base64.xxxxx
+			baseValue := ss[1]
+			decodeBytes, err := base64.StdEncoding.DecodeString(baseValue)
+			if err != nil {
+				v.result.AppendError(fmt.Errorf("failed to base64 decode for %s, err: %v", ori, err))
+				return refOp.Ori
+			}
+			if len(ss) >= 3 {
+				refOp.Ex = ss[2]
+			}
+			return v.handleRefEx(string(decodeBytes), refOp)
 		default: // case 3
 			return refOp.Ori
 		}
@@ -338,11 +350,7 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	if v.availableOutputs[ActionAlias(refOp.Ref)] != nil {
 		if output, ok := v.availableOutputs[ActionAlias(refOp.Ref)][refOp.Key]; ok {
 			// If the user specifies a special escape type， use the executor escape output
-			switch refOp.Ex {
-			case RefOpExQuote:
-				output = strconv.Quote(output)
-			}
-			return output
+			return v.handleRefEx(output, refOp)
 		}
 	}
 
@@ -377,4 +385,14 @@ func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias 
 		}
 	}
 	return
+}
+
+func (v *RefOpVisitor) handleRefEx(output string, refOp RefOp) string {
+	switch refOp.Ex {
+	case RefOpExQuote:
+		return expression.Quote(output)
+	default:
+		// do nothing
+		return output
+	}
 }
