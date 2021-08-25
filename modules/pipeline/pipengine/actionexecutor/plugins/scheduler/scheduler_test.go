@@ -1,19 +1,21 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package scheduler
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -64,7 +66,7 @@ func init() {
 }
 
 func Test_GetTaskExecutor(t *testing.T) {
-	monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "GetCluster", func(_ *executor.Manager, clusterName string) (apistructs.ClusterInfo, error) {
+	p := monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "GetCluster", func(_ *executor.Manager, clusterName string) (apistructs.ClusterInfo, error) {
 		if len(clusterName) == 0 {
 			return apistructs.ClusterInfo{}, errors.Errorf("clusterName is empty")
 		}
@@ -74,8 +76,9 @@ func Test_GetTaskExecutor(t *testing.T) {
 		}
 		return cluster, nil
 	})
+	defer p.Unpatch()
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "Get", func(_ *executor.Manager, name types.Name) (types.TaskExecutor, error) {
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "Get", func(_ *executor.Manager, name types.Name) (types.TaskExecutor, error) {
 		if len(name) == 0 {
 			return nil, errors.Errorf("executor name is empty")
 		}
@@ -85,6 +88,7 @@ func Test_GetTaskExecutor(t *testing.T) {
 		}
 		return e, nil
 	})
+	defer m.Unpatch()
 
 	_, err := s.taskManager.GetCluster("terminus-dev")
 	assert.NoError(t, err)
@@ -158,6 +162,36 @@ func Test_GetTaskExecutor(t *testing.T) {
 	shouldDispatch, _, err = s.GetTaskExecutor(edasTask.Type, edasTask.Extra.ClusterName, edasTask)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, false, shouldDispatch)
+}
+
+func TestCancel(t *testing.T) {
+	s = &Sched{
+		taskManager: taskManager,
+	}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetTaskExecutor", func(_ *Sched, executorType string, clusterName string, task *spec.PipelineTask) (bool, types.TaskExecutor, error) {
+		return false, &k8sjob.K8sJob{}, nil
+	})
+	defer m.Unpatch()
+
+	p := monkey.PatchInstanceMethod(reflect.TypeOf(&k8sjob.K8sJob{}), "Remove", func(_ *k8sjob.K8sJob, ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+		return nil, nil
+	})
+	defer p.Unpatch()
+
+	uuid := "pipeline-123456"
+	ctx := context.Background()
+	task := &spec.PipelineTask{
+		Extra: spec.PipelineTaskExtra{
+			Namespace: "pipeline-1",
+			UUID:      uuid,
+			LoopOptions: &apistructs.PipelineTaskLoopOptions{
+				LoopedTimes: 3,
+			},
+		},
+	}
+	_, err := s.Cancel(ctx, task)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uuid, task.Extra.UUID)
 }
 
 //import (

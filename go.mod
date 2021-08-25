@@ -31,9 +31,9 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210729162038-a2e798d921de
 	github.com/erda-project/erda-infra/tools v0.0.0-20210819111743-ae86696c7041 // indirect
 	github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e
+	github.com/erda-project/erda-infra v0.0.0-20210817063509-a477b158393d
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gocql/gocql v0.0.0-20210401103645-80ab1e13e309
+	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogap/errors v0.0.0-20200228125012-531a6449b28c

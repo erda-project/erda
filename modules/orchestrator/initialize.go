@@ -1,20 +1,22 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package orchestrator 编排器
 package orchestrator
 
 import (
+	"context"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -40,22 +42,42 @@ import (
 	// "terminus.io/dice/telemetry/promxp"
 )
 
+func (p *provider) serve(ctx context.Context) error {
+	logrus.Infof("serve the service and listen on address: \"%s\"", conf.ListenAddr())
+	logrus.Errorf("[alert] starting orchestrator instance")
+	var err error
+	done := make(chan struct{}, 1)
+
+	go func() {
+		err = p.server.ListenAndServe()
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
+	case <-done:
+	}
+
+	_ = p.db.Close()
+	return err
+}
+
 // Initialize 初始化应用启动服务.
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	// init db
-	db, err := dbclient.Open()
-	defer db.Close()
+	var err error
+	p.db, err = dbclient.Open()
 	if err != nil {
 		return err
 	}
 
 	// init endpoints
-	ep, err := initEndpoints(db)
+	ep, err := initEndpoints(p.db)
 	if err != nil {
 		return err
 	}
@@ -65,15 +87,16 @@ func Initialize() error {
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("orchestrator"))
 	server.RegisterEndpoint(ep.Routes())
+	p.server = server
 
-	if err := initCron(ep); err != nil {
-		return err
-	}
+	// Limit only one instance of scheduler to do the cron jobs
+	p.Election.OnLeader(func(ctx context.Context) {
+		logrus.Infof("i'm the leader now")
+		_ = initCron(ep, ctx)
+		logrus.Infof("i resign the leader now")
+	})
 
-	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
-	logrus.Errorf("[alert] starting orchestrator instance")
-
-	return server.ListenAndServe()
+	return nil
 }
 
 // 初始化 Endpoints
@@ -191,32 +214,32 @@ func initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, error) {
 }
 
 // 初始化定时任务
-func initCron(ep *endpoints.Endpoints) error {
+func initCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	// cron for pushOn deployment
-	go loop.New(loop.WithInterval(10 * time.Second)).Do(ep.PushOnDeploymentPolling)
-	go loop.New(loop.WithDeclineRatio(1.2), loop.WithInterval(50*time.Millisecond), loop.WithDeclineLimit(3*time.Second)).
-		Do(ep.PushOnDeployment)
-	go loop.New(loop.WithInterval(10 * time.Second)).Do(ep.PushOnDeletingRuntimesPolling)
-	go loop.New(loop.WithInterval(2 * time.Second)).Do(ep.PushOnDeletingRuntimes)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeploymentPolling)
+	go loop.New(loop.WithContext(ctx), loop.WithDeclineRatio(1.2), loop.WithInterval(50*time.Millisecond),
+		loop.WithDeclineLimit(3*time.Second)).Do(ep.PushOnDeployment)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeletingRuntimesPolling)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(2*time.Second)).Do(ep.PushOnDeletingRuntimes)
 
 	go ep.SyncAddons()
-	go loop.New(loop.WithInterval(10 * time.Minute)).Do(ep.SyncAddons)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddons)
 
-	//go loop.New(loop.WithInterval(10 * time.Minute)).Do(ep.RemoveAddons)
+	//go loop.New(loop.WithContext(ctx), loop.WithInterval(10 * time.Minute)).Do(ep.RemoveAddons)
 
 	go ep.SyncProjects()
-	go loop.New(loop.WithInterval(5 * time.Minute)).Do(ep.SyncProjects)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncProjects)
 
-	go loop.New(loop.WithInterval(10 * time.Minute)).Do(ep.SyncAddonReferenceNum)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddonReferenceNum)
 
 	go ep.CleanUnusedMigrationNs()
-	go loop.New(loop.WithInterval(24 * time.Hour)).Do(ep.CleanUnusedMigrationNs)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(24*time.Hour)).Do(ep.CleanUnusedMigrationNs)
 
 	go ep.SyncDeployAddon()
 
-	go loop.New(loop.WithInterval(5 * time.Minute)).Do(ep.SyncAddonResources)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncAddonResources)
 
-	ep.FullGCLoop()
+	ep.FullGCLoop(ctx)
 
 	return nil
 }

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apistructs
 
@@ -17,28 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
 	SteveErrorType = "error"
 )
-
-// SteveCollection is a resource collection returned from steve server.
-type SteveCollection struct {
-	Type         string            `json:"type,omitempty"`
-	Links        map[string]string `json:"links"`
-	CreateTypes  map[string]string `json:"createTypes,omitempty"`
-	Actions      map[string]string `json:"actions"`
-	ResourceType string            `json:"resourceType"`
-	Revision     string            `json:"revision"`
-	Pagination   *Pagination       `json:"pagination,omitempty"`
-	Continue     string            `json:"continue,omitempty"`
-	// steve resources
-	Data []SteveResource `json:"data"`
-}
 
 var (
 	BadRequest         = SteveErrorCode{"BadRequest", 400}
@@ -80,31 +65,6 @@ func (s SteveError) JSON() []byte {
 	return data
 }
 
-// SteveResource is a steve resource returned from steve server.
-type SteveResource struct {
-	K8SResource
-	ID    string            `json:"id,omitempty"`
-	Type  string            `json:"type,omitempty"`
-	Links map[string]string `json:"links"`
-}
-
-// K8SResource is a original k8s resource.
-type K8SResource struct {
-	metav1.TypeMeta
-	Metadata metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec     interface{}       `json:"spec,omitempty"`
-	Status   interface{}       `json:"status,omitempty"`
-	Extra    interface{}       `json:"extra,omitempty"`
-}
-
-// Pagination used to paging query.
-type Pagination struct {
-	Limit   int    `json:"limit,omitempty"`   // maximum number of each page
-	First   string `json:"first,omitempty"`   // first page link
-	Next    string `json:"next,omitempty"`    // next page link
-	Partial bool   `json:"partial,omitempty"` // whether partial
-}
-
 type K8SResType string
 
 const (
@@ -114,6 +74,9 @@ const (
 	K8SReplicaSet  K8SResType = "apps.replicasets"
 	K8SDaemonSet   K8SResType = "apps.daemonsets"
 	K8SStatefulSet K8SResType = "apps.statefulsets"
+	K8SJob         K8SResType = "batch.jobs"
+	K8SCronJob     K8SResType = "batch.cronjobs"
+	K8SNamespace   K8SResType = "namespace"
 	K8SEvent       K8SResType = "events"
 )
 
@@ -151,17 +114,4 @@ func (k *SteveRequest) URLQueryString() map[string][]string {
 		query["fieldSelector"] = []string{fields}
 	}
 	return query
-}
-
-func GetValue(obj interface{}, keys ...string) (interface{}, bool) {
-	data, _ := obj.(map[string]interface{})
-	for i, key := range keys {
-		if i == len(keys)-1 {
-			val, ok := data[key]
-			return val, ok
-		}
-		data, _ = data[key].(map[string]interface{})
-	}
-
-	return nil, false
 }

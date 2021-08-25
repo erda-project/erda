@@ -95,11 +95,13 @@ generate:
 	${GO_BUILD_ENV} go generate -v -x
 
 prepare:
+ifeq "$(SKIP_PREPARE)" ""
 	cd "${PROJ_PATH}" && \
 	${GO_BUILD_ENV} go generate ./apistructs && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
 	make prepare-cli
+endif
 
 submodule:
 	git submodule update --init
