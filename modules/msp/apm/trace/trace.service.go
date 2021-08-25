@@ -251,7 +251,7 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
 		queryParams["duration_min"] = structpb.NewNumberValue(float64(req.DurationMin))
 		queryParams["duration_max"] = structpb.NewNumberValue(float64(req.DurationMax))
-		where.WriteString("duration::field>$duration_min AND duration::field<$duration_max AND")
+		where.WriteString("duration::field>$duration_min AND duration::field<$duration_max AND ")
 	}
 
 	// trace status condition
