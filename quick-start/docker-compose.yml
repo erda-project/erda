@@ -585,12 +585,12 @@ services:
     image: erdaproject/mysql:5.7-quickstart
     container_name: erda-mysql
     ports:
-      - "3308:3306"
-#    volumes:
-#      - type: volume
-#        source: erda-mysql
-#        target: /var/lib/mysql
-#        read_only: false
+      - "3306:3306"
+    volumes:
+      - type: volume
+        source: erda-mysql
+        target: /var/lib/mysql
+        read_only: false
     environment:
       - MYSQL_ROOT_PASSWORD=123456
       - TZ=Asia/Shanghai
@@ -598,7 +598,7 @@ services:
     platform: linux/amd64
 
   erda-migration:
-    image: registry.erda.cloud/erda-actions/erda-mysql-migration-action:20210825-30dcd15
+    image: registry.erda.cloud/erda-actions/erda-mysql-migration-action:20210825-cf76511
     container_name: erda-migration
     depends_on:
       - mysql
