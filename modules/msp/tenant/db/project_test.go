@@ -1,10 +1,10 @@
 package db
 
 import (
-	"github.com/DATA-DOG/go-sqlmock"
 	"reflect"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jinzhu/gorm"
 )
 
