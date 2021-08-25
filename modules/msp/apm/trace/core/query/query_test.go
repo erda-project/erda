@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 )
 
@@ -83,12 +84,16 @@ func Test_clone(t *testing.T) {
 		wantErr bool
 	}{
 		{"case1", args{src: &TraceQueryConditions}, &TraceQueryConditions, false},
+		{"case2", args{src: nil}, &TraceQueryConditions, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := clone(tt.args.src)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("clone() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -98,6 +103,29 @@ func Test_clone(t *testing.T) {
 			wantPoint := getMemoryPoint(tt.want)
 			if gotPoint == wantPoint {
 				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPoint, wantPoint)
+			}
+		})
+	}
+}
+
+func TestTranslateCondition(t *testing.T) {
+	type args struct {
+		i18n i18n.Translator
+		lang i18n.LanguageCodes
+		key  string
+	}
+	i18n := new(i18n.Translator)
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"case1", args{i18n: *i18n, lang: nil, key: "test"}, "test"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := TranslateCondition(tt.args.i18n, tt.args.lang, tt.args.key); got != tt.want {
+				t.Errorf("TranslateCondition() = %v, want %v", got, tt.want)
 			}
 		})
 	}
