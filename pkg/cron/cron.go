@@ -344,6 +344,10 @@ func (c *Cron) run() {
 			// and stop requests.
 			timer = time.NewTimer(100000 * time.Hour)
 		} else {
+			// if not reset time, the next corn execution time is incorrect when another cron is removed
+			// eg: one cron execute every hour (0 0 * * * ?), and remove another cron at 2:30,
+			// and now is 2:00, because the now isn't reset.
+			// now the first cron execution time will become 1:00 2:00 3:30 4:00 ..., not 1:00 2:00 3:00 4:00
 			now = c.now()
 			timer = time.NewTimer(c.entries[0].Next.Sub(now))
 		}
