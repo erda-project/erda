@@ -30,8 +30,8 @@ EXTENSION_ZIP_ADDRS=$3
 cd $(git rev-parse --show-toplevel)
 
 # image version and url
-VERSION="$(head -n 1 VERSION)"
-VERSION="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
+VERSION="$(build/scripts/make-version.sh)"
+IMAGE_TAG="$(build/scripts/make-version.sh tag)"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
@@ -49,7 +49,7 @@ setup_single_module_env() {
     elif [ -d "build/dockerfiles/${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
-    DOCKER_IMAGE=${APP_NAME}:${VERSION}
+    DOCKER_IMAGE=${APP_NAME}:${IMAGE_TAG}
     
     # config file or directory path
     if [ -f "conf/${APP_NAME}.yaml" ];then
@@ -72,7 +72,7 @@ setup_single_module_env() {
 # setup envionment variables for build all
 setup_build_all_env() {
     MAKE_BUILD_CMD="build-all"
-    DOCKER_IMAGE="erda:${VERSION}"
+    DOCKER_IMAGE="erda:${IMAGE_TAG}"
     CONFIG_PATH=""
     MODULE_PATH=""
 }
@@ -151,7 +151,7 @@ build_push_image() {
     build_image
     push_image
     echo "action meta: image=${DOCKER_IMAGE}"
-    echo "action meta: tag=${VERSION}"
+    echo "action meta: tag=${IMAGE_TAG}"
 }
 
 case "${ACTION}" in

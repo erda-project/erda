@@ -15,7 +15,7 @@
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
-VERSION := $(shell head -n 1 VERSION)
+VERSION ?= $(shell build/scripts/make-version.sh)
 # build info
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
@@ -46,7 +46,7 @@ build-all: build-version submodule tidy
 		HAS_GO_FILE=$$(eval echo $$(bash -c "find "$${path}" -maxdepth 1 -name *.go 2>/dev/null" | wc -l)); \
 		if [ $${HAS_GO_FILE} -gt 0 ]; then \
 			MODULE_PATH=$${path#cmd/}; \
-			echo "gona to build module: $$MODULE_PATH"; \
+			echo "gonna build module: $$MODULE_PATH"; \
 			MODULE_PATHS="$${MODULE_PATHS} $${path}"; \
 		fi; \
 	done; \
