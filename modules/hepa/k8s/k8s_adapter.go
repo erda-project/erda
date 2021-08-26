@@ -20,7 +20,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
-	"time"
 	"unsafe"
 
 	"github.com/pkg/errors"
@@ -373,29 +372,14 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 			return false, err
 		}
 		log.Debugf("begin create ingress, name:%s, ns:%s", ingressName, namespace)
-		if !routeOptions.InjectRuntimeDomain {
-			_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
-			if err != nil {
-				return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
-					ingressName, namespace, err)
-			}
-			log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
-			return false, nil
-		} else {
-			//TODO optimize kong sync
-			go func() {
-				log.Infof("start async create ingress, name:%s, ns:%s", ingressName, namespace)
-				time.Sleep(time.Duration(60) * time.Second)
-				_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
-				if err != nil {
-					log.Errorf("create ingress %s failed, ns:%s, err:%s",
-						ingressName, namespace, err)
-					return
-				}
-				log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
-			}()
-			return false, nil
+
+		_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
+		if err != nil {
+			return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
+				ingressName, namespace, err)
 		}
+		log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
+		return false, nil
 	}
 	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
 	if err != nil {
@@ -521,8 +505,7 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
-		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
-		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
+		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
 	for key, value := range annotaion {
 		if value == nil {
