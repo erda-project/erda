@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -55,8 +56,6 @@ var Render = apis.ApiSpec{
 }
 
 func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
-	fmt.Println(cptype.CPConfigs)
-
 	// get scenario from query params
 	scenario := r.URL.Query().Get("scenario")
 
@@ -84,28 +83,28 @@ func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
 		proxyConfig.Addr = addr
 	}
 	proxy := httputil.ReverseProxy{
-		Director:       newDirector(*proxyConfig),
+		Director:       newProxyDirector(*proxyConfig),
 		FlushInterval:  -1,
-		ModifyResponse: modifyResponse,
+		ModifyResponse: modifyProxyResponse,
 	}
 	proxy.ServeHTTP(rw, r)
 	return
 }
 
-func newDirector(proxyConfig cptype.ProxyConfig) func(*http.Request) {
+func newProxyDirector(proxyConfig cptype.ProxyConfig) func(*http.Request) {
 	return func(r *http.Request) {
-		r.URL.Scheme = "http"
+		schema := "http"
+		if strings.HasPrefix(schema, "https://") {
+			schema = "https"
+		}
+		proxyConfig.Addr = strings.TrimPrefix(proxyConfig.Addr, schema + "://")
+		r.URL.Scheme = schema
 		r.Host = proxyConfig.Addr
 		r.URL.Host = proxyConfig.Addr
+		path := r.URL.EscapedPath()
+		path = strutil.Concat("/", strutil.TrimPrefixes(path, "/"))
+		r.Header.Set("Origin-Path", path)
 	}
-}
-
-func modifyResponse(resp *http.Response) error {
-	if err := posthandle.InjectUserInfo(resp, true); err != nil {
-		logrus.Errorf("failed to inject userinfo when modify proxied response of component-protocol: %v", err)
-		return err
-	}
-	return nil
 }
 
 func legacyProtocolRender(w http.ResponseWriter, r *http.Request) {
