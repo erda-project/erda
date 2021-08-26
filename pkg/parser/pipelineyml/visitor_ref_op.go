@@ -29,7 +29,7 @@ import (
 const (
 	RefOpOutput = "OUTPUT"
 
-	RefOpExQuote = "quote"
+	RefOpExEscape = "escape"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -121,6 +121,7 @@ func (v *RefOpVisitor) Visit(s *Spec) {
 
 // handleOneParamOrCmd handle one param or cmd, return handled result and error.
 // one param or cmd will have zero or multi refOp.
+// TODO make ${{ (escape outputs.alias.xx) }} instead of ${{ outputs.alias.xx.escape }}
 func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 	replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, ori, func(sub []string) string {
 		// inner has two formats:
@@ -166,8 +167,8 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			typeValue := ss[1]
 			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
-		case expression.Base64:
-			// - base64.xxxxx
+		case expression.Base64Decode:
+			// - base64-decode.xxxxx
 			baseValue := ss[1]
 			decodeBytes, err := base64.StdEncoding.DecodeString(baseValue)
 			if err != nil {
@@ -389,7 +390,7 @@ func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias 
 
 func (v *RefOpVisitor) handleRefEx(output string, refOp RefOp) string {
 	switch refOp.Ex {
-	case RefOpExQuote:
+	case RefOpExEscape:
 		return expression.Quote(output)
 	default:
 		// do nothing

@@ -35,13 +35,13 @@ var Re = pexpr.PhRe
 var OldRe = regexp.MustCompile(`\${([^{}]+)}`)
 
 const (
-	Dirs    = "dirs"
-	Outputs = "outputs"
-	Random  = "random"
-	Params  = "params"
-	Globals = "globals"
-	Configs = "configs"
-	Base64  = "base64"
+	Dirs         = "dirs"
+	Outputs      = "outputs"
+	Random       = "random"
+	Params       = "params"
+	Globals      = "globals"
+	Configs      = "configs"
+	Base64Decode = "base64-decode"
 )
 
 const (

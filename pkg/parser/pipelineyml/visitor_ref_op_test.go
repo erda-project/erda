@@ -64,7 +64,7 @@ func TestAllRef(t *testing.T) {
 }
 
 func TestRefOpVisitor(t *testing.T) {
-	// test ${{ outputs.8230.aa.quote }}
+	// test ${{ outputs.8230.aa.escape }}
 
 	yml := `version: "1.1"
 stages:
@@ -109,7 +109,7 @@ stages:
             body:
               content: |-
                 {
-                  "pipelineYmlContent": ${{ outputs.8231.aa.quote }}
+                  "pipelineYmlContent": ${{ outputs.8231.aa.escape }}
                 }
               type: application/json
             headers:
@@ -176,7 +176,7 @@ func TestHandleOneRefOpOutput(t *testing.T) {
 	ref := RefOp{
 		Ref: "8231",
 		Key: "aa",
-		Ex:  "quote",
+		Ex:  "escape",
 	}
 	replaced := v.handleOneRefOpOutput(ref)
 	assert.Equal(t, 0, len(v.result.Errs))
