@@ -113,13 +113,13 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 		},
 		Group: "params",
 	}
-	waitingResultField := apistructs.FormPropItem{
-		Label:        "等待执行结果",
+	isContinueExecutionField := apistructs.FormPropItem{
+		Label:        "失败后是否继续执行",
 		Component:    "input",
 		Required:     false,
-		Key:          "params.waiting_result",
+		Key:          "params.is_continue_execution",
 		Group:        "params",
-		DefaultValue: false,
+		DefaultValue: true,
 	}
 	var newField []apistructs.FormPropItem
 	for _, val := range field {
@@ -128,8 +128,7 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 			newField = append(newField, taskParams)
 			newField = append(newField, testPlanField)
 			newField = append(newField, globalConfigField)
-			newField = append(newField, waitingResultField)
-
+			newField = append(newField, isContinueExecutionField)
 		}
 	}
 	return newField
