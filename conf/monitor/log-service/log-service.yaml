@@ -1,7 +1,7 @@
 http-server:
     addr: ":7099"
 health:
-pprof:
+    path: "/api/health"
 
 kafka:
     servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
@@ -91,3 +91,7 @@ logs-metrics-analysis:
             url: "${COLLECTOR_PUBLIC_URL:http://collector.default.svc.cluster.local:7076}"
             username: "${COLLECTOR_AUTH_USERNAME}"
             password: "${COLLECTOR_AUTH_PASSWORD}"
+
+http-server@admin:
+    addr: ":7098"
+pprof:
