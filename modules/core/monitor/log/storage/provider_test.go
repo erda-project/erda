@@ -21,6 +21,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/gocql/gocql"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/kafka"
 )
@@ -125,16 +125,20 @@ func (m *mockMysql) DB() *gorm.DB {
 type mockCassandraInf struct {
 }
 
+func (m *mockCassandraInf) NewSession(cfg *cassandra.SessionConfig) (*cassandra.Session, error) {
+	return nil, nil
+}
+
+func (m *mockCassandraInf) NewBatchWriter(session *cassandra.Session, c *cassandra.WriterConfig, builderCreator func() cassandra.StatementBuilder) writer.Writer {
+	return nil
+}
+
 func (m *mockCassandraInf) CreateKeyspaces(ksc ...*cassandra.KeyspaceConfig) error {
 	return nil
 }
 
 func (m *mockCassandraInf) Session(cfg *cassandra.SessionConfig) (*gocql.Session, error) {
 	return nil, nil
-}
-
-func (m *mockCassandraInf) NewBatchWriter(session *gocql.Session, c *cassandra.WriterConfig, builderCreator func() cassandra.StatementBuilder) writer.Writer {
-	return &mockWriter{}
 }
 
 func mockProvider() *provider {
