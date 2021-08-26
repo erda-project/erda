@@ -104,11 +104,10 @@ func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apis
 		return svc.listBranches(req.OrgID, appID, req.Identity.UserID)
 
 	case req.QueryParams.Pinode == "0":
-		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope 错误, 本目录树仅支持应用层级, scope: %s", req.QueryParams.Scope))
+		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope error, there is no preject-level file tree, scope: %s", req.QueryParams.Scope))
 	}
 
-	// 对于 pinode != 0 的情况, 列出应用下的 "服务"
-	// ps: 目前没有项目级的目录树, 所以不必讨论节点的层级, 直接查叶子节点即可; 以后有项目级目录树后, 需要讨论节点层级
+	// pinode != 0, query docs or schemas
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
 		return svc.listAPIDocs(req.OrgID, req.Identity.UserID, req.QueryParams.Pinode)
