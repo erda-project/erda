@@ -292,3 +292,14 @@ type ListMembersWithoutExtraByScopeResponse struct {
 	Header
 	Data int `json:"data"`
 }
+
+type GetMemberByUserAndScopeRequest struct {
+	ScopeType ScopeType `json:"scopeType"`
+	ScopeID   int64     `json:"scopeID"`
+	UserID    string    `json:"userID"`
+}
+
+type GetMemberByUserAndScopeResponse struct {
+	Header
+	Data []Member `json:"data"`
+}
