@@ -3,10 +3,8 @@ openapi:
     scenario-proxy-binds:
       - app: dop
         scenarios:
-          - issueManage
+          - issue-manage
       - addr: http://localhost:8080
         scenarios:
           - demo
-      - app: local
-        scenarios:
           - yetAnotherDemo

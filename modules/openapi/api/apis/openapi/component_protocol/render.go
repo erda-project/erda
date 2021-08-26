@@ -86,6 +86,7 @@ func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
 		Director:       newProxyDirector(*proxyConfig),
 		FlushInterval:  -1,
 		ModifyResponse: modifyProxyResponse,
+		ErrorHandler:   errorHandler,
 	}
 	proxy.ServeHTTP(rw, r)
 	return
@@ -97,7 +98,7 @@ func newProxyDirector(proxyConfig cptype.ProxyConfig) func(*http.Request) {
 		if strings.HasPrefix(schema, "https://") {
 			schema = "https"
 		}
-		proxyConfig.Addr = strings.TrimPrefix(proxyConfig.Addr, schema + "://")
+		proxyConfig.Addr = strings.TrimPrefix(proxyConfig.Addr, schema+"://")
 		r.URL.Scheme = schema
 		r.Host = proxyConfig.Addr
 		r.URL.Host = proxyConfig.Addr
