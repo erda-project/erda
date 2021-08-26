@@ -318,6 +318,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			return err
 		}
 		cond.PageSize = 10
+		if _, ok := c.State["pageNo"]; ok {
+			cond.PageNo = uint64(c.State["pageNo"].(float64))
+		}
+		if _, ok := c.State["pageSize"]; ok {
+			cond.PageSize = uint64(c.State["pageSize"].(float64))
+		}
 	} else {
 		issuetype := sdk.InParams["fixedIssueType"].(string)
 		switch issuetype {
