@@ -23,6 +23,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/health"
 	_ "github.com/erda-project/erda-infra/providers/kafka"
 	_ "github.com/erda-project/erda-infra/providers/pprof"
+
 	// providers
 	_ "github.com/erda-project/erda/modules/core/monitor/collector"
 	// grpc

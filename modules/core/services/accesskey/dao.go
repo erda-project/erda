@@ -20,8 +20,17 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/secret"
 )
+
+type Dao interface {
+	QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, error)
+	CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysRequest) (*AccessKey, error)
+	GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*AccessKey, error)
+	UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysRequest) error
+	DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeysRequest) error
+}
 
 type dao struct {
 	db *gorm.DB
@@ -59,6 +68,36 @@ func (d *dao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysReque
 		return nil, q.Error
 	}
 	return &obj, nil
+}
+
+func (d *dao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*AccessKey, error) {
+	var obj AccessKey
+	q := d.db.Where(&AccessKey{ID: req.Id}).Find(&obj)
+	if q.RecordNotFound() {
+		return nil, errors.NewNotFoundError("access-key")
+	}
+	if q.Error != nil {
+		return nil, q.Error
+	}
+	return &obj, nil
+}
+
+func (d *dao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysRequest) error {
+	q := d.db.Model(&AccessKey{}).Where(&AccessKey{ID: req.Id})
+	updated := AccessKey{}
+	if req.Status.String() != "" {
+		updated.Status = req.Status
+	}
+	if req.Description != "" {
+		updated.Description = req.Description
+	}
+	q = q.Update(updated)
+	return q.Error
+}
+
+func (d *dao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeysRequest) error {
+	q := d.db.Model(&AccessKey{}).Where(&AccessKey{ID: req.Id}).Update(&AccessKey{Status: pb.StatusEnum_DELETED})
+	return q.Error
 }
 
 func toModel(req *pb.CreateAccessKeysRequest) AccessKey {

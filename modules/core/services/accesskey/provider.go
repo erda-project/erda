@@ -34,7 +34,7 @@ type provider struct {
 	Log              logs.Logger
 	Register         transport.Register
 	accessKeyService *accessKeyService
-	dao              *dao
+	dao              Dao
 	Perm             perm.Interface `autowired:"permission"`
 	DB               *gorm.DB       `autowired:"mysql-client"`
 }

@@ -447,11 +447,11 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
-github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec h1:iaRopzlUJ+Yk7cih2W+o+ueHw0WnAQYoYj1CfWS4m7Q=
-github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
-github.com/erda-project/erda-infra v0.0.0-20210706133120-0a742437972c/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
+github.com/erda-project/erda-infra v0.0.0-20210824080310-eb60ec8285b0/go.mod h1:YpMIFoipL7XardYV3C58qx9fm74JM5QK/E3kd/t1CJU=
 github.com/erda-project/erda-infra v0.0.0-20210825095053-85c5451901ed h1:JTCRL09cq/nQVX/448o2U05hOvH7nsLoYuu2OLWS168=
 github.com/erda-project/erda-infra v0.0.0-20210825095053-85c5451901ed/go.mod h1:zj3Pqi6Ekn0fBHtFJV9cMMSxbQXX46IT8NQsncJn6zQ=
+github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec h1:iaRopzlUJ+Yk7cih2W+o+ueHw0WnAQYoYj1CfWS4m7Q=
+github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=

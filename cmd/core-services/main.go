@@ -23,6 +23,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
 	_ "github.com/erda-project/erda/modules/core/services/accesskey"
+
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"
 	_ "github.com/erda-project/erda-infra/providers/httpserver"
