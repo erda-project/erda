@@ -138,7 +138,7 @@ func (e *Endpoints) UpdateProject(ctx context.Context, r *http.Request, vars map
 			Action:   apistructs.UpdateAction,
 		}
 		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			return apierrors.ErrUpdateProject.AccessDenied().ToResp(), nil
+			return apierrors.ErrUpdateProject.AccessDenied().AppendAuthorizedRoles([]string{e.GetLocale(r).Get("ProjectOwnerRole")}).ToResp(), nil
 		}
 	}
 
