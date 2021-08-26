@@ -48,7 +48,7 @@ func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
 	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
 	nodeFormatter := fm.NewNodeFormatter(ctx, k8sInterface)
 	return []schema.Template{
-		DefaultTemplate(cf, asl),
+		DefaultTemplate(ctx, cf, asl),
 		apigroups.Template(discovery),
 		{
 			ID:        "configmap",
@@ -69,9 +69,9 @@ func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
+func DefaultTemplate(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(clientGetter, asl),
+		Store:     cmpproxy.NewProxyStore(ctx, clientGetter, asl),
 		Formatter: formatter(),
 	}
 }
