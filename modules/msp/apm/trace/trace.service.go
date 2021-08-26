@@ -75,7 +75,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		req.Limit = 1000
 	}
 	iter := s.p.cassandraSession.Session().Query("SELECT * FROM spans WHERE trace_id = ? limit ?", req.TraceID, req.Limit).Iter()
-	spanTree := make(SpanTree)
+	spanTree := make(query.SpanTree)
 	for {
 		row := make(map[string]interface{})
 		if !iter.MapScan(row) {

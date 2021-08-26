@@ -42,11 +42,16 @@ func Test_provider_Init(t *testing.T) {
 }
 
 type mockContext struct {
+	context.Context
 	l logs.Logger
 }
 
+func (m *mockContext) Label() string {
+	return ""
+}
+
 func (m *mockContext) AddTask(task func(context.Context) error, options ...servicehub.TaskOption) {
-	panic("implement me")
+	return
 }
 
 func (m *mockContext) Hub() *servicehub.Hub {
