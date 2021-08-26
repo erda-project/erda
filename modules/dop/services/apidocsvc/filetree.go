@@ -90,9 +90,11 @@ func (svc *Service) CopyNode(req *apistructs.APIDocMvCpNodeReq) (*apistructs.Fil
 	}
 }
 
-// 获取子节点列表
+// ListChildren lists all children nodes
+// if the parent node is 0, it lists all branches,
+// else if the TreeName is "api-docs", lists all api docs,  if the TreeName is "schemas", lists schemas.
 func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	// 对于 pinode == 0 的情况, 直接列出应用下的分支, 不用管要查找的是 API 文档还是 schema
+	// if pinode==0, list all branches
 	switch {
 	case req.QueryParams.Pinode == "0" && req.QueryParams.Scope == "application":
 		appID, err := strconv.ParseUint(req.QueryParams.ScopeID, 10, 64)

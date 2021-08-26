@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -286,7 +285,7 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	return data, nil
 }
 
-// 查询应用下所有的分支, 构成节点列表
+// listBranches lists all branches as nodes
 func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	appIDStr := strconv.FormatUint(appID, 10)
 
@@ -308,27 +307,12 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	var (
 		results      []*apistructs.FileTreeNodeRspData
 		isManager, _ = bdl.IsManager(userID, apistructs.AppScope, appID)
-		m            = sync.Map{}
-		w            = sync.WaitGroup{}
 	)
 
 	for _, branch := range branches {
-		branch := branch
-		w.Add(1)
-		go func() {
-			branchInode := ft.Clone().SetBranchName(branch.Name).Inode()
-			hasAPIDoc := branchHasAPIDoc(orgID, branchInode)
-			m.Store(branch, hasAPIDoc)
-			w.Done()
-		}()
-	}
-	w.Wait()
-
-	m.Range(func(key, value interface{}) bool {
-		branch := key.(*apistructs.ValidBranch)
 		readOnly := !isManager && branch.IsProtect
-		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly, "hasDoc": value.(bool)})
-		results = append(results, &apistructs.FileTreeNodeRspData{
+		meta, _:=json.Marshal(map[string]bool{"readOnly": readOnly})
+		data := &apistructs.FileTreeNodeRspData{
 			Type:      "d",
 			Inode:     ft.Clone().SetBranchName(branch.Name).Inode(),
 			Pinode:    ft.Inode(),
@@ -338,10 +322,9 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 			CreatorID: "",
 			UpdaterID: "",
 			Meta:      meta,
-		})
-
-		return true
-	})
+		}
+		results = append(results, data)
+	}
 
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Name < results[j].Name
