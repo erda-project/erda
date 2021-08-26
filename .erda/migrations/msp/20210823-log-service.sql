@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS sp_log_service_instance
 
 INSERT INTO tb_tmc_ini (ini_name, ini_desc, ini_value, create_time, update_time, is_deleted)
 VALUES ('MK_log-service', '', 'LogAnalyze', DEFAULT, DEFAULT, DEFAULT);
+
+INSERT INTO tb_tmc (name, engine, service_type, deploy_mode, create_time, update_time, is_deleted)
+VALUES ('日志服务', 'log-service', 'ADDON', 'SAAS', DEFAULT, DEFAULT, DEFAULT);
+
+INSERT INTO erda.tb_tmc_version (engine, version, release_id, create_time, update_time, is_deleted)
+VALUES ('log-service', '1.0.0', null, DEFAULT, DEFAULT, DEFAULT);

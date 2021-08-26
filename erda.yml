@@ -685,12 +685,12 @@ services:
       replicas: ${replicas:1}
       labels:
         GROUP: "spot-v2"
-      health_check:
-        http:
-          port: 7099
-          path: "/api/health"
-          duration: 120
-        exec: { }
+    health_check:
+      http:
+        port: 7099
+        path: "/api/health"
+        duration: 120
+      exec: { }
   uc-adaptor:
     cmd: "/app/uc-adaptor"
     ports:

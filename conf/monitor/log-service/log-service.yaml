@@ -39,7 +39,7 @@ logs-exporter-elasticsearch:
             timeout: "30s"
 
 logs-index-manager:
-    index_prefix: "${INDEX_PREFIX:rlogs-}"d
+    index_prefix: "${INDEX_PREFIX:rlogs-}"
     index_template_name: "rlogs-rollover"
     index_template_file: "${INDEX_CONFIG_PATH:conf/monitor/extensions/loghub/output}/elasticsearch.index.template.json"
     request_timeout: "${ES_REQUEST_TIMEOUT:2m}"
