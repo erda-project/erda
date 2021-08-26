@@ -134,3 +134,50 @@ func TestK8SAdapterImpl_DeleteIngress(t *testing.T) {
 		})
 	}
 }
+
+func TestK8SAdapterImpl_CreateOrUpdateIngress(t *testing.T) {
+	type fields struct {
+		client          *kubernetes.Clientset
+		ingressesHelper union_interface.IngressesHelper
+		pool            *util.GPool
+	}
+	type args struct {
+		namespace string
+		name      string
+		routes    []IngressRoute
+		backend   IngressBackend
+		options   []RouteOptions
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			"case1",
+			fields{nil, ingressHelper{}, nil},
+			args{"test", "testNotFound", nil, IngressBackend{}, nil},
+			false,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			impl := &K8SAdapterImpl{
+				client:          tt.fields.client,
+				ingressesHelper: tt.fields.ingressesHelper,
+				pool:            tt.fields.pool,
+			}
+			got, err := impl.CreateOrUpdateIngress(tt.args.namespace, tt.args.name, tt.args.routes, tt.args.backend, tt.args.options...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("K8SAdapterImpl.CreateOrUpdateIngress() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("K8SAdapterImpl.CreateOrUpdateIngress() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
