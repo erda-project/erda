@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -70,52 +71,43 @@ func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *p
 }
 
 func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSystemViewsRequest) (*pb.ListSystemViewsResponse, error) {
-	list, err := s.sys.ListByFields(map[string]interface{}{
-		"Scope":   req.Scope,
-		"ScopeID": req.ScopeID,
-	})
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+	views := monitor.GetSystemChartview()
+
+	vlist := &pb.ViewList{}
+	var vs []*pb.View
+	for _, v := range views {
+		m := *v
+		if m["scope"] == req.Scope || m["scopeId"] == req.ScopeID {
+			marshal, err := json.Marshal(m)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			view := pb.View{}
+			err = json.Unmarshal(marshal, &view)
+			vs = append(vs, &view)
+		}
 	}
-	views := &pb.ViewList{}
-	for _, item := range list {
-		view := s.parseViewBlocks(&pb.View{
-			Id:        item.ID,
-			Scope:     item.Scope,
-			ScopeID:   item.ScopeID,
-			Version:   item.Version,
-			Name:      item.Name,
-			Desc:      item.Desc,
-			CreatedAt: item.CreatedAt.UnixNano() / int64(time.Millisecond),
-			UpdatedAt: item.UpdatedAt.UnixNano() / int64(time.Millisecond),
-		}, item.ViewConfig, item.DataConfig)
-		views.List = append(views.List, view)
-	}
-	views.Total = int64(len(views.List))
-	return &pb.ListSystemViewsResponse{Data: views}, nil
+	vlist.List = vs
+	vlist.Total = int64(len(vs))
+	return &pb.ListSystemViewsResponse{Data: vlist}, nil
 }
 
 func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemViewRequest) (*pb.GetSystemViewResponse, error) {
-	data, err := s.sys.GetByFields(map[string]interface{}{
-		"ID": req.Id,
-	})
+	views := monitor.GetSystemChartview()
+	chartView := views[req.Id]
+	if chartView == nil {
+		return nil, errors.NewNotFoundError(req.Id)
+	}
+	marshal, err := json.Marshal(chartView)
 	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+		return nil, errors.NewInternalServerError(err)
 	}
-	if data == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("view/%s", req.Id))
+	view := pb.View{}
+	err = json.Unmarshal(marshal, &view)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
-	view := s.parseViewBlocks(&pb.View{
-		Id:        data.ID,
-		Scope:     data.Scope,
-		ScopeID:   data.ScopeID,
-		Version:   data.Version,
-		Name:      data.Name,
-		Desc:      data.Desc,
-		CreatedAt: data.CreatedAt.UnixNano() / int64(time.Millisecond),
-		UpdatedAt: data.UpdatedAt.UnixNano() / int64(time.Millisecond),
-	}, data.ViewConfig, data.DataConfig)
-	return &pb.GetSystemViewResponse{Data: view}, nil
+	return &pb.GetSystemViewResponse{Data: &view}, nil
 }
 
 func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {
