@@ -21,10 +21,11 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bluele/gcache"
-	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/gocql/gocql"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
+
+	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
