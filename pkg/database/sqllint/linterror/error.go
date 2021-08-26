@@ -68,15 +68,13 @@ func (e LintError) StmtName() string {
 	if err != nil {
 		return ""
 	}
-	switch node.(type) {
+	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		n := node.(*ast.CreateTableStmt)
 		if n.Table == nil {
 			return ""
 		}
 		return n.Table.Name.String()
 	case *ast.AlterTableStmt:
-		n := node.(*ast.AlterTableStmt)
 		if n.Table == nil {
 			return ""
 		}

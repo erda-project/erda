@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pygrator_test
+package db
 
 import (
-	"os"
-	"testing"
-
-	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jinzhu/gorm"
 )
 
-var (
-	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename, CollectorFilename: "collector.py.sql"}
+const (
+	MYSQL = "mysql"
 )
 
-func TestGenEntrypoint(t *testing.T) {
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
-		t.Fatal(err)
+func MockInit(dialect string) (*gorm.DB, sqlmock.Sqlmock, error) {
+	db, mock, err := sqlmock.New()
+	if nil != err {
+		return nil, nil, nil
 	}
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
-		t.Fatal(err)
-	}
+	mysqldb, err := gorm.Open(dialect, db)
+	return mysqldb, mock, err
 }

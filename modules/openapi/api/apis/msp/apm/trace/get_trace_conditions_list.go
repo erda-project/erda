@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pygrator_test
+package trace
 
-import (
-	"os"
-	"testing"
+import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
-)
-
-var (
-	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename, CollectorFilename: "collector.py.sql"}
-)
-
-func TestGenEntrypoint(t *testing.T) {
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
-		t.Fatal(err)
-	}
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
-		t.Fatal(err)
-	}
+var GET_TRACE_CONDITIONS_LIST = apis.ApiSpec{
+	Path:        "/api/msp/apm/trace/conditions",
+	BackendPath: "/api/msp/apm/trace/conditions",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
+	Scheme:      "http",
+	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	Doc:         "Query apm traces Conditions.",
 }

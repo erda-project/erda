@@ -12,24 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pygrator_test
+package common
 
-import (
-	"os"
-	"testing"
+const Layout = "2006-01-02 15:04:05"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
-)
-
-var (
-	entrypoint = pygrator.Entrypoint{DeveloperScriptFilename: pythonFilename, CollectorFilename: "collector.py.sql"}
-)
-
-func TestGenEntrypoint(t *testing.T) {
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, true); err != nil {
-		t.Fatal(err)
-	}
-	if err := pygrator.GenEntrypoint(os.Stdout, entrypoint, false); err != nil {
-		t.Fatal(err)
-	}
-}
+type Void struct{}
