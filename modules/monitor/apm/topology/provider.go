@@ -17,7 +17,6 @@ package topology
 import (
 	"fmt"
 
-	"github.com/gocql/gocql"
 	"github.com/olivere/elastic"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -40,7 +39,7 @@ type provider struct {
 	ctx              servicehub.Context
 	metricq          metricq.Queryer
 	t                i18n.Translator
-	cassandraSession *gocql.Session
+	cassandraSession *cassandra.Session
 }
 
 type define struct{}
@@ -79,7 +78,7 @@ func (topology *provider) Init(ctx servicehub.Context) (err error) {
 	topology.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 
 	c := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := c.Session(&topology.Cfg.Cassandra)
+	session, err := c.NewSession(&topology.Cfg.Cassandra)
 	topology.cassandraSession = session
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)

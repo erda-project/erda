@@ -27,7 +27,7 @@ import (
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
-func (p *provider) initCassandra(session *gocql.Session) error {
+func (p *provider) initCassandra(session *cassandra.Session) error {
 	for _, stmt := range []string{
 		fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS spans (
@@ -49,7 +49,7 @@ func (p *provider) initCassandra(session *gocql.Session) error {
 		`, p.Cfg.Output.Cassandra.GCGraceSeconds),
 		fmt.Sprintf("ALTER TABLE spans WITH gc_grace_seconds = %d;", p.Cfg.Output.Cassandra.GCGraceSeconds),
 	} {
-		q := session.Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
+		q := session.Session().Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
 		err := q.Exec()
 		q.Release()
 		if err != nil {

@@ -70,6 +70,8 @@ log-store:
           replication:
             class: ${CASSANDRA_KEYSPACE_REPLICATION_CLASS:SimpleStrategy}
             factor: ${CASSANDRA_KEYSPACE_REPLICATION_FACTOR:2}
+        reconnection:
+          check_interval: ${LOG_STORE_CASSANDRA_RECONNECTION_CHECK_INTERVAL:3m}
       default_ttl: "${LOG_TTL:168h}"
       gc_grace_seconds: 86400
 

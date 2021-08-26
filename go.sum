@@ -448,8 +448,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v0.0.0-20210706133120-0a742437972c/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
-github.com/erda-project/erda-infra v0.0.0-20210817063509-a477b158393d h1:1y55yg46RQa0mVg4Rn41gKo/89e1XMzU9jMUs71fTOo=
-github.com/erda-project/erda-infra v0.0.0-20210817063509-a477b158393d/go.mod h1:YpMIFoipL7XardYV3C58qx9fm74JM5QK/E3kd/t1CJU=
+github.com/erda-project/erda-infra v0.0.0-20210825095053-85c5451901ed h1:JTCRL09cq/nQVX/448o2U05hOvH7nsLoYuu2OLWS168=
+github.com/erda-project/erda-infra v0.0.0-20210825095053-85c5451901ed/go.mod h1:zj3Pqi6Ekn0fBHtFJV9cMMSxbQXX46IT8NQsncJn6zQ=
 github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e h1:iRg9u84sDRggQyhMo3mwy2OqFh4AioPHd7OivgccBLE=
 github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
@@ -1485,8 +1485,8 @@ github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852 h1:HMvBxqM0edSR
 github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852/go.mod h1:zSV5oh3+YZboilwcJmFHO3J6FZba82BTQft1b6ijx2I=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/recallsong/go-utils v1.1.1/go.mod h1:NARLokMUOzyJ55oYXvPcxQh3rBoTBAbolNfqou6AqdY=
-github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750 h1:0EDNOOStJuUO4tEpHl4XdSV/tcYWaPSkeW1boEP6c+0=
-github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750/go.mod h1:NARLokMUOzyJ55oYXvPcxQh3rBoTBAbolNfqou6AqdY=
+github.com/recallsong/go-utils v1.1.2-0.20210825061755-9df21f10489e h1:hoCgZvzt/h3XCxc+j9Q69ngG4RSf9hPQUlQLX+iUWqc=
+github.com/recallsong/go-utils v1.1.2-0.20210825061755-9df21f10489e/go.mod h1:NARLokMUOzyJ55oYXvPcxQh3rBoTBAbolNfqou6AqdY=
 github.com/recallsong/unmarshal v1.0.0 h1:y18hJihfxJ6vIkXAYROKPh9i3xKmZHH9wTiRvshY9bQ=
 github.com/recallsong/unmarshal v1.0.0/go.mod h1:NnPiL4s7z9XV1aBS5LJaXo3V7r1l/ZH3wWOzCkKqyWo=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=

@@ -17,7 +17,6 @@ package trace
 import (
 	"fmt"
 
-	"github.com/gocql/gocql"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -45,13 +44,13 @@ type provider struct {
 	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	DB               *gorm.DB                     `autowired:"mysql-client"`
 	Cassandra        cassandra.Interface          `autowired:"cassandra"`
-	cassandraSession *gocql.Session
+	cassandraSession *cassandra.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// translator
 
-	session, err := p.Cassandra.Session(&p.Cfg.Cassandra)
+	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}

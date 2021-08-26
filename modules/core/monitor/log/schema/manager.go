@@ -47,7 +47,7 @@ type LogSchema interface {
 type CassandraSchema struct {
 	Logger         logs.Logger
 	cass           cassandra.Interface
-	defaultSession *gocql.Session
+	defaultSession *cassandra.Session
 	lastOrgList    []string
 	mutexKey       string
 }
@@ -63,7 +63,7 @@ func WithMutexKey(key string) Option {
 func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) (*CassandraSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
-	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
+	sysSession, err := cs.cass.NewSession(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (cs *CassandraSchema) compareOrUpdate() error {
 }
 
 func (cs *CassandraSchema) existedCheck(keyspace string) (keyspaceExisted bool, tableExisted bool) {
-	m, err := cs.defaultSession.KeyspaceMetadata(keyspace)
+	m, err := cs.defaultSession.Session().KeyspaceMetadata(keyspace)
 	// keyspace existed check
 	if err != nil {
 		return false, false
@@ -216,7 +216,7 @@ func (cs *CassandraSchema) CreateDefault() error {
 }
 
 func (cs *CassandraSchema) createTable(stmt string) error {
-	q := cs.defaultSession.Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
+	q := cs.defaultSession.Session().Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
 	err := q.Exec()
 	q.Release()
 	if err != nil {
