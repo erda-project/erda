@@ -188,3 +188,16 @@ mapping:
         - name: nodejs_cluster
     application_status:
         - name: status_page
+    # Browser Analysis
+    ta_timing:
+      - name: ta_timing
+    ta_error:
+      - name: ta_error
+    ta_event:
+      - name: ta_event
+    ta_req:
+      - name: ta_req
+    ta_browser:
+      - name: ta_browser
+    ta_document:
+      - name: ta_document
