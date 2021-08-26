@@ -58,7 +58,9 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		if len(req.ClusterName) <= 0 || len(req.Addon) <= 0 {
 			return nil
 		}
-		return p.getESClientsFromLogAnalyticsByCluster(strings.ReplaceAll(req.Addon, "*", ""), req.ClusterName)
+		clients := p.getESClientsFromLogAnalyticsByCluster(strings.ReplaceAll(req.Addon, "*", ""), req.ClusterName)
+		clients = append(clients, p.GetESClientFromLogService(orgID, ""))
+		return clients
 	}
 	filters := make(map[string]string)
 	for _, item := range req.Filters {
@@ -96,6 +98,7 @@ func (p *provider) getCenterESClients(indices ...string) []*ESClient {
 func (p *provider) GetESClientFromLogService(orgID int64, addon string) *ESClient {
 	logServiceInstance, err := p.db.LogServiceInstanceDB.GetFirst()
 	if err != nil {
+		p.L.Errorf("fail to get log service instance: %s", err)
 		return nil
 	}
 
