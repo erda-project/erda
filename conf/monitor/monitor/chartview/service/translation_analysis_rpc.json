@@ -1,0 +1,391 @@
+{
+  "id": "translation_analysis_rpc",
+  "name": "translation_analysis_rpc",
+  "desc": "",
+  "scope": "micro_service",
+  "scopeId": "global",
+  "viewConfig": [
+    {
+      "h": 11,
+      "w": 12,
+      "x": 0,
+      "y": 10,
+      "i": "view-UQW30sdQ",
+      "view": {
+        "api": {
+          "body": {
+            "from": [
+              "application_rpc"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeHWstw9Kl",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueV71fTatk",
+                "expr": "round_float(sum(elapsed_count::field), 2)"
+              }
+            ],
+            "where": [
+              "dubbo_method::tag=~/.*{{subSearch}}.*/"
+            ]
+          },
+          "extraData": null,
+          "header": null,
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_target_service_id": "{{serviceId}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "serviceName": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "chart:bar",
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "application_rpc",
+              "application_rpc_request"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "typeHWstw9Kl",
+                "timeField": {},
+                "timeFormat": "YYYY/MM/DD",
+                "timeInterval": {
+                  "unit": "m",
+                  "value": 1
+                },
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "请求次数",
+                "field": "application_rpc-elapsed_count::field",
+                "key": "valueV71fTatk",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isConnectNulls": false,
+            "isLabel": false,
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "YYYY/MM/DD"
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "服务请求"
+      }
+    },
+    {
+      "h": 11,
+      "w": 12,
+      "x": 12,
+      "y": 10,
+      "i": "view-WPTjI5ir",
+      "view": {
+        "api": {
+          "body": {
+            "from": [
+              "application_rpc"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "type2jCjYVIp",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueaecENLIN",
+                "expr": "round_float(avg(elapsed_mean::field), 2)"
+              }
+            ],
+            "where": [
+              "dubbo_method::tag=~/.*{{subSearch}}.*/"
+            ]
+          },
+          "extraData": null,
+          "header": null,
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_target_service_id": "{{serviceId}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "serviceName": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "chart:line",
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "application_rpc",
+              "application_rpc_request"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "key": "type2jCjYVIp",
+                "timeFormat": "YYYY/MM/DD",
+                "timeInterval": {
+                  "unit": "m",
+                  "value": 1
+                },
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "avg",
+                "alias": "请求耗时平均值",
+                "field": "application_rpc-elapsed_mean::field",
+                "key": "valueaecENLIN",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ns"
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "YYYY/MM/DD",
+            "noAreaColor": true
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "请求延迟"
+      }
+    },
+    {
+      "h": 10,
+      "w": 24,
+      "x": 0,
+      "y": 0,
+      "i": "view-lVTYdASX",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filterServiceName": "{{serviceName}}",
+            "layer": "rpc",
+            "search": "{{search}}",
+            "serviceId": "{{serviceId}}",
+            "sort": "{{sort}}",
+            "start": "{{startTime}}",
+            "terminusKey": "{{terminusKey}}"
+          },
+          "url": "/api/apm/topology/translation"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "valueDimensions": [
+              {
+                "alias": "事务名称",
+                "key": "translation_name",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "调用次数",
+                "key": "elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "错误次数",
+                "key": "error_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "慢调用次数",
+                "key": "slow_elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "平均延迟",
+                "key": "avg_elapsed",
+                "resultType": "string",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "searchTranslation",
+              "value": "translation_name"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "RPC事务"
+      }
+    },
+    {
+      "h": 9,
+      "w": 14,
+      "x": 0,
+      "y": 21,
+      "i": "view-FlQBcOqT",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_target_service_id": "{{serviceId}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "format": "chartv2",
+            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时 FROM application_rpc_slow WHERE dubbo_method::tag=~/.*{{subSearch}}.*/ AND target_service_name::tag=~/.*{{serviceName}}.*/ GROUP BY dubbo_method::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "ql": "influxql",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "isSqlMode": true,
+            "sql": {
+              "from": "application_rpc_slow",
+              "fromSource": [
+                "application_rpc",
+                "application_rpc_slow"
+              ],
+              "groupBy": "dubbo_method::tag",
+              "limit": 50,
+              "orderBy": "",
+              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时",
+              "where": [
+                "dubbo_method::tag=~/.*{{subSearch}}.*/"
+              ]
+            }
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "traceSlowTranslation",
+              "value": "Method"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "慢事务追踪top50"
+      }
+    },
+    {
+      "h": 9,
+      "w": 10,
+      "x": 14,
+      "y": 21,
+      "i": "view-sCRTdIQb",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_target_service_id": "{{serviceId}}",
+            "format": "chartv2",
+            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_rpc_error WHERE dubbo_method::tag=~/.*{{subSearch}}.*/ AND target_service_name::tag=~/.*{{serviceName}}.*/ GROUP BY dubbo_method::tag ORDER BY max(timestamp) DESC  LIMIT 50 ",
+            "ql": "influxql",
+            "serviceName": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "isSqlMode": true,
+            "sql": {
+              "from": "application_rpc_error",
+              "fromSource": [
+                "application_rpc",
+                "application_rpc_error"
+              ],
+              "groupBy": "dubbo_method::tag",
+              "limit": 50,
+              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间",
+              "where": "dubbo_method::tag=~/.*{{subSearch}}.*/"
+            }
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "traceSlowTranslation",
+              "value": "Method"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "错误事务追踪Top50"
+      }
+    }
+  ],
+  "version": "v2"
+}
