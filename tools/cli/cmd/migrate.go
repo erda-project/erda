@@ -78,8 +78,8 @@ var Migrate = command.Command{
 	ParentName:     "",
 	Name:           "migrate",
 	ShortHelp:      "Erda MySQL Migrate",
-	LongHelp:       "erda-cli migrate --host localhost -P 3306 -u root -p mypassword --database erda",
-	Example:        "erda-cli migrate --host localhost -P 3306 -u root -p mypassword --database erda",
+	LongHelp:       "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
+	Example:        "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
@@ -129,7 +129,7 @@ var Migrate = command.Command{
 		command.StringFlag{
 			Short:        "",
 			Name:         "output",
-			Doc:          "[Migrate] the filename for collecting SQLs",
+			Doc:          "[Migrate] the directory for collecting SQLs",
 			DefaultValue: "",
 		},
 	),
@@ -318,7 +318,7 @@ func (p parameters) Rules() []rules.Ruler {
 	return p.rules
 }
 
-func (p parameters) SQLCollectorName() string {
+func (p parameters) SQLCollectorDir() string {
 	return p.output
 }
 
