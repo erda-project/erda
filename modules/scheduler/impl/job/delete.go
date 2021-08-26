@@ -16,8 +16,11 @@ package job
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/task"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (j *JobImpl) Delete(job apistructs.Job) error {
@@ -25,6 +28,13 @@ func (j *JobImpl) Delete(job apistructs.Job) error {
 		ok  bool
 		err error
 	)
+	if err := j.js.Get(context.Background(), makeJobKey(job.Namespace, job.Name), &job); err != nil {
+		if strutil.HasSuffixes(err.Error(), NotFoundSuffix) {
+			logrus.Warnf("job %s in %s not found", job.Name, job.Namespace)
+			return nil
+		}
+		return err
+	}
 	if _, err = j.handleJobTask(context.Background(), &job, task.TaskRemove); err != nil {
 		return err
 	}
