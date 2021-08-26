@@ -14,6 +14,7 @@
 package pipelineyml
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,8 @@ import (
 
 const (
 	RefOpOutput = "OUTPUT"
+
+	RefOpExEscape = "escape"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -34,6 +37,7 @@ type RefOp struct {
 	Ref string // ref: alias or namespace
 	Op  string // OPERATION
 	Key string // key
+	Ex  string // Executor
 
 	IsAlias           bool // 是否是 alias
 	IsNamespace       bool // 是否是 namespace
@@ -116,6 +120,7 @@ func (v *RefOpVisitor) Visit(s *Spec) {
 
 // handleOneParamOrCmd handle one param or cmd, return handled result and error.
 // one param or cmd will have zero or multi refOp.
+// TODO make ${{ (escape outputs.alias.xx) }} instead of ${{ outputs.alias.xx.escape }}
 func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 	replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, ori, func(sub []string) string {
 		// inner has two formats:
@@ -125,7 +130,7 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 		// 去除两边的空格
 		inner = strings.Trim(inner, " ")
 
-		ss := strings.SplitN(inner, ".", 3)
+		ss := strings.SplitN(inner, ".", 4)
 
 		if len(ss) < 2 {
 			return sub[0]
@@ -153,11 +158,26 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			// - outputs.alias.key
 			refOp.Op = RefOpOutput
 			refOp.Key = ss[2]
+			if len(ss) == 4 {
+				refOp.Ex = ss[3]
+			}
 			return v.handleOneRefOp(refOp)
 		case expression.Random:
 			typeValue := ss[1]
 			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
+		case expression.Base64Decode:
+			// - base64-decode.xxxxx
+			baseValue := ss[1]
+			decodeBytes, err := base64.StdEncoding.DecodeString(baseValue)
+			if err != nil {
+				v.result.AppendError(fmt.Errorf("failed to base64 decode for %s, err: %v", ori, err))
+				return refOp.Ori
+			}
+			if len(ss) >= 3 {
+				refOp.Ex = ss[2]
+			}
+			return v.handleRefEx(string(decodeBytes), refOp)
 		default: // case 3
 			return refOp.Ori
 		}
@@ -329,7 +349,8 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	// found output, return
 	if v.availableOutputs[ActionAlias(refOp.Ref)] != nil {
 		if output, ok := v.availableOutputs[ActionAlias(refOp.Ref)][refOp.Key]; ok {
-			return output
+			// If the user specifies a special escape type， use the executor escape output
+			return v.handleRefEx(output, refOp)
 		}
 	}
 
@@ -364,4 +385,14 @@ func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias 
 		}
 	}
 	return
+}
+
+func (v *RefOpVisitor) handleRefEx(output string, refOp RefOp) string {
+	switch refOp.Ex {
+	case RefOpExEscape:
+		return expression.Quote(output)
+	default:
+		// do nothing
+		return output
+	}
 }
