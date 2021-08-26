@@ -129,7 +129,7 @@ var Migrate = command.Command{
 		command.StringFlag{
 			Short:        "",
 			Name:         "output",
-			Doc:          "[Migrate] the filename for collecting SQLs",
+			Doc:          "[Migrate] the directory for collecting SQLs",
 			DefaultValue: "",
 		},
 	),
