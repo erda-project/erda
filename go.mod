@@ -31,7 +31,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20210817063509-a477b158393d
+	github.com/erda-project/erda-infra v0.0.0-20210825095053-85c5451901ed
 	github.com/erda-project/erda-proto-go v0.0.0-20210823110307-c397defb820e
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
@@ -101,7 +101,7 @@ require (
 	github.com/rancher/remotedialer v0.2.6-0.20210318171128-d1ebd5202be4
 	github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
 	github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852
-	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
+	github.com/recallsong/go-utils v1.1.2-0.20210825061755-9df21f10489e
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
