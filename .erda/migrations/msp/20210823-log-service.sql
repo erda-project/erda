@@ -1,4 +1,4 @@
-CREATE TABLE sp_log_service_instance
+CREATE TABLE IF NOT EXISTS sp_log_service_instance
 (
     `id`          bigint        AUTO_INCREMENT PRIMARY KEY COMMENT 'Id',
     `instance_id` varchar(128)  NOT NULL COMMENT 'log-instance唯一ID',
