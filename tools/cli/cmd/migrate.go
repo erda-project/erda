@@ -318,7 +318,7 @@ func (p parameters) Rules() []rules.Ruler {
 	return p.rules
 }
 
-func (p parameters) SQLCollectorName() string {
+func (p parameters) SQLCollectorDir() string {
 	return p.output
 }
 
