@@ -19,7 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Configure struct {
@@ -27,25 +30,35 @@ type Configure struct {
 	Dirname string
 }
 
+type ConfigurationSearcher map[string]*ConfigurationFile
+
+type ConfigurationFile struct {
+	Index     string // file Index
+	Filename  string // Filename with Extension
+	Path      string // Path from dir root
+	Extension string // file Extension
+	Content   []byte // file contents
+}
+
 const (
-	JsonFileExtension = ".json"
-	YamlFileExtension = ".yaml"
-	YmlFileExtension  = ".yml"
+	FileExtensionSep       = "|"
+	JsonFileExtension      = ".json"
+	YamlOrYmlFileExtension = ".yaml|.yml"
 )
 
-func (c *Configure) YamlReader() map[string]*map[string]interface{} {
-	files := map[string]*map[string]interface{}{}
-	reader(c.FS, c.Dirname, YamlFileExtension, files)
-	return files
+func (c *Configure) YamlOrYmlReader() *ConfigurationSearcher {
+	files := ConfigurationSearcher{}
+	reader(c.FS, c.Dirname, YamlOrYmlFileExtension, &files)
+	return &files
 }
 
-func (c *Configure) JsonReader() map[string]*map[string]interface{} {
-	files := map[string]*map[string]interface{}{}
-	reader(c.FS, c.Dirname, JsonFileExtension, files)
-	return files
+func (c *Configure) JsonReader() *ConfigurationSearcher {
+	files := ConfigurationSearcher{}
+	reader(c.FS, c.Dirname, JsonFileExtension, &files)
+	return &files
 }
 
-func reader(fs embed.FS, dirname, fileExtension string, files map[string]*map[string]interface{}) {
+func reader(fs embed.FS, dirname, fileExtension string, files *ConfigurationSearcher) {
 	entries, err := fs.ReadDir(dirname)
 	if err != nil {
 		log.Printf("Read dir(%s) with error: %+v\n", dirname, err)
@@ -56,26 +69,65 @@ func reader(fs embed.FS, dirname, fileExtension string, files map[string]*map[st
 			log.Printf("Read fs entry with error: %+v\n", err)
 		}
 
-		filename := fmt.Sprintf("%s/%s", dirname, info.Name())
+		filepath := fmt.Sprintf("%s/%s", dirname, info.Name())
 		if info.IsDir() {
-			reader(fs, filename, fileExtension, files)
+			reader(fs, filepath, fileExtension, files)
+		}
+		realFileExtension := path.Ext(info.Name())
+		matchExtension := false
+		extensions := strings.Split(fileExtension, FileExtensionSep)
+		for _, s := range extensions {
+			if realFileExtension == s {
+				matchExtension = true
+				break
+			}
+		}
+		if !matchExtension {
+			continue
+		}
+		file, err := fs.ReadFile(filepath)
+		if err != nil {
+			log.Printf("Read file(%s) with error: %+v\n", filepath, err)
+			continue
 		}
 
-		if !strings.HasSuffix(info.Name(), fileExtension) {
-			continue
+		filenameWithExtension := path.Base(info.Name())
+		filenameWithOutExtension := strings.TrimSuffix(filenameWithExtension, realFileExtension)
+		cf := ConfigurationFile{
+			Index:     filenameWithOutExtension,
+			Filename:  filenameWithExtension,
+			Path:      filepath,
+			Extension: realFileExtension,
+			Content:   file,
 		}
-
-		file, err := fs.ReadFile(filename)
-		if err != nil {
-			log.Printf("Read file(%s) with error: %+v\n", filename, err)
-			continue
-		}
-		var expression map[string]interface{}
-		err = json.Unmarshal(file, &expression)
-		if err != nil {
-			log.Printf("Unmarshal file(%s) with error: %+v\n", filename, err)
-			continue
-		}
-		files[expression["id"].(string)] = &expression
+		(*files)[filenameWithOutExtension] = &cf
 	}
+}
+
+func FileUnmarshal(fileExtension string, file []byte) (interface{}, error) {
+	switch fileExtension {
+	case JsonFileExtension:
+		return jsonFileUnmarshal(file)
+	case YamlOrYmlFileExtension:
+		return yamlOrYmlFileUnmarshal(file)
+	}
+	return nil, nil
+}
+
+func jsonFileUnmarshal(file []byte) (interface{}, error) {
+	var content map[string]interface{}
+	err := json.Unmarshal(file, &content)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
+}
+
+func yamlOrYmlFileUnmarshal(file []byte) (interface{}, error) {
+	var content interface{}
+	err := yaml.Unmarshal(file, &content)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
 }

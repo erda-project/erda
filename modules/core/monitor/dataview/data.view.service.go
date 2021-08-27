@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -71,14 +72,18 @@ func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *p
 }
 
 func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSystemViewsRequest) (*pb.ListSystemViewsResponse, error) {
-	views := monitor.GetSystemChartview()
+	views := *monitor.GetSystemChartview()
 
 	vlist := &pb.ViewList{}
 	var vs []*pb.View
 	for _, v := range views {
-		m := *v
-		if m["scope"] == req.Scope || m["scopeId"] == req.ScopeID {
-			marshal, err := json.Marshal(m)
+		viewFileUnmarshal, err := conf.FileUnmarshal(conf.JsonFileExtension, v.Content)
+		view := viewFileUnmarshal.(map[string]interface{})
+		if err != nil {
+			continue
+		}
+		if view["scope"].(string) == req.Scope || view["scopeId"].(string) == req.ScopeID {
+			marshal, err := json.Marshal(view)
 			if err != nil {
 				return nil, errors.NewInternalServerError(err)
 			}
@@ -93,17 +98,15 @@ func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSyste
 }
 
 func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemViewRequest) (*pb.GetSystemViewResponse, error) {
-	views := monitor.GetSystemChartview()
-	chartView := views[req.Id]
+	if req.Id == "" {
+		return nil, errors.NewMissingParameterError("id")
+	}
+	chartView := (*monitor.GetSystemChartview())[req.Id]
 	if chartView == nil {
 		return nil, errors.NewNotFoundError(req.Id)
 	}
-	marshal, err := json.Marshal(chartView)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	view := pb.View{}
-	err = json.Unmarshal(marshal, &view)
+	err := json.Unmarshal((*chartView).Content, &view)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

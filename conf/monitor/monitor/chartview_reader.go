@@ -23,7 +23,7 @@ import (
 //go:embed chartview
 var systemChartviewFS embed.FS
 
-func GetSystemChartview() map[string]*map[string]interface{} {
+func GetSystemChartview() *conf.ConfigurationSearcher {
 	c := &conf.Configure{FS: systemChartviewFS, Dirname: "chartview"}
 	return c.JsonReader()
 }
