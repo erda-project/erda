@@ -98,7 +98,7 @@ func (g *Gantt) genProps(edgeMinTime, edgeMaxTime *time.Time) {
 		RowKey:  "id",
 		// ClassName: "task-gantt-table",
 		Columns: []gantt.PropColumn{
-			{Title: g.CtxBdl.I18nPrinter.Sprintf("Gantt Chart"), DataIndex: "user", Width: 160},
+			{Title: g.CtxBdl.I18nPrinter.Sprintf("Assignee"), DataIndex: "user", Width: 160},
 			{Title: g.CtxBdl.I18nPrinter.Sprintf("Title"), DataIndex: "issues",
 				TitleTip: []string{
 					g.CtxBdl.I18nPrinter.Sprintf("The Gantt chart of the event can only be displayed properly if the deadline and estimated time are correctly entered"),
