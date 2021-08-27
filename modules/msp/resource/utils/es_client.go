@@ -43,12 +43,43 @@ type ESClient struct {
 	Indices    []string
 }
 
-func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
+func (c *ESClient) CreateIndexTemplate(templateName string, indexPattern string, aliases ...string) error {
 	ctx := context.Background()
+	aliasList := map[string]interface{}{}
+	for _, alias := range aliases {
+		if len(alias) == 0 {
+			continue
+		}
+		aliasList[alias] = map[string]interface{}{}
+	}
+	createTemplate, err := c.IndexPutTemplate(templateName).BodyJson(map[string]interface{}{
+		"index_patterns": []string{indexPattern},
+		"aliases":        aliasList,
+	}).Do(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if !createTemplate.Acknowledged {
+		return fmt.Errorf("failed to create index template: acknowledged false")
+	}
+
+	return nil
+}
+
+func (c *ESClient) CreateIndexWithAlias(index string, aliases ...string) error {
+	ctx := context.Background()
+	aliasList := map[string]interface{}{}
+	for _, alias := range aliases {
+		if len(alias) == 0 {
+			continue
+		}
+		aliasList[alias] = map[string]interface{}{}
+	}
+
 	createIndex, err := c.CreateIndex(index).BodyJson(map[string]interface{}{
-		"aliases": map[string]interface{}{
-			alias: map[string]interface{}{},
-		},
+		"aliases": aliasList,
 	}).Do(ctx)
 	if err != nil {
 		return err
@@ -59,44 +90,6 @@ func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
 	}
 
 	return nil
-}
-
-func GetESClientFromLogService(logServiceInstance *db.LogServiceInstance, addon string) *ESClient {
-	type ESConfig struct {
-		Security bool   `json:"securityEnable"`
-		Username string `json:"securityUsername"`
-		Password string `json:"securityPassword"`
-	}
-
-	if len(logServiceInstance.EsUrls) <= 0 {
-		return nil
-	}
-	options := []elastic.ClientOptionFunc{
-		elastic.SetURL(strings.Split(logServiceInstance.EsUrls, ",")...),
-		elastic.SetSniff(false),
-		elastic.SetHealthcheck(false),
-	}
-	if len(logServiceInstance.EsConfig) > 0 {
-		var cfg ESConfig
-		err := json.Unmarshal(reflectx.StringToBytes(logServiceInstance.EsConfig), &cfg)
-		if err == nil {
-			if cfg.Security && (cfg.Username != "" || cfg.Password != "") {
-				options = append(options, elastic.SetBasicAuth(cfg.Username, cfg.Password))
-			}
-		}
-	}
-
-	client, err := elastic.NewClient(options...)
-	if err != nil {
-		return nil
-	}
-
-	return &ESClient{
-		Client:     client,
-		LogVersion: LogVersion2,
-		URLs:       logServiceInstance.EsUrls,
-		Indices:    getLogIndices("rlogs-", addon),
-	}
 }
 
 func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string) *ESClient {
@@ -126,6 +119,13 @@ func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string)
 	if logDeployment.ClusterType == 1 {
 		options = append(options, elastic.SetHttpClient(newHTTPClient(logDeployment.ClusterName)))
 	}
+
+	orgId := logDeployment.OrgId
+	if logDeployment.LogType == string(db.LogTypeLogAnalytics) {
+		// omit the orgId alias, if deployed by log-analytics addon，specially for old versions, there's no orgId alias
+		orgId = ""
+	}
+
 	client, err := elastic.NewClient(options...)
 	if err != nil {
 		return nil
@@ -136,21 +136,24 @@ func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string)
 			Client:     client,
 			LogVersion: LogVersion2,
 			URLs:       logDeployment.EsUrl,
-			Indices:    getLogIndices("rlogs-", addon),
+			Indices:    getLogIndices("rlogs-", orgId, addon),
 		}
 	} else {
 		return &ESClient{
 			Client:     client,
 			LogVersion: LogVersion1,
 			URLs:       logDeployment.EsUrl,
-			Indices:    getLogIndices("spotlogs-", addon),
+			Indices:    getLogIndices("spotlogs-", orgId, addon),
 		}
 	}
 }
 
-func getLogIndices(prefix, addon string) []string {
+func getLogIndices(prefix, orgId string, addon string) []string {
 	if len(addon) > 0 {
 		return []string{prefix + addon, prefix + addon + "-*"}
+	}
+	if len(orgId) > 0 {
+		return []string{prefix + orgId}
 	}
 	return []string{prefix + "*"}
 }

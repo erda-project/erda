@@ -25,6 +25,7 @@ import (
 	"github.com/recallsong/go-utils/encoding/jsonx"
 	"github.com/recallsong/go-utils/reflectx"
 
+	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
@@ -59,7 +60,6 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 			return nil
 		}
 		clients := p.getESClientsFromLogAnalyticsByCluster(strings.ReplaceAll(req.Addon, "*", ""), req.ClusterName)
-		clients = append(clients, p.GetESClientFromLogService(orgID, ""))
 		return clients
 	}
 	filters := make(map[string]string)
@@ -70,7 +70,6 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		return p.getCenterESClients("sls-*")
 	} else if filters["origin"] == "dice" {
 		clients := p.getESClientsFromLogAnalytics(orgID)
-		clients = append(clients, p.GetESClientFromLogService(orgID, ""))
 		if len(clients) <= 0 {
 			return p.getCenterESClients("rlogs-*")
 		}
@@ -79,7 +78,6 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		return p.getCenterESClients("__not-exist__*")
 	}
 	clients := append(p.getCenterESClients("sls-*"), p.getESClientsFromLogAnalytics(orgID)...)
-	clients = append(clients, p.GetESClientFromLogService(orgID, ""))
 	return clients
 }
 
@@ -92,50 +90,6 @@ func (p *provider) getCenterESClients(indices ...string) []*ESClient {
 	}
 	return []*ESClient{
 		{Client: p.client, URLs: "-", Indices: indices},
-	}
-}
-
-func (p *provider) GetESClientFromLogService(orgID int64, addon string) *ESClient {
-	logServiceInstance, err := p.db.LogServiceInstanceDB.GetFirst()
-	if err != nil {
-		p.L.Errorf("fail to get log service instance: %s", err)
-		return nil
-	}
-
-	type ESConfig struct {
-		Security bool   `json:"securityEnable"`
-		Username string `json:"securityUsername"`
-		Password string `json:"securityPassword"`
-	}
-
-	if len(logServiceInstance.EsUrls) <= 0 {
-		return nil
-	}
-	options := []elastic.ClientOptionFunc{
-		elastic.SetURL(strings.Split(logServiceInstance.EsUrls, ",")...),
-		elastic.SetSniff(false),
-		elastic.SetHealthcheck(false),
-	}
-	if len(logServiceInstance.EsConfig) > 0 {
-		var cfg ESConfig
-		err := json.Unmarshal(reflectx.StringToBytes(logServiceInstance.EsConfig), &cfg)
-		if err == nil {
-			if cfg.Security && (cfg.Username != "" || cfg.Password != "") {
-				options = append(options, elastic.SetBasicAuth(cfg.Username, cfg.Password))
-			}
-		}
-	}
-
-	client, err := elastic.NewClient(options...)
-	if err != nil {
-		return nil
-	}
-
-	return &ESClient{
-		Client:     client,
-		LogVersion: LogVersion2,
-		URLs:       logServiceInstance.EsUrls,
-		Indices:    getLogIndices("rlogs-", addon),
 	}
 }
 
@@ -183,6 +137,13 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 		if d.ClusterType == 1 {
 			options = append(options, elastic.SetHttpClient(newHTTPClient(d.ClusterName)))
 		}
+
+		orgId := d.OrgID
+		if d.LogType == string(db.LogTypeLogAnalytics) {
+			// omit the orgId alias, if deployed by log-analytics addon，specially for old versions, there's no orgId alias
+			orgId = ""
+		}
+
 		client, err := elastic.NewClient(options...)
 		if err != nil {
 			continue
@@ -193,23 +154,26 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 				Client:     client,
 				LogVersion: LogVersion2,
 				URLs:       d.ESURL,
-				Indices:    getLogIndices("rlogs-", addon),
+				Indices:    getLogIndices("rlogs-", orgId, addon),
 			})
 		} else {
 			clients = append(clients, &ESClient{
 				Client:     client,
 				LogVersion: LogVersion1,
 				URLs:       d.ESURL,
-				Indices:    getLogIndices("spotlogs-", addon),
+				Indices:    getLogIndices("spotlogs-", orgId, addon),
 			})
 		}
 	}
 	return clients
 }
 
-func getLogIndices(prefix, addon string) []string {
+func getLogIndices(prefix, orgId string, addon string) []string {
 	if len(addon) > 0 {
 		return []string{prefix + addon, prefix + addon + "-*"}
+	}
+	if len(orgId) > 0 {
+		return []string{prefix + orgId}
 	}
 	return []string{prefix + "*"}
 }

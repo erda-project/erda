@@ -33,11 +33,15 @@ type provider struct {
 	Log                  logs.Logger
 	DB                   *gorm.DB `autowired:"mysql-client"`
 	LogServiceInstanceDB *db.LogServiceInstanceDB
+	LogDeploymentDb      *db.LogDeploymentDB
+	LogInstanceDb        *db.LogInstanceDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultDeployHandler = handlers.NewDefaultHandler(p.DB, p.Log)
 	p.LogServiceInstanceDB = &db.LogServiceInstanceDB{DB: p.DB}
+	p.LogDeploymentDb = &db.LogDeploymentDB{DB: p.DB}
+	p.LogInstanceDb = &db.LogInstanceDB{DB: p.DB}
 	return nil
 }
 

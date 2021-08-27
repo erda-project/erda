@@ -24,20 +24,24 @@ func (db *LogServiceInstanceDB) AddOrUpdateEsUrls(instanceId, esUrls, esConfig s
 	var instance LogServiceInstance
 	resp := db.Where("instance_id=?", instanceId).Limit(1).Find(&instance)
 
-	if resp.RecordNotFound() {
-		instance = LogServiceInstance{InstanceID: instanceId, EsUrls: esUrls, EsConfig: esConfig}
-		if db.Dialect().GetName() == "mysql" {
-			return db.Set("gorm:insert_modifier", "IGNORE").Save(&instance).Error
-		}
+	if resp.Error == nil && instance.EsUrls == esUrls && instance.EsConfig == esConfig {
+		return nil
+	}
+
+	if resp.Error == nil {
+		instance.EsUrls = esUrls
+		instance.EsConfig = esConfig
 		return db.Save(&instance).Error
 	}
 
-	if instance.EsUrls == esUrls && instance.EsConfig == esConfig {
-		return nil
+	if !resp.RecordNotFound() {
+		return resp.Error
 	}
-	instance.EsUrls = esUrls
-	instance.EsConfig = esConfig
 
+	instance = LogServiceInstance{InstanceID: instanceId, EsUrls: esUrls, EsConfig: esConfig}
+	if db.Dialect().GetName() == "mysql" {
+		return db.Set("gorm:insert_modifier", "IGNORE").Save(&instance).Error
+	}
 	return db.Save(&instance).Error
 }
 

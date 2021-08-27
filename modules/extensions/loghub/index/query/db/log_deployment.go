@@ -33,6 +33,7 @@ type LogDeployment struct {
 	ESConfig     string `gorm:"column:es_config" json:"es_config"`
 	CollectorURL string `gorm:"column:collector_url" json:"collector_url"`
 	Domain       string `gorm:"column:domain" json:"domain"`
+	LogType      string `gorm:"column:log_type" json:"log_type"`
 }
 
 // TableName .

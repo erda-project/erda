@@ -164,6 +164,7 @@ type LogDeployment struct {
 	Domain       string    `gorm:"column:domain"`
 	Created      time.Time `gorm:"column:created"`
 	Updated      time.Time `gorm:"column:updated"`
+	LogType      string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogDeployment) TableName() string {
@@ -189,6 +190,7 @@ type LogInstance struct {
 	IsDelete        int       `gorm:"column:is_delete"`
 	Created         time.Time `gorm:"column:created"`
 	Updated         time.Time `gorm:"column:updated"`
+	LogType         string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogInstance) TableName() string {
