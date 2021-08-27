@@ -95,15 +95,14 @@ func (l *IDTypeLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 		// check id column type
 		// TypeLongLong is "bigint", "TypeString is char"
-		if col.Tp.Tp == mysql.TypeLonglong || col.Tp.Tp == mysql.TypeString {
+		switch col.Tp.Tp {
+		case mysql.TypeLonglong, mysql.TypeString, mysql.TypeVarchar:
+		default:
+			l.err = linterror.New(l.s, l.text, "type error: id type should be BIGINT or CHAR", func(line []byte) bool {
+				return bytes.Contains(bytes.ToLower(line), []byte("id"))
+			})
 			return in, true
 		}
-
-		l.err = linterror.New(l.s, l.text, "type error: id type should be BIGINT or CHAR", func(line []byte) bool {
-			return bytes.Contains(bytes.ToLower(line), []byte("id"))
-		})
-
-		return in, true
 	}
 
 	return in, true

@@ -17,9 +17,6 @@ package linters_test
 import (
 	"testing"
 
-	"github.com/pingcap/parser"
-	"github.com/pingcap/parser/ast"
-
 	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
@@ -147,7 +144,7 @@ func testNewIDTypeLinterWithVarcharID(t *testing.T) {
 	if err := linter.Input([]byte(createTableWithVarcharID), "createTableWithVarcharID"); err != nil {
 		t.Error(err)
 	}
-	if errors := linter.Errors(); len(errors) == 0 {
+	if errors := linter.Errors(); len(errors) > 0 {
 		t.Error("fails")
 	}
 }
@@ -196,17 +193,5 @@ func testNewIDIsPrimaryLinterPrimaryIsNotID(t *testing.T) {
 	}
 	if errors := linter.Errors(); len(errors) == 0 {
 		t.Fatal("fails")
-	}
-}
-
-func Test0(t *testing.T) {
-	var stmt = "create table t1 (id bigint(16), name char(16), nick varchar(191))"
-	node, err := parser.New().ParseOneStmt(stmt, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	create := node.(*ast.CreateTableStmt)
-	for _, col := range create.Cols {
-		t.Logf("col name: %s, tp string: %s, tp.tp value: %v", col.Name.String(), col.Tp.String(), col.Tp.Tp)
 	}
 }
