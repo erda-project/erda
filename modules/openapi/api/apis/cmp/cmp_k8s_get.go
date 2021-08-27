@@ -15,7 +15,8 @@
 package cmp
 
 import (
-	"github.com/erda-project/erda/apistructs"
+	"github.com/rancher/apiserver/pkg/types"
+
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,7 +29,7 @@ var CMP_STEVE_GET = apis.ApiSpec{
 	Scheme:       "http",
 	Audit:        nil,
 	CheckLogin:   true,
-	Doc:          "get a k8s resource",
-	ResponseType: apistructs.SteveResource{},
+	Doc:          "get or list k8s resource",
+	ResponseType: types.RawResource{},
 	IsOpenAPI:    true,
 }

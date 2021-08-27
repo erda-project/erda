@@ -226,11 +226,6 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		a.Add(cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write(apistructs.SteveError{
-				SteveErrorCode: apistructs.ServerError,
-				Type:           "error",
-				Message:        "Internal server error",
-			}.JSON())
 			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
 		}
 	}

@@ -35,12 +35,13 @@ var Re = pexpr.PhRe
 var OldRe = regexp.MustCompile(`\${([^{}]+)}`)
 
 const (
-	Dirs    = "dirs"
-	Outputs = "outputs"
-	Random  = "random"
-	Params  = "params"
-	Globals = "globals"
-	Configs = "configs"
+	Dirs         = "dirs"
+	Outputs      = "outputs"
+	Random       = "random"
+	Params       = "params"
+	Globals      = "globals"
+	Configs      = "configs"
+	Base64Decode = "base64-decode"
 )
 
 const (
@@ -230,4 +231,8 @@ func GenRandomRef(key string) string {
 
 func GenOutputRef(alias, outputName string) string {
 	return fmt.Sprintf("%s %s.%s.%s %s", LeftPlaceholder, Outputs, alias, outputName, RightPlaceholder)
+}
+
+func Quote(s string) string {
+	return strconv.Quote(s)
 }

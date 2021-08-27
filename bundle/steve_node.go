@@ -15,6 +15,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -57,7 +58,12 @@ func (b *Bundle) PatchNode(req *apistructs.SteveRequest) error {
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
 	}
-	return isSteveError(data)
+
+	obj := map[string]interface{}{}
+	if err = json.Unmarshal(data, &obj); err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	return isSteveError(obj)
 }
 
 // LabelNode labels a node.

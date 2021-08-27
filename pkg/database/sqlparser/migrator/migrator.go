@@ -17,9 +17,11 @@ package migrator
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -55,6 +57,8 @@ type Migrator struct {
 	sandboxSettings *pygrator.Settings // sandbox settings
 	db              *gorm.DB
 	sandbox         *gorm.DB
+
+	collectorFilename string
 }
 
 func New(parameters Parameters) (mig *Migrator, err error) {
@@ -88,6 +92,12 @@ func New(parameters Parameters) (mig *Migrator, err error) {
 		Port:     mig.SandboxParameters().Port,
 		Name:     mig.SandboxParameters().Database,
 		TimeZone: pygrator.TimeZoneAsiaShanghai,
+	}
+
+	// set the SQLs collector filename
+	mig.collectorFilename = SQLCollectorFilename()
+	if collectDir, ok := mig.Parameters.(SQLCollectorDir); ok {
+		mig.collectorFilename = filepath.Join(collectDir.SQLCollectorDir(), mig.collectorFilename)
 	}
 
 	// load scripts
@@ -326,8 +336,9 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 				after := func(tx *gorm.DB, err error) {
 					tx.Commit()
 				}
-				tx := mig.SandBox().Begin()
-				if err := mig.installSQL(script, mig.SandBox(), tx, after); err != nil {
+				if err := mig.installSQL(script, mig.SandBox(), func() (tx *gorm.DB) {
+					return mig.SandBox().Begin()
+				}, after); err != nil {
 					return errors.Wrapf(err, "failed to migrate in sandbox:  module name: %s, filename: %s, type: %s",
 						moduleName, script.GetName(), ScriptTypeSQL)
 				}
@@ -378,7 +389,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 
 	// install every service
 	for moduleName, mod := range mig.LocalScripts.Services {
-		logrus.WithField("module", moduleName).Infoln()
+		logrus.WithField("module", moduleName).Infoln("MySQL Server")
 		for _, script := range mod.Scripts {
 			if !script.Pending {
 				continue
@@ -395,8 +406,9 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 						tx.Commit()
 					}
 				}
-				tx := mig.DB().Begin()
-				if err := mig.installSQL(script, mig.DB(), tx, after); err != nil {
+				if err := mig.installSQL(script, mig.DB(), func() (tx *gorm.DB) {
+					return mig.DB().Begin()
+				}, after); err != nil {
 					return errors.Wrapf(err, "failed to migrate: %+v",
 						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
 				}
@@ -490,20 +502,36 @@ func (mig *Migrator) patchBeforeMigrating(db *gorm.DB, files []string) error {
 	return nil
 }
 
-func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, tx *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
-	defer after(tx, err)
+func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, begin func() (tx *gorm.DB), after func(tx *gorm.DB, err error)) (err error) {
 	defer func() {
 		mig.reversing = append(mig.reversing, s.Reversing...)
 	}()
 
 	s.Reversing = nil
 
-	for _, node := range s.DDLNodes() {
+	for i := range s.Blocks {
+		switch s.Blocks[i].Type() {
+		case DDL:
+			if err := mig.installDDLBlock(s, i, exec); err != nil {
+				return err
+			}
+		case DML:
+			if err := mig.installDMLBlocks(s, i, begin(), after); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (mig *Migrator) installDDLBlock(s *Script, i int, exec *gorm.DB) (err error) {
+	for _, node := range s.Blocks[i].Nodes() {
 		var (
 			reverse string
 			ok      bool
 		)
-		reverse, ok, err = ddlreverser.ReverseDDLWithSnapshot(exec, node)
+		reverse, ok, err := ddlreverser.ReverseDDLWithSnapshot(exec, node.(ast.DDLNode))
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate reversed DDL: %+v",
 				map[string]string{"scritpName": s.GetName(), "SQL": node.Text()})
@@ -517,23 +545,27 @@ func (mig *Migrator) installSQL(s *Script, exec *gorm.DB, tx *gorm.DB, after fun
 				map[string]string{"scriptName": s.GetName(), "SQL": node.Text()})
 		}
 	}
+	return nil
+}
 
-	for _, node := range s.DMLNodes() {
+func (mig *Migrator) installDMLBlocks(s *Script, i int, tx *gorm.DB, after func(tx *gorm.DB, err error)) (err error) {
+	defer after(tx, err)
+	for _, node := range s.Blocks[i].Nodes() {
 		if err = tx.Exec(node.Text()).Error; err != nil {
-			return errors.Wrapf(err, "failed to do data migration: %+v",
-				map[string]string{"scriptName": s.GetName(), "SQL": node.Text()})
+			return errors.Wrapf(err, "failed to do data migrations, scritp name: %s, block index: %v, SQL: %s",
+				s.GetName(), i, node.Text())
 		}
 	}
-
 	return nil
 }
 
 func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Settings, commit bool) error {
 	var p = pygrator.Package{
-		DeveloperScript: s,
-		Requirements:    module.PythonRequirementsText,
-		Settings:        *settings,
-		Commit:          commit,
+		DeveloperScript:   s,
+		Requirements:      module.PythonRequirementsText,
+		Settings:          *settings,
+		Commit:            commit,
+		CollectorFilename: mig.collectorFilename,
 	}
 	if len(p.Requirements) == 0 {
 		p.Requirements = []byte(pygrator.BaseRequirements)

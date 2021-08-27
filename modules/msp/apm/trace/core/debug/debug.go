@@ -12,23 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmp
+package debug
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+type Status int32
+
+const (
+	Init    Status = 0
+	Success Status = 1
+	Fail    Status = 2
+	Stop    Status = 3
 )
-
-var CMP_STEVE_LIST = apis.ApiSpec{
-	Path:         "/api/k8s/clusters/<*>",
-	BackendPath:  "/api/k8s/clusters/<*>",
-	Method:       "GET",
-	Host:         "cmp.marathon.l4lb.thisdcos.directory:9027",
-	K8SHost:      "cmp:9027",
-	Scheme:       "http",
-	Audit:        nil,
-	CheckLogin:   true,
-	Doc:          "list a type of k8s resource",
-	ResponseType: apistructs.SteveCollection{},
-	IsOpenAPI:    true,
-}

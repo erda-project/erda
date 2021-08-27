@@ -50,8 +50,12 @@ func (a *Authenticator) AuthMiddleware(next http.Handler) http.Handler {
 		req = req.WithContext(ctx)
 		clusterName := vars["clusterName"]
 		typ := vars["type"]
+
 		userID := req.Header.Get("User-ID")
 		orgID := req.Header.Get("Org-ID")
+
+		logrus.Infof("Steve server receive request. User-ID: %s, Org-ID: %s, Path: %s.", userID, orgID, req.URL.String())
+
 		scopeID, err := strconv.ParseUint(orgID, 10, 64)
 		if err != nil {
 			resp.WriteHeader(http.StatusBadRequest)

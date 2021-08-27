@@ -78,8 +78,8 @@ var Migrate = command.Command{
 	ParentName:     "",
 	Name:           "migrate",
 	ShortHelp:      "Erda MySQL Migrate",
-	LongHelp:       "erda-cli migrate --host localhost -P 3306 -u root -p mypassword --database erda",
-	Example:        "erda-cli migrate --host localhost -P 3306 -u root -p mypassword --database erda",
+	LongHelp:       "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
+	Example:        "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
@@ -126,12 +126,18 @@ var Migrate = command.Command{
 			Doc:          "[Migrate] skip doing pre-migration and real migration",
 			DefaultValue: false,
 		},
+		command.StringFlag{
+			Short:        "",
+			Name:         "output",
+			Doc:          "[Migrate] the directory for collecting SQLs",
+			DefaultValue: "",
+		},
 	),
 	Run: RunMigrate,
 }
 
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
-	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool) error {
+	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, output string) error {
 	logrus.Infoln("Erda Migrator is working")
 
 	var p = parameters{
@@ -162,6 +168,7 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 		skipSandbox:    skipSandbox,
 		skipPreMigrate: skipPreMig,
 		skipMigrate:    skipMig,
+		output:         output,
 	}
 
 	for _, module := range modules {
@@ -257,6 +264,7 @@ type parameters struct {
 	skipSandbox    bool
 	skipPreMigrate bool
 	skipMigrate    bool
+	output         string
 }
 
 // MySQLParameters gets MySQL DSN
@@ -308,4 +316,12 @@ func (p parameters) SkipMigrate() bool {
 
 func (p parameters) Rules() []rules.Ruler {
 	return p.rules
+}
+
+func (p parameters) SQLCollectorDir() string {
+	return p.output
+}
+
+func (p parameters) RetryTimeout() uint64 {
+	return 150
 }

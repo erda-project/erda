@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+const smallestRetryTimeout = 60
+
 type Parameters interface {
 	ScriptsParameters
 
@@ -31,6 +33,9 @@ type Parameters interface {
 
 	// DebugSQL gets weather to debug SQL executing
 	DebugSQL() bool
+
+	// RetryTimeout unit: second
+	RetryTimeout() uint64
 
 	SkipMigrationLint() bool
 	SkipSandbox() bool
@@ -66,5 +71,21 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 	params.Add("timeout", fmt.Sprintf("%vs", int(c.Timeout.Seconds())))
 	params.Add("multiStatements", "true")
 	params.Add("charset", "utf8mb4,utf8")
+	params.Add("loc", "Local")
 	return dsn + "?" + params.Encode()
+}
+
+type SQLCollectorDir interface {
+	SQLCollectorDir() string
+}
+
+func SQLCollectorFilename() string {
+	return fmt.Sprintf("%s_erda-migrator.sql.log", time.Now().Format("20060102150405"))
+}
+
+func RetryTimeout(timeout uint64) time.Duration {
+	if timeout > smallestRetryTimeout {
+		return time.Second * time.Duration(timeout)
+	}
+	return time.Second * smallestRetryTimeout
 }

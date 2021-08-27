@@ -32,7 +32,7 @@ Erda is mainly composed of the following parts:
 
 ![](./docs/assets/arch.png)
 
-The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons), [docs](https://github.com/erda-project/docs).
+The Erda project consists of multiple repsitories according to different functions. The key repositories are [erda](https://github.com/erda-project/erda), [erda-ui](https://github.com/erda-project/erda-ui), [erda-proto](https://github.com/erda-project/erda-proto), [erda-infra](https://github.com/erda-project/erda-infra), [erda-actions](https://github.com/erda-project/erda-actions), [erda-addons](https://github.com/erda-project/erda-addons).
 
 ### **[erda](https://github.com/erda-project/erda)** 
 
@@ -52,15 +52,11 @@ It is a lightweight microservices framework implements by golang. It provides ma
 
 ### **[erda-actions](https://github.com/erda-project/erda-actions)**
 
-It holds the definition for the official Pipeline Actions of the Erda Action Marketplace as found at https://www.erda.cloud/market/action. A Pipeline Action plays as a mininal runnable unit in [Erda Pipelines](https://docs.erda.cloud/1.0/manual/deploy/pipeline.html) such as checking out source code in github, buiding a docker image, creating a deployment in a Kubernetes cluster etc.. You can find more information about Pipeline Actions [here](https://docs.erda.cloud/1.0/manual/actions).
+It holds the definition for the official Pipeline Actions of the Erda Action Marketplace as found at https://www.erda.cloud/market/action. A Pipeline Action plays as a mininal runnable unit in [Erda Pipelines](https://docs.erda.cloud/latest/manual/dop/concepts/pipeline.html) such as checking out source code in github, buiding a docker image, creating a deployment in a Kubernetes cluster etc.
 
 ### **[erda-addons](https://github.com/erda-project/erda-addons)** 
 
-It holds the definition for the official Addons of the Erda Addon Marketplace as found at https://www.erda.cloud/market/addon. An Addon holds the configration of a middleware like MySQL, Redis, etc. or a third-party service and it can be shared to different environments of applications, so that developers would not need to import the same configurations again and again in different environments. You can find more information about Erda Addons [here](https://docs.erda.cloud/1.0/manual/addons/out-of-the-box.html).
-
-### **[docs](https://github.com/erda-project/docs)** 
-
-It is the codebase of Erda documentation built with [vuepress](https://vuepress.vuejs.org).
+It holds the definition for the official Addons of the Erda Addon Marketplace as found at https://www.erda.cloud/market/addon. An Addon holds the configration of a middleware like MySQL, Redis, etc. or a third-party service and it can be shared to different environments of applications, so that developers would not need to import the same configurations again and again in different environments.
 
 There are some extra repositories that plays as customized third-partiy independent components and tools in Erda project such as 
 * [erda-proto-go](https://github.com/erda-project/erda-proto-go) generated code for Erda protobuf data modals and protocols.
@@ -74,14 +70,12 @@ There are some extra repositories that plays as customized third-partiy independ
 
 ## Quick Start
 
-To get started, see [Quick Start](./docs/guides/quickstart/quickstart-full.md).
+To get started, see [Local installation](https://docs.erda.cloud/latest/manual/install/docker-install.html).
 
 ## Installation
 
-Please refer to the following documentation to install Erda.
-
-- [English](./docs/guides/deploy/How-to-install-Erda.md)
-- [简体中文](./docs/guides/deploy/How-to-install-Erda-zh.md)
+Erda can be deployed in either a single node or multi-node setup. 
+Please download binaries of [Erda release](https://github.com/erda-project/erda/releases) and follow [Installation & Configuration Guide](https://docs.erda.cloud/latest/manual/install/helm-install.html) to install Erda.
 
 ## User Manual
 

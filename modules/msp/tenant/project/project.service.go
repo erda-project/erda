@@ -295,7 +295,16 @@ func (s *projectService) GetProject(ctx context.Context, req *pb.GetProjectReque
 }
 
 func (s *projectService) DeleteProject(ctx context.Context, req *pb.DeleteProjectRequest) (*pb.DeleteProjectResponse, error) {
-	_, err := s.MSPProjectDB.Delete(req.ProjectId)
+
+	proj, err := s.MSPProjectDB.Query(req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	if proj == nil {
+		return &pb.DeleteProjectResponse{Data: nil}, nil
+	}
+
+	_, err = s.MSPProjectDB.Delete(req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
