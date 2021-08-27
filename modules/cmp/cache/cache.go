@@ -62,6 +62,8 @@ var (
 	IllegalCacheSize        = errors.New("illegal cache size")
 )
 
+var FreeCache, _ = New(1<<30, 1<<24)
+
 // Cache implement concurrent safe cache with LRU and ttl strategy.
 type Cache struct {
 	store *store

@@ -21,14 +21,28 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/cmp/metrics"
 )
 
-type provider struct{}
+type provider struct {
+	Server pb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+
+	Metrics *metrics.Metric
+}
 
 // Run Run the provider
 func (p *provider) Run(ctx context.Context) error {
+	newCtx := context.WithValue(ctx, "metrics", p.Metrics)
 	logrus.Info("cmp provider is running...")
-	return initialize(ctx)
+	return initialize(newCtx)
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	p.Metrics = &metrics.Metric{
+		Metricq: p.Server,
+	}
+	return nil
 }
 
 func init() {
