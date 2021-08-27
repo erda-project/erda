@@ -50,11 +50,10 @@ func (c *cacheKey) getKey() string {
 	return fmt.Sprintf("nodeAllocatedResCache-%s", c.nodeName)
 }
 
-func NewNodeFormatter(ctx context.Context, cache *cache.Cache, k8sInterface kubernetes.Interface) *NodeFormatter {
+func NewNodeFormatter(ctx context.Context, k8sInterface kubernetes.Interface) *NodeFormatter {
 	return &NodeFormatter{
 		ctx:       ctx,
 		podClient: k8sInterface.CoreV1().Pods(""),
-		podsCache: cache,
 	}
 }
 
