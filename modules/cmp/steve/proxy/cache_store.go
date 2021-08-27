@@ -35,9 +35,9 @@ import (
 type cacheStore struct {
 	types.Store
 
-	ctx     context.Context
-	asl     accesscontrol.AccessSetLookup
-	cache   *cache.Cache
+	ctx   context.Context
+	asl   accesscontrol.AccessSetLookup
+	cache *cache.Cache
 }
 
 type cacheKey struct {
