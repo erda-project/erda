@@ -105,7 +105,7 @@ func check(scope interface{}, idget ValueGetter, resget ValueGetter, action Acti
 			id, err := idget(ctx)
 			if err != nil {
 				Failure(ctx, err.Error())
-				return err
+				return nil
 			}
 			var scopeType apistructs.ScopeType
 			switch res := scope.(type) {
@@ -115,6 +115,7 @@ func check(scope interface{}, idget ValueGetter, resget ValueGetter, action Acti
 				f := res
 				s, err := f(ctx)
 				if err != nil {
+					Failure(ctx, err.Error())
 					return nil
 				}
 				scopeType = apistructs.ScopeType(s)

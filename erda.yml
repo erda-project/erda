@@ -449,6 +449,7 @@ services:
         expose: true
     envs:
       CREATE_ORG_ENABLED: "false"
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     resources:
       cpu: ${request_cpu:0.5}
       max_cpu: 0.5
@@ -469,7 +470,7 @@ services:
     health_check:
       http:
         port: 9529
-        path: "/api/openapi/version"
+        path: "/health"
         duration: 120
       exec: { }
   ecp:
