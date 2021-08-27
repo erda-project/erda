@@ -19,7 +19,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/rancher/apiserver/pkg/apierror"
@@ -36,10 +35,9 @@ import (
 type cacheStore struct {
 	types.Store
 
-	ctx     context.Context
-	asl     accesscontrol.AccessSetLookup
-	cache   *cache.Cache
-	cancels sync.Map
+	ctx   context.Context
+	asl   accesscontrol.AccessSetLookup
+	cache *cache.Cache
 }
 
 type cacheKey struct {
@@ -94,7 +92,14 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	go func() {
-		list, err := c.Store.List(apiOp, schema)
+		user, ok := request.UserFrom(apiOp.Context())
+		if !ok {
+			logrus.Errorf("user not found in context when steve auth")
+			return
+		}
+		ctx := request.WithUser(c.ctx, user)
+		newOp := apiOp.WithContext(ctx)
+		list, err := c.Store.List(newOp, schema)
 		if err != nil {
 			logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
 			return
