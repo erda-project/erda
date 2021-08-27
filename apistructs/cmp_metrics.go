@@ -12,22 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package apistructs
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
-	_ "github.com/erda-project/erda/modules/cmp"
-	_ "github.com/erda-project/erda/modules/msp/configcenter"
-	_ "github.com/erda-project/erda/modules/msp/registercenter"
+	v1 "k8s.io/api/core/v1"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/cmp/cmp.yaml",
-	})
+type MetricsRequest struct {
+	UserID       string
+	OrgID        string
+	ClusterName  string          `json:"cluster_name"`
+	ResourceType v1.ResourceName `json:"resource_type"`
+	HostName     []string        `json:"host_name"`
+}
+
+type MetricsResponse struct {
+	Header
+	Data []MetricsData `json:"data"`
+}
+
+type MetricsData struct {
+	Used    float64 `json:"used"`
+	Request float64 `json:"request"`
+	Total   float64 `json:"total"`
 }
