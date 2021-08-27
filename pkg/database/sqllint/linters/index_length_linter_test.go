@@ -44,7 +44,42 @@ create table some_table (
 );
 `
 
+const indexLengthLinterSQL2 = `CREATE TABLE fdp_metadata_request_error_msg (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+  action varchar(255)  NOT NULL COMMENT '执行步骤',
+  url varchar(255) NOT NULL COMMENT '请求路径',
+  error_msg text NOT NULL COMMENT '错误信息',
+  query_type varchar(255) NOT NULL COMMENT 'httt请求类型',
+  body text NOT NULL COMMENT 'body内容',
+  params varchar(255) NOT NULL DEFAULT '' COMMENT '参数内容',
+  header varchar(255) NOT NULL DEFAULT '' COMMENT 'header内容',
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp() COMMENT '更新时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='元数据异常信息记录表';`
+
+const indexLengthLinterSQL3 = `CREATE TABLE fdp_metadata_request_error_msg (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'id',
+  action varchar(255)  NOT NULL COMMENT '执行步骤',
+  url varchar(255) NOT NULL COMMENT '请求路径',
+  error_msg text NOT NULL COMMENT '错误信息',
+  query_type varchar(255) NOT NULL COMMENT 'httt请求类型',
+  body text NOT NULL COMMENT 'body内容',
+  params varchar(255) NOT NULL DEFAULT '' COMMENT '参数内容',
+  header varchar(255) NOT NULL DEFAULT '' COMMENT 'header内容',
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp() COMMENT '更新时间',
+  PRIMARY KEY (id),
+  index idx_name (body)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='元数据异常信息记录表';`
+
 func TestNewIndexLengthLinter(t *testing.T) {
+	t.Run("testNewIndexLengthLinter1", testNewIndexLengthLinter1)
+	t.Run("testNewIndexLengthLinter2", testNewIndexLengthLinter2)
+	t.Run("testNewIndexLengthLinter3", testNewIndexLengthLinter3)
+}
+
+func testNewIndexLengthLinter1(t *testing.T) {
 	linter := sqllint.New(linters.NewIndexLengthLinter)
 	if err := linter.Input([]byte(indexLengthLinterSQL), "indexLengthLinterSQL"); err != nil {
 		t.Error(err)
@@ -53,5 +88,28 @@ func TestNewIndexLengthLinter(t *testing.T) {
 	t.Logf("errors: %v", errors)
 	if len(errors) == 0 {
 		t.Fatal("failed")
+	}
+}
+
+func testNewIndexLengthLinter2(t *testing.T) {
+	linter := sqllint.New(linters.NewIndexLengthLinter)
+	if err := linter.Input([]byte(indexLengthLinterSQL2), "indexLengthLinterSQL2"); err != nil {
+		t.Fatal(err)
+	}
+	errors := linter.Errors()
+	if len(errors) > 0 {
+		t.Fatal(errors)
+	}
+}
+
+func testNewIndexLengthLinter3(t *testing.T) {
+	linter := sqllint.New(linters.NewIndexLengthLinter)
+	if err := linter.Input([]byte(indexLengthLinterSQL3), "indexLengthLinterSQL3"); err != nil {
+		t.Fatal(err)
+	}
+	errors := linter.Errors()
+	t.Logf("errors: %v", errors)
+	if len(errors) == 0 {
+		t.Fatal("fails")
 	}
 }
