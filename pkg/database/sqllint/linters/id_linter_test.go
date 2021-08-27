@@ -34,13 +34,6 @@ create table some_table (
 )
 `
 
-const createTableWithErrorIDType = `
-create table some_table (
-	id datetime,
-	created_at datetime
-)
-`
-
 const createTableWithBigintID = `
 create table some_table (
 	id bigint,
@@ -48,9 +41,22 @@ create table some_table (
 )
 `
 
+const createTableWithCharID = `
+create table t1 (
+	id char(36)
+)
+`
+
 const createTableWithVarcharID = `
 create table some_table (
 	id varchar(199),
+	created_at datetime
+)
+`
+
+const createTableWithErrorIDType = `
+create table some_table (
+	id datetime,
 	created_at datetime
 )
 `
@@ -107,25 +113,25 @@ func testNewIDExistsLinterWithID(t *testing.T) {
 }
 
 func TestNewIDTypeLinter(t *testing.T) {
-	t.Run("testNewIDTypeLinterWithErrorIDType", testNewIDTypeLinterWithErrorIDType)
 	t.Run("testNewIDTypeLinterWithBigintID", testNewIDTypeLinterWithBigintID)
+	t.Run("testNewIDTypeLinterWithCharID", testNewIDTypeLinterWithCharID)
+	t.Run("testNewIDTypeLinterWithErrorIDType", testNewIDTypeLinterWithErrorIDType)
 	t.Run("testNewIDTypeLinterWithVarcharID", testNewIDTypeLinterWithVarcharID)
-}
-
-func testNewIDTypeLinterWithErrorIDType(t *testing.T) {
-	linter := sqllint.New(linters.NewIDTypeLinter)
-	if err := linter.Input([]byte(createTableWithErrorIDType), "createTableWithErrorIDType"); err != nil {
-		t.Error(err)
-	}
-
-	if errors := linter.Errors(); len(errors) == 0 {
-		t.Fatal("fails")
-	}
 }
 
 func testNewIDTypeLinterWithBigintID(t *testing.T) {
 	linter := sqllint.New(linters.NewIDTypeLinter)
 	if err := linter.Input([]byte(createTableWithBigintID), "createTableWithBigintID"); err != nil {
+		t.Error(err)
+	}
+	if errors := linter.Errors(); len(errors) > 0 {
+		t.Error("fails")
+	}
+}
+
+func testNewIDTypeLinterWithCharID(t *testing.T) {
+	linter := sqllint.New(linters.NewIDTypeLinter)
+	if err := linter.Input([]byte(createTableWithCharID), "createTableWithCharID"); err != nil {
 		t.Error(err)
 	}
 	if errors := linter.Errors(); len(errors) > 0 {
@@ -140,6 +146,17 @@ func testNewIDTypeLinterWithVarcharID(t *testing.T) {
 	}
 	if errors := linter.Errors(); len(errors) > 0 {
 		t.Error("fails")
+	}
+}
+
+func testNewIDTypeLinterWithErrorIDType(t *testing.T) {
+	linter := sqllint.New(linters.NewIDTypeLinter)
+	if err := linter.Input([]byte(createTableWithErrorIDType), "createTableWithErrorIDType"); err != nil {
+		t.Error(err)
+	}
+
+	if errors := linter.Errors(); len(errors) == 0 {
+		t.Fatal("fails")
 	}
 }
 
