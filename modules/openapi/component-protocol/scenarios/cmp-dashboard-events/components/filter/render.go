@@ -64,7 +64,7 @@ func (f *ComponentFilter) SetCtxBundle(ctx context.Context) error {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok  := f.ctxBdl.InParams["filter__urlQuery"].(string)
+	queryData, ok := f.ctxBdl.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
