@@ -18,13 +18,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -35,9 +33,14 @@ func RenderCreator() protocol.CompRender {
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	_ apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
+	event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
 	if err := f.SetCtxBundle(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component ctx bundle, %v", err)
+	}
+	if event.Operation == apistructs.InitializeOperation {
+		if _, ok := f.ctxBdl.InParams["filter__urlQuery"]; !ok {
+			f.State.Values.Namespace = []string{"default"}
+		}
 	}
 	if err := f.DecodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to decode url query for filter component, %v", err)
@@ -49,7 +52,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *apistructs.Comp
 		return fmt.Errorf("failed to set filter component value, %v", err)
 	}
 	if err := f.EncodeURLQuery(); err != nil {
-		return fmt.Errorf("failed to encode url query for filter component, %v", err)
+		return fmt.Errorf("failed to gen filter component url query, %v", err)
 	}
 	return nil
 }
@@ -72,6 +75,7 @@ func (f *ComponentFilter) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
+
 	var values Values
 	if err := json.Unmarshal(decode, &values); err != nil {
 		return err
@@ -80,30 +84,16 @@ func (f *ComponentFilter) DecodeURLQuery() error {
 	return nil
 }
 
-func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
-	if err != nil {
-		return err
-	}
-
-	encode := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = encode
-	return nil
-}
-
-func (f *ComponentFilter) GenComponentState(c *apistructs.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentFilter) GenComponentState(component *apistructs.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	cont, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
-	err = json.Unmarshal(cont, &state)
-	if err != nil {
-		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -128,19 +118,19 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "workspace-dev",
+		Label: "dev",
 		Value: "dev",
 	}
 	testNs := Option{
-		Label: "workspace-test",
+		Label: "test",
 		Value: "test",
 	}
 	stagingNs := Option{
-		Label: "workspace-staging",
+		Label: "staging",
 		Value: "staging",
 	}
 	productionNs := Option{
-		Label: "workspace-production",
+		Label: "production",
 		Value: "production",
 	}
 	addonNs := Option{
@@ -224,18 +214,63 @@ func (f *ComponentFilter) SetComponentValue() error {
 	f.State.Conditions = append(f.State.Conditions, namespaceCond)
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
-		Key:   "type",
-		Label: "Event Type",
+		Key:         "search",
+		Label:       "Search",
+		Placeholder: "input workload id",
+		Type:        "input",
+		Fixed:       true,
+	})
+
+	f.State.Conditions = append(f.State.Conditions, Condition{
+		Key:   "status",
+		Label: "Status",
 		Type:  "select",
 		Fixed: true,
 		Options: []Option{
 			{
-				Label: "Normal",
-				Value: "Normal",
+				Label: "Active",
+				Value: WorkloadActive,
 			},
 			{
-				Label: "Warning",
-				Value: "Warning",
+				Label: "Error",
+				Value: WorkloadError,
+			},
+			{
+				Label: "Succeed",
+				Value: WorkloadSucceed,
+			},
+			{
+				Label: "Failed",
+				Value: WorkloadFailed,
+			},
+		},
+	})
+
+	f.State.Conditions = append(f.State.Conditions, Condition{
+		Key:   "kind",
+		Label: "Workload Type",
+		Type:  "select",
+		Fixed: true,
+		Options: []Option{
+			{
+				Label: "Deployment",
+				Value: DeploymentType,
+			},
+			{
+				Label: "StatefulSet",
+				Value: StatefulSetType,
+			},
+			{
+				Label: "DaemonSet",
+				Value: DaemonSetType,
+			},
+			{
+				Label: "Job",
+				Value: JobType,
+			},
+			{
+				Label: "CronJob",
+				Value: CronJobType,
 			},
 		},
 	})
@@ -246,6 +281,27 @@ func (f *ComponentFilter) SetComponentValue() error {
 		Reload: true,
 	}
 	return nil
+}
+
+func (f *ComponentFilter) EncodeURLQuery() error {
+	data, err := json.Marshal(f.State.Values)
+	if err != nil {
+		return err
+	}
+
+	encode := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encode
+	return nil
+}
+
+func hasSuffix(name string) (string, bool) {
+	suffixes := []string{"-dev", "-staging", "-test", "-prod"}
+	for _, suffix := range suffixes {
+		if strings.HasSuffix(name, suffix) {
+			return suffix, true
+		}
+	}
+	return "", false
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {
@@ -263,14 +319,4 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 		return "", err
 	}
 	return project.DisplayName, nil
-}
-
-func hasSuffix(name string) (string, bool) {
-	suffixes := []string{"-dev", "-staging", "-test", "-prod"}
-	for _, suffix := range suffixes {
-		if strings.HasSuffix(name, suffix) {
-			return suffix, true
-		}
-	}
-	return "", false
 }

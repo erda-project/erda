@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,6 +40,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/erda-project/erda/modules/cmp/cache"
 )
 
 var (
@@ -54,13 +57,15 @@ type Store struct {
 	clientGetter proxy.ClientGetter
 }
 
-func NewProxyStore(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
+func NewProxyStore(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
 	return &errorStore{
 		Store: &cacheStore{
 			Store: &Store{
 				clientGetter: clientGetter,
 			},
-			asl: asl,
+			ctx:   ctx,
+			cache: cache.FreeCache,
+			asl:   asl,
 		},
 	}
 }

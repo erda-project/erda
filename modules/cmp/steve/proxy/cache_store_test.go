@@ -17,7 +17,6 @@ package proxy
 import (
 	"context"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/rancher/apiserver/pkg/types"
@@ -329,7 +328,6 @@ func TestCacheStoreMethods(t *testing.T) {
 		ctx:     ctx,
 		asl:     accesscontrol.NewAccessStore(ctx, true, &rbacInterface{}),
 		cache:   cache,
-		cancels: sync.Map{},
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://unit.test", nil)

@@ -16,7 +16,9 @@ package eventTable
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -34,11 +36,9 @@ func RenderCreator() protocol.CompRender {
 
 func (t *ComponentEventTable) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
 	event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil {
-		return errors.New("context bundle can not be empty")
+	if err := t.SetCtxBundle(ctx); err != nil {
+		return fmt.Errorf("failed to set eventTable component ctx bundle, %v", err)
 	}
-	t.ctxBdl = bdl
 	if err := t.GenComponentState(component); err != nil {
 		return err
 	}
@@ -53,10 +53,25 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *apistructs.
 		event.Operation == apistructs.ChangeOrgsPageSizeOperationKey {
 		t.State.PageNo = 1
 	}
+	if err := t.DecodeURLQuery(); err != nil {
+		return fmt.Errorf("failed to decode url query for eventTable component, %v", err)
+	}
 	if err := t.RenderList(); err != nil {
 		return err
 	}
+	if err := t.EncodeURLQuery(); err != nil {
+		return fmt.Errorf("failed to encode url query for eventTable component, %v", err)
+	}
 	t.SetComponentValue()
+	return nil
+}
+
+func (t *ComponentEventTable) SetCtxBundle(ctx context.Context) error {
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	if bdl.Bdl == nil {
+		return errors.New("context bundle can not be empty")
+	}
+	t.ctxBdl = bdl
 	return nil
 }
 
@@ -77,6 +92,39 @@ func (t *ComponentEventTable) GenComponentState(component *apistructs.Component)
 		return err
 	}
 	t.State = state
+	return nil
+}
+
+func (t *ComponentEventTable) DecodeURLQuery() error {
+	queryData, ok := t.ctxBdl.InParams["eventTable__urlQuery"].(string)
+	if !ok {
+		return nil
+	}
+	decode, err := base64.StdEncoding.DecodeString(queryData)
+	if err != nil {
+		return err
+	}
+	query := make(map[string]int)
+	if err := json.Unmarshal(decode, &query); err != nil {
+		return err
+	}
+	t.State.PageNo = uint64(query["pageNo"])
+	t.State.PageSize = uint64(query["pageSize"])
+	return nil
+}
+
+func (t *ComponentEventTable) EncodeURLQuery() error {
+	query := make(map[string]int)
+	query["pageNo"] = int(t.State.PageNo)
+	query["pageSize"] = int(t.State.PageSize)
+
+	data, err := json.Marshal(query)
+	if err != nil {
+		return err
+	}
+
+	encode := base64.StdEncoding.EncodeToString(data)
+	t.State.EventTableUQLQuery = encode
 	return nil
 }
 
@@ -232,55 +280,55 @@ func (t *ComponentEventTable) SetComponentValue() {
 			{
 				DataIndex: "lastSeen",
 				Title:     "Last Seen",
-				Width:     "160",
+				Width:     160,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
 				Title:     "Event Type",
-				Width:     "100",
+				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
 				Title:     "Reason",
-				Width:     "100",
+				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "object",
 				Title:     "Object",
-				Width:     "150",
+				Width:     150,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "source",
 				Title:     "Source",
-				Width:     "120",
+				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
 				Title:     "Message",
-				Width:     "120",
+				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "count",
 				Title:     "Count",
-				Width:     "80",
+				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "name",
 				Title:     "Name",
-				Width:     "120",
+				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "namespace",
 				Title:     "Namespace",
-				Width:     "120",
+				Width:     120,
 				Sorter:    true,
 			},
 		},
