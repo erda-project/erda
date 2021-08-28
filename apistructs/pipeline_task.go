@@ -21,6 +21,11 @@ import (
 	"time"
 )
 
+const (
+	// TerminusDefineTag add this tag env to container for collecting logs
+	TerminusDefineTag = "TERMINUS_DEFINE_TAG"
+)
+
 type PipelineTaskDTO struct {
 	ID         uint64 `json:"id"`
 	PipelineID uint64 `json:"pipelineID"`
@@ -47,8 +52,14 @@ type PipelineTaskDTO struct {
 }
 
 type PipelineTaskExtra struct {
-	UUID         string `json:"uuid"`
-	AllowFailure bool   `json:"allowFailure"`
+	UUID           string          `json:"uuid"`
+	AllowFailure   bool            `json:"allowFailure"`
+	TaskContainers []TaskContainer `json:"taskContainers"`
+}
+
+type TaskContainer struct {
+	TaskName    string `json:"taskName"`
+	ContainerID string `json:"containerID"`
 }
 
 type PipelineTaskResult struct {
