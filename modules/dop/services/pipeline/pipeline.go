@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/pkg/pipelinecms"
 	"regexp"
 	"sort"
 	"strconv"
