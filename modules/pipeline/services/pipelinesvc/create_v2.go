@@ -16,6 +16,7 @@ package pipelinesvc
 
 import (
 	"encoding/json"
+	"github.com/erda-project/erda/pkg/pipelinecms"
 	"strconv"
 	"time"
 
@@ -50,10 +51,11 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 	// 立即执行一次
 	if req.AutoRunAtOnce {
 		_p, err := s.RunPipeline(&apistructs.PipelineRunRequest{
-			PipelineID:        p.ID,
-			ForceRun:          req.ForceRun,
-			IdentityInfo:      req.IdentityInfo,
-			PipelineRunParams: req.RunParams,
+			PipelineID:             p.ID,
+			ForceRun:               req.ForceRun,
+			IdentityInfo:           req.IdentityInfo,
+			PipelineRunParams:      req.RunParams,
+			ConfigManageNamespaces: []string{pipelinecms.MakeUserOrgPipelineCmsNs(req.IdentityInfo.UserID)},
 		})
 		if err != nil {
 			logrus.Errorf("failed to run pipeline, pipelineID: %d, err: %v", p.ID, err)
