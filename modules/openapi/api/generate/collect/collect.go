@@ -83,6 +83,9 @@ func parseDir(path string) map[string]*ast.Package {
 		if strings.HasSuffix(info.Name(), "_test.go") {
 			return false
 		}
+		if strings.HasPrefix(info.Name(), "notspec_") {
+			return false
+		}
 		return true
 	}, 0)
 	if err != nil {

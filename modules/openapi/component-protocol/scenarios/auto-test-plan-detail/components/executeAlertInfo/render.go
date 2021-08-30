@@ -50,8 +50,9 @@ type info struct {
 }
 
 type State struct {
-	PipelineID uint64 `json:"pipelineId"`
-	TaskID     uint64 `json:"taskId"`
+	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
+	PipelineID     uint64                        `json:"pipelineId"`
+	TaskID         uint64                        `json:"taskId"`
 }
 
 func (a *ComponentAlertInfo) Import(c *apistructs.Component) error {
@@ -134,6 +135,7 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *apistructs.Component
 			message = rsp.Extra.ShowMessage.Stacks
 			visible = true
 		}
+		i.State.PipelineDetail = rsp
 	}
 	i.Props = map[string]interface{}{
 		"visible":  visible,

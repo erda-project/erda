@@ -46,4 +46,3 @@ func TestComponentWorkloadChart_GenComponentState(t *testing.T) {
 		t.Error("test failed, generate result is unexpected")
 	}
 }
-
