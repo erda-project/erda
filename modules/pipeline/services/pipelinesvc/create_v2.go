@@ -16,7 +16,6 @@ package pipelinesvc
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/pkg/pipelinecms"
 	"strconv"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/pipelinecms"
 )
 
 func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error) {

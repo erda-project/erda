@@ -25,9 +25,10 @@ type ComponentFilter struct {
 }
 
 type State struct {
-	ClusterName string      `json:"clusterName,omitempty"`
-	Conditions  []Condition `json:"conditions,omitempty"`
-	Values      Values      `json:"values,omitempty"`
+	ClusterName    string      `json:"clusterName,omitempty"`
+	Conditions     []Condition `json:"conditions,omitempty"`
+	Values         Values      `json:"values,omitempty"`
+	FilterURLQuery string      `json:"filter_urlQuery,omitempty"`
 }
 
 type Values struct {

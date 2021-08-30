@@ -79,6 +79,21 @@ groups:
           name: Cluster
     - id: application_status
       name: Application Status
+    - id: browser_analysis
+      name: Browser Analysis
+      children:
+        -  id: ta_timing
+           name: Browser Timing
+        -  id: ta_error
+           name: Browser Error
+        -  id: ta_event
+           name: Browser Event
+        -  id: ta_browser
+           name: Browser Info
+        -  id: ta_req
+           name: Browser Request
+        -  id: ta_document
+           name: Browser Document
     - id: custom
       name: Custom
 mapping:
@@ -173,3 +188,16 @@ mapping:
         - name: nodejs_cluster
     application_status:
         - name: status_page
+    # Browser Analysis
+    ta_timing:
+      - name: ta_timing
+    ta_error:
+      - name: ta_error
+    ta_event:
+      - name: ta_event
+    ta_req:
+      - name: ta_req
+    ta_browser:
+      - name: ta_browser
+    ta_document:
+      - name: ta_document

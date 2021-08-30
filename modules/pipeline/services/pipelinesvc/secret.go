@@ -187,16 +187,15 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 
 	namespaces := p.GetConfigManageNamespaces()
 
-	orgID, err := strconv.ParseUint(p.Labels[apistructs.LabelOrgID], 10, 64)
-	if err != nil {
-		return nil, nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
-	}
-
 	// 制品是否需要跨集群
 	needCrossCluster := false
 	if p.Snapshot.AnalyzedCrossCluster != nil && *p.Snapshot.AnalyzedCrossCluster {
 		// 企业级 nexus 配置，包含 platform docker registry
 		if orgIDStr := p.Labels[apistructs.LabelOrgID]; orgIDStr != "" {
+			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+			if err != nil {
+				return nil, nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
+			}
 			org, err := s.bdl.GetOrg(orgID)
 			if err != nil {
 				return nil, nil, nil, nil, err
@@ -223,11 +222,12 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 			if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
 				encryptSecretKeys = append(encryptSecretKeys, c.Key)
 			}
+			secrets[c.Key] = c.Value
+
 			// DiceFile 类型，value 为 diceFileUUID
 			if c.Type == cms.ConfigTypeDiceFile {
 				cmsDiceFiles[c.Key] = c.Value
 			}
-			secrets[c.Key] = c.Value
 		}
 	}
 
