@@ -19,7 +19,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 type accessKeyService struct {
@@ -27,7 +27,7 @@ type accessKeyService struct {
 }
 
 func (s *accessKeyService) QueryAccessKeys(ctx context.Context, req *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
-	objs, err := s.p.dao.QueryAccessKey(ctx, req)
+	objs, total, err := s.p.dao.QueryAccessKey(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -44,16 +44,16 @@ func (s *accessKeyService) QueryAccessKeys(ctx context.Context, req *pb.QueryAcc
 			CreatedAt:   timestamppb.New(obj.CreatedAt),
 		}
 	}
-	return &pb.QueryAccessKeysResponse{Data: res}, nil
+	return &pb.QueryAccessKeysResponse{Data: res, Total: total}, nil
 }
 
-func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*pb.GetAccessKeysResponse, error) {
+func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKeyRequest) (*pb.GetAccessKeyResponse, error) {
 	obj, err := s.p.dao.GetAccessKey(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.GetAccessKeysResponse{Data: &pb.AccessKeysItem{
+	return &pb.GetAccessKeyResponse{Data: &pb.AccessKeysItem{
 		Id:          obj.ID,
 		AccessKey:   obj.AccessKey,
 		SecretKey:   obj.SecretKey,
@@ -65,12 +65,12 @@ func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKe
 	}}, nil
 }
 
-func (s *accessKeyService) CreateAccessKeys(ctx context.Context, req *pb.CreateAccessKeysRequest) (*pb.CreateAccessKeysResponse, error) {
+func (s *accessKeyService) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
 	obj, err := s.p.dao.CreateAccessKey(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateAccessKeysResponse{Data: &pb.AccessKeysItem{
+	return &pb.CreateAccessKeyResponse{Data: &pb.AccessKeysItem{
 		Id:          obj.ID,
 		AccessKey:   obj.AccessKey,
 		SecretKey:   obj.SecretKey,
@@ -82,10 +82,10 @@ func (s *accessKeyService) CreateAccessKeys(ctx context.Context, req *pb.CreateA
 	}}, nil
 }
 
-func (s *accessKeyService) UpdateAccessKeys(ctx context.Context, req *pb.UpdateAccessKeysRequest) (*pb.UpdateAccessKeysResponse, error) {
+func (s *accessKeyService) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) (*pb.UpdateAccessKeyResponse, error) {
 	return nil, s.p.dao.UpdateAccessKey(ctx, req)
 }
 
-func (s *accessKeyService) DeleteAccessKeys(ctx context.Context, req *pb.DeleteAccessKeysRequest) (*pb.DeleteAccessKeysResponse, error) {
+func (s *accessKeyService) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
 	return nil, s.p.dao.DeleteAccessKey(ctx, req)
 }

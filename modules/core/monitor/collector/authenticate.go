@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	akpb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/validator"

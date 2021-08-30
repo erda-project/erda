@@ -20,7 +20,7 @@ import (
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
-	pb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
@@ -46,9 +46,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		pb.RegisterAccessKeyServiceImp(p.Register, p.accessKeyService, apis.Options(), p.Perm.Check(
 			perm.NoPermMethod(pb.AccessKeyServiceServer.QueryAccessKeys),
 			perm.NoPermMethod(pb.AccessKeyServiceClient.GetAccessKey),
-			perm.NoPermMethod(pb.AccessKeyServiceClient.CreateAccessKeys),
-			perm.NoPermMethod(pb.AccessKeyServiceClient.UpdateAccessKeys),
-			perm.NoPermMethod(pb.AccessKeyServiceClient.DeleteAccessKeys),
+			perm.NoPermMethod(pb.AccessKeyServiceClient.CreateAccessKey),
+			perm.NoPermMethod(pb.AccessKeyServiceClient.UpdateAccessKey),
+			perm.NoPermMethod(pb.AccessKeyServiceClient.DeleteAccessKey),
 		))
 	}
 	return nil
@@ -56,14 +56,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.services.accesskey.AccessKeyService" || ctx.Type() == pb.AccessKeyServiceServerType() || ctx.Type() == pb.AccessKeyServiceHandlerType():
+	case ctx.Service() == "erda.core.services.authentication.credentials.accesskey.AccessKeyService" || ctx.Type() == pb.AccessKeyServiceServerType() || ctx.Type() == pb.AccessKeyServiceHandlerType():
 		return p.accessKeyService
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.core.services.accesskey", &servicehub.Spec{
+	servicehub.Register("erda.core.services.authentication.credentials.accesskey", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},

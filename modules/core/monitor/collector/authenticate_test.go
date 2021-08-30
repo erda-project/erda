@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
-	akpb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/pkg/secret"
 	"github.com/erda-project/erda/pkg/secret/hmac"
 )

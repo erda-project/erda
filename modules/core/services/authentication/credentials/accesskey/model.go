@@ -20,7 +20,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 // store secret key pair

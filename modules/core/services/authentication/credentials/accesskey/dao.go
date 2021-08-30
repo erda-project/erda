@@ -19,26 +19,26 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/secret"
 )
 
 type Dao interface {
-	QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, error)
-	CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysRequest) (*AccessKey, error)
-	GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*AccessKey, error)
-	UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysRequest) error
-	DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeysRequest) error
+	QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, int64, error)
+	CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeyRequest) (*AccessKey, error)
+	GetAccessKey(ctx context.Context, req *pb.GetAccessKeyRequest) (*AccessKey, error)
+	UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) error
+	DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) error
 }
 
 type dao struct {
 	db *gorm.DB
 }
 
-func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, error) {
+func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, int64, error) {
 	var objs []AccessKey
-	q := d.db
+	q := d.db.Order("created_at desc")
 	where := make(map[string]interface{})
 	if req.Status != pb.StatusEnum_NOT_SPECIFIED {
 		where["status"] = req.Status
@@ -54,14 +54,25 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 	if req.AccessKey != "" {
 		where["access_key"] = req.AccessKey
 	}
-
-	if res := q.Where(where).Find(&objs); res.Error != nil {
-		return nil, res.Error
+	if req.PageNo > 0 && req.PageSize > 0 {
+		q = q.Offset((req.PageSize - 1) * req.PageNo).Limit(req.PageSize)
 	}
-	return objs, nil
+
+	res := q.Where(where).Find(&objs)
+	if res.Error != nil {
+		return nil, 0, res.Error
+	}
+
+	var count int64
+	cres := res.Count(&count)
+	if cres.Error != nil {
+		return nil, 0, res.Error
+	}
+
+	return objs, count, nil
 }
 
-func (d *dao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysRequest) (*AccessKey, error) {
+func (d *dao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeyRequest) (*AccessKey, error) {
 	obj := toModel(req)
 	q := d.db.Create(&obj)
 	if q.Error != nil {
@@ -70,7 +81,7 @@ func (d *dao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysReque
 	return &obj, nil
 }
 
-func (d *dao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*AccessKey, error) {
+func (d *dao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeyRequest) (*AccessKey, error) {
 	var obj AccessKey
 	q := d.db.Where(&AccessKey{ID: req.Id}).Find(&obj)
 	if q.RecordNotFound() {
@@ -82,7 +93,7 @@ func (d *dao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*
 	return &obj, nil
 }
 
-func (d *dao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysRequest) error {
+func (d *dao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) error {
 	q := d.db.Model(&AccessKey{}).Where(&AccessKey{ID: req.Id})
 	updated := AccessKey{}
 	if req.Status.String() != "" {
@@ -95,12 +106,12 @@ func (d *dao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysReque
 	return q.Error
 }
 
-func (d *dao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeysRequest) error {
+func (d *dao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) error {
 	q := d.db.Model(&AccessKey{}).Where(&AccessKey{ID: req.Id}).Update(&AccessKey{Status: pb.StatusEnum_DELETED})
 	return q.Error
 }
 
-func toModel(req *pb.CreateAccessKeysRequest) AccessKey {
+func toModel(req *pb.CreateAccessKeyRequest) AccessKey {
 	pair := secret.CreateAkSkPair()
 	return AccessKey{
 		AccessKey:   pair.AccessKeyID,

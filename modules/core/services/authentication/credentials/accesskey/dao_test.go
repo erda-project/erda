@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 var (
@@ -51,28 +51,28 @@ func (m *mockDao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysReq
 	}, nil
 }
 
-func (m *mockDao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeysRequest) (*AccessKey, error) {
+func (m *mockDao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeyRequest) (*AccessKey, error) {
 	if m.errorTrigger {
 		return nil, _mockErr
 	}
 	return &_mockAccessKey, nil
 }
 
-func (m *mockDao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeysRequest) (*AccessKey, error) {
+func (m *mockDao) GetAccessKey(ctx context.Context, req *pb.GetAccessKeyRequest) (*AccessKey, error) {
 	if m.errorTrigger {
 		return nil, _mockErr
 	}
 	return &_mockAccessKey, nil
 }
 
-func (m *mockDao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeysRequest) error {
+func (m *mockDao) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) error {
 	if m.errorTrigger {
 		return _mockErr
 	}
 	return nil
 }
 
-func (m *mockDao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeysRequest) error {
+func (m *mockDao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) error {
 	if m.errorTrigger {
 		return _mockErr
 	}

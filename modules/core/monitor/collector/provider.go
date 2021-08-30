@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	akpb "github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 type config struct {
@@ -57,7 +57,7 @@ type provider struct {
 	Logger           logs.Logger
 	writer           writer.Writer
 	Kafka            kafka.Interface
-	AccessKeyService akpb.AccessKeyServiceServer `autowired:"erda.core.services.accesskey.AccessKeyService"`
+	AccessKeyService akpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
 
 	auth *Authenticator
 }

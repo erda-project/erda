@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/erda-project/erda-proto-go/core/services/accesskey/pb"
+	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
@@ -97,13 +97,13 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.GetAccessKeysRequest
+		req *pb.GetAccessKeyRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.GetAccessKeysResponse
+		want    *pb.GetAccessKeyResponse
 		wantErr bool
 	}{
 		{
@@ -112,9 +112,9 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 				p: &provider{dao: &mockDao{}},
 			},
 			args: args{
-				req: &pb.GetAccessKeysRequest{},
+				req: &pb.GetAccessKeyRequest{},
 			},
-			want: &pb.GetAccessKeysResponse{
+			want: &pb.GetAccessKeyResponse{
 				Data: &pb.AccessKeysItem{
 					Id:          "aaa",
 					AccessKey:   "xxx",
@@ -134,7 +134,7 @@ func Test_accessKeyService_GetAccessKey(t *testing.T) {
 				p: &provider{dao: &mockDao{errorTrigger: true}},
 			},
 			args: args{
-				req: &pb.GetAccessKeysRequest{},
+				req: &pb.GetAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: true,
@@ -163,13 +163,13 @@ func Test_accessKeyService_CreateAccessKeys(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.CreateAccessKeysRequest
+		req *pb.CreateAccessKeyRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.CreateAccessKeysResponse
+		want    *pb.CreateAccessKeyResponse
 		wantErr bool
 	}{
 		{
@@ -178,9 +178,9 @@ func Test_accessKeyService_CreateAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{}},
 			},
 			args: args{
-				req: &pb.CreateAccessKeysRequest{},
+				req: &pb.CreateAccessKeyRequest{},
 			},
-			want: &pb.CreateAccessKeysResponse{
+			want: &pb.CreateAccessKeyResponse{
 				Data: &pb.AccessKeysItem{
 					Id:          "aaa",
 					AccessKey:   "xxx",
@@ -200,7 +200,7 @@ func Test_accessKeyService_CreateAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{errorTrigger: true}},
 			},
 			args: args{
-				req: &pb.CreateAccessKeysRequest{},
+				req: &pb.CreateAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: true,
@@ -229,13 +229,13 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.UpdateAccessKeysRequest
+		req *pb.UpdateAccessKeyRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.UpdateAccessKeysResponse
+		want    *pb.UpdateAccessKeyResponse
 		wantErr bool
 	}{
 		{
@@ -244,7 +244,7 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{}},
 			},
 			args: args{
-				req: &pb.UpdateAccessKeysRequest{},
+				req: &pb.UpdateAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: false,
@@ -255,7 +255,7 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{errorTrigger: true}},
 			},
 			args: args{
-				req: &pb.UpdateAccessKeysRequest{},
+				req: &pb.UpdateAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: true,
@@ -284,13 +284,13 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		req *pb.DeleteAccessKeysRequest
+		req *pb.DeleteAccessKeyRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *pb.DeleteAccessKeysResponse
+		want    *pb.DeleteAccessKeyResponse
 		wantErr bool
 	}{
 		{
@@ -299,7 +299,7 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{}},
 			},
 			args: args{
-				req: &pb.DeleteAccessKeysRequest{},
+				req: &pb.DeleteAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: false,
@@ -310,7 +310,7 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 				p: &provider{dao: &mockDao{errorTrigger: true}},
 			},
 			args: args{
-				req: &pb.DeleteAccessKeysRequest{},
+				req: &pb.DeleteAccessKeyRequest{},
 			},
 			want:    nil,
 			wantErr: true,
