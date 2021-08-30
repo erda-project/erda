@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gocql/gocql"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
@@ -49,13 +47,13 @@ type provider struct {
 		cassandra writer.Writer
 		kafka     writer.Writer
 	}
-	cassandraSession *gocql.Session
+	cassandraSession *cassandra.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.ttlSec = int(p.Cfg.Output.Cassandra.TTL.Seconds())
 	cassandra := ctx.Service("cassandra").(cassandra.Interface)
-	session, err := cassandra.Session(&p.Cfg.Output.Cassandra.SessionConfig)
+	session, err := cassandra.NewSession(&p.Cfg.Output.Cassandra.SessionConfig)
 	p.cassandraSession = session
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)

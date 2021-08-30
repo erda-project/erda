@@ -19,7 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -29,8 +31,10 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/i18n"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
@@ -42,7 +46,7 @@ var Render = apis.ApiSpec{
 	Path:         "/api/component-protocol/actions/render",
 	Scheme:       "http",
 	Method:       "POST",
-	Custom:       protocolRender,
+	Custom:       proxyAndLegacy,
 	RequestType:  apistructs.ComponentProtocolRequest{},
 	ResponseType: apistructs.ComponentProtocolResponse{},
 	Doc:          "某场景下，用户操作，触发后端业务逻辑，重新渲染协议",
@@ -51,7 +55,62 @@ var Render = apis.ApiSpec{
 	IsOpenAPI:    true,
 }
 
-func protocolRender(w http.ResponseWriter, r *http.Request) {
+func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
+	// get scenario from query params
+	scenario := r.URL.Query().Get("scenario")
+
+	// bind scenario proxy
+	needProxy, proxyConfig := types.CPConfigs.ScenarioNeedProxy(scenario)
+	if !needProxy {
+		// not found bind, use legacy
+		logrus.Infof("scenario %s no need proxy, execute legacy openapi protocol render", scenario)
+		legacyProtocolRender(rw, r)
+		return
+	}
+
+	// new proxy
+	// get addr by app
+	if proxyConfig.Addr == "" {
+		if proxyConfig.App == "" {
+			http.Error(rw, fmt.Sprintf("no addr or app for scenario proxy, scenario: %s", scenario), http.StatusBadRequest)
+			return
+		}
+		addr, err := discover.GetEndpoint(proxyConfig.App)
+		if err != nil {
+			http.Error(rw, fmt.Sprintf("failed to get addr through discover, scenario: %s, app: %s, err: %v",
+				scenario, proxyConfig.App, err), http.StatusInternalServerError)
+			return
+		}
+		proxyConfig.Addr = addr
+	}
+	logrus.Infof("scenario %s need proxy, proxy to app: %s, addr: %s", scenario, proxyConfig.App, proxyConfig.Addr)
+	proxy := httputil.ReverseProxy{
+		Director:       newProxyDirector(*proxyConfig),
+		FlushInterval:  -1,
+		ModifyResponse: modifyProxyResponse(*proxyConfig),
+		ErrorHandler:   errorHandler,
+	}
+	proxy.ServeHTTP(rw, r)
+	return
+}
+
+func newProxyDirector(proxyConfig types.ProxyConfig) func(*http.Request) {
+	return func(r *http.Request) {
+		schema := "http"
+		if strings.HasPrefix(schema, "https://") {
+			schema = "https"
+		}
+		proxyConfig.Addr = strings.TrimPrefix(proxyConfig.Addr, schema+"://")
+		r.URL.Scheme = schema
+		r.Host = proxyConfig.Addr
+		r.URL.Host = proxyConfig.Addr
+		path := r.URL.EscapedPath()
+		path = strutil.Concat("/", strutil.TrimPrefixes(path, "/"))
+		r.Header.Set("Origin-Path", path)
+	}
+}
+
+func legacyProtocolRender(w http.ResponseWriter, r *http.Request) {
 	req := apistructs.ComponentProtocolRequest{}
 	d := json.NewDecoder(r.Body)
 	if err := d.Decode(&req); err != nil {

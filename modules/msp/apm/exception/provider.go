@@ -17,8 +17,6 @@ package exception
 import (
 	"fmt"
 
-	"github.com/gocql/gocql"
-
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -38,11 +36,11 @@ type provider struct {
 	Register         transport.Register
 	Cassandra        cassandra.Interface `autowired:"cassandra"`
 	exceptionService *exceptionService
-	cassandraSession *gocql.Session
+	cassandraSession *cassandra.Session
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	session, err := p.Cassandra.Session(&p.Cfg.Cassandra)
+	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
 	if err != nil {
 		return fmt.Errorf("fail to create cassandra session: %s", err)
 	}
