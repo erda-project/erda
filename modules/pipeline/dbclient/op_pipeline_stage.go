@@ -77,13 +77,6 @@ func (client *Client) ListPipelineStageByPipelineID(pipelineID uint64, ops ...Se
 	if err := session.Find(&stageList, spec.PipelineStage{PipelineID: pipelineID}); err != nil {
 		return nil, err
 	}
-	for i, stage := range stageList {
-		tmp, err := client.GetPipelineStageWithPreStatus(stage.ID, ops...)
-		if err != nil {
-			return nil, err
-		}
-		stageList[i] = tmp
-	}
 	return stageList, nil
 }
 
