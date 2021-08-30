@@ -525,7 +525,7 @@ func (s *TestSchedule) Next(t time.Time) time.Time {
 }
 
 func TestRun(t *testing.T) {
-	cron := New()
+	cron := New(WithoutDLock(true))
 	go cron.run()
 
 	done := make(chan bool)
