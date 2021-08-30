@@ -16,9 +16,10 @@ package adapter
 
 import (
 	"context"
-	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	"reflect"
 	"testing"
+
+	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
 func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
@@ -35,9 +36,7 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 		args    args
 		want    *pb.GetInstrumentationLibraryResponse
 		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
+	}{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &adapterService{

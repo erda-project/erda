@@ -18,9 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	config2 "github.com/recallsong/go-utils/config"
+
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
-	config2 "github.com/recallsong/go-utils/config"
 )
 
 type adapterService struct {
