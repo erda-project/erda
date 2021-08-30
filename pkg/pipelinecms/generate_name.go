@@ -15,12 +15,12 @@ package pipelinecms
 
 import "fmt"
 
-func MakeUserOrgPipelineCmsNs(userID string) string {
-	return fmt.Sprintf("user-%s", userID)
+func MakeUserOrgPipelineCmsNs(userID string, orgID uint64) string {
+	return fmt.Sprintf("user-%s-org-%d", userID, orgID)
 }
 
-func MakeOrgGittarTokenPipelineCmsNsConfig(orgID uint64) string {
-	return fmt.Sprintf("org-%d-gittar-token", orgID)
+func MakeOrgGittarTokenPipelineCmsNsConfig() string {
+	return "org-gittar-token"
 }
 
 func MakeOrgGittarUsernamePipelineCmsNsConfig() string {

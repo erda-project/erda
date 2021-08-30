@@ -377,7 +377,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		PipelineID:             pipelineID,
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
-		ConfigManageNamespaces: []string{fmt.Sprintf("user-%s", identityInfo.UserID)},
+		ConfigManageNamespaces: []string{pipelinecms.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 	}); err != nil {
 		var apiError, ok = err.(*errorresp.APIError)
 		if !ok {
@@ -417,11 +417,11 @@ func (e *Endpoints) updateCmsNsConfigs(userID string, orgID uint64) error {
 
 	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
 		&cmspb.CmsNsConfigsUpdateRequest{
-			Ns:             pipelinecms.MakeUserOrgPipelineCmsNs(userID),
+			Ns:             pipelinecms.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),
 			KVs: map[string]*cmspb.PipelineCmsConfigValue{
-				pipelinecms.MakeOrgGittarUsernamePipelineCmsNsConfig():   {Value: "git", EncryptInDB: true},
-				pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig(orgID): {Value: members[0].Token, EncryptInDB: true}},
+				pipelinecms.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
+				pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
 		})
 
 	return err

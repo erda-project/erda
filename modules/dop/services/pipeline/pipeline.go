@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/pkg/pipelinecms"
+
 	"regexp"
 	"sort"
 	"strconv"
@@ -407,7 +407,7 @@ func updateGitCheckoutPipelineYml(pipelineYml string, orgID uint64) (string, err
 						v.Params["username"] = fmt.Sprintf("((%s))", pipelinecms.MakeOrgGittarUsernamePipelineCmsNsConfig())
 					}
 					if _, ok := v.Params["password"]; ok && v.Params["password"] == "((gittar.password))" {
-						v.Params["password"] = fmt.Sprintf("((%s))", pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig(orgID))
+						v.Params["password"] = fmt.Sprintf("((%s))", pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig())
 					}
 				}
 			}
