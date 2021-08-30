@@ -34,6 +34,7 @@ DEBUG=true
 DICE_ON_DICE=xxxx
 
 # kratos
+UC_ENABLED=false
 ORY_ENABLED=true
 ORY_KRATOS_ADDR=kratos:4433
 ORY_KRATOS_PRIVATE_ADDR=kratos:4434
@@ -51,6 +52,7 @@ DICE_LOGIN_CALLBACK=http://one.erda.local:9529/logincb
 COOKIE_DOMAIN=.erda.local
 CSRF_COOKIE_DOMAIN=.erda.local
 REDIRECT_URL_WHITE_LIST=http://uc.erda.local:8080/oauth/authorize
+GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
 
 # public urls
 UC_PUBLIC_URL=http://uc.erda.local:8080

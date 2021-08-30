@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -102,12 +103,19 @@ func resolveEndpoint(serviceName string) (endpoint string, err error) {
 }
 
 func GetEndpoint(serviceName string) (endpoint string, err error) {
+	if envKey, ok := servicesEnvKeys[serviceName]; ok {
+		v := os.Getenv(envKey)
+		if v != "" {
+			return v, nil
+		}
+	}
 	endpoint, ok := getEndpoint(serviceName)
 	if ok {
 		return
 	}
 	endpoint, err = resolveEndpoint(serviceName)
 	if err != nil {
+		logrus.Infof("get endpoint failed, service name: %s, error: %s", serviceName, err)
 		return
 	}
 	go setEndpoint(serviceName, endpoint)

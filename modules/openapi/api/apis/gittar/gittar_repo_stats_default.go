@@ -21,7 +21,7 @@ import (
 
 var GITTAR_REPO_STATS_DEFAULT = apis.ApiSpec{
 	Path:         "/api/gittar/<org>/<repo>/stats",
-	BackendPath:  "/<org>/<repo>/stats/",
+	BackendPath:  "/<org>/<repo>/stats",
 	Host:         "gittar.marathon.l4lb.thisdcos.directory:5566",
 	Scheme:       "http",
 	Method:       "GET",

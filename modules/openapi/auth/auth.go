@@ -185,7 +185,7 @@ func whichCheck(req *http.Request, spec *spec.Spec) (checkType, error) {
 }
 
 func (a *Auth) checkLogin(req *http.Request, user *User, spec *spec.Spec) AuthResult {
-	return user.IsLogin(req, spec)
+	return user.IsLogin(req)
 }
 
 // checkToken try:

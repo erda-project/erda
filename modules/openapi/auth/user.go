@@ -27,7 +27,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	apispec "github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -84,7 +83,7 @@ func NewUser(redisCli *redis.Client) *User {
 	return &User{state: GetInit, redisCli: redisCli, ucUserAuth: ucUserAuth, bundle: bundle.New(bundle.WithCoreServices(), bundle.WithDOP())}
 }
 
-func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (interface{}, AuthResult) {
+func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResult) {
 	switch u.state {
 	case GetInit:
 		session := req.Context().Value("session")
@@ -185,14 +184,14 @@ func (u *User) get(req *http.Request, state GetUserState, spec *apispec.Spec) (i
 	panic("unreachable")
 }
 
-func (u *User) IsLogin(req *http.Request, spec *apispec.Spec) AuthResult {
-	_, authr := u.get(req, GotToken, spec)
+func (u *User) IsLogin(req *http.Request) AuthResult {
+	_, authr := u.get(req, GotToken)
 	return authr
 }
 
 // 获取用户信息
 func (u *User) GetInfo(req *http.Request) (ucauth.UserInfo, AuthResult) {
-	info, authr := u.get(req, GotInfo, nil)
+	info, authr := u.get(req, GotInfo)
 	if authr.Code != AuthSucc {
 		return ucauth.UserInfo{}, authr
 	}
@@ -201,7 +200,7 @@ func (u *User) GetInfo(req *http.Request) (ucauth.UserInfo, AuthResult) {
 
 // 获取用户orgID
 func (u *User) GetScopeInfo(req *http.Request) (ScopeInfo, AuthResult) {
-	scopeinfo, authr := u.get(req, GotScopeInfo, nil)
+	scopeinfo, authr := u.get(req, GotScopeInfo)
 	if authr.Code != AuthSucc {
 		return ScopeInfo{}, authr
 	}

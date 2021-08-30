@@ -34,12 +34,12 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api"
 	apispec "github.com/erda-project/erda/modules/openapi/api/spec"
 	"github.com/erda-project/erda/modules/openapi/auth"
+	"github.com/erda-project/erda/modules/openapi/hooks"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/monitor"
 	"github.com/erda-project/erda/modules/openapi/proxy"
 	phttp "github.com/erda-project/erda/modules/openapi/proxy/http"
 	"github.com/erda-project/erda/modules/openapi/proxy/ws"
-	validatehttp "github.com/erda-project/erda/modules/openapi/validate/http"
 )
 
 type ReverseProxyWithAuth struct {
@@ -75,10 +75,6 @@ func (r *ReverseProxyWithAuth) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 	}
 	switch spec.Scheme {
 	case apispec.HTTP:
-		_, err := validatehttp.ValidateRequest(req)
-		if err != nil {
-			// pass
-		}
 		monitor.Notify(monitor.Info{
 			Tp:     monitor.APIInvokeCount,
 			Detail: spec.Path.String(),
@@ -148,9 +144,11 @@ func modifyResponse(res *http.Response) error {
 		return err
 	}
 	if !spec.ChunkAPI {
-		if err = posthandle.InjectUserInfo(res, spec.NeedDesensitize); err != nil {
-			logrus.Errorf("failed to inject userinfo: %v", err)
-			return err
+		if hooks.Enable {
+			if err = posthandle.InjectUserInfo(res, spec.NeedDesensitize); err != nil {
+				logrus.Errorf("failed to inject userinfo: %v", err)
+				return err
+			}
 		}
 	}
 

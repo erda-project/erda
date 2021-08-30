@@ -21,7 +21,29 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth/compatibility"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth/ory-kratos"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth/password"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth/token"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/auth/uc-session"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/example/backend"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/example/custom-register"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/example/custom-route-source"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/example/publish"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/interceptors/audit"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/interceptors/common"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/interceptors/csrf"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/interceptors/dump"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/interceptors/user-info"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/custom"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/dynamic"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/openapi-v1"
+	_ "github.com/erda-project/erda/modules/core/openapi-ng/routes/proto"
 	_ "github.com/erda-project/erda/modules/openapi"
+	_ "github.com/erda-project/erda/providers/service-discover/erda-discover"
+	_ "github.com/erda-project/erda/providers/service-discover/fixed-discover"
 )
 
 func main() {

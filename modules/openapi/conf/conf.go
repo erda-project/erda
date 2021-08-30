@@ -26,28 +26,30 @@ import (
 )
 
 type Conf struct {
-	ListenAddr          string `default:":9529" env:"LISTEN_ADDR"`
-	RedisMasterName     string `default:"my-master" env:"REDIS_MASTER_NAME"`
-	RedisSentinelAddrs  string `default:"" env:"REDIS_SENTINELS_ADDR"`
-	RedisAddr           string `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
-	RedisPwd            string `default:"anywhere" env:"REDIS_PASSWORD"`
-	UCAddrFront         string `default:"" env:"UC_PUBLIC_ADDR"`
-	UCRedirectHost      string `default:"openapi.test.terminus.io" env:"SELF_PUBLIC_ADDR"`
-	UCClientID          string `default:"dice" env:"UC_CLIENT_ID"`
-	UCClientSecret      string `default:"secret" env:"UC_CLIENT_SECRET"`
-	RedirectAfterLogin  string `default:"//dice.test.terminus.io/" env:"UI_PUBLIC_ADDR"`
-	CMDBCurrentUserHost string `default:"cmdb.marathon.l4lb.thisdcos.directory:9093" env:"CMDB_ADDR"`
-	CookieDomain        string `default:".terminus.io,.erda.cloud" env:"COOKIE_DOMAIN"`
-	OldCookieDomain     string `default:"" env:"OLD_COOKIE_DOMAIN"`
-	SessionCookieName   string `default:"OPENAPISESSION" env:"SESSION_COOKIE_NAME"`
-	CSRFCookieDomain    string `default:"" env:"CSRF_COOKIE_DOMAIN"`
-	UseK8S              string `env:"DICE_CLUSTER_TYPE"`
-	SurveyDingding      string `env:"SURVEY_DINGDING"`
-	DiceProtocol        string `env:"DICE_PROTOCOL"`
-	CustomNamespace     string `env:"CUSTOM_NAMESPACE"`
-	SelfPublicURL       string `env:"SELF_PUBLIC_URL" required:"true"`
-	ExportUserWithRole  string `default:"false" env:"EXPORT_USER_WITH_ROLE"`
-	ErdaSystemFQDN      string `env:"ERDA_SYSTEM_FQDN"`
+	ListenAddr string `default:":9529" env:"LISTEN_ADDR"`
+
+	RedisMasterName    string `default:"my-master" env:"REDIS_MASTER_NAME"`
+	RedisSentinelAddrs string `default:"" env:"REDIS_SENTINELS_ADDR"`
+	RedisAddr          string `default:"127.0.0.1:6379" env:"REDIS_ADDR"`
+	RedisPwd           string `default:"anywhere" env:"REDIS_PASSWORD"`
+
+	UCAddrFront        string `default:"" env:"UC_PUBLIC_ADDR"`
+	UCRedirectHost     string `default:"openapi.test.terminus.io" env:"SELF_PUBLIC_ADDR"`
+	UCClientID         string `default:"dice" env:"UC_CLIENT_ID"`
+	UCClientSecret     string `default:"secret" env:"UC_CLIENT_SECRET"`
+	RedirectAfterLogin string `default:"//dice.test.terminus.io/" env:"UI_PUBLIC_ADDR"`
+	CookieDomain       string `default:".terminus.io,.erda.cloud" env:"COOKIE_DOMAIN"`
+	OldCookieDomain    string `default:"" env:"OLD_COOKIE_DOMAIN"`
+	SessionCookieName  string `default:"OPENAPISESSION" env:"SESSION_COOKIE_NAME"`
+	CSRFCookieDomain   string `default:"" env:"CSRF_COOKIE_DOMAIN"`
+
+	UseK8S             string `env:"DICE_CLUSTER_TYPE"`
+	SurveyDingding     string `env:"SURVEY_DINGDING"`
+	DiceProtocol       string `env:"DICE_PROTOCOL"`
+	CustomNamespace    string `env:"CUSTOM_NAMESPACE"`
+	SelfPublicURL      string `env:"SELF_PUBLIC_URL"`
+	ExportUserWithRole string `default:"false" env:"EXPORT_USER_WITH_ROLE"`
+	ErdaSystemFQDN     string `env:"ERDA_SYSTEM_FQDN"`
 
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/openapi/oauth2/:/oauth2/:rw' 容器内挂载点的值
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
@@ -64,6 +66,10 @@ type Conf struct {
 }
 
 var cfg Conf
+
+func init() {
+	envconf.MustLoad(&cfg)
+}
 
 // Load 加载环境变量配置
 func Load() {
@@ -111,10 +117,6 @@ func UCClientSecret() string {
 
 func RedirectAfterLogin() string {
 	return cfg.RedirectAfterLogin
-}
-
-func CMDBCurrentUserHost() string {
-	return cfg.CMDBCurrentUserHost
 }
 
 func CookieDomain() string {
