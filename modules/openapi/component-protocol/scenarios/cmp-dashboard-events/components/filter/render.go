@@ -16,7 +16,9 @@ package filter
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,19 +36,58 @@ func RenderCreator() protocol.CompRender {
 
 func (f *ComponentFilter) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
 	_ apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
+	if err := f.SetCtxBundle(ctx); err != nil {
+		return fmt.Errorf("failed to set filter component ctx bundle, %v", err)
+	}
+	if err := f.DecodeURLQuery(); err != nil {
+		return fmt.Errorf("failed to decode url query for filter component, %v", err)
+	}
+	if err := f.GenComponentState(component); err != nil {
+		return fmt.Errorf("failed to gen filter component state, %v", err)
+	}
+	if err := f.SetComponentValue(); err != nil {
+		return fmt.Errorf("failed to set filter component value, %v", err)
+	}
+	if err := f.EncodeURLQuery(); err != nil {
+		return fmt.Errorf("failed to encode url query for filter component, %v", err)
+	}
+	return nil
+}
+
+func (f *ComponentFilter) SetCtxBundle(ctx context.Context) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 	if bdl.Bdl == nil {
-		return errors.New("context bundle can not be empty")
+		return errors.New("bundle in context can not be empty")
 	}
 	f.ctxBdl = bdl
+	return nil
+}
 
-	if err := f.GenComponentState(component); err != nil {
+func (f *ComponentFilter) DecodeURLQuery() error {
+	queryData, ok := f.ctxBdl.InParams["filter__urlQuery"].(string)
+	if !ok {
+		return nil
+	}
+	decode, err := base64.StdEncoding.DecodeString(queryData)
+	if err != nil {
+		return err
+	}
+	var values Values
+	if err := json.Unmarshal(decode, &values); err != nil {
+		return err
+	}
+	f.State.Values = values
+	return nil
+}
+
+func (f *ComponentFilter) EncodeURLQuery() error {
+	data, err := json.Marshal(f.State.Values)
+	if err != nil {
 		return err
 	}
 
-	if err := f.SetComponentValue(); err != nil {
-		return err
-	}
+	encode := base64.StdEncoding.EncodeToString(data)
+	f.State.FilterURLQuery = encode
 	return nil
 }
 
@@ -87,19 +128,19 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "dev",
+		Label: "workspace-dev",
 		Value: "dev",
 	}
 	testNs := Option{
-		Label: "test",
+		Label: "workspace-test",
 		Value: "test",
 	}
 	stagingNs := Option{
-		Label: "staging",
+		Label: "workspace-staging",
 		Value: "staging",
 	}
 	productionNs := Option{
-		Label: "production",
+		Label: "workspace-production",
 		Value: "production",
 	}
 	addonNs := Option{

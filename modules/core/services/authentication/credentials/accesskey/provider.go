@@ -26,6 +26,8 @@ import (
 )
 
 type config struct {
+	Library    []string `json:"library"`
+	ConfigFile []string `json:"configFile"`
 }
 
 // +provider

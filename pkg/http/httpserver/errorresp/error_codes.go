@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Error Codes i18n templates
@@ -32,6 +33,7 @@ var (
 	templateAlreadyExists         = i18n.NewTemplate("AlreadyExists", "资源已存在")
 	templateInternalError         = i18n.NewTemplate("InternalError", "异常 %s")
 	templateErrorVerificationCode = i18n.NewTemplate("ErrorVerificationCode", "验证码错误 %s")
+	templateAuthorizedRoles       = i18n.NewTemplate("AuthorizedRoles", "有权限的角色: %s")
 )
 
 // MissingParameter 缺少参数
@@ -68,6 +70,11 @@ func (e *APIError) AccessDenied() *APIError {
 func (e *APIError) NotFound() *APIError {
 	return e.dup().appendCode(http.StatusNotFound, "NotFound").
 		appendLocaleTemplate(templateNotFound)
+}
+
+// Error prompts who has permission for the request
+func (e *APIError) AppendAuthorizedRoles(roles []string) *APIError {
+	return e.dup().appendLocaleTemplate(templateAuthorizedRoles, strutil.Join(roles, ", "))
 }
 
 func IsNotFound(e error) bool {
