@@ -22,7 +22,7 @@ type LogServiceInstanceDB struct {
 
 func (db *LogServiceInstanceDB) AddOrUpdateEsUrls(instanceId, esUrls, esConfig string) error {
 	var instance LogServiceInstance
-	resp := db.Where("instance_id=?", instanceId).Limit(1).Find(&instance)
+	resp := db.Where("id=?", instanceId).Limit(1).Find(&instance)
 
 	if resp.Error == nil && instance.EsUrls == esUrls && instance.EsConfig == esConfig {
 		return nil
@@ -38,7 +38,7 @@ func (db *LogServiceInstanceDB) AddOrUpdateEsUrls(instanceId, esUrls, esConfig s
 		return resp.Error
 	}
 
-	instance = LogServiceInstance{InstanceID: instanceId, EsUrls: esUrls, EsConfig: esConfig}
+	instance = LogServiceInstance{ID: instanceId, EsUrls: esUrls, EsConfig: esConfig}
 	if db.Dialect().GetName() == "mysql" {
 		return db.Set("gorm:insert_modifier", "IGNORE").Save(&instance).Error
 	}
