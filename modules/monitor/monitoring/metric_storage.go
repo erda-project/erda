@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metricq
+package monitoring
 
 import (
 	"context"
@@ -23,11 +23,14 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const tsqlMetric = `SELECT count(%s) AS doc_cnt, %s AS doc_label FROM %s GROUP BY %s`
+
 var (
-	storageUsage = prometheus.NewGaugeVec(
+	metricStorageUsage = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name:      "usage_bytes",
 			Namespace: "metric",
@@ -38,53 +41,14 @@ var (
 	)
 )
 
-func (p *provider) monitoring() {
-	prometheus.MustRegister(storageUsage)
-
-	smetric := &esStorageMetric{
-		metricQ: p.q,
-	}
-	ticker := time.NewTicker(time.Minute * 5)
-	defer ticker.Stop()
-	for {
-		data, err := smetric.UsageSummaryOrg()
-		if err != nil {
-			p.L.Errorf("sync storage usage failed: %s", err)
-		}
-		for k, v := range data {
-			storageUsage.WithLabelValues(k).Set(float64(v))
-		}
-		p.L.Infof("data: %+v", data)
-		select {
-		case <-ticker.C:
-		}
-	}
-}
-
-type groupType string
-
-const (
-	orgName = "organization"
-)
-
-type usage struct {
-	groupKey   string
-	groupValue string
-	UsageBytes uint
-}
-
-type storageMetric interface {
-	UsageSummaryOrg() (map[string]uint64, error)
-}
-
+// store metric with elasticsearch
 type esStorageMetric struct {
-	metricQ Queryer
-	cache   interface{}
+	metricQ metricq.Queryer
 }
 
-const (
-	tsqlGroupCount = `SELECT count(%s) AS doc_cnt, %s AS doc_label FROM %s GROUP BY %s`
-)
+func newEsStorageMetric(metricQ metricq.Queryer) storageMetric {
+	return &esStorageMetric{metricQ: metricQ}
+}
 
 // 1. get all indices info
 // 2. get doc count with group
@@ -194,8 +158,8 @@ type record struct {
 }
 
 func (es *esStorageMetric) docCount(contField, metricName string) (map[string]uint64, error) {
-	stmt := fmt.Sprintf(tsqlGroupCount, contField, contField, metricName, contField)
-	rs, err := es.metricQ.Query(InfluxQL, stmt, nil, nil)
+	stmt := fmt.Sprintf(tsqlMetric, contField, contField, metricName, contField)
+	rs, err := es.metricQ.Query(metricq.InfluxQL, stmt, nil, nil)
 	if err != nil {
 		return nil, err
 	}
