@@ -12,26 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package issueFilter
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers
-	_ "github.com/erda-project/erda-infra/providers/component-protocol"
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-infra/providers/i18n"
-	_ "github.com/erda-project/erda-infra/providers/serviceregister"
-	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
-	_ "github.com/erda-project/erda/modules/dop"
-
-	// components
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/dop/dop.yaml",
-	})
+func init() {
+	base.InitProviderWithCreator("issue-manage", "issueFilter",
+		func() servicehub.Provider { return &ComponentFilter{} })
 }

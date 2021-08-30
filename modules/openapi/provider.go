@@ -21,10 +21,17 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
-type provider struct{}
+type config struct {
+	CP types.ComponentProtocolConfigs `file:"component-protocol"`
+}
+
+type provider struct {
+	Cfg *config
+}
 
 func (p *provider) Run(ctx context.Context) error {
 	logrus.Infof(version.String())
@@ -34,12 +41,14 @@ func (p *provider) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	types.CPConfigs = p.Cfg.CP
 	return srv.ListenAndServe()
 }
 
 func init() {
 	servicehub.Register("openapi", &servicehub.Spec{
-		Services: []string{"openapi"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Services:   []string{"openapi"},
+		ConfigFunc: func() interface{} { return &config{} },
+		Creator:    func() servicehub.Provider { return &provider{} },
 	})
 }

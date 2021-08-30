@@ -255,14 +255,14 @@ func ProtoCompStateRending(ctx context.Context, p *apistructs.ComponentProtocol,
 			// get bound key value
 			stateFromValue, err = GetProtoCompStateValue(p, stateFrom, stateFromKey)
 			if err != nil {
-				logrus.Errorf("get protocol component state value failed, component:%s, key:%s", stateFrom, stateFromKey)
+				logrus.Errorf("failed to get component state value, component: %s, key: %s", stateFrom, stateFromKey)
 				return err
 			}
 		}
 		// set component state value
 		err = SetCompStateValueFromComps(pc, state.Name, stateFromValue)
 		if err != nil {
-			logrus.Errorf("set component state failed, component:%s, state key:%s, value:%+v", pc.Name, state.Name, stateFromValue)
+			logrus.Errorf("failed to set component state, component: %s, state key: %s, value: %+v", pc.Name, state.Name, stateFromValue)
 			return err
 		}
 	}

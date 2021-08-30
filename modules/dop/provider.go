@@ -30,18 +30,57 @@ package dop
 
 import (
 	"context"
+	"embed"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/pkg/dumpstack"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
+//go:embed component-protocol/scenarios
+var scenarioFS embed.FS
+
 type provider struct {
-	PipelineCms cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	Log logs.Logger
+
+	PipelineCms cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+
+	Protocol componentprotocol.Interface
+	Tran     i18n.Translator `translator:"component-protocol"`
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	p.Log.Info("init dop")
+
+	// component-protocol
+	p.Log.Info("init component-protocol")
+	p.Protocol.SetI18nTran(p.Tran) // use custom i18n translator
+	// compatible for legacy protocol context bundle
+	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bundle.New(
+		// bundle.WithDOP(), // TODO change to internal method invoke in component-protocol
+		bundle.WithAllAvailableClients(),
+		bundle.WithHTTPClient(
+			httpclient.New(
+				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithEnableAutoRetry(false),
+			)),
+	))
+	protocol.MustRegisterProtocolsFromFS(scenarioFS)
+	p.Log.Info("init component-protocol done")
+
+	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
