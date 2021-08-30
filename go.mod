@@ -54,6 +54,7 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/golang/mock v1.5.0
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
@@ -101,7 +102,7 @@ require (
 	github.com/rancher/remotedialer v0.2.6-0.20210318171128-d1ebd5202be4
 	github.com/rancher/steve v0.0.0-20210520191028-52f86dce9bd4
 	github.com/rancher/wrangler v0.8.1-0.20210423003607-f71a90542852
-	github.com/recallsong/go-utils v1.1.2-0.20210630062503-8880bcf66750
+	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
@@ -113,7 +114,7 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
@@ -133,6 +134,7 @@ require (
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210729151513-df9385d47c1b
+	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4

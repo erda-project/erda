@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -56,13 +57,14 @@ type Store struct {
 	clientGetter proxy.ClientGetter
 }
 
-func NewProxyStore(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup, cache *cache.Cache) types.Store {
+func NewProxyStore(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) types.Store {
 	return &errorStore{
 		Store: &cacheStore{
 			Store: &Store{
 				clientGetter: clientGetter,
 			},
-			cache: cache,
+			ctx:   ctx,
+			cache: cache.FreeCache,
 			asl:   asl,
 		},
 	}

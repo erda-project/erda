@@ -71,6 +71,7 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 	params.Add("timeout", fmt.Sprintf("%vs", int(c.Timeout.Seconds())))
 	params.Add("multiStatements", "true")
 	params.Add("charset", "utf8mb4,utf8")
+	params.Add("loc", "Local")
 	return dsn + "?" + params.Encode()
 }
 

@@ -58,6 +58,11 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 	if err != nil {
 		return err
 	}
+	org, err := cdp.bdl.GetOrg(orgID)
+	if err != nil {
+		logrus.Errorf("failed to get org info err: %s", err)
+		return err
+	}
 	pipelineDetail, err := cdp.bdl.GetPipeline(pipelineData.PipelineID)
 	if err != nil {
 		return err
@@ -171,7 +176,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 				"appName":        pipelineDetail.ApplicationName,
 				"projectID":      strconv.FormatUint(pipelineDetail.ProjectID, 10),
 				"projectName":    pipelineDetail.ProjectName,
-				"orgName":        pipelineDetail.OrgName,
+				"orgName":        org.Name,
 				"branch":         pipelineDetail.Branch,
 				"uiPublicURL":    conf.UIPublicURL(),
 			}
