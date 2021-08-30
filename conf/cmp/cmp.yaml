@@ -1,6 +1,26 @@
 cmp:
 
+# component-protocol framework
+component-protocol:
+# components
+component-protocol.components.events-list.eventTable:
+component-protocol.components.events-list.filter:
+component-protocol.components.workloads-list.filter:
+component-protocol.components.workloads-list.workloadChart:
+component-protocol.components.workloads-list.workloadTable:
+component-protocol.components.workloads-list.workloadTitle:
+
+
 grpc-client@erda.core.monitor.metric:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.core.monitor.metric-client:
 
+service-register:
+http-server:
+  addr: ":9028"
+grpc-server:
+  addr: ":9029"
+
+i18n:
+  files:
+    - conf/cmp/i18n/component-protocol.yaml

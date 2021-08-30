@@ -19,12 +19,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads/components/filter"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/workloads-list/filter"
 )
 
 func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
-	component := &apistructs.Component{
+	component := &cptype.Component{
 		State: map[string]interface{}{
 			"clusterName": "test",
 			"pageNo":      1,

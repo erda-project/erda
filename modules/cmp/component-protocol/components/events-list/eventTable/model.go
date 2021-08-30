@@ -14,10 +14,17 @@
 
 package eventTable
 
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
 
 type ComponentEventTable struct {
-	ctxBdl protocol.ContextBundle
+	base.DefaultProvider
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`
@@ -46,28 +53,28 @@ type Data struct {
 }
 
 type Item struct {
-	LastSeen          string `json:"lastSeen"`
-	LastSeenTimestamp int64  `json:"lastSeenTimestamp"`
-	Type              string `json:"type"`
-	Reason            string `json:"reason"`
-	Object            string `json:"object"`
-	Source            string `json:"source"`
-	Message           string `json:"message"`
-	Count             string `json:"count"`
+	LastSeen          string `json:"lastSeen,omitempty"`
+	LastSeenTimestamp int64  `json:"lastSeenTimestamp,omitempty"`
+	Type              string `json:"type,omitempty"`
+	Reason            string `json:"reason,omitempty"`
+	Object            string `json:"object,omitempty"`
+	Source            string `json:"source,omitempty"`
+	Message           string `json:"message,omitempty"`
+	Count             string `json:"count,omitempty"`
 	CountNum          int64  `json:"countNum"`
-	Name              string `json:"name"`
-	Namespace         string `json:"namespace"`
+	Name              string `json:"name,omitempty"`
+	Namespace         string `json:"namespace,omitempty"`
 }
 
 type Props struct {
-	PageSizeOptions []string `json:"pageSizeOptions"`
-	Columns         []Column `json:"columns"`
+	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
+	Columns         []Column `json:"columns,omitempty"`
 }
 
 type Column struct {
-	DataIndex string `json:"dataIndex"`
-	Title     string `json:"title"`
-	Width     int    `json:"width"`
+	DataIndex string `json:"dataIndex,omitempty"`
+	Title     string `json:"title,omitempty"`
+	Width     int    `json:"width,omitempty"`
 	Sorter    bool   `json:"sorter,omitempty"`
 }
 

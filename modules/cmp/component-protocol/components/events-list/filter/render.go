@@ -23,22 +23,27 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentFilter{}
+func init() {
+	base.InitProviderWithCreator("events-list", "filter", func() servicehub.Provider {
+		return &ComponentFilter{}
+	})
 }
 
-func (f *ComponentFilter) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	_ apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
-	if err := f.SetCtxBundle(ctx); err != nil {
-		return fmt.Errorf("failed to set filter component ctx bundle, %v", err)
-	}
+func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	f.InitComponent(ctx)
 	if err := f.DecodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to decode url query for filter component, %v", err)
 	}
@@ -54,17 +59,15 @@ func (f *ComponentFilter) Render(ctx context.Context, component *apistructs.Comp
 	return nil
 }
 
-func (f *ComponentFilter) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil {
-		return errors.New("bundle in context can not be empty")
-	}
-	f.ctxBdl = bdl
-	return nil
+func (f *ComponentFilter) InitComponent(ctx context.Context) {
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	f.bdl = bdl
+	sdk := cputil.SDK(ctx)
+	f.sdk = sdk
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok := f.ctxBdl.InParams["filter__urlQuery"].(string)
+	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
@@ -91,7 +94,7 @@ func (f *ComponentFilter) EncodeURLQuery() error {
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(c *apistructs.Component) error {
+func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
 	if c == nil || c.State == nil {
 		return nil
 	}
@@ -111,8 +114,8 @@ func (f *ComponentFilter) GenComponentState(c *apistructs.Component) error {
 }
 
 func (f *ComponentFilter) SetComponentValue() error {
-	userID := f.ctxBdl.Identity.UserID
-	orgID := f.ctxBdl.Identity.OrgID
+	userID := f.sdk.Identity.UserID
+	orgID := f.sdk.Identity.OrgID
 
 	req := apistructs.SteveRequest{
 		UserID:      userID,
@@ -121,7 +124,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 		ClusterName: f.State.ClusterName,
 	}
 
-	data, err := f.ctxBdl.Bdl.ListSteveResource(&req)
+	data, err := f.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
@@ -258,7 +261,7 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	project, err := f.ctxBdl.Bdl.GetProject(uint64(num))
+	project, err := f.bdl.GetProject(uint64(num))
 	if err != nil {
 		return "", err
 	}

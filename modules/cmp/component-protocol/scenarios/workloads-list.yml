@@ -1,6 +1,6 @@
-version: "0.1"
+version: 0.1
 
-scenario: "cmp-dashboard-workloads"
+scenario: workloads-list
 
 hierarchy:
   root: page

@@ -1,6 +1,6 @@
 version: 0.1
 
-scenario: "cmp-dashboard-events"
+scenario: events-list
 
 hierarchy:
   root: page

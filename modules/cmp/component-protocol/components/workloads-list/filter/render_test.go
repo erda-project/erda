@@ -19,8 +19,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
 func getTestURLQuery() (Values, string) {
@@ -50,7 +49,7 @@ func isEqual(a, b []string) bool {
 func TestComponentFilter_DecodeURLQuery(t *testing.T) {
 	values, res := getTestURLQuery()
 	filter := &ComponentFilter{
-		ctxBdl: protocol.ContextBundle{
+		sdk: &cptype.SDK{
 			InParams: map[string]interface{}{
 				"filter__urlQuery": res,
 			},
@@ -66,7 +65,7 @@ func TestComponentFilter_DecodeURLQuery(t *testing.T) {
 }
 
 func TestComponentFilter_GenComponentState(t *testing.T) {
-	component := &apistructs.Component{
+	component := &cptype.Component{
 		State: map[string]interface{}{
 			"clusterName": "test",
 			"conditions": []Condition{

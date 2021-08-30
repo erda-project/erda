@@ -12,23 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workloadTitle
+package types
 
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+const (
+	GlobalCtxKeyBundle = "__bundle__"
+)
 
-type ComponentWorkloadTitle struct {
-	ctxBdl protocol.ContextBundle
-
-	Type  string `json:"type,omitempty"`
-	Props Props  `json:"props,omitempty"`
-	State State  `json:"state,omitempty"`
-}
-
-type Props struct {
-	Title string `json:"title,omitempty"`
-	Size  string `json:"size,omitempty"`
-}
-
-type State struct {
-	ClusterName string `json:"clusterName,omitempty"`
-}

@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -27,30 +26,37 @@ import (
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	workloads "github.com/erda-project/erda/modules/cmp/component-protocol/scenarios"
+
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	workloads "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads/components/filter"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/workloads-list/filter"
 )
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentWorkloadTable{}
+func init() {
+	base.InitProviderWithCreator("workloads-list", "workloadTable", func() servicehub.Provider {
+		return &ComponentWorkloadTable{}
+	})
 }
 
-func (w *ComponentWorkloadTable) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
-	if err := w.SetCtxBundle(ctx); err != nil {
-		return fmt.Errorf("failed to set workloadTable component ctx bundle, %v", err)
-	}
+func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	w.InitComponent(ctx)
 	if err := w.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadTable component state, %v", err)
 	}
 
 	switch event.Operation {
-	case apistructs.InitializeOperation:
+	case cptype.InitializeOperation:
 		w.State.PageNo = 1
 		w.State.PageSize = 20
-	case apistructs.RenderingOperation, apistructs.OnChangePageSizeOperation, apistructs.OnChangeSortOperation:
+	case cptype.RenderingOperation, "changePageSize", "changeSort":
 		w.State.PageNo = 1
 	}
 
@@ -68,7 +74,7 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *apistruc
 }
 
 func (w *ComponentWorkloadTable) DecodeURLQuery() error {
-	queryData, ok := w.ctxBdl.InParams["workloadTable__urlQuery"].(string)
+	queryData, ok := w.sdk.InParams["workloadTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
@@ -100,16 +106,14 @@ func (w *ComponentWorkloadTable) EncodeURLQuery() error {
 	return nil
 }
 
-func (w *ComponentWorkloadTable) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil {
-		return errors.New("bundle in context can not be empty")
-	}
-	w.ctxBdl = bdl
-	return nil
+func (w *ComponentWorkloadTable) InitComponent(ctx context.Context) {
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	w.bdl = bdl
+	sdk := cputil.SDK(ctx)
+	w.sdk = sdk
 }
 
-func (w *ComponentWorkloadTable) GenComponentState(component *apistructs.Component) error {
+func (w *ComponentWorkloadTable) GenComponentState(component *cptype.Component) error {
 	if component == nil || component.State == nil {
 		return nil
 	}
@@ -126,8 +130,8 @@ func (w *ComponentWorkloadTable) GenComponentState(component *apistructs.Compone
 }
 
 func (w *ComponentWorkloadTable) RenderTable() error {
-	userID := w.ctxBdl.Identity.UserID
-	orgID := w.ctxBdl.Identity.OrgID
+	userID := w.sdk.Identity.UserID
+	orgID := w.sdk.Identity.OrgID
 
 	req := apistructs.SteveRequest{
 		UserID:      userID,
@@ -141,7 +145,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// deployment
 	if _, ok := kinds[filter.DeploymentType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SDeployment
-		obj, err := w.ctxBdl.Bdl.ListSteveResource(&req)
+		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
 			return err
 		}
@@ -217,7 +221,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// daemonSet
 	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) != 0 {
 		req.Type = apistructs.K8SDaemonSet
-		obj, err := w.ctxBdl.Bdl.ListSteveResource(&req)
+		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
 			return err
 		}
@@ -295,7 +299,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// statefulSet
 	if _, ok := kinds[filter.StatefulSetType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SStatefulSet
-		obj, err := w.ctxBdl.Bdl.ListSteveResource(&req)
+		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
 			return err
 		}
@@ -369,7 +373,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// job
 	if _, ok := kinds[filter.JobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SJob
-		obj, err := w.ctxBdl.Bdl.ListSteveResource(&req)
+		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
 			return err
 		}
@@ -444,7 +448,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	// cronjob
 	if _, ok := kinds[filter.CronJobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SCronJob
-		obj, err := w.ctxBdl.Bdl.ListSteveResource(&req)
+		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
 			return err
 		}

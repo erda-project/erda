@@ -14,10 +14,17 @@
 
 package workloadTable
 
-import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+)
 
 type ComponentWorkloadTable struct {
-	ctxBdl protocol.ContextBundle
+	base.DefaultProvider
+	bdl *bundle.Bundle
+	sdk *cptype.SDK
 
 	Type       string                 `json:"type,omitempty"`
 	State      State                  `json:"state,omitempty"`

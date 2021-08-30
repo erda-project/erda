@@ -22,35 +22,39 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentEventTable{}
+func init() {
+	base.InitProviderWithCreator("events-list", "eventTable", func() servicehub.Provider {
+		return &ComponentEventTable{}
+	})
 }
 
-func (t *ComponentEventTable) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) error {
-	if err := t.SetCtxBundle(ctx); err != nil {
-		return fmt.Errorf("failed to set eventTable component ctx bundle, %v", err)
-	}
+func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	t.InitComponent(ctx)
 	if err := t.GenComponentState(component); err != nil {
 		return err
 	}
 
 	// set page no. and page size in first render
-	if event.Operation == apistructs.InitializeOperation {
+	if event.Operation == cptype.InitializeOperation {
 		t.State.PageNo = 1
 		t.State.PageSize = 20
 	}
 	// set page no. if triggered by filter
-	if event.Operation == apistructs.RenderingOperation || event.Operation == apistructs.OnChangeSortOperation ||
-		event.Operation == apistructs.ChangeOrgsPageSizeOperationKey {
+	if event.Operation == cptype.RenderingOperation || event.Operation == "changeSort" ||
+		event.Operation == "changePageSize" {
 		t.State.PageNo = 1
 	}
 	if err := t.DecodeURLQuery(); err != nil {
@@ -66,16 +70,14 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *apistructs.
 	return nil
 }
 
-func (t *ComponentEventTable) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil {
-		return errors.New("context bundle can not be empty")
-	}
-	t.ctxBdl = bdl
-	return nil
+func (t *ComponentEventTable) InitComponent(ctx context.Context) {
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	t.bdl = bdl
+	sdk := cputil.SDK(ctx)
+	t.sdk = sdk
 }
 
-func (t *ComponentEventTable) GenComponentState(component *apistructs.Component) error {
+func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
 	if component == nil || component.State == nil {
 		return nil
 	}
@@ -96,7 +98,7 @@ func (t *ComponentEventTable) GenComponentState(component *apistructs.Component)
 }
 
 func (t *ComponentEventTable) DecodeURLQuery() error {
-	queryData, ok := t.ctxBdl.InParams["eventTable__urlQuery"].(string)
+	queryData, ok := t.sdk.InParams["eventTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
@@ -129,8 +131,8 @@ func (t *ComponentEventTable) EncodeURLQuery() error {
 }
 
 func (t *ComponentEventTable) RenderList() error {
-	userID := t.ctxBdl.Identity.UserID
-	orgID := t.ctxBdl.Identity.OrgID
+	userID := t.sdk.Identity.UserID
+	orgID := t.sdk.Identity.OrgID
 
 	req := apistructs.SteveRequest{
 		UserID:      userID,
@@ -139,7 +141,7 @@ func (t *ComponentEventTable) RenderList() error {
 		ClusterName: t.State.ClusterName,
 	}
 
-	obj, err := t.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err := t.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}

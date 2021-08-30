@@ -17,25 +17,30 @@ package workloadChart
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	workloads "github.com/erda-project/erda/modules/cmp/component-protocol/scenarios"
+
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	workloads "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentWorkloadChart{}
+func init() {
+	base.InitProviderWithCreator("workloads-list", "workloadChart", func() servicehub.Provider {
+		return &ComponentWorkloadChart{}
+	})
 }
 
-func (c *ComponentWorkloadChart) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	_ apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
-	if err := c.SetCtxBundle(ctx); err != nil {
-		return fmt.Errorf("failed to set workloadChart component ctx bundle, %v", err)
-	}
+func (c *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
+	c.InitComponent(ctx)
 	if err := c.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadChart component state, %v", err)
 	}
@@ -45,16 +50,14 @@ func (c *ComponentWorkloadChart) Render(ctx context.Context, component *apistruc
 	return nil
 }
 
-func (c *ComponentWorkloadChart) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil {
-		return errors.New("bundle in context can not be empty")
-	}
-	c.ctxBdl = bdl
-	return nil
+func (c *ComponentWorkloadChart) InitComponent(ctx context.Context) {
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	c.bdl = bdl
+	sdk := cputil.SDK(ctx)
+	c.sdk = sdk
 }
 
-func (c *ComponentWorkloadChart) GenComponentState(component *apistructs.Component) error {
+func (c *ComponentWorkloadChart) GenComponentState(component *cptype.Component) error {
 	if component == nil || component.State == nil {
 		return nil
 	}
@@ -95,8 +98,8 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		"CronJobs", "Jobs", "DaemonSets", "StatefulSets", "Deployments",
 	}
 
-	userID := c.ctxBdl.Identity.UserID
-	orgID := c.ctxBdl.Identity.OrgID
+	userID := c.sdk.Identity.UserID
+	orgID := c.sdk.Identity.OrgID
 	req := apistructs.SteveRequest{
 		UserID:      userID,
 		OrgID:       orgID,
@@ -106,7 +109,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	// deployment
 	var activeDeploy, errorDeploy int
 	req.Type = apistructs.K8SDeployment
-	obj, err := c.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err := c.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
@@ -127,7 +130,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	// daemonSet
 	var activeDs, errorDs int
 	req.Type = apistructs.K8SDaemonSet
-	obj, err = c.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err = c.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
@@ -148,7 +151,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	// statefulSet
 	var activeSs, errorSs int
 	req.Type = apistructs.K8SStatefulSet
-	obj, err = c.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err = c.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
@@ -169,7 +172,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	// job
 	var activeJob, succeededJob, failedJob int
 	req.Type = apistructs.K8SJob
-	obj, err = c.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err = c.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
@@ -192,7 +195,7 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	// cronjob
 	var activeCronJob int
 	req.Type = apistructs.K8SCronJob
-	obj, err = c.ctxBdl.Bdl.ListSteveResource(&req)
+	obj, err = c.bdl.ListSteveResource(&req)
 	if err != nil {
 		return err
 	}
