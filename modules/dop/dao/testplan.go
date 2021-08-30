@@ -30,16 +30,17 @@ import (
 // TestPlan 测试计划
 type TestPlan struct {
 	dbengine.BaseModel
-	Name      string
-	Status    apistructs.TPStatus // DOING/PAUSE/DONE
-	ProjectID uint64
-	CreatorID string
-	UpdaterID string
-	Summary   string
-	StartedAt *time.Time
-	EndedAt   *time.Time
-	Type      apistructs.TestPlanType
-	Inode     string
+	Name       string
+	Status     apistructs.TPStatus // DOING/PAUSE/DONE
+	ProjectID  uint64
+	CreatorID  string
+	UpdaterID  string
+	Summary    string
+	StartedAt  *time.Time
+	EndedAt    *time.Time
+	Type       apistructs.TestPlanType
+	IsArchived apistructs.ArchiveStatus
+	Inode      string
 }
 
 type PartnerIDs []string
@@ -167,6 +168,9 @@ func (client *DBClient) PagingTestPlan(req apistructs.TestPlanPagingRequest) (ui
 	}
 	if len(req.Statuses) > 0 {
 		sql = sql.Where("status IN (?)", req.Statuses)
+	}
+	if len(req.IsArchived) > 0 {
+		sql = sql.Where("is_archived = ?", req.IsArchived)
 	}
 	if err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).
 		Order("`id` DESC").Find(&testPlans).

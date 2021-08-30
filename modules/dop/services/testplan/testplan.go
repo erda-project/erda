@@ -219,6 +219,14 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		t := time.Unix(int64(*req.TimestampSecEndedAt), 0)
 		testPlan.EndedAt = &t
 	}
+
+	var isUpdateArchive bool
+	if req.IsArchived != "" {
+		if testPlan.IsArchived != req.IsArchived && req.IsArchived == apistructs.ArchiveStatusArchived {
+			isUpdateArchive = true
+		}
+		testPlan.IsArchived = req.IsArchived
+	}
 	if err := t.db.UpdateTestPlan(testPlan); err != nil {
 		return apierrors.ErrUpdateTestPlan.InternalError(err)
 	}
@@ -258,6 +266,30 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		}
 	}
 
+	if isUpdateArchive {
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		project, err := t.bdl.GetProject(testPlan.ProjectID)
+		if err != nil {
+			return err
+		}
+		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+			Audit: apistructs.Audit{
+				UserID:       req.UserID,
+				ScopeType:    apistructs.ProjectScope,
+				ScopeID:      testPlan.ProjectID,
+				OrgID:        project.OrgID,
+				Result:       "success",
+				StartTime:    now,
+				EndTime:      now,
+				TemplateName: apistructs.ArchiveTestplanTemplate,
+				Context: map[string]interface{}{
+					"projectId":    project.ID,
+					"projectName":  project.Name,
+					"testPlanName": testPlan.Name,
+				},
+			},
+		})
+	}
 	return nil
 }
 
@@ -334,6 +366,9 @@ func (t *TestPlan) Paging(req apistructs.TestPlanPagingRequest) (*apistructs.Tes
 		if !status.Valid() {
 			return nil, apierrors.ErrPagingTestPlans.InvalidParameter(fmt.Errorf("status: %s", status))
 		}
+	}
+	if !req.IsArchived.Valid() {
+		return nil, apierrors.ErrPagingTestPlans.InvalidParameter(fmt.Errorf("archive status: %s", req.IsArchived))
 	}
 
 	// paging testplan
@@ -589,20 +624,21 @@ func (t *TestPlan) ExecuteAPITest(req apistructs.TestPlanAPITestExecuteRequest) 
 // Convert
 func (t *TestPlan) Convert(testPlan *dao.TestPlan, relsCount apistructs.TestPlanRelsCount, members ...dao.TestPlanMember) apistructs.TestPlan {
 	result := apistructs.TestPlan{
-		ID:        uint64(testPlan.ID),
-		Name:      testPlan.Name,
-		Status:    testPlan.Status,
-		ProjectID: testPlan.ProjectID,
-		CreatorID: testPlan.CreatorID,
-		UpdaterID: testPlan.UpdaterID,
-		CreatedAt: &testPlan.CreatedAt,
-		UpdatedAt: &testPlan.UpdatedAt,
-		Summary:   testPlan.Summary,
-		StartedAt: testPlan.StartedAt,
-		EndedAt:   testPlan.EndedAt,
-		RelsCount: relsCount,
-		Type:      testPlan.Type,
-		Inode:     testPlan.Inode,
+		ID:         uint64(testPlan.ID),
+		Name:       testPlan.Name,
+		Status:     testPlan.Status,
+		ProjectID:  testPlan.ProjectID,
+		CreatorID:  testPlan.CreatorID,
+		UpdaterID:  testPlan.UpdaterID,
+		CreatedAt:  &testPlan.CreatedAt,
+		UpdatedAt:  &testPlan.UpdatedAt,
+		Summary:    testPlan.Summary,
+		StartedAt:  testPlan.StartedAt,
+		EndedAt:    testPlan.EndedAt,
+		RelsCount:  relsCount,
+		Type:       testPlan.Type,
+		Inode:      testPlan.Inode,
+		IsArchived: testPlan.IsArchived,
 	}
 	for _, mem := range members {
 		if mem.Role.IsOwner() {

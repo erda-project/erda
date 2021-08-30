@@ -36,6 +36,7 @@ type TestPlan struct {
 	RelsCount  TestPlanRelsCount `json:"relsCount"`
 	Type       TestPlanType      `json:"type"`
 	Inode      string            `json:"inode,omitempty"`
+	IsArchived ArchiveStatus     `json:"isArchived,omitempty"`
 }
 
 // TestPlanRelsCount 测试计划关联的测试用例状态个数
@@ -101,7 +102,8 @@ type TestPlanUpdateRequest struct {
 	TimestampSecStartedAt *time.Duration `json:"timestampSecStartedAt"`
 	TimestampSecEndedAt   *time.Duration `json:"timestampSecEndedAt"`
 
-	TestPlanID uint64 `json:"-"`
+	TestPlanID uint64        `json:"-"`
+	IsArchived ArchiveStatus `json:"isArchived"`
 
 	IdentityInfo
 }
@@ -114,10 +116,11 @@ type TestPlanGetResponse struct {
 
 // TestPlanPagingRequest 测试计划列表请求
 type TestPlanPagingRequest struct {
-	Name      string       `schema:"name"`
-	Statuses  []TPStatus   `schema:"status"`
-	ProjectID uint64       `schema:"projectID"`
-	Type      TestPlanType `schema:"type"`
+	Name       string        `schema:"name"`
+	Statuses   []TPStatus    `schema:"status"`
+	ProjectID  uint64        `schema:"projectID"`
+	Type       TestPlanType  `schema:"type"`
+	IsArchived ArchiveStatus `schema:"isArchived"`
 
 	// member about
 	OwnerIDs   []string `schema:"ownerID"`
@@ -235,4 +238,15 @@ type AutotestCancelTestPlansRequest struct {
 type AutotestCancelTestPlansResponse struct {
 	Header
 	Data string `json:"data"`
+}
+
+type ArchiveStatus string
+
+const (
+	ArchiveStatusInProgress ArchiveStatus = "INPROGRESS"
+	ArchiveStatusArchived   ArchiveStatus = "ARCHIVED"
+)
+
+func (s ArchiveStatus) Valid() bool {
+	return s == "" || s == ArchiveStatusInProgress || s == ArchiveStatusArchived
 }
