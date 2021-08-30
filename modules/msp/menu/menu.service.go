@@ -18,11 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"os"
 	"strings"
 
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
-	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/bundle"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/menu/db"
@@ -40,7 +40,7 @@ type menuService struct {
 
 var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
-// GetMenu api
+//GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
 	// get menu items
 	items, err := s.getMenuItems()
@@ -151,6 +151,103 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	return &pb.GetMenuResponse{Data: s.adjustMenuParams(items)}, nil
 }
 
+//func (s *menuService) GetMenu(ctx context.Context,req *pb.GetMenuRequest) (*pb.GetMenuResponse,error) {
+//	items,err := s.getMenuItems()
+//	if err != nil {
+//		return nil,errors.NewDatabaseError(err)
+//	}
+//	if req.Type == tenantpb.Type_MSP.String() {
+//		var mspItems []*pb.MenuItem
+//		for _,item := range items {
+//			params := s.composeMSPMenuParams(req)
+//			item.Params = params
+//			for _,child := range item.Children {
+//				child.Exists = true
+//				child.Params = params
+//			}
+//			mspItems = append(mspItems,item)
+//		}
+//		items = mspItems
+//	}
+//	if req.Type != tenantpb.Type_MSP.String() {
+//		clusterName,err := s.instanceTenantDB.GetClusterNameByTenantGroup(req.TenantId)
+//		if err != nil {
+//			return nil,errors.NewServiceInvokingError("QueryClusterInfo",err)
+//		}
+//		if len(clusterName) <= 0 {
+//			return nil,errors.NewNotFoundError("TenantGroup.ClusterName")
+//		}
+//		clusterInfo, err := s.bdl.QueryClusterInfo(clusterName)
+//		if err != nil {
+//			return nil, errors.NewServiceInvokingError("QueryClusterInfo", err)
+//		}
+//		clusterType := clusterInfo.Get("DICE_CLUSTER_TYPE")
+//
+//		menuMap := make(map[string]*pb.MenuItem)
+//		for _,item := range items {
+//			item.ClusterName = clusterName
+//			item.ClusterType = clusterType
+//			for _,child := range item.Children {
+//				if len(child.Href) > 0 {
+//					child.Href = s.version + child.Href
+//				}
+//			}
+//			menuMap[item.Key] = item
+//		}
+//		configs,err := s.getEngineConfigs(req.TenantId,req.TenantId)
+//		if err != nil {
+//			return nil,err
+//		}
+//		for engine,config := range configs {
+//			menuKey,err := s.db.GetMicroServiceEngineKey(engine)
+//			if err != nil {
+//				return nil,errors.NewDatabaseError(err)
+//			}
+//			if len(menuKey) <= 0 {
+//				continue
+//			}
+//			//item := menuMap[menuKey]
+//			//if item == nil {
+//			//	return nil,errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
+//			//}
+//			item := &pb.MenuItem{}
+//			item.Params = make(map[string]string)
+//			paramStr := config["PUBLIC_HOST"]
+//			if len(paramStr) > 0 {
+//				params := make(map[string]interface{})
+//				err := json.Unmarshal([]byte(paramStr),&params)
+//				if err != nil {
+//					return nil,errors.NewDatabaseError(fmt.Errorf("PUBLIC_HOST format error"))
+//				}
+//				for k,v := range params {
+//					item.Params[k] = fmt.Sprint(v)
+//				}
+//			}
+//			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
+//			for _,mspItem := range items {
+//				for _, child := range mspItem.Children {
+//					child.Params = item.Params
+//					// 反转exists字段，隐藏引导页，显示功能子菜单
+//					child.Exists = !child.Exists
+//					if child.OnlyK8S && !isK8s {
+//						child.Exists = false
+//					}
+//					if child.OnlyNotK8S && isK8s {
+//						child.Exists = false
+//					}
+//					if child.MustExists {
+//						child.Exists = true
+//					}
+//				}
+//			}
+//		}
+//	}
+//	if items == nil {
+//		items = make([]*pb.MenuItem, 0)
+//	}
+//	return &pb.GetMenuResponse{Data: s.adjustMenuParams(items)}, nil
+//}
+
 func (s *menuService) composeMSPMenuParams(req *pb.GetMenuRequest) map[string]string {
 	params := map[string]string{}
 	params["key"] = "Overview"
@@ -201,6 +298,7 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 }
 
 func (s *menuService) getMenuItems() ([]*pb.MenuItem, error) {
+	s.db.LogMode(true)
 	menuIni, err := s.db.GetMicroServiceMenu()
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -274,27 +372,41 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 }
 
 func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
-	var overview, monitor, loghub *pb.MenuItem
+	//var overview, monitor, loghub *pb.MenuItem
+	var monitor, loghub *pb.MenuItem
+	setParams := make([]*pb.MenuItem, 0)
 	for _, item := range items {
 		switch item.Key {
-		case "ServiceGovernance":
-			for _, child := range item.Children {
-				if child.Key == "Overview" {
-					overview = child
-				}
-			}
-		case "AppMonitor":
+		//case "ServiceGovernance":
+		case "EnvironmentalOverview", "ServiceObservation", "QueryAnalysis":
+			setParams = append(setParams, item)
+
+		//	for _, child := range item.Children {
+		//		if child.Key == "Overview" {
+		//			overview = child
+		//		}
+		//	}
+		//case "AppMonitor":
+		case "AlarmManagement":
 			monitor = item
 		case "LogAnalyze":
 			loghub = item
 		}
-		if monitor != nil && overview != nil && loghub != nil {
+		//if monitor != nil && overview != nil && loghub != nil {
+		//	break
+		//}
+		if monitor != nil && loghub != nil {
 			break
 		}
 	}
 	if monitor != nil {
-		if overview != nil {
-			overview.Params = monitor.Params
+		//if overview != nil {
+		//	overview.Params = monitor.Params
+		//}
+		for _, item := range setParams {
+			for _, child := range item.Children {
+				child.Params = monitor.Params
+			}
 		}
 		if loghub != nil {
 			if loghub.Params == nil {
@@ -305,3 +417,39 @@ func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
 	}
 	return items
 }
+
+//func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
+//	var monitor *pb.MenuItem
+//	for _, item := range items {
+//		switch item.Key {
+//		//case "ServiceGovernance":
+//		//	for _, child := range item.Children {
+//		//		if child.Key == "Overview" {
+//		//			overview = child
+//		//		}
+//		//	}
+//		case "AlarmManagement":
+//			monitor = item
+//		//case "LogAnalyze":
+//		//	loghub = item
+//		}
+//		if monitor != nil {
+//			break
+//		}
+//	}
+//	if monitor != nil {
+//		//if overview != nil {
+//		//	overview.Params = monitor.Params
+//		//}
+//		//if loghub != nil {
+//		//	if loghub.Params == nil {
+//		//		loghub.Params = make(map[string]string)
+//		//	}
+//		//	loghub.Params["terminusKey"] = monitor.Params["terminusKey"]
+//		//}
+//		for _,item := range items {
+//			item.Params = monitor.Params
+//		}
+//	}
+//	return items
+//}

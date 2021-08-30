@@ -28,6 +28,8 @@ const (
 	AppScope ScopeType = "app"
 	// AppScope Publisher范围
 	PublisherScope ScopeType = "publisher"
+
+	MspScope ScopeType = "msp"
 )
 
 // 答疑用户的固定 ID
