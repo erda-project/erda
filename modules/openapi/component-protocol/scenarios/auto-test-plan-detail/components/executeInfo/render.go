@@ -49,7 +49,8 @@ type PropColumn struct {
 }
 
 type State struct {
-	PipelineID uint64 `json:"pipelineId"`
+	PipelineID     uint64                        `json:"pipelineId"`
+	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
 }
 
 type reportNew struct {
@@ -99,6 +100,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		if err != nil {
 			return err
 		}
+		i.State.PipelineDetail = rsp
 		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			if rsp.TimeEnd == nil {

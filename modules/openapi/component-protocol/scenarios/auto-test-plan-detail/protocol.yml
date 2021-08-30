@@ -177,12 +177,12 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: executeTaskTitle
     - name: executeTaskBreadcrumb
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: executeTaskTable
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
@@ -190,6 +190,12 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeAlertInfo.pipelineDetail }}"
     - name: executeHistoryButton
       state:
         - name: "visible"
@@ -199,10 +205,6 @@ rendering:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfoTitle
-    - name: cancelExecuteButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeHistoryRefresh
   executeHistoryTable:
     - name: executeInfo
@@ -211,13 +213,9 @@ rendering:
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeTaskTable
       state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: cancelExecuteButton
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
@@ -225,11 +223,25 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: cancelExecuteButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeAlertInfo.pipelineDetail }}"
     - name: executeTaskBreadcrumb
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
   executeTaskTable:
+    - name: executeInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeTaskTable.pipelineId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: executeTaskBreadcrumb
       state:
         - name: "name"
@@ -250,19 +262,15 @@ rendering:
     #   state:
     #     - name: "visible"
     #       value: "{{ executeTaskBreadcrumb.visible }}"
+  executeTaskBreadcrumb:
     - name: executeInfo
       state:
         - name: "pipelineId"
-          value: "{{ executeTaskTable.pipelineId }}"
-  executeTaskBreadcrumb:
+          value: "{{ executeTaskBreadcrumb.pipelineId }}"
     - name: executeTaskTable
       state:
-        - name: "pipelineId"
-          value: "{{ executeTaskBreadcrumb.pipelineId }}"
-    - name: executeInfo
-      state:
-        - name: "pipelineId"
-          value: "{{ executeTaskBreadcrumb.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: executeHistoryButton
       state:
         - name: "visible"
@@ -273,45 +281,59 @@ rendering:
           value: "{{ executeTaskBreadcrumb.visible }}"
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
         # - name: "visible"
         #   value: "{{ executeTaskBreadcrumb.visible }}"
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeAlertInfo.pipelineDetail }}"
   executeHistoryRefresh:
     - name: executeHistoryTable
       state:
         - name: pageNo
           value: "{{ executeHistoryRefresh.pageNo }}"
-    - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
       state:
-        - name: pipelineId
+        - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: executeAlertInfo
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
   refreshButton:
     - name: executeHistoryTable
-    - name: executeTaskTable
     - name: executeInfo
-    - name: cancelExecuteButton
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: executeAlertInfo
+    - name: cancelExecuteButton
+      state:
+        - name: "pipelineId"
+          value: "{{ executeAlertInfo.pipelineId }}"
+        - name: "pipelineDetail"
+          value: "{{ executeAlertInfo.pipelineDetail }}"
   cancelExecuteButton:
     - name: executeHistoryTable
-    - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
       state:
-        - name: pipelineId
+        - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
     - name: refreshButton
       state:
         - name: "pipelineId"
@@ -322,18 +344,24 @@ rendering:
           value: "{{ executeHistoryTable.pipelineId }}"
   tabExecuteButton:
     - name: executeHistoryTable
-    - name: executeTaskTable
-      state:
-        - name: pipelineId
-          value: "{{ executeHistoryTable.pipelineId }}"
     - name: executeInfo
       state:
-        - name: pipelineId
+        - name: "pipelineId"
+          value: "{{ executeHistoryTable.pipelineId }}"
+    - name: executeTaskTable
+      state:
+        - name: "pipelineDetail"
+          value: "{{ executeInfo.pipelineDetail }}"
+    - name: executeAlertInfo
+      state:
+        - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
     - name: cancelExecuteButton
       state:
         - name: pipelineId
           value: "{{ executeHistoryTable.pipelineId }}"
+        - name: pipelineDetail
+          value: "{{ executeAlertInfo.pipelineDetail }}"
     - name: executeTaskBreadcrumb
       state:
         - name: "pipelineId"
@@ -343,10 +371,6 @@ rendering:
         - name: activeKey
           value: "{{ tabExecuteButton.activeKey }}"
     - name: refreshButton
-      state:
-        - name: "pipelineId"
-          value: "{{ executeHistoryTable.pipelineId }}"
-    - name: executeAlertInfo
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"

@@ -37,13 +37,14 @@ type ExecuteTaskTable struct {
 }
 
 type State struct {
-	Total      int64  `json:"total"`
-	PageSize   int64  `json:"pageSize"`
-	PageNo     int64  `json:"pageNo"`
-	PipelineID uint64 `json:"pipelineId"`
-	StepID     uint64 `json:"stepId"`
-	Name       string `json:"name"`
-	Unfold     bool   `json:"unfold"`
+	Total          int64                         `json:"total"`
+	PageSize       int64                         `json:"pageSize"`
+	PageNo         int64                         `json:"pageNo"`
+	PipelineID     uint64                        `json:"pipelineId"`
+	StepID         uint64                        `json:"stepId"`
+	Name           string                        `json:"name"`
+	Unfold         bool                          `json:"unfold"`
+	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
 }
 
 type operationData struct {
@@ -515,16 +516,13 @@ func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *a
 		e.State.PageNo = DefaultPageNo
 		e.State.PageSize = DefaultPageSize
 	}
-	if e.State.PipelineID == 0 {
+	if e.State.PipelineDetail.ID == 0 {
 		c.Data = map[string]interface{}{}
 		return nil
 	}
 
-	list, err := bdl.Bdl.GetPipeline(e.State.PipelineID)
-	if err != nil {
-		return err
-	}
-	err = e.setData(list)
+	list := e.State.PipelineDetail
+	err := e.setData(list)
 	if err != nil {
 		return err
 	}
