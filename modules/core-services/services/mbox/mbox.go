@@ -136,3 +136,7 @@ func (o *MBox) SetMBoxReadStatus(request *apistructs.SetMBoxReadStatusRequest) e
 func (o *MBox) GetMBoxStats(orgID int64, userID string) (*apistructs.QueryMBoxStatsData, error) {
 	return o.db.GetMBoxStats(orgID, userID)
 }
+
+func (o *MBox) OneClickRead(orgID int64, userID string) error {
+	return o.db.ReadAll(orgID, userID)
+}
