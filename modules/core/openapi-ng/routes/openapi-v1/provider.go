@@ -36,6 +36,7 @@ type config struct {
 
 // +provider
 type provider struct {
+	Cfg      *config
 	Log      logs.Logger
 	Discover discover.Interface `autowired:"discover"`
 	Router   openapi.Interface  `autowired:"openapi-router"`
