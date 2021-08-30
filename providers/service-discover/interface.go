@@ -16,6 +16,6 @@ package discover
 
 // Interface .
 type Interface interface {
-	Endpoint(service string) (string, error)
-	ServiceURL(service string) (string, error)
+	Endpoint(scheme, service string) (string, error)
+	ServiceURL(scheme, service string) (string, error)
 }
