@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueGantt/gantt"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/gantt"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )

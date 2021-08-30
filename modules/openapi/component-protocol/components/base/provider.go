@@ -35,7 +35,7 @@ func (p *DefaultProvider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
 		Scenario: scenario,
 		CompName: compName,
-		RenderC:  func() protocol.CompRender {
+		RenderC: func() protocol.CompRender {
 			if c, ok := ctx.Provider().(protocol.CompRender); ok {
 				return c
 			}

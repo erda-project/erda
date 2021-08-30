@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -36,8 +35,6 @@ type State struct {
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-
-	fmt.Println("!!!!!!!!!", cputil.I18n(ctx, "issue-manage"))
 
 	if c.State == nil {
 		c.State = map[string]interface{}{}
