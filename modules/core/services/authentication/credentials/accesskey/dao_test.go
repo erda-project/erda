@@ -42,13 +42,13 @@ type mockDao struct {
 	errorTrigger bool
 }
 
-func (m *mockDao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, error) {
+func (m *mockDao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, int64, error) {
 	if m.errorTrigger {
-		return nil, _mockErr
+		return nil, 0, _mockErr
 	}
 	return []AccessKey{
 		_mockAccessKey,
-	}, nil
+	}, 0, nil
 }
 
 func (m *mockDao) CreateAccessKey(ctx context.Context, req *pb.CreateAccessKeyRequest) (*AccessKey, error) {

@@ -211,13 +211,13 @@ func Test_accessKeyService_CreateAccessKeys(t *testing.T) {
 			s := &accessKeyService{
 				p: tt.fields.p,
 			}
-			got, err := s.CreateAccessKeys(tt.args.ctx, tt.args.req)
+			got, err := s.CreateAccessKey(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateAccessKeys() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CreateAccessKey() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateAccessKeys() got = %v, want %v", got, tt.want)
+				t.Errorf("CreateAccessKey() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -266,13 +266,13 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 			s := &accessKeyService{
 				p: tt.fields.p,
 			}
-			got, err := s.UpdateAccessKeys(tt.args.ctx, tt.args.req)
+			got, err := s.UpdateAccessKey(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("UpdateAccessKeys() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("UpdateAccessKey() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UpdateAccessKeys() got = %v, want %v", got, tt.want)
+				t.Errorf("UpdateAccessKey() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -321,13 +321,13 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 			s := &accessKeyService{
 				p: tt.fields.p,
 			}
-			got, err := s.DeleteAccessKeys(tt.args.ctx, tt.args.req)
+			got, err := s.DeleteAccessKey(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DeleteAccessKeys() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DeleteAccessKey() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DeleteAccessKeys() got = %v, want %v", got, tt.want)
+				t.Errorf("DeleteAccessKey() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
