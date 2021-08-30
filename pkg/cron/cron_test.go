@@ -13,6 +13,13 @@
 
 package cron
 
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
 //import (
 //	"fmt"
 //	"sync"
@@ -507,3 +514,44 @@ package cron
 //	}()
 //	return ch
 //}
+
+type TestSchedule struct {
+	d time.Duration
+}
+
+func (s *TestSchedule) Next(t time.Time) time.Time {
+	return t.Add(s.d)
+}
+
+func TestRun(t *testing.T) {
+	cron := New(WithoutDLock(true))
+	go cron.run()
+
+	done := make(chan bool)
+	ti := time.Now()
+	entry := &Entry{
+		Schedule: &TestSchedule{d: 2 * time.Second},
+		Job: FuncJob(func() {
+			if time.Now().Sub(ti) > 3*time.Second/2+1*time.Second {
+				done <- false
+			}
+			done <- true
+		}),
+		Name: "a",
+	}
+	cron.add <- entry
+
+	entry2 := &Entry{
+		Schedule: &TestSchedule{d: 10 * time.Second},
+		Job: FuncJob(func() {
+		}),
+		Name: "b",
+	}
+	cron.add <- entry2
+	time.Sleep(1 * time.Second)
+	cron.remove <- "b"
+
+	flag := <-done
+	cron.Stop()
+	assert.Equal(t, true, flag)
+}
