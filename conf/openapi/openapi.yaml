@@ -1,1 +1,11 @@
 openapi:
+  component-protocol:
+    scenario-proxy-binds:
+      - app: dop
+        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9528}
+        scenarios:
+          - issue-manage
+      - addr: http://localhost:8080
+        scenarios:
+          - demo
+          - yetAnotherDemo
