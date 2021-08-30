@@ -1,4 +1,3 @@
-# deprecated
 CREATE TABLE `erda_access_key` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
   `access_key_id` char(24) NOT NULL COMMENT 'Access Key ID',
