@@ -58,7 +58,7 @@ func getSystemNamespace() string {
 		ns = os.Getenv(diceSystemEnv)
 	}
 	if ns == "" {
-		panic("system namespace env is null")
+		ns = "default"
 	}
 	return ns
 }
