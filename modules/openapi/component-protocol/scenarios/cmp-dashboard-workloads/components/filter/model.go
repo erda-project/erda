@@ -16,6 +16,19 @@ package filter
 
 import protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 
+const (
+	WorkloadActive  = "active"
+	WorkloadError   = "error"
+	WorkloadSucceed = "succeed"
+	WorkloadFailed  = "failed"
+
+	DeploymentType  = "Deployment"
+	DaemonSetType   = "DaemonSet"
+	StatefulSetType = "StatefulSet"
+	JobType         = "Job"
+	CronJobType     = "CronJob"
+)
+
 type ComponentFilter struct {
 	ctxBdl protocol.ContextBundle
 
@@ -28,26 +41,29 @@ type State struct {
 	ClusterName    string      `json:"clusterName,omitempty"`
 	Conditions     []Condition `json:"conditions,omitempty"`
 	Values         Values      `json:"values,omitempty"`
-	FilterURLQuery string      `json:"filter_urlQuery,omitempty"`
-}
-
-type Values struct {
-	Type      []string `json:"type,omitempty"`
-	Namespace []string `json:"namespace,omitempty"`
+	FilterURLQuery string      `json:"filter__urlQuery,omitempty"`
 }
 
 type Condition struct {
-	Key     string   `json:"key,omitempty"`
-	Label   string   `json:"label,omitempty"`
-	Type    string   `json:"type,omitempty"`
-	Fixed   bool     `json:"fixed"`
-	Options []Option `json:"options,omitempty"`
+	Key         string   `json:"key,omitempty"`
+	Label       string   `json:"label,omitempty"`
+	Placeholder string   `json:"placeholder,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	Fixed       bool     `json:"fixed,omitempty"`
+	Options     []Option `json:"options,omitempty"`
 }
 
 type Option struct {
 	Label    string   `json:"label,omitempty"`
 	Value    string   `json:"value,omitempty"`
 	Children []Option `json:"children,omitempty"`
+}
+
+type Values struct {
+	Kind      []string `json:"kind,omitempty"`
+	Namespace []string `json:"namespace,omitempty"`
+	Status    []string `json:"status,omitempty"`
+	Search    string   `json:"search,omitempty"`
 }
 
 type Operation struct {
