@@ -1,6 +1,6 @@
 http-server:
   addr: ":9529"
-  reloadable: false
+  reloadable: true
 health:
 
 redis:
