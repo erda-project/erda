@@ -16,6 +16,7 @@ package component_protocol
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
@@ -25,12 +26,13 @@ func errorHandler(rw http.ResponseWriter, r *http.Request, err error) {
 	resp := response{
 		Success: false,
 		Err: apistructs.ErrorResponse{
-			Code: "Proxy Error",
+			Code: proxyErrorCode,
 			Msg:  err.Error(),
 		},
 	}
 	bytes, _ := json.Marshal(&resp)
 	rw.Header().Set("Content-Type", "application/json")
+	rw.Header().Set("Content-Length", fmt.Sprint(len(bytes)))
 	rw.WriteHeader(http.StatusInternalServerError)
 	rw.Write(bytes)
 }

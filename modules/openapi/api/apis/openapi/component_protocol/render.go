@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/cptype"
 	_ "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/action/components/actionForm"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/discover"
@@ -60,9 +60,10 @@ func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
 	scenario := r.URL.Query().Get("scenario")
 
 	// bind scenario proxy
-	needProxy, proxyConfig := cptype.CPConfigs.ScenarioNeedProxy(scenario)
+	needProxy, proxyConfig := types.CPConfigs.ScenarioNeedProxy(scenario)
 	if !needProxy {
 		// not found bind, use legacy
+		logrus.Infof("scenario %s no need proxy, execute legacy openapi protocol render", scenario)
 		legacyProtocolRender(rw, r)
 		return
 	}
@@ -82,17 +83,18 @@ func proxyAndLegacy(rw http.ResponseWriter, r *http.Request) {
 		}
 		proxyConfig.Addr = addr
 	}
+	logrus.Infof("scenario %s need proxy, proxy to app: %s, addr: %s", scenario, proxyConfig.App, proxyConfig.Addr)
 	proxy := httputil.ReverseProxy{
 		Director:       newProxyDirector(*proxyConfig),
 		FlushInterval:  -1,
-		ModifyResponse: modifyProxyResponse,
+		ModifyResponse: modifyProxyResponse(*proxyConfig),
 		ErrorHandler:   errorHandler,
 	}
 	proxy.ServeHTTP(rw, r)
 	return
 }
 
-func newProxyDirector(proxyConfig cptype.ProxyConfig) func(*http.Request) {
+func newProxyDirector(proxyConfig types.ProxyConfig) func(*http.Request) {
 	return func(r *http.Request) {
 		schema := "http"
 		if strings.HasPrefix(schema, "https://") {

@@ -21,12 +21,12 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
 )
 
 type config struct {
-	CP cptype.ComponentProtocolConfigs `file:"component-protocol"`
+	CP types.ComponentProtocolConfigs `file:"component-protocol"`
 }
 
 type provider struct {
@@ -41,7 +41,7 @@ func (p *provider) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cptype.CPConfigs = p.Cfg.CP
+	types.CPConfigs = p.Cfg.CP
 	return srv.ListenAndServe()
 }
 
