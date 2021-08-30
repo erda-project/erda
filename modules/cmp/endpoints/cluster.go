@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -89,20 +90,21 @@ func (e *Endpoints) BatchUpgradeEdgeCluster(ctx context.Context, r *http.Request
 		return
 	}
 	logrus.Debugf("batch upgrade request header:%+v", r.Header)
+
 	// get identity info
-	userid := r.Header.Get("User-ID")
-	orgid := r.Header.Get("Org-ID")
-	if userid == "" && orgid == "" {
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
 		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
 		return
 	}
+
 	// permission check
-	err = e.PermissionCheck(userid, orgid, "", apistructs.UpdateAction)
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.DeleteAction)
 	if err != nil {
 		return
 	}
 
-	go e.clusters.BatchUpgradeEdgeCluster(req, userid)
+	go e.clusters.BatchUpgradeEdgeCluster(req, i.UserID)
 
 	return mkResponse(apistructs.BatchUpgradeEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
@@ -158,82 +160,46 @@ func (e *Endpoints) OrgClusterInfo(ctx context.Context, r *http.Request, vars ma
 	})
 }
 
-func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
 	var req apistructs.OfflineEdgeClusterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to unmarshal to apistructs.OfflineEdgeClusterRequest: %v", err)
-		return mkResponse(apistructs.OfflineEdgeClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to unmarshal to apistructs.OfflineEdgeClusterRequest: %v", err)
+		return
 	}
 
-	userid := r.Header.Get("User-ID")
-	if userid == "" {
-		errstr := fmt.Sprintf("failed to get user-id in http header")
-		return mkResponse(apistructs.OfflineEdgeClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
 	}
 
-	orgid := r.Header.Get("Org-ID")
-	scopeID, err := strconv.ParseUint(orgid, 10, 64)
-	if err != nil {
-		logrus.Errorf("parse orgid failed, orgid: %v, error: %v", orgid, err)
-		return mkResponse(apistructs.CloudClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: "parse orgid failed"},
-			},
-		})
-	}
 	// permission check
-	p := apistructs.PermissionCheckRequest{
-		UserID:   userid,
-		Scope:    apistructs.OrgScope,
-		ScopeID:  scopeID,
-		Resource: apistructs.CloudResourceResource,
-		Action:   apistructs.DeleteAction,
-	}
-	rspData, err := e.bdl.CheckPermission(&p)
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.DeleteAction)
 	if err != nil {
-		logrus.Errorf("check permission error: %v", err)
-		return mkResponse(apistructs.CloudClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: "check permission internal error"},
-			},
-		})
-	}
-	if !rspData.Access {
-		return mkResponse(apistructs.CloudClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: "access denied"},
-			},
-		})
+		return
 	}
 
-	recordID, err := e.clusters.OfflineEdgeCluster(req, userid, orgid)
+	recordID, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
 	if err != nil {
-		errstr := fmt.Sprintf("failed to offline cluster: %v", err)
-		return mkResponse(apistructs.UpgradeEdgeClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errstr},
-			},
-		})
+		err = fmt.Errorf("failed to offline cluster: %v", err)
+		return
 	}
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
 		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID},
 	})
-
 }
 
 func (e *Endpoints) ClusterInfo(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -267,26 +233,51 @@ func (e *Endpoints) ClusterInfo(ctx context.Context, r *http.Request, vars map[s
 	})
 }
 
-func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
 	header := r.Header
 
 	var req apistructs.CMPClusterUpdateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errstr := fmt.Sprintf("failed to parse request body: %v", err)
-		return httpserver.ErrResp(200, "2", errstr)
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to parse request body: %v", err)
+		return
 	}
 
 	if req.OpsConfig != nil {
-		err := e.handleUpdateReq(&req)
-		if err != "ok" {
-			return httpserver.ErrResp(200, "2", err)
+		errStr := e.handleUpdateReq(&req)
+		if errStr != "ok" {
+			err = fmt.Errorf("faliled to handle update request, message: %s", errStr)
+			return
 		}
 	}
 
-	err := e.clusters.UpdateCluster(req, header)
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err := fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return errorresp.ErrResp(err)
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.UpdateAction)
 	if err != nil {
-		errstr := fmt.Sprintf("failed to update clusterinfo: %v", err)
-		return httpserver.ErrResp(200, "2", errstr)
+		return errorresp.ErrResp(err)
+	}
+
+	err = e.clusters.UpdateCluster(req, header)
+	if err != nil {
+		err = fmt.Errorf("failed to update clusterinfo: %v", err)
+		return
 	}
 	return mkResponse(apistructs.OpsClusterInfoResponse{
 		Header: apistructs.Header{Success: true},
@@ -422,32 +413,41 @@ func (e Endpoints) isEmpty(str string) bool {
 }
 
 func (e *Endpoints) ImportCluster(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
-	var req apistructs.ImportCluster
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errStr := fmt.Sprintf("failed to unmarshal to apistructs.ImportCluster: %v", err)
-		return mkResponse(apistructs.ImportClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errStr},
-			},
-		})
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
+	var req apistructs.ImportCluster
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to unmarshal to apistructs.ImportCluster: %v", err)
+		return
 	}
 
-	logrus.Debugf("cluster init retry reuqest body: %v", req)
+	logrus.Debugf("cluster init retry request body: %v", req)
 
 	i, resp := e.GetIdentity(r)
 	if resp != nil {
-		return resp, nil
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.CreateAction)
+	if err != nil {
+		return
 	}
 
 	if err = e.clusters.ImportClusterWithRecord(i.UserID, &req); err != nil {
-		return mkResponse(apistructs.BaseResponse{
-			Success: false,
-			Err: &apistructs.BaseResponseErr{
-				Msg: err.Error(),
-			},
-		})
+		return
 	}
 
 	return mkResponse(apistructs.ImportClusterResponse{
@@ -456,39 +456,49 @@ func (e *Endpoints) ImportCluster(ctx context.Context, r *http.Request, vars map
 }
 
 func (e *Endpoints) InitClusterRetry(ctx context.Context, r *http.Request, vars map[string]string) (resp httpserver.Responser, err error) {
+
+	defer func() {
+		if err != nil {
+			logrus.Errorf("error happened, error:%v", err)
+			resp, err = mkResponse(apistructs.CloudClusterResponse{
+				Header: apistructs.Header{
+					Success: false,
+					Error:   apistructs.ErrorResponse{Msg: err.Error()},
+				},
+			})
+		}
+	}()
+
 	var req apistructs.ClusterInitRetry
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errStr := fmt.Sprintf("failed to unmarshal to apistructs.ImportCluster: %v", err)
-		return mkResponse(apistructs.ImportClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: errStr},
-			},
-		})
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		err = fmt.Errorf("failed to unmarshal to apistructs.ImportCluster: %v", err)
+		return
 	}
 
 	logrus.Debugf("cluster init retry reuqest body: %v", req)
 
-	orgIDHeader := r.Header.Get(httputil.OrgHeader)
-	orgID, err := strconv.Atoi(orgIDHeader)
+	i, resp := e.GetIdentity(r)
+	if resp != nil {
+		err = fmt.Errorf("failed to get User-ID or Org-ID from request header")
+		return
+	}
+
+	// permission check
+	err = e.PermissionCheck(i.UserID, i.OrgID, "", apistructs.CreateAction)
 	if err != nil {
-		return mkResponse(apistructs.ImportClusterResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error:   apistructs.ErrorResponse{Msg: err.Error()},
-			},
-		})
+		return
+	}
+
+	orgID, err := strconv.Atoi(i.OrgID)
+	if err != nil {
+		return
 	}
 
 	if err = e.clusters.ClusterInitRetry(uint64(orgID), &req); err != nil {
-		return mkResponse(apistructs.BaseResponse{
-			Success: false,
-			Err: &apistructs.BaseResponseErr{
-				Msg: err.Error(),
-			},
-		})
+		return
 	}
+
 	return mkResponse(apistructs.ImportClusterResponse{
 		Header: apistructs.Header{Success: true},
 	})
