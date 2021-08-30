@@ -36,6 +36,7 @@ import (
 )
 
 func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
+
 	statefulName := statefulsetName(info.sg)
 
 	set := &appsv1.StatefulSet{
@@ -63,7 +64,10 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 	}
 
 	set.Spec.Selector = &metav1.LabelSelector{
-		MatchLabels: map[string]string{"app": statefulName},
+		MatchLabels: map[string]string{
+			"app":      statefulName,
+			"addon_id": info.sg.Dice.ID,
+		},
 	}
 
 	// Take one of the services
@@ -74,13 +78,16 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 
 	affinity := constraintbuilders.K8S(&info.sg.ScheduleInfo2, service, []constraints.PodLabelsForAffinity{
 		{
-			PodLabels: map[string]string{"app": statefulName},
+			PodLabels: map[string]string{"addon_id": info.sg.Dice.ID},
 		}}, k).Affinity
 
 	set.Spec.Template = apiv1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: info.namespace,
-			Labels:    map[string]string{"app": statefulName},
+			Labels: map[string]string{
+				"app":      statefulName,
+				"addon_id": info.sg.Dice.ID,
+			},
 		},
 		Spec: apiv1.PodSpec{
 			EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
@@ -141,6 +148,9 @@ func (k *Kubernetes) createStatefulSet(info StatefulsetInfo) error {
 	setEnv(container, info.envs, info.sg, info.namespace)
 
 	set.Spec.Template.Spec.Containers = []apiv1.Container{*container}
+	if info.namespace == "fake-test" {
+		return nil
+	}
 	return k.sts.Create(set)
 }
 
