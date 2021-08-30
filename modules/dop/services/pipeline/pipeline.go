@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/pipelinecms"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -319,13 +318,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		}
 	}
 
-	// update git-checkout action params placeholder
-	pipelineYml, err := updateGitCheckoutPipelineYml(strPipelineYml, app.OrgID)
-	if err != nil {
-		return nil, err
-	}
-	pv2.PipelineYml = pipelineYml
-
+	pv2.PipelineYml = strPipelineYml
 	rules, err := p.branchRuleSvc.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepoFile.InternalError(err)
@@ -390,34 +383,6 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 		strconv.FormatUint(app.ID, 10), pv1.Branch, workspace)
 
 	return pv2, nil
-}
-
-// updateGitCheckoutPipelineYml update params placeholder
-func updateGitCheckoutPipelineYml(pipelineYml string, orgID uint64) (string, error) {
-	pipelineYmlStruct, err := pipelineyml.New([]byte(pipelineYml))
-	if err != nil {
-		return "", err
-	}
-	pipelineYmlSpec := pipelineYmlStruct.Spec()
-	for _, stage := range pipelineYmlSpec.Stages {
-		for i := range stage.Actions {
-			for k, v := range stage.Actions[i] {
-				if k.String() == "git-checkout" {
-					if _, ok := v.Params["username"]; ok && v.Params["username"] == "((gittar.username))" {
-						v.Params["username"] = fmt.Sprintf("((%s))", pipelinecms.MakeOrgGittarUsernamePipelineCmsNsConfig())
-					}
-					if _, ok := v.Params["password"]; ok && v.Params["password"] == "((gittar.password))" {
-						v.Params["password"] = fmt.Sprintf("((%s))", pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig())
-					}
-				}
-			}
-		}
-	}
-	pipelineNewYml, err := pipelineyml.GenerateYml(pipelineYmlSpec)
-	if err != nil {
-		return "", err
-	}
-	return string(pipelineNewYml), nil
 }
 
 func (p *Pipeline) makeNamespace(appID uint64, branch string, workspace string) ([]string, error) {

@@ -20,9 +20,9 @@ func MakeUserOrgPipelineCmsNs(userID string, orgID uint64) string {
 }
 
 func MakeOrgGittarTokenPipelineCmsNsConfig() string {
-	return "org-gittar-token"
+	return "gittar.password"
 }
 
 func MakeOrgGittarUsernamePipelineCmsNsConfig() string {
-	return "org-gittar-username"
+	return "gittar.username"
 }
