@@ -27,18 +27,17 @@ import (
 type provider struct {
 	Log      logs.Logger
 	Discover discover.Interface `autowired:"discover"`
+	Router   openapi.Interface  `autowired:"openapi-router"`
 	proxy    proxy.Proxy
 }
-
-var _ openapi.RouteSource = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
+	p.RegisterTo(p.Router)
 	return nil
 }
 
-func (p *provider) Name() string { return "route-source-example" }
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 	registerAPIs(func(method, path, backendPath, service string) {
 		if err != nil {
@@ -67,7 +66,6 @@ func registerAPIs(add func(method, path, backendPath, service string)) {
 
 func init() {
 	servicehub.Register("openapi-example", &servicehub.Spec{
-		Services: []string{"openapi-route-example"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

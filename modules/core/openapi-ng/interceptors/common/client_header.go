@@ -27,6 +27,8 @@ type provider struct {
 	Cfg *interceptors.Config
 }
 
+var _ interceptors.Interface = (*provider)(nil)
+
 func (p *provider) List() []*interceptors.Interceptor {
 	return []*interceptors.Interceptor{{Order: p.Cfg.Order, Wrapper: p.Interceptor}}
 }

@@ -25,13 +25,14 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/openapi-ng"
+	openapiauth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
 	"github.com/erda-project/erda/modules/core/openapi-ng/common"
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 type config struct {
-	Weight int64 `file:"weight"`
+	Weight int64 `file:"weight" default:"50"`
 }
 
 // +provider
@@ -94,8 +95,15 @@ func (p *provider) Login(rw http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var _ openapiauth.AutherLister = (*provider)(nil)
+
+func (p *provider) Authers() []openapiauth.Auther {
+	return []openapiauth.Auther{p}
+}
+
 func init() {
 	servicehub.Register("openapi-auth-password", &servicehub.Spec{
+		Services:     []string{"openapi-auth-password"},
 		Dependencies: []string{"openapi-auth-session"}, // to check session
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

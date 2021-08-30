@@ -37,6 +37,7 @@ func (p *Proxy) Wrap(method, path, backendPath, service string, wrapers ...func(
 	if err != nil {
 		return nil, fmt.Errorf("fail to discover url (%s %s) of service %q: %s", method, backendPath, service, err)
 	}
+	srvURL = strings.TrimRight(srvURL, "/")
 	pubMatcher, err := runtime.Compile(path)
 	if err != nil {
 		return nil, fmt.Errorf("invalid path %q of service %q: %s", path, service, err)
@@ -54,6 +55,7 @@ func (p *Proxy) Wrap(method, path, backendPath, service string, wrapers ...func(
 	if err != nil {
 		return nil, err
 	}
+	p.Log.Infof("[proxy] %s -> %s", path, srvURL+"/"+strings.TrimLeft(backendPath, "/"))
 	rp := &httputil.ReverseProxy{Director: func(req *http.Request) {
 		director(req)
 		if _, ok := req.Header["User-Agent"]; !ok {
@@ -69,7 +71,7 @@ func (p *Proxy) Wrap(method, path, backendPath, service string, wrapers ...func(
 }
 
 func (p *Proxy) staticDirector(srvURL, backendPath string) (func(req *http.Request), error) {
-	srvURL = strings.TrimRight(srvURL, "/") + "/" + strings.TrimLeft(backendPath, "/")
+	srvURL = srvURL + "/" + strings.TrimLeft(backendPath, "/")
 	target, err := url.Parse(srvURL)
 	if err != nil {
 		return nil, fmt.Errorf("fail to parse service url: %s", err)

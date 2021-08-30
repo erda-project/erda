@@ -15,8 +15,10 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -25,7 +27,6 @@ import (
 type (
 	// Interface .
 	Interface interface {
-		Register(a Auther)
 		Interceptor(h http.HandlerFunc, opts func(r *http.Request) Options) http.HandlerFunc
 	}
 	// Auther .
@@ -39,18 +40,38 @@ type (
 		Get(key string) interface{}
 		Set(key string, val interface{})
 	}
+	// AutherLister .
+	AutherLister interface {
+		Authers() []Auther
+	}
 )
 
 type provider struct {
 	authers []Auther
 }
 
-func (p *provider) Register(a Auther) {
-	p.authers = append(p.authers, a)
+func (p *provider) Init(ctx servicehub.Context) (err error) {
+	ctx.Hub().ForeachServices(func(service string) bool {
+		if strings.HasPrefix(service, "openapi-auth-") {
+			authers, ok := ctx.Service(service).(AutherLister)
+			if !ok {
+				err = fmt.Errorf("%q not implements AutherLister", service)
+				return false
+			}
+			p.authers = append(p.authers, authers.Authers()...)
+		}
+		return true
+	})
+	if err != nil {
+		return err
+	}
 	sort.Slice(p.authers, func(i, j int) bool {
 		return p.authers[i].Weight() >= p.authers[j].Weight()
 	})
+	return nil
 }
+
+var _ Interface = (*provider)(nil)
 
 func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Options) http.HandlerFunc {
 	if len(p.authers) <= 0 {
@@ -73,6 +94,7 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 				}
 				if ok {
 					h(rw, req)
+					return
 				}
 				break
 			}
@@ -88,6 +110,15 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 func init() {
 	servicehub.Register("openapi-auth", &servicehub.Spec{
 		Services: []string{"openapi-auth"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		DependenciesFunc: func(hub *servicehub.Hub) (list []string) {
+			hub.ForeachServices(func(service string) bool {
+				if strings.HasPrefix(service, "openapi-auth-") {
+					list = append(list, service)
+				}
+				return true
+			})
+			return list
+		},
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

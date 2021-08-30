@@ -19,8 +19,9 @@ openapi-interceptor-dump:
   check_key: "${HTTP_DUMP_CHECK_KEY:__dump__}"
 
 openapi-interceptor-csrf:
+  _enable: ${HTTP_CSRF_ENABLED:true}
   order: 10
-  allow_empty_referer: true
+  allow_valid_referer: true
   cookie_name: "OPENAPI-CSRF-TOKEN"
   cookie_domain: "${CSRF_COOKIE_DOMAIN}"
   cookie_max_age: "12h"
@@ -42,24 +43,27 @@ openapi-interceptor-audit:
 openapi-auth:
 openapi-auth-ory-kratos:
   _enable: ${ORY_ENABLED:false}
+  weight: 100
   ory_kratos_addr: "${ORY_KRATOS_ADDR:kratos:4433}"
-
 openapi-auth-uc:
   _enable: ${UC_ENABLED:true}
+  weight: 100
   redirect_after_login: "${UI_PUBLIC_ADDR}"
   client_id: "${UC_CLIENT_ID:dice}"
   uc_addr: "${UC_PUBLIC_ADDR}"
   uc_redirect_addrs: "${SELF_PUBLIC_ADDR}"
   session_cookie_name: "${SESSION_COOKIE_NAME:OPENAPISESSION}"
   session_cookie_domain: "${COOKIE_DOMAIN}"
-
 openapi-auth-password:
   _enable: ${UC_ENABLED:true}
+  weight: 50
 openapi-auth-token:
   _enable: ${UC_ENABLED:true}
+  weight: 10
 
-openapi-route-protobuf:
-openapi-route-v1:
+openapi-protobuf-routes:
+openapi-v1-routes:
+openapi-custom-routes:
 
 # for test
 openapi-example:

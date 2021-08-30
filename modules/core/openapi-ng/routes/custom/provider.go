@@ -27,26 +27,24 @@ import (
 type provider struct {
 	Log      logs.Logger
 	Discover discover.Interface `autowired:"discover"`
+	Router   openapi.Interface  `autowired:"openapi-router"`
 	proxy    proxy.Proxy
 }
-
-var _ openapi.RouteSource = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
+	p.RegisterTo(p.Router)
 	return nil
 }
 
-func (p *provider) Name() string { return "openapi-custom-routes" }
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 	// add some custom API
 	return nil
 }
 
 func init() {
-	servicehub.Register("openapi-route-custom", &servicehub.Spec{
-		Services: []string{"openapi-route-custom"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+	servicehub.Register("openapi-custom-routes", &servicehub.Spec{
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

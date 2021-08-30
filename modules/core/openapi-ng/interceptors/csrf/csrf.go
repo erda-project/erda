@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ import (
 
 type config struct {
 	Order             int
-	AllowEmptyReferer bool          `file:"allow_empty_referer" default:"false"`
+	AllowValidReferer bool          `file:"allow_valid_referer" default:"false"`
 	TokenGenerator    string        `file:"token_generator" default:"random"` // random、random:
 	TokenLookup       string        `file:"token_lookup"`                     // "header:<name>"、"form:<name>"、 "query:<name>"
 	CookieName        string        `file:"cookie_name" default:"csrf" desc:"name of the CSRF cookie. This cookie will store CSRF token. optional."`
@@ -106,6 +107,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
+var _ interceptors.Interface = (*provider)(nil)
+
 func (p *provider) List() []*interceptors.Interceptor {
 	return []*interceptors.Interceptor{
 		{Order: p.Cfg.Order, Wrapper: p.Interceptor},
@@ -115,11 +118,18 @@ func (p *provider) List() []*interceptors.Interceptor {
 // Interceptor .
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		if p.Cfg.AllowEmptyReferer {
+		fmt.Println(p.Cfg.AllowValidReferer, r.Header.Get("Referer"), r.Host)
+		if p.Cfg.AllowValidReferer {
 			referer := r.Header.Get("Referer")
 			if referer == "" {
 				h(rw, r)
 				return
+			}
+			if ref, err := url.Parse(referer); err == nil {
+				if ref.Host == r.Host {
+					h(rw, r)
+					return
+				}
 			}
 		}
 		k, err := r.Cookie(p.Cfg.CookieName)

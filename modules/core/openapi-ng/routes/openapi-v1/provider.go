@@ -33,11 +33,10 @@ import (
 type provider struct {
 	Log      logs.Logger
 	Discover discover.Interface `autowired:"discover"`
+	Router   openapi.Interface  `autowired:"openapi-router"`
 	proxy    proxy.Proxy
 	handler  http.Handler
 }
-
-var _ openapi.RouteSource = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
@@ -49,10 +48,10 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		return err
 	}
 	p.handler = srv.Handler
+	p.RegisterTo(p.Router)
 	return nil
 }
 
-func (p *provider) Name() string { return "openapi-v1-routes" }
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 	methods := make(map[string]struct{})
 	for _, api := range apiv1.API {
@@ -65,8 +64,7 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 }
 
 func init() {
-	servicehub.Register("openapi-route-v1", &servicehub.Spec{
-		Services: []string{"openapi-route-v1"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+	servicehub.Register("openapi-v1-routes", &servicehub.Spec{
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -30,18 +30,17 @@ type provider struct {
 	Log      logs.Logger
 	Discover discover.Interface `autowired:"discover"`
 	Auth     auth.Interface     `autowired:"openapi-auth"`
+	Router   openapi.Interface  `autowired:"openapi-router"`
 	proxy    proxy.Proxy
 }
-
-var _ openapi.RouteSource = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
+	p.RegisterTo(p.Router)
 	return nil
 }
 
-func (p *provider) Name() string { return "openapi-protobuf-routes" }
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 	return RangeOpenAPIsProxy(func(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) error {
 		handler, err := p.proxy.Wrap(method, publishPath, backendPath, serviceName)
@@ -55,8 +54,7 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 }
 
 func init() {
-	servicehub.Register("openapi-route-protobuf", &servicehub.Spec{
-		Services: []string{"openapi-route-protobuf"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+	servicehub.Register("openapi-protobuf-routes", &servicehub.Spec{
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -23,22 +23,39 @@ import (
 )
 
 func getAuthOption(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) func(r *http.Request) auth.Options {
+	if opt.Auth == nil {
+		return func(r *http.Request) auth.Options {
+			return &authOption{}
+		}
+	}
+	opts := fieldsToMap(reflect.ValueOf(opt.Auth).Elem())
 	return func(r *http.Request) auth.Options {
-		return &authOption{opt: opt}
+		return &authOption{opts: opts}
 	}
 }
 
+func fieldsToMap(val reflect.Value) map[string]interface{} {
+	typ := val.Type()
+	n := typ.NumField()
+	fields := make(map[string]interface{})
+	for i := 0; i < n; i++ {
+		v := val.Field(i)
+		if v.CanInterface() {
+			field := typ.Field(i)
+			fields[field.Name] = v.Interface()
+		}
+	}
+	return fields
+}
+
 type authOption struct {
-	opt   *common.OpenAPIOption
+	opts  map[string]interface{}
 	other map[string]interface{}
 }
 
 func (o *authOption) Get(key string) interface{} {
-	if o.opt.Auth != nil {
-		val := reflect.ValueOf(o.opt.Auth).FieldByName(key)
-		if val.IsValid() && val.Kind() == reflect.Bool {
-			return val.Bool()
-		}
+	if val, ok := o.opts[key]; ok {
+		return val
 	}
 	return o.other[key]
 }

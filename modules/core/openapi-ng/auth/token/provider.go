@@ -25,22 +25,20 @@ import (
 )
 
 type config struct {
-	Weight int64 `file:"weight"`
+	Weight int64 `file:"weight" default:"10"`
 }
 
 // +provider
 type provider struct {
 	Cfg          *config
 	Log          logs.Logger
-	Router       openapi.Interface     `autowired:"openapi-router"`
-	Redis        *redis.Client         `autowired:"redis-client"`
-	Auth         openapiauth.Interface `autowired:"openapi-auth"`
+	Router       openapi.Interface `autowired:"openapi-router"`
+	Redis        *redis.Client     `autowired:"redis-client"`
 	oauth2server *oauth2.OAuth2Server
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.oauth2server = oauth2.NewOAuth2Server()
-	p.Auth.Register(p)
 
 	router := p.Router
 	router.Add("", "/oauth2/token", p.oauth2server.Token)
@@ -49,8 +47,15 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	return nil
 }
 
+var _ openapiauth.AutherLister = (*provider)(nil)
+
+func (p *provider) Authers() []openapiauth.Auther {
+	return []openapiauth.Auther{p}
+}
+
 func init() {
 	servicehub.Register("openapi-auth-token", &servicehub.Spec{
+		Services:   []string{"openapi-auth-token"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})

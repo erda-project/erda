@@ -25,7 +25,7 @@ import (
 )
 
 type config struct {
-	Weight        int64  `file:"weight"`
+	Weight        int64  `file:"weight" default:"100"`
 	OryKratosAddr string `file:"ory_kratos_addr"`
 }
 
@@ -33,16 +33,12 @@ type config struct {
 type provider struct {
 	Cfg    *config
 	Log    logs.Logger
-	Router openapi.Interface     `autowired:"openapi-router"`
-	Auth   openapiauth.Interface `autowired:"openapi-auth"`
+	Router openapi.Interface `autowired:"openapi-router"`
 	bundle *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.bundle = bundle.New(bundle.WithCoreServices(), bundle.WithDOP())
-
-	p.Auth.Register(&loginChecker{p: p})
-	p.Auth.Register(&tryLoginChecker{p: p})
 
 	router := p.Router
 	router.Add(http.MethodGet, "/api/openapi/login", p.LoginURL)
@@ -50,6 +46,15 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Add(http.MethodPost, "logout", p.Logout)
 	p.addUserInfoAPI(router)
 	return nil
+}
+
+var _ openapiauth.AutherLister = (*provider)(nil)
+
+func (p *provider) Authers() []openapiauth.Auther {
+	return []openapiauth.Auther{
+		&loginChecker{p: p},
+		&tryLoginChecker{p: p},
+	}
 }
 
 func init() {

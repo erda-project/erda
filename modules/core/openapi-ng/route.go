@@ -47,6 +47,7 @@ func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
 		for _, method := range allMethods {
 			s.addRoute(method, path, handler)
 		}
+		return
 	}
 	s.addRoute(method, path, handler)
 }

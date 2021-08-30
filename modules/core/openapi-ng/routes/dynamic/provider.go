@@ -34,14 +34,16 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	return p.err
 }
 
+var _ openapi.RouteSourceWatcher = (*provider)(nil)
+
 func (p *provider) Watch() chan openapi.RouteSource {
 	//TODO: watch etcd to get APIs
 	return nil
 }
 
 func init() {
-	servicehub.Register("openapi-route-dynamic", &servicehub.Spec{
-		Services: []string{"openapi-route-dynamic"},
+	servicehub.Register("openapi-dynamic-routes", &servicehub.Spec{
+		Services: []string{"openapi-route-watcher-dynamic"},
 		Creator:  func() servicehub.Provider { return &provider{} },
 	})
 }
