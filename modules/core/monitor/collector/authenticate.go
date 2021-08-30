@@ -50,7 +50,7 @@ func boolPointer(data bool) *bool {
 }
 
 func (a *Authenticator) syncAccessKey(ctx context.Context) error {
-	a.logger.Info("syncAccessKey stared...")
+	a.logger.Debug("syncAccessKey started...")
 	newStore := make(map[string]*akpb.AccessKeysItem, len(a.store))
 
 	resp, err := a.AccessKeyService.QueryAccessKeys(ctx, &akpb.QueryAccessKeysRequest{
@@ -66,7 +66,7 @@ func (a *Authenticator) syncAccessKey(ctx context.Context) error {
 	a.mu.Lock()
 	a.store = newStore
 	a.mu.Unlock()
-	a.logger.Infof("syncAccessKey successfully!")
+	a.logger.Debug("syncAccessKey successfully!")
 	return nil
 }
 
