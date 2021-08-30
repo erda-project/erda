@@ -19,8 +19,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/alecthomas/assert"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/core/dicehub/extension/pb"
+	"github.com/erda-project/erda/apistructs"
 )
 
 func Test_extensionService_SearchExtensions(t *testing.T) {
@@ -420,4 +423,16 @@ func Test_extensionService_QueryExtensionVersions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_CheckVersion(t *testing.T) {
+	spec := apistructs.Spec{SupportedVersions: []string{">=1.2"}}
+	v := spec.CheckDiceVersion("1.3.0-alpha")
+	assert.True(t, v)
+	v = spec.CheckDiceVersion("1.1-alpha")
+	assert.False(t, v)
+	v = spec.CheckDiceVersion("1.3.0")
+	assert.True(t, v)
+	v = spec.CheckDiceVersion("1.1")
+	assert.False(t, v)
 }
