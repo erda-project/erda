@@ -27,9 +27,9 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 	component := &apistructs.Component{
 		State: map[string]interface{}{
 			"clusterName": "test",
-			"pageNo": 1,
-			"pageSize": 20,
-			"total": 100,
+			"pageNo":      1,
+			"pageSize":    20,
+			"total":       100,
 			"sorterData": Sorter{
 				Field: "test",
 				Order: "test",
