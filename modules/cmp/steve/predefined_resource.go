@@ -124,6 +124,17 @@ metadata:
 `
 	ClusterRoleExpression = `
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: erda-pod-exec
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - 'pods/exec'
+  verbs:
+  - 'create'
 ---
 `
 	ClusterRoleBindingExpression = `
@@ -136,6 +147,21 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: view
+subjects:
+- kind: Group
+  name: erda-org-support
+- kind: ServiceAccount
+  name: erda-org-support
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: erda-pod-exec
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: erda-pod-exec
 subjects:
 - kind: Group
   name: erda-org-support
