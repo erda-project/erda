@@ -2,6 +2,7 @@ http-server:
   addr: ":7096"
 health:
   path: "/api/health"
+prometheus:
 
 grpc-server:
   addr: ":7080"

@@ -73,6 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		handlerV1: p.queryMetricsV1,
 	}
 	Q = p.q
+	go p.monitoring()
 
 	routes := ctx.Service("http-server", interceptors.Recover(p.L), interceptors.CORS()).(httpserver.Router)
 	err = p.initRoutes(routes)
