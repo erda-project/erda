@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type adapterService struct {
@@ -57,10 +58,15 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 
 func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
 	data, err := config2.LoadFile(s.p.configFile)
+	renderMap := map[string]string{
+		"language": request.Language,
+		"strategy": request.Strategy,
+	}
+	configFile := template.Render(string(data), renderMap)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.GetInstrumentationLibraryDocsResponse{
-		Data: string(data),
+		Data: configFile,
 	}, nil
 }
