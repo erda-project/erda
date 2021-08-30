@@ -19,62 +19,70 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
-func Test_adapterService_GetAdapters(t *testing.T) {
+func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
 	type args struct {
-		ctx context.Context
-		req *pb.GetAdaptersRequest
+		ctx     context.Context
+		request *pb.GetInstrumentationLibraryRequest
 	}
 	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetAdaptersResponse
-		wantErr  bool
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetInstrumentationLibraryResponse
+		wantErr bool
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &adapterService{
+				p: tt.fields.p,
+			}
+			got, err := s.GetInstrumentationLibrary(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetInstrumentationLibrary() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetInstrumentationLibrary() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetInstrumentationLibraryDocsRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetInstrumentationLibraryDocsResponse
+		wantErr bool
 	}{
 		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.adapter.AdapterService",
-		//			`
-		//erda.msp.apm.adapter:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.GetAdapterRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.GetAdapterResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
+			s := &adapterService{
+				p: tt.fields.p,
 			}
-			srv := hub.Service(tt.service).(pb.AdapterServiceServer)
-			got, err := srv.GetAdapters(tt.args.ctx, tt.args.req)
+			got, err := s.GetInstrumentationLibraryDocs(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("adapterService.GetAdapters() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetInstrumentationLibraryDocs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("adapterService.GetAdapters() = %v, want %v", got, tt.wantResp)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetInstrumentationLibraryDocs() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

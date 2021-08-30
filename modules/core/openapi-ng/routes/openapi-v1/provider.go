@@ -24,10 +24,15 @@ import (
 	"github.com/erda-project/erda/modules/core/openapi-ng/proxy"
 	openapiv1 "github.com/erda-project/erda/modules/openapi"
 	apiv1 "github.com/erda-project/erda/modules/openapi/api"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/hooks"
 	discover "github.com/erda-project/erda/providers/service-discover"
 )
+
+type config struct {
+	CP types.ComponentProtocolConfigs `file:"component-protocol"`
+}
 
 // +provider
 type provider struct {
@@ -48,6 +53,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		return err
 	}
 	p.handler = srv.Handler
+	types.CPConfigs = p.Cfg.CP
 	p.RegisterTo(p.Router)
 	return nil
 }
@@ -65,6 +71,7 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 
 func init() {
 	servicehub.Register("openapi-v1-routes", &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
+		ConfigFunc: func() interface{} { return &config{} },
+		Creator:    func() servicehub.Provider { return &provider{} },
 	})
 }

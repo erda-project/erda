@@ -324,10 +324,10 @@ func TestCacheStoreMethods(t *testing.T) {
 		t.Error(err)
 	}
 	cs := cacheStore{
-		Store:   &store{},
-		ctx:     ctx,
-		asl:     accesscontrol.NewAccessStore(ctx, true, &rbacInterface{}),
-		cache:   cache,
+		Store: &store{},
+		ctx:   ctx,
+		asl:   accesscontrol.NewAccessStore(ctx, true, &rbacInterface{}),
+		cache: cache,
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://unit.test", nil)

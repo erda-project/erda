@@ -62,8 +62,18 @@ openapi-auth-token:
   weight: 10
 
 openapi-protobuf-routes:
-openapi-v1-routes:
 openapi-custom-routes:
+openapi-v1-routes:
+  component-protocol:
+    scenario-proxy-binds:
+      - app: dop
+        addr: ${DOP_COMPONENT_PROTOCOL_ADDR:dop:9528}
+        scenarios:
+          - issue-manage
+      - addr: http://localhost:8080
+        scenarios:
+          - demo
+          - yetAnotherDemo
 
 # for test
 openapi-example:
