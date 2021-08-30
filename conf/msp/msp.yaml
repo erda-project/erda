@@ -80,6 +80,12 @@ erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 
+erda.msp.apm.adapter:
+  library:
+    - ${CONFIG_PATH}/adapter/instrumentationlibrary.yaml
+  configFile:
+    - ${CONFIG_PATH}/adapter/config.yaml
+
 # checker
 erda.msp.apm.checker: # checkers apis
 
