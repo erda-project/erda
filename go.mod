@@ -32,7 +32,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210830020850-d53df158bcd0
-	github.com/erda-project/erda-proto-go v0.0.0-20210830072613-c7ac218bb5f9
+	github.com/erda-project/erda-proto-go v0.0.0-20210830122656-7320114c379c
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect

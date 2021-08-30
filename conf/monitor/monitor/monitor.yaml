@@ -148,7 +148,7 @@ i18n@metric:
 
 notify-query:
   files:
-    - ${CONFIG_PATH}/notity/notify
+    - ${CONFIG_PATH}/notify/notify
 
 # admin
 http-server@admin:
