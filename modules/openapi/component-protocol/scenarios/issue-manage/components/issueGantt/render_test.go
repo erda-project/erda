@@ -23,10 +23,10 @@ import (
 
 	"github.com/alecthomas/assert"
 
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/gantt"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/gantt"
 	"github.com/erda-project/erda/modules/openapi/i18n"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
