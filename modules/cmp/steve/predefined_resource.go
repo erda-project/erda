@@ -58,7 +58,7 @@ func getSystemNamespace() string {
 		ns = os.Getenv(diceSystemEnv)
 	}
 	if ns == "" {
-		ns = "default"
+		ns = "erda-system"
 	}
 	return ns
 }
