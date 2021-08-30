@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/mysql"
 
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
 	"github.com/erda-project/erda/pkg/database/sqllint/rules"
@@ -93,16 +94,15 @@ func (l *IDTypeLinter) Enter(in ast.Node) (ast.Node, bool) {
 		}
 
 		// check id column type
-		if strings.Contains(strings.ToLower(col.Tp.String()), "bigint") ||
-			strings.Contains(strings.ToLower(col.Tp.String()), "char") {
+		// TypeLongLong is "bigint", "TypeString is char"
+		switch col.Tp.Tp {
+		case mysql.TypeLonglong, mysql.TypeString, mysql.TypeVarchar:
+		default:
+			l.err = linterror.New(l.s, l.text, "type error: id type should be BIGINT or CHAR", func(line []byte) bool {
+				return bytes.Contains(bytes.ToLower(line), []byte("id"))
+			})
 			return in, true
 		}
-
-		l.err = linterror.New(l.s, l.text, "type error: id type should be BIGINT or (VAR)CHAR", func(line []byte) bool {
-			return bytes.Contains(bytes.ToLower(line), []byte("id"))
-		})
-
-		return in, true
 	}
 
 	return in, true

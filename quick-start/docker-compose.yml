@@ -598,7 +598,7 @@ services:
     platform: linux/amd64
 
   erda-migration:
-    image: registry.erda.cloud/erda/init-image:20210817-d9577bb
+    image: registry.erda.cloud/erda-actions/erda-mysql-migration-action:20210825-cf76511
     container_name: erda-migration
     depends_on:
       - mysql
@@ -616,6 +616,7 @@ services:
       - MIGRATION_DIR=/migrations
     volumes:
       - ../.erda/migrations:/migrations
+      - .:/log
     restart: on-failure
     platform: linux/amd64
 
