@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -101,4 +102,46 @@ func TestGetRollbackConfig(t *testing.T) {
 	assert.Equal(t, 6, cfg[2]["TEST"])
 	assert.Equal(t, 6, cfg[3]["STAGING"])
 	assert.Equal(t, 8, cfg[3]["PROD"])
+}
+
+func Test_getRedeployPipelineYmlName(t *testing.T) {
+	type args struct {
+		runtime dbclient.Runtime
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases
+		{
+			name: "Filled in the space and scene set",
+			args: args{
+				runtime: dbclient.Runtime{
+					ApplicationID: 1,
+					Workspace:     "PORD",
+					Name:          "master",
+				},
+			},
+			want: "1/PORD/master/pipeline.yml",
+		},
+		{
+			name: "Filled in the space and scene set",
+			args: args{
+				runtime: dbclient.Runtime{
+					ApplicationID: 4,
+					Workspace:     "TEST",
+					Name:          "master",
+				},
+			},
+			want: "4/TEST/master/pipeline.yml",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getRedeployPipelineYmlName(tt.args.runtime); got != tt.want {
+				t.Errorf("getRedeployPipelineYmlName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
