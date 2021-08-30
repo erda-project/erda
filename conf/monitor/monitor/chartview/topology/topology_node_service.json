@@ -13,6 +13,12 @@
       "i": "view-micro_service_overview",
       "view": {
         "title": "服务概览",
+        "i18n": {
+          "title": {
+            "en": "Service Overview",
+            "zh": "服务概览"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -26,30 +32,60 @@
             "valueDimensions": [
               {
                 "alias": "运行中实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Running Instance",
+                    "zh": "运行中实例"
+                  }
+                },
                 "key": "running_instances",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "已停止实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Stopped Instance",
+                    "zh": "已停止实例"
+                  }
+                },
                 "key": "stopped_instances",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "错误请求",
+                "i18n": {
+                  "alias": {
+                    "en": "Error Request",
+                    "zh": "错误请求"
+                  }
+                },
                 "key": "service_error_req_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "服务异常",
+                "i18n": {
+                  "alias": {
+                    "en": "Service Exception",
+                    "zh": "服务异常"
+                  }
+                },
                 "key": "service_exception_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "告警次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Alert Count",
+                    "zh": "告警次数"
+                  }
+                },
                 "key": "alert_count",
                 "resultType": "number",
                 "type": "field"
@@ -79,6 +115,12 @@
       "i": "view-service-request-translation",
       "view": {
         "title": "事务分析",
+        "i18n": {
+          "title": {
+            "en": "Translation Analyzer",
+            "zh": "事务分析"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",
@@ -94,6 +136,12 @@
               {
                 "aggregation": "sum",
                 "alias": "事务类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Translation Type",
+                    "zh": "事务类型"
+                  }
+                },
                 "key": "requestType",
                 "resultType": "string",
                 "type": "field"
@@ -101,6 +149,12 @@
               {
                 "aggregation": "sum",
                 "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Called Count",
+                    "zh": "调用次数"
+                  }
+                },
                 "key": "requestCount",
                 "resultType": "number",
                 "type": "field"
@@ -108,12 +162,24 @@
               {
                 "aggregation": "avg",
                 "alias": "平均响应时间（ms）",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Response Time(ms)",
+                    "zh": "平均响应时间（ms）"
+                  }
+                },
                 "key": "requestAvgTime",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "错误率 (%)",
+                "i18n": {
+                  "alias": {
+                    "en": "Error Rate(%)",
+                    "zh": "错误率 (%)"
+                  }
+                },
                 "key": "requestErrorRate",
                 "resultType": "number",
                 "type": "field"
@@ -143,6 +209,12 @@
       "i": "view-q9ybiy3z",
       "view": {
         "title": "吞吐量",
+        "i18n": {
+          "title": {
+            "en": "Throughput",
+            "zh": "吞吐量"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -162,7 +234,13 @@
             ],
             "resultFilters": [
               {
-                "alias": "目标服务名称",
+                "alias": "服务名称",
+                "i18n": {
+                  "alias": {
+                    "en": "Service Name",
+                    "zh": "服务名称"
+                  }
+                },
                 "field": "application_http-target_service_name::tag",
                 "filter": {
                   "operation": "=",
@@ -176,6 +254,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeRvHzWW3T",
                 "type": "time"
               }
@@ -184,6 +268,12 @@
               {
                 "aggregation": "sum",
                 "alias": "HTTP 请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "HTTP Request Count",
+                    "zh": "HTTP 请求次数"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valueoTl2ugqu",
                 "resultType": "number",

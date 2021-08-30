@@ -62,6 +62,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typegq99wZs2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
@@ -75,6 +81,12 @@
               {
                 "aggregation": "count",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_db-elapsed_count::field",
                 "key": "valueSR6vrde7",
                 "resultType": "number",
@@ -91,7 +103,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "服务请求"
+        "title": "服务请求",
+        "i18n": {
+          "title": {
+            "en": "Service Request",
+            "zh": "服务请求"
+          }
+        }
       }
     },
     {
@@ -151,6 +169,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeQuPvs7M2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
@@ -164,6 +188,12 @@
               {
                 "aggregation": "avg",
                 "alias": "平均响应时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Response Time",
+                    "zh": "平均响应时间"
+                  }
+                },
                 "field": "application_db-elapsed_mean::field",
                 "key": "valueCxbcWuWT",
                 "resultType": "number",
@@ -185,7 +215,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "请求延迟"
+        "title": "请求时延",
+        "i18n": {
+          "title": {
+            "en": "Request Time Delay",
+            "zh": "请求时延"
+          }
+        }
       }
     },
     {
@@ -218,42 +254,84 @@
             "valueDimensions": [
               {
                 "alias": "SQL",
+                "i18n": {
+                  "alias": {
+                    "en": "SQL",
+                    "zh": "SQL"
+                  }
+                },
                 "key": "operation",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "数据库类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Type",
+                    "zh": "数据库类型"
+                  }
+                },
                 "key": "db_type",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "数据库实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Instance",
+                    "zh": "数据库实例"
+                  }
+                },
                 "key": "db_instance",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "数据库地址",
+                "i18n": {
+                  "alias": {
+                    "en": "Database Instance",
+                    "zh": "数据库实例"
+                  }
+                },
                 "key": "db_host",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "调用次数"
+                  }
+                },
                 "key": "call_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Request Count",
+                    "zh": "慢调用次数"
+                  }
+                },
                 "key": "slow_elapsed_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "平均延迟",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均延迟"
+                  }
+                },
                 "key": "avg_elapsed",
                 "resultType": "string",
                 "type": "field"
@@ -273,7 +351,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "数据库调用"
+        "title": "数据库调用",
+        "i18n": {
+          "title": {
+            "en": "Databases Request",
+            "zh": "数据库调用"
+          }
+        }
       }
     }
   ],

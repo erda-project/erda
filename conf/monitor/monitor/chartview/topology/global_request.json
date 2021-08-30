@@ -65,6 +65,12 @@
             "typeDimensions": [
               {
                 "alias": "服务",
+                "i18n": {
+                  "alias": {
+                    "en": "Service",
+                    "zh": "服务"
+                  }
+                },
                 "key": "typeLkQi9B9p",
                 "resultType": "string",
                 "type": "field"
@@ -74,6 +80,12 @@
               {
                 "aggregation": "sum",
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueCLP0s7v0",
                 "resultType": "number",
                 "type": "field"
@@ -89,7 +101,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "请求事务 TOP 3"
+        "title": "请求事务 TOP 3",
+        "i18n": {
+          "title": {
+            "en": "Request Translation TOP 3",
+            "zh": "请求事务 TOP 3"
+          }
+        }
       }
     },
     {
@@ -154,6 +172,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "key": "sortJR0cQzZ8",
                 "resultType": "number",
                 "sort": "DESC",
@@ -163,6 +187,12 @@
             "typeDimensions": [
               {
                 "alias": "服务",
+                "i18n": {
+                  "alias": {
+                    "en": "Service",
+                    "zh": "服务"
+                  }
+                },
                 "key": "typeA8qIXdnz",
                 "resultType": "string",
                 "type": "field"
@@ -171,6 +201,12 @@
             "valueDimensions": [
               {
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueb3jOhFB8",
                 "resultType": "number",
                 "type": "field"
@@ -186,7 +222,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "错误请求 TOP 3"
+        "title": "错误请求 TOP 3",
+        "i18n": {
+          "title": {
+            "en": "Error Request TOP 3",
+            "zh": "错误请求 TOP 3"
+          }
+        }
       }
     },
     {
@@ -247,6 +289,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "error_count-count::field",
                 "key": "sortwjwBN97R",
                 "resultType": "number",
@@ -257,6 +305,12 @@
             "typeDimensions": [
               {
                 "alias": "服务",
+                "i18n": {
+                  "alias": {
+                    "en": "Service",
+                    "zh": "服务"
+                  }
+                },
                 "field": "error_count-service_name::tag",
                 "key": "typegNGz17tG",
                 "resultType": "string",
@@ -267,6 +321,12 @@
               {
                 "aggregation": "sum",
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "field": "error_count-count::field",
                 "key": "value33vjO49J",
                 "resultType": "number",
@@ -283,7 +343,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "服务异常 TOP 3"
+        "title": "服务异常 TOP 3",
+        "i18n": {
+          "alias": {
+            "en": "Service Exception TOP 3",
+            "zh": "服务异常 TOP 3"
+          }
+        }
       }
     }
   ],

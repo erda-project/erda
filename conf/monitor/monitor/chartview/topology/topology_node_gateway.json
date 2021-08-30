@@ -79,6 +79,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "sort9zKC6Rue",
                 "resultType": "number",
@@ -89,6 +95,12 @@
             "typeDimensions": [
               {
                 "alias": "域名",
+                "i18n": {
+                  "alias": {
+                    "en": "Domain",
+                    "zh": "域名"
+                  }
+                },
                 "field": "application_http-req_host::tag",
                 "key": "typeTybZBDTL",
                 "resultType": "string",
@@ -99,6 +111,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valuebD64VaGD",
                 "resultType": "number",
@@ -115,7 +133,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "域名请求 TOP 3"
+        "title": "域名请求 TOP 3",
+        "i18n": {
+          "title": {
+            "en": "Domain Request TOP 3",
+            "zh": "域名请求 TOP 3"
+          }
+        }
       }
     },
     {
@@ -184,6 +208,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeQXtBniA6",
                 "type": "time"
               }
@@ -192,6 +222,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valueA2KagOZF",
                 "resultType": "number",
@@ -208,7 +244,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "吞吐量"
+        "title": "吞吐量",
+        "i18n": {
+          "title": {
+            "en": "Throughput",
+            "zh": "吞吐量"
+          }
+        }
       }
     },
     {
@@ -277,6 +319,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "type336bqk8x",
                 "type": "time"
               }
@@ -285,6 +333,12 @@
               {
                 "aggregation": "avg",
                 "alias": "平均延迟（ms）",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay(ms)",
+                    "zh": "平均延迟（ms）"
+                  }
+                },
                 "field": "application_http-elapsed_mean::field",
                 "key": "valueywTyWVde",
                 "resultType": "number",
@@ -305,7 +359,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "响应时间"
+        "title": "响应时间",
+        "i18n": {
+          "title": {
+            "en": "Response Time",
+            "zh": "响应时间"
+          }
+        }
       }
     }
   ],

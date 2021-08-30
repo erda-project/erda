@@ -58,6 +58,12 @@
             "resultFilters": [
               {
                 "alias": "主机",
+                "i18n": {
+                  "alias": {
+                    "en": "Host",
+                    "zh": "主机"
+                  }
+                },
                 "field": "application_mq_service-host::tag",
                 "filter": {
                   "operation": "=",
@@ -71,6 +77,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeFxiuOiOf",
                 "type": "time"
               }
@@ -79,6 +91,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_mq_service-count_sum::field",
                 "key": "valueYaLkGKG1",
                 "resultType": "number",
@@ -98,7 +116,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "吞吐量"
+        "title": "吞吐量",
+        "i18n": {
+          "title": {
+            "en": "Throughput",
+            "zh": "吞吐量"
+          }
+        }
       }
     },
     {
@@ -154,6 +178,12 @@
             "resultFilters": [
               {
                 "alias": "主机",
+                "i18n": {
+                  "alias": {
+                    "en": "Host",
+                    "zh": "主机"
+                  }
+                },
                 "field": "application_mq_service-host::tag",
                 "filter": {
                   "operation": "=",
@@ -167,6 +197,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "type6jWJnYDU",
                 "type": "time"
               }
@@ -174,6 +210,12 @@
             "valueDimensions": [
               {
                 "alias": "平均延迟(ms)",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay(ms)",
+                    "zh": "平均延迟(ms)"
+                  }
+                },
                 "expr": "sum(elapsed_sum::field)/sum(count_sum::field)",
                 "key": "value4fg9lHMB",
                 "type": "expr",
@@ -196,7 +238,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "响应时间"
+        "title": "响应时间",
+        "i18n": {
+          "title": {
+            "en": "Response Time",
+            "zh": "响应时间"
+          }
+        }
       }
     }
   ],

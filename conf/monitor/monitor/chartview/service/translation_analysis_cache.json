@@ -13,6 +13,12 @@
       "i": "view-1XA1pzWR",
       "view": {
         "title": "服务请求",
+        "i18n": {
+          "title": {
+            "en": "Service Request",
+            "zh": "服务请求"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -31,6 +37,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typegq99wZs2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
@@ -44,6 +56,12 @@
               {
                 "aggregation": "count",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_cache-elapsed_count::field",
                 "key": "valueSR6vrde7",
                 "resultType": "number",
@@ -153,6 +171,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeQuPvs7M2",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
@@ -166,6 +190,12 @@
               {
                 "aggregation": "avg",
                 "alias": "平均响应时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Response Time",
+                    "zh": "平均响应时间"
+                  }
+                },
                 "field": "application_cache-elapsed_mean::field",
                 "key": "valueCxbcWuWT",
                 "resultType": "number",
@@ -187,7 +217,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "请求延迟"
+        "title": "请求延迟",
+        "i18n": {
+          "title": {
+            "en": "Request Time Delay",
+            "zh": "请求时延"
+          }
+        }
       }
     },
     {
@@ -220,42 +256,84 @@
             "valueDimensions": [
               {
                 "alias": "执行语句",
+                "i18n": {
+                  "alias": {
+                    "en": "Executed Statement",
+                    "zh": "执行语句"
+                  }
+                },
                 "key": "operation",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "缓存类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Type",
+                    "zh": "缓存类型"
+                  }
+                },
                 "key": "db_type",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "缓存实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Instance",
+                    "zh": "缓存实例"
+                  }
+                },
                 "key": "db_instance",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "缓存地址",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Host",
+                    "zh": "缓存地址"
+                  }
+                },
                 "key": "db_host",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Called Count",
+                    "zh": "调用次数"
+                  }
+                },
                 "key": "call_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Called Count",
+                    "zh": "慢调用次数"
+                  }
+                },
                 "key": "slow_elapsed_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
-                "alias": "平均延迟",
+                "alias": "平均时延",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均时延"
+                  }
+                },
                 "key": "avg_elapsed",
                 "resultType": "string",
                 "type": "field"
@@ -275,7 +353,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "缓存调用"
+        "title": "缓存调用",
+        "i18n": {
+          "title": {
+            "en": "Cache Called",
+            "zh": "缓存调用"
+          }
+        }
       }
     }
   ],

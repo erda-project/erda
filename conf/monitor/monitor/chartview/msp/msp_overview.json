@@ -13,6 +13,12 @@
       "i": "view-project-count",
       "view": {
         "title": "项目数",
+        "i18n": {
+          "title": {
+            "en": "Project Count",
+            "zh": "项目数"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -46,6 +52,12 @@
       "i": "view-workspace",
       "view": {
         "title": "环境",
+        "i18n": {
+          "title": {
+            "en": "Workspace",
+            "zh": "环境"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -79,6 +91,12 @@
       "i": "view-service-count",
       "view": {
         "title": "服务数",
+        "i18n": {
+          "title": {
+            "en": "Service Count",
+            "zh": "服务数"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -135,6 +153,12 @@
       "i": "view-instance-count",
       "view": {
         "title": "服务实例",
+        "i18n": {
+          "title": {
+            "en": "Service Instance Count",
+            "zh": "服务实例"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -191,6 +215,12 @@
       "i": "view-alert",
       "view": {
         "title": "告警趋势",
+        "i18n": {
+          "title": {
+            "en": "Alert Tendency",
+            "zh": "告警趋势"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -203,6 +233,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "type441teal6",
                 "type": "time"
               }
@@ -210,6 +246,12 @@
             "valueDimensions": [
               {
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueynJmzYoH",
                 "resultType": "number",
                 "type": "field"
@@ -261,6 +303,12 @@
       "i": "view-hot-service",
       "view": {
         "title": "热点服务 TOP5",
+        "i18n": {
+          "title": {
+            "en": "HOT Service TOP5",
+            "zh": "热点服务 TOP5"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",
@@ -274,18 +322,36 @@
             "valueDimensions": [
               {
                 "alias": "服务名称",
+                "i18n": {
+                  "alias": {
+                    "en": "Service Name",
+                    "zh": "服务名称"
+                  }
+                },
                 "key": "serviceName",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "所属项目",
+                "i18n": {
+                  "alias": {
+                    "en": "Attribution Project",
+                    "zh": "所属项目"
+                  }
+                },
                 "key": "projectName",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "key": "countSum",
                 "resultType": "number",
                 "type": "field"
@@ -357,6 +423,12 @@
       "i": "view-gateway",
       "view": {
         "title": "入口流量",
+        "i18n": {
+          "title": {
+            "en": "Inlet Flow",
+            "zh": "入口流量"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -387,12 +459,24 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeQXtBniA6",
                 "type": "time"
               },
               {
                 "alias": "域名",
                 "field": "req_host::tag",
+                "i18n": {
+                  "alias": {
+                    "en": "Domain",
+                    "zh": "域名"
+                  }
+                },
                 "key": "reqHost",
                 "resultType": "string",
                 "type": "field"
@@ -402,6 +486,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "key": "requestCount",
                 "resultType": "number",
                 "type": "field"

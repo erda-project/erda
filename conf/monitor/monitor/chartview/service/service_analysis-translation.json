@@ -13,6 +13,12 @@
       "i": "view-WlIYS74f",
       "view": {
         "title": "接口请求量",
+        "i18n": {
+          "title": {
+            "en": "API Request",
+            "zh": "接口请求量"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -31,6 +37,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeTRtdbCxL",
                 "type": "time"
               }
@@ -39,6 +51,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求量",
+                "i18n": {
+                  "alias": {
+                    "en": "Request quantity",
+                    "zh": "请求量"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valueEOWkNhFW",
                 "resultType": "number",
@@ -94,7 +112,13 @@
       "y": 24,
       "i": "view-NDNpI1k5",
       "view": {
-        "title": "请求延迟",
+        "title": "请求时延",
+        "i18n": {
+          "title": {
+            "en": "Request Delay",
+            "zh": "请求时延"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -115,6 +139,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeCHGOKy9u",
                 "type": "time"
               }
@@ -122,6 +152,12 @@
             "valueDimensions": [
               {
                 "alias": "平均延迟(ms)",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay(ms)",
+                    "zh": "平均时延(ms)"
+                  }
+                },
                 "expr": "sum(elapsed_sum::field)/sum(elapsed_count::field)",
                 "key": "valueA3dJ0k10",
                 "type": "expr",
@@ -181,6 +217,12 @@
       "i": "view-gHh8GdKx",
       "view": {
         "title": "HTTP 状态",
+        "i18n": {
+          "title": {
+            "en": "HTTP Status",
+            "zh": "HTTP 状态"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -199,11 +241,23 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "type269Zbamy",
                 "type": "time"
               },
               {
                 "alias": "HTTP状态码",
+                "i18n": {
+                  "alias": {
+                    "en": "HTTP Code",
+                    "zh": "HTTP 状态码"
+                  }
+                },
                 "field": "application_http-http_status_code::tag",
                 "key": "typeBng48cgD",
                 "resultType": "string",
@@ -214,6 +268,12 @@
               {
                 "aggregation": "sum",
                 "alias": "请求量",
+                "i18n": {
+                  "alias": {
+                    "en": "Request quantity",
+                    "zh": "请求量"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valueGRdav3nr",
                 "resultType": "number",
@@ -275,6 +335,12 @@
       "i": "view-FOwzRMTP",
       "view": {
         "title": "服务异常",
+        "i18n": {
+          "title": {
+            "en": "Service Exception",
+            "zh": "服务异常"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -293,6 +359,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeJKRnc75E",
                 "type": "time"
               }
@@ -300,6 +372,12 @@
             "valueDimensions": [
               {
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueXTEB69H8",
                 "resultType": "number",
                 "type": "field"

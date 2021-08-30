@@ -53,6 +53,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeoQEtA1Qu",
                 "type": "time"
               }
@@ -60,6 +66,12 @@
             "valueDimensions": [
               {
                 "alias": "使用率（%）",
+                "i18n": {
+                  "alias": {
+                    "en": "Usage Rate (%)",
+                    "zh": "使用率（%）"
+                  }
+                },
                 "key": "valuea5DMGiam",
                 "resultType": "number",
                 "type": "field"
@@ -75,7 +87,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": null,
-        "title": "容器CPU"
+        "title": "容器CPU",
+        "i18n": {
+          "title": {
+            "en": "Container CPU",
+            "zh": "容器 CPU"
+          }
+        }
       },
       "w": 12,
       "x": 0,
@@ -136,6 +154,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeSf2rck4P",
                 "type": "time"
               }
@@ -175,7 +199,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "容器内存"
+        "title": "容器内存",
+        "i18n": {
+          "title": {
+            "en": "Container Memory",
+            "zh": "容器内存"
+          }
+        }
       },
       "w": 12,
       "x": 12,
@@ -240,6 +270,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typemiYT3xEp",
                 "type": "time"
               }
@@ -281,7 +317,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "Heap Memory Usage"
+        "title": "Heap Memory Usage",
+        "i18n": {
+          "title": {
+            "en": "Heap Memory Usage",
+            "zh": "堆内存"
+          }
+        }
       },
       "w": 12,
       "x": 0,
@@ -338,6 +380,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeCTERAG2L",
                 "type": "time"
               }
@@ -363,7 +411,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "Non Heap Memory Usage"
+        "title": "Non Heap Memory Usage",
+        "i18n": {
+          "title": {
+            "en": "Non Heap Memory Usage",
+            "zh": "非堆内存"
+          }
+        }
       },
       "w": 12,
       "x": 12,
@@ -419,6 +473,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeTDo594ut",
                 "type": "time"
               }
@@ -426,6 +486,12 @@
             "valueDimensions": [
               {
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueogVBbdfi",
                 "resultType": "number",
                 "type": "field"
@@ -441,7 +507,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": null,
-        "title": "Cluster Count"
+        "title": "Cluster Count",
+        "i18n": {
+          "title": {
+            "en": "Cluster Count",
+            "zh": "Cluster Count"
+          }
+        }
       },
       "w": 12,
       "x": 0,
@@ -497,6 +569,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typezZSh0it6",
                 "type": "time"
               }
@@ -504,6 +582,12 @@
             "valueDimensions": [
               {
                 "alias": "次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Count",
+                    "zh": "次数"
+                  }
+                },
                 "key": "valueK4VKq3YC",
                 "resultType": "number",
                 "type": "field"
@@ -519,7 +603,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": null,
-        "title": "Async Resources"
+        "title": "Async Resources",
+        "i18n": {
+          "title": {
+            "en": "Async Resources",
+            "zh": "Async Resources"
+          }
+        }
       },
       "w": 12,
       "x": 12,
@@ -577,6 +667,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typefJayqUa2",
                 "type": "time"
               }
@@ -584,6 +680,12 @@
             "valueDimensions": [
               {
                 "alias": "读取",
+                "i18n": {
+                  "alias": {
+                    "en": "Read",
+                    "zh": "读取"
+                  }
+                },
                 "key": "valuevcb3aWnu",
                 "resultType": "number",
                 "type": "field",
@@ -594,6 +696,12 @@
               },
               {
                 "alias": "写入",
+                "i18n": {
+                  "alias": {
+                    "en": "Write",
+                    "zh": "写入"
+                  }
+                },
                 "key": "value5hQ0Ce2S",
                 "resultType": "number",
                 "type": "field",
@@ -613,7 +721,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": null,
-        "title": "磁盘IO"
+        "title": "磁盘IO",
+        "i18n": {
+          "title": {
+            "en": "Disk IO",
+            "zh": "磁盘IO"
+          }
+        }
       },
       "w": 12,
       "x": 0,
@@ -671,6 +785,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typefJayqUa1",
                 "type": "time"
               }
@@ -678,6 +798,12 @@
             "valueDimensions": [
               {
                 "alias": "接收",
+                "i18n": {
+                  "alias": {
+                    "en": "Accept",
+                    "zh": "接收"
+                  }
+                },
                 "key": "valuex5rrfADW",
                 "resultType": "number",
                 "type": "field",
@@ -688,6 +814,12 @@
               },
               {
                 "alias": "发送",
+                "i18n": {
+                  "alias": {
+                    "en": "Send",
+                    "zh": "发送"
+                  }
+                },
                 "key": "valueezORvCqz",
                 "resultType": "number",
                 "type": "field",
@@ -707,7 +839,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": null,
-        "title": "容器网络"
+        "title": "容器网络",
+        "i18n": {
+          "title": {
+            "en": "Container Network",
+            "zh": "容器网络"
+          }
+        }
       },
       "w": 12,
       "x": 12,

@@ -13,6 +13,12 @@
       "i": "view-JOhL0CXv",
       "view": {
         "title": "集群组件状态",
+        "i18n": {
+          "title": {
+            "en": "Cluster Component Status",
+            "zh": "集群组件状态"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",
@@ -116,6 +122,12 @@
       "i": "view-G4LpQfk7",
       "view": {
         "title": "集群节点状态",
+        "i18n": {
+          "title": {
+            "en": "Cluster Node Status",
+            "zh": "集群节点状态"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",
@@ -218,7 +230,13 @@
       "y": 18,
       "i": "view-Ecrdq0jI",
       "view": {
-        "title": "kubernetes状态",
+        "title": "kubernetes 状态",
+        "i18n": {
+          "title": {
+            "en": "kubernetes Status",
+            "zh": "kubernetes 状态"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",
@@ -269,6 +287,12 @@
       "i": "view-tgogQI1P",
       "view": {
         "title": "集群中间件状态",
+        "i18n": {
+          "title": {
+            "en": "Cluster Middleware Status",
+            "zh": "集群中间件状态"
+          }
+        },
         "description": "",
         "chartType": "table",
         "dataSourceType": "api",

@@ -62,6 +62,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "typeHWstw9Kl",
                 "timeField": {},
                 "timeFormat": "YYYY/MM/DD",
@@ -76,6 +82,12 @@
               {
                 "aggregation": "count",
                 "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
                 "field": "application_http-elapsed_count::field",
                 "key": "valuensYW3soM",
                 "resultType": "number",
@@ -94,7 +106,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "服务请求"
+        "title": "服务请求",
+        "i18n": {
+          "alias": {
+            "en": "Service Request",
+            "zh": "服务请求"
+          }
+        }
       }
     },
     {
@@ -154,6 +172,12 @@
             "typeDimensions": [
               {
                 "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
                 "key": "type2jCjYVIp",
                 "timeFormat": "YYYY/MM/DD",
                 "timeInterval": {
@@ -167,6 +191,12 @@
               {
                 "aggregation": "avg",
                 "alias": "平均响应时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Response Time",
+                    "zh": "平均响应时间"
+                  }
+                },
                 "field": "application_http-elapsed_mean::field",
                 "key": "valueZjrFmhZg",
                 "resultType": "number",
@@ -188,7 +218,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "请求延迟"
+        "title": "请求时延",
+        "i18n": {
+          "title": {
+            "en": "Request Time Delay",
+            "zh": "请求时延"
+          }
+        }
       }
     },
     {
@@ -221,30 +257,60 @@
             "valueDimensions": [
               {
                 "alias": "事务名称",
+                "i18n": {
+                  "alias": {
+                    "en": "Translation Name",
+                    "zh": "事务名称"
+                  }
+                },
                 "key": "translation_name",
                 "resultType": "string",
                 "type": "field"
               },
               {
                 "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Called Count",
+                    "zh": "调用次数"
+                  }
+                },
                 "key": "elapsed_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "错误次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Error Count",
+                    "zh": "错误次数"
+                  }
+                },
                 "key": "error_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
                 "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Called Count",
+                    "zh": "慢调用次数"
+                  }
+                },
                 "key": "slow_elapsed_count",
                 "resultType": "number",
                 "type": "field"
               },
               {
-                "alias": "平均延迟",
+                "alias": "平均时延",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均时延"
+                  }
+                },
                 "key": "avg_elapsed",
                 "resultType": "string",
                 "type": "field"
@@ -264,7 +330,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "HTTP事务"
+        "title": "HTTP 事务",
+        "i18n": {
+          "title": {
+            "en": "HTTP Translation",
+            "zh": "HTTP 事务"
+          }
+        }
       }
     },
     {
@@ -325,7 +397,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "慢事务追踪top50"
+        "title": "慢事务追踪 Top50",
+        "i18n": {
+          "title": {
+            "en": "Slow Translation Tracing Top50",
+            "zh": "慢事务追踪 Top50"
+          }
+        }
       }
     },
     {
@@ -386,7 +464,13 @@
         "dataSourceType": "api",
         "description": "",
         "staticData": {},
-        "title": "错误事务追踪Top50"
+        "title": "错误事务追踪 Top50",
+        "i18n": {
+          "title": {
+            "en": "Error Translation Tracing Top50",
+            "zh": "错误事务追踪 Top50"
+          }
+        }
       }
     }
   ],
