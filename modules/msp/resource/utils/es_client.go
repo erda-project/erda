@@ -131,7 +131,7 @@ func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string)
 		return nil
 	}
 	logDeployment.CollectorUrl = strings.TrimSpace(logDeployment.CollectorUrl)
-	if len(logDeployment.CollectorUrl) > 0 {
+	if len(logDeployment.CollectorUrl) > 0 || logDeployment.LogType == string(db.LogTypeLogService) {
 		return &ESClient{
 			Client:     client,
 			LogVersion: LogVersion2,

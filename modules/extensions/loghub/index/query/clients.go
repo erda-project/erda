@@ -149,7 +149,7 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 			continue
 		}
 		d.CollectorURL = strings.TrimSpace(d.CollectorURL)
-		if len(d.CollectorURL) > 0 {
+		if len(d.CollectorURL) > 0 || d.LogType == string(db.LogTypeLogService) {
 			clients = append(clients, &ESClient{
 				Client:     client,
 				LogVersion: LogVersion2,
