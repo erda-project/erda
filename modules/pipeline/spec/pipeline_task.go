@@ -61,19 +61,20 @@ func (*PipelineTask) TableName() string {
 }
 
 type PipelineTaskExtra struct {
-	Namespace    string                   `json:"namespace,omitempty"`
-	ExecutorName PipelineTaskExecutorName `json:"executorName,omitempty"`
-	ClusterName  string                   `json:"clusterName,omitempty"`
-	AllowFailure bool                     `json:"allowFailure,omitempty"`
-	Pause        bool                     `json:"pause,omitempty"`
-	Timeout      time.Duration            `json:"timeout,omitempty"`
-	PrivateEnvs  map[string]string        `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
-	PublicEnvs   map[string]string        `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
-	Labels       map[string]string        `json:"labels,omitempty"`
-	Image        string                   `json:"image,omitempty"`
-	Cmd          string                   `json:"cmd,omitempty"`
-	CmdArgs      []string                 `json:"cmdArgs,omitempty"`
-	Binds        []apistructs.Bind        `json:"binds,omitempty"`
+	Namespace      string                     `json:"namespace,omitempty"`
+	ExecutorName   PipelineTaskExecutorName   `json:"executorName,omitempty"`
+	ClusterName    string                     `json:"clusterName,omitempty"`
+	AllowFailure   bool                       `json:"allowFailure,omitempty"`
+	Pause          bool                       `json:"pause,omitempty"`
+	Timeout        time.Duration              `json:"timeout,omitempty"`
+	PrivateEnvs    map[string]string          `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
+	PublicEnvs     map[string]string          `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
+	Labels         map[string]string          `json:"labels,omitempty"`
+	Image          string                     `json:"image,omitempty"`
+	Cmd            string                     `json:"cmd,omitempty"`
+	CmdArgs        []string                   `json:"cmdArgs,omitempty"`
+	Binds          []apistructs.Bind          `json:"binds,omitempty"`
+	TaskContainers []apistructs.TaskContainer `json:"taskContainers"`
 	// Volumes 创建 task 时的 volumes 快照
 	// 若一开始 volume 无 volumeID，启动 task 后返回的 volumeID 不会在这里更新，只会更新到 task.Context.OutStorages 里
 	Volumes         []apistructs.MetadataField `json:"volumes,omitempty"` //
@@ -198,8 +199,9 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		Type:       string(pt.Type),
 		Status:     pt.Status,
 		Extra: apistructs.PipelineTaskExtra{
-			UUID:         pt.Extra.UUID,
-			AllowFailure: pt.Extra.AllowFailure,
+			UUID:           pt.Extra.UUID,
+			AllowFailure:   pt.Extra.AllowFailure,
+			TaskContainers: pt.Extra.TaskContainers,
 		},
 		Labels:       pt.Extra.Action.Labels,
 		Result:       pt.Result,
