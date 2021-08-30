@@ -22,7 +22,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -149,6 +151,10 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 		return err
 	}
 
+	if err := a.insureSystemNamespace(client); err != nil {
+		return err
+	}
+
 	for _, sa := range predefinedServiceAccount {
 		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
 		if _, err = saClient.Create(a.ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
@@ -167,6 +173,33 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 	for _, crb := range predefinedClusterRoleBinding {
 		if _, err = crbClient.Create(a.ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
+		}
+	}
+	return nil
+}
+
+func (a *Aggregator) insureSystemNamespace(client *k8sclient.K8sClient) error {
+	nsClient := client.ClientSet.CoreV1().Namespaces()
+	system := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "erda-system",
+		},
+	}
+	newNs, err := nsClient.Create(a.ctx, system, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	for newNs.Status.Phase != v1.NamespaceActive {
+		newNs, err = nsClient.Get(a.ctx, "erda-system", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		select {
+		case <-a.ctx.Done():
+			return errors.New("failed to watch system namespace, context canceled")
+		case <-time.After(time.Second):
+			logrus.Infof("creating erda system namespace...")
 		}
 	}
 	return nil
