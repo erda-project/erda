@@ -15,8 +15,12 @@
 package steve
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
@@ -27,10 +31,49 @@ var (
 	predefinedServiceAccount     = getPredefinedServiceAccount()
 	predefinedClusterRole        = getPredefinedClusterRole()
 	predefinedClusterRoleBinding = getPredefinedClusterRoleBinding()
+
+	erdaSystemEnv   = "ERDA_NAMESPACE"
+	diceSystemEnv   = "DICE_NAMESPACE"
+	systemNamespace = getSystemNamespace()
+
+	UserGroups map[string]UserGroupInfo
 )
 
+func init() {
+	UserGroups = make(map[string]UserGroupInfo)
+	UserGroups["erda-org-manager"] = UserGroupInfo{
+		ServiceAccountName:      "erda-org-manager",
+		ServiceAccountNamespace: systemNamespace,
+	}
+	UserGroups["erda-org-support"] = UserGroupInfo{
+		ServiceAccountName:      "erda-org-support",
+		ServiceAccountNamespace: systemNamespace,
+	}
+}
+
+func getSystemNamespace() string {
+	ns := ""
+	ns = os.Getenv(erdaSystemEnv)
+	if ns == "" {
+		ns = os.Getenv(diceSystemEnv)
+	}
+	if ns == "" {
+		panic("system namespace env is null")
+	}
+	return ns
+}
+
 func getPredefinedServiceAccount() []*corev1.ServiceAccount {
-	yamls := strings.Split(ServiceAccountExpression, "\n---\n")
+	tem, err := template.New("sa").Parse(ServiceAccountExpression)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse predefined serviceAccounts, %v", err))
+	}
+	buf := bytes.Buffer{}
+	if err = tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to execute predefined serviceAccounts template, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var sa []*corev1.ServiceAccount
 	for _, yml := range yamls {
 		var tmp corev1.ServiceAccount
@@ -46,7 +89,16 @@ func getPredefinedServiceAccount() []*corev1.ServiceAccount {
 }
 
 func getPredefinedClusterRole() []*rbacv1.ClusterRole {
-	yamls := strings.Split(ClusterRoleExpression, "\n---\n")
+	tem, err := template.New("cr").Parse(ClusterRoleExpression)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoles, %v", err))
+	}
+	buf := bytes.Buffer{}
+	if err := tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoles template, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var cr []*rbacv1.ClusterRole
 	for _, yml := range yamls {
 		var tmp rbacv1.ClusterRole
@@ -62,7 +114,14 @@ func getPredefinedClusterRole() []*rbacv1.ClusterRole {
 }
 
 func getPredefinedClusterRoleBinding() []*rbacv1.ClusterRoleBinding {
-	yamls := strings.Split(ClusterRoleBindingExpression, "\n---\n")
+	tem := template.New("crb")
+	tem = template.Must(tem.Parse(ClusterRoleBindingExpression))
+	buf := bytes.Buffer{}
+	if err := tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoleBindings, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var crb []*rbacv1.ClusterRoleBinding
 	for _, yml := range yamls {
 		var tmp rbacv1.ClusterRoleBinding
@@ -95,13 +154,6 @@ const (
 	OrgSupportGroup = "erda-support-manager"
 )
 
-var (
-	UserGroups = map[string]UserGroupInfo{
-		"erda-org-manager": {"erda-org-manager", "default"},
-		"erda-org-support": {"erda-org-support", "default"},
-	}
-)
-
 type UserGroupInfo struct {
 	ServiceAccountName      string
 	ServiceAccountNamespace string
@@ -114,13 +166,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-manager
-  namespace: default
+  namespace: {{.}}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-support
-  namespace: default
+  namespace: {{.}}
 `
 	ClusterRoleExpression = `
 ---
@@ -135,7 +187,6 @@ rules:
   - 'pods/exec'
   verbs:
   - 'create'
----
 `
 	ClusterRoleBindingExpression = `
 ---
@@ -152,7 +203,7 @@ subjects:
   name: erda-org-support
 - kind: ServiceAccount
   name: erda-org-support
-  namespace: default
+  namespace: {{.}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -167,7 +218,7 @@ subjects:
   name: erda-org-support
 - kind: ServiceAccount
   name: erda-org-support
-  namespace: default
+  namespace: {{.}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -182,6 +233,6 @@ subjects:
   name: erda-org-manager
 - kind: ServiceAccount
   name: erda-org-manager
-  namespace: default
+  namespace: {{.}}
 `
 )
