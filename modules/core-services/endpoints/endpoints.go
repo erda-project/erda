@@ -23,7 +23,6 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
-	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
@@ -71,7 +70,6 @@ type Endpoints struct {
 	queryStringDecoder *schema.Decoder
 	audit              *audit.Audit
 	errorbox           *errorbox.ErrorBox
-	accesskey          *accesskey.Service
 	fileSvc            *filesvc.FileService
 }
 
@@ -214,12 +212,6 @@ func WithNotice(notice *notice.Notice) Option {
 	}
 }
 
-func WithAksk(aksk *accesskey.Service) Option {
-	return func(e *Endpoints) {
-		e.accesskey = aksk
-	}
-}
-
 func WithApprove(approve *approve.Approve) Option {
 	return func(e *Endpoints) {
 		e.approve = approve
@@ -353,13 +345,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/permissions/actions/access", Method: http.MethodPost, Handler: e.ScopeRoleAccess},
 		{Path: "/api/permissions/actions/check", Method: http.MethodPost, Handler: e.CheckPermission},
 		{Path: "/api/permissions/actions/stateCheck", Method: http.MethodPost, Handler: e.StateCheckPermission},
-
-		// the interface of accesskey
-		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodGet, Handler: e.GetByAccessKeyID},
-		{Path: "/api/credential/access-keys", Method: http.MethodGet, Handler: e.ListAccessKeys},
-		{Path: "/api/credential/access-keys", Method: http.MethodPost, Handler: e.CreateAccessKey},
-		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodPut, Handler: e.UpdateAccessKey},
-		{Path: "/api/credential/access-keys/{accessKeyId}", Method: http.MethodDelete, Handler: e.DeleteByAccessKeyID},
 
 		// the interface of license
 		{Path: "/api/license", Method: http.MethodGet, Handler: e.GetLicense},

@@ -46,6 +46,14 @@ type mockContext struct {
 	l logs.Logger
 }
 
+func (m *mockContext) Key() string {
+	return ""
+}
+
+func (m *mockContext) Provider() servicehub.Provider {
+	return ""
+}
+
 func (m *mockContext) Label() string {
 	return ""
 }
