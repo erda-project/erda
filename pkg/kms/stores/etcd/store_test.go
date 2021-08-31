@@ -14,20 +14,89 @@
 
 package etcd
 
-//import (
-//	"testing"
-//
-//	"github.com/davecgh/go-spew/spew"
-//	"github.com/stretchr/testify/assert"
-//
-//	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-//)
-//
-//func TestGetKeyVersion(t *testing.T) {
-//	etcdclient, err := etcd.New()
-//	assert.NoError(t, err)
-//	s := Store{etcdClient: etcdclient}
-//	keyVersionInfo, err := s.GetKeyVersion("9367fcdeeed94a809004b3f228c05a08", "ac643c07a95a433ca080ef58c04bc357")
-//	assert.NoError(t, err)
-//	spew.Dump(keyVersionInfo)
-//}
+import (
+	"context"
+	"fmt"
+	"io"
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/coreos/etcd/clientv3"
+)
+
+var (
+	goodEndpoint = "http://localhost:2379"
+	badEndpoint  = "http://localhost:23791"
+)
+
+// mockMaintenance used to mock etcdclient.Status, because Status is provided by embed interface clientv3.Maintenance,
+// and default struct implement of clientv3.Maintenance is unexported.
+type mockMaintenance struct{}
+
+func (o mockMaintenance) Status(ctx context.Context, endpoint string) (*clientv3.StatusResponse, error) {
+	if endpoint == goodEndpoint {
+		return &clientv3.StatusResponse{}, nil
+	}
+	return nil, fmt.Errorf("fake bad endpoint error")
+}
+func (o mockMaintenance) AlarmList(ctx context.Context) (*clientv3.AlarmResponse, error) {
+	panic("implement me")
+}
+func (o mockMaintenance) AlarmDisarm(ctx context.Context, m *clientv3.AlarmMember) (*clientv3.AlarmResponse, error) {
+	panic("implement me")
+}
+func (o mockMaintenance) Defragment(ctx context.Context, endpoint string) (*clientv3.DefragmentResponse, error) {
+	panic("implement me")
+}
+func (o mockMaintenance) HashKV(ctx context.Context, endpoint string, rev int64) (*clientv3.HashKVResponse, error) {
+	panic("implement me")
+}
+func (o mockMaintenance) Snapshot(ctx context.Context) (io.ReadCloser, error) {
+	panic("implement me")
+}
+func (o mockMaintenance) MoveLeader(ctx context.Context, transfereeID uint64) (*clientv3.MoveLeaderResponse, error) {
+	panic("implement me")
+}
+
+func Test_checkEtcdStatus(t *testing.T) {
+	etcdClient := &clientv3.Client{
+		Maintenance: &mockMaintenance{},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(etcdClient), "Status", func(client *clientv3.Client, ctx context.Context, endpoint string) (*clientv3.StatusResponse, error) {
+		return nil, nil
+	})
+	type args struct {
+		etcdClient *clientv3.Client
+		endpoints  string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "etcd ready",
+			args: args{
+				etcdClient: etcdClient,
+				endpoints:  goodEndpoint,
+			},
+			wantErr: false,
+		},
+		{
+			name: "etcd not ready",
+			args: args{
+				etcdClient: etcdClient,
+				endpoints:  badEndpoint,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := checkEtcdStatus(tt.args.etcdClient, tt.args.endpoints); (err != nil) != tt.wantErr {
+				t.Errorf("checkEtcdStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
