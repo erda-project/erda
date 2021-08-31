@@ -120,6 +120,29 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 		if len(d.ESURL) <= 0 {
 			continue
 		}
+
+		// get all other addons in same cluster, project and workspace
+		addons := []string{addon}
+		if len(addon) > 0 {
+			logInstance, err := p.db.LogInstanceDB.GetByLogKey(addon)
+			if err != nil {
+				p.L.Warnf("fail to get logInstance for logKey: %s", addon)
+			}
+			if logInstance != nil {
+				sameGroupLogInstances, err := p.db.LogInstanceDB.
+					GetListByClusterAndProjectIdAndWorkspace(logInstance.ClusterName, logInstance.ProjectId, logInstance.Workspace)
+				if err != nil {
+					p.L.Warnf("fail to get logInstance")
+				}
+				for _, instance := range sameGroupLogInstances {
+					if instance.LogKey == addon {
+						continue
+					}
+					addons = append(addons, instance.LogKey)
+				}
+			}
+		}
+
 		options := []elastic.ClientOptionFunc{
 			elastic.SetURL(strings.Split(d.ESURL, ",")...),
 			elastic.SetSniff(false),
@@ -154,23 +177,27 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 				Client:     client,
 				LogVersion: LogVersion2,
 				URLs:       d.ESURL,
-				Indices:    getLogIndices("rlogs-", orgId, addon),
+				Indices:    getLogIndices("rlogs-", orgId, addons...),
 			})
 		} else {
 			clients = append(clients, &ESClient{
 				Client:     client,
 				LogVersion: LogVersion1,
 				URLs:       d.ESURL,
-				Indices:    getLogIndices("spotlogs-", orgId, addon),
+				Indices:    getLogIndices("spotlogs-", orgId, addons...),
 			})
 		}
 	}
 	return clients
 }
 
-func getLogIndices(prefix, orgId string, addon string) []string {
-	if len(addon) > 0 {
-		return []string{prefix + addon, prefix + addon + "-*"}
+func getLogIndices(prefix, orgId string, addons ...string) []string {
+	if len(addons) > 0 {
+		var indices []string
+		for _, addon := range addons {
+			indices = append(indices, prefix+addon, prefix+addon+"-*")
+		}
+		return indices
 	}
 	if len(orgId) > 0 {
 		return []string{prefix + orgId}

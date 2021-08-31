@@ -23,6 +23,7 @@ type DB struct {
 	*gorm.DB
 	LogDeployment        LogDeploymentDB
 	LogServiceInstanceDB LogServiceInstanceDB
+	LogInstanceDB        LogInstanceDB
 }
 
 // New .
@@ -31,6 +32,7 @@ func New(db *gorm.DB) *DB {
 		DB:                   db,
 		LogDeployment:        LogDeploymentDB{db},
 		LogServiceInstanceDB: LogServiceInstanceDB{db},
+		LogInstanceDB:        LogInstanceDB{db},
 	}
 }
 

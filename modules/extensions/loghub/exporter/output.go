@@ -64,7 +64,7 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 		}
 	}
 	if !ok {
-		key, ok = data.Tags["msp_env"]
+		key, ok = data.Tags["msp_tenant_id"]
 	}
 
 	if len(key) <= 2 {

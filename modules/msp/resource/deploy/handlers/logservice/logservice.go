@@ -93,7 +93,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	logKey := tenant.ID
 	config := map[string]string{}
-	config["MSP_ENV"] = logKey
+	config["MSP_TENANT_ID"] = tenant.TenantGroup
 	config["MSP_LOG_ATTACH"] = "true"
 	configStr, _ := utils.JsonConvertObjToString(config)
 

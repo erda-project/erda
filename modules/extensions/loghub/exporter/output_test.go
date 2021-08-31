@@ -93,7 +93,7 @@ func TestInvoke_WithLogServicePattern_Should_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_env":        "n4e4d034460114086b2a2b203312f5522",
+			"msp_tenant_id":  "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "",
 		},
 		log:    logger,
