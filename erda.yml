@@ -58,7 +58,7 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
-      MONITOR_ADDR: monitor:7096
+      DOP_ADDR: localhost:9527 # TODO remove it after internal bundle invoke inside cp issue-manage adjusted
     health_check:
       exec: { }
       http:
