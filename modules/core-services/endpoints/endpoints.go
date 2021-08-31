@@ -379,6 +379,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/mboxs/actions/stats", Method: http.MethodGet, Handler: e.GetMBoxStats},
 		{Path: "/api/mboxs/actions/set-read", Method: http.MethodPost, Handler: e.SetMBoxReadStatus},
 		{Path: "/api/mboxs/{mboxID}", Method: http.MethodGet, Handler: e.GetMBox},
+		{Path: "/api/mboxs/actions/read-all", Method: http.MethodPost, Handler: e.OneClickRead},
 
 		// the interface of error box
 		{Path: "/api/task-error/actions/create", Method: http.MethodPost, Handler: e.CreateOrUpdateErrorLog},
