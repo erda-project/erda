@@ -15,6 +15,7 @@ envs:
   PIPELINE_ADDR: pipeline:3081
   ADMIN_ADDR: admin:9095
   MSP_ADDR: msp:8080
+  DOP_ADDR: dop:9527
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
