@@ -96,8 +96,8 @@ func (svc *FileTree) listFileTreeNodes(req apistructs.UnifiedFileTreeNodeListReq
 			return nil, err
 		}
 		treeNodes := make([]*apistructs.UnifiedFileTreeNode, 0, len(nodes))
-		for _, v := range nodes {
-			treeNodes = append(treeNodes, &v)
+		for i := range nodes {
+			treeNodes = append(treeNodes, &nodes[i])
 		}
 		return treeNodes, nil
 	}
