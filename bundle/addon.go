@@ -17,6 +17,7 @@ package bundle
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
@@ -110,6 +111,33 @@ func (b *Bundle) ListAddonByRuntimeID(runtimeID string) (*apistructs.AddonListRe
 		Header(httputil.UserHeader, "bundle").Header(httputil.OrgHeader, "bundle").
 		Param("type", "runtime").
 		Param("value", runtimeID).
+		Do().
+		JSON(&data)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), data.Error)
+	}
+	return &data, nil
+}
+
+// ListAddonByProjectID get addons by projectID
+func (b *Bundle) ListAddonByProjectID(projectID, orgID int64) (*apistructs.AddonListResponse, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var data apistructs.AddonListResponse
+	r, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/addons")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Param("type", "project").
+		Param("value", strconv.FormatInt(projectID, 10)).
 		Do().
 		JSON(&data)
 	if err != nil {
