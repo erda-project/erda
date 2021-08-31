@@ -607,9 +607,9 @@ func queryConditions(indexType string, params Vo) *elastic.BoolQuery {
 					Should(elastic.NewTermQuery(apm.TagsTargetApplicationName, value)).
 					Should(elastic.NewTermQuery(apm.TagsSourceApplicationName, value))
 			case ServiceSearchTag.Tag:
-				sbq.Should(elastic.NewTermQuery(apm.TagsServiceName, value)).
-					Should(elastic.NewTermQuery(apm.TagsTargetServiceName, value)).
-					Should(elastic.NewTermQuery(apm.TagsSourceServiceName, value))
+				sbq.Should(elastic.NewTermQuery(apm.TagsServiceId, value)).
+					Should(elastic.NewTermQuery(apm.TagsTargetServiceId, value)).
+					Should(elastic.NewTermQuery(apm.TagsSourceServiceId, value))
 			}
 		}
 		boolQuery.Filter(sbq)
