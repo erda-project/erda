@@ -4,6 +4,10 @@ http-server:
 health:
     path: "/api/health"
 
+grpc-client@erda.core.services.authentication.credentials.accesskey:
+    addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.services.authentication.credentials.accesskey-client:
+
 kafka:
     producer:
         options:
