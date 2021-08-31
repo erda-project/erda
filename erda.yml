@@ -58,7 +58,7 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
-      MONITOR_ADDR: monitor:7096
+      DOP_ADDR: localhost:9527 # TODO remove it after internal bundle invoke inside cp issue-manage adjusted
     health_check:
       exec: { }
       http:
@@ -121,6 +121,12 @@ services:
     cmd: "/app/core-services"
     ports:
       - port: 9526
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9536 # new http port
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9537 # new grpc port
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
