@@ -35,8 +35,7 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 	}
 	for k, v := range s.p.libraryMap {
 		libraryList := &pb.InstrumentationLibrary{
-			DisplayName: k,
-			Strategy:    k,
+			Strategy: k,
 		}
 		languages := make([]*pb.Language, 0)
 		languageList, ok := v.([]interface{})
@@ -45,8 +44,7 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 		}
 		for _, v := range languageList {
 			language := &pb.Language{
-				Language:    v.(string),
-				DisplayName: v.(string),
+				Language: v.(string),
 			}
 			languages = append(languages, language)
 		}
