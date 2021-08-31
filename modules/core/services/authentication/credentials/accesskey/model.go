@@ -37,7 +37,7 @@ type AccessKey struct {
 }
 
 func (ak AccessKey) TableName() string {
-	return "access_key"
+	return "erda_access_key"
 }
 
 func (ak *AccessKey) BeforeCreate(scope *gorm.Scope) error {
