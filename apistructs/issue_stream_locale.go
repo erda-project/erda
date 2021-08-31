@@ -25,7 +25,7 @@ import (
 var IssueTemplate = map[string]map[IssueStreamType]string{
 	"zh": {
 		ISTCreate:               `该事件由 {{.UserName}} 创建`,
-		ISTComment:              `{{.Comment}}`,
+		ISTComment:              `添加了备注: {{.Comment}}`,
 		ISTRelateMR:             `mrInfo: {{.MRInfo}}`,
 		ISTAssign:               `该事件分派给 "{{.UserName}}" 处理`,
 		ISTTransferState:        `该事件状态自 "{{.CurrentState}}" 迁移至 "{{.NewState}}"`,
@@ -46,7 +46,7 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 	},
 	`en`: {
 		ISTCreate:               `{{.UserName}} created`,
-		ISTComment:              `{{.Comment}}`,
+		ISTComment:              `added a comment: {{.Comment}}`,
 		ISTRelateMR:             `mrInfo: {{.MRInfo}}`,
 		ISTAssign:               `assigned to "{{.UserName}}"`,
 		ISTTransferState:        `transfer state from "{{.CurrentState}}" to "{{.NewState}}"`,

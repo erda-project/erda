@@ -17,10 +17,6 @@ package conf
 import "embed"
 
 var (
-	//go:embed openapi-ng/openapi-ng.yaml
-	OpenAPINGDefaultConfig  string
-	OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
-
 	//go:embed openapi/openapi.yaml
 	OpenAPIDefaultConfig  string
 	OpenAPIConfigFilePath = "conf/openapi/openapi.yaml"

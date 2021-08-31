@@ -16,30 +16,60 @@ package discover
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/discover"
+	servicediscover "github.com/erda-project/erda/providers/service-discover"
 )
 
 type config struct {
-	URLScheme string `file:"url_scheme" default:"http"`
+	URLs map[string][]string `file:"urls"`
 }
 
 // +provider
 type provider struct {
-	Cfg *config
+	Cfg  *config
+	urls map[string][]*url.URL
 }
 
-func (p *provider) Endpoint(service string) (string, error) {
+func (p *provider) Init(ctx servicehub.Context) (err error) {
+	p.urls = make(map[string][]*url.URL)
+	for service, urls := range p.Cfg.URLs {
+		for _, item := range urls {
+			u, err := url.Parse(item)
+			if err != nil {
+				return err
+			}
+			p.urls[service] = append(p.urls[service], u)
+		}
+	}
+	return nil
+}
+
+var _ servicediscover.Interface = (*provider)(nil)
+
+func (p *provider) Endpoint(scheme, service string) (string, error) {
+	fmt.Println(scheme, service, p.urls)
+	for _, u := range p.urls[service] {
+		if u.Scheme == scheme {
+			return u.Host, nil
+		}
+	}
 	return discover.GetEndpoint(service)
 }
 
-func (p *provider) ServiceURL(service string) (string, error) {
-	endpoint, err := p.Endpoint(service)
+func (p *provider) ServiceURL(scheme, service string) (string, error) {
+	for _, u := range p.urls[service] {
+		if u.Scheme == scheme {
+			return u.String(), nil
+		}
+	}
+	addr, err := discover.GetEndpoint(service)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s://%s", p.Cfg.URLScheme, endpoint), nil
+	return fmt.Sprintf("%s://%s", scheme, addr), nil
 }
 
 func init() {

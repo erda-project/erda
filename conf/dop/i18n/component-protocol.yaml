@@ -1,0 +1,156 @@
+zh:
+  issue-manage: 协同管理
+  issue: 事项
+  open: 待处理
+  working: 进行中
+  testing: 测试中
+  done: 已完成
+  resolved: 已解决
+  reopen: 重新打开
+  wontfix: 无需修复
+  dup: 重复提交
+  closed: 已关闭
+  undefined: 未指定
+  expired: 已到期
+  expireIn1Day: 今天到期
+  expireIn2Days: 明天到期
+  expireIn7Days: 7天内到期
+  expireIn30Days: 30天内到期
+  expireInFuture: 未来
+  urgent: 紧急
+  high: 高
+  normal: 中
+  low: 低
+  move-to-priority: 转移至优先级
+  move-to: 转移至
+  move-out: 移出迭代
+  move-to-assignee: 转移至处理人
+  move-to-custom: 转移至看板
+  confirm-to-move-out-iteration: 确认移出迭代
+  confirm-to-delete-board: 确认删除看板
+  confirm-to-update-board: 确认更新看板
+  the-number-of-boards-cannot-exceed-15: 创建的看板数量不能超过15
+  no-permission-to-operate: 您暂无权限进行此操作
+  sprint: 迭代
+  all: 全部
+  choose-sprint: 选择迭代
+  title: 标题
+  please-enter-title-or-id: 请输入标题或ID
+  label: 标签
+  please-choose-label: 请选择标签
+  priority: 优先级
+  choose-priorities: 选择优先级
+  severity: 严重程度
+  choose-severity: 选择严重程度
+  fatal: 致命
+  serious: 严重
+  slight: 轻微
+  suggest: 建议
+  creator: 创建人
+  choose-yourself: 选择你自己
+  assignee: 处理人
+  responsible-person: 负责人
+  epic: 里程碑
+  task-type: 任务类型
+  import-source: 引入源
+  demand-design: 需求设计
+  architecture-design: 架构设计
+  code-development: 代码研发
+  created-at: 创建日期
+  deadline: 截止日期
+  closed-at: 关闭日期
+  requirement: 需求
+  bug: 缺陷
+  task: 任务
+  create-issue: 新建事项
+  create-requirement: 新建需求
+  create-bug: 新建缺陷
+  create-task: 新建任务
+  issue-gante-tips1: "事项的甘特图只有确保正确输入截止日期、预计时间才能正常显示"
+  issue-gante-tips2: "#gray#灰色#>gray#：代表事项截止日期的剩余时间段"
+  issue-gante-tips3: "#blue#蓝色#>blue#：代表从事项开始时间到当前/事项完成日期的时间段"
+  issue-gante-tips4: "#red#红色#>red#：代表截止日期到当前/事项完成日期的超时时间段"
+  list: 列表
+  bord: 看板
+  gantt-chart: 甘特图
+  board-view: 看板视图
+  custom: 自定义
+  state: 状态
+en:
+  issue-manage: issue manage
+  issue: issue
+  open: OPEN
+  working: WORKING
+  testing: TESTING
+  done: DONE
+  resolved: RESOLVED
+  reopen: REOPEN
+  wontfix: WONTFIX
+  dup: DUP
+  closed: CLOSED
+  undefined: Undefined
+  expired: Expired
+  expireIn1Day: ExpireIn1Day
+  expireIn2Days: ExpireIn2Days
+  expireIn7Days: ExpireIn7Days
+  expireIn30Days: ExpireIn30Days
+  expireInFuture: ExpireInFuture
+  urgent: URGENT
+  high: HIGH
+  normal: NORMAL
+  low: LOW
+  move-to-priority: MoveToPriority
+  move-to: MoveTo
+  move-out: MoveOut
+  move-to-assignee: MoveToAssignee
+  move-to-custom: MoveToCustom
+  confirm-to-move-out-iteration: 'Confirm to move out iteration'
+  confirm-to-delete-board: 'Confirm to delete board'
+  confirm-to-update-board: 'Confirm to update board'
+  the-number-of-boards-cannot-exceed-15: 'The number of boards cannot exceed 15'
+  no-permission-to-operate: 'No permission to operate'
+  sprint: Sprint
+  all: All
+  choose-sprint: Choose Sprint
+  title: Title
+  please-enter-title-or-id: "Please enter title or ID"
+  label: Label
+  please-choose-label: Please choose label
+  priority: Priority
+  choose-priorities: Choose Priorities
+  severity: Severity
+  choose-severity: Choose Severity
+  fatal: FATAL
+  serious: SERIOUS
+  slight: SLIGHT
+  suggest: SUGGEST
+  creator: Creator
+  choose-yourself: Choose Yourself
+  assignee: Assignee
+  responsible-person: Responsible Person
+  epic: EPIC
+  task-type: Task Type
+  import-source: Import Source
+  demand-design: Demand Design
+  architecture-design: Architecture Design
+  code-development: Code Development
+  created-at: Created At
+  deadline: Deadline
+  closed-at: Closed At
+  requirement: REQUIREMENT
+  bug: BUG
+  task: TASK
+  create-issue: Create Issue
+  create-requirement: Create Requirement
+  create-bug: Create Bug
+  create-task: Create Task
+  issue-gante-tips1: The Gantt chart of the event can only be displayed properly if the deadline and estimated time are correctly entered
+  issue-gante-tips2: '#gray#gray#>gray#: Represents the remaining time period of the deadline'
+  issue-gante-tips3: '#blue#blue#>blu#: Represents the time period from the start time of the issue to the current or the issue completion date'
+  issue-gante-tips4: '#red#read#>red#: Represents the timeout period from the due date to the current or completion date of the issue'
+  list: List
+  bord: Board
+  gantt-chart: Gantt Chart
+  board-view: Board View
+  custom: Custom
+  state: State

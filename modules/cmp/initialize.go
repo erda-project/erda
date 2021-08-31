@@ -160,6 +160,7 @@ func do(ctx context.Context) (*httpserver.Server, error) {
 		auditor.AuditMiddleWare,
 	}
 	server.Router().PathPrefix("/api/k8s/clusters/{clusterName}").Handler(middlewares.Handler(ep.SteveAggregator))
+	server.Router().PathPrefix("/api/apim/metrics").Handler(endpoints.InternalReverseHandler(endpoints.ProxyMetrics))
 
 	logrus.Infof("start the service and listen on address: %s", conf.ListenAddr())
 	logrus.Info("starting cmp instance")

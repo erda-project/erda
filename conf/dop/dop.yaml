@@ -1,6 +1,32 @@
 dop:
 
+service-register:
+http-server:
+  addr: ":9528"
+grpc-server:
+  addr: ":9529"
+i18n:
+  files:
+    - conf/dop/i18n/component-protocol.yaml
+
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.cms-client:
+
+# component-protocol framework
+component-protocol:
+# components
+component-protocol.components.issue-manage.content:
+component-protocol.components.issue-manage.head:
+component-protocol.components.issue-manage.issueAddButton:
+component-protocol.components.issue-manage.issueExport:
+component-protocol.components.issue-manage.issueFilter:
+component-protocol.components.issue-manage.issueGantt:
+component-protocol.components.issue-manage.issueImport:
+component-protocol.components.issue-manage.issueKanban:
+component-protocol.components.issue-manage.issueManage:
+component-protocol.components.issue-manage.issueOperations:
+component-protocol.components.issue-manage.issueTable:
+component-protocol.components.issue-manage.issueViewGroup:
+component-protocol.components.issue-manage.topHead:

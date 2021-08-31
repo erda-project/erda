@@ -293,3 +293,9 @@ func WithAllAvailableClients() Option {
 		b.urls.PutAllAvailable()
 	}
 }
+
+func WithCustom(srvName, url string) Option {
+	return func(b *Bundle) {
+		b.urls.Put(srvName, url)
+	}
+}

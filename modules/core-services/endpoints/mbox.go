@@ -120,3 +120,23 @@ func (e *Endpoints) SetMBoxReadStatus(ctx context.Context, r *http.Request, vars
 	}
 	return httpserver.OkResp("")
 }
+
+// OneClickRead read all unread mbox with one click
+func (e *Endpoints) OneClickRead(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	orgID, err := strconv.ParseInt(r.Header.Get("Org-ID"), 10, 64)
+	if err != nil {
+		return apierrors.ErrCleanUnreadMboxs.MissingParameter("Org-ID header is nil").ToResp(), nil
+	}
+	userID := r.Header.Get("User-ID")
+
+	if orgID == 0 || userID == "" {
+		return apierrors.ErrCleanUnreadMboxs.InvalidParameter("orgID or userID is empty").ToResp(), nil
+	}
+
+	err = e.mbox.OneClickRead(orgID, userID)
+	if err != nil {
+		return apierrors.ErrSetMBoxReadStatus.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp("")
+}

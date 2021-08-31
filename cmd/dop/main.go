@@ -19,9 +19,15 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers
+	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-infra/providers/i18n"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/dop"
+
+	// components
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
 )
 
 func main() {
