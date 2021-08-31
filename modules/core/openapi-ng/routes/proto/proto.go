@@ -187,8 +187,13 @@ func getPathMethod(service protoreflect.ServiceDescriptor, m protoreflect.Method
 	if len(path) <= 0 {
 		path = fmt.Sprintf("/%s/%s", service.FullName(), m.Name())
 	} else {
+		idx := strings.Index(path, "?")
+		if idx >= 0 {
+			path = path[0:idx]
+		}
 		path = formatPath(path)
 	}
+
 	if len(method) <= 0 {
 		method = "POST"
 	}

@@ -45,10 +45,14 @@ type (
 		routes        []route
 		sources       []RouteSource
 		watchers      []RouteSourceWatcher
+		router        httpserver.Router
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
+	if !p.RouterManager.Reloadable() {
+		p.router = p.RouterManager.NewRouter()
+	}
 	ctx.Hub().ForeachServices(func(service string) bool {
 		for i := len(dependKeys) - 1; i >= 0; i-- {
 			if strings.HasPrefix(service, dependKeys[i]) {
