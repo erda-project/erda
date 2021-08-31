@@ -37,8 +37,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
-	p.RegisterTo(p.Router)
-	return nil
+	return p.RegisterTo(p.Router)
 }
 
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {

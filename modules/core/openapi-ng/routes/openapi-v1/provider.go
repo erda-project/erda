@@ -55,8 +55,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	}
 	p.handler = srv.Handler
 	types.CPConfigs = p.Cfg.CP
-	p.RegisterTo(p.Router)
-	return nil
+	return p.RegisterTo(p.Router)
 }
 
 func (p *provider) RegisterTo(router transhttp.Router) (err error) {

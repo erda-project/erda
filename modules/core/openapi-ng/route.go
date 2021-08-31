@@ -53,11 +53,15 @@ func (s *service) Add(method, path string, handler transhttp.HandlerFunc) {
 }
 
 func (s *service) addRoute(method, path string, handler transhttp.HandlerFunc) {
-	s.p.routes = append(s.p.routes, route{
+	r := route{
 		method:  method,
 		path:    path,
 		handler: s.p.WrapHandler(handler),
-	})
+	}
+	s.p.routes = append(s.p.routes, r)
+	if !s.p.RouterManager.Reloadable() {
+		s.p.router.Add(r.method, r.path, r.handler, httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
+	}
 }
 
 func (s *service) WrapHandler(handler transhttp.HandlerFunc) transhttp.HandlerFunc {
@@ -72,14 +76,16 @@ func (p *provider) WrapHandler(handler transhttp.HandlerFunc) transhttp.HandlerF
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	router := p.RouterManager.NewRouter()
-	err := p.registerFixedRoutes(router)
-	if err != nil {
-		return err
-	}
-	err = router.Commit()
-	if err != nil {
-		return err
+	if p.RouterManager.Reloadable() {
+		router := p.RouterManager.NewRouter()
+		err := p.registerFixedRoutes(router)
+		if err != nil {
+			return err
+		}
+		err = router.Commit()
+		if err != nil {
+			return err
+		}
 	}
 	return p.doWatch(ctx)
 }
