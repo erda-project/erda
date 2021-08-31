@@ -18,6 +18,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -46,6 +48,14 @@ func (svc *Service) CreateAutoTestSceneInput(req apistructs.AutotestSceneRequest
 	if err := svc.db.UpdateAutotestSceneUpdater(input.SceneID, req.UserID); err != nil {
 		return 0, err
 	}
+
+	go func() {
+		err := svc.reportScenePipelineDefinition(req.SceneID)
+		if err != nil {
+			logrus.Errorf("createAutoTestSceneInput reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
 	return input.ID, nil
 }
 
@@ -120,6 +130,13 @@ func (svc *Service) UpdateAutoTestSceneInput(req apistructs.AutotestSceneInputUp
 		}
 	}
 
+	go func() {
+		err := svc.reportScenePipelineDefinition(req.SceneID)
+		if err != nil {
+			logrus.Errorf("updateAutoTestSceneInput reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
 	return uint64(len(updateList) + len(createList)), nil
 }
 
@@ -136,6 +153,12 @@ func (svc *Service) DeleteAutoTestSceneInput(id uint64) (uint64, error) {
 		return 0, err
 	}
 
+	go func() {
+		err := svc.reportScenePipelineDefinition(rsp.SceneID)
+		if err != nil {
+			logrus.Errorf("deleteAutoTestSceneInput reportScenePipelineDefinition error %v", err)
+		}
+	}()
 	return rsp.ID, nil
 }
 

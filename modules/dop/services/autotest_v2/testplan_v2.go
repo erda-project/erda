@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -93,6 +95,13 @@ func (svc *Service) DeleteTestPlanV2(testPlanID uint64, identityInfo apistructs.
 	if err := svc.db.DeleteTestPlanV2ByID(testPlanID); err != nil {
 		return err
 	}
+
+	go func() {
+		err := svc.deleteTestPlanPipelineDefinition(*testPlan)
+		if err != nil {
+			logrus.Errorf("deleteTestPlanV2 deleteTestPlanPipelineDefinition error %v", err)
+		}
+	}()
 
 	// Delete test plan member
 	return svc.db.DeleteAutoTestPlanMemberByPlanID(testPlanID)
@@ -181,14 +190,13 @@ func (svc *Service) PagingTestPlansV2(req *apistructs.TestPlanV2PagingRequest) (
 	}, nil
 }
 
-// GetTestPlanV2 get testplan detail
-func (svc *Service) GetTestPlanV2(testPlanID uint64, identityInfo apistructs.IdentityInfo) (*apistructs.TestPlanV2, error) {
+func (svc *Service) getTestPlanV2(testPlanID uint64, identityInfo *apistructs.IdentityInfo) (*apistructs.TestPlanV2, error) {
 	testPlan, err := svc.db.GetTestPlanV2ByID(testPlanID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !identityInfo.IsInternalClient() {
+	if identityInfo != nil && !identityInfo.IsInternalClient() {
 		// Authorize
 		access, err := svc.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   identityInfo.UserID,
@@ -241,6 +249,11 @@ func (svc *Service) GetTestPlanV2(testPlanID uint64, identityInfo apistructs.Ide
 	return &result, nil
 }
 
+// GetTestPlanV2 get testplan detail
+func (svc *Service) GetTestPlanV2(testPlanID uint64, identityInfo apistructs.IdentityInfo) (*apistructs.TestPlanV2, error) {
+	return svc.getTestPlanV2(testPlanID, &identityInfo)
+}
+
 // AddTestPlanV2Step Add a step in the test plan
 func (svc *Service) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddRequest) (uint64, error) {
 	testPlan, err := svc.db.GetTestPlanV2ByID(req.TestPlanID)
@@ -278,6 +291,14 @@ func (svc *Service) AddTestPlanV2Step(req *apistructs.TestPlanV2StepAddRequest) 
 	if err != nil {
 		return 0, err
 	}
+
+	go func() {
+		err := svc.reportTestPlanPipelineDefinition(req.TestPlanID)
+		if err != nil {
+			logrus.Errorf("addTestPlanV2Step reportTestPlanPipelineDefinition error %v", err)
+		}
+	}()
+
 	return newStep.ID, nil
 }
 
@@ -305,7 +326,19 @@ func (svc *Service) DeleteTestPlanV2Step(req *apistructs.TestPlanV2StepDeleteReq
 		}
 	}
 
-	return svc.db.DeleteTestPlanV2Step(req)
+	err = svc.db.DeleteTestPlanV2Step(req)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := svc.reportTestPlanPipelineDefinition(testPlan.ID)
+		if err != nil {
+			logrus.Errorf("deleteTestPlanV2Step reportTestPlanPipelineDefinition error %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // UpdateTestPlanV2Step Update a step in the test plan
@@ -332,7 +365,19 @@ func (svc *Service) MoveTestPlanV2Step(req *apistructs.TestPlanV2StepUpdateReque
 		}
 	}
 
-	return svc.db.MoveTestPlanV2Step(req)
+	err = svc.db.MoveTestPlanV2Step(req)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := svc.reportTestPlanPipelineDefinition(testPlan.ID)
+		if err != nil {
+			logrus.Errorf("moveTestPlanV2Step reportTestPlanPipelineDefinition error %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // UpdateTestPlanV2Step Update a step in the test plan
@@ -365,7 +410,20 @@ func (svc *Service) UpdateTestPlanV2Step(req *apistructs.TestPlanV2StepUpdateReq
 			return apierrors.ErrUpdateTestPlan.AccessDenied()
 		}
 	}
-	return svc.db.UpdateTestPlanV2Step(step)
+
+	err = svc.db.UpdateTestPlanV2Step(step)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := svc.reportTestPlanPipelineDefinition(plan.ID)
+		if err != nil {
+			logrus.Errorf("updateTestPlanV2Step reportTestPlanPipelineDefinition error %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // UpdateTestPlanV2Step Update a step in the test plan
@@ -414,13 +472,7 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 	return fields, nil
 }
 
-func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*apistructs.PipelineDTO, error) {
-
-	testPlan, err := svc.GetTestPlanV2(req.TestPlan.ID, req.IdentityInfo)
-	if err != nil {
-		return nil, err
-	}
-
+func (svc *Service) testPlanToYml(testPlan *apistructs.TestPlanV2) (string, error) {
 	var spec pipelineyml.Spec
 	spec.Version = "1.1"
 	var stagesValue []*pipelineyml.Stage
@@ -431,7 +483,7 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		var specStage pipelineyml.Stage
 		sceneSetJson, err := json.Marshal(v)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
 			pipelineyml.Snippet: {
@@ -458,6 +510,21 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 	spec.Stages = stagesValue
 	yml, err := pipelineyml.GenerateYml(&spec)
 	if err != nil {
+		return "", err
+	}
+
+	return string(yml), nil
+}
+
+func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTestPlansRequest) (*apistructs.PipelineDTO, error) {
+
+	testPlan, err := svc.GetTestPlanV2(req.TestPlan.ID, req.IdentityInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	yml, err := svc.testPlanToYml(testPlan)
+	if err != nil {
 		return nil, err
 	}
 
@@ -467,7 +534,7 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		AutoRun:         true,
 		ForceRun:        true,
 		ClusterName:     req.ClusterName,
-		PipelineYml:     string(yml),
+		PipelineYml:     yml,
 		Labels:          req.Labels,
 		IdentityInfo:    req.IdentityInfo,
 	}
@@ -561,99 +628,106 @@ func (svc *Service) BatchQuerySceneSetPipelineSnippetYaml(configs []apistructs.S
 
 	var resultConfigs []apistructs.BatchSnippetConfigYml
 	for index, key := range setIds {
-		resultsScenes := results[key]
-		var spec pipelineyml.Spec
-		spec.Version = "1.1"
-
-		scenes := sortAutoTestSceneList(resultsScenes, 1, 10000)
-		spec.Stages = make([]*pipelineyml.Stage, len(scenes))
-		for index, v := range scenes {
-			var specStage pipelineyml.Stage
-			inputs := v.Inputs
-
-			var params = make(map[string]interface{})
-			for _, input := range inputs {
-				// replace mock random param before return to pipeline
-				// and so steps can use the same random value
-				replacedValue := expression.ReplaceRandomParams(input.Value)
-				params[input.Name] = replacedValue
-			}
-
-			sceneJson, err := json.Marshal(v)
-			if err != nil {
-				return nil, err
-			}
-
-			if v.RefSetID > 0 {
-				// scene reference scene set
-				specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
-					pipelineyml.Snippet: {
-						Alias: pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
-						Type:  pipelineyml.Snippet,
-						Labels: map[string]string{
-							apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
-							apistructs.AutotestType:  apistructs.AutotestScene,
-						},
-						If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
-						SnippetConfig: &pipelineyml.SnippetConfig{
-							Name:   strconv.Itoa(int(v.ID)),
-							Source: apistructs.PipelineSourceAutoTest.String(),
-							Labels: map[string]string{
-								apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
-								apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
-								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
-								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
-							},
-						},
-					},
-				})
-			} else {
-				specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
-					pipelineyml.Snippet: {
-						Alias:  pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
-						Type:   pipelineyml.Snippet,
-						Params: params,
-						Labels: map[string]string{
-							apistructs.AutotestType:  apistructs.AutotestScene,
-							apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
-						},
-						If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
-						SnippetConfig: &pipelineyml.SnippetConfig{
-							Name:   strconv.Itoa(int(v.ID)),
-							Source: apistructs.PipelineSourceAutoTest.String(),
-							Labels: map[string]string{
-								apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
-								apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
-								apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
-							},
-						},
-					},
-				})
-			}
-
-			spec.Stages[index] = &specStage
-		}
-
-		for _, v := range scenes {
-			for _, output := range v.Output {
-				spec.Outputs = append(spec.Outputs, &pipelineyml.PipelineOutput{
-					Name: fmt.Sprintf("%v_%v", v.ID, output.Name),
-					Ref:  fmt.Sprintf("%s %s.%d.%s %s", expression.LeftPlaceholder, expression.Outputs, v.ID, output.Name, expression.RightPlaceholder),
-				})
-			}
-		}
-
-		yml, err := pipelineyml.GenerateYml(&spec)
+		yml, err := sceneSetToYml(results[key])
 		if err != nil {
 			return nil, err
 		}
 		resultConfigs = append(resultConfigs, apistructs.BatchSnippetConfigYml{
-			Yml:    string(yml),
+			Yml:    yml,
 			Config: configs[index],
 		})
 	}
 
 	return resultConfigs, nil
+}
+
+func sceneSetToYml(resultsScenes []apistructs.AutoTestScene) (string, error) {
+	var spec pipelineyml.Spec
+	spec.Version = "1.1"
+
+	scenes := sortAutoTestSceneList(resultsScenes, 1, 10000)
+	spec.Stages = make([]*pipelineyml.Stage, len(scenes))
+	for index, v := range scenes {
+		var specStage pipelineyml.Stage
+		inputs := v.Inputs
+
+		var params = make(map[string]interface{})
+		for _, input := range inputs {
+			// replace mock random param before return to pipeline
+			// and so steps can use the same random value
+			replacedValue := expression.ReplaceRandomParams(input.Value)
+			params[input.Name] = replacedValue
+		}
+
+		sceneJson, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+
+		if v.RefSetID > 0 {
+			// scene reference scene set
+			specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
+				pipelineyml.Snippet: {
+					Alias: pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
+					Type:  pipelineyml.Snippet,
+					Labels: map[string]string{
+						apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
+						apistructs.AutotestType:  apistructs.AutotestScene,
+					},
+					If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
+					SnippetConfig: &pipelineyml.SnippetConfig{
+						Name:   strconv.Itoa(int(v.ID)),
+						Source: apistructs.PipelineSourceAutoTest.String(),
+						Labels: map[string]string{
+							apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
+							apistructs.LabelSceneSetID:       strconv.Itoa(int(v.RefSetID)),
+							apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+							apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+						},
+					},
+				},
+			})
+		} else {
+			specStage.Actions = append(specStage.Actions, map[pipelineyml.ActionType]*pipelineyml.Action{
+				pipelineyml.Snippet: {
+					Alias:  pipelineyml.ActionAlias(strconv.Itoa(int(v.ID))),
+					Type:   pipelineyml.Snippet,
+					Params: params,
+					Labels: map[string]string{
+						apistructs.AutotestType:  apistructs.AutotestScene,
+						apistructs.AutotestScene: base64.StdEncoding.EncodeToString(sceneJson),
+					},
+					If: expression.LeftPlaceholder + " 1 == 1 " + expression.RightPlaceholder,
+					SnippetConfig: &pipelineyml.SnippetConfig{
+						Name:   strconv.Itoa(int(v.ID)),
+						Source: apistructs.PipelineSourceAutoTest.String(),
+						Labels: map[string]string{
+							apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
+							apistructs.LabelSceneID:          strconv.Itoa(int(v.ID)),
+							apistructs.LabelSpaceID:          strconv.Itoa(int(v.SpaceID)),
+						},
+					},
+				},
+			})
+		}
+
+		spec.Stages[index] = &specStage
+	}
+
+	for _, v := range scenes {
+		for _, output := range v.Output {
+			spec.Outputs = append(spec.Outputs, &pipelineyml.PipelineOutput{
+				Name: fmt.Sprintf("%v_%v", v.ID, output.Name),
+				Ref:  fmt.Sprintf("%s %s.%d.%s %s", expression.LeftPlaceholder, expression.Outputs, v.ID, output.Name, expression.RightPlaceholder),
+			})
+		}
+	}
+
+	yml, err := pipelineyml.GenerateYml(&spec)
+	if err != nil {
+		return "", err
+	}
+	return string(yml), nil
 }
 
 func (svc *Service) QuerySceneSetPipelineSnippetYaml(req apistructs.SnippetConfig) (string, error) {

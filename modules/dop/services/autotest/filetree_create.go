@@ -15,11 +15,15 @@
 package autotest
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition/transform_type"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -35,7 +39,77 @@ func (svc *Service) CreateFileTreeNode(req apistructs.UnifiedFileTreeNodeCreateR
 		return nil, apierrors.ErrCreateAutoTestFileTreeNode.InternalError(err)
 	}
 	// 转换
-	return convertToUnifiedFileTreeNode(node, nil), nil
+	result := convertToUnifiedFileTreeNode(node, nil)
+	go svc.reportPipelineDefinition(*result)
+	return result, nil
+}
+
+func (svc *Service) deletePipelineDefinition(node apistructs.UnifiedFileTreeNode) {
+	if node.Type.IsDir() {
+		return
+	}
+
+	var req = transform_type.ClientPipelineDefinitionProcessRequest{
+		PipelineYmlName: node.Inode,
+		PipelineYml:     "version: \"1.1\"\nstages: []",
+		IsDelete:        true,
+	}
+
+	req.PipelineSource = apistructs.FileTreeScope(node.Scope).ToPipelineSource()
+	if req.PipelineSource == "" {
+		req.PipelineSource = apistructs.PipelineSourceProject
+	}
+
+	_, err := svc.ds.ProcessPipelineDefinition(nil, req)
+	if err != nil {
+		logrus.Errorf("fail to deletePipelineDefinition req %v ,err: %s", req, err)
+	}
+}
+
+func (svc *Service) reportPipelineDefinition(node apistructs.UnifiedFileTreeNode) {
+	if node.Type.IsDir() {
+		return
+	}
+
+	var yml string
+	var snippet *apistructs.SnippetConfig
+	if node.Meta == nil {
+		return
+	} else {
+		if node.Meta[apistructs.AutoTestFileTreeNodeMetaKeySnippetAction] != nil {
+			snippetConfigMapJson, err := json.Marshal(node.Meta[apistructs.AutoTestFileTreeNodeMetaKeySnippetAction])
+			if err != nil {
+				logrus.Errorf("fail to marshal autoTestFileTreeNodeMetaKeySnippetAction %v ,err: %s", node.Meta[apistructs.AutoTestFileTreeNodeMetaKeySnippetAction], err)
+				return
+			}
+			snippetAction := apistructs.PipelineYmlAction{}
+			err = json.Unmarshal(snippetConfigMapJson, &snippetAction)
+			if err != nil {
+				logrus.Errorf("fail to Unmarshal AutoTestFileTreeNodeMetaKeySnippetAction %v ,err: %s", node.Meta[apistructs.AutoTestFileTreeNodeMetaKeySnippetAction], err)
+				return
+			}
+			snippet = snippetAction.SnippetConfig
+		}
+		if node.Meta[apistructs.AutoTestFileTreeNodeMetaKeyPipelineYml] != nil {
+			yml = node.Meta[apistructs.AutoTestFileTreeNodeMetaKeyPipelineYml].(string)
+		}
+	}
+
+	var req = transform_type.ClientPipelineDefinitionProcessRequest{
+		PipelineYmlName: node.Inode,
+		PipelineYml:     yml,
+		SnippetConfig:   snippet,
+	}
+
+	req.PipelineSource = apistructs.FileTreeScope(node.Scope).ToPipelineSource()
+	if req.PipelineSource == "" {
+		req.PipelineSource = apistructs.PipelineSourceProject
+	}
+
+	_, err := svc.ds.ProcessPipelineDefinition(nil, req)
+	if err != nil {
+		logrus.Errorf("fail to reportPipelineDefinition req %v ,err: %s", req, err)
+	}
 }
 
 func (svc *Service) validateNodeBeforeCreate(req apistructs.UnifiedFileTreeNodeCreateRequest) (*dao.AutoTestFileTreeNode, error) {

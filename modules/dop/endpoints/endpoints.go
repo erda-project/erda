@@ -221,6 +221,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicd-crons/actions/hook-for-update", Method: http.MethodPost, Handler: e.pipelineCronUpdate},
 		{Path: "/api/cicd-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
 
+		// pipeline_definitions
+		{Path: "/api/cicd-pipeline-definitions/actions/hook-for-update", Method: http.MethodPost, Handler: e.gittarPipelineDefinitionUpdate},
+
 		// project pipeline
 		{Path: "/api/cicds-project", Method: http.MethodPost, Handler: e.projectPipelineCreate},
 
@@ -230,8 +233,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicds/multinamespace/configs", Method: http.MethodPost, Handler: e.getCmsNsConfigs},
 		{Path: "/api/cicds/actions/fetch-config-namespaces", Method: http.MethodGet, Handler: e.getConfigNamespaces},
 		{Path: "/api/cicds/actions/list-workspaces", Method: http.MethodGet, Handler: e.listConfigWorkspaces},
-
-		{Path: "/api/pipeline-snippets/actions/query-snippet-yml", Method: http.MethodPost, Handler: e.querySnippetYml},
 
 		{Path: "/api/cicd-pipeline/filetree/{inode}/actions/find-ancestors", Method: http.MethodGet, Handler: e.FindGittarFileTreeNodeAncestors},
 		{Path: "/api/cicd-pipeline/filetree/actions/get-inode-by-pipeline", Method: http.MethodGet, Handler: e.GetGittarFileByPipelineId},
@@ -341,12 +342,18 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/autotests/filetree/{inode}/actions/find-ancestors", Method: http.MethodGet, Handler: e.FindAutoTestFileTreeNodeAncestors},
 		{Path: "/api/autotests/filetree/{inode}/actions/save-pipeline", Method: http.MethodPost, Handler: e.SaveAutoTestFileTreeNodePipeline},
 		{Path: "/api/autotests/filetree/{inode}/actions/get-histories", Method: http.MethodGet, Handler: e.ListAutoTestFileTreeNodeHistory},
-		{Path: "/api/autotests/pipeline-snippets/actions/query-snippet-yml", Method: http.MethodPost, Handler: e.QueryPipelineSnippetYaml},
-		{Path: "/api/autotests/pipeline-snippets/actions/batch-query-snippet-yml", Method: http.MethodPost, Handler: e.BatchQueryPipelineSnippetYaml},
+
+		// autotest global-configs
 		{Path: "/api/autotests/global-configs", Method: http.MethodPost, Handler: e.CreateAutoTestGlobalConfig},
 		{Path: "/api/autotests/global-configs/{ns}", Method: http.MethodPut, Handler: e.UpdateAutoTestGlobalConfig},
 		{Path: "/api/autotests/global-configs/{ns}", Method: http.MethodDelete, Handler: e.DeleteAutoTestGlobalConfig},
 		{Path: "/api/autotests/global-configs", Method: http.MethodGet, Handler: e.ListAutoTestGlobalConfigs},
+
+		// autotest snippet
+		{Path: "/api/autotests/pipeline-snippets/actions/batch-query-snippet-yml", Method: http.MethodPost, Handler: e.BatchQueryPipelineSnippetYaml},
+		{Path: "/api/autotests/pipeline-snippets/actions/query-snippet-yml", Method: http.MethodPost, Handler: e.QueryPipelineSnippetYaml},
+		// gittar snippet
+		{Path: "/api/pipeline-snippets/actions/query-snippet-yml", Method: http.MethodPost, Handler: e.querySnippetYml},
 
 		// 自动化测试 - 测试空间
 		{Path: "/api/autotests/spaces", Method: http.MethodPost, Handler: e.CreateAutoTestSpace},
@@ -411,9 +418,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// 计划 执行取消
 		{Path: "/api/autotests/testplans/{testPlanID}/actions/execute", Method: http.MethodPost, Handler: e.ExecuteDiceAutotestTestPlans},
 		{Path: "/api/autotests/testplans/{testPlanID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDiceAutotestTestPlans},
-
-		// 自动化测试v2
-		//{Path: "/api/autotests/testplans/actions/query-snippet-yml", Method: http.MethodPost, Handler: e.QueryPipelineSnippetYamlV2},
 
 		//场景集
 		{Path: "/api/autotests/scenesets/{setID}", Method: http.MethodGet, Handler: e.GetSceneSet},

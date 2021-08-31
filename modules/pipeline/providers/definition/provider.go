@@ -15,6 +15,8 @@
 package definition
 
 import (
+	"reflect"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -53,9 +55,19 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
+	var services []string
+	for _, svc := range pb.ServiceNames() {
+		services = append(services, svc)
+	}
+
+	var types []reflect.Type
+	for _, ty := range pb.Types() {
+		types = append(types, ty)
+	}
+
 	servicehub.Register("erda.core.pipeline.definition", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
+		Services:             services,
+		Types:                types,
 		OptionalDependencies: []string{"service-register"},
 		Description:          "",
 		ConfigFunc: func() interface{} {

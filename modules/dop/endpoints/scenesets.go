@@ -174,7 +174,7 @@ func (e *Endpoints) DeleteSceneSet(ctx context.Context, r *http.Request, vars ma
 			return nil, apierrors.ErrDeleteAutoTestSceneSet.AccessDenied()
 		}
 	}
-	if err = e.sceneset.DeleteSceneSet(req); err != nil {
+	if err = e.autotestV2.DeleteSceneSet(req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 	return httpserver.OkResp(id)
@@ -207,7 +207,7 @@ func (e *Endpoints) DragSceneSet(ctx context.Context, r *http.Request, vars map[
 			return nil, apierrors.ErrDragAutoTestSceneSet.AccessDenied()
 		}
 	}
-	err = e.sceneset.DragSceneSet(req)
+	err = e.autotestV2.DragSceneSet(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -225,7 +225,7 @@ func (e *Endpoints) CopySceneSet(ctx context.Context, r *http.Request, vars map[
 		return apierrors.ErrDragAutoTestSceneSet.InvalidParameter(err).ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
-	setId, err := e.sceneset.CopySceneSet(req, false)
+	setId, err := e.autotestV2.CopySceneSet(req, false)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

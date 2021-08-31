@@ -235,7 +235,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	)
 	testCaseSvc.CreateTestSetFn = testSetSvc.Create
 
-	autotest := autotest.New(autotest.WithDBClient(db), autotest.WithBundle(bdl.Bdl), autotest.WithPipelineCms(p.PipelineCms))
+	autotest := autotest.New(autotest.WithDBClient(db),
+		autotest.WithBundle(bdl.Bdl),
+		autotest.WithPipelineCms(p.PipelineCms),
+		autotest.WithPipelineDefinitionServices(p.PipelineDs),
+	)
 
 	sceneset := sceneset.New(
 		sceneset.WithDBClient(db),
@@ -248,6 +252,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
 		atv2.WithPipelineCms(p.PipelineCms),
+		atv2.WithPipelineDefinitionServices(p.PipelineDs),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord
@@ -421,6 +426,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 			pipeline.WithBranchRuleSvc(branchRule),
 			pipeline.WithPublisherSvc(pub),
 			pipeline.WithPipelineCms(p.PipelineCms),
+			pipeline.WithPipelineDefinitionServices(p.PipelineDs),
 		)),
 		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
@@ -506,6 +512,21 @@ func registerWebHook(bdl *bundle.Bundle) {
 		Name:   "pipeline_yml_update",
 		Events: []string{bundle.GitPushEvent},
 		URL:    strutil.Concat("http://", discover.DOP(), "/api/cicd-crons/actions/hook-for-update"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register pipeline yml event, %v", err)
+	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "pipeline_definition_update",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/cicd-pipeline-definitions/actions/hook-for-update"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",

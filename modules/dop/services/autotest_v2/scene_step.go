@@ -21,13 +21,12 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-
-	"github.com/erda-project/erda/pkg/expression"
-
-	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/expression"
 )
 
 // CreateAutoTestSceneStep 添加场景步骤
@@ -80,6 +79,14 @@ func (svc *Service) CreateAutoTestSceneStep(req apistructs.AutotestSceneRequest)
 	if err := svc.db.UpdateAutotestSceneUpdater(req.SceneID, req.UserID); err != nil {
 		return 0, err
 	}
+
+	go func() {
+		err := svc.reportScenePipelineDefinition(req.SceneID)
+		if err != nil {
+			logrus.Errorf("createAutoTestSceneStep reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
 	return id, nil
 }
 
@@ -125,6 +132,14 @@ func (svc *Service) UpdateAutoTestSceneStep(req apistructs.AutotestSceneRequest)
 	if err := svc.UpdateAutotestSceneUpdateTime(step.SceneID); err != nil {
 		return 0, err
 	}
+
+	go func() {
+		err := svc.reportScenePipelineDefinition(step.SceneID)
+		if err != nil {
+			logrus.Errorf("updateAutoTestSceneStep reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
 	return step.ID, nil
 }
 
@@ -171,7 +186,19 @@ func (svc *Service) MoveAutoTestSceneStep(req apistructs.AutotestSceneRequest) e
 	if err := svc.db.UpdateAutotestSceneUpdateAt(req.SceneID, time.Now()); err != nil {
 		return err
 	}
-	return svc.db.MoveAutoTestSceneStep(req)
+	err := svc.db.MoveAutoTestSceneStep(req)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := svc.reportScenePipelineDefinition(req.SceneID)
+		if err != nil {
+			logrus.Errorf("moveAutoTestSceneStep reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // DeleteAutoTestSceneStep 删除场景步骤
@@ -189,6 +216,12 @@ func (svc *Service) DeleteAutoTestSceneStep(id uint64) error {
 		return err
 	}
 
+	go func() {
+		err := svc.reportScenePipelineDefinition(step.SceneID)
+		if err != nil {
+			logrus.Errorf("deleteAutoTestSceneStep reportScenePipelineDefinition error %v", err)
+		}
+	}()
 	return nil
 }
 

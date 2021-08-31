@@ -35,6 +35,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition/transform_type"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition_adaptor"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
@@ -52,6 +54,7 @@ type Pipeline struct {
 	branchRuleSvc *branchrule.BranchRule
 	publisherSvc  *publisher.Publisher
 	cms           cmspb.CmsServiceServer
+	ds            definition_adaptor.ClientProcess
 }
 
 // Option Pipeline 配置选项
@@ -70,6 +73,12 @@ func New(options ...Option) *Pipeline {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(f *Pipeline) {
 		f.bdl = bdl
+	}
+}
+
+func WithPipelineDefinitionServices(ds definition_adaptor.ClientProcess) Option {
+	return func(svc *Pipeline) {
+		svc.ds = ds
 	}
 }
 
@@ -565,6 +574,135 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 		}
 	}
 	return nil
+}
+
+// PipelineCronUpdate pipeline cron update
+func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEvent) error {
+	appID, err := strconv.ParseInt(req.ApplicationID, 10, 64)
+	if err != nil {
+		return err
+	}
+	appDto, err := p.bdl.GetApp(uint64(appID))
+	if err != nil {
+		return err
+	}
+	branch := getBranch(req.Content.Ref)
+
+	// get diffs between two commits
+	compare, err := p.bdl.GetGittarCompare(req.Content.After, req.Content.Before, appID, req.Content.Pusher.Id)
+	if err != nil {
+		return err
+	}
+	for _, v := range compare.Diff.Files {
+		if isPipelineYmlPath(v.OldName) && v.OldName != v.Name {
+			// to delete old pipelineDefinition
+			err := p.deletePipelineDefinition(v.OldName, uint64(appID), branch)
+			if err != nil {
+				continue
+			}
+		}
+
+		if isPipelineYmlPath(v.Name) {
+			// if type is rename do not care
+			if v.Type == "rename" {
+				continue
+			}
+
+			if v.Type == "delete" {
+				err := p.deletePipelineDefinition(v.Name, uint64(appID), branch)
+				if err != nil {
+					continue
+				}
+			}
+
+			// if type modified, need to save pipeline definition
+			if v.Type == "modified" || v.Type == "add" {
+				err := p.reportPipelineDefinition(appDto, req, branch, v)
+				if err != nil {
+					continue
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (p *Pipeline) reportPipelineDefinition(appDto *apistructs.ApplicationDTO, reqEvent apistructs.GittarPushPayloadEvent, branch string, v *apistructs.DiffFile) error {
+	// get pipeline yml file content
+	searchINode := appDto.ProjectName + "/" + appDto.Name + "/blob/" + branch + "/" + v.Name
+	pipelineYml, err := p.bdl.GetGittarBlobNode("/wb/"+searchINode, reqEvent.OrgID, reqEvent.Content.Pusher.Id)
+	if err != nil {
+		logrus.Errorf("fail to GetGittarBlobNode,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+		return err
+	}
+	// to save pipeline definition
+	var createReqV1 = apistructs.PipelineCreateRequest{
+		PipelineYmlName:    v.Name,
+		AppID:              appDto.ID,
+		Branch:             branch,
+		PipelineYmlContent: pipelineYml,
+		UserID:             reqEvent.Content.Pusher.Id,
+	}
+	createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
+	if err != nil {
+		logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
+		return err
+	}
+
+	var req = transform_type.ClientPipelineDefinitionProcessRequest{
+		PipelineSource:        createReqV2.PipelineSource,
+		PipelineYmlName:       createReqV2.PipelineYmlName,
+		PipelineYml:           pipelineYml,
+		PipelineCreateRequest: createReqV2,
+		SnippetConfig: &apistructs.SnippetConfig{
+			Name:   "/" + v.Name,
+			Source: apistructs.SnippetSourceLocal,
+			Labels: map[string]string{
+				apistructs.LabelGittarYmlPath: GetGittarYmlNamesLabels(appDto.Name, createReqV2.Labels[apistructs.LabelDiceWorkspace], branch, v.Name),
+				apistructs.LabelSnippetScope:  apistructs.FileTreeScopeProjectApp,
+				apistructs.LabelProjectID:     strconv.FormatInt(int64(appDto.ProjectID), 10),
+				apistructs.LabelOrgID:         strconv.FormatInt(int64(appDto.OrgID), 10),
+			},
+		},
+	}
+
+	_, err = p.ds.ProcessPipelineDefinition(nil, req)
+	if err != nil {
+		logrus.Errorf("fail to reportPipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+	return nil
+}
+
+func (p *Pipeline) deletePipelineDefinition(name string, appID uint64, branch string) error {
+	// to delete old pipelineDefinition
+	var createReqV1 = apistructs.PipelineCreateRequest{
+		PipelineYmlName:    name,
+		AppID:              appID,
+		Branch:             branch,
+		PipelineYmlContent: "version: \"1.1\"\nstages: []",
+	}
+	createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
+	if err != nil {
+		logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
+		return err
+	}
+
+	var req = transform_type.ClientPipelineDefinitionProcessRequest{
+		PipelineSource:  createReqV2.PipelineSource,
+		PipelineYmlName: createReqV2.PipelineYmlName,
+		IsDelete:        true,
+	}
+	_, err = p.ds.ProcessPipelineDefinition(nil, req)
+	if err != nil {
+		logrus.Errorf("fail to deletePipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+	return nil
+}
+
+func GetGittarYmlNamesLabels(appID, workspace, branch, ymlName string) string {
+	return fmt.Sprintf("%s/%s/%s/%s", appID, workspace, branch, ymlName)
 }
 
 func getCronExpr(pipelineYmlStr string) (string, error) {

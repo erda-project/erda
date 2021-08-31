@@ -110,7 +110,9 @@ func (svc *Service) CopyFileTreeNode(req apistructs.UnifiedFileTreeNodeCopyReque
 		}
 	}()
 
-	return convertToUnifiedFileTreeNode(dupNode, nil), nil
+	node = convertToUnifiedFileTreeNode(dupNode, nil)
+	go svc.reportPipelineDefinition(*node)
+	return node, nil
 }
 
 func duplicateNode(o *apistructs.UnifiedFileTreeNode) *dao.AutoTestFileTreeNode {

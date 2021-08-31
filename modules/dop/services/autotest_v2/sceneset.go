@@ -15,6 +15,10 @@
 package autotestv2
 
 import (
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -99,6 +103,101 @@ func (svc *Service) UpdateSceneSet(setID uint64, req apistructs.SceneSetRequest)
 	}
 
 	return mapping(res), nil
+}
+
+func (svc *Service) DragSceneSet(req apistructs.SceneSetRequest) error {
+	if req.Position == 0 {
+		return fmt.Errorf("Cannot drag sceneset into another!")
+	}
+	err := svc.db.MoveSceneSet(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc *Service) CopySceneSet(req apistructs.SceneSetRequest, isSpaceCopy bool) (uint64, error) {
+	id := req.SetID
+	set, err := svc.GetSceneSet(id)
+	if err != nil {
+		return 0, nil
+	}
+
+	newSet := &dao.SceneSet{
+		Name:        set.Name,
+		Description: set.Description,
+		SpaceID:     req.SpaceID,
+		PreID:       req.PreID,
+		CreatorID:   req.UserID,
+	}
+
+	if err := svc.db.CreateSceneSet(newSet); err != nil {
+		return 0, err
+	}
+
+	_, scenes, err := svc.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: id})
+	preId := uint64(0)
+	r := apistructs.AutotestSceneCopyRequest{
+		PreID:   preId,
+		SetID:   newSet.ID,
+		SpaceID: req.SpaceID,
+	}
+	r.IdentityInfo = req.IdentityInfo
+
+	var sceneIdMap = map[uint64]uint64{}
+	for _, scene := range scenes {
+		r.SceneID = scene.ID
+		r.PreID = preId
+		preId, err = svc.CopyAutotestScene(r, isSpaceCopy, sceneIdMap)
+		if err != nil {
+			return 0, err
+		}
+		sceneIdMap[scene.ID] = preId
+	}
+
+	go func() {
+		err := svc.reportSceneSetPipelineDefinition(newSet.ID)
+		if err != nil {
+			logrus.Errorf("copySceneSet reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
+	return newSet.ID, nil
+}
+
+func (svc *Service) DeleteSceneSet(req apistructs.SceneSetRequest) error {
+	r, err := svc.db.CheckRelatedSceneSet(req.SetID)
+	if err != nil {
+		return apierrors.ErrDeleteAutoTestSceneSet.InternalError(err)
+	}
+	if r {
+		return fmt.Errorf("场景集合加入了测试计划, 无法删除")
+	}
+
+	s, err := svc.db.GetSceneSet(req.SetID)
+	if err != nil {
+		return apierrors.ErrDeleteAutoTestSceneSet.InternalError(err)
+	}
+
+	l, scenes, err := svc.ListAutotestScene(apistructs.AutotestSceneRequest{SetID: req.SetID})
+	if err != nil {
+		return apierrors.ErrDeleteAutoTestSceneSet.InternalError(err)
+	}
+
+	ids := make([]uint64, l)
+	for i, s := range scenes {
+		ids[i] = s.ID
+	}
+
+	go func() {
+		err := svc.deleteSceneSetPipelineDefinition(*s)
+		if err != nil {
+			logrus.Errorf("deleteSceneSet deleteSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
+	return svc.db.DeleteSceneSet(s, ids)
 }
 
 func (svc *Service) GetSceneSet(setID uint64) (*apistructs.SceneSet, error) {
