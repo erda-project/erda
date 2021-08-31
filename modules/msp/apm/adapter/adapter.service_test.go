@@ -16,74 +16,67 @@ package adapter
 
 import (
 	"context"
-	"reflect"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	_ "google.golang.org/grpc"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
+////go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
+////go:generate mockgen -destination=./adapter_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
-	type fields struct {
-		p *provider
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	//register := NewMockRegister(ctrl)
+	pro := &provider{
+		Cfg: &config{
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+		},
+		Log:            logger,
+		Register:       nil,
+		adapterService: &adapterService{},
+		libraryMap: map[string]interface{}{
+			"Java Agent":        []interface{}{"Java"},
+			"Apache SkyWalking": []interface{}{"Java"},
+		},
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
 	}
-	type args struct {
-		ctx     context.Context
-		request *pb.GetInstrumentationLibraryRequest
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.GetInstrumentationLibraryResponse
-		wantErr bool
-	}{}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &adapterService{
-				p: tt.fields.p,
-			}
-			got, err := s.GetInstrumentationLibrary(tt.args.ctx, tt.args.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetInstrumentationLibrary() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetInstrumentationLibrary() got = %v, want %v", got, tt.want)
-			}
-		})
+	pro.adapterService.p = pro
+	_, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
+	if err != nil {
+		t.Errorf("should not throw err")
 	}
 }
 
 func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
-	type fields struct {
-		p *provider
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	//register := NewMockRegister(ctrl)
+	pro := &provider{
+		Cfg: &config{
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+		},
+		Log:            logger,
+		Register:       nil,
+		adapterService: &adapterService{},
+		libraryMap: map[string]interface{}{
+			"Java Agent":        []interface{}{"Java"},
+			"Apache SkyWalking": []interface{}{"Java"},
+		},
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
 	}
-	type args struct {
-		ctx     context.Context
-		request *pb.GetInstrumentationLibraryDocsRequest
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.GetInstrumentationLibraryDocsResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &adapterService{
-				p: tt.fields.p,
-			}
-			got, err := s.GetInstrumentationLibraryDocs(tt.args.ctx, tt.args.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetInstrumentationLibraryDocs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetInstrumentationLibraryDocs() got = %v, want %v", got, tt.want)
-			}
-		})
+	pro.adapterService.p = pro
+	_, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
+		Language: "java",
+		Strategy: "javaagent",
+	})
+	if err != nil {
+		t.Errorf("shoult not err")
 	}
 }
