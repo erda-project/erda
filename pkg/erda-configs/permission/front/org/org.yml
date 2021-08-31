@@ -63,3 +63,8 @@
   resource: "UI.ecp"
   action: "operate"
   role: "Manager,EdgeOps"
+- scope: "org"
+  name: "企业 > 管理中心 > 查看审计日志"
+  resource: "UI.orgCenter"
+  action: "viewAuditLog"
+  role: "Manager,Auditor,Support"
