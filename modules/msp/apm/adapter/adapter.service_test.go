@@ -16,15 +16,15 @@ package adapter
 
 import (
 	"context"
-	"google.golang.org/grpc"
 	"net/http"
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/golang/mock/gomock"
+	"google.golang.org/grpc"
 	_ "google.golang.org/grpc"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
