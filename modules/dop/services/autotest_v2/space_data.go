@@ -481,6 +481,21 @@ func (a *AutoTestSpaceData) Copy() (*apistructs.AutoTestSpace, error) {
 			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))
 			return
 		}
+
+		for _, v := range a.sceneSetIDAssociationMap {
+			err := a.svc.reportSceneSetPipelineDefinition(v)
+			if err != nil {
+				logrus.Errorf("copy reportSceneSetPipelineDefinition error %v", err)
+			}
+		}
+
+		for _, v := range a.sceneIDAssociationMap {
+			err := a.svc.reportScenePipelineDefinition(v)
+			if err != nil {
+				logrus.Errorf("copy reportScenePipelineDefinition error %v", err)
+			}
+		}
+
 		a.NewSpace.Status = apistructs.TestSpaceOpen
 		if _, err = a.svc.UpdateAutoTestSpace(*a.NewSpace, a.UserID); err != nil {
 			logrus.Error(apierrors.ErrCopyAutoTestSpace.InternalError(err))

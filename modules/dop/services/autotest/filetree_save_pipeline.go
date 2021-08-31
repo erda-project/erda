@@ -109,6 +109,9 @@ func (svc *Service) SaveFileTreeNodePipeline(req apistructs.AutoTestCaseSavePipe
 	if err != nil {
 		return nil, apierrors.ErrSaveAutoTestFileTreeNodePipeline.InternalError(err)
 	}
+
+	go svc.reportPipelineDefinition(*node)
+
 	return node, nil
 }
 

@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 )
 
 // Service autotestv2 实例对象封装
@@ -30,6 +31,7 @@ type Service struct {
 	sceneset    *sceneset.Service
 	autotestSvc *autotest.Service
 	cms         cmspb.CmsServiceServer
+	ds          definition_client.Processor
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -75,5 +77,11 @@ func WithAutotestSvc(svc *autotest.Service) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(e *Service) {
 		e.cms = cms
+	}
+}
+
+func WithPipelineDefinitionServices(ds definition_client.Processor) Option {
+	return func(svc *Service) {
+		svc.ds = ds
 	}
 }

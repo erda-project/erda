@@ -18,6 +18,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 )
 
 // Service autotest 实例对象封装
@@ -25,6 +26,7 @@ type Service struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
 	cms cmspb.CmsServiceServer
+	ds  definition_client.Processor
 }
 
 // New 新建 autotest service
@@ -55,5 +57,11 @@ func WithBundle(bdl *bundle.Bundle) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(svc *Service) {
 		svc.cms = cms
+	}
+}
+
+func WithPipelineDefinitionServices(ds definition_client.Processor) Option {
+	return func(svc *Service) {
+		svc.ds = ds
 	}
 }

@@ -238,6 +238,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	autotest := autotest.New(autotest.WithDBClient(db),
 		autotest.WithBundle(bdl.Bdl),
 		autotest.WithPipelineCms(p.PipelineCms),
+		autotest.WithPipelineDefinitionServices(p.PipelineDs),
 	)
 
 	sceneset := sceneset.New(
@@ -251,6 +252,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		atv2.WithSceneSet(sceneset),
 		atv2.WithAutotestSvc(autotest),
 		atv2.WithPipelineCms(p.PipelineCms),
+		atv2.WithPipelineDefinitionServices(p.PipelineDs),
 	)
 
 	autotestV2.UpdateFileRecord = testCaseSvc.UpdateFileRecord

@@ -36,7 +36,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
 	"github.com/erda-project/erda/pkg/apitestsv2"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
@@ -114,6 +116,24 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 	if err := svc.db.CreateAutotestScene(scene); err != nil {
 		return 0, err
 	}
+
+	go func() {
+		if scene.RefSetID <= 0 {
+			return
+		}
+		err := svc.reportScenePipelineDefinition(scene.ID)
+		if err != nil {
+			logrus.Errorf("createAutotestScene reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
+	go func() {
+		err = svc.reportSceneSetPipelineDefinition(scene.SetID)
+		if err != nil {
+			logrus.Errorf("createAutotestScene reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
 	return scene.ID, nil
 }
 
@@ -196,11 +216,25 @@ func (svc *Service) UpdateAutotestScene(req apistructs.AutotestSceneSceneUpdateR
 	if err = svc.db.UpdateAutotestScene(scene); err != nil {
 		return 0, err
 	}
+
+	go func() {
+		err = svc.reportSceneSetPipelineDefinition(scene.SetID)
+		if err != nil {
+			logrus.Errorf("updateAutotestScene reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
 	return scene.ID, nil
 }
 
 // MoveAutotestScene 移动场景
 func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint64, error) {
+
+	beforeScene, err := svc.db.GetAutotestScene(req.ID)
+	if err != nil {
+		return 0, apierrors.ErrMoveAutoTestScene.InternalError(err)
+	}
+
 	var preID uint64
 	// 移动到另一scene set
 	if req.GroupID > 0 {
@@ -235,10 +269,32 @@ func (svc *Service) MoveAutotestScene(req apistructs.AutotestSceneRequest) (uint
 			return 0, apierrors.ErrMoveAutoTestScene.AlreadyExists()
 		}
 	}
-	err := svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID))
+	err = svc.db.MoveAutoTestScene(req.ID, preID, uint64(req.GroupID))
 	if err != nil {
 		return 0, err
 	}
+
+	afterScene, err := svc.db.GetAutotestScene(req.ID)
+	if err != nil {
+		return 0, apierrors.ErrMoveAutoTestScene.InternalError(err)
+	}
+
+	go func() {
+		err := svc.reportSceneSetPipelineDefinition(beforeScene.SetID)
+		if err != nil {
+			logrus.Errorf("moveAutotestScene reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
+	go func() {
+		if beforeScene.SetID == afterScene.SetID {
+			return
+		}
+		err := svc.reportSceneSetPipelineDefinition(afterScene.SetID)
+		if err != nil {
+			logrus.Errorf("moveAutotestScene reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
 
 	return req.ID, nil
 }
@@ -384,7 +440,24 @@ func (svc *Service) CutAutotestScene(sc *dao.AutoTestScene) error {
 
 // DeleteAutotestScene 删除场景
 func (svc *Service) DeleteAutotestScene(id uint64) error {
-	return svc.db.DeleteAutoTestScene(id)
+	scene, err := svc.db.GetAutotestScene(id)
+	if err != nil {
+		return err
+	}
+
+	err = svc.db.DeleteAutoTestScene(id)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		err := svc.deleteScenePipelineDefinition(*scene)
+		if err != nil {
+			logrus.Errorf("deleteAutotestScene deleteScenePipelineDefinition error %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // UpdateAutotestSceneUpdater 更新场景更新人
@@ -597,6 +670,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 }
 
 func (svc *Service) SceneToYml(scene uint64) (string, error) {
+
 	sceneInputs, err := svc.ListAutoTestSceneInput(scene)
 	if err != nil {
 		return "", err
@@ -613,6 +687,217 @@ func (svc *Service) SceneToYml(scene uint64) (string, error) {
 	}
 
 	return svc.DoSceneToYml(sceneSteps, sceneInputs, sceneOutputs)
+}
+
+func (svc *Service) deleteTestPlanPipelineDefinition(testPlan dao.TestPlanV2) error {
+	var req = deftype.ClientDefinitionProcessRequest{
+		PipelineYmlName: apistructs.PipelineSourceAutoTestPlan.String() + "-" + strconv.Itoa(int(testPlan.ID)),
+		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		IsDelete:        true,
+	}
+
+	_, err := svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to deleteTestPlanPipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+	return nil
+}
+
+func (svc *Service) reportTestPlanPipelineDefinition(testPlanID uint64) error {
+	testPlan, err := svc.getTestPlanV2(testPlanID, nil)
+	if err != nil {
+		return err
+	}
+
+	yml, err := svc.testPlanToYml(testPlan)
+	if err != nil {
+		return err
+	}
+
+	var req = deftype.ClientDefinitionProcessRequest{
+		PipelineYmlName: apistructs.PipelineSourceAutoTestPlan.String() + "-" + strconv.Itoa(int(testPlan.ID)),
+		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		PipelineYml:     yml,
+	}
+
+	_, err = svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to reportTestPlanPipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+
+	return nil
+}
+
+func (svc *Service) deleteSceneSetPipelineDefinition(sceneSet dao.SceneSet) error {
+	var req = deftype.ClientDefinitionProcessRequest{
+		PipelineYmlName: apistructs.PipelineSourceAutoTest.String() + "-" + apistructs.SceneSetsAutotestExecType + "-" + strconv.Itoa(int(sceneSet.ID)),
+		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		IsDelete:        true,
+	}
+
+	_, err := svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to deleteSceneSetPipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+	return nil
+}
+
+func (svc *Service) reportSceneSetPipelineDefinition(sceneSetID uint64) error {
+	sceneSet, err := svc.GetSceneSet(sceneSetID)
+	if err != nil {
+		return err
+	}
+
+	scenesMap, err := svc.ListAutotestScenes([]uint64{sceneSetID})
+	if err != nil {
+		return err
+	}
+	if scenesMap == nil || scenesMap[sceneSetID] == nil {
+		return nil
+	}
+
+	yml, err := sceneSetToYml(scenesMap[sceneSetID])
+	if err != nil {
+		return err
+	}
+
+	var req = deftype.ClientDefinitionProcessRequest{
+		PipelineYmlName: apistructs.PipelineSourceAutoTest.String() + "-" + apistructs.SceneSetsAutotestExecType + "-" + strconv.Itoa(int(sceneSet.ID)),
+		PipelineSource:  apistructs.PipelineSourceAutoTest,
+		PipelineYml:     yml,
+		SnippetConfig: &apistructs.SnippetConfig{
+			Name:   strconv.Itoa(int(sceneSet.ID)),
+			Source: apistructs.PipelineSourceAutoTest.String(),
+			Labels: map[string]string{
+				apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
+				apistructs.LabelSceneSetID:       strconv.Itoa(int(sceneSet.ID)),
+				apistructs.LabelSpaceID:          strconv.Itoa(int(sceneSet.SpaceID)),
+			},
+		},
+	}
+
+	_, err = svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to reportSceneSetPipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+
+	return nil
+}
+
+func (svc *Service) deleteScenePipelineDefinition(scene dao.AutoTestScene) error {
+	var req deftype.ClientDefinitionProcessRequest
+	if scene.RefSetID > 0 {
+		req = deftype.ClientDefinitionProcessRequest{
+			PipelineYmlName: apistructs.PipelineSourceAutoTest.String() + "-" + apistructs.SceneAutotestExecType + "-" + apistructs.SceneSetsAutotestExecType + "-" + strconv.Itoa(int(scene.RefSetID)),
+			PipelineSource:  apistructs.PipelineSourceAutoTest,
+			IsDelete:        true,
+		}
+	} else {
+		req = deftype.ClientDefinitionProcessRequest{
+			PipelineYmlName: strconv.Itoa(int(scene.ID)),
+			PipelineSource:  apistructs.PipelineSourceAutoTest,
+			IsDelete:        true,
+		}
+	}
+
+	_, err := svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to deleteScenePipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+	return nil
+}
+
+func (svc *Service) reportScenePipelineDefinition(sceneID uint64) error {
+	var autotestSceneRequest apistructs.AutotestSceneRequest
+	autotestSceneRequest.SceneID = sceneID
+	scene, err := svc.GetAutotestScene(autotestSceneRequest)
+	if err != nil {
+		return err
+	}
+
+	var req deftype.ClientDefinitionProcessRequest
+
+	if scene.RefSetID > 0 {
+
+		var snippetConfig = &apistructs.SnippetConfig{
+			Name:   strconv.Itoa(int(scene.ID)),
+			Source: apistructs.PipelineSourceAutoTest.String(),
+			Labels: map[string]string{
+				apistructs.LabelAutotestExecType: apistructs.SceneSetsAutotestExecType,
+				apistructs.LabelSceneSetID:       strconv.Itoa(int(scene.RefSetID)),
+				apistructs.LabelSpaceID:          strconv.Itoa(int(scene.SpaceID)),
+				apistructs.LabelSceneID:          strconv.Itoa(int(scene.ID)),
+			},
+		}
+
+		scenesMap, err := svc.ListAutotestScenes([]uint64{scene.RefSetID})
+		if err != nil {
+			return err
+		}
+		if scenesMap == nil || scenesMap[scene.RefSetID] == nil {
+			return nil
+		}
+
+		yml, err := sceneSetToYml(scenesMap[scene.RefSetID])
+		if err != nil {
+			return err
+		}
+
+		req = deftype.ClientDefinitionProcessRequest{
+			PipelineYmlName: apistructs.PipelineSourceAutoTest.String() + "-" + apistructs.SceneAutotestExecType + "-" + apistructs.SceneSetsAutotestExecType + "-" + strconv.Itoa(int(scene.RefSetID)),
+			PipelineSource:  apistructs.PipelineSourceAutoTest,
+			PipelineYml:     yml,
+			SnippetConfig:   snippetConfig,
+		}
+	} else {
+		sceneInputs, err := svc.ListAutoTestSceneInput(sceneID)
+		if err != nil {
+			return err
+		}
+
+		sceneOutputs, err := svc.ListAutoTestSceneOutput(sceneID)
+		if err != nil {
+			return err
+		}
+
+		sceneSteps, err := svc.ListAutoTestSceneStep(sceneID)
+		if err != nil {
+			return err
+		}
+
+		yml, err := svc.DoSceneToYml(sceneSteps, sceneInputs, sceneOutputs)
+		if err != nil {
+			return err
+		}
+
+		req = deftype.ClientDefinitionProcessRequest{
+			PipelineYmlName: strconv.Itoa(int(scene.ID)),
+			PipelineSource:  apistructs.PipelineSourceAutoTest,
+			PipelineYml:     yml,
+			SnippetConfig: &apistructs.SnippetConfig{
+				Name:   strconv.Itoa(int(scene.ID)),
+				Source: apistructs.PipelineSourceAutoTest.String(),
+				Labels: map[string]string{
+					apistructs.LabelAutotestExecType: apistructs.SceneAutotestExecType,
+					apistructs.LabelSceneID:          strconv.Itoa(int(scene.ID)),
+					apistructs.LabelSpaceID:          strconv.Itoa(int(scene.SpaceID)),
+				},
+			},
+		}
+	}
+
+	_, err = svc.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		logrus.Errorf("fail to reportScenePipelineDefinition req %v ,err: %s", req, err)
+		return err
+	}
+
+	return nil
 }
 
 func (svc *Service) DoSceneToYml(sceneSteps []apistructs.AutoTestSceneStep, sceneInputs []apistructs.AutoTestSceneInput, sceneOutputs []apistructs.AutoTestSceneOutput) (string, error) {
@@ -845,6 +1130,7 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 	if req.SetID == 0 {
 		req.SetID = oldScene.SetID
 	}
+
 	// 校验目标场景集是否存在
 	checkSet, err := svc.db.GetSceneSet(req.SetID)
 	if err != nil {
@@ -983,6 +1269,26 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			return newScene.ID, err
 		}
 	}
+
+	go func() {
+		err := svc.reportScenePipelineDefinition(newScene.ID)
+		if err != nil {
+			logrus.Errorf("copyAutotestScene reportScenePipelineDefinition error %v", err)
+		}
+	}()
+
+	go func() {
+		// The representative is a copy of the scene set, there is no need to report here,
+		// the place where the final scene set is copied will naturally be reported
+		if req.SetID != oldScene.SetID {
+			return
+		}
+		err := svc.reportSceneSetPipelineDefinition(newScene.SetID)
+		if err != nil {
+			logrus.Errorf("copyAutotestScene reportSceneSetPipelineDefinition error %v", err)
+		}
+	}()
+
 	return newScene.ID, nil
 }
 

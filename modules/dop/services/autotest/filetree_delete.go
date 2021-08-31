@@ -64,6 +64,6 @@ func (svc *Service) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteR
 			}
 		}
 	}()
-
+	go svc.deletePipelineDefinition(*node)
 	return node, nil
 }
