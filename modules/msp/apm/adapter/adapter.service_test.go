@@ -17,8 +17,9 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
@@ -73,11 +74,8 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 	}
 	pro.adapterService.p = pro
 	result, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
-		ProjectID:   0,
-		ServiceName: "ss",
-		Type:        "sss",
-		Language:    "java",
-		Strategy:    "javaagent",
+		Language: "java",
+		Strategy: "javaagent",
 	})
 	if err != nil {
 		t.Errorf("shoult not err")
