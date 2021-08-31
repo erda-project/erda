@@ -24,7 +24,9 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/i18n"
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
 	_ "github.com/erda-project/erda/modules/dop"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 
 	// components
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
