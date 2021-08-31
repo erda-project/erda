@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -130,21 +131,23 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
-	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
+	podsLabels := []constraints.PodLabelsForAffinity{
+		{PodLabels: map[string]string{"redisfailovers.databases.spotahome.com/name": sg.Dice.ID}}}
+	affinity := constraintbuilders.K8S(&scheinfo, nil, podsLabels, nil).Affinity
 
 	switch svc0.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc0, affinity)
+		redis = ro.convertRedis(svc0, &affinity)
 		redisService = svc0
 	case svcNameSentinel:
-		sentinel = convertSentinel(svc0, affinity)
+		sentinel = convertSentinel(svc0, &affinity)
 	}
 	switch svc1.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc1, affinity)
+		redis = ro.convertRedis(svc1, &affinity)
 		redisService = svc1
 	case svcNameSentinel:
-		sentinel = convertSentinel(svc1, affinity)
+		sentinel = convertSentinel(svc1, &affinity)
 	}
 
 	rf := RedisFailover{
@@ -295,9 +298,9 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	return fmt.Errorf("redisoperator not impl Update yet")
 }
 
-func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.NodeAffinity) RedisSettings {
+func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.Affinity) RedisSettings {
 	settings := RedisSettings{}
-	settings.Affinity = &corev1.Affinity{NodeAffinity: affinity}
+	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = corev1.ResourceRequirements{
@@ -318,9 +321,9 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.N
 	return settings
 }
 
-func convertSentinel(svc apistructs.Service, affinity *corev1.NodeAffinity) SentinelSettings {
+func convertSentinel(svc apistructs.Service, affinity *corev1.Affinity) SentinelSettings {
 	settings := SentinelSettings{}
-	settings.Affinity = &corev1.Affinity{NodeAffinity: affinity}
+	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = corev1.ResourceRequirements{

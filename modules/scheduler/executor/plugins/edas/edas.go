@@ -2216,7 +2216,7 @@ func (e *EDAS) Scale(ctx context.Context, specObj interface{}) (interface{}, err
 		err   error
 	)
 	if appID, err = e.getAppID(appName); err != nil {
-		errMsg := fmt.Sprintf("get appID errL: %v", err)
+		errMsg := fmt.Sprintf("get appID err in scale: %v", err)
 		logrus.Errorf(errMsg)
 		return nil, fmt.Errorf(errMsg)
 	}

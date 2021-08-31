@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -285,4 +286,68 @@ func TestParseJobSpecTemplate(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, clusterInfo["MOUNTPOINT_PATH"], newPath)
+}
+
+func TestCreateStatefulSet(t *testing.T) {
+	kubernetes := &Kubernetes{}
+
+	info := StatefulsetInfo{
+		sg: &apistructs.ServiceGroup{
+			Dice: apistructs.Dice{
+				ID:     "fake-test-dice",
+				Type:   "addon",
+				Labels: nil,
+				Services: []apistructs.Service{
+					apistructs.Service{
+						Name:          "fake-test-service",
+						Namespace:     "fake-test",
+						Image:         "",
+						ImageUsername: "",
+						ImagePassword: "",
+						Cmd:           "",
+						Ports:         nil,
+						ProxyPorts:    nil,
+						Vip:           "",
+						ShortVIP:      "",
+						ProxyIp:       "",
+						PublicIp:      "",
+						Scale:         0,
+						Resources: apistructs.Resources{
+							Cpu:  100,
+							Mem:  200,
+							Disk: 0,
+						},
+						Depends:            nil,
+						Env:                nil,
+						Labels:             map[string]string{"ADDON_GROUP_ID": "11111111"},
+						DeploymentLabels:   nil,
+						Selectors:          nil,
+						Binds:              nil,
+						Volumes:            nil,
+						Hosts:              nil,
+						HealthCheck:        nil,
+						NewHealthCheck:     nil,
+						SideCars:           nil,
+						InitContainer:      nil,
+						InstanceInfos:      nil,
+						MeshEnable:         nil,
+						TrafficSecurity:    diceyml.TrafficSecurity{},
+						WorkLoad:           "",
+						ProjectServiceName: "",
+						K8SSnippet:         nil,
+						StatusDesc:         apistructs.StatusDesc{},
+					},
+				},
+				ServiceDiscoveryKind: "",
+				ServiceDiscoveryMode: "",
+				ProjectNamespace:     "",
+			},
+		},
+		namespace:   "fake-test",
+		envs:        map[string]string{},
+		annotations: map[string]string{},
+	}
+
+	err := kubernetes.createStatefulSet(info)
+	assert.Nil(t, err)
 }
