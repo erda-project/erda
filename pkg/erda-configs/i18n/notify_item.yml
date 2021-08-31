@@ -86,9 +86,9 @@ zh-CN:
   notify.pipeline.pipeline_failed.markdown_template: |-
     ### {{projectName}}/{{appName}} 流水线 {{pipelineID}} 运行失败 {{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}}
     {{failedDetail}}
-  notify.issue.issue_create: 创建任务事件
+  notify.issue.issue_create: 创建项目协同事件
   notify.issue.issue_create.markdown_template: "事件【{{issue_title}}】{{content}}"
-  notify.issue.issue_update: 更新任务事件
+  notify.issue.issue_update: 更新项目协同事件
   notify.issue.issue_update.markdown_template: "你关注的事件【{{issue_title}}】 {{content}}"
   notify.workflow.Failed: 工作流运行失败
   notify.workflow.Failed.email: |-

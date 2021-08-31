@@ -456,6 +456,9 @@ github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec h1:iaRo
 github.com/erda-project/erda-proto-go v0.0.0-20210824100650-1d7d288aebec/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
 github.com/erda-project/erda-proto-go v0.0.0-20210830081737-53132cb0c50a h1:2VdQlWG/5oF6nSNrLXbpp7BYF/QCrE/NJvC6FjtTXqw=
 github.com/erda-project/erda-proto-go v0.0.0-20210830081737-53132cb0c50a/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
+github.com/erda-project/erda-proto-go v0.0.0-20210830122656-7320114c379c h1:ZAV+vQp8Y8ZakAhlQJGuKNaxuqp1NPXAEhS/1TQtAMY=
+github.com/erda-project/erda-proto-go v0.0.0-20210830122656-7320114c379c/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
+github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
@@ -955,8 +958,6 @@ github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfC
 github.com/jmoiron/sqlx v1.3.1 h1:aLN7YINNZ7cYOPK3QC83dbM6KT0NMqVMw961TqrejlE=
 github.com/jmoiron/sqlx v1.3.1/go.mod h1:2BljVx/86SuTyjE+aPYlHCTNvZrnJXghYGpNiXLBMCQ=
 github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901/go.mod h1:Z86h9688Y0wesXCyonoVr47MasHilkuLMqGhRZ4Hpak=
-github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511 h1:hTsn9H037MvDBdBWbTlHw9nsoZPMilJTJdGTo8zfifo=
-github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=

@@ -65,11 +65,15 @@ services:
         path: /_api/health
         port: 9527
     ports:
-      - default: false
-        expose: false
-        l4_protocol: TCP
-        port: 9527
-        protocol: TCP
+      - port: 9527 # legacy http port
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9528 # new http port
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9529 # grpc port
+        protocol: "TCP"
+        l4_protocol: "TCP"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
@@ -449,6 +453,7 @@ services:
         expose: true
     envs:
       CREATE_ORG_ENABLED: "false"
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
     resources:
       cpu: ${request_cpu:0.5}
       max_cpu: 0.5
@@ -469,7 +474,7 @@ services:
     health_check:
       http:
         port: 9529
-        path: "/api/openapi/version"
+        path: "/health"
         duration: 120
       exec: { }
   ecp:

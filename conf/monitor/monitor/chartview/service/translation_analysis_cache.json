@@ -1,0 +1,367 @@
+{
+  "id": "translation_analysis_cache",
+  "name": "translation_analysis_cache",
+  "desc": "",
+  "scope": "micro_service",
+  "scopeId": "global",
+  "viewConfig": [
+    {
+      "w": 11,
+      "h": 9,
+      "x": 0,
+      "y": 0,
+      "i": "view-1XA1pzWR",
+      "view": {
+        "title": "服务请求",
+        "i18n": {
+          "title": {
+            "en": "Service Request",
+            "zh": "服务请求"
+          }
+        },
+        "description": "",
+        "chartType": "chart:bar",
+        "dataSourceType": "api",
+        "staticData": {
+        },
+        "config": {
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "YYYY/MM/DD"
+          },
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "application_cache",
+              "application_cahce_request"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
+                "key": "typegq99wZs2",
+                "timeFormat": "YYYY/MM/DD",
+                "timeInterval": {
+                  "unit": "m",
+                  "value": 1
+                },
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "count",
+                "alias": "请求次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Request Count",
+                    "zh": "请求次数"
+                  }
+                },
+                "field": "application_cache-elapsed_count::field",
+                "key": "valueSR6vrde7",
+                "resultType": "number",
+                "type": "field"
+              }
+            ]
+          }
+        },
+        "api": {
+          "url": "/api/tmc/metrics-query",
+          "body": {
+            "from": [
+              "application_cache"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typegq99wZs2",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueSR6vrde7",
+                "expr": "round_float(sum(elapsed_count::field), 2)"
+              }
+            ],
+            "where": [
+              "db_statement::tag=~/.*{{subSearch}}.*/"
+            ]
+          },
+          "extraData": null,
+          "header": null,
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "serviceName": "{{serviceName}}",
+            "filter_source_service_id": "{{serviceId}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "start": "{{startTime}}",
+            "type": "_",
+            "search": "{{search}}"
+          }
+        },
+        "controls": null
+      }
+    },
+    {
+      "h": 9,
+      "w": 13,
+      "x": 11,
+      "y": 0,
+      "i": "view-J4SwjHDP",
+      "view": {
+        "api": {
+          "body": {
+            "from": [
+              "application_cache"
+            ],
+            "groupby": [
+              "time()"
+            ],
+            "select": [
+              {
+                "alias": "typeQuPvs7M2",
+                "expr": "time()"
+              },
+              {
+                "alias": "valueCxbcWuWT",
+                "expr": "round_float(avg(elapsed_mean::field), 2)"
+              }
+            ],
+            "where": [
+              "db_statement::tag=~/.*{{subSearch}}.*/"
+            ]
+          },
+          "extraData": null,
+          "header": null,
+          "method": "post",
+          "query": {
+            "end": "{{endTime}}",
+            "epoch": "ms",
+            "filter__metric_scope": "micro_service",
+            "filter__metric_scope_id": "{{terminusKey}}",
+            "filter_source_service_id": "{{serviceId}}",
+            "filter_terminus_key": "{{terminusKey}}",
+            "format": "chartv2",
+            "ql": "influxql:ast",
+            "serviceName": "{{serviceName}}",
+            "start": "{{startTime}}",
+            "type": "_"
+          },
+          "url": "/api/tmc/metrics-query"
+        },
+        "chartType": "chart:line",
+        "config": {
+          "dataSourceConfig": {
+            "activedMetricGroups": [
+              "application_cache",
+              "application_cache_request"
+            ],
+            "typeDimensions": [
+              {
+                "alias": "时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Time",
+                    "zh": "时间"
+                  }
+                },
+                "key": "typeQuPvs7M2",
+                "timeFormat": "YYYY/MM/DD",
+                "timeInterval": {
+                  "unit": "m",
+                  "value": 1
+                },
+                "type": "time"
+              }
+            ],
+            "valueDimensions": [
+              {
+                "aggregation": "avg",
+                "alias": "平均响应时间",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Response Time",
+                    "zh": "平均响应时间"
+                  }
+                },
+                "field": "application_cache-elapsed_mean::field",
+                "key": "valueCxbcWuWT",
+                "resultType": "number",
+                "type": "field",
+                "unit": {
+                  "type": "TIME",
+                  "unit": "ns"
+                }
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "YYYY/MM/DD",
+            "noAreaColor": true
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "请求延迟",
+        "i18n": {
+          "title": {
+            "en": "Request Time Delay",
+            "zh": "请求时延"
+          }
+        }
+      }
+    },
+    {
+      "h": 10,
+      "w": 24,
+      "x": 0,
+      "y": 9,
+      "i": "view-lVTYdASX",
+      "view": {
+        "api": {
+          "body": null,
+          "extraData": null,
+          "header": null,
+          "method": "get",
+          "query": {
+            "end": "{{endTime}}",
+            "filterServiceName": "{{serviceName}}",
+            "layer": "cache",
+            "search": "{{search}}",
+            "serviceId": "{{serviceId}}",
+            "sort": "{{sort}}",
+            "start": "{{startTime}}",
+            "terminusKey": "{{terminusKey}}"
+          },
+          "url": "/api/apm/topology/translation/db"
+        },
+        "chartType": "table",
+        "config": {
+          "dataSourceConfig": {
+            "valueDimensions": [
+              {
+                "alias": "执行语句",
+                "i18n": {
+                  "alias": {
+                    "en": "Executed Statement",
+                    "zh": "执行语句"
+                  }
+                },
+                "key": "operation",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "缓存类型",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Type",
+                    "zh": "缓存类型"
+                  }
+                },
+                "key": "db_type",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "缓存实例",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Instance",
+                    "zh": "缓存实例"
+                  }
+                },
+                "key": "db_instance",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "缓存地址",
+                "i18n": {
+                  "alias": {
+                    "en": "Cache Host",
+                    "zh": "缓存地址"
+                  }
+                },
+                "key": "db_host",
+                "resultType": "string",
+                "type": "field"
+              },
+              {
+                "alias": "调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Called Count",
+                    "zh": "调用次数"
+                  }
+                },
+                "key": "call_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "慢调用次数",
+                "i18n": {
+                  "alias": {
+                    "en": "Slow Called Count",
+                    "zh": "慢调用次数"
+                  }
+                },
+                "key": "slow_elapsed_count",
+                "resultType": "number",
+                "type": "field"
+              },
+              {
+                "alias": "平均时延",
+                "i18n": {
+                  "alias": {
+                    "en": "Avg Time Delay",
+                    "zh": "平均时延"
+                  }
+                },
+                "key": "avg_elapsed",
+                "resultType": "string",
+                "type": "field"
+              }
+            ]
+          },
+          "optionProps": {
+            "isMoreThanOneDay": true,
+            "moreThanOneDayFormat": "M/D",
+            "rowClick": {
+              "name": "searchTranslation",
+              "value": "operation"
+            }
+          }
+        },
+        "controls": null,
+        "dataSourceType": "api",
+        "description": "",
+        "staticData": {},
+        "title": "缓存调用",
+        "i18n": {
+          "title": {
+            "en": "Cache Called",
+            "zh": "缓存调用"
+          }
+        }
+      }
+    }
+  ],
+  "version": "v2"
+}
