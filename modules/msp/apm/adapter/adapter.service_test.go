@@ -16,7 +16,6 @@ package adapter
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -33,8 +32,8 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 	register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/config.yaml"},
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
 		},
 		Log:            logger,
 		Register:       register,
@@ -43,14 +42,13 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},
 		},
-		configFile: "/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/config.yaml",
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
 	}
 	pro.adapterService.p = pro
-	result, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
+	_, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
 	if err != nil {
 		t.Errorf("should not throw err")
 	}
-	fmt.Println(result)
 }
 
 func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
@@ -60,8 +58,8 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 	register := NewMockRegister(ctrl)
 	pro := &provider{
 		Cfg: &config{
-			Library:    []string{"/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/instrumentationlibrary.yaml"},
-			ConfigFile: []string{"/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/config.yaml"},
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
 		},
 		Log:            logger,
 		Register:       register,
@@ -70,15 +68,14 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 			"Java Agent":        []interface{}{"Java"},
 			"Apache SkyWalking": []interface{}{"Java"},
 		},
-		configFile: "/Users/terminus/go/src/github.com/erda-project/erda/conf/msp/adapter/config.yaml",
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
 	}
 	pro.adapterService.p = pro
-	result, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
+	_, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
 		Language: "java",
 		Strategy: "javaagent",
 	})
 	if err != nil {
 		t.Errorf("shoult not err")
 	}
-	fmt.Println(result)
 }
