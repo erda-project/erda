@@ -68,7 +68,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createRequirement"}},
 		PrefixIcon: "ISSUE_ICON.issue.REQUIREMENT",
-		Text:       "需求",
+		Text:       cputil.I18n(ctx, "requirement"),
 	}
 	taskCandidate := AddButtonCandidate{
 		Disabled:    isGuest,
@@ -79,7 +79,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createTask"}},
 		PrefixIcon: "ISSUE_ICON.issue.TASK",
-		Text:       "任务",
+		Text:       cputil.I18n(ctx, "task"),
 	}
 	bugCandidate := AddButtonCandidate{
 		Disabled:    isGuest,
@@ -90,12 +90,12 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Key    string `json:"key"`
 		}{Reload: false, Key: "createBug"}},
 		PrefixIcon: "ISSUE_ICON.issue.BUG",
-		Text:       "缺陷",
+		Text:       cputil.I18n(ctx, "bug"),
 	}
 	props := Props{
 		Menu:       nil,
 		SuffixIcon: "di",
-		Text:       "新建事项",
+		Text:       cputil.I18n(ctx, "create-issue"),
 		Type:       "primary",
 		Disabled:   isGuest,
 	}
@@ -112,7 +112,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		props.Menu = menu
 		c.Props = props
 	case apistructs.IssueTypeRequirement.String():
-		prop.Text = "新建需求"
+		prop.Text = cputil.I18n(ctx, "create-requirement")
 		c.Operations = make(cptype.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
@@ -121,7 +121,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}{Reload: false, Key: "createRequirement", Disabled: isGuest}
 		c.Props = prop
 	case apistructs.IssueTypeTask.String():
-		prop.Text = "新建任务"
+		prop.Text = cputil.I18n(ctx, "create-task")
 		c.Operations = make(cptype.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`
@@ -130,7 +130,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}{Reload: false, Key: "createTask", Disabled: isGuest}
 		c.Props = prop
 	case apistructs.IssueTypeBug.String():
-		prop.Text = "新建缺陷"
+		prop.Text = cputil.I18n(ctx, "create-bug")
 		c.Operations = make(cptype.ComponentOps)
 		c.Operations["click"] = struct {
 			Reload   bool   `json:"reload"`

@@ -15,6 +15,7 @@
 package issueGantt
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueGantt/gantt"
@@ -99,19 +101,19 @@ func getEdgeTime(issues []apistructs.Issue) (eMin, eMax *time.Time) {
 	return edgeMinTime, edgeMaxTime
 }
 
-func (g *Gantt) genProps(edgeMinTime, edgeMaxTime *time.Time) {
+func (g *Gantt) genProps(ctx context.Context, edgeMinTime, edgeMaxTime *time.Time) {
 	props := gantt.Props{
 		Visible: true,
 		RowKey:  "id",
 		// ClassName: "task-gantt-table",
 		Columns: []gantt.PropColumn{
-			{Title: "处理人", DataIndex: "user", Width: 160},
-			{Title: "标题", DataIndex: "issues",
+			{Title: cputil.I18n(ctx, "assignee"), DataIndex: "user", Width: 160},
+			{Title: cputil.I18n(ctx, "title"), DataIndex: "issues",
 				TitleTip: []string{
-					"事项的甘特图只有确保正确输入截止日期、预计时间才能正常显示",
-					"#gray#灰色#>gray#：代表事项截止日期的剩余时间段",
-					"#blue#蓝色#>blue#：代表从事项开始时间到当前/事项完成日期的时间段",
-					"#red#红色#>red#：代表截止日期到当前/事项完成日期的超时时间段",
+					cputil.I18n(ctx, "issue-gante-tips1"),
+					cputil.I18n(ctx, "issue-gante-tips2"),
+					cputil.I18n(ctx, "issue-gante-tips3"),
+					cputil.I18n(ctx, "issue-gante-tips4"),
 				},
 			},
 		}}

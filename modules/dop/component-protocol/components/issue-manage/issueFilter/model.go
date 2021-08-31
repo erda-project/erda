@@ -15,7 +15,10 @@
 package issueFilter
 
 import (
+	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -48,83 +51,83 @@ type FrontendConditions struct {
 	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
 }
 
-func generateFrontendConditionProps(fixedIssueType string, state State) FrontendConditionProps {
+func generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
 	conditionProps := []filter.PropCondition{
 		{
 			Key:         PropConditionKeyIterationIDs,
-			Label:       "迭代",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "sprint"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
 			ShowIndex:   1,
 			HaveFilter:  true,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择迭代",
+			Placeholder: cputil.I18n(ctx, "choose-sprint"),
 			Options:     nil,
 		},
 		{
 			Key:         PropConditionKeyTitle,
-			Label:       "标题",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "title"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
 			ShowIndex:   2,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeInput,
-			Placeholder: "请输入标题或ID",
+			Placeholder: cputil.I18n(ctx, "please-enter-title-or-id"),
 		},
 		{
 			Key:         PropConditionKeyLabelIDs,
-			Label:       "标签",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "label"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  true,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择标签",
+			Placeholder: cputil.I18n(ctx, "please-choose-label"),
 			Options:     nil,
 		},
 		{
 			Key:         PropConditionKeyPriorities,
-			Label:       "优先级",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "priority"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择优先级",
+			Placeholder: cputil.I18n(ctx, "choose-priorities"),
 			Options: []filter.PropConditionOption{
-				{Label: "紧急", Value: "URGENT", Icon: ""},
-				{Label: "高", Value: "HIGH", Icon: ""},
-				{Label: "中", Value: "NORMAL", Icon: ""},
-				{Label: "低", Value: "LOW", Icon: ""},
+				{Label: cputil.I18n(ctx, "urgent"), Value: "URGENT", Icon: ""},
+				{Label: cputil.I18n(ctx, "high"), Value: "HIGH", Icon: ""},
+				{Label: cputil.I18n(ctx, "normal"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "low"), Value: "LOW", Icon: ""},
 			},
 		},
 		{
 			Key:         PropConditionKeySeverities,
-			Label:       "严重程度",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "severity"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "选择优先级",
+			Placeholder: cputil.I18n(ctx, "choose-severity"),
 			Options: []filter.PropConditionOption{
-				{Label: "致命", Value: "FATAL", Icon: ""},
-				{Label: "严重", Value: "SERIOUS", Icon: ""},
-				{Label: "一般", Value: "NORMAL", Icon: ""},
-				{Label: "轻微", Value: "SLIGHT", Icon: ""},
-				{Label: "建议", Value: "SUGGEST", Icon: ""},
+				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
+				{Label: cputil.I18n(ctx, "normal"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
+				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
 			},
 		},
 		{
 			Key:        PropConditionKeyCreatorIDs,
-			Label:      "创建人",
-			EmptyText:  "全部",
+			Label:      cputil.I18n(ctx, "creator"),
+			EmptyText:  cputil.I18n(ctx, "all"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        cputil.I18n(ctx, "choose-yourself"),
 				OperationKey: OperationKeyCreatorSelectMe,
 			},
 			Placeholder: "",
@@ -132,14 +135,14 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:        PropConditionKeyAssigneeIDs,
-			Label:      "处理人",
-			EmptyText:  "全部",
+			Label:      cputil.I18n(ctx, "assignee"),
+			EmptyText:  cputil.I18n(ctx, "all"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        cputil.I18n(ctx, "choose-yourself"),
 				OperationKey: OperationKeyAssigneeSelectMe,
 			},
 			Placeholder: "",
@@ -147,14 +150,14 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:        PropConditionKeyOwnerIDs,
-			Label:      "责任人",
-			EmptyText:  "全部",
+			Label:      cputil.I18n(ctx, "responsible-person"),
+			EmptyText:  cputil.I18n(ctx, "all"),
 			Fixed:      false,
 			ShowIndex:  0,
 			HaveFilter: true,
 			Type:       filter.PropConditionTypeSelect,
 			QuickSelect: filter.QuickSelect{
-				Label:        "选择自己",
+				Label:        cputil.I18n(ctx, "choose-yourself"),
 				OperationKey: OperationKeyOwnerSelectMe,
 			},
 			Placeholder: "",
@@ -168,13 +171,13 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 				case apistructs.IssueTypeEpic.String():
 				case apistructs.IssueTypeRequirement.String():
 				case apistructs.IssueTypeTask.String():
-					return "任务类型"
+					return cputil.I18n(ctx, "task-type")
 				case apistructs.IssueTypeBug.String():
-					return "引入源"
+					return cputil.I18n(ctx, "import-source")
 				}
 				return ""
 			}(),
-			EmptyText:   "全部",
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       false,
 			HaveFilter:  false,
 			ShowIndex:   0,
@@ -182,15 +185,15 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 			QuickSelect: filter.QuickSelect{},
 			Placeholder: "",
 			Options: []filter.PropConditionOption{
-				{Label: "需求设计", Value: "demandDesign", Icon: ""},
-				{Label: "架构设计", Value: "architectureDesign", Icon: ""},
-				{Label: "代码研发", Value: "codeDevelopment", Icon: ""},
+				{Label: cputil.I18n(ctx, "demand-design"), Value: "demandDesign", Icon: ""},
+				{Label: cputil.I18n(ctx, "architecture-design"), Value: "architectureDesign", Icon: ""},
+				{Label: cputil.I18n(ctx, "code-development"), Value: "codeDevelopment", Icon: ""},
 			},
 		},
 		{
 			Key:         PropConditionKeyCreatedAtStartEnd,
-			Label:       "创建日期",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "created-at"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       false,
 			ShowIndex:   0,
 			HaveFilter:  false,
@@ -204,7 +207,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 		},
 		{
 			Key:         PropConditionKeyFinishedAtStartEnd,
-			Label:       "截止日期",
+			Label:       cputil.I18n(ctx, "deadline"),
 			EmptyText:   "",
 			Fixed:       false,
 			ShowIndex:   0,
@@ -222,7 +225,7 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 	if fixedIssueType == apistructs.IssueTypeBug.String() {
 		conditionProps = append(conditionProps, filter.PropCondition{
 			Key:         PropConditionKeyClosed,
-			Label:       "关闭日期",
+			Label:       cputil.I18n(ctx, "closed-at"),
 			EmptyText:   "",
 			Fixed:       false,
 			ShowIndex:   0,
@@ -241,21 +244,21 @@ func generateFrontendConditionProps(fixedIssueType string, state State) Frontend
 	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
 		status := filter.PropCondition{
 			Key:         PropConditionKeyStateBelongs,
-			Label:       "状态",
-			EmptyText:   "全部",
+			Label:       cputil.I18n(ctx, "state"),
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
 			ShowIndex:   3,
 			HaveFilter:  false,
 			Type:        filter.PropConditionTypeSelect,
 			Placeholder: "",
 			Options: func() []filter.PropConditionOption {
-				open := filter.PropConditionOption{Label: "待处理", Value: apistructs.IssueStateBelongOpen, Icon: ""}
-				reopen := filter.PropConditionOption{Label: "重新打开", Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				resolved := filter.PropConditionOption{Label: "已解决", Value: apistructs.IssueStateBelongResloved, Icon: ""}
-				wontfix := filter.PropConditionOption{Label: "不修复", Value: apistructs.IssueStateBelongWontfix, Icon: ""}
-				closed := filter.PropConditionOption{Label: "已关闭", Value: apistructs.IssueStateBelongClosed, Icon: ""}
-				working := filter.PropConditionOption{Label: "进行中", Value: apistructs.IssueStateBelongWorking, Icon: ""}
-				done := filter.PropConditionOption{Label: "已完成", Value: apistructs.IssueStateBelongDone, Icon: ""}
+				open := filter.PropConditionOption{Label: cputil.I18n(ctx, "open"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
+				reopen := filter.PropConditionOption{Label: cputil.I18n(ctx, "reopen"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
+				resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resloved"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
+				wontfix := filter.PropConditionOption{Label: cputil.I18n(ctx, "wontfix"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
+				closed := filter.PropConditionOption{Label: cputil.I18n(ctx, "closed"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
+				working := filter.PropConditionOption{Label: cputil.I18n(ctx, "working"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
+				done := filter.PropConditionOption{Label: cputil.I18n(ctx, "done"), Value: apistructs.IssueStateBelongDone, Icon: ""}
 				switch fixedIssueType {
 				case "ALL":
 					return []filter.PropConditionOption{open, working, done, reopen, resolved, wontfix, closed}

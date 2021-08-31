@@ -70,13 +70,13 @@ func (g *Gantt) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
 		g.setDefaultState(event.Operation)
 		g.setOperations()
-		err := g.RenderOnFilter(c)
+		err := g.RenderOnFilter(ctx, c)
 		if err != nil {
 			logrus.Errorf("render on filter failed, err:%v", err)
 			return err
 		}
 	case gantt.OpChangePageNo.String():
-		err := g.RenderOnFilter(c)
+		err := g.RenderOnFilter(ctx, c)
 		if err != nil {
 			logrus.Errorf("render on filter failed, err:%v", err)
 			return err
@@ -93,7 +93,7 @@ func (g *Gantt) Render(ctx context.Context, c *cptype.Component, scenario cptype
 	return nil
 }
 
-func (g *Gantt) RenderOnFilter(c *cptype.Component) error {
+func (g *Gantt) RenderOnFilter(ctx context.Context, c *cptype.Component) error {
 	// get filter request
 
 	req, err := g.getFilterReq(c)
@@ -113,7 +113,7 @@ func (g *Gantt) RenderOnFilter(c *cptype.Component) error {
 	edgeMinTime, edgeMaxTime := getEdgeTime(rsp.Data.List)
 
 	// generate gantt props
-	g.genProps(edgeMinTime, edgeMaxTime)
+	g.genProps(ctx, edgeMinTime, edgeMaxTime)
 
 	// generate gantt data
 	err = g.genData(rsp.Data.List, edgeMinTime, edgeMaxTime)
