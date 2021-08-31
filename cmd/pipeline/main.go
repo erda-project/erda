@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline"
 	_ "github.com/erda-project/erda/modules/pipeline/aop"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
 )
 
 func main() {
