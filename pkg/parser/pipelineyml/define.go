@@ -33,8 +33,9 @@ const (
 type Spec struct {
 	Version string `yaml:"version"`
 
-	On      *TriggerConfig `yaml:"on,omitempty"`
-	Storage *StorageConfig `yaml:"storage,omitempty"`
+	On       *TriggerConfig                `yaml:"on,omitempty"`
+	Triggers []*apistructs.PipelineTrigger `yaml:"triggers,omitempty"` // todo Solve the problem that quotation marks will be automatically added after yaml is saved
+	Storage  *StorageConfig                `yaml:"storage,omitempty"`
 
 	Envs map[string]string `yaml:"envs,omitempty"`
 
