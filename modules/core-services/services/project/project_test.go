@@ -117,9 +117,14 @@ func TestDeleteProjectWhenAddonExists(t *testing.T) {
 		})
 	defer monkey.UnpatchAll()
 
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectByID",
+		func(*dao.DBClient, int64) (model.Project, error) {
+			return model.Project{}, nil
+		})
+
 	bdl := &bundle.Bundle{}
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListAddonByProjectID",
-		func(*bundle.Bundle, int64) (*apistructs.AddonListResponse, error) {
+		func(*bundle.Bundle, int64, int64) (*apistructs.AddonListResponse, error) {
 			return &apistructs.AddonListResponse{
 				Header: apistructs.Header{},
 				Data: []apistructs.AddonFetchResponseData{
