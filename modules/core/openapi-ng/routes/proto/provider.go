@@ -46,7 +46,7 @@ func (p *provider) RegisterTo(router transhttp.Router) (err error) {
 		if err != nil {
 			return err
 		}
-		handler = p.Auth.Interceptor(handler, getAuthOption(method, publishPath, backendPath, serviceName, opt))
+		handler = p.Auth.Interceptor(handler, GetAuthOption(opt.Auth))
 		router.Add(method, publishPath, transhttp.HandlerFunc(handler))
 		return nil
 	})

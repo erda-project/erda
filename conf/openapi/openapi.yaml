@@ -1,6 +1,6 @@
 http-server:
   addr: ":9529"
-  reloadable: false
+  reloadable: ${OPENAPI_DEV_MODE:false}
 health:
 
 redis:
@@ -74,6 +74,16 @@ openapi-v1-routes:
         scenarios:
           - demo
           - yetAnotherDemo
+
+etcd:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+openapi-dynamic-routes:
+  _enable: ${OPENAPI_DEV_MODE:false}
 
 # for test
 openapi-example:

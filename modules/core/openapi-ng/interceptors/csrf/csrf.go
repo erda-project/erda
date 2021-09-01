@@ -118,7 +118,6 @@ func (p *provider) List() []*interceptors.Interceptor {
 // Interceptor .
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(p.Cfg.AllowValidReferer, r.Header.Get("Referer"), r.Host)
 		if p.Cfg.AllowValidReferer {
 			referer := r.Header.Get("Referer")
 			if referer == "" {

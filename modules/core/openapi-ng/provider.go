@@ -28,6 +28,10 @@ import (
 )
 
 type (
+	routeKey struct {
+		method string
+		path   string
+	}
 	route struct {
 		method  string
 		path    string
