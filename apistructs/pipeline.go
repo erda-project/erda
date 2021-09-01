@@ -77,6 +77,10 @@ type PipelineCreateRequestV2 struct {
 	// +required
 	ClusterName string `json:"clusterName"`
 
+	// Namespace upper layer could customize pipeline running in which namespace
+	// +optional
+	Namespace string `json:"namespace"`
+
 	// PipelineYmlName
 	// Equal to `Name`.
 	// Default is `pipeline.yml`.
