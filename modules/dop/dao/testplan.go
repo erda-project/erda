@@ -39,7 +39,7 @@ type TestPlan struct {
 	StartedAt  *time.Time
 	EndedAt    *time.Time
 	Type       apistructs.TestPlanType
-	IsArchived apistructs.ArchiveStatus
+	IsArchived bool
 	Inode      string
 }
 
@@ -169,7 +169,7 @@ func (client *DBClient) PagingTestPlan(req apistructs.TestPlanPagingRequest) (ui
 	if len(req.Statuses) > 0 {
 		sql = sql.Where("status IN (?)", req.Statuses)
 	}
-	if len(req.IsArchived) > 0 {
+	if req.IsArchived != nil {
 		sql = sql.Where("is_archived = ?", req.IsArchived)
 	}
 	if err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).

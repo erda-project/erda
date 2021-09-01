@@ -221,11 +221,11 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 	}
 
 	var isUpdateArchive bool
-	if req.IsArchived != "" {
-		if testPlan.IsArchived != req.IsArchived && req.IsArchived == apistructs.ArchiveStatusArchived {
+	if req.IsArchived != nil {
+		if &testPlan.IsArchived != req.IsArchived {
 			isUpdateArchive = true
 		}
-		testPlan.IsArchived = req.IsArchived
+		testPlan.IsArchived = *req.IsArchived
 	}
 	if err := t.db.UpdateTestPlan(testPlan); err != nil {
 		return apierrors.ErrUpdateTestPlan.InternalError(err)
@@ -366,9 +366,6 @@ func (t *TestPlan) Paging(req apistructs.TestPlanPagingRequest) (*apistructs.Tes
 		if !status.Valid() {
 			return nil, apierrors.ErrPagingTestPlans.InvalidParameter(fmt.Errorf("status: %s", status))
 		}
-	}
-	if !req.IsArchived.Valid() {
-		return nil, apierrors.ErrPagingTestPlans.InvalidParameter(fmt.Errorf("archive status: %s", req.IsArchived))
 	}
 
 	// paging testplan
