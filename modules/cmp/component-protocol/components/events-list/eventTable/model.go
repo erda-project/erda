@@ -34,12 +34,12 @@ type ComponentEventTable struct {
 }
 
 type State struct {
-	PageNo             uint64       `json:"pageNo,omitempty"`
-	PageSize           uint64       `json:"pageSize,omitempty"`
-	Total              uint64       `json:"total"`
-	Sorter             Sorter       `json:"sorterData,omitempty"`
 	ClusterName        string       `json:"clusterName,omitempty"`
 	FilterValues       FilterValues `json:"filterValues,omitempty"`
+	PageNo             uint64       `json:"pageNo,omitempty"`
+	PageSize           uint64       `json:"pageSize,omitempty"`
+	Sorter             Sorter       `json:"sorterData,omitempty"`
+	Total              uint64       `json:"total"`
 	EventTableUQLQuery string       `json:"eventTable__urlQuery,omitempty"`
 }
 

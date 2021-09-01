@@ -107,19 +107,23 @@ func (t *ComponentEventTable) DecodeURLQuery() error {
 	if err != nil {
 		return err
 	}
-	query := make(map[string]int)
+	query := make(map[string]interface{})
 	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	t.State.PageNo = uint64(query["pageNo"])
-	t.State.PageSize = uint64(query["pageSize"])
+	t.State.PageNo = uint64(query["pageNo"].(float64))
+	t.State.PageSize = uint64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	t.State.Sorter.Field = sorter["field"].(string)
+	t.State.Sorter.Order = sorter["order"].(string)
 	return nil
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	query := make(map[string]int)
+	query := make(map[string]interface{})
 	query["pageNo"] = int(t.State.PageNo)
 	query["pageSize"] = int(t.State.PageSize)
+	query["sorterData"] = t.State.Sorter
 
 	data, err := json.Marshal(query)
 	if err != nil {

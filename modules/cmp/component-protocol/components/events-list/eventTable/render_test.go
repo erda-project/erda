@@ -15,10 +15,101 @@
 package eventTable
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"testing"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 )
+
+func getTestURLQuery() (State, string) {
+	v := State{
+		PageNo:   1,
+		PageSize: 20,
+		Sorter: Sorter{
+			Field: "test",
+			Order: "ascend",
+		},
+	}
+	m := map[string]interface{}{
+		"pageNo":     v.PageNo,
+		"pageSize":   v.PageSize,
+		"sorterData": v.Sorter,
+	}
+	data, _ := json.Marshal(m)
+	encode := base64.StdEncoding.EncodeToString(data)
+	return v, encode
+}
+
+func TestComponentEventTable_DecodeURLQuery(t *testing.T) {
+	state, res := getTestURLQuery()
+	table := &ComponentEventTable{
+		sdk: &cptype.SDK{
+			InParams: map[string]interface{}{
+				"eventTable__urlQuery": res,
+			},
+		},
+	}
+	if err := table.DecodeURLQuery(); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+	if state.PageNo != table.State.PageNo || state.PageSize != table.State.PageSize ||
+		state.Sorter.Field != table.State.Sorter.Field || state.Sorter.Order != table.State.Sorter.Order {
+		t.Errorf("test failed, edcode result is not expected")
+	}
+}
+
+func TestComponentEventTable_EncodeURLQuery(t *testing.T) {
+	state, res := getTestURLQuery()
+	table := ComponentEventTable{State: state}
+	if err := table.EncodeURLQuery(); err != nil {
+		t.Error(err)
+	}
+	if table.State.EventTableUQLQuery != res {
+		t.Errorf("test failed, expected url query encode result")
+	}
+}
+
+func TestComponentEventTable_GenComponentState(t *testing.T) {
+	component := &cptype.Component{
+		State: map[string]interface{}{
+			"clusterName": "test",
+			"pageNo":      1,
+			"pageSize":    20,
+			"sorterData": Sorter{
+				Field: "test",
+				Order: "ascend",
+			},
+			"total": 100,
+			"filterValues": FilterValues{
+				Namespace: []string{"test"},
+				Type:      []string{"test"},
+			},
+		},
+	}
+	src, err := json.Marshal(component.State)
+	if err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	f := &ComponentEventTable{}
+	if err := f.GenComponentState(component); err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	dst, err := json.Marshal(f.State)
+	if err != nil {
+		t.Errorf("test failed, %v", err)
+	}
+
+	fmt.Println(string(src))
+	fmt.Println(string(dst))
+	if string(src) != string(dst) {
+		t.Error("test failed, generate result is unexpected")
+	}
+}
 
 func TestContain(t *testing.T) {
 	arr := []string{
