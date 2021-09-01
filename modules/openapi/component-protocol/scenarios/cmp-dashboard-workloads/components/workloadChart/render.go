@@ -19,12 +19,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	workloads "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads"
 )
 
 func RenderCreator() protocol.CompRender {
@@ -112,12 +112,12 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 	list := obj.Slice("data")
 	for _, obj := range list {
-		fields := obj.StringSlice("metadata", "fields")
-		if len(fields) != 8 {
-			logrus.Errorf("deployment %s has invalid fields length", obj.String("metadata", "name"))
+		status, _, err := workloads.ParseWorkloadStatus(obj)
+		if err != nil {
+			logrus.Error(err)
 			continue
 		}
-		if fields[2] == fields[3] {
+		if status == "Active" {
 			activeDeploy++
 		} else {
 			errorDeploy++
@@ -133,12 +133,12 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 	list = obj.Slice("data")
 	for _, obj := range list {
-		fields := obj.StringSlice("metadata", "fields")
-		if len(fields) != 11 {
-			logrus.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
+		status, _, err := workloads.ParseWorkloadStatus(obj)
+		if err != nil {
+			logrus.Error(err)
 			continue
 		}
-		if fields[3] == fields[1] {
+		if status == "Active" {
 			activeDs++
 		} else {
 			errorDs++
@@ -154,13 +154,12 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 	list = obj.Slice("data")
 	for _, obj := range list {
-		fields := obj.StringSlice("metadata", "fields")
-		if len(fields) != 5 {
-			logrus.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
+		status, _, err := workloads.ParseWorkloadStatus(obj)
+		if err != nil {
+			logrus.Error(err)
 			continue
 		}
-		readyPods := strings.Split(fields[1], "/")
-		if readyPods[0] == readyPods[1] {
+		if status == "Active" {
 			activeSs++
 		} else {
 			errorSs++
@@ -176,19 +175,16 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 	}
 	list = obj.Slice("data")
 	for _, obj := range list {
-		fields := obj.StringSlice("metadata", "fields")
-		if len(fields) != 7 {
-			logrus.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))
+		status, _, err := workloads.ParseWorkloadStatus(obj)
+		if err != nil {
+			logrus.Error(err)
 			continue
 		}
-		succeed := obj.String("status", "succeeded")
-		active := obj.String("status", "active")
-		failed := obj.String("status", "failed")
-		if failed != "" {
+		if status == "Failed" {
 			failedJob++
-		} else if active != "" {
+		} else if status != "Active" {
 			activeJob++
-		} else if succeed != "" {
+		} else {
 			succeededJob++
 		}
 	}
