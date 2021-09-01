@@ -20,7 +20,7 @@ import (
 	"regexp"
 )
 
-var serviceNameRegex = regexp.MustCompile("^((([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))$")
+var serviceNameRegex = regexp.MustCompile("^((([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9]))$")
 
 // var serviceNameMaxLen = 14 // service name 最长长度
 
