@@ -74,6 +74,10 @@ openapi-v1-routes:
         scenarios:
           - demo
           - yetAnotherDemo
+      - addr: cmp:9028
+        scenarios:
+          - events-list
+          - workloads-list
 
 # for test
 openapi-example:

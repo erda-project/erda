@@ -17,18 +17,32 @@ package cmp
 
 import (
 	"context"
+	"embed"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+//go:embed component-protocol/scenarios
+var scenarioFS embed.FS
 
 type provider struct {
 	Server pb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 
-	Metrics *metrics.Metric
+	Metrics  *metrics.Metric
+	Protocol componentprotocol.Interface
+	Tran     i18n.Translator `translator:"component-protocol"`
 }
 
 // Run Run the provider
@@ -42,6 +56,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Metrics = &metrics.Metric{
 		Metricq: p.Server,
 	}
+	p.Protocol.SetI18nTran(p.Tran)
+	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bundle.New(
+		bundle.WithAllAvailableClients(),
+		bundle.WithHTTPClient(
+			httpclient.New(
+				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithEnableAutoRetry(false),
+			)),
+	))
+	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	return nil
 }
 
