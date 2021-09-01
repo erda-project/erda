@@ -31,8 +31,8 @@ type State struct {
 	WorkloadID        string `json:"workloadId,omitempty"`
 	PageNo            int    `json:"pageNo"`
 	PageSize          int    `json:"pageSize"`
-	Total             int    `json:"total"`
 	Sorter            Sorter `json:"sorterData,omitempty"`
+	Total             int    `json:"total"`
 	PodsTableURLQuery string `json:"podsTableURLQuery,omitempty"`
 }
 

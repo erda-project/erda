@@ -105,7 +105,9 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	}
 	p.State.PageNo = int(query["pageNo"].(float64))
 	p.State.PageSize = int(query["pageSize"].(float64))
-	p.State.Sorter = query["sorterData"].(Sorter)
+	sorter := query["sorterData"].(map[string]interface{})
+	p.State.Sorter.Field = sorter["field"].(string)
+	p.State.Sorter.Order = sorter["order"].(string)
 	return nil
 }
 
