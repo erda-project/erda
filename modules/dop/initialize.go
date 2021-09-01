@@ -70,7 +70,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -212,23 +211,6 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	if err != nil {
 		return nil, err
 	}
-
-	// init bundle
-	bdl.Init(
-		bundle.WithHepa(),
-		bundle.WithOrchestrator(),
-		bundle.WithEventBox(),
-		bundle.WithGittar(),
-		bundle.WithPipeline(),
-		bundle.WithMonitor(),
-		bundle.WithCollector(),
-		bundle.WithHTTPClient(httpclient.New(
-			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
-		)),
-		bundle.WithKMS(),
-		bundle.WithCoreServices(),
-		bundle.WithDOP(),
-	)
 
 	c := cdp.New(cdp.WithBundle(bdl.Bdl))
 

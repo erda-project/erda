@@ -13,6 +13,12 @@
       "i": "view-f6623ce7",
       "view": {
         "title": "缺陷按状态分布",
+        "i18n": {
+          "title": {
+            "en": "bug are distributed by state",
+            "zh": "缺陷按状态分布"
+          }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "api",
@@ -74,6 +80,12 @@
       "i": "view-fd2ecfbe",
       "view": {
         "title": "缺陷新增 / 关闭趋势",
+        "i18n": {
+          "title": {
+            "en": "bug add/close trend",
+            "zh": "缺陷新增 / 关闭趋势"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -138,6 +150,12 @@
       "i": "view-1e86c4a6",
       "view": {
         "title": "缺陷按严重等级分布",
+        "i18n": {
+          "title": {
+            "en": "bug distribution by severity level",
+            "zh": "缺陷按严重等级分布"
+          }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "api",
@@ -199,6 +217,12 @@
       "i": "view-91fd7d1f",
       "view": {
         "title": "缺陷平均响应时间 (天)",
+        "i18n": {
+          "title": {
+            "en": "bug defect response time (MD)",
+            "zh": "缺陷平均响应时间 (天)"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -262,6 +286,12 @@
       "i": "view-d8d99372",
       "view": {
         "title": "缺陷平均修复工作量（人天)",
+        "i18n": {
+          "title": {
+            "en": "bug average repair workload（MD)",
+            "zh": "缺陷平均修复工作量（人天)"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -325,6 +355,12 @@
       "i": "view-8b1ee412",
       "view": {
         "title": "缺陷按优先级分布",
+        "i18n": {
+          "title": {
+            "en": "bug distribution by priority",
+            "zh": "缺陷按优先级分布"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -423,6 +459,12 @@
       "i": "view-a844c5b7",
       "view": {
         "title": "缺陷按重新打开分布",
+        "i18n": {
+          "title": {
+            "en": "bug press to reopen the distribution",
+            "zh": "缺陷按重新打开分布"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -519,6 +561,12 @@
       "i": "view-7fb8a372",
       "view": {
         "title": "缺陷按人员分布",
+        "i18n": {
+          "title": {
+            "en": "bug distribution by personnel",
+            "zh": "缺陷按人员分布"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
