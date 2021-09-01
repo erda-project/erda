@@ -3,6 +3,7 @@ http-server:
 health:
   path: "/api/health"
 prometheus:
+monitor-monitoring:
 
 grpc-server:
   addr: ":7080"
