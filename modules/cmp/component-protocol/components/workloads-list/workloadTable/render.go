@@ -33,10 +33,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/components/workloads-list/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
-	"github.com/erda-project/erda/modules/cmp/component-protocol/components/workloads-list/filter"
 )
 
 func init() {

@@ -17,4 +17,3 @@ package types
 const (
 	GlobalCtxKeyBundle = "__bundle__"
 )
-
