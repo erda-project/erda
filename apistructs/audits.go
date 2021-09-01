@@ -197,6 +197,7 @@ const (
 	QaTestEnvCreateTemplate TemplateName = "qaTestEnvCreate"
 	QaTestEnvUpdateTemplate TemplateName = "qaTestEnvUpdate"
 	QaTestEnvDeleteTemplate TemplateName = "qaTestEnvDelete"
+	ArchiveTestplanTemplate TemplateName = "archiveTestPlan"
 	// ========================cmdb==========================================
 	CreateCertificatesTemplate TemplateName = "createCertificates"
 	DeleteCertificatesTemplate TemplateName = "deleteCertificates"

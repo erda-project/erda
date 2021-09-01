@@ -36,6 +36,7 @@ type TestPlan struct {
 	RelsCount  TestPlanRelsCount `json:"relsCount"`
 	Type       TestPlanType      `json:"type"`
 	Inode      string            `json:"inode,omitempty"`
+	IsArchived bool              `json:"isArchived"`
 }
 
 // TestPlanRelsCount 测试计划关联的测试用例状态个数
@@ -102,6 +103,7 @@ type TestPlanUpdateRequest struct {
 	TimestampSecEndedAt   *time.Duration `json:"timestampSecEndedAt"`
 
 	TestPlanID uint64 `json:"-"`
+	IsArchived *bool  `json:"isArchived"`
 
 	IdentityInfo
 }
@@ -114,10 +116,11 @@ type TestPlanGetResponse struct {
 
 // TestPlanPagingRequest 测试计划列表请求
 type TestPlanPagingRequest struct {
-	Name      string       `schema:"name"`
-	Statuses  []TPStatus   `schema:"status"`
-	ProjectID uint64       `schema:"projectID"`
-	Type      TestPlanType `schema:"type"`
+	Name       string       `schema:"name"`
+	Statuses   []TPStatus   `schema:"status"`
+	ProjectID  uint64       `schema:"projectID"`
+	Type       TestPlanType `schema:"type"`
+	IsArchived *bool        `schema:"isArchived"`
 
 	// member about
 	OwnerIDs   []string `schema:"ownerID"`
