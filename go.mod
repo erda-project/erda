@@ -32,7 +32,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210830020850-d53df158bcd0
-	github.com/erda-project/erda-proto-go v0.0.0-20210829160214-5c23017d6f89
+	github.com/erda-project/erda-proto-go v0.0.0-20210830125659-5e16d29761a7
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -169,8 +169,6 @@ require (
 )
 
 replace (
-
-	github.com/erda-project/erda-proto-go => /Users/terminus/go/src/github.com/erda-proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/johnlanni/flink-on-k8s-operator v0.0.0-20210712093304-4d24aba33511
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
