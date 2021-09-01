@@ -176,7 +176,7 @@ func (p *provider) createIndex(orgId string, clusterName string, logKey string) 
 	index := "<" + indexPrefix + "-{now/d{yyyy.ww}}-000001>"
 	var orgAlias string
 	if len(orgId) > 0 {
-		orgAlias = AddonLogIndexPrefix + orgId
+		orgAlias = AddonLogIndexPrefix + "org-" + orgId
 		esClient.CreateIndexTemplate(indexPrefix, indexPrefix+"-*", orgAlias)
 	}
 
