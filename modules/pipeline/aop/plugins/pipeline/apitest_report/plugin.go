@@ -19,7 +19,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -29,14 +31,6 @@ const (
 	version2          = "2.0"
 )
 
-type Plugin struct {
-	aoptypes.PipelineBaseTunePoint
-}
-
-func (p *Plugin) Name() string {
-	return "apitest_report"
-}
-
 type ApiReportMeta struct {
 	ApiTotalNum   int `json:"apiTotalNum"`
 	ApiSuccessNum int `json:"apiSuccessNum"`
@@ -44,7 +38,14 @@ type ApiReportMeta struct {
 	ApiNotExecNum int `json:"apiNotExecNum"`
 }
 
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
+// +provider
+type provider struct {
+	aoptypes.PipelineBaseTunePoint
+}
+
+func (p *provider) Name() string { return "apitest-report" }
+
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource != apistructs.PipelineSourceAutoTest {
 		return nil
@@ -151,7 +152,17 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	return nil
 }
 
-func New() *Plugin {
-	var p Plugin
-	return &p
+func (p *provider) Init(ctx servicehub.Context) error {
+	if err := aop.RegisterTunePoint(p); err != nil {
+		return err
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
