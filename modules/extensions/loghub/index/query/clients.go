@@ -59,7 +59,7 @@ func (p *provider) getESClients(orgID int64, req *LogRequest) []*ESClient {
 		if len(req.ClusterName) <= 0 || len(req.Addon) <= 0 {
 			return nil
 		}
-		clients := p.getESClientsFromLogAnalyticsByCluster(strings.ReplaceAll(req.Addon, "*", ""), req.ClusterName)
+		clients := p.getESClientsFromLogAnalyticsByCluster(orgID, strings.ReplaceAll(req.Addon, "*", ""), req.ClusterName)
 		return clients
 	}
 	filters := make(map[string]string)
@@ -102,11 +102,11 @@ func (p *provider) getESClientsFromLogAnalytics(orgID int64) []*ESClient {
 	for _, c := range clusters {
 		clusterNames = append(clusterNames, c.Name)
 	}
-	return p.getESClientsFromLogAnalyticsByCluster("", clusterNames...)
+	return p.getESClientsFromLogAnalyticsByCluster(orgID, "", clusterNames...)
 }
 
-func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNames ...string) []*ESClient {
-	list, err := p.db.LogDeployment.QueryByClusters(clusterNames...)
+func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon string, clusterNames ...string) []*ESClient {
+	list, err := p.db.LogDeployment.QueryByOrgIDAndClusters(orgID, clusterNames...)
 	if err != nil {
 		return nil
 	}

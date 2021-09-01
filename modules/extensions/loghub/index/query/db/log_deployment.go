@@ -65,3 +65,15 @@ func (db *LogDeploymentDB) QueryByClusters(clusters ...string) ([]*LogDeployment
 	}
 	return list, nil
 }
+
+// QueryByOrgIDAndClusters .
+func (db *LogDeploymentDB) QueryByOrgIDAndClusters(orgID int64, clusters ...string) ([]*LogDeployment, error) {
+	var list []*LogDeployment
+	if err := db.Table(LogDeploymentTable).
+		Where("org_id=?", strconv.FormatInt(orgID, 10)).
+		Where("cluster_name IN (?)", clusters).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
