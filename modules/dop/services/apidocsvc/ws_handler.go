@@ -214,7 +214,7 @@ func (h *APIDocWSHandler) handleAutoSave(tx *dbclient.TX, w websocket.ResponseWr
 		return nil
 	}
 	if data.Inode != h.ft.Inode() {
-		h.responseError(w, errors.New("inode 错误"))
+		h.responseError(w, errors.New("inode error"))
 		return nil
 	}
 

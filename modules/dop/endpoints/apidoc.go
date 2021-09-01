@@ -27,6 +27,8 @@ import (
 	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
+// APIDocWebsocket is the handler for the editor session,
+// all edtion in the same websocket session.
 func (e *Endpoints) APIDocWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
