@@ -64,7 +64,9 @@ func (p *provider) syncStorage(sm storageMetric, gauge *prometheus.GaugeVec, int
 			p.Log.Errorf("sync %T storage usage failed: %s", sm, err)
 		}
 		for k, v := range data {
-			gauge.WithLabelValues(k).Set(float64(v))
+			if v > 0 {
+				gauge.WithLabelValues(k).Set(float64(v))
+			}
 		}
 		p.Log.Debugf("data of %T: %+v", sm, data)
 		select {

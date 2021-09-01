@@ -37,7 +37,7 @@ var (
 			Subsystem: "storage",
 			Help:      "log storage usage of organization",
 		},
-		[]string{"org_name"},
+		[]string{"x_org_name"},
 	)
 )
 var bdl = bundle.New(bundle.WithDOP())

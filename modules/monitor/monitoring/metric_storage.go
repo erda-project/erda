@@ -37,7 +37,7 @@ var (
 			Subsystem: "storage",
 			Help:      "metric storage usage of organization",
 		},
-		[]string{"org_name"},
+		[]string{"x_org_name"},
 	)
 )
 
