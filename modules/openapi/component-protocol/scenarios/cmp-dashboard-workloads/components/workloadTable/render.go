@@ -29,6 +29,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	workloads "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads/components/filter"
 )
 
@@ -160,13 +161,20 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 
-			status := Status{RenderType: "text"}
-			if fields[2] == fields[3] {
-				status.Value = "Active"
-				status.StyleConfig.Color = "green"
-			} else {
-				status.Value = "Error"
-				status.StyleConfig.Color = "red"
+			value, color, err := workloads.ParseWorkloadStatus(obj)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+				continue
+			}
+			status := Status{
+				RenderType: "text",
+				Value:      value,
+				StyleConfig: StyleConfig{
+					Color: color,
+				},
 			}
 
 			name := fields[0]
@@ -229,13 +237,20 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 
-			status := Status{RenderType: "text"}
-			if fields[3] == fields[1] {
-				status.Value = "Active"
-				status.StyleConfig.Color = "green"
-			} else {
-				status.Value = "Error"
-				status.StyleConfig.Color = "red"
+			value, color, err := workloads.ParseWorkloadStatus(obj)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+				continue
+			}
+			status := Status{
+				RenderType: "text",
+				Value:      value,
+				StyleConfig: StyleConfig{
+					Color: color,
+				},
 			}
 
 			name := fields[0]
@@ -300,14 +315,20 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 
-			status := Status{RenderType: "text"}
-			readyPods := strings.Split(fields[1], "/")
-			if readyPods[0] == readyPods[1] {
-				status.Value = "Active"
-				status.StyleConfig.Color = "green"
-			} else {
-				status.Value = "Error"
-				status.StyleConfig.Color = "red"
+			value, color, err := workloads.ParseWorkloadStatus(obj)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+				continue
+			}
+			status := Status{
+				RenderType: "text",
+				Value:      value,
+				StyleConfig: StyleConfig{
+					Color: color,
+				},
 			}
 
 			name := fields[0]
@@ -368,19 +389,20 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 
-			status := Status{RenderType: "text"}
-			succeed := obj.String("status", "succeeded")
-			active := obj.String("status", "active")
-			failed := obj.String("status", "failed")
-			if failed != "" {
-				status.Value = "Failed"
-				status.StyleConfig.Color = "red"
-			} else if active != "" {
-				status.Value = "Active"
-				status.StyleConfig.Color = "green"
-			} else if succeed != "" {
-				status.Value = "Succeeded"
-				status.StyleConfig.Color = "steelBlue"
+			value, color, err := workloads.ParseWorkloadStatus(obj)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+				continue
+			}
+			status := Status{
+				RenderType: "text",
+				Value:      value,
+				StyleConfig: StyleConfig{
+					Color: color,
+				},
 			}
 
 			name := fields[0]
@@ -442,13 +464,22 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				continue
 			}
 
+			value, color, err := workloads.ParseWorkloadStatus(obj)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
+				continue
+			}
 			status := Status{
 				RenderType: "text",
-				Value:      "Active",
+				Value:      value,
 				StyleConfig: StyleConfig{
-					Color: "green",
+					Color: color,
 				},
 			}
+
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SCronJob, namespace, name)
@@ -789,11 +820,11 @@ func contain(arr []string, target string) bool {
 
 func getRange(length, pageNo, pageSize int) (int, int) {
 	l := (pageNo - 1) * pageSize
-	if l >= length {
+	if l >= length || l < 0 {
 		l = 0
 	}
 	r := l + pageSize
-	if r > length {
+	if r > length || r < 0 {
 		r = length
 	}
 	return l, r

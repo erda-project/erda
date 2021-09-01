@@ -359,11 +359,11 @@ func contain(arr []string, target string) bool {
 
 func getRange(length, pageNo, pageSize int) (int, int) {
 	l := (pageNo - 1) * pageSize
-	if l >= length {
+	if l >= length || l < 0 {
 		l = 0
 	}
 	r := l + pageSize
-	if r > length {
+	if r > length || r < 0 {
 		r = length
 	}
 	return l, r
