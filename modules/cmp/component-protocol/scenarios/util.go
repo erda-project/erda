@@ -63,9 +63,9 @@ func ParseWorkloadStatus(obj data.Object) (string, string, error) {
 		}
 		active := obj.String("status", "active")
 		failed := obj.String("status", "failed")
-		if failed != "" {
+		if failed != "" && failed != "0" {
 			return "Failed", "red", nil
-		} else if active != "" {
+		} else if active != "" && active != "0" {
 			return "Active", "green", nil
 		} else {
 			return "Succeeded", "steelBlue", nil
