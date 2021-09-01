@@ -1767,5 +1767,16 @@
       "zh": "",
       "en": ""
     }
+  },
+  "archiveTestPlan": {
+    "desc": "测试计划归档",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对测试计划 [@testPlanName] 进行了归档",
+      "en": "Archive test plan [@testPlanName] in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
   }
 }
