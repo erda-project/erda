@@ -18,9 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestConvertGraphPipelineYml(t *testing.T) {
@@ -39,4 +42,56 @@ func TestConvertToGraphPipelineYml(t *testing.T) {
 	b, err := json.MarshalIndent(graph, "", "  ")
 	assert.NoError(t, err)
 	fmt.Println(string(b))
+}
+
+func Test_cronCompensatorReset(t *testing.T) {
+	type args struct {
+		cronCompensator *apistructs.CronCompensator
+	}
+	tests := []struct {
+		name string
+		args args
+		want *apistructs.CronCompensator
+	}{
+		{
+			name: "test_nil",
+			args: args{
+				cronCompensator: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "test_default",
+			args: args{
+				cronCompensator: &apistructs.CronCompensator{
+					Enable:               DefaultCronCompensator.Enable,
+					LatestFirst:          DefaultCronCompensator.LatestFirst,
+					StopIfLatterExecuted: DefaultCronCompensator.StopIfLatterExecuted,
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "test_other",
+			args: args{
+				cronCompensator: &apistructs.CronCompensator{
+					Enable:               true,
+					LatestFirst:          false,
+					StopIfLatterExecuted: true,
+				},
+			},
+			want: &apistructs.CronCompensator{
+				Enable:               true,
+				LatestFirst:          false,
+				StopIfLatterExecuted: true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cronCompensatorReset(tt.args.cronCompensator); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cronCompensatorReset() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -230,7 +230,20 @@ func ConvertToGraphPipelineYml(data []byte) (*apistructs.PipelineYml, error) {
 		}
 		result.Stages = append(result.Stages, stageActions)
 	}
+
+	result.CronCompensator = cronCompensatorReset(result.CronCompensator)
 	return result, nil
+}
+
+func cronCompensatorReset(cronCompensator *apistructs.CronCompensator) *apistructs.CronCompensator {
+	if cronCompensator != nil {
+		if cronCompensator.Enable == DefaultCronCompensator.Enable &&
+			cronCompensator.LatestFirst == DefaultCronCompensator.LatestFirst &&
+			cronCompensator.StopIfLatterExecuted == DefaultCronCompensator.StopIfLatterExecuted {
+			return nil
+		}
+	}
+	return cronCompensator
 }
 
 func toApiParam(pipelineInput *PipelineParam) (params *apistructs.PipelineParam) {
