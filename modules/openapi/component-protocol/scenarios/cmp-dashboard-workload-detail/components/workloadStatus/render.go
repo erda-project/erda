@@ -21,9 +21,9 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
+	workloads "github.com/erda-project/erda/modules/cmp/component-protocol/scenarios"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	workloaddetail "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workload-detail"
-	workloads "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/cmp-dashboard-workloads"
 )
 
 func RenderCreator() protocol.CompRender {
