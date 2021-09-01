@@ -20,11 +20,17 @@ type LogInstanceDB struct {
 	*gorm.DB
 }
 
-func (db *LogInstanceDB) GetLatestByLogKey(logKey string) (*LogInstance, error) {
+func (db *LogInstanceDB) GetLatestByLogKey(logKey string, logType LogType) (*LogInstance, error) {
 	var instance LogInstance
-	result := db.Table(TableLogInstance).
+	query := db.Table(TableLogInstance).
 		Where("log_key=?", logKey).
-		Where("is_delete=0").
+		Where("is_delete=0")
+
+	if len(logType) > 0 {
+		query = query.Where("`log_type`=?", logType)
+	}
+
+	result := query.
 		Order("id DESC").
 		Limit(1).
 		Find(&instance)

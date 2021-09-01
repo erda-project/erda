@@ -1,7 +1,8 @@
 http-server:
     addr: ":7096"
 health:
-    
+    path: "/api/health"
+
 kafka:
     # servers: "${BOOTSTRAP_SERVERS:localhost:9092}"
     comsumer:

@@ -16,14 +16,26 @@ package db
 
 import "github.com/jinzhu/gorm"
 
+type LogType string
+
+const LogTypeLogAnalytics = LogType("log-analytics")
+const LogTypeLogService = LogType("log-service")
+
 type LogDeploymentDB struct {
 	*gorm.DB
 }
 
-func (db *LogDeploymentDB) GetByClusterName(clusterName string) (*LogDeployment, error) {
+func (db *LogDeploymentDB) GetByClusterName(clusterName string, logType LogType) (*LogDeployment, error) {
 	var deployment LogDeployment
-	result := db.Table(TableLogDeployment).
-		Where("`cluster_name`=?", clusterName).
+
+	query := db.Table(TableLogDeployment).
+		Where("`cluster_name`=?", clusterName)
+
+	if len(logType) > 0 {
+		query = query.Where("`log_type`=?", logType)
+	}
+
+	result := query.
 		Limit(1).
 		Find(&deployment)
 
@@ -38,11 +50,43 @@ func (db *LogDeploymentDB) GetByClusterName(clusterName string) (*LogDeployment,
 	return &deployment, nil
 }
 
-func (db *LogDeploymentDB) GetByClusterNameAndOrgId(clusterName, orgId string) (*LogDeployment, error) {
+func (db *LogDeploymentDB) GetByOrgId(orgId string, logType LogType) (*LogDeployment, error) {
 	var deployment LogDeployment
-	result := db.Table(TableLogDeployment).
+
+	query := db.Table(TableLogDeployment).
+		Where("`org_id`=?", orgId)
+
+	if len(logType) > 0 {
+		query = query.Where("`log_type`=?", logType)
+	}
+
+	result := query.
+		Limit(1).
+		Find(&deployment)
+
+	if result.RecordNotFound() {
+		return nil, nil
+	}
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &deployment, nil
+}
+
+func (db *LogDeploymentDB) GetByClusterNameAndOrgId(clusterName, orgId string, logType LogType) (*LogDeployment, error) {
+	var deployment LogDeployment
+
+	query := db.Table(TableLogDeployment).
 		Where("`cluster_name`=?", clusterName).
-		Where("`org_id`=?", orgId).
+		Where("`org_id`=?", orgId)
+
+	if len(logType) > 0 {
+		query = query.Where("`log_type`=?", logType)
+	}
+
+	result := query.
 		Limit(1).
 		Find(&deployment)
 

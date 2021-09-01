@@ -23,15 +23,16 @@ import (
 
 // tables name
 const (
-	TableInstance        = "tb_tmc_instance"
-	TableInstanceTenant  = "tb_tmc_instance_tenant"
-	TableTmc             = "tb_tmc"
-	TableTmcVersion      = "tb_tmc_version"
-	TableRequestRelation = "tb_tmc_request_relation"
-	TableTmcIni          = "tb_tmc_ini"
-	TableProject         = "sp_project"
-	TableLogDeployment   = "sp_log_deployment"
-	TableLogInstance     = "sp_log_instance"
+	TableInstance           = "tb_tmc_instance"
+	TableInstanceTenant     = "tb_tmc_instance_tenant"
+	TableTmc                = "tb_tmc"
+	TableTmcVersion         = "tb_tmc_version"
+	TableRequestRelation    = "tb_tmc_request_relation"
+	TableTmcIni             = "tb_tmc_ini"
+	TableProject            = "sp_project"
+	TableLogDeployment      = "sp_log_deployment"
+	TableLogInstance        = "sp_log_instance"
+	TableLogServiceInstance = "sp_log_service_instance"
 )
 
 // InstanceTenant .
@@ -163,6 +164,7 @@ type LogDeployment struct {
 	Domain       string    `gorm:"column:domain"`
 	Created      time.Time `gorm:"column:created"`
 	Updated      time.Time `gorm:"column:updated"`
+	LogType      string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogDeployment) TableName() string {
@@ -188,8 +190,19 @@ type LogInstance struct {
 	IsDelete        int       `gorm:"column:is_delete"`
 	Created         time.Time `gorm:"column:created"`
 	Updated         time.Time `gorm:"column:updated"`
+	LogType         string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogInstance) TableName() string {
 	return TableLogInstance
+}
+
+type LogServiceInstance struct {
+	ID       string `gorm:"column:id;primary_key"`
+	EsUrls   string `gorm:"column:es_urls"`
+	EsConfig string `gorm:"column:es_config"`
+}
+
+func (LogServiceInstance) TableName() string {
+	return TableLogServiceInstance
 }

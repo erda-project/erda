@@ -60,6 +60,7 @@ const (
 	ResourceMonitorKafka     = "monitor-kafka"
 	ResourceMonitorZk        = "monitor-zk"
 	ResourceServiceMesh      = "service-mesh"
+	ResourceLogService       = "log-service"
 )
 
 const (

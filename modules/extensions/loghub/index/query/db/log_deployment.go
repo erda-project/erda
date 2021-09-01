@@ -33,6 +33,7 @@ type LogDeployment struct {
 	ESConfig     string `gorm:"column:es_config" json:"es_config"`
 	CollectorURL string `gorm:"column:collector_url" json:"collector_url"`
 	Domain       string `gorm:"column:domain" json:"domain"`
+	LogType      string `gorm:"column:log_type" json:"log_type"`
 }
 
 // TableName .
@@ -58,6 +59,18 @@ func (db *LogDeploymentDB) QueryByOrgID(orgID int64) ([]*LogDeployment, error) {
 func (db *LogDeploymentDB) QueryByClusters(clusters ...string) ([]*LogDeployment, error) {
 	var list []*LogDeployment
 	if err := db.Table(LogDeploymentTable).
+		Where("cluster_name IN (?)", clusters).
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// QueryByOrgIDAndClusters .
+func (db *LogDeploymentDB) QueryByOrgIDAndClusters(orgID int64, clusters ...string) ([]*LogDeployment, error) {
+	var list []*LogDeployment
+	if err := db.Table(LogDeploymentTable).
+		Where("org_id=?", strconv.FormatInt(orgID, 10)).
 		Where("cluster_name IN (?)", clusters).
 		Find(&list).Error; err != nil {
 		return nil, err
