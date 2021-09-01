@@ -18,11 +18,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
 func TestComponentWorkloadChart_GenComponentState(t *testing.T) {
-	component := &apistructs.Component{
+	component := &cptype.Component{
 		State: map[string]interface{}{
 			"clusterName": "test",
 		},
