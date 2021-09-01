@@ -317,7 +317,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err := json.Unmarshal(filterCondS, &cond); err != nil {
 			return err
 		}
-		cond.PageSize = 10
+		resetPageInfo(&cond, c.State)
 	} else {
 		issuetype := sdk.InParams["fixedIssueType"].(string)
 		switch issuetype {
@@ -783,4 +783,14 @@ func init() {
 	base.InitProviderWithCreator("issue-manage", "issueTable", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
+}
+
+func resetPageInfo(req *apistructs.IssuePagingRequest, state map[string]interface{}) {
+	req.PageSize = 10
+	if _, ok := state["pageNo"]; ok {
+		req.PageNo = uint64(state["pageNo"].(float64))
+	}
+	if _, ok := state["pageSize"]; ok {
+		req.PageSize = uint64(state["pageSize"].(float64))
+	}
 }
