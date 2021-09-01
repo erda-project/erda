@@ -122,24 +122,28 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 		}
 
 		// get all other addons in same cluster, project and workspace
-		addons := []string{addon}
+		var addons []string
 		if len(addon) > 0 {
 			logInstance, err := p.db.LogInstanceDB.GetByLogKey(addon)
 			if err != nil {
 				p.L.Warnf("fail to get logInstance for logKey: %s", addon)
 			}
 			if logInstance != nil {
+				keyCaches := map[string]bool{}
 				sameGroupLogInstances, err := p.db.LogInstanceDB.
 					GetListByClusterAndProjectIdAndWorkspace(logInstance.ClusterName, logInstance.ProjectId, logInstance.Workspace)
 				if err != nil {
 					p.L.Warnf("fail to get logInstance")
 				}
 				for _, instance := range sameGroupLogInstances {
-					if instance.LogKey == addon {
+					if _, ok := keyCaches[instance.LogKey]; ok {
 						continue
 					}
 					addons = append(addons, instance.LogKey)
+					keyCaches[instance.LogKey] = true
 				}
+			} else {
+				addons = append(addons, addon)
 			}
 		}
 
@@ -169,6 +173,7 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(addon string, clusterNa
 
 		client, err := elastic.NewClient(options...)
 		if err != nil {
+			p.L.Errorf("failed to create elasticsearch client: %s", err)
 			continue
 		}
 		d.CollectorURL = strings.TrimSpace(d.CollectorURL)
