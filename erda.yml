@@ -16,6 +16,7 @@ envs:
   ADMIN_ADDR: admin:9095
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
+  CORE_SERVICES_ADDR: core-services:9526
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -58,7 +59,6 @@ services:
       replicas: 1
     envs:
       DEBUG: "true"
-      DOP_ADDR: localhost:9527 # TODO remove it after internal bundle invoke inside cp issue-manage adjusted
     health_check:
       exec: { }
       http:
