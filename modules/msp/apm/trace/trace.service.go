@@ -252,7 +252,7 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 	if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
 		queryParams["duration_min"] = structpb.NewNumberValue(float64(req.DurationMin))
 		queryParams["duration_max"] = structpb.NewNumberValue(float64(req.DurationMax))
-		where.WriteString("duration::field>$duration_min AND duration::field<$duration_max AND ")
+		where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
 	}
 
 	// trace status condition
@@ -286,9 +286,9 @@ func (s *traceService) sortConditionStrategy(sort string) string {
 	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
 		return "ORDER BY start_time::field ASC"
 	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
-		return "ORDER BY duration::field DESC"
+		return "ORDER BY trace_duration::field DESC"
 	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
-		return "ORDER BY duration::field ASC"
+		return "ORDER BY trace_duration::field ASC"
 	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
 		return "ORDER BY span_count::field DESC"
 	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
