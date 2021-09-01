@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"regexp"
 	"sort"
 	"strconv"
@@ -346,6 +345,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	if err != nil {
 		return nil, apierrors.ErrMakeConfigNamespace.InternalError(err)
 	}
+	ns = append(ns, utils.MakeUserOrgPipelineCmsNs(pv1.UserID, app.OrgID))
 	pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, ns...)
 
 	// label

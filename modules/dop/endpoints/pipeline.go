@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -42,7 +43,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/pipelinecms"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -377,7 +377,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		PipelineID:             pipelineID,
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
-		ConfigManageNamespaces: []string{pipelinecms.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
+		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 	}); err != nil {
 		var apiError, ok = err.(*errorresp.APIError)
 		if !ok {
@@ -417,11 +417,11 @@ func (e *Endpoints) updateCmsNsConfigs(userID string, orgID uint64) error {
 
 	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
 		&cmspb.CmsNsConfigsUpdateRequest{
-			Ns:             pipelinecms.MakeUserOrgPipelineCmsNs(userID, orgID),
+			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
 			PipelineSource: apistructs.PipelineSourceDice.String(),
 			KVs: map[string]*cmspb.PipelineCmsConfigValue{
-				pipelinecms.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
-				pipelinecms.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
 		})
 
 	return err
