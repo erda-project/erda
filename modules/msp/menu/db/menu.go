@@ -30,7 +30,7 @@ type MenuConfigDB struct {
 func (db *MenuConfigDB) GetMicroServiceMenu() (*TmcIni, error) {
 	var list []*TmcIni
 	if err := db.Table(TableTmcIni).
-		Where("ini_name=?", MenuIniName).Where("is_deleted=?", "N").Limit(1).Find(&list).Error; err != nil {
+		Where("ini_name=?", MenuIniName).Limit(1).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	if len(list) <= 0 {
@@ -43,7 +43,7 @@ func (db *MenuConfigDB) GetMicroServiceMenu() (*TmcIni, error) {
 func (db *MenuConfigDB) GetMicroServiceEngineKey(engine string) (string, error) {
 	var list []*TmcIni
 	if err := db.Table(TableTmcIni).
-		Where("ini_name=?", EngineMenuKeyPrefix+engine).Where("is_deleted=?", "N").Limit(1).Find(&list).Error; err != nil {
+		Where("ini_name=?", EngineMenuKeyPrefix+engine).Limit(1).Find(&list).Error; err != nil {
 		return "", err
 	}
 	if len(list) <= 0 || list[0] == nil {

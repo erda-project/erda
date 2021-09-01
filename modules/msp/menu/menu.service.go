@@ -220,7 +220,6 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 }
 
 func (s *menuService) getMenuItems() ([]*pb.MenuItem, error) {
-	s.db.LogMode(true)
 	menuIni, err := s.db.GetMicroServiceMenu()
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)

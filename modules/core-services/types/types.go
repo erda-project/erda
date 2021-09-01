@@ -153,10 +153,6 @@ const (
 
 	// guest
 	RoleGuest = "Guest"
-
-	//msp
-	RoleMspOwner = "Owner"
-	RoleMspLead  = "Lead"
 )
 
 // RoleInfo 角色信息
@@ -207,10 +203,6 @@ var AllScopeRoleMap = map[apistructs.ScopeType]map[string]RoleInfo{
 	apistructs.PublisherScope: {
 		RolePublisherManager: {Role: RolePublisherManager, IsHide: false, I18nKey: "PublisherManagerRole", IsManager: true, Level: 0},
 		RolePublisherMember:  {Role: RolePublisherMember, IsHide: false, I18nKey: "PublisherMemberRole", IsManager: false, Level: 1},
-	},
-	apistructs.MspScope: {
-		RoleMspOwner: {Role: RoleMspOwner, IsHide: false, I18nKey: "MspOwnerRole", IsManager: true, Level: 0},
-		RoleMspLead:  {Role: RoleMspLead, IsHide: false, I18nKey: "MspLeadRole", IsManager: true, Level: 1},
 	},
 }
 
