@@ -46,8 +46,8 @@ const applicationJsonExample = `{"age":0,"info":{"grade":0,"school":""},"name":"
 const urlEncodedExample = `age=0&info=%7B%22grade%22%3A0%2C%22school%22%3A%22%22%7D&name=&registered=true`
 
 func TestGenExampleFromExpandedSchema(t *testing.T) {
-	t.Run("schemaA", testGenExampleFromExpandedSchema_applicationJson)
-	t.Run("schemaText", testGenExampleFromExpandedSchema_urlEncodedForm)
+	t.Run(string(httputil.ApplicationJson), testGenExampleFromExpandedSchema_applicationJson)
+	t.Run(string(httputil.URLEncodedFormMime), testGenExampleFromExpandedSchema_urlEncodedForm)
 }
 
 func testGenExampleFromExpandedSchema_applicationJson(t *testing.T) {
