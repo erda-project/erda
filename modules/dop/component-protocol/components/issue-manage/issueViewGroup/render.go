@@ -72,32 +72,32 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	props["buttonStyle"] = "solid"
 	props["size"] = "small"
 	optionTable := map[string]interface{}{
-		"text":       "表格",
+		"text":       cputil.I18n(ctx, "list"),
 		"tooltip":    "",
 		"prefixIcon": "default-list",
 		"key":        "table",
 	}
 	optionKanban := map[string]interface{}{
-		"text":       "看板",
-		"tooltip":    "看板视图",
+		"text":       cputil.I18n(ctx, "bord"),
+		"tooltip":    cputil.I18n(ctx, "bord-view"),
 		"prefixIcon": "data-matrix",
 		"suffixIcon": "di",
 		"key":        "kanban",
 	}
 	optionGantt := map[string]interface{}{
-		"text":       "甘特图",
+		"text":       cputil.I18n(ctx, "gantt-chart"),
 		"tooltip":    "",
 		"prefixIcon": "gantetu",
 		"key":        "gantt",
 	}
 	optionKanbanChildren := []map[string]string{
-		{"text": "优先级", "key": "priority"},
+		{"text": cputil.I18n(ctx, "priority"), "key": "priority"},
 		//{"text": "处理人", "key": "assignee"},
-		{"text": "截止日期", "key": "deadline"},
-		{"text": "自定义", "key": "custom"},
+		{"text": cputil.I18n(ctx, "deadline"), "key": "deadline"},
+		{"text": cputil.I18n(ctx, "custom"), "key": "custom"},
 	}
 	if sdk.InParams["fixedIssueType"].(string) != "ALL" {
-		optionKanbanChildren = append(optionKanbanChildren, map[string]string{"text": "状态", "key": "status"})
+		optionKanbanChildren = append(optionKanbanChildren, map[string]string{"text": cputil.I18n(ctx, "state"), "key": "status"})
 	}
 	optionKanban["children"] = optionKanbanChildren
 	props["options"] = []map[string]interface{}{optionTable, optionKanban, optionGantt}

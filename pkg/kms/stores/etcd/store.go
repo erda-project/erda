@@ -59,7 +59,11 @@ func init() {
 			panic(fmt.Errorf("failed to init etcd client, err: %v", err))
 			return nil
 		}
-
+		// health check
+		oneEndpoint := strings.Split(endpoints, ",")[0]
+		if err := checkEtcdStatus(etcdclient.GetClient(), oneEndpoint); err != nil {
+			panic(err)
+		}
 		s := Store{etcdClient: etcdclient}
 
 		return &s
@@ -252,4 +256,14 @@ func getKeyFromEtcd(ctx context.Context, keyID string, etcdClient *etcd.Store) (
 		return nil, err
 	}
 	return &model, nil
+}
+
+func checkEtcdStatus(etcdClient *clientv3.Client, endpoints string) error {
+	oneEndpoint := strings.Split(endpoints, ",")[0]
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	if _, err := etcdClient.Status(timeoutCtx, oneEndpoint); err != nil {
+		return fmt.Errorf("failed to get status of one etcd endpoint %s, err: %v", oneEndpoint, err)
+	}
+	return nil
 }

@@ -199,6 +199,7 @@ var (
 	ErrQueryMBox         = err("ErrQueryMBox", "查询站内信失败")
 	ErrGetMBoxStats      = err("ErrGetMBoxStats", "获取站内信统计信息失败")
 	ErrSetMBoxReadStatus = err("ErrSetMBoxReadStatus", "设置站内信已读失败")
+	ErrCleanUnreadMboxs  = err("ErrCleanUnreadMboxs", "一键已读站内信失败")
 
 	ErrCreateIssueStream = err("ErrCreateIssueStream", "创建活动记录列表失败")
 	ErrPagingIssueStream = err("ErrPagingIssueStream", "分页查询活动记录失败")
