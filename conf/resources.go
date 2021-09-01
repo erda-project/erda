@@ -17,10 +17,6 @@ package conf
 import "embed"
 
 var (
-	//go:embed openapi-ng/openapi-ng.yaml
-	OpenAPINGDefaultConfig  string
-	OpenAPINGConfigFilePath = "conf/openapi-ng/openapi-ng.yaml"
-
 	//go:embed openapi/openapi.yaml
 	OpenAPIDefaultConfig  string
 	OpenAPIConfigFilePath = "conf/openapi/openapi.yaml"
@@ -39,6 +35,10 @@ var (
 	//go:embed monitor/streaming/streaming.yaml
 	MonitorStreamingDefaultConfig  string
 	MonitorStreamingConfigFilePath string = "conf/monitor/streaming/streaming.yaml"
+
+	//go:embed monitor/log-service/log-service.yaml
+	MonitorLogServiceDefaultConfig  string
+	MonitorLogServiceConfigFilePath string = "conf/monitor/log-service/log-service.yaml"
 
 	// extensions
 	//go:embed monitor/extensions/report-engine.yaml

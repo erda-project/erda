@@ -204,7 +204,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 				return
 			}
 			c.Set("repository", gitRepository)
-			c.Set("user", models.NewInnerUser())
 
 			//只有在skipAuth范围内,如果读取到了user-id,也触发校验
 			userIdStr := c.GetHeader("User-Id")
@@ -225,6 +224,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 				}
 				c.Set("repository", gitRepository)
 				//c.Set("lock", repoLock.Lock)
+
 				c.Set("user", &models.User{
 					Name:     userInfoDto.Username,
 					NickName: userInfoDto.NickName,
@@ -238,20 +238,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			c.Next()
 			return
 		}
-	}
-
-	//如果是内置账户不做校验
-	innerUser, err := GetInnerUser(c)
-	if err == nil {
-		gitRepository, err = openRepository(repo)
-		if err != nil {
-			c.AbortWithStatus(500, err)
-			return
-		}
-		c.Set("repository", gitRepository)
-		c.Set("user", innerUser)
-		c.Next()
-		return
 	}
 
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)

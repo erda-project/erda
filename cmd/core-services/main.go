@@ -22,6 +22,13 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
+	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
+
+	// infra
+	_ "github.com/erda-project/erda-infra/providers/grpcserver"
+	_ "github.com/erda-project/erda-infra/providers/httpserver"
+	_ "github.com/erda-project/erda-infra/providers/mysql"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 )
 
 func main() {

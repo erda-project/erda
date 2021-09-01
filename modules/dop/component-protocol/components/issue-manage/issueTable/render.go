@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -316,7 +317,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		if err := json.Unmarshal(filterCondS, &cond); err != nil {
 			return err
 		}
-		cond.PageSize = 10
+		resetPageInfo(&cond, c.State)
 	} else {
 		issuetype := sdk.InParams["fixedIssueType"].(string)
 		switch issuetype {
@@ -474,7 +475,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			severityOps["changeSeverityTo"+severityAuto[s]+string(s)] = map[string]interface{}{
 				"key":        "changeSeverityTo" + severityAuto[s] + string(s),
 				"reload":     true,
-				"text":       s.GetZhName(),
+				"text":       cputil.I18n(ctx, string(s)),
 				"prefixIcon": "ISSUE_ICON.severity." + string(s),
 				"meta": map[string]string{
 					"id":       strconv.FormatInt(data.ID, 10),
@@ -484,7 +485,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		severity := Severity{
 			RenderType: "operationsDropdownMenu",
-			Value:      string(data.Severity.GetZhName()),
+			Value:      cputil.I18n(ctx, strings.ToLower(string(data.Severity))),
 			PrefixIcon: "ISSUE_ICON.severity." + string(data.Severity),
 			Operations: severityOps,
 			Disabled:   isGuest,
@@ -569,7 +570,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Progress:    progress,
 			Severity:    severity,
 			Priority: Priority{
-				Value:      data.Priority.GetZhName(),
+				Value:      cputil.I18n(ctx, strings.ToLower(string(data.Priority))),
 				RenderType: "operationsDropdownMenu",
 				PrefixIcon: priorityIcon[data.Priority],
 				Operations: map[string]interface{}{
@@ -579,7 +580,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 							"priority": "LOW",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityLow],
-						"text":       apistructs.IssuePriorityLow.GetZhName(),
+						"text":       cputil.I18n(ctx, "low"),
 						"reload":     true,
 						"key":        "changePriorityTodLOW",
 					}, "changePriorityTocNORMAL": map[string]interface{}{
@@ -588,7 +589,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 							"priority": "NORMAL",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityNormal],
-						"text":       apistructs.IssuePriorityNormal.GetZhName(),
+						"text":       cputil.I18n(ctx, "normal"),
 						"reload":     true,
 						"key":        "changePriorityTocNORMAL",
 					}, "changePriorityTobHIGH": map[string]interface{}{
@@ -597,7 +598,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 							"priority": "HIGH",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityHigh],
-						"text":       apistructs.IssuePriorityHigh.GetZhName(),
+						"text":       cputil.I18n(ctx, "high"),
 						"reload":     true,
 						"key":        "changePriorityTobHIGH",
 					},
@@ -607,7 +608,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 							"priority": "URGENT",
 						},
 						"prefixIcon": priorityIcon[apistructs.IssuePriorityUrgent],
-						"text":       apistructs.IssuePriorityUrgent.GetZhName(),
+						"text":       cputil.I18n(ctx, "urgent"),
 						"reload":     true,
 						"key":        "changePriorityToaURGENT",
 					},
@@ -672,29 +673,29 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
         },
         {
             "dataIndex": "title",
-            "title": "标题"
+            "title": "` + cputil.I18n(ctx, "title") + `"
         },` +
 		progressCol +
 		severityCol +
 		`{
             "width": 100,
             "dataIndex": "priority",
-            "title": "优先级"
+            "title": "` + cputil.I18n(ctx, "priority") + `"
         },
         {
             "width": 110,
             "dataIndex": "state",
-            "title": "状态"
+            "title": "` + cputil.I18n(ctx, "state") + `"
         },
         {
             "width": 120,
             "dataIndex": "assignee",
-            "title": "处理人"
+            "title": "` + cputil.I18n(ctx, "assignee") + `"
         },
         {
             "width": 100,
             "dataIndex": "deadline",
-            "title": "截止日期"
+            "title": "` + cputil.I18n(ctx, "deadline") + `"
         }` +
 		closedAtCol +
 		`],
@@ -782,4 +783,14 @@ func init() {
 	base.InitProviderWithCreator("issue-manage", "issueTable", func() servicehub.Provider {
 		return &ComponentAction{}
 	})
+}
+
+func resetPageInfo(req *apistructs.IssuePagingRequest, state map[string]interface{}) {
+	req.PageSize = 10
+	if _, ok := state["pageNo"]; ok {
+		req.PageNo = uint64(state["pageNo"].(float64))
+	}
+	if _, ok := state["pageSize"]; ok {
+		req.PageSize = uint64(state["pageSize"].(float64))
+	}
 }

@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
-	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
@@ -238,11 +237,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		notice.WithDBClient(db),
 	)
 
-	accessKey, err := accesskey.New(accesskey.WithDBClient(db))
-	if err != nil {
-		return nil, err
-	}
-
 	audit := audit.New(
 		audit.WithDBClient(db),
 		audit.WithUCClient(uc),
@@ -287,7 +281,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
-		endpoints.WithAksk(accessKey),
 		endpoints.WithFileSvc(fileSvc),
 	)
 

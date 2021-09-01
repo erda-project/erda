@@ -50,11 +50,10 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 	// 立即执行一次
 	if req.AutoRunAtOnce {
 		_p, err := s.RunPipeline(&apistructs.PipelineRunRequest{
-			PipelineID:             p.ID,
-			ForceRun:               req.ForceRun,
-			IdentityInfo:           req.IdentityInfo,
-			PipelineRunParams:      req.RunParams,
-			ConfigManageNamespaces: req.ConfigManageNamespaces,
+			PipelineID:        p.ID,
+			ForceRun:          req.ForceRun,
+			IdentityInfo:      req.IdentityInfo,
+			PipelineRunParams: req.RunParams,
 		})
 		if err != nil {
 			logrus.Errorf("failed to run pipeline, pipelineID: %d, err: %v", p.ID, err)

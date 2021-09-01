@@ -136,3 +136,11 @@ func (client *DBClient) GetMboxByDeduplicateID(orgID int64, deduplicateID, userI
 	}
 	return &mbox, nil
 }
+
+// ReadAll read all unread mbox with one click
+func (client *DBClient) ReadAll(orgID int64, userID string) error {
+	now := time.Now()
+	return client.Model(&model.MBox{}).Where("status = ? and user_id = ? and org_id = ?", apistructs.MBoxUnReadStatus,
+		userID, orgID).Updates(map[string]interface{}{"read_at": &now, "status": apistructs.MBoxReadStatus,
+		"unread_count": 0}).Error
+}

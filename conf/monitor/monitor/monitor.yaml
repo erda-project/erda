@@ -2,6 +2,8 @@ http-server:
   addr: ":7096"
 health:
   path: "/api/health"
+prometheus:
+monitor-monitoring:
 
 grpc-server:
   addr: ":7080"
@@ -148,7 +150,7 @@ i18n@metric:
 
 notify-query:
   files:
-    - ${CONFIG_PATH}/notity/notify
+    - ${CONFIG_PATH}/notify/notify
 
 # admin
 http-server@admin:

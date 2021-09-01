@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/auth"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/generate/auto_register"
 	"github.com/erda-project/erda/modules/openapi/conf"
+	"github.com/erda-project/erda/modules/openapi/hooks"
 	"github.com/erda-project/erda/modules/openapi/hooks/prehandle"
 	"github.com/erda-project/erda/modules/openapi/oauth2"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -66,13 +67,15 @@ func NewLoginServer() (*LoginServer, error) {
 }
 
 func (s *LoginServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	prehandle.FilterHeader(context.Background(), rw, req)
-	prehandle.ReplaceOldCookie(context.Background(), rw, req)
-	prehandle.FilterCookie(context.Background(), rw, req)
-	if err := prehandle.CSRFToken(context.Background(), rw, req); err != nil {
-		logrus.Errorf("CSRFToken: %v", err)
-		return
+	if hooks.Enable {
+		prehandle.FilterHeader(context.Background(), rw, req)
+		prehandle.ReplaceOldCookie(context.Background(), rw, req)
+		if err := prehandle.CSRFToken(context.Background(), rw, req); err != nil {
+			logrus.Errorf("CSRFToken: %v", err)
+			return
+		}
 	}
+	prehandle.FilterCookie(context.Background(), rw, req) // for auth
 
 	// TODO: move there to api/apis/
 	if req.Method == "GET" && req.URL.Path == "/api/openapi/login" {
