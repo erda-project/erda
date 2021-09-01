@@ -153,7 +153,7 @@ func getLogIndices(prefix, orgId string, addon string) []string {
 		return []string{prefix + addon, prefix + addon + "-*"}
 	}
 	if len(orgId) > 0 {
-		return []string{prefix + orgId}
+		return []string{prefix + "org-" + orgId}
 	}
 	return []string{prefix + "*"}
 }
