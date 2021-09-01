@@ -73,7 +73,7 @@ func ValidateOAS3(ctx context.Context, oas3 openapi3.Swagger) error {
 	// 校验 info
 	ve.path_ = []string{"info"}
 	if oas3.Info == nil {
-		ve.error = "info 是 required 字段, 不能缺失"
+		ve.error = "document info is required"
 		return &ve
 	}
 	if err := ValidateInfo(ctx, oas3.Info); err != nil {
@@ -83,7 +83,7 @@ func ValidateOAS3(ctx context.Context, oas3 openapi3.Swagger) error {
 	// 校验 paths
 	ve.path_ = []string{"paths"}
 	if len(oas3.Paths) == 0 {
-		ve.error = "paths 是 required 字段, 不能缺失"
+		ve.error = "document paths is required"
 		return &ve
 	}
 	if err := ValidatePaths(ctx, oas3.Paths); err != nil {
@@ -438,41 +438,19 @@ func ValidateSchema(ctx context.Context, schema *openapi3.Schema, stack []*opena
 	switch schemaType {
 	case "":
 	case "boolean":
-	case "number", "int", "integer":
-		switch schema.Format {
-		case "":
-		case "int", "int64", "int32", "int16", "int8",
-			"uint", "uint64", "uint32", "uint16", "uint18",
-			"float", "float64", "float32", "double", "decimal":
-		default:
-			if !openapi3.SchemaFormatValidationDisabled {
-				return unsupportedFormat(schema.Format)
-			}
-		}
+	case "number":
+		// format is an open value, do not to validate it
+	case "integer":
+		// format is an open value, do not to validate it
 	case "string":
-		switch schema.Format {
-		case "":
-		// Supported by OpenAPIv3.0.1:
-		case "byte", "binary", "date", "date-time", "password":
-			// In JSON Draft-07 (not validated yet though):
-		case "regex":
-		case "time", "email", "idn-email":
-		case "hostname", "idn-hostname", "ipv4", "ipv6":
-		case "uri", "uri-reference", "iri", "iri-reference", "uri-template":
-		case "json-pointer", "relative-json-pointer":
-		default:
-			// Try to check for custom defined formats
-			if _, ok := openapi3.SchemaStringFormats[schema.Format]; !ok && !openapi3.SchemaFormatValidationDisabled {
-				return unsupportedFormat(schema.Format)
-			}
-		}
+		// format is an open value, do not to validate it
 	case "array":
 		if schema.Items == nil {
-			return errors.New("'array' 类型的 schema 元素不能是 non-null")
+			return errors.New("'array' items can not be non-null")
 		}
 	case "object":
 	default:
-		return errors.Errorf("不支持的 'type' '%s'", schemaType)
+		return errors.Errorf("unsuport type '%s'", schemaType)
 	}
 
 	if ref := schema.Items; ref != nil {

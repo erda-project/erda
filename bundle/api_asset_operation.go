@@ -22,6 +22,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/swagger/oas3"
 )
 
 // SearchAPIOperationHandle 操作集市 API 搜索的手柄
@@ -168,7 +170,7 @@ func (b *Bundle) GetAPIOperation(orgID uint64, userID string, id uint64) (*apist
 				continue
 			}
 			if c.Schema.Value != nil {
-				GenExample(c.Schema.Value)
+				oas3.GenExampleFromExpandedSchema(httputil.ContentType(mediaType), c.Schema.Value)
 			}
 			result.RequestBody = append(result.RequestBody, &apistructs.RequestBody{
 				MediaType: mediaType,
