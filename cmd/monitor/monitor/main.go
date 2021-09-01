@@ -42,6 +42,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/report/apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/runtime-apis"
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
+	_ "github.com/erda-project/erda/modules/monitor/monitoring"
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
 
 	// providers

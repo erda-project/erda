@@ -449,8 +449,8 @@ github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v0.0.0-20210706133120-0a742437972c/go.mod h1:TUQYSZ60w9dk7m0q3U3AVg7U74APj/sdEVvRWR3wYv8=
 github.com/erda-project/erda-infra v0.0.0-20210824080310-eb60ec8285b0/go.mod h1:YpMIFoipL7XardYV3C58qx9fm74JM5QK/E3kd/t1CJU=
-github.com/erda-project/erda-infra v0.0.0-20210831035504-c98605fcf680 h1:YiZUqeSIsXduIUr1FGHrD3wDKQYaXzuWkyWhpBhgpHI=
-github.com/erda-project/erda-infra v0.0.0-20210831035504-c98605fcf680/go.mod h1:YTzG9qn+ANduchImF9uA7VU1B5cRMjPK5Dhb2EjQ2E8=
+github.com/erda-project/erda-infra v0.0.0-20210831075905-460d20f61f48 h1:fNQMTiJx4/N5KiF6lYXH3lrABKZLTJCTVyLT1Cwq9Wo=
+github.com/erda-project/erda-infra v0.0.0-20210831075905-460d20f61f48/go.mod h1:YTzG9qn+ANduchImF9uA7VU1B5cRMjPK5Dhb2EjQ2E8=
 github.com/erda-project/erda-proto-go v0.0.0-20210820073528-bcd612c2efb7/go.mod h1:rSETXX3nKxxIhgrVn7fKDM3mla1nNlWcPz4AkepixaU=
 github.com/erda-project/erda-proto-go v0.0.0-20210831060342-7be1b9a69982 h1:XPF5ESkZqpL7VpboXuUNXpexyHBiJZjy2S91/ppHLOM=
 github.com/erda-project/erda-proto-go v0.0.0-20210831060342-7be1b9a69982/go.mod h1:G5C43mj+aCGsYlB/KsjYL/S8UIfU8XHBaJoG83GRP7g=
