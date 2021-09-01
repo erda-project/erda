@@ -36,7 +36,7 @@ type TestPlan struct {
 	RelsCount  TestPlanRelsCount `json:"relsCount"`
 	Type       TestPlanType      `json:"type"`
 	Inode      string            `json:"inode,omitempty"`
-	IsArchived bool              `json:"isArchived,omitempty"`
+	IsArchived bool              `json:"isArchived"`
 }
 
 // TestPlanRelsCount 测试计划关联的测试用例状态个数
