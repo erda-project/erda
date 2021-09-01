@@ -20,12 +20,13 @@ import (
 	"embed"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -41,7 +42,7 @@ type provider struct {
 
 	Metrics  *metrics.Metric
 	Protocol componentprotocol.Interface
-	Tran i18n.Translator `translator:"component-protocol"`
+	Tran     i18n.Translator `translator:"component-protocol"`
 }
 
 // Run Run the provider
