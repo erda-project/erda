@@ -16,15 +16,15 @@ package monitoring
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 )
 
 const tsqlMetric = `SELECT count(%s) AS doc_cnt, %s AS doc_label FROM %s GROUP BY %s`
@@ -95,11 +95,6 @@ func (es *esStorageMetric) UsageSummaryOrg() (map[string]uint64, error) {
 	}
 
 	return usageMap, nil
-}
-
-func debug(data interface{}) string {
-	d, _ := json.Marshal(&data)
-	return string(d)
 }
 
 func (es *esStorageMetric) indicesInfo() (map[string]*metricIndex, error) {

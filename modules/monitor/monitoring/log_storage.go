@@ -18,12 +18,13 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/log/schema"
 	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const tsqlLog = `SELECT keyspace::tag, address::tag, value(cassandra_columnfamily_totaldiskspaceused::field) FROM cassandra WHERE columnfamily::tag='base_log' AND keyspace::tag=~/spot_.*?/ AND keyspace::tag!='spot_prod' GROUP BY keyspace::tag, address::tag`
