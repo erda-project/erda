@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/kafka"
-	"github.com/erda-project/erda/modules/core-services/model"
+	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 type config struct {
@@ -53,10 +53,11 @@ func (m *define) Creator() servicehub.Creator {
 
 // provider .
 type provider struct {
-	Cfg    *config
-	Logger logs.Logger
-	writer writer.Writer
-	Kafka  kafka.Interface
+	Cfg              *config
+	Logger           logs.Logger
+	writer           writer.Writer
+	Kafka            kafka.Interface
+	AccessKeyService akpb.AccessKeyServiceServer `autowired:"erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
 
 	auth *Authenticator
 }
@@ -84,14 +85,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) initAuthenticator(ctx context.Context) error {
 	p.auth = &Authenticator{
-		store:  make(map[string]*model.AccessKey),
-		logger: p.Logger.Sub("Authenticator"),
+		store:            make(map[string]*akpb.AccessKeysItem),
+		logger:           p.Logger.Sub("Authenticator"),
+		AccessKeyService: p.AccessKeyService,
 	}
 	if err := p.auth.syncAccessKey(ctx); err != nil {
 		return err
 	}
 	go func() {
-		p.Logger.Info("start syncAccessKey...")
 		tick := time.NewTicker(p.Cfg.SignAuth.SyncInterval)
 		defer tick.Stop()
 		for {

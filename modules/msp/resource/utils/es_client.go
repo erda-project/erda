@@ -43,12 +43,43 @@ type ESClient struct {
 	Indices    []string
 }
 
-func (c *ESClient) CreateIndexWithAlias(index string, alias string) error {
+func (c *ESClient) CreateIndexTemplate(templateName string, indexPattern string, aliases ...string) error {
 	ctx := context.Background()
+	aliasList := map[string]interface{}{}
+	for _, alias := range aliases {
+		if len(alias) == 0 {
+			continue
+		}
+		aliasList[alias] = map[string]interface{}{}
+	}
+	createTemplate, err := c.IndexPutTemplate(templateName).BodyJson(map[string]interface{}{
+		"index_patterns": []string{indexPattern},
+		"aliases":        aliasList,
+	}).Do(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if !createTemplate.Acknowledged {
+		return fmt.Errorf("failed to create index template: acknowledged false")
+	}
+
+	return nil
+}
+
+func (c *ESClient) CreateIndexWithAlias(index string, aliases ...string) error {
+	ctx := context.Background()
+	aliasList := map[string]interface{}{}
+	for _, alias := range aliases {
+		if len(alias) == 0 {
+			continue
+		}
+		aliasList[alias] = map[string]interface{}{}
+	}
+
 	createIndex, err := c.CreateIndex(index).BodyJson(map[string]interface{}{
-		"aliases": map[string]interface{}{
-			alias: map[string]interface{}{},
-		},
+		"aliases": aliasList,
 	}).Do(ctx)
 	if err != nil {
 		return err
@@ -88,31 +119,41 @@ func GetESClientsFromLogAnalytics(logDeployment *db.LogDeployment, addon string)
 	if logDeployment.ClusterType == 1 {
 		options = append(options, elastic.SetHttpClient(newHTTPClient(logDeployment.ClusterName)))
 	}
+
+	orgId := logDeployment.OrgId
+	if logDeployment.LogType == string(db.LogTypeLogAnalytics) {
+		// omit the orgId alias, if deployed by log-analytics addon，specially for old versions, there's no orgId alias
+		orgId = ""
+	}
+
 	client, err := elastic.NewClient(options...)
 	if err != nil {
 		return nil
 	}
 	logDeployment.CollectorUrl = strings.TrimSpace(logDeployment.CollectorUrl)
-	if len(logDeployment.CollectorUrl) > 0 {
+	if len(logDeployment.CollectorUrl) > 0 || logDeployment.LogType == string(db.LogTypeLogService) {
 		return &ESClient{
 			Client:     client,
 			LogVersion: LogVersion2,
 			URLs:       logDeployment.EsUrl,
-			Indices:    getLogIndices("rlogs-", addon),
+			Indices:    getLogIndices("rlogs-", orgId, addon),
 		}
 	} else {
 		return &ESClient{
 			Client:     client,
 			LogVersion: LogVersion1,
 			URLs:       logDeployment.EsUrl,
-			Indices:    getLogIndices("spotlogs-", addon),
+			Indices:    getLogIndices("spotlogs-", orgId, addon),
 		}
 	}
 }
 
-func getLogIndices(prefix, addon string) []string {
+func getLogIndices(prefix, orgId string, addon string) []string {
 	if len(addon) > 0 {
 		return []string{prefix + addon, prefix + addon + "-*"}
+	}
+	if len(orgId) > 0 {
+		return []string{prefix + orgId}
 	}
 	return []string{prefix + "*"}
 }

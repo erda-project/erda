@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
+
 	_ "github.com/erda-project/erda/modules/msp/apm/adapter"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
@@ -53,6 +54,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/loganalytics"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/loges"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/logexporter"
+	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/logservice"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitor"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitorcollector"
 	_ "github.com/erda-project/erda/modules/msp/resource/deploy/handlers/monitorkafka"

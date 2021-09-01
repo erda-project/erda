@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestGetTotalPage(t *testing.T) {
@@ -33,5 +35,40 @@ func TestGetTotalPage(t *testing.T) {
 	}
 	for _, v := range data {
 		assert.Equal(t, getTotalPage(v.total, v.pageSize), v.page)
+	}
+}
+
+func Test_resetPageInfo(t *testing.T) {
+	type args struct {
+		req   *apistructs.IssuePagingRequest
+		state map[string]interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "reset",
+			args: args{
+				req: &apistructs.IssuePagingRequest{},
+				state: map[string]interface{}{
+					"pageNo":   float64(1),
+					"pageSize": float64(2),
+				},
+			},
+		},
+	}
+
+	expected := []*apistructs.IssuePagingRequest{
+		{
+			PageNo:   1,
+			PageSize: 2,
+		},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetPageInfo(tt.args.req, tt.args.state)
+			assert.Equal(t, expected[i], tt.args.req)
+		})
 	}
 }

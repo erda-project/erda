@@ -335,7 +335,7 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 
 // Delete 删除项目
 func (p *Project) Delete(projectID int64) (*model.Project, error) {
-	// 检查项目下是否有应用，无应用时可删除
+	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
 		return nil, errors.Errorf("failed to delete project(there exists applications)")
 	}
@@ -343,6 +343,15 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, errors.Errorf("failed to get project, (%v)", err)
+	}
+
+	// check if addon exists
+	addOnListResp, err := p.bdl.ListAddonByProjectID(projectID, project.OrgID)
+	if err != nil {
+		return nil, err
+	}
+	if addOnListResp != nil && len(addOnListResp.Data) > 0 {
+		return nil, errors.Errorf("failed to delete project(there exists addons)")
 	}
 
 	if err = p.db.DeleteProject(projectID); err != nil {
