@@ -131,7 +131,30 @@ func (f *ComponentFilter) SetToProtocolComponent(c *cptype.Component) error {
 func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State) error {
 	f.Props = filter.Props{Delay: 2000}
 	f.Operations = GetAllOperations()
-	f.State.FrontendConditionProps = generateFrontendConditionProps(ctx, f.InParams.FrontendFixedIssueType, state)
+	f.State.FrontendConditionProps = f.generateFrontendConditionProps(ctx, f.InParams.FrontendFixedIssueType, state)
+
+	f.State.FrontendConditionValues.StateBelongs = map[string][]apistructs.IssueStateBelong{
+		"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
+		"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
+		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
+		"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
+	}[f.InParams.FrontendFixedIssueType]
+	types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
+	res := make(map[string][]int64)
+	res["ALL"] = make([]int64, 0)
+	for _, v := range types {
+		req := &apistructs.IssueStatesGetRequest{
+			ProjectID:    f.InParams.ProjectID,
+			StateBelongs: f.State.FrontendConditionValues.StateBelongs,
+			IssueType:    v,
+		}
+		ids, err := f.issueStateSvc.GetIssueStateIDs(req)
+		if err != nil {
+			return err
+		}
+		res[v.String()] = ids
+		res["ALL"] = append(res["ALL"], ids...)
+	}
 
 	// 初始化时从 url query params 中获取已经存在的过滤参数
 	if f.InParams.FrontendUrlQuery != "" {
@@ -143,12 +166,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			return err
 		}
 	} else {
-		f.State.FrontendConditionValues.StateBelongs = map[string][]apistructs.IssueStateBelong{
-			"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-			"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-			"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
-			"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
-		}[f.InParams.FrontendFixedIssueType]
+		f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
 	}
 
 	return nil

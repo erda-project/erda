@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/dbclient"
@@ -111,6 +112,8 @@ func (p *provider) Initialize() error {
 	if err := ep.RegisterEvents(); err != nil {
 		return err
 	}
+
+	p.Protocol.WithContextValue(types.IssueStateService, ep.IssueStateService())
 
 	server := httpserver.New(conf.ListenAddr())
 	server.Router().UseEncodedPath()
