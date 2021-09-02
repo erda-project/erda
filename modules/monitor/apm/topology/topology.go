@@ -2024,15 +2024,31 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	TerminusKey string `query:"terminusKey" validate:"required"`
 	Operation   string `query:"operation" validate:"required"`
 	ServiceId   string `query:"serviceId" validate:"required"`
-	Sort        string `default:"DESC" query:"sort"`
+	Limit       int64  `query:"limit" default:"100"`
+	Sort        string `default:"duration:DESC" query:"sort"`
 }) interface{} {
-	if params.Sort != "ASC" && params.Sort != "DESC" {
-		return api.Errors.Internal(errors.New("not supported sort name"))
+	sortCondition := ""
+	if params.Sort == "timestamp:DESC" {
+		sortCondition = "timestamp DESC"
+	} else if params.Sort == "timestamp:ASC" {
+		sortCondition = "timestamp ASC"
+	} else if params.Sort == "duration:DESC" {
+		sortCondition = "trace_duration DESC"
+	} else if params.Sort == "duration:ASC" {
+		sortCondition = "trace_duration ASC"
+	} else {
+		sortCondition = "trace_duration DESC"
+	}
+	if params.Limit < 100 {
+		params.Limit = 100
+	}
+	if params.Limit > 1000 {
+		params.Limit = 1000
 	}
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
-	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation) ORDER BY timestamp %s", params.Sort)
+	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey AND (http_paths::field=$operation OR dubbo_methods::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
 	details, err := topology.metricq.Query(metricq.InfluxQL,
 		sql,
 		map[string]interface{}{
