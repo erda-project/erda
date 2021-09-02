@@ -22,13 +22,14 @@ import (
 	auth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
 )
 
-func getAuthOption(method, publishPath, backendPath, serviceName string, opt *common.OpenAPIOption) func(r *http.Request) auth.Options {
-	if opt.Auth == nil {
+// GetAuthOption .
+func GetAuthOption(opt *common.APIAuth) func(r *http.Request) auth.Options {
+	if opt == nil {
 		return func(r *http.Request) auth.Options {
 			return &authOption{}
 		}
 	}
-	opts := fieldsToMap(reflect.ValueOf(opt.Auth).Elem())
+	opts := fieldsToMap(reflect.ValueOf(opt).Elem())
 	return func(r *http.Request) auth.Options {
 		return &authOption{opts: opts}
 	}

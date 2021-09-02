@@ -14,6 +14,8 @@
 
 package discover
 
+import "sort"
+
 // 定义各个服务地址的环境变量配置名字.
 const (
 	EnvEventBox       = "EVENTBOX_ADDR"
@@ -101,6 +103,15 @@ var servicesEnvKeys = map[string]string{
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
 	SvcCoreServices:   EnvCoreServices,
+}
+
+func Services() []string {
+	list := make([]string, 0, len(servicesEnvKeys))
+	for key := range servicesEnvKeys {
+		list = append(list, key)
+	}
+	sort.Strings(list)
+	return list
 }
 
 func EventBox() string       { return getURL(SvcEventBox) }
