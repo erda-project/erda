@@ -673,7 +673,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	err = tx.Set("gorm:query_option", "FOR UPDATE").Where(where).First(&exContract).Error
 	// case 1: record not found
 	if gorm.IsRecordNotFoundError(err) {
-		contract, err := svc.createContractFirstTime(req, &asset, &access, client)
+		contract, err := svc.createContractFirstTime(tx, req, &asset, &access, client)
 		if err != nil {
 			logrus.Errorf("failed to createContractFirstTime, err: %v", err)
 			return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("调用申请失败"))
@@ -686,7 +686,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 		return nil, nil, nil, apierrors.CreateContract.InvalidState(fmt.Sprintf("repeated request: %v", err))
 	}
 	// case 3: the record is already exists
-	contract, err := svc.createContractIfExists(req, &asset, &access, client, &exContract)
+	contract, err := svc.createContractIfExists(tx, req, &asset, &access, client, &exContract)
 	if err != nil {
 		logrus.Errorf("failed to createContractIfExists, err: %v", err)
 		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("调用申请失败"))
@@ -695,7 +695,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 }
 
 // 创建合约时, 如果合约已存在, 进入此分支
-func (svc *Service) createContractIfExists(req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel, exContract *apistructs.ContractModel) (*apistructs.ContractModel, error) {
 	var (
 		err      error
@@ -729,9 +729,6 @@ func (svc *Service) createContractIfExists(req *apistructs.CreateContractReq, as
 
 	// 库表操作和消息通知
 	defer func() {
-		tx := dbclient.Tx()
-		defer tx.RollbackUnlessCommitted()
-
 		updates["updated_at"] = timeNow
 		updates["updater_id"] = req.Identity.UserID
 		if err = tx.Model(&contract).
@@ -820,7 +817,7 @@ func (svc *Service) createContractIfExists(req *apistructs.CreateContractReq, as
 }
 
 // 创建合约时, 如果合约不存在, 进入此分支
-func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel) (*apistructs.ContractModel, error) {
 	var (
 		timeNow  = time.Now()
@@ -889,9 +886,6 @@ func (svc *Service) createContractFirstTime(req *apistructs.CreateContractReq, a
 		// 默认情形, 令 contract 的申请中 SLA 为传入的 SLA
 		contract.RequestSLAID = req.Body.SLAID
 	}
-
-	tx := dbclient.Tx()
-	defer tx.RollbackUnlessCommitted()
 
 	// 创建合约记录
 	if err := tx.Create(&contract).Error; err != nil {
