@@ -42,6 +42,8 @@ const (
 	NEXUS_USERNAME          ClusterInfoMapKey = "NEXUS_USERNAME"          // nexus 用户名
 	NEXUS_PASSWORD          ClusterInfoMapKey = "NEXUS_PASSWORD"          // nexus的密码
 	REGISTRY_ADDR           ClusterInfoMapKey = "REGISTRY_ADDR"           // registry的地址
+	REGISTRY_USERNAME       ClusterInfoMapKey = "REGISTRY_USERNAME"       // registry username
+	REGISTRY_PASSWORD       ClusterInfoMapKey = "REGISTRY_PASSWORD"       // registry password
 	SOLDIER_ADDR            ClusterInfoMapKey = "SOLDIER_ADDR"            // soldier的地址
 	NETPORTAL_URL           ClusterInfoMapKey = "NETPORTAL_URL"           // netportal的集群入口url
 	EDASJOB_CLUSTER_NAME    ClusterInfoMapKey = "EDASJOB_CLUSTER_NAME"    // edas 集群可能会使用别的集群运行 JOB，若该字段为空，则说明使用本集群运行 JOB
