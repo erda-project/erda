@@ -49,6 +49,40 @@ func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (
 }
 
 func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+	//host, err := b.urls.CoreServices()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//hc := b.hc
+	//var r apistructs.MemberListResponse
+	//request := hc.Get(host).Path("/api/members").
+	//	Header(httputil.InternalHeader, "bundle").
+	//	Param("scopeType", string(req.ScopeType)).
+	//	Param("scopeId", strconv.FormatInt(req.ScopeID, 10)).
+	//	Param("q", req.Q).
+	//	Param("pageNo", strconv.Itoa(req.PageNo)).
+	//	Param("pageSize", strconv.Itoa(req.PageSize))
+	//for _, role := range req.Roles {
+	//	request = request.Param("roles", role)
+	//}
+	//for _, label := range req.Labels {
+	//	request = request.Param("label", label)
+	//}
+	//resp, err := request.Do().JSON(&r)
+	//if err != nil {
+	//	return nil, apierrors.ErrInvoke.InternalError(err)
+	//}
+	//if !resp.IsOK() || !r.Success {
+	//	return nil, toAPIError(resp.StatusCode(), r.Error)
+	//}
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r.List, nil
+}
+
+func (b *Bundle) GetMembers(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -75,7 +109,15 @@ func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Mem
 	if !resp.IsOK() || !r.Success {
 		return nil, toAPIError(resp.StatusCode(), r.Error)
 	}
-	return r.Data.List, nil
+	return &r.Data, nil
+}
+
+func (b *Bundle) ListMembersAndTotal(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // UpdateMemberUserInfo 更新成员的用户信息
