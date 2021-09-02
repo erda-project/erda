@@ -63,17 +63,18 @@ func (*PipelineExtra) TableName() string {
 }
 
 type PipelineExtraInfo struct {
-	Namespace         string                       `json:"namespace"`
-	DiceWorkspace     apistructs.DiceWorkspace     `json:"diceWorkspace,omitempty"`
-	PipelineYmlSource apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"`
-	SubmitUser        *apistructs.PipelineUser     `json:"submitUser,omitempty"`
-	RunUser           *apistructs.PipelineUser     `json:"runUser,omitempty"`
-	CancelUser        *apistructs.PipelineUser     `json:"cancelUser,omitempty"`
-	InternalClient    string                       `json:"internalClient,omitempty"`
-	CronExpr          string                       `json:"cronExpr,omitempty"`
-	CronTriggerTime   *time.Time                   `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级
-	ShowMessage       *apistructs.ShowMessage      `json:"showMessage,omitempty"`
-	Messages          []string                     `json:"errors,omitempty"` // TODO ShowMessage 和 Message
+	Namespace               string                       `json:"namespace"`
+	NotPipelineControlledNs bool                         `json:"NotPipelineControlledNs"`
+	DiceWorkspace           apistructs.DiceWorkspace     `json:"diceWorkspace,omitempty"`
+	PipelineYmlSource       apistructs.PipelineYmlSource `json:"pipelineYmlSource,omitempty"`
+	SubmitUser              *apistructs.PipelineUser     `json:"submitUser,omitempty"`
+	RunUser                 *apistructs.PipelineUser     `json:"runUser,omitempty"`
+	CancelUser              *apistructs.PipelineUser     `json:"cancelUser,omitempty"`
+	InternalClient          string                       `json:"internalClient,omitempty"`
+	CronExpr                string                       `json:"cronExpr,omitempty"`
+	CronTriggerTime         *time.Time                   `json:"cronTriggerTime,omitempty"` // 秒级精确，毫秒级误差请忽略，cron expr 精确度同样为秒级
+	ShowMessage             *apistructs.ShowMessage      `json:"showMessage,omitempty"`
+	Messages                []string                     `json:"errors,omitempty"` // TODO ShowMessage 和 Message
 	// Deprecated
 	ConfigManageNamespaceOfSecretsDefault string `json:"configManageNamespaceOfSecretsDefault,omitempty"`
 	// Deprecated

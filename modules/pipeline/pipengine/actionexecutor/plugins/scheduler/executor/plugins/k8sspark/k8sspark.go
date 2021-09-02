@@ -165,7 +165,10 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 
 func (k *K8sSpark) Remove(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
 	if task.Extra.UUID == "" {
-		return nil, k.removePipelineJobs(task.Extra.Namespace)
+		if !task.Extra.NotPipelineControlledNs {
+			return nil, k.removePipelineJobs(task.Extra.Namespace)
+		}
+		return nil, nil
 	}
 
 	sparkApp, err := k.getSparkApp(ctx, task)

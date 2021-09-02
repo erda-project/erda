@@ -159,8 +159,10 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 				JobFromUser: job,
 			}, nil
 		}
-		if delErr := k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{}); delErr != nil {
-			return nil, fmt.Errorf("delete namespace err: %v", delErr)
+		if !job.NotPipelineControlledNs {
+			if delErr := k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, ns.Name, metav1.DeleteOptions{}); delErr != nil {
+				return nil, fmt.Errorf("delete namespace err: %v", delErr)
+			}
 		}
 		statusDesc.Status = apistructs.StatusError
 		statusDesc.Reason = err.Error()

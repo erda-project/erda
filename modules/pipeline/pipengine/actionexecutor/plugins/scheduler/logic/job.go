@@ -141,7 +141,8 @@ func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 				return ""
 			}
 		}(),
-		Namespace: task.Extra.Namespace,
+		Namespace:               task.Extra.Namespace,
+		NotPipelineControlledNs: task.Extra.NotPipelineControlledNs,
 		ClusterName: func() string {
 			if len(task.Extra.ClusterName) == 0 {
 				panic(errors.New("missing cluster name in pipeline task"))

@@ -40,6 +40,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.OpType
 	task.Type = action.Type.String()
 	task.Extra.Namespace = p.Extra.Namespace
+	task.Extra.NotPipelineControlledNs = p.Extra.NotPipelineControlledNs
 	task.Extra.ClusterName = p.ClusterName
 	task.Extra.AllowFailure = false
 	task.Extra.Pause = false
@@ -140,6 +141,7 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) spec.PipelineTaskExtra {
 	var ex spec.PipelineTaskExtra
 	ex.Namespace = p.Extra.Namespace
+	ex.NotPipelineControlledNs = p.Extra.NotPipelineControlledNs
 	ex.ExecutorName = spec.PipelineTaskExecutorNameEmpty
 	ex.ClusterName = p.ClusterName
 	ex.AllowFailure = false
