@@ -15,7 +15,9 @@
 package autotest_cookie_keep_after
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 )
@@ -25,15 +27,14 @@ const metaKeySetCookie = "api_set_cookie"
 const AutotestApiGlobalConfig = "AUTOTEST_API_GLOBAL_CONFIG"
 const ReportTypeAutotestSetCookie = "autotest_set_cookie"
 
-type Plugin struct {
+// +provider
+type provider struct {
 	aoptypes.TaskBaseTunePoint
 }
 
-func (p *Plugin) Name() string {
-	return "autotest_cookie_keep_after"
-}
+func (p *provider) Name() string { return "autotest-cookie-keep-after" }
 
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// task not api-test type return
 	if ctx.SDK.Task.Type != taskType {
 		return nil
@@ -70,7 +71,18 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	return err
 }
 
-func New() *Plugin {
-	var p Plugin
-	return &p
+func (p *provider) Init(ctx servicehub.Context) error {
+	err := aop.RegisterTunePoint(p)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

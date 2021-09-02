@@ -18,19 +18,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 )
 
-type Plugin struct {
+// +provider
+type provider struct {
 	aoptypes.PipelineBaseTunePoint
 }
 
-func (p *Plugin) Name() string {
-	return "scene_before"
-}
+func (p *provider) Name() string { return "scene-before" }
 
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// source = autotest
 	if ctx.SDK.Pipeline.PipelineSource == apistructs.PipelineSourceAutoTest && !ctx.SDK.Pipeline.IsSnippet {
 		if strings.HasPrefix(ctx.SDK.Pipeline.PipelineYmlName, apistructs.PipelineSourceAutoTestPlan.String()+"-") {
@@ -62,7 +63,18 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	return nil
 }
 
-func New() *Plugin {
-	var p Plugin
-	return &p
+func (p *provider) Init(ctx servicehub.Context) error {
+	err := aop.RegisterTunePoint(p)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

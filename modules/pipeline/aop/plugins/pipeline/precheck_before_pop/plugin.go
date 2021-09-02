@@ -15,19 +15,20 @@
 package precheck_before_pop
 
 import (
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 )
 
-type Plugin struct {
+// +provider
+type provider struct {
 	aoptypes.PipelineBaseTunePoint
 }
 
-func New() *Plugin { return &Plugin{} }
+func (p *provider) Name() string { return "precheck-before-pop" }
 
-func (p *Plugin) Name() string { return "queue" }
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
-
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	var httpBeforeCheckRun = HttpBeforeCheckRun{
 		PipelineID: ctx.SDK.Pipeline.ID,
 		DBClient:   ctx.SDK.DBClient,
@@ -63,4 +64,20 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 		ctx.PutKV(apistructs.PipelinePreCheckResultContextKey, validResult)
 	}
 	return nil
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	err := aop.RegisterTunePoint(p)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }

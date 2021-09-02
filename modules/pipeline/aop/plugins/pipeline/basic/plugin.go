@@ -17,18 +17,20 @@ package basic
 import (
 	"time"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 )
 
-type Plugin struct {
+// +provider
+type provider struct {
 	aoptypes.PipelineBaseTunePoint
 }
 
-func New() *Plugin { return &Plugin{} }
+func (p *provider) Name() string { return "basic" }
 
-func (p *Plugin) Name() string { return "basic" }
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	pipeline := ctx.SDK.Pipeline
 
 	// make report content
@@ -83,4 +85,20 @@ func getTimeOrNil(t time.Time) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	err := aop.RegisterTunePoint(p)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
