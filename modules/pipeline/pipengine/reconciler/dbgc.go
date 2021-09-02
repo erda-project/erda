@@ -61,10 +61,10 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 		req.PageNum = pageNum
 
 		pipelineResults, _, _, _, err := r.dbClient.PageListPipelines(req)
-
+		pageNum += 1
 		if err != nil {
 			logrus.Errorf("doPipelineDatabaseGC failed to compensate pipeline req %v err: %v", req, err)
-			return
+			continue
 		}
 
 		if len(pipelineResults) <= 0 {
@@ -86,11 +86,10 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 			// gc logic
 			if err := r.DoDBGC(p.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive}); err != nil {
 				logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", p.PipelineID, err)
-				return
+				continue
 			}
 		}
 
-		pageNum += 1
 		time.Sleep(time.Second * 10)
 	}
 }
