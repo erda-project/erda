@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package cmp_dashboard_events_list
 
 import (
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list/eventTable"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list/filter"
 )

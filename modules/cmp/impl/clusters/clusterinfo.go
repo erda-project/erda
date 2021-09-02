@@ -62,7 +62,7 @@ func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames [
 		go func(clusterName string) {
 			defer func() {
 				if err := recover(); err != nil {
-					logrus.Error("get cluster (%s) format info panic, err: %v", clusterName, err)
+					logrus.Errorf("get cluster (%s) format info panic, err: %v", clusterName, err)
 					logrus.Errorf("%s", debug.Stack())
 				}
 				wg.Done()
