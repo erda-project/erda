@@ -24,6 +24,7 @@ openapi-interceptor-csrf:
   allow_valid_referer: true
   cookie_name: "OPENAPI-CSRF-TOKEN"
   cookie_domain: "${CSRF_COOKIE_DOMAIN}"
+  cookie_path: "/"
   cookie_max_age: "12h"
   token_lookup: "header:OPENAPI-CSRF-TOKEN"
 openapi-interceptor-filter-client-header:
