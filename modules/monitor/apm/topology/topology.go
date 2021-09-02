@@ -1867,17 +1867,17 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 	default:
 		return api.Errors.InvalidParameter(errors.New("not support layer name"))
 	}
-	// error count desc
+	// elapsed_mean desc
 	if params.Sort == 0 {
-		orderby = " ORDER BY count(error::tag) DESC"
+		orderby = " ORDER BY avg(elapsed_mean::field) DESC"
 	}
 	// error elapsed_count desc
 	if params.Sort == 1 {
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
-	// elapsed_mean desc
+	// error count desc
 	if params.Sort == 2 {
-		orderby = " ORDER BY avg(elapsed_mean::field) DESC"
+		orderby = " ORDER BY count(error::tag) DESC"
 	}
 
 	sql := fmt.Sprintf("SELECT %s,sum(elapsed_count::field),count(error::tag),format_duration(avg(elapsed_mean::field),'',2) "+
@@ -1951,13 +1951,13 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 		param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
 	}
 
-	// error elapsed_count desc
-	if params.Sort == 0 {
-		orderby = " ORDER BY sum(elapsed_count::field) DESC"
-	}
 	// elapsed_mean desc
-	if params.Sort == 1 {
+	if params.Sort == 0 {
 		orderby = " ORDER BY avg(elapsed_mean::field) DESC"
+	}
+	// error elapsed_count desc
+	if params.Sort == 1 {
+		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
 
 	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
