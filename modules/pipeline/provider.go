@@ -22,13 +22,17 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	_ "github.com/erda-project/erda-infra/providers/etcd"
+	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 
 type provider struct {
-	CmsService pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	CmsService         pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
+	GcElection         election.Interface  `autowired:"etcd-election@gc"`
 }
 
 func (p *provider) Run(ctx context.Context) error {
@@ -47,7 +51,8 @@ func (p *provider) Run(ctx context.Context) error {
 
 func init() {
 	servicehub.Register("pipeline", &servicehub.Spec{
-		Services: []string{"pipeline"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+		Services:     []string{"pipeline"},
+		Dependencies: []string{"etcd"},
+		Creator:      func() servicehub.Provider { return &provider{} },
 	})
 }

@@ -16,11 +16,10 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
-	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -50,7 +49,6 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/pipeline_network_hook_client"
 	"github.com/erda-project/erda/pkg/pipeline_snippet_client"
 	// "terminus.io/dice/telemetry/promxp"
@@ -191,12 +189,14 @@ func (p *provider) do() (*httpserver.Server, error) {
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
-	// engine start after all dependencies done
-	engine.Start()
-	// handle cron related after engine started
-	if err := doCrondAbout(crondSvc, pipelineSvc); err != nil {
-		return nil, err
-	}
+	p.ReconcilerElection.OnLeader(func(ctx context.Context) {
+		engine.StartReconciler(ctx)
+		pipelineSvc.DoCrondAbout(ctx)
+	})
+
+	p.GcElection.OnLeader(func(ctx context.Context) {
+		engine.StartGC(ctx)
+	})
 
 	// register cluster hook after pipeline service start
 	if err := clusterinfo.RegisterClusterHook(); err != nil {
@@ -225,35 +225,5 @@ func registerSnippetClient(dbclient *dbclient.Client) error {
 		}
 	}
 	pipeline_snippet_client.SetSnippetClientMap(clientMap)
-	return nil
-}
-
-func doCrondAbout(crondSvc *crondsvc.CrondSvc, pipelineSvc *pipelinesvc.PipelineSvc) error {
-	// 加载定时配置
-	logs, err := crondSvc.ReloadCrond(pipelineSvc.RunCronPipelineFunc)
-	for _, log := range logs {
-		logrus.Info(log)
-	}
-	if err != nil {
-		return errors.Errorf("failed to reload crond from db (%v)", err)
-	}
-
-	// watch crond
-	go crondSvc.ListenCrond(pipelineSvc.RunCronPipelineFunc)
-
-	// 定时打印定时任务快照
-	go func() {
-		_ = loop.New(loop.WithInterval(time.Minute)).Do(
-			func() (bool, error) {
-				for _, log := range crondSvc.CrondSnapshot() {
-					logrus.Debug(log)
-				}
-				return false, nil
-			})
-	}()
-
-	// 定时补偿
-	go pipelineSvc.ContinueCompensate()
-
 	return nil
 }

@@ -31,6 +31,7 @@ const bufferTime = 3600
 // then the etcd lease of gc may expire at this time
 // and then there is no instance get lease, which results in some namespaces pod not being gc
 func (r *Reconciler) CompensateGCNamespaces() {
+
 	r.doWaitGCCompensate(false)
 	r.doWaitGCCompensate(true)
 

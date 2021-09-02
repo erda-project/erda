@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -205,4 +207,17 @@ func Test_getCronCompensateInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetTriggeredTime(t *testing.T) {
+	now := time.Now()
+	p := spec.Pipeline{
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
+				CronTriggerTime: &now,
+			},
+		},
+	}
+	triggerTime := getTriggeredTime(p)
+	assert.Equal(t, now.Unix(), triggerTime.Unix())
 }

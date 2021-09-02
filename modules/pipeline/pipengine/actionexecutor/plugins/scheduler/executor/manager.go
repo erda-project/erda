@@ -30,6 +30,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
 // Manager for scheduler task executor
@@ -75,12 +77,8 @@ func (m *Manager) Initialize() error {
 	}
 
 	triggerChan := clusterinfo.RegisterRefreshChan()
-	eventChan, err := clusterinfo.RegisterClusterEvent()
 
-	if err != nil {
-		return err
-	}
-	go m.listenAndPatchExecutor(context.Background(), eventChan, triggerChan)
+	go m.listenAndPatchExecutor(context.Background(), triggerChan)
 
 	logrus.Info("pipeline task executor manager Initialize Done .")
 
@@ -244,8 +242,48 @@ func (m *Manager) batchUpdateExecutors() error {
 	return nil
 }
 
-func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan apistructs.ClusterEvent, triggerChan <-chan struct{}) {
-	var err error
+func (m *Manager) listenAndPatchExecutor(ctx context.Context, triggerChan <-chan struct{}) {
+	js, err := jsonstore.New()
+	if err != nil {
+		logrus.Errorf("failed to do cluster event listening, err: %v", err)
+		return
+	}
+
+	go func() {
+		for {
+			_ = js.IncludeWatch().Watch(ctx, clusterinfo.ClusterEventEtcdKey, true, true, false, apistructs.ClusterEvent{}, func(key string, v interface{}, t storetypes.ChangeType) (_ error) {
+				go func(et storetypes.ChangeType, ev interface{}) {
+					if et == storetypes.Del {
+						return
+					}
+
+					event, ok := ev.(*apistructs.ClusterEvent)
+					if !ok {
+						logrus.Errorf("failed to convert value: %+v to cluster event", v)
+						return
+					}
+					switch event.Action {
+					case apistructs.ClusterActionCreate:
+						err := m.updateClusterExecutor(event.Content)
+						if err != nil {
+							logrus.Errorf("failed to add task executor, err: %v", err)
+						}
+					case apistructs.ClusterActionUpdate:
+						err := m.updateClusterExecutor(event.Content)
+						if err != nil {
+							logrus.Errorf("failed to update task executor, err: %v", err)
+						}
+					case apistructs.ClusterActionDelete:
+						m.deleteExecutor(event.Content)
+					default:
+					}
+				}(t, v)
+
+				return nil
+			})
+		}
+	}()
+
 	interval := time.Duration(conf.ExecutorRefreshIntervalMinute())
 	ticker := time.NewTicker(time.Minute * interval)
 	for {
@@ -260,23 +298,7 @@ func (m *Manager) listenAndPatchExecutor(ctx context.Context, eventChan <-chan a
 			if err := m.batchUpdateExecutors(); err != nil {
 				logrus.Errorf("failed to refresh executors, err: %v", err)
 			}
-		case event := <-eventChan:
-			switch event.Action {
-			case apistructs.ClusterActionCreate:
-				err = m.updateClusterExecutor(event.Content)
-				if err != nil {
-					logrus.Errorf("failed to add task executor, err: %v", err)
-				}
-			case apistructs.ClusterActionUpdate:
-				err = m.updateClusterExecutor(event.Content)
-				if err != nil {
-					logrus.Errorf("failed to update task executor, err: %v", err)
-				}
-			case apistructs.ClusterActionDelete:
-				m.deleteExecutor(event.Content)
-			default:
-
-			}
 		}
 	}
+
 }

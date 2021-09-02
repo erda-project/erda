@@ -96,6 +96,41 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	})
 }
 
+func TestMakeDBGCKey(t *testing.T) {
+	pipelineID := uint64(123)
+	gcKey := makeDBGCKey(pipelineID)
+	assert.Equal(t, "/devops/pipeline/dbgc/pipeline/123", gcKey)
+}
+
+func TestMakeDBGCDLockKey(t *testing.T) {
+	pipelineID := uint64(123)
+	lockKey := makeDBGCDLockKey(pipelineID)
+	assert.Equal(t, "/devops/pipeline/dbgc/dlock/123", lockKey)
+}
+
+func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
+	key := "/devops/pipeline/dbgc/pipeline/123"
+	pipelineID, err := getPipelineIDFromDBGCWatchedKey(key)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint64(123), pipelineID)
+
+	key = "/devops/pipeline/dbgc/pipeline/xxx"
+	pipelineID, err = getPipelineIDFromDBGCWatchedKey(key)
+	assert.Equal(t, false, err == nil)
+	assert.Equal(t, uint64(0), pipelineID)
+}
+
+func TestPipelineDatabaseGC(t *testing.T) {
+	var r Reconciler
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *Reconciler) {
+		return
+	})
+	defer pm.Unpatch()
+	t.Run("PipelineDatabaseGC", func(t *testing.T) {
+		r.PipelineDatabaseGC()
+	})
+}
+
 func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 

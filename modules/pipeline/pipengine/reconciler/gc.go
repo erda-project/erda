@@ -39,7 +39,6 @@ const (
 	defaultGCTime                          = 3600 * 24 * 2
 )
 
-// ListenGC 监听需要 GC 的 pipeline.
 func (r *Reconciler) ListenGC() {
 	logrus.Info("reconciler: start watching gc pipelines")
 	for {
