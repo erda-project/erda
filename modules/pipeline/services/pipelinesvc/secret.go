@@ -121,8 +121,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
 		// gittar
-		"gittar.username":      conf.GitInnerUserName(),
-		"gittar.password":      conf.GitInnerUserPassword(),
 		"gittar.repo":          gittarRepo,
 		"gittar.branch":        p.Labels[apistructs.LabelBranch],
 		"gittar.commit":        p.GetCommitID(),
