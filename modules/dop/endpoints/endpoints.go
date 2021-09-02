@@ -1003,3 +1003,7 @@ func (e *Endpoints) AutotestV2Service() *atv2.Service {
 func (e *Endpoints) TestSetService() *testset.Service {
 	return e.testset
 }
+
+func (e *Endpoints) IssueStateService() *issuestate.IssueState {
+	return e.issueState
+}
