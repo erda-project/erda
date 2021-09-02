@@ -146,3 +146,75 @@ func Test_getRedeployPipelineYmlName(t *testing.T) {
 		})
 	}
 }
+
+var diceYml = `version: 2.0
+services:
+  web:
+    ports:
+      - 8080
+      - port: 20880
+      - port: 1234
+        protocol: "UDP"
+      - port: 4321
+        protocol: "HTTP"
+      - port: 53
+        protocol: "DNS"
+        l4_protocol: "UDP"
+        default: true
+    deployments:
+      replicas: 1
+    resources:
+      cpu: 0.1
+      mem: 512
+    k8s_snippet:
+      container:
+        name: abc
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+`
+
+func TestGetServicesNames(t *testing.T) {
+	name, err := getServicesNames(diceYml)
+	if err != nil {
+		assert.Error(t, err)
+		return
+	}
+	assert.Equal(t, []string{"web"}, name)
+}
+
+func TestConvertRuntimeDeployDto(t *testing.T) {
+	app := &apistructs.ApplicationDTO{
+		ID:          1,
+		Name:        "foo",
+		OrgID:       2,
+		OrgName:     "erda",
+		ProjectID:   3,
+		ProjectName: "bar",
+	}
+
+	release := &apistructs.ReleaseGetResponseData{
+		Diceyml: diceYml,
+	}
+
+	dto := &apistructs.PipelineDTO{ID: 4}
+
+	want := apistructs.RuntimeDeployDTO{
+		PipelineID:      4,
+		ApplicationID:   1,
+		ApplicationName: "foo",
+		ProjectID:       3,
+		ProjectName:     "bar",
+		OrgID:           2,
+		OrgName:         "erda",
+		ServicesNames:   []string{"web"},
+	}
+	deployDto, err := convertRuntimeDeployDto(app, release, dto)
+	if err != nil {
+		assert.Error(t, err)
+		return
+	}
+	assert.Equal(t, want, *deployDto)
+}
