@@ -58,7 +58,7 @@ func (r *Reconciler) getSchedulableTasks(p *spec.Pipeline, tasks []*spec.Pipelin
 		// get task by nodeName
 		task := taskMap[nodeName]
 		// if task is already processing by another goroutine, skip
-		if _, alreadyProcessing := r.processingTasks.LoadOrStore(task.ID, true); alreadyProcessing {
+		if _, alreadyProcessing := r.processingTasks.LoadOrStore(buildTaskDagName(p.ID, task.Name), true); alreadyProcessing {
 			continue
 		}
 		schedulableTasks = append(schedulableTasks, task)
