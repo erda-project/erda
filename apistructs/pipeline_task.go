@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apistructs
 
@@ -18,6 +19,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+)
+
+const (
+	// TerminusDefineTag add this tag env to container for collecting logs
+	TerminusDefineTag = "TERMINUS_DEFINE_TAG"
 )
 
 type PipelineTaskDTO struct {
@@ -46,8 +52,14 @@ type PipelineTaskDTO struct {
 }
 
 type PipelineTaskExtra struct {
-	UUID         string `json:"uuid"`
-	AllowFailure bool   `json:"allowFailure"`
+	UUID           string          `json:"uuid"`
+	AllowFailure   bool            `json:"allowFailure"`
+	TaskContainers []TaskContainer `json:"taskContainers"`
+}
+
+type TaskContainer struct {
+	TaskName    string `json:"taskName"`
+	ContainerID string `json:"containerID"`
 }
 
 type PipelineTaskResult struct {
@@ -169,6 +181,9 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 	var newResponseOrder orderedResponses
 	now := time.Now()
 	for index, g := range newResponses {
+		if g.Ctx.StartTime.IsZero() {
+			g.Ctx.StartTime = now.Add(time.Duration(index) * time.Millisecond)
+		}
 		if g.Ctx.EndTime.IsZero() {
 			g.Ctx.EndTime = now.Add(time.Duration(index) * time.Millisecond)
 		}
@@ -210,8 +225,8 @@ func (t *PipelineTaskResult) AppendError(newResponses ...*PipelineTaskErrRespons
 
 func (t *PipelineTaskResult) ConvertErrors() {
 	for _, response := range t.Errors {
-		if !response.Ctx.StartTime.IsZero() {
-			response.Msg = fmt.Sprintf("%s, startTime: %s, endTIme: %s, count: %d",
+		if response.Ctx.Count > 1 {
+			response.Msg = fmt.Sprintf("%s\nstartTime: %s\nendTime: %s\ncount: %d",
 				response.Msg, response.Ctx.StartTime.Format("2006-01-02 15:04:05"),
 				response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
 		}

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package logic
 
@@ -140,22 +141,24 @@ func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 				return ""
 			}
 		}(),
-		Namespace: task.Extra.Namespace,
+		Namespace:               task.Extra.Namespace,
+		NotPipelineControlledNs: task.Extra.NotPipelineControlledNs,
 		ClusterName: func() string {
 			if len(task.Extra.ClusterName) == 0 {
 				panic(errors.New("missing cluster name in pipeline task"))
 			}
 			return task.Extra.ClusterName
 		}(),
-		Image:      task.Extra.Image,
-		Cmd:        strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
-		CPU:        task.Extra.RuntimeResource.CPU,
-		Memory:     task.Extra.RuntimeResource.Memory,
-		Binds:      task.Extra.Binds,
-		Volumes:    MakeVolume(task),
-		PreFetcher: task.Extra.PreFetcher,
-		Env:        task.Extra.PublicEnvs,
-		Labels:     task.Extra.Labels,
+		Image:          task.Extra.Image,
+		Cmd:            strings.Join(append([]string{task.Extra.Cmd}, task.Extra.CmdArgs...), " "),
+		CPU:            task.Extra.RuntimeResource.CPU,
+		Memory:         task.Extra.RuntimeResource.Memory,
+		Binds:          task.Extra.Binds,
+		Volumes:        MakeVolume(task),
+		PreFetcher:     task.Extra.PreFetcher,
+		Env:            task.Extra.PublicEnvs,
+		Labels:         task.Extra.Labels,
+		TaskContainers: task.Extra.TaskContainers,
 		// flink/spark
 		Resource:  task.Extra.FlinkSparkConf.JarResource,
 		MainClass: task.Extra.FlinkSparkConf.MainClass,

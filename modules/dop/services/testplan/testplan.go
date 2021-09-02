@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package testplan
 
@@ -218,6 +219,14 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		t := time.Unix(int64(*req.TimestampSecEndedAt), 0)
 		testPlan.EndedAt = &t
 	}
+
+	var isUpdateArchive bool
+	if req.IsArchived != nil {
+		if &testPlan.IsArchived != req.IsArchived {
+			isUpdateArchive = true
+		}
+		testPlan.IsArchived = *req.IsArchived
+	}
 	if err := t.db.UpdateTestPlan(testPlan); err != nil {
 		return apierrors.ErrUpdateTestPlan.InternalError(err)
 	}
@@ -257,6 +266,30 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		}
 	}
 
+	if isUpdateArchive {
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		project, err := t.bdl.GetProject(testPlan.ProjectID)
+		if err != nil {
+			return err
+		}
+		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+			Audit: apistructs.Audit{
+				UserID:       req.UserID,
+				ScopeType:    apistructs.ProjectScope,
+				ScopeID:      testPlan.ProjectID,
+				OrgID:        project.OrgID,
+				Result:       "success",
+				StartTime:    now,
+				EndTime:      now,
+				TemplateName: apistructs.ArchiveTestplanTemplate,
+				Context: map[string]interface{}{
+					"projectId":    project.ID,
+					"projectName":  project.Name,
+					"testPlanName": testPlan.Name,
+				},
+			},
+		})
+	}
 	return nil
 }
 
@@ -588,20 +621,21 @@ func (t *TestPlan) ExecuteAPITest(req apistructs.TestPlanAPITestExecuteRequest) 
 // Convert
 func (t *TestPlan) Convert(testPlan *dao.TestPlan, relsCount apistructs.TestPlanRelsCount, members ...dao.TestPlanMember) apistructs.TestPlan {
 	result := apistructs.TestPlan{
-		ID:        uint64(testPlan.ID),
-		Name:      testPlan.Name,
-		Status:    testPlan.Status,
-		ProjectID: testPlan.ProjectID,
-		CreatorID: testPlan.CreatorID,
-		UpdaterID: testPlan.UpdaterID,
-		CreatedAt: &testPlan.CreatedAt,
-		UpdatedAt: &testPlan.UpdatedAt,
-		Summary:   testPlan.Summary,
-		StartedAt: testPlan.StartedAt,
-		EndedAt:   testPlan.EndedAt,
-		RelsCount: relsCount,
-		Type:      testPlan.Type,
-		Inode:     testPlan.Inode,
+		ID:         uint64(testPlan.ID),
+		Name:       testPlan.Name,
+		Status:     testPlan.Status,
+		ProjectID:  testPlan.ProjectID,
+		CreatorID:  testPlan.CreatorID,
+		UpdaterID:  testPlan.UpdaterID,
+		CreatedAt:  &testPlan.CreatedAt,
+		UpdatedAt:  &testPlan.UpdatedAt,
+		Summary:    testPlan.Summary,
+		StartedAt:  testPlan.StartedAt,
+		EndedAt:    testPlan.EndedAt,
+		RelsCount:  relsCount,
+		Type:       testPlan.Type,
+		Inode:      testPlan.Inode,
+		IsArchived: testPlan.IsArchived,
 	}
 	for _, mem := range members {
 		if mem.Role.IsOwner() {

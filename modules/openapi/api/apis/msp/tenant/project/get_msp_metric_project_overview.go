@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package project
 
@@ -58,13 +59,22 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("project_key")
 	params.Del("project_key")
+	var projectIDs []string
+	for _, p := range perms.List {
+		if p.Scope.Type == apistructs.ProjectScope && p.Access {
+			projectIDs = append(projectIDs, p.Scope.ID)
+		}
+	}
+
+	if projectIDs == nil || len(projectIDs) == 0 {
+		Success(w, nil)
+		return
+	}
 	if key == "gateway" {
 		paramsForProject := url.Values{}
 		paramsForProject.Del("projectId")
-		for _, p := range perms.List {
-			if p.Scope.Type == apistructs.ProjectScope && p.Access {
-				paramsForProject.Add("projectId", p.Scope.ID)
-			}
+		for _, id := range projectIDs {
+			paramsForProject.Add("projectId", id)
 		}
 		var data []string
 		cr = client.Get(discover.MSP()).
@@ -84,10 +94,8 @@ func attachMetricProjectParams(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fk := fmt.Sprintf("in_%s", key)
 		params.Del(fk)
-		for _, p := range perms.List {
-			if p.Scope.Type == apistructs.ProjectScope && p.Access {
-				params.Add(fk, p.Scope.ID)
-			}
+		for _, id := range projectIDs {
+			params.Add(fk, id)
 		}
 	}
 

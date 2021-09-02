@@ -1,28 +1,48 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package cancelExecuteButton
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
-type ComponentAction struct{}
+type ComponentAction struct {
+	Version    string                                           `json:"version,omitempty"`
+	Name       string                                           `json:"name,omitempty"`
+	Type       string                                           `json:"type,omitempty"`
+	Props      map[string]interface{}                           `json:"props,omitempty"`
+	State      State                                            `json:"state,omitempty"`
+	Operations map[apistructs.OperationKey]apistructs.Operation `json:"operations,omitempty"`
+	Data       map[string]interface{}                           `json:"data,omitempty"`
+}
 
-func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+type State struct {
+	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
+}
+
+func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+	if err := ca.Import(c); err != nil {
+		logrus.Errorf("failed to import component, err: %v", err)
+		return err
+	}
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
@@ -48,19 +68,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		if _, ok := c.State["visible"]; ok {
 			visible = c.State["visible"].(bool)
 		}
-		if _, ok := c.State["pipelineId"]; ok && visible {
-			pipelineId := uint64(c.State["pipelineId"].(float64))
-			if pipelineId > 0 {
-				rsp, err := bdl.Bdl.GetPipeline(pipelineId)
-				if err != nil {
-					return err
-				}
-				if !rsp.Status.IsReconcilerRunningStatus() {
-					visible = false
-				}
-			} else {
+		pipelineId := ca.State.PipelineDetail.ID
+		if pipelineId > 0 {
+			if !ca.State.PipelineDetail.Status.IsReconcilerRunningStatus() {
 				visible = false
 			}
+		} else {
+			visible = false
 		}
 		c.Props = map[string]interface{}{
 			"text":    "取消执行",
@@ -78,4 +92,42 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 func RenderCreator() protocol.CompRender {
 	return &ComponentAction{}
+}
+
+func (a *ComponentAction) Import(c *apistructs.Component) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, a); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *ComponentAction) marshal(c *apistructs.Component) error {
+	stateValue, err := json.Marshal(a.State)
+	if err != nil {
+		return err
+	}
+	var state map[string]interface{}
+	err = json.Unmarshal(stateValue, &state)
+	if err != nil {
+		return err
+	}
+
+	propValue, err := json.Marshal(a.Props)
+	if err != nil {
+		return err
+	}
+	var props interface{}
+	err = json.Unmarshal(propValue, &props)
+	if err != nil {
+		return err
+	}
+
+	c.Props = props
+	c.State = state
+	c.Type = a.Type
+	return nil
 }

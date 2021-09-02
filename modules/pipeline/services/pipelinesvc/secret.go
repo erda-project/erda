@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
@@ -120,8 +121,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
 		// gittar
-		"gittar.username":      conf.GitInnerUserName(),
-		"gittar.password":      conf.GitInnerUserPassword(),
 		"gittar.repo":          gittarRepo,
 		"gittar.branch":        p.Labels[apistructs.LabelBranch],
 		"gittar.commit":        p.GetCommitID(),
@@ -134,13 +133,12 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"dice.openapi.addr":       discover.Openapi(),
 
 		// buildpack
-		"bp.repo.prefix":                "", // 兼容用户 pipeline.yml 里写的 ((bp.repo.prefix))
-		"bp.repo.default.version":       "", // 兼容用户 pipeline.yml 里写的 ((bp.repo.default.version))
-		"bp.nexus.url":                  httpclientutil.WrapProto(clusterInfo.Get(apistructs.NEXUS_ADDR)),
-		"bp.nexus.username":             clusterInfo.Get(apistructs.NEXUS_USERNAME),
-		"bp.nexus.password":             clusterInfo.Get(apistructs.NEXUS_PASSWORD),
-		secretKeyDockerArtifactRegistry: httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
-		"bp.docker.cache.registry":      httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
+		"bp.repo.prefix":           "", // Compatible with ((bp.repo.prefix)) written in user pipeline.yml
+		"bp.repo.default.version":  "", // Compatible with ((bp.repo.default.version)) written in user pipeline.yml
+		"bp.nexus.url":             httpclientutil.WrapProto(clusterInfo.Get(apistructs.NEXUS_ADDR)),
+		"bp.nexus.username":        clusterInfo.Get(apistructs.NEXUS_USERNAME),
+		"bp.nexus.password":        clusterInfo.Get(apistructs.NEXUS_PASSWORD),
+		"bp.docker.cache.registry": httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
 
 		// storage
 		"pipeline.storage.url": storageURL,
@@ -152,6 +150,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		// others
 		"date.YYYYMMDD": time.Now().Format("20060102"),
 	}
+	r = AddRegistryLabel(r, clusterInfo)
 
 	// 额外加载 labels，项目级别的流水线，对应的项目名称和企业名称是传递过来的
 	if r["dice.org.name"] == "" {
@@ -182,7 +181,7 @@ func getCenterOrSaaSURL(diceCluster, requestCluster, center, sass string) string
 
 // FetchSecrets return secrets, cmsDiceFiles and error.
 // holdOnKeys: 声明 key 需要持有，不能被平台 secrets 覆盖，与 ignoreKeys 配合使用
-func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys []string, err error) {
+func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[string]string, holdOnKeys, encryptSecretKeys []string, err error) {
 	secrets = make(map[string]string)
 	cmsDiceFiles = make(map[string]string)
 
@@ -195,11 +194,11 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 		if orgIDStr := p.Labels[apistructs.LabelOrgID]; orgIDStr != "" {
 			orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
 			if err != nil {
-				return nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
+				return nil, nil, nil, nil, errors.Errorf("invalid org id from label %q, err: %v", apistructs.LabelOrgID, err)
 			}
 			org, err := s.bdl.GetOrg(orgID)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, nil, err
 			}
 			if org.EnableReleaseCrossCluster {
 				namespaces = append(namespaces, nexus.MakeOrgPipelineCmsNs(orgID))
@@ -217,9 +216,12 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 				GlobalDecrypt:  true,
 			})
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 		for _, c := range configs.Data {
+			if c.EncryptInDB && c.Type == cms.ConfigTypeKV {
+				encryptSecretKeys = append(encryptSecretKeys, c.Key)
+			}
 			secrets[c.Key] = c.Value
 
 			// DiceFile 类型，value 为 diceFileUUID
@@ -241,5 +243,13 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 		)
 	}
 
-	return secrets, cmsDiceFiles, holdOnKeys, nil
+	return secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, nil
+}
+
+// AddRegistryLabel Support third-party docker registry
+func AddRegistryLabel(r map[string]string, clusterInfo apistructs.ClusterInfoData) map[string]string {
+	r[secretKeyDockerArtifactRegistry] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR))
+	r[secretKeyDockerArtifactRegistryUsername] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_USERNAME))
+	r[secretKeyDockerArtifactRegistryPassword] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_PASSWORD))
+	return r
 }

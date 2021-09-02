@@ -1,24 +1,30 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
 import (
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -248,11 +254,7 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &PipelineSvc{}
-			got, got1, err := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("judgeTaskExecutor() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, got1 := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
 			if got != tt.want {
 				t.Errorf("judgeTaskExecutor() got = %v, want %v", got, tt.want)
 			}
@@ -261,4 +263,37 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenSnippetTaskExtra(t *testing.T) {
+	svc := PipelineSvc{
+		bdl: bundle.New(
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
+			bundle.WithScheduler(),
+		),
+	}
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{},
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
+				Namespace:               "custom-namespace",
+				NotPipelineControlledNs: true,
+			},
+		},
+	}
+	taskExtra := svc.genSnippetTaskExtra(p, &pipelineyml.Action{})
+	assert.Equal(t, true, taskExtra.NotPipelineControlledNs)
+}
+
+func TestCalculateTaskTimeoutDuration(t *testing.T) {
+	svc := PipelineSvc{
+		bdl: bundle.New(
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
+			bundle.WithScheduler(),
+		),
+	}
+	duration := svc.calculateTaskTimeoutDuration(&pipelineyml.Action{
+		Timeout: pipelineyml.TimeoutDuration4Forever,
+	})
+	assert.Equal(t, time.Duration(-1), duration)
 }

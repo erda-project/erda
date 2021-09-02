@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package clusters
 
@@ -32,6 +33,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	decoder "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -52,6 +55,7 @@ const (
 	ClusterAgentSA   = "cluster-agent"
 	ClusterAgentCR   = "cluster-agent-cr"
 	ClusterAgentCRB  = "cluster-agent-crb"
+	ErdaOrgLabel     = "dice/org-%s"
 )
 
 var (
@@ -94,6 +98,45 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return nil
 	}
 
+	if req.ClusterName == conf.ErdaClusterName() {
+		ic, err := rest.InClusterConfig()
+		if err != nil {
+			// Erda doesn't at kubernetes cluster
+			if err == rest.ErrNotInCluster {
+				return nil
+			}
+			logrus.Errorf("get incluster rest config error: %v", err)
+			return err
+		}
+
+		inClusterCs, err := kubernetes.NewForConfig(ic)
+		if err != nil {
+			logrus.Errorf("new incluster clientSet error: %v", err)
+			return err
+		}
+
+		nodes, err := inClusterCs.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			logrus.Errorf("get kubernetes nodes error: %v", err)
+			return err
+		}
+
+		orgDTO, err := c.bdl.GetOrg(req.OrgID)
+		if err != nil {
+			logrus.Errorf("get org info error: %v", err)
+			return err
+		}
+
+		for _, node := range nodes.Items {
+			node.Labels[fmt.Sprintf(ErdaOrgLabel, orgDTO.Name)] = "true"
+			if _, err = inClusterCs.CoreV1().Nodes().Update(context.Background(), &node, metav1.UpdateOptions{}); err != nil {
+				logrus.Errorf("label node: %s, error: %v", node.Name, err)
+				return err
+			}
+		}
+		return nil
+	}
+
 	ci, err := c.bdl.GetCluster(req.ClusterName)
 	if err != nil {
 		return err
@@ -111,7 +154,7 @@ func (c *Clusters) importCluster(userID string, req *apistructs.ImportCluster) e
 		return err
 	}
 
-	if req.ClusterName == conf.ErdaClusterName() || !(status == statusOffline || status == statusUnknown) {
+	if !(status == statusOffline || status == statusUnknown) {
 		return nil
 	}
 
@@ -581,7 +624,7 @@ func (c *Clusters) renderCommonDeployConfig(orgName, clusterName string) (*Rende
 			{Name: "DEBUG", Value: "true"},
 			{Name: "ERDA_CHART_VERSION", Value: conf.ErdaVersion()},
 			{Name: "HELM_NAMESPACE", Value: getWorkerNamespace()},
-			{Name: "NODE_LABELS", Value: fmt.Sprintf("dice/org-%s=true", orgName)},
+			{Name: "NODE_LABELS", Value: fmt.Sprintf(ErdaOrgLabel+"=true", orgName)},
 			{Name: "ERDA_CHART_VALUES", Value: generateSetValues(ci)},
 			{Name: "HELM_REPO_URL", Value: conf.HelmRepoURL()},
 			{Name: "HELM_REPO_USERNAME", Value: conf.HelmRepoUsername()},

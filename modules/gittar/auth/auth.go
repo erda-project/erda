@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package auth
 
@@ -206,7 +207,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 				return
 			}
 			c.Set("repository", gitRepository)
-			c.Set("user", models.NewInnerUser())
 
 			//只有在skipAuth范围内,如果读取到了user-id,也触发校验
 			userIdStr := c.GetHeader("User-Id")
@@ -227,6 +227,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 				}
 				c.Set("repository", gitRepository)
 				//c.Set("lock", repoLock.Lock)
+
 				c.Set("user", &models.User{
 					Name:     userInfoDto.Username,
 					NickName: userInfoDto.NickName,
@@ -240,20 +241,6 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			c.Next()
 			return
 		}
-	}
-
-	//如果是内置账户不做校验
-	innerUser, err := GetInnerUser(c)
-	if err == nil {
-		gitRepository, err = openRepository(c, repo)
-		if err != nil {
-			c.AbortWithStatus(500, err)
-			return
-		}
-		c.Set("repository", gitRepository)
-		c.Set("user", innerUser)
-		c.Next()
-		return
 	}
 
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)

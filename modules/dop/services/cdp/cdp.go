@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package cdp pipeline相关的结构信息
 package cdp
@@ -55,6 +56,11 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 	pipelineData := pipelineEvent.Content
 	orgID, err := strconv.ParseInt(pipelineEvent.OrgID, 10, 64)
 	if err != nil {
+		return err
+	}
+	org, err := cdp.bdl.GetOrg(orgID)
+	if err != nil {
+		logrus.Errorf("failed to get org info err: %s", err)
 		return err
 	}
 	pipelineDetail, err := cdp.bdl.GetPipeline(pipelineData.PipelineID)
@@ -170,7 +176,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 				"appName":        pipelineDetail.ApplicationName,
 				"projectID":      strconv.FormatUint(pipelineDetail.ProjectID, 10),
 				"projectName":    pipelineDetail.ProjectName,
-				"orgName":        pipelineDetail.OrgName,
+				"orgName":        org.Name,
 				"branch":         pipelineDetail.Branch,
 				"uiPublicURL":    conf.UIPublicURL(),
 			}

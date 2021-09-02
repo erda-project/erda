@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package steve
 
@@ -21,7 +22,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -148,6 +151,10 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 		return err
 	}
 
+	if err := a.insureSystemNamespace(client); err != nil {
+		return err
+	}
+
 	for _, sa := range predefinedServiceAccount {
 		saClient := client.ClientSet.CoreV1().ServiceAccounts(sa.Namespace)
 		if _, err = saClient.Create(a.ctx, sa, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
@@ -166,6 +173,33 @@ func (a *Aggregator) createPredefinedResource(clusterName string) error {
 	for _, crb := range predefinedClusterRoleBinding {
 		if _, err = crbClient.Create(a.ctx, crb, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
+		}
+	}
+	return nil
+}
+
+func (a *Aggregator) insureSystemNamespace(client *k8sclient.K8sClient) error {
+	nsClient := client.ClientSet.CoreV1().Namespaces()
+	system := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "erda-system",
+		},
+	}
+	newNs, err := nsClient.Create(a.ctx, system, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	for newNs.Status.Phase != v1.NamespaceActive {
+		newNs, err = nsClient.Get(a.ctx, "erda-system", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		select {
+		case <-a.ctx.Done():
+			return errors.New("failed to watch system namespace, context canceled")
+		case <-time.After(time.Second):
+			logrus.Infof("creating erda system namespace...")
 		}
 	}
 	return nil
@@ -225,11 +259,6 @@ func (a *Aggregator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		a.Add(cluster)
 		if s, ok = a.servers.Load(cluster.Name); !ok {
 			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write(apistructs.SteveError{
-				SteveErrorCode: apistructs.ServerError,
-				Type:           "error",
-				Message:        "Internal server error",
-			}.JSON())
 			rw.Write(apistructs.NewSteveError(apistructs.ServerError, "Internal server error").JSON())
 		}
 	}

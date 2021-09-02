@@ -1,64 +1,76 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package discover
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	servicediscover "github.com/erda-project/erda/providers/service-discover"
 )
 
 type config struct {
-	URLScheme string `file:"url_scheme" default:"http"`
-	Endpoints map[string]string
-	URLs      map[string]string
+	URLs map[string][]string `file:"urls"`
 }
 
 // +provider
 type provider struct {
-	Cfg *config
+	Cfg  *config
+	urls map[string][]*url.URL
 }
 
-func (p *provider) Endpoint(service string) (string, error) {
-	if addr, ok := p.Cfg.Endpoints[service]; ok {
-		return addr, nil
+func (p *provider) Init(ctx servicehub.Context) (err error) {
+	p.urls = make(map[string][]*url.URL)
+	for service, urls := range p.Cfg.URLs {
+		for _, item := range urls {
+			u, err := url.Parse(item)
+			if err != nil {
+				return err
+			}
+			p.urls[service] = append(p.urls[service], u)
+		}
+	}
+	return nil
+}
+
+var _ servicediscover.Interface = (*provider)(nil)
+
+func (p *provider) Endpoint(scheme, service string) (string, error) {
+	for _, u := range p.urls[service] {
+		if u.Scheme == scheme {
+			return u.Host, nil
+		}
 	}
 	return "", fmt.Errorf("not found endpoint %q", service)
 }
 
-func (p *provider) ServiceURL(service string) (string, error) {
-	if url, ok := p.Cfg.URLs[service]; ok {
-		return url, nil
+func (p *provider) ServiceURL(scheme, service string) (string, error) {
+	for _, u := range p.urls[service] {
+		if u.Scheme == scheme {
+			return u.String(), nil
+		}
 	}
-	if addr, ok := p.Cfg.Endpoints[service]; ok {
-		return fmt.Sprintf("%s://%s", p.Cfg.URLScheme, addr), nil
-	}
-	return "", fmt.Errorf("not found url of service %q", service)
+	return "", fmt.Errorf("not found %s url for service %q", scheme, service)
 }
 
 func init() {
 	servicehub.Register("fixed-discover", &servicehub.Spec{
 		Services:    []string{"discover"},
 		Description: "discover all services",
-		ConfigFunc: func() interface{} {
-			return &config{
-				Endpoints: make(map[string]string),
-				URLs:      make(map[string]string),
-			}
-		},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+		ConfigFunc:  func() interface{} { return &config{} },
+		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }

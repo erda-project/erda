@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package schema
 
@@ -46,7 +47,7 @@ type LogSchema interface {
 type CassandraSchema struct {
 	Logger         logs.Logger
 	cass           cassandra.Interface
-	defaultSession *gocql.Session
+	defaultSession *cassandra.Session
 	lastOrgList    []string
 	mutexKey       string
 }
@@ -62,7 +63,7 @@ func WithMutexKey(key string) Option {
 func NewCassandraSchema(cass cassandra.Interface, l logs.Logger, ops ...Option) (*CassandraSchema, error) {
 	cs := &CassandraSchema{}
 	cs.cass = cass
-	sysSession, err := cs.cass.Session(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
+	sysSession, err := cs.cass.NewSession(&cassandra.SessionConfig{Keyspace: *defaultKeyspaceConfig("system"), Consistency: "LOCAL_ONE"})
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (cs *CassandraSchema) compareOrUpdate() error {
 }
 
 func (cs *CassandraSchema) existedCheck(keyspace string) (keyspaceExisted bool, tableExisted bool) {
-	m, err := cs.defaultSession.KeyspaceMetadata(keyspace)
+	m, err := cs.defaultSession.Session().KeyspaceMetadata(keyspace)
 	// keyspace existed check
 	if err != nil {
 		return false, false
@@ -215,7 +216,7 @@ func (cs *CassandraSchema) CreateDefault() error {
 }
 
 func (cs *CassandraSchema) createTable(stmt string) error {
-	q := cs.defaultSession.Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
+	q := cs.defaultSession.Session().Query(stmt).Consistency(gocql.All).RetryPolicy(nil)
 	err := q.Exec()
 	q.Release()
 	if err != nil {

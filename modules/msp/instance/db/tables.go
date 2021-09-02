@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package db
 
@@ -22,15 +23,16 @@ import (
 
 // tables name
 const (
-	TableInstance        = "tb_tmc_instance"
-	TableInstanceTenant  = "tb_tmc_instance_tenant"
-	TableTmc             = "tb_tmc"
-	TableTmcVersion      = "tb_tmc_version"
-	TableRequestRelation = "tb_tmc_request_relation"
-	TableTmcIni          = "tb_tmc_ini"
-	TableProject         = "sp_project"
-	TableLogDeployment   = "sp_log_deployment"
-	TableLogInstance     = "sp_log_instance"
+	TableInstance           = "tb_tmc_instance"
+	TableInstanceTenant     = "tb_tmc_instance_tenant"
+	TableTmc                = "tb_tmc"
+	TableTmcVersion         = "tb_tmc_version"
+	TableRequestRelation    = "tb_tmc_request_relation"
+	TableTmcIni             = "tb_tmc_ini"
+	TableProject            = "sp_project"
+	TableLogDeployment      = "sp_log_deployment"
+	TableLogInstance        = "sp_log_instance"
+	TableLogServiceInstance = "sp_log_service_instance"
 )
 
 // InstanceTenant .
@@ -162,6 +164,7 @@ type LogDeployment struct {
 	Domain       string    `gorm:"column:domain"`
 	Created      time.Time `gorm:"column:created"`
 	Updated      time.Time `gorm:"column:updated"`
+	LogType      string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogDeployment) TableName() string {
@@ -187,8 +190,19 @@ type LogInstance struct {
 	IsDelete        int       `gorm:"column:is_delete"`
 	Created         time.Time `gorm:"column:created"`
 	Updated         time.Time `gorm:"column:updated"`
+	LogType         string    `gorm:"column:log_type;default:'log-analytics'"`
 }
 
 func (LogInstance) TableName() string {
 	return TableLogInstance
+}
+
+type LogServiceInstance struct {
+	ID       string `gorm:"column:id;primary_key"`
+	EsUrls   string `gorm:"column:es_urls"`
+	EsConfig string `gorm:"column:es_config"`
+}
+
+func (LogServiceInstance) TableName() string {
+	return TableLogServiceInstance
 }

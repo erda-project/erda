@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apidocsvc
 
@@ -155,29 +156,29 @@ func CommitAPIDocModifies(orgID uint64, userID, repo, commitMessage, serviceName
 // 如果文档内容为空, 则填充默认内容;
 // 前端提交的文档格式为 json, 转换为 yaml 后再提交.
 func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName, content, branch, action string) error {
-	// 如果 content 为空, 给一个默认的 content
+	// if the content is empty, set default
 	if content == "" {
 		content = defaultOAS3Content(serviceName)
 	}
 
-	// 前端传来的 content 是 json, 转换为 yaml
-	data, err := oasconv.JSONToYAML([]byte(content))
+	// load structural Openapi 3
+	v3, err := oas3.LoadFromData([]byte(content))
 	if err != nil {
-		return errors.Wrap(err, "failed to JSONToYAML")
+		return errors.Wrap(err, "failed to load Openapi 3 structural from content")
 	}
 
-	// 校验文档合法性 仅作反序列化校验
-	if _, err := oas3.LoadFromData(data); err != nil {
-		return err
+	// trans to yaml
+	data, err := oas3.MarshalYaml(v3)
+	if err != nil {
+		return errors.Wrap(err, "failed to MarshalYaml")
 	}
-
 	content = string(data)
 
-	// 统一更改文件名和路径后缀
+	// change filename suffix to .yaml
 	serviceName = mustSuffix(serviceName, suffixYaml)
 	filenameFromRepoRoot := filepath.Join(apiDocsPathFromRepoRoot, serviceName)
 
-	// 在 gittar 仓库对应分支下创建文档: .dice/apidocs/{docName}
+	// make commit: .dice/apidocs/{docName}
 	var commit = apistructs.GittarCreateCommitRequest{
 		Message: commitMessage,
 		Actions: []apistructs.EditActionItem{{

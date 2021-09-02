@@ -1,39 +1,39 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/mohae/deepcopy"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/xormplus/xorm"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
+	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Deprecated
@@ -42,7 +42,7 @@ func (s *PipelineSvc) Create(req *apistructs.PipelineCreateRequest) (*spec.Pipel
 	if err != nil {
 		return nil, err
 	}
-	if err := s.createPipelineGraph(p); err != nil {
+	if err := s.CreatePipelineGraph(p); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -188,62 +188,11 @@ func (s *PipelineSvc) makePipelineFromRequest(req *apistructs.PipelineCreateRequ
 	return p, nil
 }
 
-// createPipelineGraph recursively create pipeline graph.
-// passedData stores data passed recursively.
-func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...passedDataWhenCreate) (err error) {
-	var passedData passedDataWhenCreate
-	if len(passedDataOpt) > 0 {
-		passedData = passedDataOpt[0]
-	}
-	passedData.initData(s.extMarketSvc)
+// traverse the stage of yml and save it to the database
+func (s *PipelineSvc) createPipelineGraphStage(p *spec.Pipeline, pipelineYml *pipelineyml.PipelineYml, ops ...dbclient.SessionOption) (stages []*spec.PipelineStage, err error) {
+	var dbStages []*spec.PipelineStage
 
-	// tx
-	txSession := s.dbClient.NewSession()
-	defer txSession.Close()
-	if err := txSession.Begin(); err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
-	defer func() {
-		if err != nil {
-			rbErr := txSession.Rollback()
-			if rbErr != nil {
-				logrus.Errorf("[alert] failed to rollback when createPipelineGraph failed, pipeline: %+v, rollbackErr: %v",
-					p, rbErr)
-			}
-			return
-		}
-		// metrics.PipelineCounterTotalAdd(*p, 1)
-	}()
-
-	// 创建 pipeline
-	if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(txSession.Session)); err != nil {
-		return apierrors.ErrCreatePipeline.InternalError(err)
-	}
-
-	// 创建 stage -> task
-	pipelineYml, err := pipelineyml.New(
-		[]byte(p.PipelineYml),
-		//pipelineyml.WithRunParams(p.Snapshot.RunPipelineParams), // runParams 在执行时才渲染，提前渲染在嵌套流水线中会导致渲染为 outputs 占位符，会引起歧义
-		//pipelineyml.WithRenderSnippet(p.Labels, caches),
-	)
-	if err != nil {
-		return apierrors.ErrParsePipelineYml.InternalError(err)
-	}
-
-	// search and cache action define and spec
-	if err := passedData.putPassedDataByPipelineYml(pipelineYml); err != nil {
-		return err
-	}
-
-	lastSuccessTaskMap, _, err := s.dbClient.ParseRerunFailedDetail(p.Extra.RerunFailedDetail)
-	if err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(err)
-	}
-
-	var snippetTasks []*spec.PipelineTask
-	var allStagedTasks [][]*spec.PipelineTask
-	for si, stage := range pipelineYml.Spec().Stages {
-		var stagedTasks []*spec.PipelineTask
+	for si := range pipelineYml.Spec().Stages {
 		ps := &spec.PipelineStage{
 			PipelineID:  p.ID,
 			Name:        "",
@@ -251,136 +200,198 @@ func (s *PipelineSvc) createPipelineGraph(p *spec.Pipeline, passedDataOpt ...pas
 			CostTimeSec: -1,
 			Extra:       spec.PipelineStageExtra{StageOrder: si},
 		}
-		if err := s.dbClient.CreatePipelineStage(ps, dbclient.WithTxSession(txSession.Session)); err != nil {
-			return apierrors.ErrCreatePipelineGraph.InternalError(err)
+		if err := s.dbClient.CreatePipelineStage(ps, ops...); err != nil {
+			return nil, apierrors.ErrCreatePipelineGraph.InternalError(err)
 		}
+		dbStages = append(dbStages, ps)
+	}
+	return dbStages, nil
+}
 
-		// create tasks
-		for _, typedAction := range stage.Actions {
-			for actionType, action := range typedAction {
-				var pt *spec.PipelineTask
-				lastSuccessTask, ok := lastSuccessTaskMap[string(action.Alias)]
-				if ok {
-					pt = lastSuccessTask
-					pt.ID = 0
-					pt.PipelineID = p.ID
-					pt.StageID = ps.ID
-				} else {
-					switch actionType {
-					case apistructs.ActionTypeSnippet: // 生成嵌套流水线任务
-						pt, err = s.makeSnippetPipelineTask(p, ps, action)
-						if err != nil {
-							return apierrors.ErrCreatePipelineTask.InternalError(err)
-						}
-						snippetTasks = append(snippetTasks, pt)
-					default: // 生成普通任务
-						pt, err = s.makeNormalPipelineTask(p, ps, action, passedData)
-						if err != nil {
-							return apierrors.ErrCreatePipelineTask.InternalError(err)
-						}
-					}
-				}
-				// 创建当前节点
-				if err := s.dbClient.CreatePipelineTask(pt, dbclient.WithTxSession(txSession.Session)); err != nil {
-					logrus.Errorf("[alert] failed to create pipeline task when create pipeline graph: %v", err)
-					return apierrors.ErrCreatePipelineTask.InternalError(err)
-				}
-				stagedTasks = append(stagedTasks, pt)
-			}
+// replace the tasks parsed by yml and tasks in the database with the same name
+func (s *PipelineSvc) MergePipelineYmlTasks(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error) {
+	// loop yml actions to make actionTasks
+	actionTasks := s.getYmlActionTasks(pipelineYml, p, dbStages, passedDataWhenCreate)
+
+	// determine whether the task status was disabled or Paused according to the TaskOperates of the pipeline
+	var operateActionTasks []spec.PipelineTask
+	for _, actionTask := range actionTasks {
+		operateTask, err := s.OperateTask(p, &actionTask)
+		if err != nil {
+			return nil, apierrors.ErrListPipelineTasks.InternalError(err)
 		}
-		allStagedTasks = append(allStagedTasks, stagedTasks)
+		operateActionTasks = append(operateActionTasks, *operateTask)
 	}
 
-	// commit transaction
-	if err := txSession.Commit(); err != nil {
-		logrus.Errorf("[alert] failed to commit when createPipelineGraph success, pipeline: %+v, commitErr: %v",
-			p, err)
+	// combine the task converted from yml with the task in the database
+	return ymlTasksMergeDBTasks(actionTasks, dbTasks), nil
+}
+
+// generate task array according to yml structure
+func (s *PipelineSvc) getYmlActionTasks(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) []spec.PipelineTask {
+	if pipelineYml == nil || p == nil || len(dbStages) <= 0 {
+		return nil
+	}
+
+	// loop yml actions to make actionTasks
+	var actionTasks []spec.PipelineTask
+	pipelineYml.Spec().LoopStagesActions(func(stageIndex int, action *pipelineyml.Action) {
+		var task *spec.PipelineTask
+		if action.Type.IsSnippet() {
+			task = s.makeSnippetPipelineTask(p, &dbStages[stageIndex], action)
+		} else {
+			task = s.makeNormalPipelineTask(p, &dbStages[stageIndex], action, passedDataWhenCreate)
+		}
+		actionTasks = append(actionTasks, *task)
+	})
+
+	return actionTasks
+}
+
+// combine the task converted from yml with the task in the database
+func ymlTasksMergeDBTasks(actionTasks []spec.PipelineTask, dbTasks []spec.PipelineTask) []spec.PipelineTask {
+	var mergeTasks []spec.PipelineTask
+	for actionIndex := range actionTasks {
+		var actionTask = actionTasks[actionIndex]
+		// actionTask the same dbTask pipelineID,stagesID,type and name replace with dbTask
+		var mergeTask *spec.PipelineTask
+		for index := range dbTasks {
+			var dbTask = dbTasks[index]
+			if actionTask.PipelineID != dbTask.PipelineID || actionTask.StageID != dbTask.StageID {
+				continue
+			}
+			if actionTask.Type != dbTask.Type || actionTask.Name != dbTask.Name {
+				continue
+			}
+			mergeTask = &dbTask
+		}
+		if mergeTask == nil {
+			mergeTask = &actionTask
+		}
+
+		mergeTasks = append(mergeTasks, *mergeTask)
+	}
+	return mergeTasks
+}
+
+// determine whether the task status is disabled according to the TaskOperates of the pipeline
+func (s *PipelineSvc) OperateTask(p *spec.Pipeline, task *spec.PipelineTask) (*spec.PipelineTask, error) {
+	for _, taskOp := range p.Extra.TaskOperates {
+		// the name of the disabled task matches the task name
+		if taskOp.TaskAlias != task.Name {
+			continue
+		}
+		// task have id mean can not disable
+		if task.ID > 0 {
+			continue
+		}
+
+		var opAction OperateAction
+		wrapError := func(err error) error {
+			return errors.Wrapf(err, "failed to operate pipeline, task [%v], action [%s]", taskOp.TaskAlias, opAction)
+		}
+		// disable
+		if taskOp.Disable != nil {
+			if *taskOp.Disable {
+				opAction = OpDisableTask
+				if !(task.Status == apistructs.PipelineStatusAnalyzed || task.Status == apistructs.PipelineStatusPaused) {
+					return nil, wrapError(errors.Errorf("invalid status [%v]", task.Status))
+				}
+				task.Status = apistructs.PipelineStatusDisabled
+			} else {
+				opAction = OpEnableTask
+				task.Status = apistructs.PipelineStatusAnalyzed
+			}
+			// needUpdatePipelineCtx = true
+		}
+
+		// pause: task cannot be modified after starting execution
+		if taskOp.Pause != nil {
+			if *taskOp.Pause {
+				opAction = OpPauseTask
+				if !task.Status.CanPause() {
+					return nil, wrapError(errors.Errorf("status [%s]", task.Status))
+				}
+				task.Status = apistructs.PipelineStatusPaused
+			} else {
+				opAction = OpUnpauseTask
+				if !task.Status.CanUnpause() {
+					return nil, wrapError(errors.Errorf("status [%s]", task.Status))
+				}
+				// Determine the stage status of the current node:
+				// 1. If it is Born, it means that the stage can be pushed by the thruster, then task.status = Born
+				// 2. Otherwise, it means that the stage has been executed and will not be advanced again, so task.status = Mark
+				stage, err := s.dbClient.GetPipelineStage(task.StageID)
+				if err != nil {
+					return nil, err
+				}
+				if stage.Status == apistructs.PipelineStatusBorn {
+					task.Status = apistructs.PipelineStatusBorn
+				} else {
+					task.Status = apistructs.PipelineStatusMark
+				}
+			}
+			task.Extra.Pause = *taskOp.Pause
+		}
+	}
+	return task, nil
+}
+
+// createPipelineGraph recursively create pipeline graph.
+func (s *PipelineSvc) CreatePipelineGraph(p *spec.Pipeline) (err error) {
+	// parse yml
+	pipelineYml, err := pipelineyml.New(
+		[]byte(p.PipelineYml),
+	)
+	if err != nil {
+		return apierrors.ErrParsePipelineYml.InternalError(err)
+	}
+
+	// init pipeline gc setting
+	p.EnsureGC()
+
+	// only create pipeline and stages, tasks waiting pipeline run
+	var stages []*spec.PipelineStage
+	_, err = s.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
+		// create pipeline
+		if err := s.dbClient.CreatePipeline(p, dbclient.WithTxSession(session)); err != nil {
+			return nil, apierrors.ErrCreatePipeline.InternalError(err)
+		}
+		// create pipeline stages
+		stages, err = s.createPipelineGraphStage(p, pipelineYml, dbclient.WithTxSession(session))
+		if err != nil {
+			return nil, err
+		}
+
+		// calculate pipeline applied resource after all snippetTask created
+		pipelineAppliedResources, err := s.calculatePipelineResources(pipelineYml)
+		if err != nil {
+			return nil, apierrors.ErrCreatePipelineGraph.InternalError(
+				fmt.Errorf("failed to search pipeline action resrouces, err: %v", err))
+		}
+		if pipelineAppliedResources != nil {
+			p.Snapshot.AppliedResources = *pipelineAppliedResources
+		}
+		if err := s.dbClient.UpdatePipelineExtraSnapshot(p.ID, p.Snapshot, dbclient.WithTxSession(session)); err != nil {
+			return nil, apierrors.ErrCreatePipelineGraph.InternalError(
+				fmt.Errorf("failed to update pipeline snapshot for applied resources, err: %v", err))
+		}
+		return nil, nil
+	})
+	if err != nil {
 		return apierrors.ErrCreatePipelineGraph.InternalError(err)
 	}
 
-	_ = s.PreCheck(p)
+	// cover stages
+	var newStages []spec.PipelineStage
+	for _, stage := range stages {
+		newStages = append(newStages, *stage)
+	}
 
-	// put into db gc
-	p.EnsureGC()
-	//s.engine.WaitDBGC(p.ID, *p.Extra.GC.DatabaseGC.Analyzed.TTLSecond, *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive)
+	_ = s.PreCheck(pipelineYml, p, newStages)
 
 	// events
 	events.EmitPipelineInstanceEvent(p, p.GetSubmitUserID())
-
-	// 统一处理嵌套流水线
-	// 批量查询 snippet yaml
-	var sourceSnippetConfigs []apistructs.SnippetConfig
-	for _, snippetTask := range snippetTasks {
-		yamlSnippetConfig := snippetTask.Extra.Action.SnippetConfig
-		snippetConfig := apistructs.SnippetConfig{
-			Source: yamlSnippetConfig.Source,
-			Name:   yamlSnippetConfig.Name,
-			Labels: yamlSnippetConfig.Labels,
-		}
-		sourceSnippetConfigs = append(sourceSnippetConfigs, snippetConfig)
-	}
-	sourceSnippetConfigYamls, err := s.HandleQueryPipelineYamlBySnippetConfigs(sourceSnippetConfigs)
-	if err != nil {
-		return apierrors.ErrQuerySnippetYaml.InternalError(err)
-	}
-
-	// 创建嵌套流水线
-	var sErrs []error
-	var sLock sync.Mutex
-	var wg sync.WaitGroup
-	for i := range snippetTasks {
-		snippet := snippetTasks[i]
-		snippetConfig := apistructs.SnippetConfig{
-			Source: snippet.Extra.Action.SnippetConfig.Source,
-			Name:   snippet.Extra.Action.SnippetConfig.Name,
-			Labels: snippet.Extra.Action.SnippetConfig.Labels,
-		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// snippetTask 转换为 pipeline 结构体
-			snippetPipeline, err := s.makeSnippetPipeline4Create(p, snippet, sourceSnippetConfigYamls[snippetConfig.ToString()])
-			if err != nil {
-				sLock.Lock()
-				sErrs = append(sErrs, err)
-				sLock.Unlock()
-				return
-			}
-			// 创建嵌套流水线
-			if err := s.createPipelineGraph(snippetPipeline, passedData); err != nil {
-				sLock.Lock()
-				sErrs = append(sErrs, err)
-				sLock.Unlock()
-				return
-			}
-			// 创建好的流水线数据塞回 snippetTask
-			snippet.SnippetPipelineID = &snippetPipeline.ID
-			snippet.Extra.AppliedResources = snippetPipeline.Snapshot.AppliedResources
-			if err := s.dbClient.UpdatePipelineTask(snippet.ID, snippet); err != nil {
-				sLock.Lock()
-				sErrs = append(sErrs, err)
-				sLock.Unlock()
-				return
-			}
-		}()
-	}
-	wg.Wait()
-	if len(sErrs) > 0 {
-		var errMsgs []string
-		for _, err := range sErrs {
-			errMsgs = append(errMsgs, err.Error())
-		}
-		return apierrors.ErrCreatePipelineGraph.InternalError(fmt.Errorf(strutil.Join(errMsgs, "; ")))
-	}
-
-	// calculate pipeline applied resource after all snippetTask created
-	pipelineAppliedResources := s.calculatePipelineResources(allStagedTasks)
-	p.Snapshot.AppliedResources = pipelineAppliedResources
-	if err := s.dbClient.UpdatePipelineExtraSnapshot(p.ID, p.Snapshot); err != nil {
-		return apierrors.ErrCreatePipelineGraph.InternalError(
-			fmt.Errorf("failed to update pipeline snapshot for applied resources, err: %v", err))
-	}
-
 	return nil
 }
 

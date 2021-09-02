@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apidocsvc
 
@@ -21,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -285,16 +285,16 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	return data, nil
 }
 
-// 查询应用下所有的分支, 构成节点列表
+// listBranches lists all branches as nodes
 func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+	// query branches by appID
+	// there is no project-level file tree, so "pinode != 0" is not discussed
 	appIDStr := strconv.FormatUint(appID, 10)
-
-	// 查询 application (由于不存在项目级目录树, 所以不讨论 pinode != 0 的情况)
 	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID))
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetAllValidBranchWorkspace"))
 	}
-	// 查询 application 数据构造目录树 node
+	// query application data and make a tree node
 	app, err := bdl.Bdl.GetApp(appID)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetApp"))
@@ -307,27 +307,12 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	var (
 		results      []*apistructs.FileTreeNodeRspData
 		isManager, _ = bdl.IsManager(userID, apistructs.AppScope, appID)
-		m            = sync.Map{}
-		w            = sync.WaitGroup{}
 	)
 
 	for _, branch := range branches {
-		branch := branch
-		w.Add(1)
-		go func() {
-			branchInode := ft.Clone().SetBranchName(branch.Name).Inode()
-			hasAPIDoc := branchHasAPIDoc(orgID, branchInode)
-			m.Store(branch, hasAPIDoc)
-			w.Done()
-		}()
-	}
-	w.Wait()
-
-	m.Range(func(key, value interface{}) bool {
-		branch := key.(*apistructs.ValidBranch)
 		readOnly := !isManager && branch.IsProtect
-		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly, "hasDoc": value.(bool)})
-		results = append(results, &apistructs.FileTreeNodeRspData{
+		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
+		data := &apistructs.FileTreeNodeRspData{
 			Type:      "d",
 			Inode:     ft.Clone().SetBranchName(branch.Name).Inode(),
 			Pinode:    ft.Inode(),
@@ -337,10 +322,9 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 			CreatorID: "",
 			UpdaterID: "",
 			Meta:      meta,
-		})
-
-		return true
-	})
+		}
+		results = append(results, data)
+	}
 
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Name < results[j].Name
@@ -349,21 +333,23 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	return results, nil
 }
 
-// 查询分支下所有 API 文档
+// listAPIDocs lists all api docs names as nodes
 func (svc *Service) listAPIDocs(orgID uint64, userID, pinode string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	return svc.listServices(orgID, userID, pinode, apiDocsPathFromRepoRoot, func(node apistructs.TreeEntry) bool {
 		return node.Type == "blob" && matchSuffix(node.Name, suffixYaml, suffixYml)
 	})
 }
 
-// 查询分支下所有的 migration 的 service 名称, 即 migration 的目录名
+// listSchemas lists all module's migration schemas names as nodes
 func (svc *Service) listSchemas(orgID uint64, userID, pinode string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	return svc.listServices(orgID, userID, pinode, migrationsPathFromRepoRoot, func(node apistructs.TreeEntry) bool {
 		return node.Type == "tree"
 	})
 }
 
-// 列出目录树的 service 层的节点列表
+// listServices lists services names as nodes.
+// pathFromRepoRoot the path to read from repo root,
+// filter the condition to filter services.
 func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot string, filter func(node apistructs.TreeEntry) bool) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	ft, err := bundle.NewGittarFileTree(pinode)
 	if err != nil {
@@ -378,7 +364,8 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
-	// 查找目录下的文档. 允许错误, 错误则认为目录下没有任何文档
+	// query the docs under the path,
+	// if the error is not nil, it is considered that there is no document here.
 	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
@@ -387,7 +374,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 		return nil, nil
 	}
 
-	// 文档是否只读: 如果用户是应用管理员, 则
+	// is the doc readonly
 	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
 	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName(), svc.branchRuleSvc)
 	meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})

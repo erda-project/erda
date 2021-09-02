@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package redis
 
@@ -28,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -129,21 +131,23 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 
 	scheinfo := sg.ScheduleInfo2
 	scheinfo.Stateful = true
-	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
+	podsLabels := []constraints.PodLabelsForAffinity{
+		{PodLabels: map[string]string{"redisfailovers.databases.spotahome.com/name": sg.Dice.ID}}}
+	affinity := constraintbuilders.K8S(&scheinfo, nil, podsLabels, nil).Affinity
 
 	switch svc0.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc0, affinity)
+		redis = ro.convertRedis(svc0, &affinity)
 		redisService = svc0
 	case svcNameSentinel:
-		sentinel = convertSentinel(svc0, affinity)
+		sentinel = convertSentinel(svc0, &affinity)
 	}
 	switch svc1.Name {
 	case svcNameRedis:
-		redis = ro.convertRedis(svc1, affinity)
+		redis = ro.convertRedis(svc1, &affinity)
 		redisService = svc1
 	case svcNameSentinel:
-		sentinel = convertSentinel(svc1, affinity)
+		sentinel = convertSentinel(svc1, &affinity)
 	}
 
 	rf := RedisFailover{
@@ -294,9 +298,9 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	return fmt.Errorf("redisoperator not impl Update yet")
 }
 
-func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.NodeAffinity) RedisSettings {
+func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.Affinity) RedisSettings {
 	settings := RedisSettings{}
-	settings.Affinity = &corev1.Affinity{NodeAffinity: affinity}
+	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = corev1.ResourceRequirements{
@@ -317,9 +321,9 @@ func (ro *RedisOperator) convertRedis(svc apistructs.Service, affinity *corev1.N
 	return settings
 }
 
-func convertSentinel(svc apistructs.Service, affinity *corev1.NodeAffinity) SentinelSettings {
+func convertSentinel(svc apistructs.Service, affinity *corev1.Affinity) SentinelSettings {
 	settings := SentinelSettings{}
-	settings.Affinity = &corev1.Affinity{NodeAffinity: affinity}
+	settings.Affinity = affinity
 	settings.Envs = svc.Env
 	settings.Replicas = int32(svc.Scale)
 	settings.Resources = corev1.ResourceRequirements{

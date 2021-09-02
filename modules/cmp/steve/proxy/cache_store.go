@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package proxy
 
@@ -18,7 +19,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/rancher/apiserver/pkg/apierror"
@@ -35,10 +35,9 @@ import (
 type cacheStore struct {
 	types.Store
 
-	ctx     context.Context
-	asl     accesscontrol.AccessSetLookup
-	cache   *cache.Cache
-	cancels sync.Map
+	ctx   context.Context
+	asl   accesscontrol.AccessSetLookup
+	cache *cache.Cache
 }
 
 type cacheKey struct {
@@ -93,7 +92,14 @@ func (c *cacheStore) List(apiOp *types.APIRequest, schema *types.APISchema) (typ
 	}
 
 	go func() {
-		list, err := c.Store.List(apiOp, schema)
+		user, ok := request.UserFrom(apiOp.Context())
+		if !ok {
+			logrus.Errorf("user not found in context when steve auth")
+			return
+		}
+		ctx := request.WithUser(c.ctx, user)
+		newOp := apiOp.WithContext(ctx)
+		list, err := c.Store.List(newOp, schema)
 		if err != nil {
 			logrus.Errorf("failed to list %s in steve cache store, %v", gvk.Kind, err)
 			return

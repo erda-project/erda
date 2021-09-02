@@ -1,23 +1,20 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package discover
 
-import (
-	"os"
-
-	"github.com/sirupsen/logrus"
-)
+import "sort"
 
 // 定义各个服务地址的环境变量配置名字.
 const (
@@ -79,119 +76,72 @@ const (
 	SvcCoreServices   = "core-services"
 )
 
-func EventBox() string {
-	return getURL(EnvEventBox, SvcEventBox)
+var servicesEnvKeys = map[string]string{
+	SvcEventBox:       EnvEventBox,
+	SvcCMDB:           EnvCMDB,
+	SvcScheduler:      EnvScheduler,
+	SvcDiceHub:        EnvDiceHub,
+	SvcSoldier:        EnvSoldier,
+	SvcOrchestrator:   EnvOrchestrator,
+	SvcAddOnPlatform:  EnvAddOnPlatform,
+	SvcGittar:         EnvGittar,
+	SvcGittarAdaptor:  EnvGittarAdaptor,
+	SvcCollector:      EnvCollector,
+	SvcMonitor:        EnvMonitor,
+	SvcPipeline:       EnvPipeline,
+	SvcHepa:           EnvHepa,
+	SvcCMP:            EnvCMP,
+	SvcOpenapi:        EnvOpenapi,
+	SvcKMS:            EnvKMS,
+	SvcQA:             EnvQA,
+	SvcAPIM:           EnvAPIM,
+	SvcTMC:            EnvTMC,
+	SvcMSP:            EnvMSP,
+	SvcUC:             EnvUC,
+	SvcClusterDialer:  EnvClusterDialer,
+	SvcDOP:            EnvDOP,
+	SvcECP:            EnvECP,
+	SvcClusterManager: EnvClusterManager,
+	SvcCoreServices:   EnvCoreServices,
 }
 
-func CMDB() string {
-	return getURL(EnvCMDB, SvcCMDB)
-}
-
-func Scheduler() string {
-	return getURL(EnvScheduler, SvcScheduler)
-}
-
-func DiceHub() string {
-	return getURL(EnvDiceHub, SvcDiceHub)
-}
-
-func Soldier() string {
-	return getURL(EnvSoldier, SvcSoldier)
-}
-
-func Orchestrator() string {
-	return getURL(EnvOrchestrator, SvcOrchestrator)
-}
-
-func AddOnPlatform() string {
-	return getURL(EnvAddOnPlatform, SvcAddOnPlatform)
-}
-
-func Gittar() string {
-	return getURL(EnvGittar, SvcGittar)
-}
-
-func GittarAdaptor() string {
-	return getURL(EnvGittarAdaptor, SvcGittarAdaptor)
-}
-
-func Collector() string {
-	return getURL(EnvCollector, SvcCollector)
-}
-
-func Monitor() string {
-	return getURL(EnvMonitor, SvcMonitor)
-}
-
-func Pipeline() string {
-	return getURL(EnvPipeline, SvcPipeline)
-}
-
-func Hepa() string {
-	return getURL(EnvHepa, SvcHepa)
-}
-
-func TMC() string {
-	return getURL(EnvTMC, SvcTMC)
-}
-
-func MSP() string {
-	return getURL(EnvMSP, SvcMSP)
-}
-
-func CMP() string {
-	return getURL(EnvCMP, SvcCMP)
-}
-
-func Openapi() string {
-	return getURL(EnvOpenapi, SvcOpenapi)
-}
-
-func KMS() string {
-	return getURL(EnvKMS, SvcKMS)
-}
-
-func QA() string {
-	return getURL(EnvQA, SvcQA)
-}
-
-func APIM() string {
-	return getURL(EnvAPIM, SvcAPIM)
-}
-
-func UC() string {
-	return getURL(EnvUC, SvcUC)
-}
-
-func ClusterDialer() string {
-	return getURL(EnvClusterDialer, SvcClusterDialer)
-}
-
-func DOP() string {
-	return getURL(EnvDOP, SvcDOP)
-}
-
-func CoreServices() string {
-	return getURL(EnvCoreServices, SvcCoreServices)
-}
-
-func ECP() string {
-	return getURL(EnvECP, SvcECP)
-}
-
-func ClusterManager() string {
-	return getURL(EnvClusterManager, SvcClusterManager)
-}
-
-func getURL(envKey, srvName string) string {
-	v := os.Getenv(envKey)
-	if v != "" {
-		return v
+func Services() []string {
+	list := make([]string, 0, len(servicesEnvKeys))
+	for key := range servicesEnvKeys {
+		list = append(list, key)
 	}
-	url, err := GetEndpoint(srvName)
-	if err != nil {
-		logrus.Infof("get endpoint failed, service name: %s, error: %s",
-			srvName, err)
-	}
+	sort.Strings(list)
+	return list
+}
+
+func EventBox() string       { return getURL(SvcEventBox) }
+func CMDB() string           { return getURL(SvcCMDB) }
+func Scheduler() string      { return getURL(SvcScheduler) }
+func DiceHub() string        { return getURL(SvcDiceHub) }
+func Soldier() string        { return getURL(SvcSoldier) }
+func Orchestrator() string   { return getURL(SvcOrchestrator) }
+func AddOnPlatform() string  { return getURL(SvcAddOnPlatform) }
+func Gittar() string         { return getURL(SvcGittar) }
+func GittarAdaptor() string  { return getURL(SvcGittarAdaptor) }
+func Collector() string      { return getURL(SvcCollector) }
+func Monitor() string        { return getURL(SvcMonitor) }
+func Pipeline() string       { return getURL(SvcPipeline) }
+func Hepa() string           { return getURL(SvcHepa) }
+func TMC() string            { return getURL(SvcTMC) }
+func MSP() string            { return getURL(SvcMSP) }
+func CMP() string            { return getURL(SvcCMP) }
+func Openapi() string        { return getURL(SvcOpenapi) }
+func KMS() string            { return getURL(SvcKMS) }
+func QA() string             { return getURL(SvcQA) }
+func APIM() string           { return getURL(SvcAPIM) }
+func UC() string             { return getURL(SvcUC) }
+func ClusterDialer() string  { return getURL(SvcClusterDialer) }
+func DOP() string            { return getURL(SvcDOP) }
+func CoreServices() string   { return getURL(SvcCoreServices) }
+func ECP() string            { return getURL(SvcECP) }
+func ClusterManager() string { return getURL(SvcClusterManager) }
+
+func getURL(srvName string) string {
+	url, _ := GetEndpoint(srvName)
 	return url
 }

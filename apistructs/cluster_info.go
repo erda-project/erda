@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apistructs
 
@@ -41,6 +42,8 @@ const (
 	NEXUS_USERNAME          ClusterInfoMapKey = "NEXUS_USERNAME"          // nexus 用户名
 	NEXUS_PASSWORD          ClusterInfoMapKey = "NEXUS_PASSWORD"          // nexus的密码
 	REGISTRY_ADDR           ClusterInfoMapKey = "REGISTRY_ADDR"           // registry的地址
+	REGISTRY_USERNAME       ClusterInfoMapKey = "REGISTRY_USERNAME"       // registry username
+	REGISTRY_PASSWORD       ClusterInfoMapKey = "REGISTRY_PASSWORD"       // registry password
 	SOLDIER_ADDR            ClusterInfoMapKey = "SOLDIER_ADDR"            // soldier的地址
 	NETPORTAL_URL           ClusterInfoMapKey = "NETPORTAL_URL"           // netportal的集群入口url
 	EDASJOB_CLUSTER_NAME    ClusterInfoMapKey = "EDASJOB_CLUSTER_NAME"    // edas 集群可能会使用别的集群运行 JOB，若该字段为空，则说明使用本集群运行 JOB

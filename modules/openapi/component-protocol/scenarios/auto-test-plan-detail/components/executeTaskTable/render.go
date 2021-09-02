@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package executeTaskTable
 
@@ -24,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
 )
 
 type ExecuteTaskTable struct {
@@ -36,13 +38,14 @@ type ExecuteTaskTable struct {
 }
 
 type State struct {
-	Total      int64  `json:"total"`
-	PageSize   int64  `json:"pageSize"`
-	PageNo     int64  `json:"pageNo"`
-	PipelineID uint64 `json:"pipelineId"`
-	StepID     uint64 `json:"stepId"`
-	Name       string `json:"name"`
-	Unfold     bool   `json:"unfold"`
+	Total          int64                         `json:"total"`
+	PageSize       int64                         `json:"pageSize"`
+	PageNo         int64                         `json:"pageNo"`
+	PipelineID     uint64                        `json:"pipelineId"`
+	StepID         uint64                        `json:"stepId"`
+	Name           string                        `json:"name"`
+	Unfold         bool                          `json:"unfold"`
+	PipelineDetail *apistructs.PipelineDetailDTO `json:"pipelineDetail"`
 }
 
 type operationData struct {
@@ -189,7 +192,7 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "id",
+		"rowKey": "key",
 		"scroll": map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
@@ -291,6 +294,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 			}
 			if task.Labels == nil || len(task.Labels) == 0 {
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -382,6 +386,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					path = ""
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -416,6 +421,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					}
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -447,6 +453,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					}
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -514,16 +521,13 @@ func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *a
 		e.State.PageNo = DefaultPageNo
 		e.State.PageSize = DefaultPageSize
 	}
-	if e.State.PipelineID == 0 {
+	if e.State.PipelineDetail.ID == 0 {
 		c.Data = map[string]interface{}{}
 		return nil
 	}
 
-	list, err := bdl.Bdl.GetPipeline(e.State.PipelineID)
-	if err != nil {
-		return err
-	}
-	err = e.setData(list)
+	list := e.State.PipelineDetail
+	err := e.setData(list)
 	if err != nil {
 		return err
 	}

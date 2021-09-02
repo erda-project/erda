@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package taskop
 
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -206,9 +208,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.Action = *action
 	// --- uuid ---
 	task.Extra.UUID = fmt.Sprintf("pipeline-task-%d", task.ID)
+	task.Extra.EncryptSecretKeys = p.Snapshot.EncryptSecretKeys
 
 	const (
-		TerminusDefineTag = "TERMINUS_DEFINE_TAG"
 		PipelineTaskLogID = "PIPELINE_TASK_LOG_ID"
 		PipelineDebugMode = "PIPELINE_DEBUG_MODE"
 		AgentEnvPrefix    = "ACTIONAGENT_"
@@ -252,7 +254,6 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		// If set to privateEnvs, cannot set to debug mode if agent invoke platform to fetch privateEnvs failed.
 		task.Extra.PublicEnvs[AgentEnvPrefix+k] = v
 	}
-	task.Extra.PublicEnvs[TerminusDefineTag] = task.Extra.UUID
 	task.Extra.PublicEnvs["PIPELINE_ID"] = strconv.FormatUint(p.ID, 10)
 	task.Extra.PublicEnvs["PIPELINE_TASK_ID"] = fmt.Sprintf("%v", task.ID)
 	task.Extra.PublicEnvs["PIPELINE_TASK_NAME"] = task.Name
@@ -278,7 +279,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if task.Extra.Labels == nil {
 		task.Extra.Labels = make(map[string]string)
 	}
-	task.Extra.Labels[TerminusDefineTag] = task.Extra.UUID
+	task.Extra.Labels[apistructs.TerminusDefineTag] = task.Extra.UUID
 
 	// --- image ---
 	// 所有 action，包括 custom-script，都需要在 ext market 注册；
@@ -315,6 +316,14 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 			task.Extra.Labels[apistructs.LabelPack] = "true"
 		}
 	}
+
+	// --- task containers ---
+	taskContainers, err := containers.GenContainers(task)
+	if err != nil {
+		return false, apierrors.ErrRunPipeline.InvalidState(
+			fmt.Sprintf("failed to make task containers err: %v", err))
+	}
+	task.Extra.TaskContainers = taskContainers
 
 	// --- resource ---
 	task.Extra.RuntimeResource = spec.RuntimeResource{

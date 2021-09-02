@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package errorresp
 
@@ -18,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Error Codes i18n templates
@@ -31,6 +33,7 @@ var (
 	templateAlreadyExists         = i18n.NewTemplate("AlreadyExists", "资源已存在")
 	templateInternalError         = i18n.NewTemplate("InternalError", "异常 %s")
 	templateErrorVerificationCode = i18n.NewTemplate("ErrorVerificationCode", "验证码错误 %s")
+	templateAuthorizedRoles       = i18n.NewTemplate("AuthorizedRoles", "有权限的角色: %s")
 )
 
 // MissingParameter 缺少参数
@@ -67,6 +70,11 @@ func (e *APIError) AccessDenied() *APIError {
 func (e *APIError) NotFound() *APIError {
 	return e.dup().appendCode(http.StatusNotFound, "NotFound").
 		appendLocaleTemplate(templateNotFound)
+}
+
+// Error prompts who has permission for the request
+func (e *APIError) AppendAuthorizedRoles(roles []string) *APIError {
+	return e.dup().appendLocaleTemplate(templateAuthorizedRoles, strutil.Join(roles, ", "))
 }
 
 func IsNotFound(e error) bool {

@@ -1,20 +1,22 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -42,7 +44,22 @@ func (e *Endpoints) CICDTaskLog(ctx context.Context, r *http.Request, vars map[s
 	if err := queryStringDecoder.Decode(&logReq, r.URL.Query()); err != nil {
 		return apierrors.ErrGetCICDTaskLog.InvalidParameter(err).ToResp(), nil
 	}
-	logReq.ID = task.Extra.UUID
+	logID := task.Extra.UUID
+	if logReq.ID != "" {
+		var exist bool
+		for _, container := range task.Extra.TaskContainers {
+			if container.ContainerID == logReq.ID {
+				exist = true
+			}
+		}
+		if !exist {
+			return apierrors.ErrGetCICDTaskLog.InvalidParameter(
+				fmt.Errorf("container: %s don't exist", logReq.ID),
+			).ToResp(), nil
+		}
+		logID = logReq.ID
+	}
+	logReq.ID = logID
 	logReq.Source = apistructs.DashboardSpotLogSourceJob
 
 	log, err := e.bdl.GetLog(logReq)
@@ -59,6 +76,27 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 		return apierrors.ErrDownloadCICDTaskLog.InternalError(err)
 	}
 
+	var logReq apistructs.DashboardSpotLogRequest
+	if err := queryStringDecoder.Decode(&logReq, r.URL.Query()); err != nil {
+		return apierrors.ErrDownloadCICDTaskLog.InvalidParameter(err)
+	}
+
+	logID := task.Extra.UUID
+	if logReq.ID != "" {
+		var exist bool
+		for _, container := range task.Extra.TaskContainers {
+			if container.ContainerID == logReq.ID {
+				exist = true
+			}
+		}
+		if !exist {
+			return apierrors.ErrDownloadCICDTaskLog.InvalidParameter(
+				fmt.Errorf("container: %s don't exist", logReq.ID),
+			)
+		}
+		logID = logReq.ID
+	}
+
 	// proxy
 	r.URL.Scheme = "http"
 	r.Host = discover.Monitor()
@@ -66,7 +104,10 @@ func (e *Endpoints) ProxyCICDTaskLogDownload(ctx context.Context, r *http.Reques
 	r.URL.Path = "/api/logs/actions/download"
 	q := r.URL.Query()
 	q.Add("source", string(apistructs.DashboardSpotLogSourceJob))
-	q.Add("id", task.Extra.UUID)
+	q.Add("id", logID)
+	q.Add("start", strconv.FormatInt(int64(logReq.Start), 10))
+	q.Add("end", strconv.FormatInt(int64(logReq.End), 10))
+	q.Add("stream", string(logReq.Stream))
 	r.URL.RawQuery = q.Encode()
 
 	return nil

@@ -1,21 +1,24 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package expression
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_expression(t *testing.T) {
@@ -85,4 +88,10 @@ func TestReconcile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQuote(t *testing.T) {
+	s := "version: \"1.1\"\nstages:\n  - stage:\n      - api-test:\n          alias: \"8231\"\n          version: \"2.0\"\n          params:\n            asserts:\n              - arg: aa\n                operator: not_empty\n                value: \"\"\n            body:\n              content: null\n              type: \"\"\n            headers: []\n            id: \"\"\n            method: GET\n            name: 获取yml文件\n            out_params:\n              - expression: data.meta.pipelineYml\n                key: aa\n                source: body:json\n            params:\n              - desc: \"\"\n                key: scope\n                value: project-app\n              - desc: \"\"\n                key: scopeID\n                value: \"2\"\n            url: /api/project-pipeline/filetree/Mi8yL3RyZWUvbWFzdGVyL3BpcGVsaW5lLnltbA%3D%3D?scopeID=2&scope=project-app\n          labels:\n            AUTOTESTTYPE: STEP\n            STEP: eyJpZCI6ODIzMSwidHlwZSI6IkFQSSIsIm1ldGhvZCI6IiIsInZhbHVlIjoie1wiYXBpU3BlY1wiOntcImFzc2VydHNcIjpbe1wiYXJnXCI6XCJhYVwiLFwib3BlcmF0b3JcIjpcIm5vdF9lbXB0eVwiLFwidmFsdWVcIjpcIlwifV0sXCJib2R5XCI6e1wiY29udGVudFwiOm51bGwsXCJ0eXBlXCI6XCJcIn0sXCJoZWFkZXJzXCI6W10sXCJpZFwiOlwiXCIsXCJtZXRob2RcIjpcIkdFVFwiLFwibmFtZVwiOlwi6I635Y+WeW1s5paH5Lu2XCIsXCJvdXRfcGFyYW1zXCI6W3tcImV4cHJlc3Npb25cIjpcImRhdGEubWV0YS5waXBlbGluZVltbFwiLFwia2V5XCI6XCJhYVwiLFwic291cmNlXCI6XCJib2R5Ompzb25cIn1dLFwicGFyYW1zXCI6W3tcImRlc2NcIjpcIlwiLFwia2V5XCI6XCJzY29wZVwiLFwidmFsdWVcIjpcInByb2plY3QtYXBwXCJ9LHtcImRlc2NcIjpcIlwiLFwia2V5XCI6XCJzY29wZUlEXCIsXCJ2YWx1ZVwiOlwiMlwifV0sXCJ1cmxcIjpcIi9hcGkvcHJvamVjdC1waXBlbGluZS9maWxldHJlZS9NaTh5TDNSeVpXVXZiV0Z6ZEdWeUwzQnBjR1ZzYVc1bExubHRiQSUzRCUzRD9zY29wZUlEPTJcXHUwMDI2c2NvcGU9cHJvamVjdC1hcHBcIn0sXCJsb29wXCI6bnVsbH0iLCJuYW1lIjoi6I635Y+WeW1s5paH5Lu2IiwicHJlSUQiOjAsInByZVR5cGUiOiJTZXJpYWwiLCJzY2VuZUlEIjo5NTEsInNwYWNlSUQiOjcsImNyZWF0b3JJRCI6IiIsInVwZGF0ZXJJRCI6IiIsIkNoaWxkcmVuIjpudWxsLCJhcGlTcGVjSUQiOjB9\n          if: ${{ 1 == 1 }}"
+	qs := Quote(s)
+	assert.Equal(t, false, s == qs)
 }

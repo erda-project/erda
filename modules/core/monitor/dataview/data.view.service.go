@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package dataview
 
@@ -24,6 +25,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -69,52 +72,45 @@ func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *p
 }
 
 func (s *dataViewService) ListSystemViews(ctx context.Context, req *pb.ListSystemViewsRequest) (*pb.ListSystemViewsResponse, error) {
-	list, err := s.sys.ListByFields(map[string]interface{}{
-		"Scope":   req.Scope,
-		"ScopeID": req.ScopeID,
-	})
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+	views := *monitor.GetSystemChartview()
+
+	vlist := &pb.ViewList{}
+	var vs []*pb.View
+	for _, v := range views {
+		viewFileUnmarshal, err := conf.FileUnmarshal(conf.JsonFileExtension, v.Content)
+		view := viewFileUnmarshal.(map[string]interface{})
+		if err != nil {
+			continue
+		}
+		if view["scope"].(string) == req.Scope || view["scopeId"].(string) == req.ScopeID {
+			marshal, err := json.Marshal(view)
+			if err != nil {
+				return nil, errors.NewInternalServerError(err)
+			}
+			view := pb.View{}
+			err = json.Unmarshal(marshal, &view)
+			vs = append(vs, &view)
+		}
 	}
-	views := &pb.ViewList{}
-	for _, item := range list {
-		view := s.parseViewBlocks(&pb.View{
-			Id:        item.ID,
-			Scope:     item.Scope,
-			ScopeID:   item.ScopeID,
-			Version:   item.Version,
-			Name:      item.Name,
-			Desc:      item.Desc,
-			CreatedAt: item.CreatedAt.UnixNano() / int64(time.Millisecond),
-			UpdatedAt: item.UpdatedAt.UnixNano() / int64(time.Millisecond),
-		}, item.ViewConfig, item.DataConfig)
-		views.List = append(views.List, view)
-	}
-	views.Total = int64(len(views.List))
-	return &pb.ListSystemViewsResponse{Data: views}, nil
+	vlist.List = vs
+	vlist.Total = int64(len(vs))
+	return &pb.ListSystemViewsResponse{Data: vlist}, nil
 }
 
 func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemViewRequest) (*pb.GetSystemViewResponse, error) {
-	data, err := s.sys.GetByFields(map[string]interface{}{
-		"ID": req.Id,
-	})
+	if req.Id == "" {
+		return nil, errors.NewMissingParameterError("id")
+	}
+	chartView := (*monitor.GetSystemChartview())[req.Id]
+	if chartView == nil {
+		return nil, errors.NewNotFoundError(req.Id)
+	}
+	view := pb.View{}
+	err := json.Unmarshal((*chartView).Content, &view)
 	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+		return nil, errors.NewInternalServerError(err)
 	}
-	if data == nil {
-		return nil, errors.NewNotFoundError(fmt.Sprintf("view/%s", req.Id))
-	}
-	view := s.parseViewBlocks(&pb.View{
-		Id:        data.ID,
-		Scope:     data.Scope,
-		ScopeID:   data.ScopeID,
-		Version:   data.Version,
-		Name:      data.Name,
-		Desc:      data.Desc,
-		CreatedAt: data.CreatedAt.UnixNano() / int64(time.Millisecond),
-		UpdatedAt: data.UpdatedAt.UnixNano() / int64(time.Millisecond),
-	}, data.ViewConfig, data.DataConfig)
-	return &pb.GetSystemViewResponse{Data: view}, nil
+	return &pb.GetSystemViewResponse{Data: &view}, nil
 }
 
 func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {

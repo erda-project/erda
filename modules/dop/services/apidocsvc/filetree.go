@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apidocsvc
 
@@ -89,9 +90,11 @@ func (svc *Service) CopyNode(req *apistructs.APIDocMvCpNodeReq) (*apistructs.Fil
 	}
 }
 
-// 获取子节点列表
+// ListChildren lists all children nodes
+// if the parent node is 0, it lists all branches,
+// else if the TreeName is "api-docs", lists all api docs,  if the TreeName is "schemas", lists schemas.
 func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	// 对于 pinode == 0 的情况, 直接列出应用下的分支, 不用管要查找的是 API 文档还是 schema
+	// if pinode==0, list all branches
 	switch {
 	case req.QueryParams.Pinode == "0" && req.QueryParams.Scope == "application":
 		appID, err := strconv.ParseUint(req.QueryParams.ScopeID, 10, 64)
@@ -101,11 +104,10 @@ func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apis
 		return svc.listBranches(req.OrgID, appID, req.Identity.UserID)
 
 	case req.QueryParams.Pinode == "0":
-		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope 错误, 本目录树仅支持应用层级, scope: %s", req.QueryParams.Scope))
+		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope error, there is no preject-level file tree, scope: %s", req.QueryParams.Scope))
 	}
 
-	// 对于 pinode != 0 的情况, 列出应用下的 "服务"
-	// ps: 目前没有项目级的目录树, 所以不必讨论节点的层级, 直接查叶子节点即可; 以后有项目级目录树后, 需要讨论节点层级
+	// pinode != 0, query docs or schemas
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
 		return svc.listAPIDocs(req.OrgID, req.Identity.UserID, req.QueryParams.Pinode)

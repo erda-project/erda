@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package reconciler
 
@@ -19,16 +20,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 const (
@@ -61,9 +66,14 @@ type Reconciler struct {
 	pipelineSvcFunc *PipelineSvcFunc
 }
 
-// 该结构体为了解决假如 Reconciler 引入 pipelinesvc 导致循环依赖问题，所以将 svc 方法挂载进来
+// In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.
+// todo resolve cycle import here through better module architecture
 type PipelineSvcFunc struct {
-	CronNotExecuteCompensate func(id uint64) error
+	CronNotExecuteCompensate                func(id uint64) error
+	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error)
+	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
+	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
+	CreatePipelineGraph                     func(p *spec.Pipeline) (err error)
 }
 
 // New generate a new reconciler.

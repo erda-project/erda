@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package linters
 
@@ -54,8 +55,9 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 	var (
 		// colStorage key is col name, value is col storage size
-		colStorage = make(map[string]int, len(stmt.Cols))
-		colNames   = make(map[string]*ast.ColumnDef, len(stmt.Cols))
+		colStorage      = make(map[string]int)
+		colsCanNotIndex = make(map[string]error)
+		colNames        = make(map[string]*ast.ColumnDef, len(stmt.Cols))
 	)
 	for _, col := range stmt.Cols {
 		colName := ddlconv.ExtractColName(col)
@@ -93,9 +95,8 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 			colStorage[colName] = 8
 
 		case mysql.TypeNull:
-			l.err = linterror.New(l.s, l.text, "do not index on type NULL",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type NULL",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 
 		// For TIME, DATETIME, and TIMESTAMP columns, the storage required for tables created before MySQL 5.6.4 differs
 		// from tables created from 5.6.4 on. This is due to a change in 5.6.4 that permits these types to have a
@@ -133,15 +134,13 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 		// DO NOT INDEX ON BIT !
 		case mysql.TypeBit:
-			l.err = linterror.New(l.s, l.text, "do not index on type BIT",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type BIT",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 
 		// DO NOT INDEX ON JSON
 		case mysql.TypeJSON:
-			l.err = linterror.New(l.s, l.text, "do not index on type JSON",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type JSON",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 
 		// 1 or 2 bytes, depending on the number of enumeration values (65,535 values maximum)
 		case mysql.TypeEnum:
@@ -153,14 +152,12 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 		// DO NOT INDEX ON BLOB
 		case mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob, mysql.TypeBlob:
-			l.err = linterror.New(l.s, l.text, "do not index on type BLOB",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type BLOB",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 
 		case mysql.TypeVarString:
-			l.err = linterror.New(l.s, l.text, "do not index on type VAR_STRING",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type VAR_STRING",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 
 		// TypeString is type CHAR
 		case mysql.TypeString:
@@ -172,13 +169,12 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 		// DO NOT INDEX ON GEOMETRY
 		case mysql.TypeGeometry:
-			l.err = linterror.New(l.s, l.text, "do not index on type GEOMETRY",
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type GEOMETRY",
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
+
 		default:
-			l.err = linterror.New(l.s, l.text, "do not index on type "+types.TypeStr(col.Tp.Tp),
+			colsCanNotIndex[colName] = linterror.New(l.s, l.text, "do not index on type "+types.TypeStr(col.Tp.Tp),
 				func(line []byte) bool { return bytes.Contains(bytes.ToLower(line), []byte(colName)) })
-			return in, true
 		}
 	}
 	for _, c := range stmt.Constraints {
@@ -196,6 +192,11 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 				l.err = linterror.New(l.s, l.text, "index key out of columns definitions", func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), []byte(key.Column.Name.String()))
 				})
+				return in, true
+			}
+
+			if err, ok := colsCanNotIndex[key.Column.Name.String()]; ok {
+				l.err = err
 				return in, true
 			}
 

@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apierrors
 
@@ -82,6 +83,7 @@ var (
 	ErrListMember                           = err("ErrListMember", "获取成员列表失败")
 	ErrListMemberRoles                      = err("ErrListMemberRoles", "获取成员角色列表失败")
 	ListMembersWithoutExtraByScope          = err("ListMembersWithoutExtraByScope", "获取成员角色列表失败")
+	GetMemberByUserAndScope                 = err("GetMemberByUserAndScope", "获取成员失败")
 	ErrGetHost                              = err("ErrGetHost", "获取主机失败")
 	ErrGetHostUsage                         = err("ErrGetHostUsage", "获取主机资源使用失败")
 	ErrListHost                             = err("ErrListHost", "获取主机列表失败")
@@ -198,6 +200,7 @@ var (
 	ErrQueryMBox         = err("ErrQueryMBox", "查询站内信失败")
 	ErrGetMBoxStats      = err("ErrGetMBoxStats", "获取站内信统计信息失败")
 	ErrSetMBoxReadStatus = err("ErrSetMBoxReadStatus", "设置站内信已读失败")
+	ErrCleanUnreadMboxs  = err("ErrCleanUnreadMboxs", "一键已读站内信失败")
 
 	ErrCreateIssueStream = err("ErrCreateIssueStream", "创建活动记录列表失败")
 	ErrPagingIssueStream = err("ErrPagingIssueStream", "分页查询活动记录失败")

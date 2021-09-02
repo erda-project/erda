@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package apistructs
 
@@ -65,29 +66,31 @@ type Job struct {
 }
 
 type JobFromUser struct {
-	Name         string                 `json:"name"`
-	Namespace    string                 `json:"namespace"`    // the default namespace is "default"
-	ID           string                 `json:"id,omitempty"` // if Job has owner, e.g. jobflow, it's ID can be specified.
-	CallBackUrls []string               `json:"callbackurls,omitempty"`
-	Image        string                 `json:"image,omitempty"`
-	Resource     string                 `json:"resource,omitempty"`  // Flink时，为jarId；Spark时，为jar url
-	MainClass    string                 `json:"mainClass,omitempty"` // 入口类, 主要用于Flink/Spark
-	MainArgs     []string               `json:"mainArgs"`            // 入口类参数, 主要用于Flink/Spark
-	Cmd          string                 `json:"cmd,omitempty"`
-	CPU          float64                `json:"cpu,omitempty"`
-	Memory       float64                `json:"memory,omitempty"`
-	Labels       map[string]string      `json:"labels,omitempty"`
-	Extra        map[string]string      `json:"extra,omitempty"`
-	Env          map[string]string      `json:"env,omitempty"`
-	Binds        []Bind                 `json:"binds,omitempty"`
-	Volumes      []diceyml.Volume       `json:"volumes,omitempty"`
-	Executor     string                 `json:"executor,omitempty"`
-	ClusterName  string                 `json:"clusterName,omitempty"`
-	Kind         string                 `json:"kind"`              // Metronome/FLink/Spark/LocalDocker/Swarm/Kubernetes
-	Depends      []string               `json:"depends,omitempty"` // JobName
-	PreFetcher   *PreFetcher            `json:"preFetcher,omitempty"`
-	BackoffLimit int                    `json:"backoffLimit,omitempty"`
-	Params       map[string]interface{} `json:"params,omitempty"`
+	Name                    string                 `json:"name"`
+	Namespace               string                 `json:"namespace"`               // the default namespace is "default"
+	NotPipelineControlledNs bool                   `json:"NotPipelineControlledNs"` // if NotPipelineControlledNs is true, resource gc should be attention don't delete namespace
+	ID                      string                 `json:"id,omitempty"`            // if Job has owner, e.g. jobflow, it's ID can be specified.
+	CallBackUrls            []string               `json:"callbackurls,omitempty"`
+	Image                   string                 `json:"image,omitempty"`
+	Resource                string                 `json:"resource,omitempty"`  // Flink时，为jarId；Spark时，为jar url
+	MainClass               string                 `json:"mainClass,omitempty"` // 入口类, 主要用于Flink/Spark
+	MainArgs                []string               `json:"mainArgs"`            // 入口类参数, 主要用于Flink/Spark
+	Cmd                     string                 `json:"cmd,omitempty"`
+	CPU                     float64                `json:"cpu,omitempty"`
+	Memory                  float64                `json:"memory,omitempty"`
+	Labels                  map[string]string      `json:"labels,omitempty"`
+	Extra                   map[string]string      `json:"extra,omitempty"`
+	Env                     map[string]string      `json:"env,omitempty"`
+	Binds                   []Bind                 `json:"binds,omitempty"`
+	Volumes                 []diceyml.Volume       `json:"volumes,omitempty"`
+	Executor                string                 `json:"executor,omitempty"`
+	ClusterName             string                 `json:"clusterName,omitempty"`
+	Kind                    string                 `json:"kind"`              // Metronome/FLink/Spark/LocalDocker/Swarm/Kubernetes
+	Depends                 []string               `json:"depends,omitempty"` // JobName
+	PreFetcher              *PreFetcher            `json:"preFetcher,omitempty"`
+	BackoffLimit            int                    `json:"backoffLimit,omitempty"`
+	Params                  map[string]interface{} `json:"params,omitempty"`
+	TaskContainers          []TaskContainer        `json:"taskContainers"`
 }
 
 // PreFetcher 用于 job 下载功能

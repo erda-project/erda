@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package k8s
 
@@ -19,7 +20,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
-	"time"
 	"unsafe"
 
 	"github.com/pkg/errors"
@@ -271,17 +271,20 @@ func (impl *K8SAdapterImpl) CheckDomainExist(domain string) (bool, error) {
 }
 
 func (impl *K8SAdapterImpl) DeleteIngress(namespace, name string) error {
+	name = strings.ToLower(name)
 	exist, err := impl.CheckIngressExist(namespace, name)
 	if err != nil {
 		return err
 	}
 	if !exist {
+		logrus.Warnf("ingress not found, namespace:%s, name:%s", namespace, name)
 		return nil
 	}
-	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), strings.ToLower(name), metav1.DeleteOptions{})
+	err = impl.ingressesHelper.Ingresses(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Errorf("delete ingress %s failed, ns:%s, err:%s", name, namespace, err)
 	}
+	logrus.Infof("ingress deleted, namespace:%s, name:%s", namespace, name)
 	return nil
 }
 
@@ -369,29 +372,14 @@ func (impl *K8SAdapterImpl) CreateOrUpdateIngress(namespace, name string, routes
 			return false, err
 		}
 		log.Debugf("begin create ingress, name:%s, ns:%s", ingressName, namespace)
-		if !routeOptions.InjectRuntimeDomain {
-			_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
-			if err != nil {
-				return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
-					ingressName, namespace, err)
-			}
-			log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
-			return false, nil
-		} else {
-			//TODO optimize kong sync
-			go func() {
-				log.Infof("start async create ingress, name:%s, ns:%s", ingressName, namespace)
-				time.Sleep(time.Duration(60) * time.Second)
-				_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
-				if err != nil {
-					log.Errorf("create ingress %s failed, ns:%s, err:%s",
-						ingressName, namespace, err)
-					return
-				}
-				log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
-			}()
-			return false, nil
+
+		_, err = ns.Create(context.Background(), ingress, metav1.CreateOptions{})
+		if err != nil {
+			return false, errors.Errorf("create ingress %s failed, ns:%s, err:%s",
+				ingressName, namespace, err)
 		}
+		log.Infof("new ingress created, name:%s, ns:%s", ingressName, namespace)
+		return false, nil
 	}
 	oldAnnotations, err := impl.ingressesHelper.IngressAnnotationBatchGet(exist)
 	if err != nil {
@@ -517,8 +505,7 @@ func (impl *K8SAdapterImpl) UpdateIngressAnnotaion(namespace, name string, annot
 	ingressName := strings.ToLower(name)
 	ingress, err := ns.Get(context.Background(), ingressName, metav1.GetOptions{})
 	if err != nil {
-		log.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
-		return errors.Errorf("ingress %s is creating, please retry after about 60 seconds", ingressName)
+		return errors.Errorf("get ingress %s failed, ns:%s, err:%s", ingressName, namespace, err)
 	}
 	for key, value := range annotaion {
 		if value == nil {

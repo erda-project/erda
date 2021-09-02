@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package steve
 
@@ -34,8 +35,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/erda-project/erda/modules/cmp/cache"
-	"github.com/erda-project/erda/modules/cmp/conf"
 	fm "github.com/erda-project/erda/modules/cmp/steve/formatter"
 	cmpproxy "github.com/erda-project/erda/modules/cmp/steve/proxy"
 )
@@ -47,10 +46,9 @@ func DefaultSchemas(baseSchema *types.APISchemas) {
 
 func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
 	discovery discovery.DiscoveryInterface, asl accesscontrol.AccessSetLookup, k8sInterface kubernetes.Interface) []schema.Template {
-	cache, _ := cache.New(conf.CacheSize(), conf.CacheSegSize())
-	nodeFormatter := fm.NewNodeFormatter(ctx, cache, k8sInterface)
+	nodeFormatter := fm.NewNodeFormatter(ctx, k8sInterface)
 	return []schema.Template{
-		DefaultTemplate(cf, asl, cache),
+		DefaultTemplate(ctx, cf, asl),
 		apigroups.Template(discovery),
 		{
 			ID:        "configmap",
@@ -71,9 +69,9 @@ func DefaultSchemaTemplates(ctx context.Context, cf *client.Factory,
 	}
 }
 
-func DefaultTemplate(clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup, cache *cache.Cache) schema.Template {
+func DefaultTemplate(ctx context.Context, clientGetter proxy.ClientGetter, asl accesscontrol.AccessSetLookup) schema.Template {
 	return schema.Template{
-		Store:     cmpproxy.NewProxyStore(clientGetter, asl, cache),
+		Store:     cmpproxy.NewProxyStore(ctx, clientGetter, asl),
 		Formatter: formatter(),
 	}
 }

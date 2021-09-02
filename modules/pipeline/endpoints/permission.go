@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -20,7 +21,9 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // checkPipelineCronPermission 包装校验 cron 权限
@@ -60,27 +63,46 @@ func (e *Endpoints) checkBranchPermission(r *http.Request, appIDStr, branch stri
 func (e *Endpoints) checkPipelineOperatePermission(r *http.Request, pipelineID uint64,
 	operateRequest apistructs.PipelineOperateRequest, permissionAction string) error {
 
-	// 校验 pipeline 是否合法
+	// Verify that the pipeline is legal
 	p, err := e.dbClient.GetPipeline(pipelineID)
 	if err != nil {
 		return apierrors.ErrGetPipeline.InvalidParameter(err)
 	}
-	// 校验 task 是否属于当前 pipeline
-	tasks, err := e.dbClient.ListPipelineTasksByPipelineID(pipelineID)
+
+	yml, err := pipelineyml.New([]byte(p.PipelineYml))
+	if err != nil {
+		return apierrors.ErrCheckPermission.InvalidParameter(
+			fmt.Sprintf("yml parse error: %v", p.ID))
+	}
+
+	stages, err := e.dbClient.ListPipelineStageByPipelineID(p.ID)
+	if err != nil {
+		return apierrors.ErrCheckPermission.InvalidParameter(
+			fmt.Sprintf("list pipeline stages error pipelineID: %v", p.ID))
+	}
+
+	tasks, err := e.pipelineSvc.MergePipelineYmlTasks(yml, nil, &p, stages, nil)
 	if err != nil {
 		return apierrors.ErrListPipelineTasks.InvalidParameter(err)
 	}
-	validTaskMap := make(map[uint64]struct{}, 0)
-	for _, task := range tasks {
-		validTaskMap[task.ID] = struct{}{}
-	}
-	for _, taskReq := range operateRequest.TaskOperates {
-		if _, ok := validTaskMap[taskReq.TaskID]; !ok {
-			return apierrors.ErrCheckPermission.InvalidParameter(
-				fmt.Sprintf("task not belong to pipeline, taskID: %d, pipelineID: %d", taskReq.TaskID, pipelineID))
-		}
+
+	if err = checkTaskOperatesBelongToTasks(operateRequest.TaskOperates, tasks); err != nil {
+		return err
 	}
 
-	// 校验分支权限
 	return e.checkBranchPermission(r, p.Labels[apistructs.LabelAppID], p.Labels[apistructs.LabelBranch], permissionAction)
+}
+
+func checkTaskOperatesBelongToTasks(taskOperates []apistructs.PipelineTaskOperateRequest, tasks []spec.PipelineTask) error {
+	validTaskMap := make(map[string]struct{}, 0)
+	for _, task := range tasks {
+		validTaskMap[task.Name] = struct{}{}
+	}
+	for _, taskReq := range taskOperates {
+		if _, ok := validTaskMap[taskReq.TaskAlias]; !ok {
+			return apierrors.ErrCheckPermission.InvalidParameter(
+				fmt.Sprintf("task not belong to pipeline, taskAlias: %s", taskReq.TaskAlias))
+		}
+	}
+	return nil
 }

@@ -1,80 +1,82 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package adapter
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/golang/mock/gomock"
+	_ "google.golang.org/grpc"
+
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 )
 
-func Test_adapterService_GetAdapters(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.GetAdaptersRequest
+////go:generate mockgen -destination=./adapter_logs_test.go -package exporter github.com/erda-project/erda-infra/base/logs Logger
+////go:generate mockgen -destination=./adapter_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
+func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	//register := NewMockRegister(ctrl)
+	pro := &provider{
+		Cfg: &config{
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+		},
+		Log:            logger,
+		Register:       nil,
+		adapterService: &adapterService{},
+		libraryMap: map[string]interface{}{
+			"Java Agent":        []interface{}{"Java"},
+			"Apache SkyWalking": []interface{}{"Java"},
+		},
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
 	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetAdaptersResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		//		{
-		//			"case 1",
-		//			"erda.msp.apm.adapter.AdapterService",
-		//			`
-		//erda.msp.apm.adapter:
-		//`,
-		//			args{
-		//				context.TODO(),
-		//				&pb.GetAdapterRequest{
-		//					// TODO: setup fields
-		//				},
-		//			},
-		//			&pb.GetAdapterResponse{
-		//				// TODO: setup fields.
-		//			},
-		//			false,
-		//		},
+	pro.adapterService.p = pro
+	_, err := pro.adapterService.GetInstrumentationLibrary(context.Background(), &pb.GetInstrumentationLibraryRequest{})
+	if err != nil {
+		t.Errorf("should not throw err")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.AdapterServiceServer)
-			got, err := srv.GetAdapters(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("adapterService.GetAdapters() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("adapterService.GetAdapters() = %v, want %v", got, tt.wantResp)
-			}
-		})
+}
+
+func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	//register := NewMockRegister(ctrl)
+	pro := &provider{
+		Cfg: &config{
+			Library:    []string{"./../../../../conf/msp/adapter/instrumentationlibrary.yaml"},
+			ConfigFile: []string{"./../../../../conf/msp/adapter/config.yaml"},
+		},
+		Log:            logger,
+		Register:       nil,
+		adapterService: &adapterService{},
+		libraryMap: map[string]interface{}{
+			"Java Agent":        []interface{}{"Java"},
+			"Apache SkyWalking": []interface{}{"Java"},
+		},
+		configFile: "./../../../../conf/msp/adapter/config.yaml",
+	}
+	pro.adapterService.p = pro
+	_, err := pro.adapterService.GetInstrumentationLibraryDocs(context.Background(), &pb.GetInstrumentationLibraryDocsRequest{
+		Language: "java",
+		Strategy: "javaagent",
+	})
+	if err != nil {
+		t.Errorf("shoult not err")
 	}
 }

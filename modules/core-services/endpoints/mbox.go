@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package endpoints
 
@@ -114,6 +115,26 @@ func (e *Endpoints) SetMBoxReadStatus(ctx context.Context, r *http.Request, vars
 	req.OrgID = orgID
 	req.UserID = r.Header.Get("User-ID")
 	err = e.mbox.SetMBoxReadStatus(req)
+	if err != nil {
+		return apierrors.ErrSetMBoxReadStatus.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp("")
+}
+
+// OneClickRead read all unread mbox with one click
+func (e *Endpoints) OneClickRead(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	orgID, err := strconv.ParseInt(r.Header.Get("Org-ID"), 10, 64)
+	if err != nil {
+		return apierrors.ErrCleanUnreadMboxs.MissingParameter("Org-ID header is nil").ToResp(), nil
+	}
+	userID := r.Header.Get("User-ID")
+
+	if orgID == 0 || userID == "" {
+		return apierrors.ErrCleanUnreadMboxs.InvalidParameter("orgID or userID is empty").ToResp(), nil
+	}
+
+	err = e.mbox.OneClickRead(orgID, userID)
 	if err != nil {
 		return apierrors.ErrSetMBoxReadStatus.InternalError(err).ToResp(), nil
 	}

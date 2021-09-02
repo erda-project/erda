@@ -7,7 +7,8 @@
     "AccessDenied": "无权限",
     "NotFound": "资源不存在",
     "AlreadyExists": "资源已存在",
-    "InternalError": "异常 %s"
+    "InternalError": "异常 %s",
+    "AuthorizedRoles": "有权限的角色: %s"
   },
   "en-US": {
     "MissingParameter": "MissingParameter %s",
@@ -17,6 +18,7 @@
     "AccessDenied": "AccessDenied",
     "NotFound": "NotFound",
     "AlreadyExists": "AlreadyExists",
-    "InternalError": "InternalError %s"
+    "InternalError": "InternalError %s",
+    "AuthorizedRoles": "AuthorizedRoles: %s"
   }
 }

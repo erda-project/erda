@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package etcd
 
@@ -58,7 +59,11 @@ func init() {
 			panic(fmt.Errorf("failed to init etcd client, err: %v", err))
 			return nil
 		}
-
+		// health check
+		oneEndpoint := strings.Split(endpoints, ",")[0]
+		if err := checkEtcdStatus(etcdclient.GetClient(), oneEndpoint); err != nil {
+			panic(err)
+		}
 		s := Store{etcdClient: etcdclient}
 
 		return &s
@@ -251,4 +256,14 @@ func getKeyFromEtcd(ctx context.Context, keyID string, etcdClient *etcd.Store) (
 		return nil, err
 	}
 	return &model, nil
+}
+
+func checkEtcdStatus(etcdClient *clientv3.Client, endpoints string) error {
+	oneEndpoint := strings.Split(endpoints, ",")[0]
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	if _, err := etcdClient.Status(timeoutCtx, oneEndpoint); err != nil {
+		return fmt.Errorf("failed to get status of one etcd endpoint %s, err: %v", oneEndpoint, err)
+	}
+	return nil
 }

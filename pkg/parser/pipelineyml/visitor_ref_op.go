@@ -1,19 +1,21 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelineyml
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -26,6 +28,8 @@ import (
 
 const (
 	RefOpOutput = "OUTPUT"
+
+	RefOpExEscape = "escape"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -34,6 +38,7 @@ type RefOp struct {
 	Ref string // ref: alias or namespace
 	Op  string // OPERATION
 	Key string // key
+	Ex  string // Executor
 
 	IsAlias           bool // 是否是 alias
 	IsNamespace       bool // 是否是 namespace
@@ -116,6 +121,7 @@ func (v *RefOpVisitor) Visit(s *Spec) {
 
 // handleOneParamOrCmd handle one param or cmd, return handled result and error.
 // one param or cmd will have zero or multi refOp.
+// TODO make ${{ (escape outputs.alias.xx) }} instead of ${{ outputs.alias.xx.escape }}
 func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 	replaced := strutil.ReplaceAllStringSubmatchFunc(expression.Re, ori, func(sub []string) string {
 		// inner has two formats:
@@ -125,7 +131,7 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 		// 去除两边的空格
 		inner = strings.Trim(inner, " ")
 
-		ss := strings.SplitN(inner, ".", 3)
+		ss := strings.SplitN(inner, ".", 4)
 
 		if len(ss) < 2 {
 			return sub[0]
@@ -153,11 +159,26 @@ func (v *RefOpVisitor) handleOneParamOrCmdV2(ori string) string {
 			// - outputs.alias.key
 			refOp.Op = RefOpOutput
 			refOp.Key = ss[2]
+			if len(ss) == 4 {
+				refOp.Ex = ss[3]
+			}
 			return v.handleOneRefOp(refOp)
 		case expression.Random:
 			typeValue := ss[1]
 			value := mock.MockValue(typeValue)
 			return fmt.Sprintf("%v", value)
+		case expression.Base64Decode:
+			// - base64-decode.xxxxx
+			baseValue := ss[1]
+			decodeBytes, err := base64.StdEncoding.DecodeString(baseValue)
+			if err != nil {
+				v.result.AppendError(fmt.Errorf("failed to base64 decode for %s, err: %v", ori, err))
+				return refOp.Ori
+			}
+			if len(ss) >= 3 {
+				refOp.Ex = ss[2]
+			}
+			return v.handleRefEx(string(decodeBytes), refOp)
 		default: // case 3
 			return refOp.Ori
 		}
@@ -329,7 +350,8 @@ func (v *RefOpVisitor) handleOneRefOpOutput(refOp RefOp) (replaced string) {
 	// found output, return
 	if v.availableOutputs[ActionAlias(refOp.Ref)] != nil {
 		if output, ok := v.availableOutputs[ActionAlias(refOp.Ref)][refOp.Key]; ok {
-			return output
+			// If the user specifies a special escape type， use the executor escape output
+			return v.handleRefEx(output, refOp)
 		}
 	}
 
@@ -364,4 +386,14 @@ func (v *RefOpVisitor) getStageIndex(namespace string) (stageIndex int, isAlias 
 		}
 	}
 	return
+}
+
+func (v *RefOpVisitor) handleRefEx(output string, refOp RefOp) string {
+	switch refOp.Ex {
+	case RefOpExEscape:
+		return expression.Quote(output)
+	default:
+		// do nothing
+		return output
+	}
 }

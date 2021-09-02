@@ -1,21 +1,23 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package bundle
 
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
@@ -120,6 +122,59 @@ func (b *Bundle) ListAddonByRuntimeID(runtimeID string) (*apistructs.AddonListRe
 	return &data, nil
 }
 
+// ListAddonByProjectID get addons by projectID
+func (b *Bundle) ListAddonByProjectID(projectID, orgID int64) (*apistructs.AddonListResponse, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var data apistructs.AddonListResponse
+	r, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/addons")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Param("type", "project").
+		Param("value", strconv.FormatInt(projectID, 10)).
+		Do().
+		JSON(&data)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), data.Error)
+	}
+	return &data, nil
+}
+
+// listConfigSheetAddon query the data source of the configuration sheet
+func (b *Bundle) ListConfigSheetAddon(params url.Values, orgID string, userID string) (*apistructs.AddonListResponse, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var data apistructs.AddonListResponse
+	r, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/addons")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
+		Params(params).
+		Do().
+		JSON(&data)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), data.Error)
+	}
+	return &data, nil
+}
+
 func (b *Bundle) AddonConfigCallback(addonID string, req apistructs.AddonConfigCallBackResponse) (*apistructs.PostAddonConfigCallBackResponse, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
@@ -189,7 +244,7 @@ func (b *Bundle) FindClusterResource(clusterName, orgID string) (*apistructs.Res
 	return &(resp.Data), nil
 }
 
-func (b *Bundle) GetAddon(addonid string) (*apistructs.AddonFetchResponseData, error) {
+func (b *Bundle) GetAddon(addonid string, orgID string, userID string) (*apistructs.AddonFetchResponseData, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
@@ -197,7 +252,10 @@ func (b *Bundle) GetAddon(addonid string) (*apistructs.AddonFetchResponseData, e
 	hc := b.hc
 	var resp apistructs.AddonFetchResponse
 	r, err := hc.Get(host).
-		Path(fmt.Sprintf("/api/addon/%s", addonid)).
+		Path(fmt.Sprintf("/api/addons/%s", addonid)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
 		Do().
 		JSON(&resp)
 	if err != nil {

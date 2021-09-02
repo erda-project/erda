@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package pipelinesvc
 
@@ -41,7 +42,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 		return nil, err
 	}
 
-	if err := s.createPipelineGraph(p); err != nil {
+	if err := s.CreatePipelineGraph(p); err != nil {
 		logrus.Errorf("failed to create pipeline graph, pipelineID: %d, err: %v", p.ID, err)
 		return nil, err
 	}
@@ -175,6 +176,14 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	}
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
+
+	// namespace
+	// if upper layer customize namespace, use custom namespace
+	// default namespace is pipeline controlled
+	if req.Namespace != "" {
+		p.Extra.Namespace = req.Namespace
+		p.Extra.NotPipelineControlledNs = true
+	}
 
 	// 挂载配置
 	p.Extra.StorageConfig.EnableNFS = true

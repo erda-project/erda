@@ -1,21 +1,26 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package steve
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
@@ -26,10 +31,49 @@ var (
 	predefinedServiceAccount     = getPredefinedServiceAccount()
 	predefinedClusterRole        = getPredefinedClusterRole()
 	predefinedClusterRoleBinding = getPredefinedClusterRoleBinding()
+
+	erdaSystemEnv   = "ERDA_NAMESPACE"
+	diceSystemEnv   = "DICE_NAMESPACE"
+	systemNamespace = getSystemNamespace()
+
+	UserGroups map[string]UserGroupInfo
 )
 
+func init() {
+	UserGroups = make(map[string]UserGroupInfo)
+	UserGroups["erda-org-manager"] = UserGroupInfo{
+		ServiceAccountName:      "erda-org-manager",
+		ServiceAccountNamespace: systemNamespace,
+	}
+	UserGroups["erda-org-support"] = UserGroupInfo{
+		ServiceAccountName:      "erda-org-support",
+		ServiceAccountNamespace: systemNamespace,
+	}
+}
+
+func getSystemNamespace() string {
+	ns := ""
+	ns = os.Getenv(erdaSystemEnv)
+	if ns == "" {
+		ns = os.Getenv(diceSystemEnv)
+	}
+	if ns == "" {
+		ns = "erda-system"
+	}
+	return ns
+}
+
 func getPredefinedServiceAccount() []*corev1.ServiceAccount {
-	yamls := strings.Split(ServiceAccountExpression, "\n---\n")
+	tem, err := template.New("sa").Parse(ServiceAccountExpression)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse predefined serviceAccounts, %v", err))
+	}
+	buf := bytes.Buffer{}
+	if err = tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to execute predefined serviceAccounts template, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var sa []*corev1.ServiceAccount
 	for _, yml := range yamls {
 		var tmp corev1.ServiceAccount
@@ -45,7 +89,16 @@ func getPredefinedServiceAccount() []*corev1.ServiceAccount {
 }
 
 func getPredefinedClusterRole() []*rbacv1.ClusterRole {
-	yamls := strings.Split(ClusterRoleExpression, "\n---\n")
+	tem, err := template.New("cr").Parse(ClusterRoleExpression)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoles, %v", err))
+	}
+	buf := bytes.Buffer{}
+	if err := tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoles template, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var cr []*rbacv1.ClusterRole
 	for _, yml := range yamls {
 		var tmp rbacv1.ClusterRole
@@ -61,7 +114,14 @@ func getPredefinedClusterRole() []*rbacv1.ClusterRole {
 }
 
 func getPredefinedClusterRoleBinding() []*rbacv1.ClusterRoleBinding {
-	yamls := strings.Split(ClusterRoleBindingExpression, "\n---\n")
+	tem := template.New("crb")
+	tem = template.Must(tem.Parse(ClusterRoleBindingExpression))
+	buf := bytes.Buffer{}
+	if err := tem.Execute(&buf, systemNamespace); err != nil {
+		panic(fmt.Sprintf("failed to parse predefined clusterRoleBindings, %v", err))
+	}
+
+	yamls := strings.Split(buf.String(), "\n---\n")
 	var crb []*rbacv1.ClusterRoleBinding
 	for _, yml := range yamls {
 		var tmp rbacv1.ClusterRoleBinding
@@ -94,13 +154,6 @@ const (
 	OrgSupportGroup = "erda-support-manager"
 )
 
-var (
-	UserGroups = map[string]UserGroupInfo{
-		"erda-org-manager": {"erda-org-manager", "default"},
-		"erda-org-support": {"erda-org-support", "default"},
-	}
-)
-
 type UserGroupInfo struct {
 	ServiceAccountName      string
 	ServiceAccountNamespace string
@@ -113,17 +166,27 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-manager
-  namespace: default
+  namespace: {{.}}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: erda-org-support
-  namespace: default
+  namespace: {{.}}
 `
 	ClusterRoleExpression = `
 ---
----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: erda-pod-exec
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - 'pods/exec'
+  verbs:
+  - 'create'
 `
 	ClusterRoleBindingExpression = `
 ---
@@ -140,7 +203,22 @@ subjects:
   name: erda-org-support
 - kind: ServiceAccount
   name: erda-org-support
-  namespace: default
+  namespace: {{.}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: erda-pod-exec
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: erda-pod-exec
+subjects:
+- kind: Group
+  name: erda-org-support
+- kind: ServiceAccount
+  name: erda-org-support
+  namespace: {{.}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -155,6 +233,6 @@ subjects:
   name: erda-org-manager
 - kind: ServiceAccount
   name: erda-org-manager
-  namespace: default
+  namespace: {{.}}
 `
 )

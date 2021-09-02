@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package core_services
 package core_services
@@ -29,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
-	"github.com/erda-project/erda/modules/core-services/services/accesskey"
 	"github.com/erda-project/erda/modules/core-services/services/activity"
 	"github.com/erda-project/erda/modules/core-services/services/application"
 	"github.com/erda-project/erda/modules/core-services/services/approve"
@@ -237,11 +237,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		notice.WithDBClient(db),
 	)
 
-	accessKey, err := accesskey.New(accesskey.WithDBClient(db))
-	if err != nil {
-		return nil, err
-	}
-
 	audit := audit.New(
 		audit.WithDBClient(db),
 		audit.WithUCClient(uc),
@@ -286,7 +281,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 		endpoints.WithAudit(audit),
 		endpoints.WithErrorBox(errorBox),
-		endpoints.WithAksk(accessKey),
 		endpoints.WithFileSvc(fileSvc),
 	)
 

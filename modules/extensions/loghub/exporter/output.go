@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package exporter
 
@@ -62,20 +63,26 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 			data.Tags["monitor_log_key"] = key
 		}
 	}
+	if !ok {
+		key, ok = data.Tags["msp_tenant_id"]
+	}
+
 	if len(key) <= 2 {
 		return nil
 	}
 
 	// do filter
 	// allow no filter
-	// todo support filter by es index existence
-	for k, v := range c.filters {
-		val, ok := data.Tags[k]
-		if !ok {
-			return nil
-		}
-		if len(v) > 0 && v != reflectx.BytesToString([]byte(val)) {
-			return nil
+	// todo: support filter by es index existence
+	if c.filters != nil {
+		for k, v := range c.filters {
+			val, ok := data.Tags[k]
+			if !ok {
+				return nil
+			}
+			if len(v) > 0 && v != reflectx.BytesToString(val[1:len(val)-1]) {
+				return nil
+			}
 		}
 	}
 

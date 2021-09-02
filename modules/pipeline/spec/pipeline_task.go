@@ -1,15 +1,16 @@
 // Copyright (c) 2021 Terminus, Inc.
 //
-// This program is free software: you can use, redistribute, and/or modify
-// it under the terms of the GNU Affero General Public License, version 3
-// or later ("AGPL"), as published by the Free Software Foundation.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package spec
 
@@ -60,19 +61,21 @@ func (*PipelineTask) TableName() string {
 }
 
 type PipelineTaskExtra struct {
-	Namespace    string                   `json:"namespace,omitempty"`
-	ExecutorName PipelineTaskExecutorName `json:"executorName,omitempty"`
-	ClusterName  string                   `json:"clusterName,omitempty"`
-	AllowFailure bool                     `json:"allowFailure,omitempty"`
-	Pause        bool                     `json:"pause,omitempty"`
-	Timeout      time.Duration            `json:"timeout,omitempty"`
-	PrivateEnvs  map[string]string        `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
-	PublicEnvs   map[string]string        `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
-	Labels       map[string]string        `json:"labels,omitempty"`
-	Image        string                   `json:"image,omitempty"`
-	Cmd          string                   `json:"cmd,omitempty"`
-	CmdArgs      []string                 `json:"cmdArgs,omitempty"`
-	Binds        []apistructs.Bind        `json:"binds,omitempty"`
+	Namespace               string                     `json:"namespace,omitempty"`
+	NotPipelineControlledNs bool                       `json:"NotPipelineControlledNs,omitempty"`
+	ExecutorName            PipelineTaskExecutorName   `json:"executorName,omitempty"`
+	ClusterName             string                     `json:"clusterName,omitempty"`
+	AllowFailure            bool                       `json:"allowFailure,omitempty"`
+	Pause                   bool                       `json:"pause,omitempty"`
+	Timeout                 time.Duration              `json:"timeout,omitempty"`
+	PrivateEnvs             map[string]string          `json:"envs,omitempty"`       // PrivateEnvs 由 agent 注入 run 运行时，run 可见，容器内不可见
+	PublicEnvs              map[string]string          `json:"publicEnvs,omitempty"` // PublicEnvs 注入容器，run 可见，容器内亦可见
+	Labels                  map[string]string          `json:"labels,omitempty"`
+	Image                   string                     `json:"image,omitempty"`
+	Cmd                     string                     `json:"cmd,omitempty"`
+	CmdArgs                 []string                   `json:"cmdArgs,omitempty"`
+	Binds                   []apistructs.Bind          `json:"binds,omitempty"`
+	TaskContainers          []apistructs.TaskContainer `json:"taskContainers"`
 	// Volumes 创建 task 时的 volumes 快照
 	// 若一开始 volume 无 volumeID，启动 task 后返回的 volumeID 不会在这里更新，只会更新到 task.Context.OutStorages 里
 	Volumes         []apistructs.MetadataField `json:"volumes,omitempty"` //
@@ -95,6 +98,8 @@ type PipelineTaskExtra struct {
 	LoopOptions *apistructs.PipelineTaskLoopOptions `json:"loopOptions,omitempty"` // 开始执行后保证不为空
 
 	AppliedResources apistructs.PipelineAppliedResources `json:"appliedResources,omitempty"`
+
+	EncryptSecretKeys []string `json:"encryptSecretKeys"` // the encrypt envs' key list
 }
 
 type FlinkSparkConf struct {
@@ -195,8 +200,9 @@ func (pt *PipelineTask) Convert2DTO() *apistructs.PipelineTaskDTO {
 		Type:       string(pt.Type),
 		Status:     pt.Status,
 		Extra: apistructs.PipelineTaskExtra{
-			UUID:         pt.Extra.UUID,
-			AllowFailure: pt.Extra.AllowFailure,
+			UUID:           pt.Extra.UUID,
+			AllowFailure:   pt.Extra.AllowFailure,
+			TaskContainers: pt.Extra.TaskContainers,
 		},
 		Labels:       pt.Extra.Action.Labels,
 		Result:       pt.Result,

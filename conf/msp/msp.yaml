@@ -80,6 +80,12 @@ erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
 
+erda.msp.apm.adapter:
+  library:
+    - ${CONFIG_PATH}/adapter/instrumentationlibrary.yaml
+  configFile:
+    - ${CONFIG_PATH}/adapter/config.yaml
+
 # checker
 erda.msp.apm.checker: # checkers apis
 
@@ -144,6 +150,7 @@ erda.msp.resource.deploy.handlers.jvmprofiler:
 erda.msp.resource.deploy.handlers.loganalytics:
 erda.msp.resource.deploy.handlers.loges:
 erda.msp.resource.deploy.handlers.logexporter:
+erda.msp.resource.deploy.handlers.logservice:
 erda.msp.resource.deploy.handlers.monitor:
   ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
   ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"
