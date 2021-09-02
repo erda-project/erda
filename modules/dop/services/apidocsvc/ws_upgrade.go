@@ -28,16 +28,16 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
-// http ==> ws
-// 直接将错误处理写到了 w http.ResponseWriter, 所以调用方不必对错误进行额外处理了
+// Upgrade updates the scheme http to ws.
+// It writes the error to w http.ResponseWriter, so the caller need not to handle the error.
 func (svc *Service) Upgrade(w http.ResponseWriter, r *http.Request, req *apistructs.WsAPIDocHandShakeReq) *errorresp.APIError {
 	ft, err := bundle.NewGittarFileTree(req.URIParams.Inode)
 	if err != nil {
-		return apierrors.WsUpgrade.InvalidParameter("不合法的 inode")
+		return apierrors.WsUpgrade.InvalidParameter("invalid inode")
 	}
 	appID, err := strconv.ParseUint(ft.ApplicationID(), 10, 64)
 	if err != nil {
-		return apierrors.WsUpgrade.InvalidParameter("不合法的 inode")
+		return apierrors.WsUpgrade.InvalidParameter("invalid inode")
 	}
 
 	h := APIDocWSHandler{

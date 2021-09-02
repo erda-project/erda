@@ -142,11 +142,6 @@ type RuntimeDeployResponse struct {
 	Data RuntimeDeployDTO `json:"data"`
 }
 
-type DeploymentCreateResponse struct {
-	Header
-	Data DeploymentCreateResponsePipelineDTO `json:"data"`
-}
-
 type PageInfo struct {
 	// 页码
 	PageNO int `query:"pageNo"`

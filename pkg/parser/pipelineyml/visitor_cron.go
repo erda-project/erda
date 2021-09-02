@@ -120,11 +120,6 @@ func (v *CronVisitor) Visit(s *Spec) {
 		v.nextTimes = append(v.nextTimes, nextTime)
 		scheduleFrom = nextTime
 	}
-
-	// compensator
-	if s.CronCompensator == nil {
-		s.CronCompensator = &DefaultCronCompensator
-	}
 }
 
 func ListNextCronTime(cronExpr string, ops ...CronVisitorOption) ([]time.Time, error) {

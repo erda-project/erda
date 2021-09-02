@@ -77,6 +77,10 @@ type PipelineCreateRequestV2 struct {
 	// +required
 	ClusterName string `json:"clusterName"`
 
+	// Namespace upper layer could customize pipeline running in which namespace
+	// +optional
+	Namespace string `json:"namespace"`
+
 	// PipelineYmlName
 	// Equal to `Name`.
 	// Default is `pipeline.yml`.
@@ -465,9 +469,10 @@ type PipelinePageListData struct {
 // pipeline run
 
 type PipelineRunRequest struct {
-	PipelineID        uint64            `json:"pipelineID"`
-	ForceRun          bool              `json:"forceRun"`
-	PipelineRunParams PipelineRunParams `json:"runParams"`
+	PipelineID             uint64            `json:"pipelineID"`
+	ForceRun               bool              `json:"forceRun"`
+	PipelineRunParams      PipelineRunParams `json:"runParams"`
+	ConfigManageNamespaces []string          `json:"configManageNamespaces"`
 	IdentityInfo
 }
 
@@ -539,9 +544,10 @@ type PipelineOperateRequest struct {
 }
 
 type PipelineTaskOperateRequest struct {
-	TaskID  uint64 `json:"taskID"`
-	Disable *bool  `json:"disable,omitempty"`
-	Pause   *bool  `json:"pause,omitempty"`
+	TaskID    uint64 `json:"taskID"`
+	TaskAlias string `json:"taskAlias"` // the task will not be created until the pipeline is executed, so you must use alias to disable the task later
+	Disable   *bool  `json:"disable,omitempty"`
+	Pause     *bool  `json:"pause,omitempty"`
 }
 
 type PipelineOperateResponse struct {

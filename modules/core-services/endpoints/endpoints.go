@@ -339,6 +339,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/members/actions/list-labels", Method: http.MethodGet, Handler: e.ListMeberLabels}, // 成员标签
 		{Path: "/api/members/actions/list-by-scopeID", Method: http.MethodGet, Handler: e.ListScopeManagersByScopeID},
 		{Path: "/api/members/actions/count-by-only-scopeID", Method: http.MethodGet, Handler: e.CountMembersWithoutExtraByScope},
+		{Path: "/api/members/actions/get-by-user-and-scope", Method: http.MethodGet, Handler: e.GetMemberByUserAndScope},
 
 		// the interface of permission
 		{Path: "/api/permissions", Method: http.MethodGet, Handler: e.ListScopeRole},

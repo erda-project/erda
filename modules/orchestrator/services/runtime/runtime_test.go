@@ -17,7 +17,6 @@ package runtime
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"reflect"
 	"testing"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestModifyStatusIfNotForDisplay(t *testing.T) {

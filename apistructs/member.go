@@ -63,7 +63,8 @@ type Member struct {
 	// 被移除标记, 延迟删除
 	Removed bool `json:"removed"`
 	// uc注销用户的标记，用于分页查询member时的返回
-	Deleted bool `json:"deleted"`
+	Deleted bool   `json:"deleted"`
+	Token   string `json:"token"`
 }
 
 // RoleInfo 角色信息
@@ -291,4 +292,15 @@ type ListMembersWithoutExtraByScopeRequest struct {
 type ListMembersWithoutExtraByScopeResponse struct {
 	Header
 	Data int `json:"data"`
+}
+
+type GetMemberByUserAndScopeRequest struct {
+	ScopeType ScopeType `json:"scopeType"`
+	ScopeID   int64     `json:"scopeID"`
+	UserID    string    `json:"userID"`
+}
+
+type GetMemberByUserAndScopeResponse struct {
+	Header
+	Data []Member `json:"data"`
 }

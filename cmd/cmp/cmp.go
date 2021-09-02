@@ -16,14 +16,21 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/component-protocol"
+	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
+
 	_ "github.com/erda-project/erda/modules/cmp"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
 	_ "github.com/erda-project/erda/modules/msp/registercenter"
+
+	// components
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components"
 )
 
 func main() {

@@ -74,7 +74,6 @@ type RuntimeDTO struct {
 	ProjectID       uint64          `json:"projectId"`
 	ProjectName     string          `json:"projectName"`
 	OrgID           uint64          `json:"orgId"`
-	OrgName         string          `json:"orgName"`
 	Errors          []ErrorResponse `json:"errors"`
 }
 
