@@ -20,7 +20,6 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 )
@@ -43,4 +42,33 @@ func TestIssueState_GetIssueStateIDs(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(res))
+}
+
+func TestIssueState_GetIssueStatesMap(t *testing.T) {
+	is := New()
+	db := &dao.DBClient{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssuesStatesByProjectID",
+		func(db *dao.DBClient, projectID uint64, issuetype apistructs.IssueType) ([]dao.IssueState, error) {
+			return []dao.IssueState{
+				{
+					ProjectID: 1,
+					IssueType: apistructs.IssueTypeBug,
+				},
+				{
+					ProjectID: 1,
+					IssueType: apistructs.IssueTypeRequirement,
+				},
+				{
+					ProjectID: 1,
+					IssueType: apistructs.IssueTypeTask,
+				},
+			}, nil
+		})
+	defer m.Unpatch()
+
+	res, err := is.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+		ProjectID: 1,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(res))
 }
