@@ -83,6 +83,7 @@ var (
 	ErrListMember                           = err("ErrListMember", "获取成员列表失败")
 	ErrListMemberRoles                      = err("ErrListMemberRoles", "获取成员角色列表失败")
 	ListMembersWithoutExtraByScope          = err("ListMembersWithoutExtraByScope", "获取成员角色列表失败")
+	GetMemberByUserAndScope                 = err("GetMemberByUserAndScope", "获取成员失败")
 	ErrGetHost                              = err("ErrGetHost", "获取主机失败")
 	ErrGetHostUsage                         = err("ErrGetHostUsage", "获取主机资源使用失败")
 	ErrListHost                             = err("ErrListHost", "获取主机列表失败")

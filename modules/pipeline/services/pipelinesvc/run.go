@@ -61,6 +61,8 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, err
 	}
 
+	p.Extra.ConfigManageNamespaces = append(p.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...)
+
 	// cms
 	secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, err := s.FetchSecrets(&p)
 	if err != nil {

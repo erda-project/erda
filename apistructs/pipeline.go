@@ -465,9 +465,10 @@ type PipelinePageListData struct {
 // pipeline run
 
 type PipelineRunRequest struct {
-	PipelineID        uint64            `json:"pipelineID"`
-	ForceRun          bool              `json:"forceRun"`
-	PipelineRunParams PipelineRunParams `json:"runParams"`
+	PipelineID             uint64            `json:"pipelineID"`
+	ForceRun               bool              `json:"forceRun"`
+	PipelineRunParams      PipelineRunParams `json:"runParams"`
+	ConfigManageNamespaces []string          `json:"configManageNamespaces"`
 	IdentityInfo
 }
 

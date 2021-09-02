@@ -224,13 +224,13 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		if err := json.NewDecoder(r.Body).Decode(&runRequest); err != nil {
 			return apierrors.ErrRunPipeline.InvalidParameter(err).ToResp(), nil
 		}
-
 	}
 
 	if p, err = e.pipelineSvc.RunPipeline(&apistructs.PipelineRunRequest{
-		PipelineID:        p.ID,
-		IdentityInfo:      identityInfo,
-		PipelineRunParams: runRequest.PipelineRunParams,
+		PipelineID:             p.ID,
+		IdentityInfo:           identityInfo,
+		PipelineRunParams:      runRequest.PipelineRunParams,
+		ConfigManageNamespaces: runRequest.ConfigManageNamespaces,
 	},
 	); err != nil {
 		return errorresp.ErrResp(err)

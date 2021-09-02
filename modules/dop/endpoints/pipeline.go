@@ -28,13 +28,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -365,10 +368,16 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		return errorresp.ErrResp(err)
 	}
 
+	// update CmsNsConfigs
+	if err = e.updateCmsNsConfigs(identityInfo.UserID, p.OrgID); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	if err = e.bdl.RunPipeline(apistructs.PipelineRunRequest{
-		PipelineID:        pipelineID,
-		IdentityInfo:      identityInfo,
-		PipelineRunParams: runRequest.PipelineRunParams,
+		PipelineID:             pipelineID,
+		IdentityInfo:           identityInfo,
+		PipelineRunParams:      runRequest.PipelineRunParams,
+		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 	}); err != nil {
 		var apiError, ok = err.(*errorresp.APIError)
 		if !ok {
@@ -393,6 +402,29 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 	}
 
 	return httpserver.OkResp(nil)
+}
+
+// updateCmsNsConfigs update CmsNsConfigs
+func (e *Endpoints) updateCmsNsConfigs(userID string, orgID uint64) error {
+	members, err := e.bdl.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	if len(members) <= 0 {
+		return errors.New("the member is not exist")
+	}
+
+	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+		&cmspb.CmsNsConfigsUpdateRequest{
+			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
+			PipelineSource: apistructs.PipelineSourceDice.String(),
+			KVs: map[string]*cmspb.PipelineCmsConfigValue{
+				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+		})
+
+	return err
 }
 
 func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars map[string]string) (

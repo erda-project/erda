@@ -56,6 +56,25 @@ type MemberJoin struct {
 	ResourceValue string                      `gorm:"column:resource_value"`
 }
 
+func (m *MemberJoin) Convert2APIDTO() apistructs.Member {
+	return apistructs.Member{
+		UserID: m.UserID,
+		Email:  m.Email,
+		Mobile: m.Mobile,
+		Name:   m.Name,
+		Nick:   m.Nick,
+		Avatar: m.Avatar,
+		Scope: apistructs.Scope{
+			Type: m.ScopeType,
+			ID:   strconv.FormatInt(m.ScopeID, 10),
+		},
+		Roles:   m.Roles,
+		Labels:  m.Labels,
+		Deleted: m.Deleted,
+		Token:   m.Token,
+	}
+}
+
 func (m *Member) Convert2APIDTO() apistructs.Member {
 	return apistructs.Member{
 		UserID: m.UserID,
