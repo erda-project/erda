@@ -602,7 +602,18 @@ func (m *Member) CheckPermission(userID string, scopeType apistructs.ScopeType, 
 			return nil
 		}
 	}
+
+	admin, err := m.db.IsSysAdmin(userID)
+	if err != nil {
+		return err
+	}
+
 	switch scopeType {
+	case apistructs.SysScope:
+		// 系统管理员
+		if admin {
+			return nil
+		}
 	case apistructs.OrgScope: // 企业级鉴权
 		// 企业管理员
 		members, err := m.db.GetMemberByScopeAndUserID(userID, scopeType, scopeID)
@@ -616,8 +627,8 @@ func (m *Member) CheckPermission(userID string, scopeType apistructs.ScopeType, 
 		}
 
 		// 系统管理员
-		if admin, err := m.db.IsSysAdmin(userID); err != nil || admin {
-			return err
+		if admin {
+			return nil
 		}
 	case apistructs.ProjectScope: // 项目级鉴权
 		// 项目管理员

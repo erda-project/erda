@@ -296,7 +296,7 @@
 ## approve end
 
 ## audit start
-- role: Manager,Support,Guest
+- role: Manager,Support,Guest,Auditor
   scope: org
   resource: audit
   action: LIST

@@ -60,7 +60,8 @@ func (e *Endpoints) ListMemberRoles(ctx context.Context, r *http.Request, vars m
 			}
 		}
 	}
-	if orgID == 0 {
+
+	if orgID == 0 && scopeType != apistructs.SysScope {
 		return nil, errors.Errorf("invalid param, orgId is empty")
 	}
 

@@ -63,3 +63,13 @@
   resource: addon
   action: DELETE
 ## addon end
+
+## audit start
+- role: Manager,Support,Guest,Auditor
+  scope: sys
+  resource: audit
+  action: LIST
+- role: Manager
+  scope: sys
+  resource: audit
+  action: UPDATE
