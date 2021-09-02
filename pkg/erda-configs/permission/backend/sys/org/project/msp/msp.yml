@@ -1,0 +1,16 @@
+- scope: msp
+  resource: msp
+  action: UPDATE
+  role: Owner,Lead
+- scope: msp
+  resource: msp
+  action: CREATE
+  role: Owner,Lead
+- scope: msp
+  resource: msp
+  action: DELETE
+  role: Owner,Lead
+- scope: msp
+  resource: msp
+  action: GET
+  role: Owner,Lead
