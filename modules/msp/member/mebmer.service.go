@@ -129,21 +129,18 @@ func (m memberService) ListMember(ctx context.Context, request *pb.ListMemberReq
 }
 
 func (m memberService) ScopeRoleAccess(ctx context.Context, request *pb.ScopeRoleAccessRequest) (*pb.ScopeRoleAccessResponse, error) {
-	data, err := json.Marshal(request.Scope)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	listReq := apistructs.ScopeRoleAccessRequest{}
-	err = json.Unmarshal(data, &listReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	listReq := apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			ID:   request.Scope.Id,
+			Type: apistructs.ScopeType(request.Scope.Type),
+		},
 	}
 	userId := apis.GetUserID(ctx)
 	list, err := m.p.bdl.ScopeRoleAccessList(userId, &listReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err = json.Marshal(list)
+	data, err := json.Marshal(list)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
