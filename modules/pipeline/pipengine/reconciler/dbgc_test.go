@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -92,5 +93,40 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{
 		PageNum:  1,
 		PageSize: 10,
+	})
+}
+
+func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+
+		var dbClient *dbclient.Client
+		var r Reconciler
+		r.dbClient = dbClient
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+			switch req.PageNum {
+			case 1:
+				return nil, nil, 0, 0, fmt.Errorf("error")
+			case 2:
+				return []spec.Pipeline{
+					{
+						PipelineBase: spec.PipelineBase{},
+						PipelineExtra: spec.PipelineExtra{
+							PipelineID: 1,
+						},
+					},
+				}, nil, 0, 0, nil
+			default:
+				return []spec.Pipeline{}, nil, 0, 0, nil
+			}
+		})
+		defer patch.Unpatch()
+
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+			assert.Equal(t, pipelineID, uint64(1))
+			return fmt.Errorf("error")
+		})
+		defer patch1.Unpatch()
+
+		r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{PageNum: 1})
 	})
 }
