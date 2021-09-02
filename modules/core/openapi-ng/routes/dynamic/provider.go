@@ -144,7 +144,7 @@ func (rs *routeSource) RegisterTo(router transhttp.Router) error {
 
 func init() {
 	servicehub.Register("openapi-dynamic-routes", &servicehub.Spec{
-		Services:   []string{"openapi-route-watcher-dynamic" /*, "openapi-route-dynamic"*/},
+		Services:   []string{"openapi-route-watcher-dynamic"},
 		ConfigFunc: func() interface{} { return &config{} },
 		Creator:    func() servicehub.Provider { return &provider{} },
 	})
