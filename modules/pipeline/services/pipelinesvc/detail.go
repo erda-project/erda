@@ -82,6 +82,19 @@ func (s *PipelineSvc) Detail(pipelineID uint64) (*apistructs.PipelineDetailDTO, 
 		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
 	}
 
+	// init yml
+	pipelineYml, err := pipelineyml.New(
+		[]byte(p.PipelineYml),
+	)
+	if err != nil {
+		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
+	}
+	// merge yml task and db task
+	tasks, err = s.MergePipelineYmlTasks(pipelineYml, tasks, &p, stages, nil)
+	if err != nil {
+		return nil, apierrors.ErrGetPipelineDetail.InternalError(err)
+	}
+
 	var needApproval bool
 	var stageDetailDTO []apistructs.PipelineStageDetailDTO
 
@@ -238,6 +251,9 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 	extensionSearchRequest.YamlFormat = true
 	// 循环 stageDetails 数组，获取里面的 task 并设置到 Extensions 中
 	loopStageDetails(stageDetails, func(task apistructs.PipelineTaskDTO) {
+		if task.Type == apistructs.ActionTypeSnippet {
+			return
+		}
 		extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, task.Type)
 	})
 	if extensionSearchRequest.Extensions != nil {

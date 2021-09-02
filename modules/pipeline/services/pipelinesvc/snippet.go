@@ -267,7 +267,7 @@ func (s *PipelineSvc) batchQueryPipelineYAMLBySnippetConfigs(snippetConfigs []ap
 }
 
 // createSnippetPipeline4Create 为 snippetTask 创建流水线对象
-func (s *PipelineSvc) makeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error) {
+func (s *PipelineSvc) MakeSnippetPipeline4Create(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error) {
 	snippetConfig := snippetTask.Extra.Action.SnippetConfig
 	// runParams
 	var runParams []apistructs.PipelineRunParam

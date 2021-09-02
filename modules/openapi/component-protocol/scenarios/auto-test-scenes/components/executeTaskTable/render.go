@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
 )
 
 type ExecuteTaskTable struct {
@@ -196,7 +197,7 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "id",
+		"rowKey": "key",
 		"scroll": map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
@@ -333,6 +334,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				}
 				item = map[string]interface{}{
 					"id":                task.ID,
+					"key":               component_key.GetKey(task.ID),
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
 						"renderType": "tableOperation",
@@ -402,6 +404,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 				}
 				item = map[string]interface{}{
 					"id":                task.ID,
+					"key":               component_key.GetKey(task.ID),
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
 						"renderType": "tableOperation",

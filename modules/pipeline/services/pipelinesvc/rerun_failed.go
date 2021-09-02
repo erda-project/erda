@@ -60,7 +60,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 	}
 	p.Type = apistructs.PipelineTypeRerunFailed
 
-	if err = s.createPipelineGraph(p); err != nil {
+	if err = s.CreatePipelineGraph(p); err != nil {
 		return nil, apierrors.ErrRerunFailedPipeline.InternalError(err)
 	}
 

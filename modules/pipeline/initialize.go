@@ -130,8 +130,13 @@ func (p *provider) do() (*httpserver.Server, error) {
 		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
+	// todo resolve cycle import here through better module architecture
 	pipelineFun := &reconciler.PipelineSvcFunc{
-		CronNotExecuteCompensate: pipelineSvc.CronNotExecuteCompensateById,
+		CronNotExecuteCompensate:                pipelineSvc.CronNotExecuteCompensateById,
+		MergePipelineYmlTasks:                   pipelineSvc.MergePipelineYmlTasks,
+		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
+		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
+		CreatePipelineGraph:                     pipelineSvc.CreatePipelineGraph,
 	}
 
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters

@@ -16,18 +16,14 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 	"runtime/debug"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
-	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
@@ -42,15 +38,19 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 		rlog.PWarnf(pipelineID, "no need reconcile, dlock already lost, err: %v", ctx.Err())
 		return nil
 	}
+	// init caches and get stages
+	defer clearPipelineContextCaches(pipelineID)
 
 	// get latest pipeline before reconcile
-	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
+	p, err := r.dbClient.GetPipeline(pipelineID)
 	if err != nil {
-		rlog.PErrorf(pipelineID, "cannot reconcile, failed to get pipeline with tasks, err: %v", err)
 		return err
 	}
-	p := pipelineWithTasks.Pipeline
-	tasks := pipelineWithTasks.Tasks
+
+	tasks, err := r.YmlTaskMergeDBTasks(&p)
+	if err != nil {
+		return err
+	}
 
 	// delay gc if have
 	r.delayGC(p.Extra.Namespace, p.ID)
@@ -60,97 +60,38 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 	logrus.Infof("reconciler: pipelineID: %d, pipeline is not completed, continue reconcile, currentStatus: %s",
 		p.ID, p.Status)
 
-	schedulableTasks, err := r.getSchedulableTasks(p, tasks)
+	schedulableTasks, err := r.getSchedulableTasks(&p, tasks)
 	if err != nil {
 		return rlog.PErrorAndReturn(p.ID, err)
 	}
 
 	var wg sync.WaitGroup
 	for i := range schedulableTasks {
-		task := schedulableTasks[i]
-
 		wg.Add(1)
-
-		go func() {
+		go func(i int) {
 			var err error
+			var task *spec.PipelineTask
+			task, err = r.saveTask(schedulableTasks[i], &p)
+			if err != nil {
+				logrus.Errorf("[alert] reconciler: pipelineID: %d, task %v reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
+				return
+			}
+
 			defer func() {
 				if r := recover(); r != nil {
 					debug.PrintStack()
 					err = errors.Errorf("%v", r)
 				}
 				if err != nil {
-					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q reconcile occurred an error: %v", p.ID, task.Name, err)
+					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %v reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
 				}
-				r.processingTasks.Delete(task.ID)
+				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
 				err = r.reconcile(ctx, pipelineID)
 				wg.Done()
 			}()
 
-			// 嵌套流水线
 			if task.IsSnippet {
-				snippetPipelineWithTasks, sErr := r.dbClient.GetPipelineWithTasks(*task.SnippetPipelineID)
-				if sErr != nil {
-					if strings.Contains(sErr.Error(), "not found") {
-						err = fmt.Errorf("%s, no need retry(not found)", sErr)
-						task.Status = apistructs.PipelineStatusAnalyzeFailed
-						if updateErr := r.dbClient.UpdatePipelineTask(task.ID, task); updateErr != nil {
-							err = updateErr
-							return
-						}
-						return
-					}
-					err = sErr
-					return
-				}
-				sp := snippetPipelineWithTasks.Pipeline
-				// 第一次执行，赋予初始值
-				if sp.Status == apistructs.PipelineStatusAnalyzed {
-					// copy pipeline level run info from root pipeline
-					if err = r.copyParentPipelineRunInfo(sp); err != nil {
-						return
-					}
-					// set begin time
-					now := time.Now()
-					sp.TimeBegin = &now
-					if err = r.dbClient.UpdatePipelineBase(snippetPipelineWithTasks.Pipeline.ID, &sp.PipelineBase); err != nil {
-						return
-					}
-				}
-				if err := r.updateStatusBeforeReconcile(*sp); err != nil {
-					rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
-					return
-				}
-				// 更新 task 状态为 running
-				task.Status = apistructs.PipelineStatusRunning
-				if err = r.dbClient.UpdatePipelineTaskStatus(task.ID, task.Status); err != nil {
-					return
-				}
-				// 更新 task snippet detail
-				snippetDetail := apistructs.PipelineTaskSnippetDetail{
-					DirectSnippetTasksNum:    len(snippetPipelineWithTasks.Tasks),
-					RecursiveSnippetTasksNum: -1,
-				}
-				if err := r.dbClient.UpdatePipelineTaskSnippetDetail(task.ID, snippetDetail); err != nil {
-					return
-				}
-				// make context for snippet
-				snippetCtx := makeContextForPipelineReconcile(sp.ID)
-				err = r.reconcile(snippetCtx, sp.ID)
-				defer func() {
-					r.teardownCurrentReconcile(snippetCtx, sp.ID)
-					if err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
-						logrus.Errorf("snippet pipeline: %d, failed to update status after reconcile, err: %v", sp.ID, err)
-					}
-				}()
-				if err != nil {
-					return
-				}
-				// 查询最新 task
-				latestTask, err := r.dbClient.GetPipelineTask(task.ID)
-				if err != nil {
-					return
-				}
-				*task = *(&latestTask)
+				task, err = r.reconcileSnippetTask(task, &p)
 				return
 			}
 
@@ -161,7 +102,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
-				r.TaskThrottler, executor, p, r.bdl, r.dbClient, r.js,
+				r.TaskThrottler, executor, &p, r.bdl, r.dbClient, r.js,
 				r.actionAgentSvc, r.extMarketSvc)
 
 			// tear down task
@@ -196,22 +137,9 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 
 			err = reconcileTask(tr)
 			return
-		}()
+		}(i)
 	}
 	wg.Wait()
-
-	return nil
-}
-
-// updatePipeline update db, publish websocket event
-func (r *Reconciler) updatePipelineStatus(p *spec.Pipeline) error {
-	// db
-	if err := r.dbClient.UpdatePipelineBaseStatus(p.ID, p.Status); err != nil {
-		return err
-	}
-
-	// event
-	events.EmitPipelineInstanceEvent(p, p.GetRunUserID())
 
 	return nil
 }

@@ -249,11 +249,7 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &PipelineSvc{}
-			got, got1, err := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("judgeTaskExecutor() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, got1 := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
 			if got != tt.want {
 				t.Errorf("judgeTaskExecutor() got = %v, want %v", got, tt.want)
 			}

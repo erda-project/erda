@@ -72,7 +72,9 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 			continue
 		}
 		if task.Type == apistructs.ActionTypeSnippet {
-			snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			if task.SnippetPipelineID != nil {
+				snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			}
 			continue
 		}
 	}
