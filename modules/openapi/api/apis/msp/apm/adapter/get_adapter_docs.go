@@ -17,8 +17,8 @@ package adapter
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var GET_MSP_ADAPTER_DOCS = apis.ApiSpec{
-	Path:        "/api/msp/apm/adapter/docs",
-	BackendPath: "/api/msp/apm/adapter/docs",
+	Path:        "/api/msp/apm/instrumentation-library/config-docs",
+	BackendPath: "/api/msp/apm/instrumentation-library/config-docs",
 	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",

@@ -25,6 +25,8 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/metric/client"
 
+	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
 	_ "github.com/erda-project/erda/modules/msp/apm/adapter"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/apis"
@@ -41,6 +43,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/apm/trace"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
+	_ "github.com/erda-project/erda/modules/msp/credential"
 	_ "github.com/erda-project/erda/modules/msp/instance/permission"
 	_ "github.com/erda-project/erda/modules/msp/menu"
 	_ "github.com/erda-project/erda/modules/msp/registercenter"
