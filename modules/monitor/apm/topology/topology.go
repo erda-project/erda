@@ -1994,15 +1994,14 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 		itemResult["call_count"] = r[4]
 		itemResult["avg_elapsed"] = r[5]
 		sql := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
-			"AND source_service_name::tag=$filterServiceName AND db_statement::tag=$field AND target_terminus_key::tag=$terminusKey", params.Layer)
+			"AND db_statement::tag=$field AND source_terminus_key::tag=$terminusKey", params.Layer)
 		slowElapsedCount, err := topology.metricq.Query(
 			metricq.InfluxQL,
 			sql,
 			map[string]interface{}{
-				"field":             conv.ToString(r[0]),
-				"terminusKey":       params.TerminusKey,
-				"filterServiceName": params.FilterServiceName,
-				"serviceId":         params.ServiceId,
+				"field":       conv.ToString(r[0]),
+				"terminusKey": params.TerminusKey,
+				"serviceId":   params.ServiceId,
 			},
 			options)
 		if err != nil {
