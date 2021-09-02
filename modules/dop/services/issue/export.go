@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/i18n"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -33,9 +34,7 @@ type issueStage struct {
 	Value string
 }
 
-var sample = []string{"", "样例标题", "样例内容", "待处理", "2", "2", "", "设计", "中", "1.0", "中", "一般", "", "任务", "2021-02-01 00:00:00", "2021-01-01 09:30:42"}
-
-func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64) (io.Reader, string, error) {
+func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {
 	// list of  issue stage
 	stages, err := svc.db.GetIssuesStageByOrgID(orgID)
 	if err != nil {
@@ -44,7 +43,7 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 	// get the stageMap
 	stageMap := svc.getStageMap(stages)
 
-	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload, stageMap)
+	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload, stageMap, locale)
 	if err != nil {
 		return nil, "", err
 	}
@@ -98,6 +97,8 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 
 	// insert sample issue
 	if isDownload {
+		l := svc.bdl.GetLocale(locale)
+		sample := strutil.Split(l.Get(i18n.I18nKeyIssueExportSample), ",")
 		table = append(table, sample)
 	}
 	buf := bytes.NewBuffer([]byte{})
