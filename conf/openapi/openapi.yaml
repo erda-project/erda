@@ -76,8 +76,9 @@ openapi-v1-routes:
           - yetAnotherDemo
       - addr: cmp:9028
         scenarios:
-          - events-list
-          - workloads-list
+          - cmp-dashboard-events-list
+          - cmp-dashboard-workloads-list
+          - cmp-dashboard-workload-detail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

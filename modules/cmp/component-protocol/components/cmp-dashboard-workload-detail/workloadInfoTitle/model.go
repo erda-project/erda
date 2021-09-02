@@ -12,10 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package workloadInfoTitle
 
-import (
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-events-list"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workload-detail"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list"
-)
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+
+type ComponentWorkloadInfoTitle struct {
+	base.DefaultProvider
+
+	Type  string `json:"type,omitempty"`
+	Props Props  `json:"props,omitempty"`
+}
+
+type Props struct {
+	Title string `json:"title,omitempty"`
+	Size  string `json:"size,omitempty"`
+}

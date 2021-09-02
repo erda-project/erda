@@ -1,0 +1,63 @@
+version: 0.1
+
+scenario: cmp-dashboard-workload-detail
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - header
+      - workloadInfoTitle
+      - workloadInfo
+      - podsTableTitle
+      - podsTable
+    header:
+      - workloadTitle
+      - workloadStatus
+
+components:
+  page:
+    type: Container
+  header:
+    type: RowContainer
+  workloadStatus:
+    type: Text
+  workloadTitle:
+    type: Title
+  podsTableTitle:
+    type: Title
+  workloadInfoTitle:
+    type: Title
+  workloadInfo:
+    type: Panel
+  podsTable:
+    type: Table
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: header
+    - name: workloadTitle
+      state:
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+    - name: workloadStatus
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+    - name: workloadInfoTitle
+    - name: workloadInfo
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
+    - name: podsTableTitle
+    - name: podsTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "workloadId"
+          value: "{{ __InParams__.workloadId }}"
