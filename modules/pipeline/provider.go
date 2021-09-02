@@ -16,37 +16,40 @@ package pipeline
 
 import (
 	"context"
-	"os"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/base/version"
 	_ "github.com/erda-project/erda-infra/providers/etcd"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
-	"github.com/erda-project/erda/pkg/dumpstack"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 type provider struct {
 	CmsService         pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
 	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
 	GcElection         election.Interface  `autowired:"etcd-election@gc"`
+	server             *httpserver.Server
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	logrus.SetFormatter(&logrus.TextFormatter{
-		ForceColors:     true,
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05.000000000",
-	})
-	logrus.SetOutput(os.Stdout)
+	logrus.Infof("[alert] starting pipeline instance")
+	var err error
+	done := make(chan struct{}, 1)
 
-	dumpstack.Open()
-	logrus.Infoln(version.String())
+	go func() {
+		err = p.server.ListenAndServe()
+		done <- struct{}{}
+	}()
 
-	return p.Initialize()
+	select {
+	case <-ctx.Done():
+	case <-done:
+	}
+
+	return err
 }
 
 func init() {

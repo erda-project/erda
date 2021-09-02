@@ -38,60 +38,64 @@ const (
 // decide to delete or add a scheduled task according to the prefix of the key
 func (s *CrondSvc) ListenCrond(ctx context.Context, pipelineCronFunc func(id uint64)) {
 	for {
-		_ = s.js.IncludeWatch().Watch(ctx, etcdCronWatchPrefix, true, true, true, nil, func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
-			go func() {
-				logrus.Infof("crond: watched update etcd key: %s, changeType: %d", key, t)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_ = s.js.IncludeWatch().Watch(ctx, etcdCronWatchPrefix, true, true, true, nil, func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
+				go func() {
+					logrus.Infof("crond: watched update etcd key: %s, changeType: %d", key, t)
 
-				// if change type is delete, don't need do anything
-				if t == storetypes.Del {
-					return
-				}
-
-				if err := s.js.Remove(ctx, key, nil); err != nil {
-					logrus.Errorf("crond: failed to delete key: %s", key)
-					return
-				}
-				cronID, err := parseCronIDFromWatchedKey(key)
-				if err != nil {
-					logrus.Errorf("crond: failed to parse cronID from watched key, key: %s, err: %v", key, err)
-					return
-				}
-
-				if strings.HasPrefix(key, etcdCronPrefixAddKey) {
-					pc, err := s.dbClient.GetPipelineCron(cronID)
-					if err != nil {
-						logrus.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
-						return
-					}
-					// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name
-					err = s.crond.Remove(makePipelineCronName(cronID))
-					if err != nil {
-						logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
+					// if change type is delete, don't need do anything
+					if t == storetypes.Del {
 						return
 					}
 
-					// determine whether there is a scheduled task
-					if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
-						err = s.crond.AddFunc(pc.CronExpr, func() {
-							pipelineCronFunc(pc.ID)
-						}, makePipelineCronName(pc.ID))
+					if err := s.js.Remove(ctx, key, nil); err != nil {
+						logrus.Errorf("crond: failed to delete key: %s", key)
+						return
+					}
+					cronID, err := parseCronIDFromWatchedKey(key)
+					if err != nil {
+						logrus.Errorf("crond: failed to parse cronID from watched key, key: %s, err: %v", key, err)
+						return
+					}
+
+					if strings.HasPrefix(key, etcdCronPrefixAddKey) {
+						pc, err := s.dbClient.GetPipelineCron(cronID)
 						if err != nil {
-							logrus.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, pc.CronExpr, err)
+							logrus.Errorf("crond: failed to get cron cronID: %v error: %v", cronID, err)
+							return
+						}
+						// why delete it first, because crond.AddFunc cannot add a scheduled task with the same name
+						err = s.crond.Remove(makePipelineCronName(cronID))
+						if err != nil {
+							logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
+							return
+						}
+
+						// determine whether there is a scheduled task
+						if pc.Enable != nil && *pc.Enable && pc.CronExpr != "" {
+							err = s.crond.AddFunc(pc.CronExpr, func() {
+								pipelineCronFunc(pc.ID)
+							}, makePipelineCronName(pc.ID))
+							if err != nil {
+								logrus.Errorf("crond: failed to update cron cronID: %v cronExpr: %v  error: %v", cronID, pc.CronExpr, err)
+								return
+							}
+						}
+					} else if strings.HasPrefix(key, etcdCronPrefixDeleteKey) {
+						err = s.crond.Remove(makePipelineCronName(cronID))
+						if err != nil {
+							logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
 							return
 						}
 					}
-				} else if strings.HasPrefix(key, etcdCronPrefixDeleteKey) {
-					err = s.crond.Remove(makePipelineCronName(cronID))
-					if err != nil {
-						logrus.Errorf("crond: failed to remove cron cronID: %v error: %v", cronID, err)
-						return
-					}
-				}
-				logrus.Infof("crond: watched and reload successfully")
-			}()
-			return nil
-		})
-
+					logrus.Infof("crond: watched and reload successfully")
+				}()
+				return nil
+			})
+		}
 	}
 }
 
@@ -121,7 +125,7 @@ func (s *CrondSvc) AddIntoPipelineCrond(cronID uint64) error {
 }
 
 // ReloadCrond 触发当前 crond 实例更新任务.
-func (s *CrondSvc) ReloadCrond(pipelineCronFunc func(uint64)) ([]string, error) {
+func (s *CrondSvc) ReloadCrond(ctx context.Context, pipelineCronFunc func(uint64)) ([]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -142,6 +146,15 @@ func (s *CrondSvc) ReloadCrond(pipelineCronFunc func(uint64)) ([]string, error) 
 	// 初始化一个新的 crond
 	s.crond = cron.New(cron.WithoutDLock(true))
 	s.crond.Start()
+	go func() {
+		select {
+		case <-ctx.Done():
+			s.crond.Stop()
+			return
+		default:
+
+		}
+	}()
 
 	for i := range pcs {
 		pc := pcs[i]

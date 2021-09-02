@@ -39,91 +39,94 @@ const (
 	defaultGCTime                          = 3600 * 24 * 2
 )
 
-func (r *Reconciler) ListenGC() {
+func (r *Reconciler) ListenGC(ctx context.Context) {
 	logrus.Info("reconciler: start watching gc pipelines")
 	for {
-		ctx := context.Background()
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			// watch: isPrefix[true], filterDelete[false], keyOnly[true]
+			err := r.js.IncludeWatch().Watch(ctx, etcdReconcilerGCWatchPrefix, true, false, true, nil,
+				func(key string, _ interface{}, t storetypes.ChangeType) error {
 
-		// watch: isPrefix[true], filterDelete[false], keyOnly[true]
-		err := r.js.IncludeWatch().Watch(ctx, etcdReconcilerGCWatchPrefix, true, false, true, nil,
-			func(key string, _ interface{}, t storetypes.ChangeType) error {
-
-				// async handle, non-blocking, so we can watch subsequent incoming pipelines
-				go func() {
-					logrus.Infof("reconciler: gc watched a key change, key: %s, changeType: %s", key, t.String())
-					// only listen del op
-					if t != storetypes.Del {
-						return
-					}
-
-					// {ns}
-					namespace := getPipelineNamespaceFromGCWatchedKey(key)
-
-					var err error
-					defer func() {
-						if err != nil {
-							logrus.Errorf("[alert] reconciler: gc handle failed, key: %s, changeType: %s, err: %v",
-								key, t.String(), err)
-
-							// put to gc again, retry gc in 60s
-							r.waitGC(namespace, 0, 60)
-						}
-					}()
-
-					// 新数据 忽略 namespace 下的 subKey
-					//
-					// 新数据格式为多条:
-					// {prefix}/{ns}
-					// {prefix}/{ns}/{pipelineID-1}
-					// {prefix}/{ns}/{pipelineID-2}
-					var oldFormatSubKeys []string
-					if strutil.Contains(namespace, "/") {
-						// list key，如果没找到 key: {prefix}/{ns}，则为老格式
-						namespace = strutil.Split(namespace, "/")[0]
-						keys, err := r.js.ListKeys(ctx, makePipelineGCKey(namespace))
-						if err != nil {
+					// async handle, non-blocking, so we can watch subsequent incoming pipelines
+					go func() {
+						logrus.Infof("reconciler: gc watched a key change, key: %s, changeType: %s", key, t.String())
+						// only listen del op
+						if t != storetypes.Del {
 							return
 						}
-						isOldFormat := true
-						for _, key := range keys {
-							if key == makePipelineGCKey(namespace) {
-								isOldFormat = false
-								break
+
+						// {ns}
+						namespace := getPipelineNamespaceFromGCWatchedKey(key)
+
+						var err error
+						defer func() {
+							if err != nil {
+								logrus.Errorf("[alert] reconciler: gc handle failed, key: %s, changeType: %s, err: %v",
+									key, t.String(), err)
+
+								// put to gc again, retry gc in 60s
+								r.waitGC(namespace, 0, 60)
 							}
+						}()
+
+						// 新数据 忽略 namespace 下的 subKey
+						//
+						// 新数据格式为多条:
+						// {prefix}/{ns}
+						// {prefix}/{ns}/{pipelineID-1}
+						// {prefix}/{ns}/{pipelineID-2}
+						var oldFormatSubKeys []string
+						if strutil.Contains(namespace, "/") {
+							// list key，如果没找到 key: {prefix}/{ns}，则为老格式
+							namespace = strutil.Split(namespace, "/")[0]
+							keys, err := r.js.ListKeys(ctx, makePipelineGCKey(namespace))
+							if err != nil {
+								return
+							}
+							isOldFormat := true
+							for _, key := range keys {
+								if key == makePipelineGCKey(namespace) {
+									isOldFormat = false
+									break
+								}
+							}
+
+							if !isOldFormat {
+								return
+							}
+							oldFormatSubKeys = append(oldFormatSubKeys, key)
 						}
 
-						if !isOldFormat {
+						// acquire a dlock
+						gcNamespaceLockKey := etcdReconcilerGCNamespaceLockKeyPrefix + namespace
+						lock, err := r.etcd.GetClient().Txn(context.Background()).
+							If(v3.Compare(v3.Version(gcNamespaceLockKey), "=", 0)).
+							Then(v3.OpPut(gcNamespaceLockKey, "")).
+							Commit()
+						defer func() {
+							_, _ = r.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcNamespaceLockKey)).Commit()
+						}()
+						if err != nil {
 							return
 						}
-						oldFormatSubKeys = append(oldFormatSubKeys, key)
-					}
+						if lock != nil && !lock.Succeeded {
+							return
+						}
 
-					// acquire a dlock
-					gcNamespaceLockKey := etcdReconcilerGCNamespaceLockKeyPrefix + namespace
-					lock, err := r.etcd.GetClient().Txn(context.Background()).
-						If(v3.Compare(v3.Version(gcNamespaceLockKey), "=", 0)).
-						Then(v3.OpPut(gcNamespaceLockKey, "")).
-						Commit()
-					defer func() {
-						_, _ = r.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcNamespaceLockKey)).Commit()
+						// gc logic
+						if err = r.gcNamespace(namespace, oldFormatSubKeys...); err != nil {
+							return
+						}
 					}()
-					if err != nil {
-						return
-					}
-					if lock != nil && !lock.Succeeded {
-						return
-					}
-
-					// gc logic
-					if err = r.gcNamespace(namespace, oldFormatSubKeys...); err != nil {
-						return
-					}
-				}()
-				return nil
-			},
-		)
-		if err != nil {
-			logrus.Errorf("[alert] reconciler: gc watch failed, err: %v", err)
+					return nil
+				},
+			)
+			if err != nil {
+				logrus.Errorf("[alert] reconciler: gc watch failed, err: %v", err)
+			}
 		}
 	}
 }

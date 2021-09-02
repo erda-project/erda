@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"time"
@@ -30,14 +31,20 @@ const bufferTime = 3600
 // sometimes the pipeline is in downtime or restart time
 // then the etcd lease of gc may expire at this time
 // and then there is no instance get lease, which results in some namespaces pod not being gc
-func (r *Reconciler) CompensateGCNamespaces() {
-
+func (r *Reconciler) CompensateGCNamespaces(ctx context.Context) {
 	r.doWaitGCCompensate(false)
 	r.doWaitGCCompensate(true)
 
-	time.AfterFunc(24*time.Hour, func() {
-		r.CompensateGCNamespaces()
-	})
+	ticker := time.NewTicker(24 * time.Hour)
+	for {
+		select {
+		case <-ticker.C:
+			r.doWaitGCCompensate(false)
+			r.doWaitGCCompensate(true)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (r *Reconciler) doWaitGCCompensate(isSnippetPipeline bool) {

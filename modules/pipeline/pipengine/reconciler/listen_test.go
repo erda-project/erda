@@ -56,11 +56,11 @@ func TestMakePipelineWatchedKey(t *testing.T) {
 
 func TestListen(t *testing.T) {
 	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "Listen", func(r *Reconciler) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "Listen", func(r *Reconciler, ctx context.Context) {
 		return
 	})
 	defer pm1.Unpatch()
 	t.Run("listen", func(t *testing.T) {
-		r.Listen()
+		r.Listen(context.Background())
 	})
 }

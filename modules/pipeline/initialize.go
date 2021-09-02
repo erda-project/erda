@@ -18,10 +18,13 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/aop"
@@ -46,6 +49,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
 	"github.com/erda-project/erda/modules/pkg/websocket"
+	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -54,8 +58,21 @@ import (
 	// "terminus.io/dice/telemetry/promxp"
 )
 
+func (p *provider) Init(ctx servicehub.Context) error {
+	return p.Initialize()
+}
+
 // Initialize 初始化应用启动服务.
 func (p *provider) Initialize() error {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05.000000000",
+	})
+	logrus.SetOutput(os.Stdout)
+
+	dumpstack.Open()
+	logrus.Infoln(version.String())
 	conf.Load()
 
 	if conf.Debug() {
@@ -63,17 +80,14 @@ func (p *provider) Initialize() error {
 		logrus.Debug("DEBUG MODE")
 	}
 
-	server, err := p.do()
+	err := p.do()
 	if err != nil {
 		return err
 	}
-
-	logrus.Errorf("[alert] starting pipeline instance")
-
-	return server.ListenAndServe()
+	return nil
 }
 
-func (p *provider) do() (*httpserver.Server, error) {
+func (p *provider) do() error {
 
 	// TODO metric
 	// // metrics
@@ -82,7 +96,7 @@ func (p *provider) do() (*httpserver.Server, error) {
 	// db client
 	dbClient, err := dbclient.New()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// queryStringDecoder
@@ -92,17 +106,17 @@ func (p *provider) do() (*httpserver.Server, error) {
 	// websocket publisher
 	publisher, err := websocket.NewPublisher()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// etcd
 	js, err := jsonstore.New()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	etcdctl, err := etcd.New()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// bundle
@@ -142,17 +156,17 @@ func (p *provider) do() (*httpserver.Server, error) {
 
 	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init reconciler, err: %v", err)
+		return fmt.Errorf("failed to init reconciler, err: %v", err)
 	}
 	if err := engine.OnceDo(r); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := registerSnippetClient(dbClient); err != nil {
-		return nil, err
+		return err
 	}
 	if err := pipeline_network_hook_client.RegisterLifecycleHookClient(dbClient); err != nil {
-		return nil, err
+		return err
 	}
 
 	pvolumes.Initialize(dbClient)
@@ -200,10 +214,12 @@ func (p *provider) do() (*httpserver.Server, error) {
 
 	// register cluster hook after pipeline service start
 	if err := clusterinfo.RegisterClusterHook(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return server, nil
+	//return server, nil
+	p.server = server
+	return nil
 }
 
 func registerSnippetClient(dbclient *dbclient.Client) error {

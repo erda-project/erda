@@ -34,10 +34,6 @@ import (
 	"github.com/erda-project/erda/pkg/loop"
 )
 
-const (
-	ReconcilerLeaderElectionPrefix = "/pipeline/leaderelection/do-cron"
-)
-
 // RunCronPipelineFunc 定时触发时会先创建 pipeline 记录，然后尝试执行；
 // 如果因为某些因素（比如并行数量限制）不能立即执行，用户后续仍然可以再次手动执行这条 pipeline。
 func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
@@ -197,7 +193,7 @@ func (s *PipelineSvc) UpgradePipelineCron(pc *spec.PipelineCron) error {
 func (s *PipelineSvc) DoCrondAbout(ctx context.Context) {
 
 	// 加载定时配置
-	logs, err := s.crondSvc.ReloadCrond(s.RunCronPipelineFunc)
+	logs, err := s.crondSvc.ReloadCrond(ctx, s.RunCronPipelineFunc)
 	for _, log := range logs {
 		logrus.Info(log)
 	}
@@ -209,17 +205,24 @@ func (s *PipelineSvc) DoCrondAbout(ctx context.Context) {
 	// watch crond
 	go s.crondSvc.ListenCrond(ctx, s.RunCronPipelineFunc)
 
-	// 定时打印定时任务快照
+	// Print a snapshot of a scheduled task regularly
 	go func() {
-		_ = loop.New(loop.WithInterval(time.Minute)).Do(
-			func() (bool, error) {
-				for _, log := range s.crondSvc.CrondSnapshot() {
-					logrus.Debug(log)
-				}
-				return false, nil
-			})
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				_ = loop.New(loop.WithInterval(time.Minute)).Do(
+					func() (bool, error) {
+						for _, log := range s.crondSvc.CrondSnapshot() {
+							logrus.Debug(log)
+						}
+						return false, nil
+					})
+			}
+		}
 	}()
 
 	// 定时补偿
-	go s.ContinueCompensate()
+	go s.ContinueCompensate(ctx)
 }

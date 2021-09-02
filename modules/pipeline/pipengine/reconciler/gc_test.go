@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -47,11 +48,11 @@ func TestMakePipelineGCSubKey(t *testing.T) {
 
 func TestListenGC(t *testing.T) {
 	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ListenGC", func(r *Reconciler) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ListenGC", func(r *Reconciler, ctx context.Context) {
 		return
 	})
 	defer pm1.Unpatch()
 	t.Run("listenGC", func(t *testing.T) {
-		r.ListenGC()
+		r.ListenGC(context.Background())
 	})
 }

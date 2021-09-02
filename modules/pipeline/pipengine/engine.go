@@ -16,6 +16,7 @@ package pipengine
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -73,8 +74,8 @@ func (engine *Engine) OnceDo(
 }
 
 func (engine *Engine) StartReconciler(ctx context.Context) {
-	go engine.reconciler.Listen()
-	go engine.reconciler.ContinueBackupThrottler()
+	go engine.reconciler.Listen(ctx)
+	go engine.reconciler.ContinueBackupThrottler(ctx)
 
 	// 开始 Listen 后再开始加载已经在处理中的流水线，否则组件还未准备好，包括 eventManger(阻塞)
 	go func() {
@@ -86,9 +87,9 @@ func (engine *Engine) StartReconciler(ctx context.Context) {
 }
 
 func (engine *Engine) StartGC(ctx context.Context) {
-	go engine.reconciler.ListenGC()
-	go engine.reconciler.PipelineDatabaseGC()
-	go engine.reconciler.CompensateGCNamespaces()
+	go engine.reconciler.ListenGC(ctx)
+	go engine.reconciler.PipelineDatabaseGC(ctx)
+	go engine.reconciler.CompensateGCNamespaces(ctx)
 }
 
 func (engine *Engine) Send(pipelineID uint64) {
@@ -127,4 +128,38 @@ func (engine *Engine) loadRunningPipelines() error {
 	}
 	logrus.Infof("%s: pipengine end load running pipelines", logPrefixContinueLoading)
 	return nil
+}
+
+func (engine *Engine) continueLoadRunningPipelines() {
+	// 多实例，先等待随机时间
+	rand.Seed(time.Now().UnixNano())
+	randN := rand.Intn(60)
+	logrus.Debugf("%s: random sleep %d seconds...", logPrefixContinueLoading, randN)
+	time.Sleep(time.Duration(randN) * time.Second)
+
+	done := make(chan struct{})
+	errDone := make(chan error)
+
+	for {
+		go func() {
+			// 执行 loading
+			if err := engine.loadRunningPipelines(); err != nil {
+				errDone <- err
+				return
+			}
+			done <- struct{}{}
+		}()
+
+		select {
+		// 正常结束，等待 30min 后开始下一次处理
+		case <-done:
+			logrus.Infof("%s: sleep 30min for next loading...", logPrefixContinueLoading)
+			time.Sleep(time.Minute * 30)
+
+		// 异常结束，等待 2min 后尽快开始下一次处理
+		case err := <-errDone:
+			logrus.Errorf("%s: failed to load, wait 2min for next loading, err: %v", logPrefixContinueLoading, err)
+			time.Sleep(time.Minute * 2)
+		}
+	}
 }

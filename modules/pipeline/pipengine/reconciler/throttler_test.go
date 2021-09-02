@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -37,11 +38,11 @@ func TestContinueBackupThrottler(t *testing.T) {
 	//	cancel()
 	//})
 	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ContinueBackupThrottler", func(r *Reconciler) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ContinueBackupThrottler", func(r *Reconciler, ctx context.Context) {
 		return
 	})
 	defer pm1.Unpatch()
 	t.Run("ContinueBackupThrottler", func(t *testing.T) {
-		r.ContinueBackupThrottler()
+		r.ContinueBackupThrottler(context.Background())
 	})
 }

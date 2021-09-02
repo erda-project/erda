@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -314,11 +315,11 @@ func TestReconciler_doWaitGCCompensate(t *testing.T) {
 
 func TestCompensateGCNamespaces(t *testing.T) {
 	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "CompensateGCNamespaces", func(r *Reconciler) {
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "CompensateGCNamespaces", func(r *Reconciler, ctx context.Context) {
 		return
 	})
 	defer pm1.Unpatch()
 	t.Run("CompensateGCNamespaces", func(t *testing.T) {
-		r.CompensateGCNamespaces()
+		r.CompensateGCNamespaces(context.Background())
 	})
 }

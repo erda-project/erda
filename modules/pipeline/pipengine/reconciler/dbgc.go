@@ -40,17 +40,26 @@ const (
 // remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
 // these two methods will create a lot of etcd ttl, will cause high load on etcd
 // use fixed gc time, traverse the data in the database every day
-func (r *Reconciler) PipelineDatabaseGC() {
-
+func (r *Reconciler) PipelineDatabaseGC(ctx context.Context) {
 	r.doAnalyzedPipelineDatabaseGC(true)
 	r.doAnalyzedPipelineDatabaseGC(false)
-
 	r.doNotAnalyzedPipelineDatabaseGC(true)
 	r.doNotAnalyzedPipelineDatabaseGC(false)
 
-	time.AfterFunc(24*time.Hour, func() {
-		r.PipelineDatabaseGC()
-	})
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			r.doAnalyzedPipelineDatabaseGC(true)
+			r.doAnalyzedPipelineDatabaseGC(false)
+
+			r.doNotAnalyzedPipelineDatabaseGC(true)
+			r.doNotAnalyzedPipelineDatabaseGC(false)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // query the data in the database according to req paging to perform gc
