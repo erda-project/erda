@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	WorkloadActive  = "active"
-	WorkloadError   = "error"
-	WorkloadSucceed = "succeed"
-	WorkloadFailed  = "failed"
+	WorkloadActive  = "Active"
+	WorkloadError   = "Error"
+	WorkloadSucceed = "Succeeded"
+	WorkloadFailed  = "Failed"
 
 	DeploymentType  = "Deployment"
 	DaemonSetType   = "DaemonSet"

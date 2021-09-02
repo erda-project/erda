@@ -65,7 +65,7 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 	if err := p.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for podsTable component, %v", err)
 	}
-	p.SetComponentValue()
+	p.SetComponentValue(ctx)
 	return nil
 }
 
@@ -362,74 +362,74 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
-func (p *ComponentPodsTable) SetComponentValue() {
+func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
 	p.Props.Columns = []Column{
 		{
 			DataIndex: "status",
-			Title:     "Status",
+			Title:     cputil.I18n(ctx, "status"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "name",
-			Title:     "Name",
+			Title:     cputil.I18n(ctx, "name"),
 			Width:     180,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "namespace",
-			Title:     "Namespace",
+			Title:     cputil.I18n(ctx, "namespace"),
 			Width:     180,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ip",
-			Title:     "IP",
+			Title:     cputil.I18n(ctx, "ip"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuRequests",
-			Title:     "CPU Requests",
+			Title:     cputil.I18n(ctx, "cpuRequests"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuLimits",
-			Title:     "CPU Limits",
+			Title:     cputil.I18n(ctx, "cpuLimits"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuPercent",
-			Title:     "CPU Percent",
+			Title:     cputil.I18n(ctx, "cpuPercent"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryRequests",
-			Title:     "Memory Requests",
+			Title:     cputil.I18n(ctx, "memoryRequests"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryLimits",
-			Title:     "Memory Limits",
+			Title:     cputil.I18n(ctx, "memoryLimits"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryPercent",
-			Title:     "Memory Percent",
+			Title:     cputil.I18n(ctx, "memoryPercent"),
 			Width:     120,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "ready",
-			Title:     "Ready",
+			Title:     cputil.I18n(ctx, "ready"),
 			Width:     80,
 			Sorter:    true,
 		},

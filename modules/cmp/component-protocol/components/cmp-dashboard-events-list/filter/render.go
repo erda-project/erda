@@ -51,7 +51,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Componen
 	if err := f.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
-	if err := f.SetComponentValue(); err != nil {
+	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
 	}
 	if err := f.EncodeURLQuery(); err != nil {
@@ -114,7 +114,7 @@ func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
-func (f *ComponentFilter) SetComponentValue() error {
+func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	userID := f.sdk.Identity.UserID
 	orgID := f.sdk.Identity.OrgID
 
@@ -132,39 +132,39 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "workspace-dev",
+		Label: cputil.I18n(ctx, "workload"),
 		Value: "dev",
 	}
 	testNs := Option{
-		Label: "workspace-test",
+		Label: cputil.I18n(ctx, "workspace-test"),
 		Value: "test",
 	}
 	stagingNs := Option{
-		Label: "workspace-staging",
+		Label: cputil.I18n(ctx, "workspace-staging"),
 		Value: "staging",
 	}
 	productionNs := Option{
-		Label: "workspace-production",
+		Label: cputil.I18n(ctx, "workspace-production"),
 		Value: "production",
 	}
 	addonNs := Option{
-		Label: "addons",
+		Label: cputil.I18n(ctx, "addons"),
 		Value: "addons",
 	}
 	pipelineNs := Option{
-		Label: "pipelines",
+		Label: cputil.I18n(ctx, "pipelines"),
 		Value: "pipelines",
 	}
 	defaultNs := Option{
-		Label: "default",
+		Label: cputil.I18n(ctx, "default"),
 		Value: "default",
 	}
 	systemNs := Option{
-		Label: "system",
+		Label: cputil.I18n(ctx, "system"),
 		Value: "system",
 	}
 	otherNs := Option{
-		Label: "others",
+		Label: cputil.I18n(ctx, "others"),
 		Value: "others",
 	}
 
@@ -213,7 +213,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 	f.State.Conditions = nil
 	namespaceCond := Condition{
 		Key:   "namespace",
-		Label: "Namespace",
+		Label: cputil.I18n(ctx, "namespace"),
 		Type:  "select",
 		Fixed: true,
 	}
@@ -229,16 +229,16 @@ func (f *ComponentFilter) SetComponentValue() error {
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:   "type",
-		Label: "Event Type",
+		Label: cputil.I18n(ctx, "eventType"),
 		Type:  "select",
 		Fixed: true,
 		Options: []Option{
 			{
-				Label: "Normal",
+				Label: cputil.I18n(ctx, "normal"),
 				Value: "Normal",
 			},
 			{
-				Label: "Warning",
+				Label: cputil.I18n(ctx, "warning"),
 				Value: "Warning",
 			},
 		},

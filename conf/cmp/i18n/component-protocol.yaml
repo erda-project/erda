@@ -1,0 +1,127 @@
+zh:
+ # general
+ name: 名称
+ namespace: 命名空间
+ status: 状态
+ ip: IP地址
+ age: 存活时间
+ images: 镜像
+ labels: 标签
+ annotations: 注释
+
+ # cmp-dashboard-events-list.eventTable
+ lastSeen: 上次触发时间
+ eventType: 事件级别
+ reason: 原因
+ object: 对象
+ source: 事件源
+ message: 事件信息
+ count: 累计次数
+
+ # cmp-dashboard-events-list.filter
+ workspace-dev: 开发环境
+ workspace-test: 测试环境
+ workspace-staging: 预发环境
+ workspace-production: 生产环境
+ addons: 扩展组件
+ pipelines: 流水线
+ default: 默认
+ system: 系统
+ others: 其他
+ normal: 普通
+ warning: 警告
+
+ # cmp-dashboard-workload-detail.podsTable
+ cpuRequests: CPU请求值
+ cpuLimits: CPU限制值
+ cpuPercent: CPU水位
+ memoryRequests: 内存请求值
+ memoryLimits: 内存限制值
+ memoryPercent: 内存水位
+ ready: 就绪
+
+ # cmp-dashboard-workload-detail.podsTableTitle
+ workloadPods: 关联的Pods
+
+ # cmp-dashboard-workload-detail.workloadTitle
+ workloadDetail: 工作负载详情
+ totalWorkload: 工作负载总数
+
+ # cmp-dashboard-workloads-list.filter
+ search: 搜索
+ searchPlaceHolder: 搜索工作负载名称
+ workloadKind: 工作负载类型
+
+ # cmp-dashboard-workloads-list.workloadTable
+ upToDate: Up-to-Date
+ available: Available
+ desired: Desired
+ current: Current
+ completions: Completions
+ jobDuration: 运行时间
+ schedule: 运行计划
+ lastSchedule: 上次运行时间
+
+en:
+ # general
+ name: Name
+ namespace: Namespace
+ status: Status
+ ip: IP
+ age: Age
+ images: Images
+ labels: Labels
+ annotations: Annotations
+
+ # cmp-dashboard-events-list.eventTable
+ lastSeen: Last Seen
+ eventType: Event Type
+ reason: Reason
+ object: Object
+ source: Source
+ message: Message
+ count: Count
+
+ # cmp-dashboard-events-list.filter
+ workspace-dev: Workspace-Dev
+ workspace-list: Workspace-Test
+ workspace-staging: Workspace-Staging
+ workspace-production: Workspace-Production
+ addons: Addons
+ pipelines: Pipelines
+ default: Default
+ system: System
+ others: Others
+ normal: Normal
+ warning: Warning
+
+ # cmp-dashboard-workload-detail.podsTable
+ cpuRequests: CPU Requests
+ cpuLimits: CPU Limits
+ cpuPercent: CPU Percent
+ memoryRequests: Memory Requests
+ memoryLimits: Memory Limits
+ memoryPercent: Memory Percent
+ ready: Ready
+
+ # cmp-dashboard-workload-detail.podsTableTitle
+ workloadPods: Pods
+
+ # cmp-dashboard-workload-detail.workloadTitle
+ workloadDetail: Workload Detail
+ totalWorkload: Total Workloads
+
+ # cmp-dashboard-workloads-list.filter
+ search: Search
+ searchPlaceHolder: input workload name
+ workloadKind: Workload Kind
+
+ # cmp-dashboard-workloads-list.workloadTable
+ upToDate: Up-to-Date
+ available: Available
+ desired: Desired
+ current: Current
+ completions: Completion
+ jobDuration: Duration
+ schedule: Schedule
+ lastSchedule: LastSchedule
