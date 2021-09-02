@@ -97,3 +97,8 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
+
+http-server@admin:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  addr: ":9432"
+  reloadable: ${OPENAPI_DEV_MODE:false}

@@ -46,7 +46,7 @@ type (
 	provider struct {
 		Cfg      *config
 		Log      logs.Logger
-		Router   httpserver.Router  `autowired:"http-router"`
+		Router   httpserver.Router  `autowired:"http-router@admin"`
 		Etcd     *clientv3.Client   `autowired:"etcd-client"`
 		Discover discover.Interface `autowired:"discover"`
 		proxy    proxy.Proxy
