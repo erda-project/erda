@@ -40,7 +40,7 @@ type config struct {
 	TokenLookup       string        `file:"token_lookup"`                     // "header:<name>"、"form:<name>"、 "query:<name>"
 	CookieName        string        `file:"cookie_name" default:"csrf" desc:"name of the CSRF cookie. This cookie will store CSRF token. optional."`
 	CookieDomain      string        `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
-	CookiePath        string        `file:"cookie_path" desc:"path of the CSRF cookie. optional."`
+	CookiePath        string        `file:"cookie_path" default:"/" desc:"path of the CSRF cookie. optional."`
 	CookieMaxAge      time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the CSRF cookie. optional."`
 	CookieSecure      bool          `file:"cookie_secure" desc:"indicates if CSRF cookie is secure. optional."`
 	CookieHTTPOnly    bool          `file:"cookie_http_only" desc:"indicates if CSRF cookie is HTTP only. optional."`
