@@ -26,6 +26,8 @@ components:
     type: Container
   head:
     type: LRContainer
+    props: 
+      whiteBg: true
   content:
     type: Container
   topHead:
