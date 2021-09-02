@@ -17,6 +17,7 @@ package orchestrator
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
 var ORCHESTRATOR_RUNTIME_RELEASE_CREATE = apis.ApiSpec{
@@ -31,4 +32,29 @@ var ORCHESTRATOR_RUNTIME_RELEASE_CREATE = apis.ApiSpec{
 	CheckToken:   true,
 	IsOpenAPI:    true,
 	Doc:          "summary: 通过releaseId创建runtime",
+	Audit: func(ctx *spec.AuditContext) error {
+		var resp apistructs.RuntimeDeployResponse
+
+		if err := ctx.BindResponseData(&resp); err != nil {
+			return err
+		}
+
+		for _, v := range resp.Data.ServicesNames {
+			err := ctx.CreateAudit(&apistructs.Audit{
+				ScopeType:    apistructs.AppScope,
+				ScopeID:      resp.Data.ApplicationID,
+				TemplateName: apistructs.DeployRuntimeTemplate,
+				Context: map[string]interface{}{
+					"orgName":     resp.Data.OrgName,
+					"projectName": resp.Data.ProjectName,
+					"appName":     resp.Data.ApplicationName,
+					"serviceName": v,
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 }

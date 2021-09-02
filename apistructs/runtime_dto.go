@@ -74,6 +74,7 @@ type RuntimeDTO struct {
 	ProjectID       uint64          `json:"projectId"`
 	ProjectName     string          `json:"projectName"`
 	OrgID           uint64          `json:"orgId"`
+	OrgName         string          `json:"orgName"`
 	Errors          []ErrorResponse `json:"errors"`
 }
 
@@ -154,4 +155,17 @@ type DeploymentCreateResponseDTO struct {
 
 type DeploymentCreateResponsePipelineDTO struct {
 	PipelineID uint64 `json:"pipelineId"`
+}
+
+type RuntimeDeployDTO struct {
+	PipelineID      uint64   `json:"pipelineId"`
+	Workspace       string   `json:"workspace"`
+	ClusterName     string   `json:"clusterName"`
+	ApplicationID   uint64   `json:"applicationId"`
+	ApplicationName string   `json:"applicationName"`
+	ProjectID       uint64   `json:"projectId"`
+	ProjectName     string   `json:"projectName"`
+	OrgID           uint64   `json:"orgId"`
+	OrgName         string   `json:"orgName"`
+	ServicesNames   []string `json:"servicesNames"`
 }

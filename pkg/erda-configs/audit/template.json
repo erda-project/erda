@@ -1636,7 +1636,7 @@
       "en": ""
     }
   },
-  "deleteTag":{
+  "deleteTag": {
     "desc": "删除标签",
     "success": {
       "zh": "在应用 [@appName](app) 下删除标签 [@name]",
@@ -1647,7 +1647,7 @@
       "en": ""
     }
   },
-  "deleteBranch":{
+  "deleteBranch": {
     "desc": "删除分支",
     "success": {
       "zh": "在应用 [@appName](app) 下删除分支 [@name]",
@@ -1658,7 +1658,7 @@
       "en": ""
     }
   },
-  "repoLocked":{
+  "repoLocked": {
     "desc": "仓库锁定",
     "success": {
       "zh": "应用 [@appName](app) 的仓库锁定状态变更为 [@isLocked]",
@@ -1672,7 +1672,7 @@
   "scaleRuntime": {
     "desc": "服务扩缩容",
     "success": {
-      "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
+      "zh": "应用 [@appName](app) 中, 对 [@serviceName] runtime 进行了扩缩容, [@scaleMessageZH]",
       "en": "in app [@appName](app), Changed the scale of service [@serviceName], [@scaleMessageEN]"
     },
     "fail": {
@@ -1767,5 +1767,38 @@
       "zh": "",
       "en": ""
     }
-  }
+  },
+  "redeployRuntime": {
+    "desc": "服务重启",
+    "success": {
+      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行重启操作",
+      "en": "in @orgName/@projectName/@appName, redeploy the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "rollbackRuntime": {
+    "desc": "服务回滚",
+    "success": {
+      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行回滚操作",
+      "en": "in @orgName/@projectName/@appName, rollback the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "deployRuntime": {
+    "desc": "服务部署",
+    "success": {
+      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行部署操作",
+      "en": "in @orgName/@projectName/@appName, deploy the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
 }

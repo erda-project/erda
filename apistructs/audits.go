@@ -168,8 +168,11 @@ const (
 	CreateCustomAddonTemplate TemplateName = "createCustomAddon"
 	DeleteAddonTemplate       TemplateName = "deleteAddon"
 	// ========================Runtime================================
-	DeleteRuntimeTemplate TemplateName = "deleteRuntime"
-	ScaleRuntimeTemplate  TemplateName = "scaleRuntime"
+	DeleteRuntimeTemplate   TemplateName = "deleteRuntime"
+	ScaleRuntimeTemplate    TemplateName = "scaleRuntime"
+	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
+	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
+	DeployRuntimeTemplate   TemplateName = "deployRuntime"
 
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"

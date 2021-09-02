@@ -14,7 +14,11 @@
 
 package orchestrator
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
+)
 
 var ORCHESTRATOR_RUNTIME_REDEPLOY = apis.ApiSpec{
 	Path:        "/api/runtimes/<runtimeId>/actions/redeploy",
@@ -64,4 +68,28 @@ responses:
   '400':
     description: bad request
 `,
+	Audit: func(ctx *spec.AuditContext) error {
+		var resp apistructs.RuntimeDeployResponse
+
+		if err := ctx.BindResponseData(&resp); err != nil {
+			return err
+		}
+		for _, v := range resp.Data.ServicesNames {
+			err := ctx.CreateAudit(&apistructs.Audit{
+				ScopeType:    apistructs.AppScope,
+				ScopeID:      resp.Data.ApplicationID,
+				TemplateName: apistructs.RedeployRuntimeTemplate,
+				Context: map[string]interface{}{
+					"orgName":     resp.Data.OrgName,
+					"projectName": resp.Data.ProjectName,
+					"appName":     resp.Data.ApplicationName,
+					"serviceName": v,
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 }
