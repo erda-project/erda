@@ -115,6 +115,13 @@ func newService(service *apistructs.Service, selectors map[string]string) *apiv1
 	}
 
 	setServiceLabelSelector(k8sService, selectors)
+	if selectors == nil {
+		k8sService.Labels = map[string]string{
+			"app": service.Name,
+		}
+	} else {
+		k8sService.Labels = selectors
+	}
 
 	for i, port := range service.Ports {
 		k8sService.Spec.Ports = append(k8sService.Spec.Ports, apiv1.ServicePort{
