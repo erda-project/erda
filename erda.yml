@@ -17,6 +17,7 @@ envs:
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
   CORE_SERVICES_ADDR: core-services:9526
+  OPENAPI_ADDR: openapi:9529
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -458,6 +459,9 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
         expose: true
+      - port: 9432
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       CREATE_ORG_ENABLED: "false"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"

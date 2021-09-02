@@ -118,20 +118,6 @@ func (p *provider) List() []*interceptors.Interceptor {
 // Interceptor .
 func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(p.Cfg.AllowValidReferer, r.Header.Get("Referer"), r.Host)
-		if p.Cfg.AllowValidReferer {
-			referer := r.Header.Get("Referer")
-			if referer == "" {
-				h(rw, r)
-				return
-			}
-			if ref, err := url.Parse(referer); err == nil {
-				if ref.Host == r.Host {
-					h(rw, r)
-					return
-				}
-			}
-		}
 		k, err := r.Cookie(p.Cfg.CookieName)
 		var token string
 		if err == nil {
@@ -141,17 +127,31 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
 		default:
-			// Validate token only for requests which are not defined as 'safe' by RFC7231
-			clientToken, err := p.extractor(r)
-			if err != nil {
-				rw.WriteHeader(http.StatusBadRequest)
-				common.WriteError(err, rw)
-				return
+			validateToken := true
+			if p.Cfg.AllowValidReferer {
+				referer := r.Header.Get("Referer")
+				if referer == "" {
+					validateToken = false
+				}
+				if ref, err := url.Parse(referer); err == nil {
+					if ref.Host == r.Host {
+						validateToken = false
+					}
+				}
 			}
-			if !p.generator.valid(token, clientToken, r) {
-				rw.WriteHeader(http.StatusForbidden)
-				common.WriteError(errors.New("invalid csrf token"), rw)
-				return
+			if validateToken {
+				// Validate token only for requests which are not defined as 'safe' by RFC7231
+				clientToken, err := p.extractor(r)
+				if err != nil {
+					rw.WriteHeader(http.StatusBadRequest)
+					common.WriteError(err, rw)
+					return
+				}
+				if !p.generator.valid(token, clientToken, r) {
+					rw.WriteHeader(http.StatusForbidden)
+					common.WriteError(errors.New("invalid csrf token"), rw)
+					return
+				}
 			}
 		}
 		if len(token) <= 0 {
