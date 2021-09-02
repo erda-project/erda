@@ -125,6 +125,9 @@ func (s *traceService) handleSpanResponse(spanTree SpanTree) (*pb.GetSpansRespon
 	services := map[string]void{}
 	for _, span := range spanTree {
 		services[span.Tags["service_name"]] = void{}
+		if span.ParentSpanId == span.Id {
+			span.ParentSpanId = ""
+		}
 		tempDepth := calculateDepth(depth, span, spanTree)
 		if tempDepth > depth {
 			depth = tempDepth
@@ -145,6 +148,9 @@ func (s *traceService) handleSpanResponse(spanTree SpanTree) (*pb.GetSpansRespon
 }
 
 func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
+	if span.ParentSpanId == span.Id {
+		return 0
+	}
 	if span.ParentSpanId != "" && spanTree[span.ParentSpanId] != nil {
 		depth += 1
 		calculateDepth(depth, spanTree[span.ParentSpanId], spanTree)
