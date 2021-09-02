@@ -1672,7 +1672,7 @@
   "scaleRuntime": {
     "desc": "服务扩缩容",
     "success": {
-      "zh": "应用 [@appName](app) 中, 对 [@serviceName] runtime 进行了扩缩容, [@scaleMessageZH]",
+      "zh": "应用 [@appName](app) 中, 对 [@serviceName] 进行了扩缩容, [@scaleMessageZH]",
       "en": "in app [@appName](app), Changed the scale of service [@serviceName], [@scaleMessageEN]"
     },
     "fail": {
@@ -1771,8 +1771,8 @@
   "redeployRuntime": {
     "desc": "服务重启",
     "success": {
-      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行重启操作",
-      "en": "in @orgName/@projectName/@appName, redeploy the service [@serviceName]"
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行重启操作",
+      "en": "in [@projectName](project) / [@appName](app) , redeploy the service [@serviceName]"
     },
     "fail": {
       "zh": "",
@@ -1782,8 +1782,8 @@
   "rollbackRuntime": {
     "desc": "服务回滚",
     "success": {
-      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行回滚操作",
-      "en": "in @orgName/@projectName/@appName, rollback the service [@serviceName]"
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行回滚操作",
+      "en": "in [@projectName](project) / [@appName](app) , rollback the service [@serviceName]"
     },
     "fail": {
       "zh": "",
@@ -1793,12 +1793,12 @@
   "deployRuntime": {
     "desc": "服务部署",
     "success": {
-      "zh": "在 @orgName/@projectName/@appName 中, 对 [@serviceName] runtime 进行部署操作",
-      "en": "in @orgName/@projectName/@appName, deploy the service [@serviceName]"
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行部署操作",
+      "en": "in [@projectName](project) / [@appName](app) , deploy the service [@serviceName]"
     },
     "fail": {
       "zh": "",
       "en": ""
     }
-  },
+  }
 }

@@ -17,6 +17,7 @@ package runtime
 
 import (
 	"encoding/json"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"reflect"
 	"testing"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestModifyStatusIfNotForDisplay(t *testing.T) {
@@ -145,4 +145,41 @@ func Test_getRedeployPipelineYmlName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetServicesNames(t *testing.T) {
+	var diceYml = `version: 2.0
+services:
+  web:
+    ports:
+      - 8080
+      - port: 20880
+      - port: 1234
+        protocol: "UDP"
+      - port: 4321
+        protocol: "HTTP"
+      - port: 53
+        protocol: "DNS"
+        l4_protocol: "UDP"
+        default: true
+    deployments:
+      replicas: 1
+    resources:
+      cpu: 0.1
+      mem: 512
+    k8s_snippet:
+      container:
+        name: abc
+        stdin: true
+        workingDir: aaa
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+`
+	name, err := getServicesNames(diceYml)
+	if err != nil {
+		assert.Error(t, err)
+		return
+	}
+	assert.Equal(t, []string{"web"}, name)
 }

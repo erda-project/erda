@@ -88,7 +88,8 @@ responses:
 				ScopeID:      resp.Data.ApplicationID,
 				TemplateName: apistructs.RollbackRuntimeTemplate,
 				Context: map[string]interface{}{
-					"orgName":     resp.Data.OrgName,
+					"projectId":   resp.Data.ProjectID,
+					"appId":       resp.Data.ApplicationID,
 					"projectName": resp.Data.ProjectName,
 					"appName":     resp.Data.ApplicationName,
 					"serviceName": v,
