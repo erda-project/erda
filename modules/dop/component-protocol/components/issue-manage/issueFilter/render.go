@@ -133,7 +133,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	f.Operations = GetAllOperations()
 	f.State.FrontendConditionProps = f.generateFrontendConditionProps(ctx, f.InParams.FrontendFixedIssueType, state)
 
-	f.State.FrontendConditionValues.StateBelongs = map[string][]apistructs.IssueStateBelong{
+	stateBelongs := map[string][]apistructs.IssueStateBelong{
 		"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
 		"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
 		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
@@ -145,7 +145,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	for _, v := range types {
 		req := &apistructs.IssueStatesGetRequest{
 			ProjectID:    f.InParams.ProjectID,
-			StateBelongs: f.State.FrontendConditionValues.StateBelongs,
+			StateBelongs: stateBelongs,
 			IssueType:    v,
 		}
 		ids, err := f.issueStateSvc.GetIssueStateIDs(req)
