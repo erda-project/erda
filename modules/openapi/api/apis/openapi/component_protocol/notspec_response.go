@@ -69,7 +69,7 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 	defer func() {
 		if r := recover(); r != nil {
 			resp.Body = ioutil.NopCloser(bytes.NewReader(content))
-			wErr = fmt.Errorf("%v", r)
+			wErr = fmt.Errorf("err: %v, responseBody: %s", r, string(content))
 		}
 		resp.Header.Set("Content-Type", "application/json")
 	}()

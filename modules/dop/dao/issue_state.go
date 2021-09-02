@@ -127,6 +127,21 @@ func (client *DBClient) GetIssuesStatesByProjectID(projectID uint64, issueType a
 	return states, nil
 }
 
+func (client *DBClient) GetIssuesStates(req *apistructs.IssueStatesGetRequest) ([]IssueState, error) {
+	var states []IssueState
+	db := client.Table("dice_issue_state").Select("id").Where("project_id = ?", req.ProjectID)
+	if req.IssueType != "" {
+		db = db.Where("issue_type = ?", req.IssueType)
+	}
+	if len(req.StateBelongs) > 0 {
+		db = db.Where("belong IN (?)", req.StateBelongs)
+	}
+	if err := db.Order("index").Find(&states).Error; err != nil {
+		return nil, err
+	}
+	return states, nil
+}
+
 // get all state by projectID list
 func (client *DBClient) GetIssuesStatesByProjectIDList(projectIDList []uint64) ([]IssueState, error) {
 	var states []IssueState

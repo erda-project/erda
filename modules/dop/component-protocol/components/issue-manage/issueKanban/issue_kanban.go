@@ -15,6 +15,7 @@
 package issueKanban
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -23,18 +24,19 @@ import (
 
 	"github.com/golang-collections/collections/set"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/text/message"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type IssueCart struct {
-	i18nPrinter    *message.Printer
+	// i18nPrinter    *message.Printer
+	ctx            context.Context
 	Assignee       string                        `json:"assignee"`
 	Priority       apistructs.IssuePriority      `json:"priority"`
 	ID             int64                         `json:"id"`
@@ -48,8 +50,8 @@ type IssueCart struct {
 }
 
 type CartList struct {
-	i18nPrinter *message.Printer
-
+	// i18nPrinter *message.Printer
+	ctx context.Context
 	// 分类类型: 状态，处理人，时间，自定义,优先级
 	Label      interface{}            `json:"label"`
 	LabelKey   interface{}            `json:"labelKey"`
@@ -79,12 +81,12 @@ func (cl *CartList) Add(c IssueCart) {
 }
 
 const (
-	MoveOutConfirmMsg           = "Confirm to move out iteration"
-	CreateBoardConfirmMsg       = "Confirm to create board"
-	DeleteBoardConfirmMsg       = "Confirm to delete board"
-	UpdateBoardConfirmMsg       = "Confirm to update board"
-	CreateBoardDisabledTip      = "The number of boards cannot exceed 5"
-	GuestCreateBoardDisabledTip = "No permission to operate"
+	MoveOutConfirmMsg           = "confirm-to-move-out-iteration"
+	CreateBoardConfirmMsg       = "confirm-to-create-board"
+	DeleteBoardConfirmMsg       = "confirm-to-delete-board"
+	UpdateBoardConfirmMsg       = "confirm-to-update-board"
+	CreateBoardDisabledTip      = "the-number-of-boards-cannot-exceed-15"
+	GuestCreateBoardDisabledTip = "no-permission-to-operate"
 )
 
 type OperationBaseInfo struct {
@@ -153,12 +155,12 @@ const MaxBoardNum = 15
 
 //type DragToCustomOperation DragOperationInfo
 
-func (c *CartList) SetI18nPrinter(ip *message.Printer) {
-	c.i18nPrinter = ip
+func (c *CartList) SetCtx(ctx context.Context) {
+	c.ctx = ctx
 }
 
-func (c *IssueCart) SetI18nPrinter(ip *message.Printer) {
-	c.i18nPrinter = ip
+func (c *IssueCart) SetCtx(ctx context.Context) {
+	c.ctx = ctx
 }
 
 // 移除操作渲染生成
@@ -169,8 +171,8 @@ func (c *IssueCart) RenderMoveOutOperation() {
 	}
 	o := MoveOutOperation{}
 	o.Disabled = false
-	o.Confirm = c.i18nPrinter.Sprintf(MoveOutConfirmMsg)
-	o.Text = c.i18nPrinter.Sprintf(apistructs.MoveOutOperation.String())
+	o.Confirm = cputil.I18n(c.ctx, MoveOutConfirmMsg)
+	o.Text = cputil.I18n(c.ctx, apistructs.MoveOutOperation.String())
 	o.Reload = true
 	o.Meta = OpMetaInfo{IssueID: c.ID}
 	c.Operations[apistructs.MoveOutOperation.String()] = o
@@ -195,7 +197,7 @@ func (c *IssueCart) RenderMoveToOperation() {
 	for _, v := range c.IssueButton {
 		o := MoveToOperation{}
 		o.Disabled = !v.Permission
-		o.Text = c.i18nPrinter.Sprintf(apistructs.MoveToOperation.String()) + v.StateName
+		o.Text = cputil.I18n(c.ctx, apistructs.MoveToOperation.String()) + v.StateName
 		o.Reload = true
 		o.Meta = OpMetaInfo{IssueID: c.ID, StateID: v.StateID}
 		c.Operations[apistructs.MoveToOperation.String()+v.StateName] = o
@@ -207,7 +209,7 @@ func (c *IssueCart) RenderMoveToCustomOperation(mp map[cptype.OperationKey]inter
 	for _, v := range p {
 		o := MoveToCustomOperation{}
 		o.Disabled = false
-		o.Text = c.i18nPrinter.Sprintf(apistructs.MoveToCustomOperation.String()) + v.PanelName
+		o.Text = cputil.I18n(c.ctx, apistructs.MoveToCustomOperation.String()) + v.PanelName
 		o.Reload = true
 		o.Meta = OpMetaInfo{
 			IssueID:    c.ID,
@@ -240,7 +242,7 @@ func (c *IssueCart) RenderMoveToAssigneeOperation(mp map[cptype.OperationKey]int
 		}
 		o := MoveToAssigneeOperation{}
 		o.Disabled = false
-		o.Text = c.i18nPrinter.Sprintf(apistructs.MoveToAssigneeOperation.String()) + v.Nick
+		o.Text = cputil.I18n(c.ctx, apistructs.MoveToAssigneeOperation.String()) + v.Nick
 		o.Reload = true
 		o.Meta = OpMetaInfo{
 			IssueID:       c.ID,
@@ -273,7 +275,7 @@ func (c *IssueCart) RenderMoveToPriorityOperation(i apistructs.Issue, mp map[cpt
 		if v == i.Priority {
 			o.Disabled = true
 		}
-		o.Text = c.i18nPrinter.Sprintf(apistructs.MoveToPriorityOperation.String()) + v.GetZhName()
+		o.Text = cputil.I18n(c.ctx, apistructs.MoveToPriorityOperation.String()) + v.GetZhName()
 		o.Reload = true
 		o.Meta = OpMetaInfo{
 			IssueID:       c.ID,
@@ -358,8 +360,8 @@ func (cl *CartList) RenderCartListOperations(s ChartOperationSwitch) {
 	if len(cl.List) == 0 && cl.LabelKey.(int64) != 0 {
 		o := DeleteBoardOperation{}
 		o.Disabled = false
-		o.Confirm = cl.i18nPrinter.Sprintf(DeleteBoardConfirmMsg)
-		o.Text = cl.i18nPrinter.Sprintf(apistructs.DeleteCustomOperation.String())
+		o.Confirm = cputil.I18n(cl.ctx, DeleteBoardConfirmMsg)
+		o.Text = cputil.I18n(cl.ctx, apistructs.DeleteCustomOperation.String())
 		o.Reload = true
 		o.Meta = OpMetaInfo{IssuePanel: apistructs.IssuePanel{PanelID: cl.LabelKey.(int64)}}
 		cl.Operations[apistructs.DeleteCustomOperation.String()] = o
@@ -368,8 +370,8 @@ func (cl *CartList) RenderCartListOperations(s ChartOperationSwitch) {
 	if cl.LabelKey.(int64) != 0 {
 		o := UpdateBoardOperation{}
 		o.Disabled = false
-		o.Confirm = cl.i18nPrinter.Sprintf(UpdateBoardConfirmMsg)
-		o.Text = cl.i18nPrinter.Sprintf(apistructs.UpdateCustomOperation.String())
+		o.Confirm = cputil.I18n(cl.ctx, UpdateBoardConfirmMsg)
+		o.Text = cputil.I18n(cl.ctx, apistructs.UpdateCustomOperation.String())
 		o.Reload = true
 		o.Meta = OpMetaInfo{IssuePanel: apistructs.IssuePanel{PanelID: cl.LabelKey.(int64)}}
 		cl.Operations[apistructs.UpdateCustomOperation.String()] = o
@@ -454,7 +456,10 @@ func (c *ChartOperationSwitch) ClearAble() {
 }
 
 type ComponentIssueBoard struct {
-	ctxBdl    protocol.ContextBundle
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
+	// ctxBdl protocol.ContextBundle
+
 	boardType BoardType
 	swt       ChartOperationSwitch
 
@@ -571,7 +576,7 @@ func (i *ComponentIssueBoard) SetBoardType(bt BoardType) {
 // GetUserPermission  check Guest permission
 func (i *ComponentIssueBoard) CheckUserPermission(projectID uint64) error {
 	isGuest := false
-	scopeRole, err := i.ctxBdl.Bdl.ScopeRoleAccess(i.ctxBdl.Identity.UserID, &apistructs.ScopeRoleAccessRequest{
+	scopeRole, err := i.bdl.ScopeRoleAccess(i.sdk.Identity.UserID, &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
 			Type: apistructs.ProjectScope,
 			ID:   strconv.FormatUint(projectID, 10),
@@ -626,7 +631,7 @@ func (i *ComponentIssueBoard) disableOperationPermission(op interface{}) interfa
 	case CreateBoardOperation:
 		o := op.(CreateBoardOperation)
 		o.Disabled = true
-		o.DisabledTip = i.ctxBdl.I18nPrinter.Sprintf(GuestCreateBoardDisabledTip)
+		o.DisabledTip = i.sdk.I18n(GuestCreateBoardDisabledTip)
 		return o
 	case DeleteBoardOperation:
 		o := op.(DeleteBoardOperation)
@@ -646,7 +651,7 @@ func (i *ComponentIssueBoard) disableOperationPermission(op interface{}) interfa
 	return nil
 }
 
-func (i *ComponentIssueBoard) Filter(req IssueFilterRequest) (ib *IssueBoard, err error) {
+func (i *ComponentIssueBoard) Filter(ctx context.Context, req IssueFilterRequest) (ib *IssueBoard, err error) {
 	var (
 		cls   []CartList
 		board IssueBoard
@@ -657,35 +662,35 @@ func (i *ComponentIssueBoard) Filter(req IssueFilterRequest) (ib *IssueBoard, er
 	switch req.BoardType {
 	// 所有，不含此分类
 	case BoardTypeStatus:
-		cls, uids, err = i.FilterByStatusConcurrent(req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByStatusConcurrent(ctx, req.IssuePagingRequest, req.KanbanKey)
 	case BoardTypeTime:
-		cls, uids, err = i.FilterByTime(req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByTime(ctx, req.IssuePagingRequest, req.KanbanKey)
 	case BoardTypePriority:
-		cls, uids, err = i.FilterByPriority(req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey)
 	// 所有，不含此分类
 	case BoardTypeCustom:
-		cls, uids, err = i.FilterByCustom(req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByCustom(ctx, req.IssuePagingRequest, req.KanbanKey)
 		// Created custom board max num 15
 		o := CreateBoardOperation{}
 		o.Disabled = false
-		o.Confirm = i.ctxBdl.I18nPrinter.Sprintf(CreateBoardConfirmMsg)
-		o.Text = i.ctxBdl.I18nPrinter.Sprintf(apistructs.CreateCustomOperation.String())
+		o.Confirm = i.sdk.I18n(CreateBoardConfirmMsg)
+		o.Text = i.sdk.I18n(apistructs.CreateCustomOperation.String())
 		o.Reload = true
-		o.DisabledTip = i.ctxBdl.I18nPrinter.Sprintf(CreateBoardDisabledTip)
+		o.DisabledTip = i.sdk.I18n(CreateBoardDisabledTip)
 		if len(cls) > MaxBoardNum {
 			o.Disabled = true
 		}
 		i.Operations[apistructs.CreateCustomOperation.String()] = o
 	default:
 		//err = fmt.Errorf("invalid board type [%s], must in [%v]", req.BoardType, SupportBoardTypes)
-		cls, uids, err = i.FilterByPriority(req.IssuePagingRequest, req.KanbanKey)
+		cls, uids, err = i.FilterByPriority(ctx, req.IssuePagingRequest, req.KanbanKey)
 	}
 	if err != nil {
 		return
 	}
 	// 时间分类i18n
 	for k, v := range cls {
-		cls[k].Label = i.ctxBdl.I18nPrinter.Sprintf(v.Label)
+		cls[k].Label = i.sdk.I18n(v.Label.(string))
 	}
 	if req.KanbanKey != "" {
 		board.RefreshBoard = false
@@ -709,7 +714,7 @@ func (i ComponentIssueBoard) GetByStatus(req apistructs.IssuePagingRequest, igno
 	// 获取当前项目，特定IssueType的IssueStates
 	//it := req.Type[0]
 	//isReq := apistructs.IssueStateRelationGetRequest{ProjectID: int64(req.ProjectID), IssueType: it}
-	//is, err := i.ctxBdl.Bdl.GetIssueStateBelong(isReq)
+	//is, err := i.bdl.GetIssueStateBelong(isReq)
 	//if err != nil {
 	//	logrus.Errorf("get issue state belong failed, request:%+v, err:%v", isReq, err)
 	//	return
@@ -731,7 +736,7 @@ func (i ComponentIssueBoard) GetByStatus(req apistructs.IssuePagingRequest, igno
 	//	req.State = issueStates
 	//}
 
-	rsp, err = i.ctxBdl.Bdl.PageIssues(req)
+	rsp, err = i.bdl.PageIssues(req)
 	if err != nil {
 		logrus.Errorf("page issues failed, request:%+v, err:%v", req, err)
 		return
@@ -769,7 +774,7 @@ func (i ComponentIssueBoard) GetIssues(req apistructs.IssuePagingRequest, ignore
 	return
 }
 
-func GenCart(bt BoardType, i apistructs.Issue, p *message.Printer, s ChartOperationSwitch, mp map[cptype.OperationKey]interface{}) IssueCart {
+func GenCart(bt BoardType, i apistructs.Issue, ctx context.Context, s ChartOperationSwitch, mp map[cptype.OperationKey]interface{}) IssueCart {
 	var c IssueCart
 	switch bt {
 	case BoardTypeTime:
@@ -797,18 +802,18 @@ func GenCart(bt BoardType, i apistructs.Issue, p *message.Printer, s ChartOperat
 	c.Type = i.Type
 	c.IssueButton = i.IssueButton
 	c.IterationID = i.IterationID
-	c.SetI18nPrinter(p)
+	c.SetCtx(ctx)
 	c.RenderCartOperations(s, i, mp)
 	return c
 }
 
-func (c *CartList) GenCartList(p *message.Printer, s ChartOperationSwitch) {
-	c.SetI18nPrinter(p)
+func (c *CartList) GenCartList(ctx context.Context, s ChartOperationSwitch) {
+	c.SetCtx(ctx)
 	c.RenderCartListOperations(s)
 }
 
 // 按状态过滤 并发
-func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByStatusConcurrent(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
 	if len(req.Type) == 0 || len(req.Type) != 1 {
 		err = fmt.Errorf("issue type number is not 1, type: %v", req.Type)
 		return
@@ -816,7 +821,7 @@ func (i ComponentIssueBoard) FilterByStatusConcurrent(req apistructs.IssuePaging
 	// 获取当前项目，特定IssueType的IssueStates
 	it := req.Type[0]
 	isReq := apistructs.IssueStateRelationGetRequest{ProjectID: req.ProjectID, IssueType: it}
-	is, err := i.ctxBdl.Bdl.GetIssueStateBelong(isReq)
+	is, err := i.bdl.GetIssueStateBelong(isReq)
 	if err != nil {
 		logrus.Errorf("get issue state belong failed, request:%+v, err:%v", isReq, err)
 		return
@@ -864,7 +869,7 @@ loop:
 			r := req
 			// 按特定种类IssueType的一个IssueState并发查询
 			r.State = []int64{state.ID}
-			rsp, e := i.ctxBdl.Bdl.PageIssues(r)
+			rsp, e := i.bdl.PageIssues(r)
 			if e != nil {
 				err = e
 				logrus.Errorf("page issues failed, request:%+v, err:%v", r, e)
@@ -881,7 +886,7 @@ loop:
 				cl.RenderChangePageNoOperation(strconv.FormatInt(cl.LabelKey.(int64), 10))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, i.ctxBdl.I18nPrinter, i.swt, nil)
+				c := GenCart(i.boardType, v, ctx, i.swt, nil)
 				cl.Add(c)
 			}
 
@@ -901,7 +906,7 @@ loop:
 }
 
 // FilterByPriority 按优先级过滤 去掉终态状态 [CLOSED, DONE]
-func (i ComponentIssueBoard) FilterByPriority(req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByPriority(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
 	// 用于生成权限
 	var priorityList []apistructs.IssuePriority
 	if kanbanKey != "" {
@@ -934,7 +939,7 @@ func (i ComponentIssueBoard) FilterByPriority(req apistructs.IssuePagingRequest,
 			r := req
 			// 按特定种类IssueType的一个IssueState并发查询
 			r.Priority = []apistructs.IssuePriority{state}
-			rsp, e := i.ctxBdl.Bdl.PageIssues(r)
+			rsp, e := i.bdl.PageIssues(r)
 			if e != nil {
 				err = e
 				logrus.Errorf("page issues failed, request:%+v, err:%v", r, e)
@@ -951,7 +956,7 @@ func (i ComponentIssueBoard) FilterByPriority(req apistructs.IssuePagingRequest,
 				cl.RenderChangePageNoOperation(cl.LabelKey.(string))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, i.ctxBdl.I18nPrinter, i.swt, mp)
+				c := GenCart(i.boardType, v, ctx, i.swt, mp)
 				cl.Add(c)
 			}
 			date.Lock.Lock()
@@ -970,7 +975,7 @@ func (i ComponentIssueBoard) FilterByPriority(req apistructs.IssuePagingRequest,
 }
 
 // FilterByTime 根据完成时间(planFinishedAt)分为：未分类，已过期，1天内过期，2天内，7天内，30天，未来
-func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+func (i ComponentIssueBoard) FilterByTime(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
 	// 为减少事件数量，不需要展示终态的事项[CLOSED, DONE]
 	timeMap := getTimeMap()
 	// map并发写需要加锁
@@ -1014,7 +1019,7 @@ func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kan
 					r.EndFinishedAt = req.EndFinishedAt
 				}
 			}
-			rsp, e := i.ctxBdl.Bdl.PageIssues(r)
+			rsp, e := i.bdl.PageIssues(r)
 			if e != nil {
 				err = e
 				logrus.Errorf("page issues failed, request:%+v, err:%v", r, e)
@@ -1031,7 +1036,7 @@ func (i ComponentIssueBoard) FilterByTime(req apistructs.IssuePagingRequest, kan
 				cl.RenderChangePageNoOperation(cl.LabelKey.(string))
 			}
 			for _, v := range rsp.Data.List {
-				c := GenCart(i.boardType, v, i.ctxBdl.I18nPrinter, i.swt, nil)
+				c := GenCart(i.boardType, v, ctx, i.swt, nil)
 				cl.Add(c)
 			}
 			date.Lock.Lock()
@@ -1068,8 +1073,8 @@ func getTimeMap() map[ExpireType][]int64 {
 }
 
 // 按自定义看板 过滤
-func (i ComponentIssueBoard) FilterByCustom(req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
-	rsp, err := i.ctxBdl.Bdl.GetIssuePanel(apistructs.IssuePanelRequest{IssuePagingRequest: req})
+func (i ComponentIssueBoard) FilterByCustom(ctx context.Context, req apistructs.IssuePagingRequest, kanbanKey string) (cls []CartList, uids []string, err error) {
+	rsp, err := i.bdl.GetIssuePanel(apistructs.IssuePanelRequest{IssuePagingRequest: req})
 	if err != nil {
 		return
 	}
@@ -1103,7 +1108,7 @@ func (i ComponentIssueBoard) FilterByCustom(req apistructs.IssuePagingRequest, k
 			defer func() {
 				wg.Done()
 			}()
-			rsp, e := i.ctxBdl.Bdl.GetIssuePanelIssue(apistructs.IssuePanelRequest{
+			rsp, e := i.bdl.GetIssuePanelIssue(apistructs.IssuePanelRequest{
 				IssuePanel:         apistructs.IssuePanel{PanelID: panel.PanelID},
 				IssuePagingRequest: req,
 			})
@@ -1119,7 +1124,7 @@ func (i ComponentIssueBoard) FilterByCustom(req apistructs.IssuePagingRequest, k
 			cl.PageSize = req.PageSize
 			if rsp.Total > 0 {
 				for _, v := range rsp.Issues {
-					c := GenCart(i.boardType, v, i.ctxBdl.I18nPrinter, i.swt, mp)
+					c := GenCart(i.boardType, v, ctx, i.swt, mp)
 					// 不能转移到自己
 					cMove := c.Operations[apistructs.MoveToCustomOperation.String()+panel.PanelName].(MoveToCustomOperation)
 					cMove.Disabled = true
@@ -1134,7 +1139,7 @@ func (i ComponentIssueBoard) FilterByCustom(req apistructs.IssuePagingRequest, k
 				}
 			}
 
-			cl.GenCartList(i.ctxBdl.I18nPrinter, i.swt)
+			cl.GenCartList(ctx, i.swt)
 			date.Lock.Lock()
 			date.Map[panel] = cl
 			date.Lock.Unlock()

@@ -136,6 +136,43 @@ func (is *IssueState) GetIssueStates(req *apistructs.IssueStatesGetRequest) ([]a
 	return states, nil
 }
 
+func (is *IssueState) GetIssueStatesMap(req *apistructs.IssueStatesGetRequest) (map[apistructs.IssueType][]apistructs.IssueStatus, error) {
+	stateMap := map[apistructs.IssueType][]apistructs.IssueStatus{
+		apistructs.IssueTypeRequirement: make([]apistructs.IssueStatus, 0),
+		apistructs.IssueTypeTask:        make([]apistructs.IssueStatus, 0),
+		apistructs.IssueTypeBug:         make([]apistructs.IssueStatus, 0),
+	}
+	st, err := is.db.GetIssuesStatesByProjectID(req.ProjectID, "")
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range st {
+		if _, ok := stateMap[v.IssueType]; ok {
+			stateMap[v.IssueType] = append(stateMap[v.IssueType], apistructs.IssueStatus{
+				ProjectID:   v.ProjectID,
+				IssueType:   v.IssueType,
+				StateID:     int64(v.ID),
+				StateName:   v.Name,
+				StateBelong: v.Belong,
+				Index:       v.Index,
+			})
+		}
+	}
+	return stateMap, nil
+}
+
+func (is *IssueState) GetIssueStateIDs(req *apistructs.IssueStatesGetRequest) ([]int64, error) {
+	st, err := is.db.GetIssuesStates(req)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]int64, 0)
+	for _, v := range st {
+		res = append(res, int64(v.ID))
+	}
+	return res, nil
+}
+
 func (is *IssueState) GetIssuesStatesByID(id int64) (*apistructs.IssueStatus, error) {
 	state, err := is.db.GetIssueStateByID(id)
 	if err != nil {

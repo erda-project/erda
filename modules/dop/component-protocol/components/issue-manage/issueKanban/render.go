@@ -24,8 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -74,9 +76,9 @@ func GetCartOpsInfo(opsData interface{}, isDrag bool) (*OpMetaInfo, error) {
 func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 	var inParams issueRenderInparams
 	var req IssueFilterRequest
-	cont, err := json.Marshal(i.ctxBdl.InParams)
+	cont, err := json.Marshal(i.sdk.InParams)
 	if err != nil {
-		logrus.Errorf("marshal inParams failed, content:%v, err:%v", i.ctxBdl.InParams, err)
+		logrus.Errorf("marshal inParams failed, content:%v, err:%v", i.sdk.InParams, err)
 		return nil, err
 	}
 	err = json.Unmarshal(cont, &inParams)
@@ -84,8 +86,8 @@ func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 		logrus.Errorf("unmarshal move out request failed, content:%v, err:%v", cont, err)
 		return nil, err
 	}
-	if i.ctxBdl.Identity.UserID != "" {
-		req.UserID = i.ctxBdl.Identity.UserID
+	if i.sdk.Identity.UserID != "" {
+		req.UserID = i.sdk.Identity.UserID
 	}
 	req.IssuePagingRequest = i.State.FilterConditions
 	_, ok := i.State.IssueViewGroupChildrenValue["kanban"]
@@ -102,9 +104,9 @@ func (i ComponentIssueBoard) GetFilterReq() (*IssueFilterRequest, error) {
 
 func (i ComponentIssueBoard) GetDefaultFilterReq(req *IssueFilterRequest) error {
 	var inParams issueRenderInparams
-	cont, err := json.Marshal(i.ctxBdl.InParams)
+	cont, err := json.Marshal(i.sdk.InParams)
 	if err != nil {
-		logrus.Errorf("marshal inParams failed, content:%v, err:%v", i.ctxBdl.InParams, err)
+		logrus.Errorf("marshal inParams failed, content:%v, err:%v", i.sdk.InParams, err)
 		return err
 	}
 	err = json.Unmarshal(cont, &inParams)
@@ -147,8 +149,8 @@ func (i *ComponentIssueBoard) GenComponentState(c *cptype.Component) error {
 }
 
 // Issue过滤，分类
-func (i *ComponentIssueBoard) RenderOnFilter(req IssueFilterRequest) error {
-	ib, err := i.Filter(req)
+func (i *ComponentIssueBoard) RenderOnFilter(ctx context.Context, req IssueFilterRequest) error {
+	ib, err := i.Filter(ctx, req)
 	if err != nil {
 		logrus.Errorf("issue filter failed, request:%+v, err:%v", req, err)
 		return err
@@ -165,14 +167,14 @@ func (i *ComponentIssueBoard) RenderOnMoveOut(opsData interface{}) error {
 	}
 
 	// get
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
 	}
 	// update
 	is.IterationID = -1
-	if err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID)); err != nil {
+	if err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID)); err != nil {
 		return err
 	}
 
@@ -204,7 +206,7 @@ func (i *ComponentIssueBoard) RenderOnDrag(opsData interface{}) error {
 		return err
 	}
 
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
@@ -217,7 +219,7 @@ func (i *ComponentIssueBoard) RenderOnDrag(opsData interface{}) error {
 		if currentState == is.State {
 			return nil
 		}
-		err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+		err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 		//err:=i.RefreshOnMoveTo(is.ID,currentState,is.State)
 		//if err!=nil{
 		//	return err
@@ -228,18 +230,18 @@ func (i *ComponentIssueBoard) RenderOnDrag(opsData interface{}) error {
 		if currentAssignee == is.Assignee {
 			return nil
 		}
-		err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+		err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 	case BoardTypePriority:
 		currentPriority := is.Priority
 		is.Priority = apistructs.IssuePriority(i.State.DropTarget.(string))
 		if is.Priority == currentPriority {
 			return nil
 		}
-		err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+		err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 	case BoardTypeTime:
 		logrus.Infof("drag ignore board type: time")
 	case BoardTypeCustom:
-		err = i.ctxBdl.Bdl.UpdateIssuePanelIssue(i.ctxBdl.Identity.UserID, int64(i.State.DropTarget.(float64)), is.ID, int64(i.State.FilterConditions.ProjectID))
+		err = i.bdl.UpdateIssuePanelIssue(i.sdk.Identity.UserID, int64(i.State.DropTarget.(float64)), is.ID, int64(i.State.FilterConditions.ProjectID))
 	default:
 		err := fmt.Errorf("invalid board type, only support: [%v]", SupportBoardTypes)
 		logrus.Errorf(err.Error())
@@ -259,7 +261,7 @@ func (i *ComponentIssueBoard) RenderOnMoveTo(opsData interface{}) error {
 		return err
 	}
 
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
@@ -267,7 +269,7 @@ func (i *ComponentIssueBoard) RenderOnMoveTo(opsData interface{}) error {
 	//from := is.State
 	//to := req.StateID
 	is.State = req.StateID
-	err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+	err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 	if err != nil {
 		logrus.Errorf("update issue failed, req:%v, err:%v", req, err)
 		return err
@@ -284,7 +286,7 @@ func (i *ComponentIssueBoard) RenderOnMoveToAssignee(opsData interface{}) error 
 		logrus.Errorf("get ops data failed, state:%v, err:%v", opsData, err)
 		return err
 	}
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
@@ -292,7 +294,7 @@ func (i *ComponentIssueBoard) RenderOnMoveToAssignee(opsData interface{}) error 
 	//from := is.State
 	//to := req.StateID
 	is.Assignee = req.IssueAssignee
-	err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+	err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 	if err != nil {
 		logrus.Errorf("update issue failed, req:%v, err:%v", req, err)
 		return err
@@ -310,7 +312,7 @@ func (i *ComponentIssueBoard) RenderOnMoveToPriority(opsData interface{}) error 
 		logrus.Errorf("get ops data failed, state:%v, err:%v", opsData, err)
 		return err
 	}
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
@@ -318,7 +320,7 @@ func (i *ComponentIssueBoard) RenderOnMoveToPriority(opsData interface{}) error 
 	//from := is.State
 	//to := req.StateID
 	is.Priority = req.IssuePriority
-	err = i.ctxBdl.Bdl.UpdateIssueTicketUser(i.ctxBdl.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
+	err = i.bdl.UpdateIssueTicketUser(i.sdk.Identity.UserID, is.ConvertToIssueUpdateReq(), uint64(is.ID))
 	if err != nil {
 		logrus.Errorf("update issue failed, req:%v, err:%v", req, err)
 		return err
@@ -331,33 +333,33 @@ func (i *ComponentIssueBoard) RenderOnMoveToPriority(opsData interface{}) error 
 }
 
 // 全量更新时间长，在改变状态时，可以直接move到另一个状态list，同时删掉当前list中的item
-func (i *ComponentIssueBoard) RefreshOnMoveTo(issueID, from, to int64) error {
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(issueID))
-	if err != nil {
-		logrus.Errorf("get issue failed, req:%v, err:%v", issueID, err)
-		return err
-	}
-	c := GenCart(i.boardType, *is, i.ctxBdl.I18nPrinter, i.swt, nil)
-	for k, v := range i.Data.Board {
-		if v.LabelKey.(int64) == from {
-			i.Data.Board[k].Delete(issueID)
-			i.Data.Board[k].Total = i.Data.Board[k].Total - 1
-		}
-		if v.LabelKey.(int64) == to {
-			i.Data.Board[k].Add(c)
-			i.Data.Board[k].Total = i.Data.Board[k].Total + 1
-		}
-	}
-	return nil
-}
+// func (i *ComponentIssueBoard) RefreshOnMoveTo(issueID, from, to int64) error {
+// 	is, err := i.bdl.GetIssue(uint64(issueID))
+// 	if err != nil {
+// 		logrus.Errorf("get issue failed, req:%v, err:%v", issueID, err)
+// 		return err
+// 	}
+// 	c := GenCart(i.boardType, *is, i.ctxBdl.I18nPrinter, i.swt, nil)
+// 	for k, v := range i.Data.Board {
+// 		if v.LabelKey.(int64) == from {
+// 			i.Data.Board[k].Delete(issueID)
+// 			i.Data.Board[k].Total = i.Data.Board[k].Total - 1
+// 		}
+// 		if v.LabelKey.(int64) == to {
+// 			i.Data.Board[k].Add(c)
+// 			i.Data.Board[k].Total = i.Data.Board[k].Total + 1
+// 		}
+// 	}
+// 	return nil
+// }
 
 // TODO 增加自定义看板
 func (i *ComponentIssueBoard) RenderOnAddCustom() error {
 	var ipr apistructs.IssuePanelRequest
 	ipr.PanelName = i.State.PanelName
 	ipr.ProjectID = i.State.FilterConditions.ProjectID
-	ipr.UserID = i.ctxBdl.Identity.UserID
-	_, err := i.ctxBdl.Bdl.CreateIssuePanel(ipr)
+	ipr.UserID = i.sdk.Identity.UserID
+	_, err := i.bdl.CreateIssuePanel(ipr)
 	if err != nil {
 		logrus.Errorf("add panel failed, project:%v, err:%v", i.State.FilterConditions.ProjectID, err)
 		return err
@@ -370,8 +372,8 @@ func (i *ComponentIssueBoard) RenderOnUpdateCustom() error {
 	var req apistructs.IssuePanelRequest
 	req.IssuePanel = i.State.IssuePanel
 	req.ProjectID = i.State.FilterConditions.ProjectID
-	req.UserID = i.ctxBdl.Identity.UserID
-	_, err := i.ctxBdl.Bdl.UpdateIssuePanel(req)
+	req.UserID = i.sdk.Identity.UserID
+	_, err := i.bdl.UpdateIssuePanel(req)
 	if err != nil {
 		logrus.Errorf("update panel failed, project:%v, err:%v", i.State.FilterConditions.ProjectID, err)
 		return err
@@ -384,8 +386,8 @@ func (i *ComponentIssueBoard) RenderOnDeleteCustom() error {
 	var req apistructs.IssuePanelRequest
 	req.IssuePanel = i.State.IssuePanel
 	req.ProjectID = i.State.FilterConditions.ProjectID
-	req.UserID = i.ctxBdl.Identity.UserID
-	_, err := i.ctxBdl.Bdl.DeleteIssuePanel(req)
+	req.UserID = i.sdk.Identity.UserID
+	_, err := i.bdl.DeleteIssuePanel(req)
 	if err != nil {
 		logrus.Errorf("delete panel failed, project:%v, panelID:%v, err:%v", i.State.FilterConditions.ProjectID, i.State.PanelID, err)
 		return err
@@ -399,14 +401,14 @@ func (i *ComponentIssueBoard) RenderOnMoveToCustom(opsData interface{}) error {
 		logrus.Errorf("get ops data failed, state:%v, err:%v", opsData, err)
 		return err
 	}
-	is, err := i.ctxBdl.Bdl.GetIssue(uint64(req.IssueID))
+	is, err := i.bdl.GetIssue(uint64(req.IssueID))
 	if err != nil {
 		logrus.Errorf("get issue failed, req:%v, err:%v", req, err)
 		return err
 	}
 	//from := i.State.PanelID
 	to := req.PanelID
-	err = i.ctxBdl.Bdl.UpdateIssuePanelIssue(i.ctxBdl.Identity.UserID, to, is.ID, int64(i.State.FilterConditions.ProjectID))
+	err = i.bdl.UpdateIssuePanelIssue(i.sdk.Identity.UserID, to, is.ID, int64(i.State.FilterConditions.ProjectID))
 	if err != nil {
 		logrus.Errorf("update panel issue failed, req:%v, err:%v", req, err)
 		return err
@@ -437,6 +439,9 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 	if err != nil {
 		return
 	}
+
+	i.sdk = cputil.SDK(ctx)
+	i.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
 	visable := make(map[string]bool)
 	visable["visible"] = false
@@ -482,13 +487,13 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 		if err != nil {
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
 		}
 	case apistructs.FilterOperation:
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -499,7 +504,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action state failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -510,7 +515,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action state failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -521,7 +526,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action state failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -532,7 +537,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -543,7 +548,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -554,7 +559,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -565,7 +570,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -577,7 +582,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -588,7 +593,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("generate action custom failed,  err:%v", err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err
@@ -598,7 +603,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 			logrus.Errorf("render on setChangeNoOperationReq failed, request:%+v, err:%v", *fReq, err)
 			return err
 		}
-		err = i.RenderOnFilter(*fReq)
+		err = i.RenderOnFilter(ctx, *fReq)
 		if err != nil {
 			logrus.Errorf("render on filter failed, request:%+v, err:%v", *fReq, err)
 			return err

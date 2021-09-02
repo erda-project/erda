@@ -50,9 +50,10 @@ type QuickSelect struct {
 }
 
 type PropConditionOption struct {
-	Label string      `json:"label,omitempty"`
-	Value interface{} `json:"value,omitempty"`
-	Icon  string      `json:"icon,omitempty"`
+	Label    string                `json:"label,omitempty"`
+	Value    interface{}           `json:"value,omitempty"`
+	Icon     string                `json:"icon,omitempty"`
+	Children []PropConditionOption `json:"children,omitempty"`
 }
 
 type PropConditionType string

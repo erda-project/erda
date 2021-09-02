@@ -29,6 +29,7 @@ zh:
   confirm-to-move-out-iteration: 确认移出迭代
   confirm-to-delete-board: 确认删除看板
   confirm-to-update-board: 确认更新看板
+  confirm-to-create-board: 确认创建看板
   the-number-of-boards-cannot-exceed-15: 创建的看板数量不能超过15
   no-permission-to-operate: 您暂无权限进行此操作
   sprint: 迭代
@@ -47,7 +48,7 @@ zh:
   slight: 轻微
   suggest: 建议
   creator: 创建人
-  choose-yourself: 选择你自己
+  choose-yourself: 选择自己
   assignee: 处理人
   responsible-person: 负责人
   epic: 里程碑
@@ -71,7 +72,7 @@ zh:
   issue-gante-tips3: "#blue#蓝色#>blue#：代表从事项开始时间到当前/事项完成日期的时间段"
   issue-gante-tips4: "#red#红色#>red#：代表截止日期到当前/事项完成日期的超时时间段"
   list: 列表
-  bord: 看板
+  board: 看板
   gantt-chart: 甘特图
   board-view: 看板视图
   custom: 自定义
@@ -107,6 +108,7 @@ en:
   confirm-to-move-out-iteration: 'Confirm to move out iteration'
   confirm-to-delete-board: 'Confirm to delete board'
   confirm-to-update-board: 'Confirm to update board'
+  confirm-to-create-board: 'Confirm to create board'
   the-number-of-boards-cannot-exceed-15: 'The number of boards cannot exceed 15'
   no-permission-to-operate: 'No permission to operate'
   sprint: Sprint
@@ -149,7 +151,7 @@ en:
   issue-gante-tips3: '#blue#blue#>blu#: Represents the time period from the start time of the issue to the current or the issue completion date'
   issue-gante-tips4: '#red#read#>red#: Represents the timeout period from the due date to the current or completion date of the issue'
   list: List
-  bord: Board
+  board: Board
   gantt-chart: Gantt Chart
   board-view: Board View
   custom: Custom

@@ -45,7 +45,7 @@ func (f *ComponentFilter) SetStateConditionProps() ([]filter.PropCondition, erro
 
 		case PropConditionKeyTitle:
 
-		case PropConditionKeyStateBelongs:
+		case PropConditionKeyStates:
 
 		case PropConditionKeyLabelIDs:
 			cond.Options, err = f.getPropLabelsOptions()

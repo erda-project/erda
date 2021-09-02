@@ -78,8 +78,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"key":        "table",
 	}
 	optionKanban := map[string]interface{}{
-		"text":       cputil.I18n(ctx, "bord"),
-		"tooltip":    cputil.I18n(ctx, "bord-view"),
+		"text":       cputil.I18n(ctx, "board"),
+		"tooltip":    cputil.I18n(ctx, "board-view"),
 		"prefixIcon": "data-matrix",
 		"suffixIcon": "di",
 		"key":        "kanban",
