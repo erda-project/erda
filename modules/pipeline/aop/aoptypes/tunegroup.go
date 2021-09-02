@@ -14,10 +14,10 @@
 
 package aoptypes
 
-// TuneGroup 保存所有类型不同触发时机下的调用链
+// TuneGroup Save all types of call chains under different trigger
 type TuneGroup map[TuneType]map[TuneTrigger]TuneChain
 
-// GetTuneChainByTypeAndTrigger 根据 类型 和 触发时机 返回 调用链
+// GetTuneChainByTypeAndTrigger Return TuneChain by TuneType and TuneTrigger
 func (g TuneGroup) GetTuneChainByTypeAndTrigger(pointType TuneType, trigger TuneTrigger) TuneChain {
 	if len(g) == 0 {
 		return nil

@@ -20,24 +20,25 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/plugins/autotest_cookie_keep_after"
+	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/autotest_cookie_keep_after"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 )
 
 const taskType = "api-test"
 
-type Plugin struct {
+// +provider
+type provider struct {
 	aoptypes.TaskBaseTunePoint
 }
 
-func (p *Plugin) Name() string {
-	return "autotest_cookie_keep_before"
-}
+func (p *provider) Name() string { return "autotest-cookie-keep-before" }
 
-func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
+func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	// task not api-test type return
 	if ctx.SDK.Task.Type != taskType {
 		return nil
@@ -103,7 +104,18 @@ func (p *Plugin) Handle(ctx *aoptypes.TuneContext) error {
 	return nil
 }
 
-func New() *Plugin {
-	var p Plugin
-	return &p
+func (p *provider) Init(ctx servicehub.Context) error {
+	err := aop.RegisterTunePoint(p)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func init() {
+	servicehub.Register(aop.NewProviderNameByPluginName(&provider{}), &servicehub.Spec{
+		Creator: func() servicehub.Provider {
+			return &provider{}
+		},
+	})
 }
