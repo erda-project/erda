@@ -217,7 +217,7 @@ ohai "Setup local hosts"
 (
   exists_in_host="$(grep -n erda.local /etc/hosts)"
   if [ -z "$exists_in_host" ]; then
-    echo "127.0.0.1 erda.local one.erda.local" | execute_sudo "tee" "-a" "/etc/hosts"
+    echo "127.0.0.1 erda.local one.erda.local collector.erda.local openapi.erda.local" | execute_sudo "tee" "-a" "/etc/hosts"
   fi
 ) || exit 1
 
