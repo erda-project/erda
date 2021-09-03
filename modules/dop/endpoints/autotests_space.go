@@ -206,7 +206,7 @@ func (e *Endpoints) CopyAutoTestSpaceV2(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(res.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.CreateAction,
 		})
 		if err != nil {
 			return nil, err
@@ -247,7 +247,7 @@ func (e *Endpoints) ExportAutoTestSpace(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(res.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.ReadAction,
 		})
 		if err != nil {
 			return apierrors.ErrExportAutoTestSpace.InternalError(err).ToResp(), nil
@@ -298,7 +298,7 @@ func (e *Endpoints) ImportAutotestSpace(ctx context.Context, r *http.Request, va
 			Scope:    apistructs.ProjectScope,
 			ScopeID:  uint64(req.ProjectID),
 			Resource: apistructs.TestSpaceResource,
-			Action:   apistructs.DeleteAction,
+			Action:   apistructs.CreateAction,
 		})
 		if err != nil {
 			return apierrors.ErrImportAutoTestSpace.InvalidParameter(err).ToResp(), nil
