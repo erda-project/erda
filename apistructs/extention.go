@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/sirupsen/logrus"
 )
 
 const DicehubExtensionsMenu = "dicehub.extensions.menu"
@@ -76,6 +77,16 @@ func (spec *Spec) CheckDiceVersion(versionStr string) bool {
 	}
 	semVersion, err := semver.NewVersion(versionStr)
 	if err != nil {
+		logrus.Error(err)
+		return true
+	}
+	// The result is always false when comparing any version ends with pre-release tag with a constraint in golang implementation of semver.
+	// For instance 1.3.0-alpha doesn't match the constraint ">= 1.2".
+	// Here we use the Erda version to compare with the supported version of action to find compatible actions.
+	// Actually the version without pre-release tag is what we want the supported version compare to.
+	newSemVersion, err := semVersion.SetPrerelease("")
+	if err != nil {
+		logrus.Error(err)
 		return true
 	}
 	if spec.SupportedVersions == nil || len(spec.SupportedVersions) == 0 {
@@ -87,7 +98,7 @@ func (spec *Spec) CheckDiceVersion(versionStr string) bool {
 		if err != nil {
 			continue
 		}
-		if !constraint.Check(semVersion) {
+		if !constraint.Check(&newSemVersion) {
 			return false
 		}
 	}
