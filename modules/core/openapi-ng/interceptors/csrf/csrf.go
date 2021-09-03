@@ -220,7 +220,7 @@ func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token 
 		cookie.Domain = p.Cfg.CookieDomain
 	}
 	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
-	cookie.Secure = r.URL.Scheme == "https"
+	cookie.Secure = p.getScheme(r) == "https"
 	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
 	http.SetCookie(rw, cookie)
 	return token
@@ -256,6 +256,17 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 		}
 		return token, nil
 	}
+}
+
+func (p *provider) getScheme(r *http.Request) string {
+	referer := r.Header.Get("Referer")
+	scheme := "http"
+	if u, err := url.Parse(referer); err == nil && len(u.Scheme) > 0 {
+		scheme = u.Scheme
+	} else if len(r.URL.Scheme) > 0 {
+		scheme = r.URL.Scheme
+	}
+	return scheme
 }
 
 func init() {
