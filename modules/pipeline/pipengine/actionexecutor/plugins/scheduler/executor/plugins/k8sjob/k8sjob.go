@@ -237,7 +237,9 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 			logrus.Infof("finish to delete pvc %s", pvcName)
 		}
 	}
-	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" {
+
+	// if user customize namespace, shouldn't delete namespace
+	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
 		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)

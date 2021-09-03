@@ -37,7 +37,7 @@ func (p *provider) LoginURL(rw http.ResponseWriter, r *http.Request) {
 	common.ResponseJSON(rw, &struct {
 		URL string `json:"url"`
 	}{
-		URL: p.getAuthorizeURL(p.getScheme(referer, r), r.URL.Host, referer),
+		URL: p.getAuthorizeURL(p.getScheme(r), r.URL.Host, referer),
 	})
 }
 
@@ -55,7 +55,7 @@ func (p *provider) LoginCallback(rw http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	referer := r.URL.Query().Get("referer")
 
-	scheme := p.getScheme(referer, r)
+	scheme := p.getScheme(r)
 	redirectURI := fmt.Sprintf("%s://%s/logincb?referer=%s", scheme, p.getUCRedirectHost(referer, r.URL.Host), url.QueryEscape(referer))
 
 	user := auth.NewUser(p.Redis)
@@ -93,7 +93,7 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	scheme := p.getScheme(referer, r)
+	scheme := p.getScheme(r)
 	http.SetCookie(rw, &http.Cookie{
 		Name:     p.Cfg.SessionCookieName,
 		Value:    "",
@@ -113,14 +113,28 @@ func (p *provider) Logout(rw http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (p *provider) getScheme(referer string, r *http.Request) string {
-	scheme := "http"
-	if u, err := url.Parse(referer); err == nil && len(u.Scheme) > 0 {
-		scheme = u.Scheme
-	} else if len(r.URL.Scheme) > 0 {
-		scheme = r.URL.Scheme
+func (p *provider) getScheme(r *http.Request) string {
+	// get from standard header first
+	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"), r.URL.Scheme)
+	if len(proto) > 0 {
+		return proto
 	}
-	return scheme
+	return "https"
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if len(s) > 0 {
+			list := strings.Split(s, ",")
+			for _, item := range list {
+				v := strings.ToLower(strings.TrimSpace(item))
+				if len(v) > 0 {
+					return v
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (p *provider) getSessionDomain(host string) string {

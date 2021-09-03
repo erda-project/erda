@@ -15,9 +15,7 @@
 PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
-# TODO: revert to use make-version script
-# VERSION ?= $(shell build/scripts/make-version.sh)
-VERSION := $(shell head -n 1 VERSION)
+VERSION ?= $(shell build/scripts/make-version.sh)
 # build info
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)

@@ -177,6 +177,14 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
 
+	// namespace
+	// if upper layer customize namespace, use custom namespace
+	// default namespace is pipeline controlled
+	if req.Namespace != "" {
+		p.Extra.Namespace = req.Namespace
+		p.Extra.NotPipelineControlledNs = true
+	}
+
 	// 挂载配置
 	p.Extra.StorageConfig.EnableNFS = true
 	storageConfig := pipelineYml.Spec().Storage

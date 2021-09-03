@@ -14,6 +14,7 @@
 package credential
 
 import (
+	"fmt"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -43,6 +44,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
 				if resp, ok := data.(*pb.DownloadAccessKeyFileResponse); ok {
 					rw.Write(resp.Data)
+					attachment := fmt.Sprintf(`attachment; filename="accessKey.csv"`)
+					rw.Header().Add("Content-Type", "text/plain")
+					rw.Header().Add("Content-Disposition", attachment)
 				}
 				return encoding.EncodeResponse(rw, r, data)
 			})))

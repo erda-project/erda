@@ -67,7 +67,7 @@ func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.C
 	if err := w.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to gen url query for workloadTable component, %v", err)
 	}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	return nil
 }
 
@@ -141,6 +141,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	kinds := getWorkloadKindMap(w.State.Values.Kind)
 
 	// deployment
+	var activeDeploy, errorDeploy int
 	if _, ok := kinds[filter.DeploymentType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SDeployment
 		obj, err := w.bdl.ListSteveResource(&req)
@@ -171,6 +172,11 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
 				continue
 			}
+			if value == "Active" {
+				activeDeploy++
+			} else {
+				errorDeploy++
+			}
 			status := Status{
 				RenderType: "text",
 				Value:      value,
@@ -181,7 +187,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
-			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDaemonSet, namespace, name)
+			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDeployment, namespace, name)
 			ageNum, _ := time.ParseDuration(fields[4])
 			items = append(items, Item{
 				ID:     id,
@@ -193,7 +199,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 						"click": LinkOperation{
 							Command: Command{
 								Key:    "goto",
-								Target: "cmpClustersWorkload",
+								Target: "cmpClustersWorkloadDetail",
 								State: CommandState{
 									Params: map[string]string{
 										"workloadId": id,
@@ -217,7 +223,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	}
 
 	// daemonSet
-	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) != 0 {
+	var activeDs, errorDs int
+	if _, ok := kinds[filter.DaemonSetType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SDaemonSet
 		obj, err := w.bdl.ListSteveResource(&req)
 		if err != nil {
@@ -247,6 +254,11 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
 				continue
 			}
+			if value == "Active" {
+				activeDs++
+			} else {
+				errorDs++
+			}
 			status := Status{
 				RenderType: "text",
 				Value:      value,
@@ -269,7 +281,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 						"click": LinkOperation{
 							Command: Command{
 								Key:    "goto",
-								Target: "cmpClustersWorkload",
+								Target: "cmpClustersWorkloadDetail",
 								State: CommandState{
 									Params: map[string]string{
 										"workloadId": id,
@@ -295,6 +307,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	}
 
 	// statefulSet
+	var activeSs, errorSs int
 	if _, ok := kinds[filter.StatefulSetType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SStatefulSet
 		obj, err := w.bdl.ListSteveResource(&req)
@@ -325,6 +338,11 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
 				continue
 			}
+			if value == "Active" {
+				activeSs++
+			} else {
+				errorSs++
+			}
 			status := Status{
 				RenderType: "text",
 				Value:      value,
@@ -347,7 +365,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 						"click": LinkOperation{
 							Command: Command{
 								Key:    "goto",
-								Target: "cmpClustersWorkload",
+								Target: "cmpClustersWorkloadDetail",
 								State: CommandState{
 									Params: map[string]string{
 										"workloadId": id,
@@ -369,6 +387,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	}
 
 	// job
+	var activeJob, succeededJob, failedJob int
 	if _, ok := kinds[filter.JobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SJob
 		obj, err := w.bdl.ListSteveResource(&req)
@@ -399,6 +418,13 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
 				continue
 			}
+			if value == "Active" {
+				activeJob++
+			} else if value == "Succeeded" {
+				succeededJob++
+			} else {
+				failedJob++
+			}
 			status := Status{
 				RenderType: "text",
 				Value:      value,
@@ -421,7 +447,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 						"click": LinkOperation{
 							Command: Command{
 								Key:    "goto",
-								Target: "cmpClustersWorkload",
+								Target: "cmpClustersWorkloadDetail",
 								State: CommandState{
 									Params: map[string]string{
 										"workloadId": id,
@@ -444,6 +470,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	}
 
 	// cronjob
+	var activeCronJob int
 	if _, ok := kinds[filter.CronJobType]; ok || len(kinds) == 0 {
 		req.Type = apistructs.K8SCronJob
 		obj, err := w.bdl.ListSteveResource(&req)
@@ -474,6 +501,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			if w.State.Values.Status != nil && !contain(w.State.Values.Status, value) {
 				continue
 			}
+			activeCronJob++
 			status := Status{
 				RenderType: "text",
 				Value:      value,
@@ -496,7 +524,7 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 						"click": LinkOperation{
 							Command: Command{
 								Key:    "goto",
-								Target: "cmpClustersWorkload",
+								Target: "cmpClustersWorkloadDetail",
 								State: CommandState{
 									Params: map[string]string{
 										"workloadId": id,
@@ -516,6 +544,29 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				LastSchedule: fields[4],
 			})
 		}
+	}
+
+	w.State.CountValues = CountValues{
+		DeploymentsCount: Count{
+			Active: activeDeploy,
+			Error:  errorDeploy,
+		},
+		DaemonSetCount: Count{
+			Active: activeDs,
+			Error:  errorDs,
+		},
+		StatefulSetCount: Count{
+			Active: activeSs,
+			Error:  errorSs,
+		},
+		JobCount: Count{
+			Active:    activeJob,
+			Succeeded: succeededJob,
+			Failed:    failedJob,
+		},
+		CronJobCount: Count{
+			Active: activeCronJob,
+		},
 	}
 
 	if w.State.Sorter.Field != "" {
@@ -672,90 +723,90 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 	return nil
 }
 
-func (w *ComponentWorkloadTable) SetComponentValue() {
+func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 	w.Props.PageSizeOptions = []string{"10", "20", "50", "100"}
 
 	statusColumn := Column{
 		DataIndex: "status",
-		Title:     "Status",
+		Title:     cputil.I18n(ctx, "status"),
 		Width:     120,
 		Sorter:    true,
 	}
 	kindColumn := Column{
 		DataIndex: "kind",
-		Title:     "Kind",
+		Title:     cputil.I18n(ctx, "workloadKind"),
 		Width:     120,
 		Sorter:    true,
 	}
 	nameColumn := Column{
 		DataIndex: "name",
-		Title:     "Name",
+		Title:     cputil.I18n(ctx, "name"),
 		Width:     180,
 		Sorter:    true,
 	}
 	namespaceColumn := Column{
 		DataIndex: "namespace",
-		Title:     "Namespace",
+		Title:     cputil.I18n(ctx, "namespace"),
 		Width:     180,
 		Sorter:    true,
 	}
 	ageColumn := Column{
 		DataIndex: "age",
-		Title:     "Age",
+		Title:     cputil.I18n(ctx, "age"),
 		Width:     100,
 		Sorter:    true,
 	}
 	readyColumn := Column{
 		DataIndex: "ready",
-		Title:     "Ready",
+		Title:     cputil.I18n(ctx, "ready"),
 		Width:     100,
 		Sorter:    true,
 	}
 	upToDateColumn := Column{
 		DataIndex: "upToDate",
-		Title:     "Up-to-Date",
+		Title:     cputil.I18n(ctx, "upToDate"),
 		Width:     100,
 		Sorter:    true,
 	}
 	availableColumn := Column{
 		DataIndex: "available",
-		Title:     "Available",
+		Title:     cputil.I18n(ctx, "available"),
 		Width:     100,
 		Sorter:    true,
 	}
 	desiredColumn := Column{
 		DataIndex: "desired",
-		Title:     "Desired",
+		Title:     cputil.I18n(ctx, "desired"),
 		Width:     100,
 		Sorter:    true,
 	}
 	currentColumn := Column{
 		DataIndex: "current",
-		Title:     "Current",
+		Title:     cputil.I18n(ctx, "current"),
 		Width:     100,
 		Sorter:    true,
 	}
 	completionsColumn := Column{
 		DataIndex: "completions",
-		Title:     "Completions",
+		Title:     cputil.I18n(ctx, "completions"),
 		Width:     100,
 		Sorter:    true,
 	}
 	durationColumn := Column{
 		DataIndex: "duration",
-		Title:     "Duration",
+		Title:     cputil.I18n(ctx, "jobDuration"),
 		Width:     120,
 		Sorter:    true,
 	}
 	scheduleColumn := Column{
 		DataIndex: "schedule",
-		Title:     "Schedule",
+		Title:     cputil.I18n(ctx, "schedule"),
 		Width:     100,
 		Sorter:    true,
 	}
 	lastScheduleColumn := Column{
 		DataIndex: "lastSchedule",
-		Title:     "LastSchedule",
+		Title:     cputil.I18n(ctx, "lastSchedule"),
 		Width:     120,
 		Sorter:    true,
 	}

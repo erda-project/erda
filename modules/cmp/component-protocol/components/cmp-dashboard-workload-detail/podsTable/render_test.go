@@ -15,6 +15,7 @@
 package podsTable
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 func TestComponentPodsTable_GenComponentState(t *testing.T) {
@@ -108,9 +110,22 @@ func TestComponentPodsTable_EncodeURLQuery(t *testing.T) {
 	}
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComponentPodsTable_SetComponentValue(t *testing.T) {
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
 	p := &ComponentPodsTable{}
-	p.SetComponentValue()
+	p.SetComponentValue(ctx)
 	if len(p.Props.PageSizeOptions) != 4 || len(p.Props.Columns) != 11 || len(p.Operations) != 3 {
 		t.Errorf("test failed, length of pods table fileds is unexpected")
 	}
