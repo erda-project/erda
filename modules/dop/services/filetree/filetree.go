@@ -136,7 +136,6 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 
 		// 根据 / 分割判定长度为 2 的时候，代表需要查询分支列表
 		if length == 2 {
-			fmt.Println("GetGittarBranchesV2 wxj: ", req.UserID)
 			branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 			if err != nil {
 				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
@@ -155,7 +154,6 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 			}
 		} else if length > 3+branchExcessLength {
 			// 长度大于 3 就表达查询子节点了 /projectName/appName/tree/branchName
-			fmt.Println("GetGittarTreeNode wxj: ", req.UserID)
 			entrys, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 			if err != nil {
 				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
@@ -593,6 +591,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 		ScopeID: node.ScopeID,
 		Scope:   node.Scope,
 	}
+	treeNodeGetRequest.IdentityInfo = req.IdentityInfo
 	return svc.GetFileTreeNode(treeNodeGetRequest, orgID)
 }
 
@@ -736,7 +735,7 @@ func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uin
 	return results, nil
 }
 
-func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
+func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID uint64, identity apistructs.IdentityInfo) (*apistructs.UnifiedFileTreeNode, error) {
 	// 参数校验
 	pipelineDetail, err := svc.bdl.GetPipeline(pipelineId)
 	if err != nil {
@@ -759,6 +758,7 @@ func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID ui
 
 	var req apistructs.UnifiedFileTreeNodeGetRequest
 	req.Inode = base64Inode
+	req.IdentityInfo = identity
 	return svc.GetFileTreeNode(req, orgID)
 }
 

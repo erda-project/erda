@@ -117,7 +117,7 @@ func (a *ComponentNodeFormModal) handlerSubmitOperation(ctxBdl protocol.ContextB
 		req.Scope = apistructs.FileTreeScopeProjectApp
 		req.ScopeID = inParams.ProjectId
 		req.Name = formData.Name
-		req.UserID = "1"
+		req.UserID = ctxBdl.Identity.UserID
 		req.Type = apistructs.UnifiedFileTreeNodeTypeFile
 		req.Pinode = base64.StdEncoding.EncodeToString([]byte(pinode))
 		result, err := ctxBdl.Bdl.CreateFileTreeNodes(req, project.OrgID)
