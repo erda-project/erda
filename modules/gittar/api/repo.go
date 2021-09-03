@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -675,20 +674,10 @@ func CreateCommit(context *webcontext.Context) {
 	}
 	createCommitRequest.Signature = context.User.ToGitSignature()
 
-	commit, err := repository.CreateCommit(&createCommitRequest)
+	commit, err := repository.CreateCommit(&createCommitRequest, context.EtcdClient)
 	if err != nil {
 		context.Abort(err)
 		return
-	}
-
-	// 外置仓库推送代码过去
-	if repository.IsExternal {
-		repoPath := path.Join(conf.RepoRoot(), repository.Path)
-		err = gitmodule.PushExternalRepository(repoPath)
-		if err != nil {
-			context.Abort(err)
-			return
-		}
 	}
 
 	pushEvent := &models.PayloadPushEvent{
