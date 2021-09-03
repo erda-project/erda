@@ -43,7 +43,7 @@ type config struct {
 	CookieDomain      string        `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
 	CookiePath        string        `file:"cookie_path" default:"/" desc:"path of the CSRF cookie. optional."`
 	CookieMaxAge      time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the CSRF cookie. optional."`
-	CookieHTTPOnly    bool          `file:"cookie_http_only" desc:"indicates if CSRF cookie is HTTP only. optional."`
+	CookieHTTPOnly    bool          `file:"cookie_http_only" default:"true" desc:"indicates if CSRF cookie is HTTP only. optional."`
 }
 
 type (
