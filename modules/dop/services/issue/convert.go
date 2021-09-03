@@ -195,12 +195,15 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 	}
 }
 
+func (svc *Issue) getIssueExportDataI18n(locale, i18nKey string) []string {
+	l := svc.bdl.GetLocale(locale)
+	t := l.Get(i18nKey)
+	return strutil.Split(t, ",")
+}
+
 func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string, locale string) ([][]string, error) {
 	// 默认字段列名
-	l := svc.bdl.GetLocale(locale)
-	t := l.Get(i18n.I18nKeyIssueExportTitles)
-	titles := strutil.Split(t, ",")
-	r := [][]string{titles}
+	r := [][]string{svc.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportTitles)}
 	// 自定义字段列名
 	for _, pro := range property {
 		r[0] = append(r[0], pro.DisplayName)

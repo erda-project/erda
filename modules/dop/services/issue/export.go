@@ -97,9 +97,7 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 
 	// insert sample issue
 	if isDownload {
-		l := svc.bdl.GetLocale(locale)
-		sample := strutil.Split(l.Get(i18n.I18nKeyIssueExportSample), ",")
-		table = append(table, sample)
+		table = append(table, svc.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportSample))
 	}
 	buf := bytes.NewBuffer([]byte{})
 	if err := excel.ExportExcel(buf, table, tablename); err != nil {
