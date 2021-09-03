@@ -195,7 +195,7 @@ func (branchRule *BranchRule) CheckRuleValid(newBranchRule *model.BranchRule) er
 	return nil
 }
 
-func (branchRule *BranchRule) GetAllValidBranchWorkspaces(appID int64) ([]*apistructs.ValidBranch, error) {
+func (branchRule *BranchRule) GetAllValidBranchWorkspaces(appID int64, userID string) ([]*apistructs.ValidBranch, error) {
 	var result []*apistructs.ValidBranch
 
 	app, err := branchRule.bdl.GetApp(uint64(appID))
@@ -210,7 +210,7 @@ func (branchRule *BranchRule) GetAllValidBranchWorkspaces(appID int64) ([]*apist
 	if err != nil {
 		return nil, err
 	}
-	repoStats, err := branchRule.bdl.GetGittarStats(int64(app.ID))
+	repoStats, err := branchRule.bdl.GetGittarStats(int64(app.ID), userID)
 	if err != nil {
 		return nil, err
 	}

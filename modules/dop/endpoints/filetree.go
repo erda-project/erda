@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"net/http"
 	"strconv"
@@ -267,6 +268,7 @@ func (e *Endpoints) ListGittarFileTreeNodes(ctx context.Context, r *http.Request
 		return apierrors.ErrListGittarFileTreeNodes.NotLogin().ToResp(), nil
 	}
 
+	fmt.Println("wxj: ", identityInfo.UserID)
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrListGittarFileTreeNodes.InvalidParameter(err).ToResp(), nil
@@ -429,7 +431,7 @@ func (e *Endpoints) DeleteGittarFileTreeNode(ctx context.Context, r *http.Reques
 
 	// TODO: 鉴权
 
-	unifiedNode, err := e.fileTree.DeleteFileTreeNode(req, orgID)
+	unifiedNode, err := e.fileTree.DeleteFileTreeNode(req, orgID, identityInfo.UserID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

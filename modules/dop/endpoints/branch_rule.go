@@ -152,7 +152,12 @@ func (e *Endpoints) GetAllValidBranchWorkspaces(ctx context.Context, r *http.Req
 	if appID == -1 {
 		return apierrors.ErrQueryBranchRule.InvalidParameter("invalid appId").ToResp(), nil
 	}
-	branches, err := e.branchRule.GetAllValidBranchWorkspaces(appID)
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrQueryBranchRule.InvalidParameter(err).ToResp(), nil
+	}
+
+	branches, err := e.branchRule.GetAllValidBranchWorkspaces(appID, identityInfo.UserID)
 	if err != nil {
 		return apierrors.ErrQueryBranchRule.InternalError(err).ToResp(), nil
 	}

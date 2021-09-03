@@ -134,7 +134,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
 			return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
 		}
@@ -192,7 +192,7 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	if releaseReq.ApplicationID != uint64(releaseResp.ApplicationID) {
 		return nil, errors.Errorf("release does not correspond to the application")
 	}
-	branchWorkspaces, err := r.bdl.GetAllValidBranchWorkspace(releaseReq.ApplicationID)
+	branchWorkspaces, err := r.bdl.GetAllValidBranchWorkspace(releaseReq.ApplicationID, string(operator))
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -418,7 +418,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
 			return nil, err
 		}
@@ -836,7 +836,7 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
 			return nil, err
 		}

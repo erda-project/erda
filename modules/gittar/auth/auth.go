@@ -16,6 +16,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -35,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/uc"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -205,36 +207,35 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 			}
 			c.Set("repository", gitRepository)
 
-			//只有在skipAuth范围内,如果读取到了user-id,也触发校验
-			userIdStr := c.GetHeader("User-Id")
-			if userIdStr != "" {
-				userInfoDto, err := uc.FindUserById(userIdStr)
-				if err != nil {
-					c.AbortWithStatus(500, err)
-					return
-				}
-				logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
-				//校验通过缓存5分钟结果
-				//校验失败每次都会请求
-				_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
-				if validateError != nil {
-					logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
-					c.AbortWithStatus(403, validateError)
-					return
-				}
-				c.Set("repository", gitRepository)
-				//c.Set("lock", repoLock.Lock)
-
-				c.Set("user", &models.User{
-					Name:     userInfoDto.Username,
-					NickName: userInfoDto.NickName,
-					Email:    userInfoDto.Email,
-					Id:       userIdStr,
-				})
-				c.Next()
+			userIdStr := c.GetHeader(httputil.UserHeader)
+			if userIdStr == "" {
+				c.AbortWithStatus(500, errors.New("the userID is empty"))
 				return
 			}
-			logrus.Warn("no user user info ")
+
+			userInfoDto, err := uc.FindUserById(userIdStr)
+			if err != nil {
+				c.AbortWithStatus(500, err)
+				return
+			}
+			logrus.Infof("repo: %s userId: %v, username: %s", repoName, userIdStr, userInfoDto.Username)
+			//校验通过缓存5分钟结果
+			//校验失败每次都会请求
+			_, validateError := ValidaUserRepoWithCache(c, userIdStr, repo)
+			if validateError != nil {
+				logrus.Infof("openapi auth fail repo:%s user:%s", repoName, userInfoDto.Username)
+				c.AbortWithStatus(403, validateError)
+				return
+			}
+			c.Set("repository", gitRepository)
+			//c.Set("lock", repoLock.Lock)
+
+			c.Set("user", &models.User{
+				Name:     userInfoDto.Username,
+				NickName: userInfoDto.NickName,
+				Email:    userInfoDto.Email,
+				Id:       userIdStr,
+			})
 			c.Next()
 			return
 		}
@@ -378,7 +379,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 		return nil, err
 	}
 	if !permission.Access {
-		return nil, errors.New("no permission to access")
+		return nil, errors.New(fmt.Sprintf("no permission to access,userID: %s, appID: %d", userId, repo.AppID))
 	}
 	return &AuthResp{
 		Repo:       repo,

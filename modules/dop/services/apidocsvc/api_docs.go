@@ -55,7 +55,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 
 	// 检查父目录中是否已存在同名文档
 	ft := pft.Clone().SetPathFromRepoRoot(filenameFromRepoRoot)
-	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), orgIDStr); err == nil {
+	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), orgIDStr, userID); err == nil {
 		return nil, apierrors.CreateNode.InvalidParameter("已存在同名文档")
 	}
 
@@ -88,7 +88,7 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 	if err != nil {
 		return apierrors.DeleteNode.InvalidParameter(err)
 	}
-	nodeInfo, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), strconv.FormatUint(orgID, 10))
+	nodeInfo, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		logrus.Errorf("查询文档节点失败, ft: %+v, err: %v", ft, err)
 		return apierrors.DeleteNode.InternalError(errors.Wrap(err, "查询文档节点失败"))
@@ -171,7 +171,7 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 	// 目标名称不能与目录下文件名同名
 	newPath := filepath.Join(apiDocsPathFromRepoRoot, docName)
 	nft := ft.Clone().SetPathFromRepoRoot(newPath) // nft: newFileTree
-	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(nft.TreePath(), strconv.FormatUint(orgID, 10)); err == nil {
+	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(nft.TreePath(), strconv.FormatUint(orgID, 10), userID); err == nil {
 		return nil, apierrors.CreateNode.InvalidParameter("目标名称与其他节点重名")
 	}
 
@@ -271,7 +271,7 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	if dstPinode == ft.Clone().DeletePathFromRepoRoot().Inode() {
 		return nil, apierrors.CopyNode.InvalidParameter("目标分支不得与源分支相同")
 	}
-	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10))
+	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		return nil, apierrors.CopyNode.InternalError(err)
 	}
@@ -290,7 +290,7 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	// query branches by appID
 	// there is no project-level file tree, so "pinode != 0" is not discussed
 	appIDStr := strconv.FormatUint(appID, 10)
-	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID))
+	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID), userID)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetAllValidBranchWorkspace"))
 	}
@@ -366,7 +366,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	// query the docs under the path,
 	// if the error is not nil, it is considered that there is no document here.
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
@@ -473,7 +473,7 @@ func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apist
 	return data, nil
 }
 
-func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	// todo: 鉴权 谁能查
 
 	// 解析路径
@@ -487,7 +487,7 @@ func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.Fi
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
 	// 查找服务目录下所有的子目录, 允许错误和结果数量为 0
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
@@ -521,7 +521,7 @@ func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.Fi
 		cft := ft.Clone().SetPathFromRepoRoot(filepath.Join(ft.PathFromRepoRoot(), node.Name, "schema.sql"))
 
 		// 查询 schema.sql 的内容
-		nodeInfo, err := bdl.Bdl.GetGittarBlobNodeInfo(cft.BlobPath(), orgIDStr)
+		nodeInfo, err := bdl.Bdl.GetGittarBlobNodeInfo(cft.BlobPath(), orgIDStr, userID)
 		if err != nil {
 			logrus.Errorf("failed to GetGittarBlobNodeInfo, blobPath: %s, err: %v", cft.BlobPath(), err)
 			continue

@@ -470,7 +470,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		return apierrors.ErrGetAppWorkspaceReleases.InternalError(errors.Errorf("not found cluster for %s", req.Workspace)).ToResp(), nil
 	}
 
-	branches, err := e.bdl.GetAllValidBranchWorkspace(req.AppID)
+	branches, err := e.bdl.GetAllValidBranchWorkspace(req.AppID, string(userID))
 	if err != nil {
 		return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
 	}
