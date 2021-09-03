@@ -151,6 +151,9 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 				}
 				if !p.generator.valid(token, clientToken, r) {
 					p.Log.Warnf("invalid csrf token: %s", token)
+					rw.WriteHeader(http.StatusForbidden)
+					// compatible, client should recognize response's Set-Cookie header and correct cookie name
+					common.WriteError(errors.New("invalid csrf token"), rw)
 					p.setCSRFCookie(rw, r, "")
 					return
 				}
