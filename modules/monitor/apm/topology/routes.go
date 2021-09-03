@@ -83,6 +83,7 @@ type translation struct {
 	TerminusKey       string `query:"terminusKey" validate:"required"`
 	Sort              int64  `query:"sort"`
 	ServiceId         string `query:"serviceId" validate:"required"`
+	Type              string `query:"type"`
 }
 
 func (topology *provider) exceptionTypes(r *http.Request, params ServiceParams) interface{} {

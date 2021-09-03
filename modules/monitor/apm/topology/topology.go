@@ -2057,6 +2057,7 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 	if params.Sort == 1 {
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
+
 	// producer
 	sqlProducer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
@@ -2066,27 +2067,36 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE target_service_id::tag=$serviceId AND "+
 		"span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
 
-	producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
-
-	consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
-
-	if err != nil {
-		return nil, err
+	p := &query.ResultSet{}
+	c := &query.ResultSet{}
+	if params.Type == "producer" {
+		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
+		if err != nil {
+			return nil, err
+		}
+		p = producer
+	} else if params.Type == "consumer" {
+		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
+		if err != nil {
+			return nil, err
+		}
+		c = consumer
+	} else {
+		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
+		if err != nil {
+			return nil, err
+		}
+		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
+		if err != nil {
+			return nil, err
+		}
+		p = producer
+		c = consumer
 	}
 
 	result := make(map[string]interface{}, 0)
-	cols := []map[string]interface{}{
-		{"_key": "tags.message_bus_destination", "flag": "tag|groupby", "key": "topic"},
-		{"_key": "tags.span_kind", "flag": "tag", "key": "type"},
-		{"_key": "tags.component", "flag": "tag", "key": "component"},
-		{"_key": "tags.host", "flag": "tag", "key": "host"},
-		{"_key": "", "flag": "field|func|agg", "key": "call_count"},
-		{"_key": "", "flag": "field|func|agg", "key": "avg_elapsed"},
-		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
-	}
-	result["cols"] = cols
-	data, err := topology.handleMQTranslationResponse(params, producer, options)
-	dataConsumer, err := topology.handleMQTranslationResponse(params, consumer, options)
+	data, err := topology.handleMQTranslationResponse(params, p, options)
+	dataConsumer, err := topology.handleMQTranslationResponse(params, c, options)
 	data = append(data, dataConsumer...)
 	if err != nil {
 		return nil, err
@@ -2097,6 +2107,9 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 
 func (topology *provider) handleMQTranslationResponse(params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
 	data := make([]map[string]interface{}, 0)
+	if result.ResultSet == nil {
+		return []map[string]interface{}{}, nil
+	}
 	for _, r := range result.ResultSet.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["topic"] = r[0]
