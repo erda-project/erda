@@ -156,9 +156,11 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 		}
+		needSetCookie := false
 		if len(token) <= 0 {
 			// Generate token
 			token = p.generator.gen(r)
+			needSetCookie = true
 		}
 
 		// Store token in the context
@@ -168,7 +170,9 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		rw.Header().Add(echo.HeaderVary, echo.HeaderCookie)
 
 		// Set CSRF cookie
-		p.setCSRFCookie(rw, r, token)
+		if needSetCookie {
+			p.setCSRFCookie(rw, r, token)
+		}
 
 		h(rw, r)
 	}
