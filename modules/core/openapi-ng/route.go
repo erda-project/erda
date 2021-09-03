@@ -78,11 +78,8 @@ func (p *provider) WrapHandler(handler transhttp.HandlerFunc) transhttp.HandlerF
 func (p *provider) Run(ctx context.Context) error {
 	if p.RouterManager.Reloadable() {
 		router := p.RouterManager.NewRouter()
-		err := p.registerFixedRoutes(router)
-		if err != nil {
-			return err
-		}
-		err = router.Commit()
+		p.registerFixedRoutes(router, nil)
+		err := router.Commit()
 		if err != nil {
 			return err
 		}
@@ -90,15 +87,16 @@ func (p *provider) Run(ctx context.Context) error {
 	return p.doWatch(ctx)
 }
 
-func (p *provider) registerFixedRoutes(router httpserver.RouterTx) error {
+func (p *provider) registerFixedRoutes(router httpserver.Router, exclude map[routeKey]bool) {
 	opts := []interface{}{httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs)}
 	for _, route := range p.routes {
-		err := router.Add(route.method, route.path, route.handler, opts...)
-		if err != nil {
-			return err
+		if exclude[routeKey{
+			method: route.method, path: route.path,
+		}] {
+			continue
 		}
+		router.Add(route.method, route.path, route.handler, opts...)
 	}
-	return nil
 }
 
 func (p *provider) doWatch(ctx context.Context) error {
@@ -107,28 +105,28 @@ func (p *provider) doWatch(ctx context.Context) error {
 	}
 	for _, w := range p.watchers {
 		go func(w RouteSourceWatcher) {
-			ch := w.Watch()
+			ch := w.Watch(ctx)
 			for {
 				select {
 				case source := <-ch:
-					router := p.RouterManager.NewRouter()
-					err := p.registerFixedRoutes(router)
-					if err != nil {
-						p.Log.Errorf("failed to load fixed routes: %s", err)
-						continue
+					p.Log.Info("routes reloading ...")
+					tx := p.RouterManager.NewRouter()
+					router := &routerTx{
+						tx:     tx,
+						routes: make(map[routeKey]bool),
+						p:      p,
 					}
-					err = source.RegisterTo(&routerTx{
-						tx: router,
-						p:  p,
-					})
+					err := source.RegisterTo(router)
 					if err != nil {
 						p.Log.Errorf("failed to register routes from source(%s): %s", source.Name(), err)
 						continue
 					}
-					err = router.Commit()
+					p.registerFixedRoutes(tx, router.routes)
+					err = tx.Commit()
 					if err != nil {
 						p.Log.Errorf("failed to commit routes from source(%s): %s", source.Name(), err)
 					}
+					p.Log.Info("routes reload ok")
 				case <-ctx.Done():
 					return
 				}
@@ -139,10 +137,25 @@ func (p *provider) doWatch(ctx context.Context) error {
 }
 
 type routerTx struct {
-	tx httpserver.RouterTx
-	p  *provider
+	tx     httpserver.RouterTx
+	routes map[routeKey]bool
+	p      *provider
 }
 
-func (r *routerTx) Add(method, path string, handler transhttp.HandlerFunc) {
-	r.tx.Add(method, path, r.p.WrapHandler(handler), httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
+func (rt *routerTx) Add(method, path string, handler transhttp.HandlerFunc) {
+	if len(method) <= 0 {
+		for _, method := range allMethods {
+			rt.addRoute(method, path, handler)
+		}
+		return
+	}
+	rt.addRoute(method, path, handler)
+}
+
+func (rt *routerTx) addRoute(method, path string, handler transhttp.HandlerFunc) {
+	rt.routes[routeKey{
+		method: method,
+		path:   path,
+	}] = true
+	rt.tx.Add(method, path, rt.p.WrapHandler(handler), httpserver.WithPathFormat(httpserver.PathFormatGoogleAPIs))
 }

@@ -168,8 +168,11 @@ const (
 	CreateCustomAddonTemplate TemplateName = "createCustomAddon"
 	DeleteAddonTemplate       TemplateName = "deleteAddon"
 	// ========================Runtime================================
-	DeleteRuntimeTemplate TemplateName = "deleteRuntime"
-	ScaleRuntimeTemplate  TemplateName = "scaleRuntime"
+	DeleteRuntimeTemplate   TemplateName = "deleteRuntime"
+	ScaleRuntimeTemplate    TemplateName = "scaleRuntime"
+	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
+	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
+	DeployRuntimeTemplate   TemplateName = "deployRuntime"
 
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"
@@ -197,6 +200,7 @@ const (
 	QaTestEnvCreateTemplate TemplateName = "qaTestEnvCreate"
 	QaTestEnvUpdateTemplate TemplateName = "qaTestEnvUpdate"
 	QaTestEnvDeleteTemplate TemplateName = "qaTestEnvDelete"
+	ArchiveTestplanTemplate TemplateName = "archiveTestPlan"
 	// ========================cmdb==========================================
 	CreateCertificatesTemplate TemplateName = "createCertificates"
 	DeleteCertificatesTemplate TemplateName = "deleteCertificates"

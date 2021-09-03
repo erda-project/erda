@@ -358,3 +358,32 @@ func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint6
 
 	return memberResp.Data, nil
 }
+
+// GetMemberByUserAndScope get member by user and scope
+func (b *Bundle) GetMemberByUserAndScope(scopeType apistructs.ScopeType, userID string, scopeID uint64) ([]apistructs.Member, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.GetMemberByUserAndScopeResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/get-by-user-and-scope").
+		Header(httputil.InternalHeader, "bundle").
+		Param("scopeType", string(scopeType)).
+		Param("userID", userID).
+		Param("scopeID", strconv.FormatUint(scopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to GetMemberByUserAndScope, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return memberResp.Data, nil
+}

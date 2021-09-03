@@ -20,16 +20,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/loop"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 const (
@@ -62,9 +66,14 @@ type Reconciler struct {
 	pipelineSvcFunc *PipelineSvcFunc
 }
 
-// 该结构体为了解决假如 Reconciler 引入 pipelinesvc 导致循环依赖问题，所以将 svc 方法挂载进来
+// In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.
+// todo resolve cycle import here through better module architecture
 type PipelineSvcFunc struct {
-	CronNotExecuteCompensate func(id uint64) error
+	CronNotExecuteCompensate                func(id uint64) error
+	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error)
+	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
+	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
+	CreatePipelineGraph                     func(p *spec.Pipeline) (err error)
 }
 
 // New generate a new reconciler.

@@ -156,29 +156,29 @@ func CommitAPIDocModifies(orgID uint64, userID, repo, commitMessage, serviceName
 // 如果文档内容为空, 则填充默认内容;
 // 前端提交的文档格式为 json, 转换为 yaml 后再提交.
 func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName, content, branch, action string) error {
-	// 如果 content 为空, 给一个默认的 content
+	// if the content is empty, set default
 	if content == "" {
 		content = defaultOAS3Content(serviceName)
 	}
 
-	// 前端传来的 content 是 json, 转换为 yaml
-	data, err := oasconv.JSONToYAML([]byte(content))
+	// load structural Openapi 3
+	v3, err := oas3.LoadFromData([]byte(content))
 	if err != nil {
-		return errors.Wrap(err, "failed to JSONToYAML")
+		return errors.Wrap(err, "failed to load Openapi 3 structural from content")
 	}
 
-	// 校验文档合法性 仅作反序列化校验
-	if _, err := oas3.LoadFromData(data); err != nil {
-		return err
+	// trans to yaml
+	data, err := oas3.MarshalYaml(v3)
+	if err != nil {
+		return errors.Wrap(err, "failed to MarshalYaml")
 	}
-
 	content = string(data)
 
-	// 统一更改文件名和路径后缀
+	// change filename suffix to .yaml
 	serviceName = mustSuffix(serviceName, suffixYaml)
 	filenameFromRepoRoot := filepath.Join(apiDocsPathFromRepoRoot, serviceName)
 
-	// 在 gittar 仓库对应分支下创建文档: .dice/apidocs/{docName}
+	// make commit: .dice/apidocs/{docName}
 	var commit = apistructs.GittarCreateCommitRequest{
 		Message: commitMessage,
 		Actions: []apistructs.EditActionItem{{

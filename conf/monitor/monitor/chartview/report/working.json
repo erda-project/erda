@@ -13,6 +13,12 @@
       "i": "view-98ae03fd",
       "view": {
         "title": "实际工作量 (人天)",
+        "i18n": {
+          "title": {
+            "en": "actual workload (MD)",
+            "zh": "实际工作量 (人天)"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -60,6 +66,12 @@
       "i": "view-73d60bcb",
       "view": {
         "title": "预计工作量 (人天)",
+        "i18n": {
+          "title": {
+            "en": "estimated workload (MD)",
+            "zh": "预计工作量 (人天)"
+          }
+        },
         "description": "",
         "chartType": "card",
         "dataSourceType": "api",
@@ -107,6 +119,12 @@
       "i": "view-cdb72329",
       "view": {
         "title": "成员工作量分布 (人天)",
+        "i18n": {
+          "title": {
+            "en": "member workload distribution (MD)",
+            "zh": "成员工作量分布 (人天)"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -173,6 +191,12 @@
       "i": "view-2161e559",
       "view": {
         "title": "缺陷 耗时TOP10 (人天)",
+        "i18n": {
+          "title": {
+            "en": "BUG time consuming TOP10 (MD)",
+            "zh": "缺陷 耗时TOP10 (人天)"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -242,6 +266,12 @@
       "i": "view-1e55a4eb",
       "view": {
         "title": "任务 耗时TOP10 (人天)",
+        "i18n": {
+          "title": {
+            "en": "task time consuming TOP10 (MD)",
+            "zh": "任务 耗时TOP10 (人天)"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",
@@ -311,6 +341,12 @@
       "i": "view-970a9935",
       "view": {
         "title": "人员事件分布 (个)",
+        "i18n": {
+          "title": {
+            "en": "personnel incident distribution (num)",
+            "zh": "人员事件分布 (个)"
+          }
+        },
         "description": "",
         "chartType": "chart:bar",
         "dataSourceType": "api",

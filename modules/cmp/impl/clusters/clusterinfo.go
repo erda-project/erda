@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime/debug"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/message"
@@ -45,82 +47,102 @@ var (
 	checkCRDs    = []string{erdaOperator, diceOperator}
 )
 
+type ResultType = map[string]map[string]apistructs.NameValue
+
 func (c *Clusters) ClusterInfo(ctx context.Context, orgID uint64, clusterNames []string) ([]map[string]map[string]apistructs.NameValue, error) {
 	i18n := ctx.Value("i18nPrinter").(*message.Printer)
-	resultList := make([]map[string]map[string]apistructs.NameValue, 0)
+	resultList := make([]ResultType, 0)
+	resultMap := make(map[string]ResultType, 0)
+
+	var wg sync.WaitGroup
+
+	wg.Add(len(clusterNames))
 
 	for _, clusterName := range clusterNames {
-		clusterMetaData, err := c.bdl.GetCluster(clusterName)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
+		go func(clusterName string) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("get cluster (%s) format info panic, err: %v", clusterName, err)
+					logrus.Errorf("%s", debug.Stack())
+				}
+				wg.Done()
+			}()
 
-		baseInfo := map[string]apistructs.NameValue{
-			"manageType":         {Name: i18n.Sprintf("manage type"), Value: parseManageType(clusterMetaData.ManageConfig)},
-			"clusterName":        {Name: i18n.Sprintf("cluster name"), Value: clusterName},
-			"clusterDisplayName": {Name: i18n.Sprintf("cluster display name"), Value: clusterMetaData.DisplayName},
-			"initJobClusterName": {Name: i18n.Sprintf("init job cluster name"), Value: os.Getenv("DICE_CLUSTER_NAME")},
-		}
-
-		if clusterMetaData.ManageConfig != nil && (clusterMetaData.ManageConfig.Type == apistructs.ManageProxy &&
-			clusterMetaData.ManageConfig.AccessKey == "") {
-			baseInfo["registered"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("cluster agent registered"),
-				Value: true,
-			}
-		}
-
-		urlInfo := map[string]apistructs.NameValue{}
-
-		if ci, err := c.bdl.QueryClusterInfo(clusterName); err != nil {
-			errStr := fmt.Sprintf("failed to queryclusterinfo: %v, cluster: %v", err, clusterName)
-			logrus.Errorf(errStr)
-		} else {
-			baseInfo["clusterType"] = apistructs.NameValue{Name: i18n.Sprintf("cluster type"), Value: ci.Get(apistructs.DICE_CLUSTER_TYPE)}
-			baseInfo["clusterVersion"] = apistructs.NameValue{Name: i18n.Sprintf("cluster version"), Value: ci.Get(apistructs.DICE_VERSION)}
-			baseInfo["rootDomain"] = apistructs.NameValue{Name: i18n.Sprintf("root domain"), Value: ci.Get(apistructs.DICE_ROOT_DOMAIN)}
-			baseInfo["edgeCluster"] = apistructs.NameValue{Name: i18n.Sprintf("edge cluster"), Value: ci.Get(apistructs.DICE_IS_EDGE) == "true"}
-			baseInfo["httpsEnabled"] = apistructs.NameValue{
-				Name:  i18n.Sprintf("https enabled"),
-				Value: strutil.Contains(ci.Get(apistructs.DICE_PROTOCOL), "https"),
+			clusterMetaData, err := c.bdl.GetCluster(clusterName)
+			if err != nil {
+				logrus.Errorf("get cluster info error: %v", err)
+				return
 			}
 
-			urlInfo["registry"] = apistructs.NameValue{Name: "registry", Value: ci.Get(apistructs.REGISTRY_ADDR)}
-			urlInfo["nexus"] = apistructs.NameValue{Name: "nexus", Value: ci.Get(apistructs.NEXUS_ADDR)}
-		}
+			baseInfo := map[string]apistructs.NameValue{
+				"manageType":         {Name: i18n.Sprintf("manage type"), Value: parseManageType(clusterMetaData.ManageConfig)},
+				"clusterName":        {Name: i18n.Sprintf("cluster name"), Value: clusterName},
+				"clusterDisplayName": {Name: i18n.Sprintf("cluster display name"), Value: clusterMetaData.DisplayName},
+				"initJobClusterName": {Name: i18n.Sprintf("init job cluster name"), Value: os.Getenv("DICE_CLUSTER_NAME")},
+			}
 
-		kc, err := k8sclient.NewWithTimeOut(clusterName, getClusterTimeout)
-		if err != nil {
-			logrus.Errorf("get k8sclient error: %v", err)
+			if clusterMetaData.ManageConfig != nil && (clusterMetaData.ManageConfig.Type == apistructs.ManageProxy &&
+				clusterMetaData.ManageConfig.AccessKey == "") {
+				baseInfo["registered"] = apistructs.NameValue{
+					Name:  i18n.Sprintf("cluster agent registered"),
+					Value: true,
+				}
+			}
+
+			urlInfo := map[string]apistructs.NameValue{}
+
+			if ci, err := c.bdl.QueryClusterInfo(clusterName); err != nil {
+				errStr := fmt.Sprintf("failed to queryclusterinfo: %v, cluster: %v", err, clusterName)
+				logrus.Errorf(errStr)
+			} else {
+				baseInfo["clusterType"] = apistructs.NameValue{Name: i18n.Sprintf("cluster type"), Value: ci.Get(apistructs.DICE_CLUSTER_TYPE)}
+				baseInfo["clusterVersion"] = apistructs.NameValue{Name: i18n.Sprintf("cluster version"), Value: ci.Get(apistructs.DICE_VERSION)}
+				baseInfo["rootDomain"] = apistructs.NameValue{Name: i18n.Sprintf("root domain"), Value: ci.Get(apistructs.DICE_ROOT_DOMAIN)}
+				baseInfo["edgeCluster"] = apistructs.NameValue{Name: i18n.Sprintf("edge cluster"), Value: ci.Get(apistructs.DICE_IS_EDGE) == "true"}
+				baseInfo["httpsEnabled"] = apistructs.NameValue{
+					Name:  i18n.Sprintf("https enabled"),
+					Value: strutil.Contains(ci.Get(apistructs.DICE_PROTOCOL), "https"),
+				}
+
+				urlInfo["registry"] = apistructs.NameValue{Name: "registry", Value: ci.Get(apistructs.REGISTRY_ADDR)}
+				urlInfo["nexus"] = apistructs.NameValue{Name: "nexus", Value: ci.Get(apistructs.NEXUS_ADDR)}
+			}
+
+			kc, err := k8sclient.NewWithTimeOut(clusterName, getClusterTimeout)
+			if err != nil {
+				logrus.Errorf("get k8s client error: %v", err)
+			} else {
+				nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+				if err != nil {
+					logrus.Errorf("get cluster(%s) node error: %v", clusterName, err)
+				} else {
+					baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
+				}
+
+				if status, err := c.getClusterStatus(kc, clusterMetaData); err != nil {
+					logrus.Errorf("get cluster status error: %v", err)
+				} else {
+					baseInfo["clusterStatus"] = apistructs.NameValue{Name: i18n.Sprintf("cluster status"), Value: status}
+				}
+			}
+
 			result := map[string]map[string]apistructs.NameValue{
 				"basic": baseInfo,
 				"URLs":  urlInfo,
 			}
 
-			resultList = append(resultList, result)
-			continue
-		}
+			resultMap[clusterName] = result
 
-		nodes, err := kc.ClientSet.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-		if err != nil {
-			logrus.Error(err)
-		}
-		baseInfo["nodeCount"] = apistructs.NameValue{Name: i18n.Sprintf("node count"), Value: len(nodes.Items)}
-
-		if status, err := c.getClusterStatus(kc, clusterMetaData); err != nil {
-			logrus.Errorf("get cluster status error: %v", err)
-		} else {
-			baseInfo["clusterStatus"] = apistructs.NameValue{Name: i18n.Sprintf("cluster status"), Value: status}
-		}
-
-		result := map[string]map[string]apistructs.NameValue{
-			"basic": baseInfo,
-			"URLs":  urlInfo,
-		}
-
-		resultList = append(resultList, result)
+		}(clusterName)
 	}
+
+	wg.Wait()
+
+	// Sort by request names
+	for _, name := range clusterNames {
+		resultList = append(resultList, resultMap[name])
+	}
+
 	return resultList, nil
 }
 

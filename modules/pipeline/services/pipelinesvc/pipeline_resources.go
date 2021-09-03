@@ -16,19 +16,41 @@ package pipelinesvc
 
 import (
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/pkg/numeral"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 // calculatePipelineResources calculate pipeline resources according to all tasks grouped by stages.
-func (s *PipelineSvc) calculatePipelineResources(allStagedTasks [][]*spec.PipelineTask) apistructs.PipelineAppliedResources {
-	// merge result
-	pipelineResource := apistructs.PipelineAppliedResources{
-		Limits:   calculatePipelineLimitResource(allStagedTasks),
-		Requests: calculatePipelineRequestResource(allStagedTasks),
+func (s *PipelineSvc) calculatePipelineResources(pipelineYml *pipelineyml.PipelineYml) (*apistructs.PipelineAppliedResources, error) {
+	if pipelineYml.Spec() == nil || len(pipelineYml.Spec().Stages) <= 0 {
+		return nil, nil
 	}
 
-	return pipelineResource
+	// load pipelineYml all action define and spec
+	var passedDataWhenCreate action_info.PassedDataWhenCreate
+	passedDataWhenCreate.InitData(s.bdl)
+	if err := passedDataWhenCreate.PutPassedDataByPipelineYml(pipelineYml); err != nil {
+		return nil, err
+	}
+
+	// summarize the resources required for all actions
+	var stagesPipelineAppliedResources = make([][]*apistructs.PipelineAppliedResources, len(pipelineYml.Spec().Stages))
+	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
+		if !action.Type.IsSnippet() {
+			resources := calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(extmarketsvc.MakeActionTypeVersion(action)))
+			stagesPipelineAppliedResources[stage] = append(stagesPipelineAppliedResources[stage], &resources)
+		}
+	})
+
+	// merge result
+	pipelineResource := apistructs.PipelineAppliedResources{
+		Limits:   calculatePipelineLimitResource(stagesPipelineAppliedResources),
+		Requests: calculatePipelineRequestResource(stagesPipelineAppliedResources),
+	}
+
+	return &pipelineResource, nil
 }
 
 // calculatePipelineLimitResource calculate pipeline limit resource according to all tasks grouped by stages.
@@ -38,19 +60,19 @@ func (s *PipelineSvc) calculatePipelineResources(allStagedTasks [][]*spec.Pipeli
 // 2 3 (5)
 // 4   (4)
 // => max((1+2), (2+3), (4)) = 5
-func calculatePipelineLimitResource(allStagedTasks [][]*spec.PipelineTask) apistructs.PipelineAppliedResource {
+func calculatePipelineLimitResource(resources [][]*apistructs.PipelineAppliedResources) apistructs.PipelineAppliedResource {
 	var (
 		allStageCPU   []float64
 		allStageMemMB []float64
 	)
-	for _, stageTasks := range allStagedTasks {
+	for _, stagesResources := range resources {
 		var (
 			stageCPU   float64 = 0
 			stageMemMB float64 = 0
 		)
-		for _, task := range stageTasks {
-			stageCPU += task.Extra.AppliedResources.Limits.CPU
-			stageMemMB += task.Extra.AppliedResources.Limits.MemoryMB
+		for _, taskResources := range stagesResources {
+			stageCPU += taskResources.Limits.CPU
+			stageMemMB += taskResources.Limits.MemoryMB
 		}
 		allStageCPU = append(allStageCPU, stageCPU)
 		allStageMemMB = append(allStageMemMB, stageMemMB)
@@ -70,13 +92,13 @@ func calculatePipelineLimitResource(allStagedTasks [][]*spec.PipelineTask) apist
 // 2 3 (3)
 // 4   (4)
 // => max(1,2,2,3,4) = 4
-func calculatePipelineRequestResource(allStagedTasks [][]*spec.PipelineTask) apistructs.PipelineAppliedResource {
+func calculatePipelineRequestResource(resources [][]*apistructs.PipelineAppliedResources) apistructs.PipelineAppliedResource {
 	var allMinTaskCPUs []float64
 	var allMinTaskMemMBs []float64
-	for _, stageTasks := range allStagedTasks {
-		for _, task := range stageTasks {
-			allMinTaskCPUs = append(allMinTaskCPUs, task.Extra.AppliedResources.Requests.CPU)
-			allMinTaskMemMBs = append(allMinTaskMemMBs, task.Extra.AppliedResources.Requests.MemoryMB)
+	for _, stagesResources := range resources {
+		for _, taskResources := range stagesResources {
+			allMinTaskCPUs = append(allMinTaskCPUs, taskResources.Requests.CPU)
+			allMinTaskMemMBs = append(allMinTaskMemMBs, taskResources.Requests.MemoryMB)
 		}
 	}
 	minStageResource := apistructs.PipelineAppliedResource{

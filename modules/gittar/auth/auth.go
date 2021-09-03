@@ -15,16 +15,19 @@
 package auth
 
 import (
+	"context"
 	"errors"
+	"fmt"
+
 	"net/http"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -198,13 +201,12 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 	for _, skipUrl := range conf.SkipAuthUrls() {
 		if skipUrl != "" && strings.HasSuffix(host, skipUrl) {
 			logrus.Debugf("skip authenticate host: %s", host)
-			gitRepository, err = openRepository(repo)
+			gitRepository, err = openRepository(c, repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
 			}
 			c.Set("repository", gitRepository)
-			c.Set("user", models.NewInnerUser())
 
 			//只有在skipAuth范围内,如果读取到了user-id,也触发校验
 			userIdStr := c.GetHeader("User-Id")
@@ -225,6 +227,7 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 				}
 				c.Set("repository", gitRepository)
 				//c.Set("lock", repoLock.Lock)
+
 				c.Set("user", &models.User{
 					Name:     userInfoDto.Username,
 					NickName: userInfoDto.NickName,
@@ -240,27 +243,13 @@ func doAuth(c *webcontext.Context, repo *models.Repo, repoName string) {
 		}
 	}
 
-	//如果是内置账户不做校验
-	innerUser, err := GetInnerUser(c)
-	if err == nil {
-		gitRepository, err = openRepository(repo)
-		if err != nil {
-			c.AbortWithStatus(500, err)
-			return
-		}
-		c.Set("repository", gitRepository)
-		c.Set("user", innerUser)
-		c.Next()
-		return
-	}
-
 	userInfo, err = GetUserInfoByTokenOrBasicAuth(c, repo.ProjectID)
 	if err == nil {
 		_, validateError := ValidaUserRepo(c, string(userInfo.ID), repo)
 		if validateError != nil {
 			c.AbortWithString(403, validateError.Error()+" 403")
 		} else {
-			gitRepository, err = openRepository(repo)
+			gitRepository, err = openRepository(c, repo)
 			if err != nil {
 				c.AbortWithStatus(500, err)
 				return
@@ -400,11 +389,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 	}, nil
 }
 
-// 用于外置仓库的锁定，同一时间只有一个线程在同步外置仓库
-var lockMap = sync.Map{}
-
-func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
-	repo.RwMutex = &sync.RWMutex{}
+func openRepository(ctx *webcontext.Context, repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository, err := gitmodule.OpenRepositoryWithInit(conf.RepoRoot(), repo.Path)
 	if err != nil {
 		return nil, err
@@ -415,46 +400,53 @@ func openRepository(repo *models.Repo) (*gitmodule.Repository, error) {
 	gitRepository.OrgId = repo.OrgID
 	gitRepository.Size = repo.Size
 	gitRepository.Url = conf.GittarUrl() + "/" + repo.Path
+	gitRepository.IsExternal = repo.IsExternal
 	if repo.IsExternal {
-		repoPath := path.Join(conf.RepoRoot(), repo.Path)
-
-		// 判定是否锁定
-		lock, ok := lockMap.Load(repoPath)
-		if ok {
-			if lock != nil && !lock.(bool) {
-				// 假如没有锁定，就开始锁定
-				lockMap.Store(repoPath, true)
-				// 结束后取消锁定
-				repo.RwMutex.Lock()
-				go func() {
-					defer func() {
-						lockMap.Store(repoPath, false)
-						repo.RwMutex.Unlock()
-					}()
-					err = gitmodule.SyncExternalRepository(repoPath)
-					if err != nil {
-						logrus.Errorf(" SyncExternalRepository error: %v ", err)
-					}
-				}()
+		// check the key is exist or not
+		key := fmt.Sprintf("/gittar/repo/%d", repo.ID)
+		resp, err := ctx.EtcdClient.Get(context.Background(), key)
+		if err != nil {
+			return nil, err
+		}
+		// if key exist,and the request url's suffix is "/commits" will return err
+		// else return without SyncExternalRepository
+		if len(resp.Kvs) > 0 {
+			if strings.HasSuffix(ctx.EchoContext.Request().URL.String(), "/commits") {
+				return nil, errors.New("the repo is locked, please wait for a moment")
 			}
-		} else {
-			lockMap.Store(repoPath, true)
-			repo.RwMutex.Lock()
-			go func() {
-				defer func() {
-					lockMap.Store(repoPath, false)
-					repo.RwMutex.Unlock()
-				}()
-				err = gitmodule.SyncExternalRepository(repoPath)
-				if err != nil {
-					logrus.Errorf(" SyncExternalRepository error: %v ", err)
-				}
-			}()
+			return gitRepository, nil
 		}
 
+		// minimum lease TTL is 5-second
+		grantResp, err := ctx.EtcdClient.Grant(context.Background(), 5)
+		if err != nil {
+			return nil, err
+		}
+
+		// put key with lease
+		_, err = ctx.EtcdClient.Put(context.Background(), key, "lock", clientv3.WithLease(grantResp.ID))
+		if err != nil {
+			return nil, err
+		}
+
+		// keep alive
+		_, err = ctx.EtcdClient.KeepAlive(context.Background(), grantResp.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		defer func() {
+			_, err = ctx.EtcdClient.Revoke(context.Background(), grantResp.ID)
+			if err != nil {
+				logrus.Errorf("failed to revoke etcd, err: %v ", err)
+			}
+		}()
+
+		err = gitmodule.SyncExternalRepository(path.Join(conf.RepoRoot(), repo.Path))
+		if err != nil {
+			return nil, err
+		}
 	}
-	gitRepository.IsExternal = repo.IsExternal
-	gitRepository.RwLock = repo.RwMutex
 
 	return gitRepository, nil
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	"github.com/erda-project/erda/pkg/dumpstack"
 )
 

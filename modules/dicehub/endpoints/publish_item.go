@@ -916,7 +916,7 @@ func getMobileType(mobileType string) (apistructs.ResourceType, error) {
 	}
 
 	if mobileType != string(apistructs.ResourceTypeIOS) && mobileType != string(apistructs.ResourceTypeAndroid) &&
-		mobileType != string(apistructs.ResourceTypeH5) {
+		mobileType != string(apistructs.ResourceTypeH5) && mobileType != string(apistructs.ResourceTypeAndroidAppBundle) {
 		return "", errors.New("mobileType is invalied")
 	}
 

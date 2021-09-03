@@ -33,8 +33,8 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
-	tasks, err := s.dbClient.ListPipelineTasksByPipelineID(p.ID)
+func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage) error {
+	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
 	}
@@ -66,6 +66,9 @@ func (s *PipelineSvc) PreCheck(p *spec.Pipeline) error {
 	extSearchReq := make([]string, 0)
 	actionTypeVerMap := make(map[string]struct{})
 	for _, task := range tasks {
+		if task.Type == apistructs.ActionTypeSnippet {
+			continue
+		}
 		typeVersion := task.Extra.Action.GetActionTypeVersion()
 		if _, ok := actionTypeVerMap[typeVersion]; ok {
 			continue

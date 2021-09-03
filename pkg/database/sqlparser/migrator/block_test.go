@@ -61,13 +61,13 @@ func TestAppendBlock(t *testing.T) {
 
 	var (
 		actualTypes       = []migrator.StmtType{migrator.DDL, migrator.DML, migrator.DDL, migrator.DML}
-		actualNodesLength = []int{2,2,1,1}
+		actualNodesLength = []int{2, 2, 1, 1}
 	)
 	for i := range blocks {
 		if typ := blocks[i]; typ.Type() != actualTypes[i] {
 			t.Fatalf("blocks[%v] type is error, type: %s", i, typ.Type())
 		}
-		if length:=len(blocks[i].Nodes());length != actualNodesLength[i] {
+		if length := len(blocks[i].Nodes()); length != actualNodesLength[i] {
 			t.Fatalf("blocks[%v] nodes length is error, lenght: %v", i, length)
 		}
 	}

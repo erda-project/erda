@@ -22,6 +22,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -29,13 +30,15 @@ import (
 	"github.com/rancher/remotedialer"
 
 	"github.com/erda-project/erda/modules/cluster-agent/config"
+	"github.com/erda-project/erda/pkg/discover"
 )
 
 var connected = make(chan struct{})
 
 const (
-	tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-	rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	inClusterKey = "DICE_CLUSTER_NAME"
+	tokenFile    = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	rootCAFile   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
 func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
@@ -53,6 +56,27 @@ func getClusterInfo(apiserverAddr string) (map[string]interface{}, error) {
 		"token":   strings.TrimSpace(string(token)),
 		"caCert":  base64.StdEncoding.EncodeToString(caData),
 	}, nil
+}
+
+func parseDialerEndpoint(clusterKey, endpoint string) (string, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
+	}
+
+	//inCluster, visit dialer inner service first.
+	if os.Getenv(inClusterKey) == clusterKey && discover.ClusterDialer() != "" {
+		return "ws://" + discover.ClusterDialer() + u.Path, nil
+	}
+
+	switch u.Scheme {
+	case "https":
+		u.Scheme = "wss"
+	case "http":
+		u.Scheme = "ws"
+	}
+
+	return u.String(), nil
 }
 
 func Start(ctx context.Context, cfg *config.Config) error {
@@ -73,19 +97,13 @@ func Start(ctx context.Context, cfg *config.Config) error {
 		headers["X-Erda-Cluster-Info"] = []string{base64.StdEncoding.EncodeToString(bytes)}
 	}
 
-	u, err := url.Parse(cfg.ClusterDialEndpoint)
+	ep, err := parseDialerEndpoint(cfg.ClusterKey, cfg.ClusterDialEndpoint)
 	if err != nil {
 		return err
 	}
-	switch u.Scheme {
-	case "https":
-		u.Scheme = "wss"
-	case "http":
-		u.Scheme = "ws"
-	}
 
 	for {
-		remotedialer.ClientConnect(ctx, u.String(), headers, nil, func(proto, address string) bool {
+		remotedialer.ClientConnect(ctx, ep, headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
 				return true
