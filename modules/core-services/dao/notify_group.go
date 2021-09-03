@@ -83,8 +83,6 @@ func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupReq
 	}
 	if request.Label != "" {
 		query = query.Where("label =? ", request.Label)
-	} else {
-		query = query.Where("label not like ?", "%msp%")
 	}
 	if request.ClusterName != "" {
 		query = query.Where("cluster_name =? ", request.ClusterName)
