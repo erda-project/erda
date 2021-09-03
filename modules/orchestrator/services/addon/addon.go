@@ -1059,6 +1059,11 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 		return err
 	}
 
+	oldconfig := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(instance.Config), &oldconfig); err != nil {
+		return err
+	}
+
 	logExporterMap := map[string]string{}
 	for k, v := range *configReq {
 		// 环境变量interface转为string操作
@@ -1071,6 +1076,13 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 		}
 		// ============= end ===============
 		if strings.Contains(strings.ToLower(k), "pass") || strings.Contains(strings.ToLower(k), "secret") {
+			oldV, ok := (oldconfig)[k]
+			// the encrypted value has not changed
+			if ok && IsEncryptedValueByValue(v.(string)) {
+				(*configReq)[k] = oldV
+				continue
+			}
+
 			encryptPassword := v.(string)
 			if instance.KmsKey == "" {
 				encryptPassword, err = a.encrypt.EncryptPassword(v.(string))
@@ -1092,19 +1104,6 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 
 			(*configReq)[k] = encryptPassword
 			(*configReq)[apistructs.AddonPasswordHasEncripy] = "YES"
-		}
-	}
-	oldconfig := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(instance.Config), &oldconfig); err != nil {
-		return err
-	}
-	for k, v := range oldconfig {
-		if IsEncryptedValueByKey(k) {
-			v1, ok := (*configReq)[k]
-			// the encrypted value has not changed
-			if ok && IsEncryptedValueByValue(v1.(string)) {
-				(*configReq)[k] = v
-			}
 		}
 	}
 
