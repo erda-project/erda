@@ -272,22 +272,26 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 		if err != nil {
 			return err
 		}
-		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
-			Audit: apistructs.Audit{
-				UserID:       req.UserID,
-				ScopeType:    apistructs.ProjectScope,
-				ScopeID:      testPlan.ProjectID,
-				OrgID:        project.OrgID,
-				Result:       "success",
-				StartTime:    now,
-				EndTime:      now,
-				TemplateName: apistructs.ArchiveTestplanTemplate,
-				Context: map[string]interface{}{
-					"projectId":    project.ID,
-					"projectName":  project.Name,
-					"testPlanName": testPlan.Name,
-				},
+		audit := apistructs.Audit{
+			UserID:       req.UserID,
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      testPlan.ProjectID,
+			OrgID:        project.OrgID,
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+			TemplateName: apistructs.ArchiveTestplanTemplate,
+			Context: map[string]interface{}{
+				"projectId":    project.ID,
+				"projectName":  project.Name,
+				"testPlanName": testPlan.Name,
 			},
+		}
+		if !*req.IsArchived {
+			audit.TemplateName = apistructs.CancelArchiveTestPlanTemplate
+		}
+		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+			Audit: audit,
 		})
 	}
 	return nil

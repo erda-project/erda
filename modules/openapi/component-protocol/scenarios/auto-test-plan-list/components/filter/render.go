@@ -28,6 +28,11 @@ func RenderCreator() protocol.CompRender {
 	return &AutoTestPlanFilter{}
 }
 
+type Value struct {
+	Archive []string `json:"archive"`
+	Name    string   `json:"name"`
+}
+
 func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	if event.Operation.String() == "filter" {
 		if _, ok := c.State["values"]; ok {
@@ -35,16 +40,22 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 			if err != nil {
 				return err
 			}
-			var values map[string]string
+			var values Value
 			if err := json.Unmarshal(fiterDataBytes, &values); err != nil {
 				return err
 			}
-			for k, v := range values {
-				c.State[k] = v
+
+			c.State["name"] = values.Name
+			if _, ok := c.State["archive"]; ok {
+				c.State["archive"] = nil
+			}
+			if len(values.Archive) == 1 {
+				c.State["archive"] = values.Archive[0] == "archived"
 			}
 		}
 	} else {
 		c.State["name"] = ""
+		c.State["archive"] = false
 	}
 
 	return nil

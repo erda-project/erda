@@ -1811,5 +1811,16 @@
       "zh": "",
       "en": ""
     }
+  },
+  "cancelArchiveTestPlan": {
+    "desc": "测试计划取消归档",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对测试计划 [@testPlanName] 取消了归档",
+      "en": "Cancel archive test plan [@testPlanName] in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
   }
 }
