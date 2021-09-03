@@ -203,4 +203,6 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.21.2
 	k8s.io/mount-utils => k8s.io/mount-utils v0.21.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.21.2
+
+	github.com/erda-project/erda-proto-go => /Users/terminus/go/src/github.com/erda-proto-go
 )
