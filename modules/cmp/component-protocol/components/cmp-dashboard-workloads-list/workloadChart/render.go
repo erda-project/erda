@@ -23,11 +23,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -39,7 +34,6 @@ func init() {
 
 func (c *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	_ cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
-	c.InitComponent(ctx)
 	if err := c.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadChart component state, %v", err)
 	}
@@ -47,13 +41,6 @@ func (c *ComponentWorkloadChart) Render(ctx context.Context, component *cptype.C
 		return fmt.Errorf("faield to set workloadChart component value, %v", err)
 	}
 	return nil
-}
-
-func (c *ComponentWorkloadChart) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
-	c.bdl = bdl
-	sdk := cputil.SDK(ctx)
-	c.sdk = sdk
 }
 
 func (c *ComponentWorkloadChart) GenComponentState(component *cptype.Component) error {
@@ -97,109 +84,25 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		"CronJobs", "Jobs", "DaemonSets", "StatefulSets", "Deployments",
 	}
 
-	userID := c.sdk.Identity.UserID
-	orgID := c.sdk.Identity.OrgID
-	req := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		ClusterName: c.State.ClusterName,
-	}
-
 	// deployment
-	var activeDeploy, errorDeploy int
-	req.Type = apistructs.K8SDeployment
-	obj, err := c.bdl.ListSteveResource(&req)
-	if err != nil {
-		return err
-	}
-	list := obj.Slice("data")
-	for _, obj := range list {
-		status, _, err := cmpcputil.ParseWorkloadStatus(obj)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		if status == "Active" {
-			activeDeploy++
-		} else {
-			errorDeploy++
-		}
-	}
+	activeDeploy := c.State.Values.DeploymentsCount.Active
+	errorDeploy := c.State.Values.DeploymentsCount.Error
 
 	// daemonSet
-	var activeDs, errorDs int
-	req.Type = apistructs.K8SDaemonSet
-	obj, err = c.bdl.ListSteveResource(&req)
-	if err != nil {
-		return err
-	}
-	list = obj.Slice("data")
-	for _, obj := range list {
-		status, _, err := cmpcputil.ParseWorkloadStatus(obj)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		if status == "Active" {
-			activeDs++
-		} else {
-			errorDs++
-		}
-	}
+	activeDs := c.State.Values.DaemonSetCount.Active
+	errorDs := c.State.Values.DaemonSetCount.Error
 
 	// statefulSet
-	var activeSs, errorSs int
-	req.Type = apistructs.K8SStatefulSet
-	obj, err = c.bdl.ListSteveResource(&req)
-	if err != nil {
-		return err
-	}
-	list = obj.Slice("data")
-	for _, obj := range list {
-		status, _, err := cmpcputil.ParseWorkloadStatus(obj)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		if status == "Active" {
-			activeSs++
-		} else {
-			errorSs++
-		}
-	}
+	activeSs := c.State.Values.StatefulSetCount.Active
+	errorSs := c.State.Values.StatefulSetCount.Error
 
 	// job
-	var activeJob, succeededJob, failedJob int
-	req.Type = apistructs.K8SJob
-	obj, err = c.bdl.ListSteveResource(&req)
-	if err != nil {
-		return err
-	}
-	list = obj.Slice("data")
-	for _, obj := range list {
-		status, _, err := cmpcputil.ParseWorkloadStatus(obj)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		if status == "Failed" {
-			failedJob++
-		} else if status != "Active" {
-			activeJob++
-		} else {
-			succeededJob++
-		}
-	}
+	activeJob := c.State.Values.JobCount.Active
+	succeededJob := c.State.Values.JobCount.Succeeded
+	failedJob := c.State.Values.JobCount.Failed
 
 	// cronjob
-	var activeCronJob int
-	req.Type = apistructs.K8SCronJob
-	obj, err = c.bdl.ListSteveResource(&req)
-	if err != nil {
-		return err
-	}
-	list = obj.Slice("data")
-	activeCronJob = len(list)
+	activeCronJob := c.State.Values.CronJobCount.Active
 
 	activeSeries := Series{
 		Name:     "Active",

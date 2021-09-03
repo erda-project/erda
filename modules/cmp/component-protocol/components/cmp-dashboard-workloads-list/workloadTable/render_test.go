@@ -15,11 +15,13 @@
 package workloadTable
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 )
@@ -40,6 +42,28 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 				Kind:      []string{"test"},
 				Status:    []string{"test"},
 				Search:    "test",
+			},
+			"countValues": CountValues{
+				DeploymentsCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				DaemonSetCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				StatefulSetCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				JobCount: Count{
+					Active:    1,
+					Succeeded: 1,
+					Failed:    1,
+				},
+				CronJobCount: Count{
+					Active: 1,
+				},
 			},
 		},
 	}
@@ -65,39 +89,52 @@ func TestComponentWorkloadTable_GenComponentState(t *testing.T) {
 	}
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestComponentWorkloadTable_SetComponentValue(t *testing.T) {
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
 	w := ComponentWorkloadTable{}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 5 {
 		t.Errorf("test failed, expected length of columns in props is 5, actual %d", len(w.Props.Columns))
 	}
 
 	w.State.Values.Kind = []string{filter.DeploymentType}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 8 {
 		t.Errorf("test failed, expected length of columns in props is 8, actual %d", len(w.Props.Columns))
 	}
 
 	w.State.Values.Kind = []string{filter.DaemonSetType}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 10 {
 		t.Errorf("test failed, expected length of columns in props is 10, actual %d", len(w.Props.Columns))
 	}
 
 	w.State.Values.Kind = []string{filter.StatefulSetType}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 6 {
 		t.Errorf("test failed, expected length of columns in props is 6, actual %d", len(w.Props.Columns))
 	}
 
 	w.State.Values.Kind = []string{filter.JobType}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 7 {
 		t.Errorf("test failed, expected length of columns in props is 7, actual %d", len(w.Props.Columns))
 	}
 
 	w.State.Values.Kind = []string{filter.CronJobType}
-	w.SetComponentValue()
+	w.SetComponentValue(ctx)
 	if len(w.Props.Columns) != 7 {
 		t.Errorf("test failed, expected length of columns in props is 7, actual %d", len(w.Props.Columns))
 	}

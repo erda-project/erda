@@ -34,13 +34,29 @@ type ComponentWorkloadTable struct {
 }
 
 type State struct {
-	ClusterName           string `json:"clusterName,omitempty"`
-	PageNo                uint64 `json:"pageNo"`
-	PageSize              uint64 `json:"pageSize"`
-	Sorter                Sorter `json:"sorterData,omitempty"`
-	Total                 uint64 `json:"total"`
-	Values                Values `json:"values,omitempty"`
-	WorkloadTableURLQuery string `json:"workloadTable__urlQuery,omitempty"`
+	ClusterName           string      `json:"clusterName,omitempty"`
+	CountValues           CountValues `json:"countValues,omitempty"`
+	PageNo                uint64      `json:"pageNo"`
+	PageSize              uint64      `json:"pageSize"`
+	Sorter                Sorter      `json:"sorterData,omitempty"`
+	Total                 uint64      `json:"total"`
+	Values                Values      `json:"values,omitempty"`
+	WorkloadTableURLQuery string      `json:"workloadTable__urlQuery,omitempty"`
+}
+
+type CountValues struct {
+	DeploymentsCount Count `json:"deploymentsCount,omitempty"`
+	DaemonSetCount   Count `json:"daemonSetCount,omitempty"`
+	StatefulSetCount Count `json:"statefulSetCount,omitempty"`
+	JobCount         Count `json:"jobCount,omitempty"`
+	CronJobCount     Count `json:"cronJobCount,omitempty"`
+}
+
+type Count struct {
+	Active    int `json:"active"`
+	Error     int `json:"error"`
+	Succeeded int `json:"succeeded"`
+	Failed    int `json:"failed"`
 }
 
 type Sorter struct {
