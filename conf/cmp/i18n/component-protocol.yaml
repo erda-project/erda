@@ -8,6 +8,7 @@ zh:
  images: 镜像
  labels: 标签
  annotations: 注释
+ project: 项目名
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: 上次触发时间
@@ -72,6 +73,7 @@ en:
  images: Images
  labels: Labels
  annotations: Annotations
+ project: Project Name
 
  # cmp-dashboard-events-list.eventTable
  lastSeen: Last Seen

@@ -177,7 +177,7 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
 			displayName, err := f.getDisplayName(name)
 			if err == nil {
-				option.Label = displayName
+				option.Label = fmt.Sprintf("%s (%s: %s)", name, cputil.I18n(ctx, "project"), displayName)
 				switch suf {
 				case "-dev":
 					devNs.Children = append(devNs.Children, option)
