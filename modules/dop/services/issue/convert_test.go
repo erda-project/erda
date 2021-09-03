@@ -19,9 +19,10 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/magiconair/properties/assert"
+
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/i18n"
-	"github.com/magiconair/properties/assert"
 )
 
 func TestIssue_getIssueExportDataI18n(t *testing.T) {
