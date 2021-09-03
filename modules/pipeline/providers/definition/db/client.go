@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conf
+package db
 
-import (
-	"github.com/erda-project/erda/modules/soldier/settings"
-	"github.com/erda-project/erda/pkg/envconf"
-)
+import "github.com/erda-project/erda-infra/providers/mysqlxorm"
 
-type Conf struct {
-	//CollectorURL string `env:"COLLECTOR_URL" default:"http://collector.marathon.l4lb.thisdcos.directory:7076"`
-}
-
-var cfg Conf
-
-func Load() {
-	settings.LoadEnv()
-	envconf.MustLoad(&cfg)
+type Client struct {
+	mysqlxorm.Interface
 }
