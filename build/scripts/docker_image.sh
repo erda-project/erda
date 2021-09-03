@@ -30,11 +30,8 @@ EXTENSION_ZIP_ADDRS=$3
 cd $(git rev-parse --show-toplevel)
 
 # image version and url
-# TODO: revert to use make-version script
-VERSION="$(head -n 1 VERSION)"
-IMAGE_TAG="${VERSION}-$(date '+%Y%m%d')-$(git rev-parse --short HEAD)"
-# VERSION="$(build/scripts/make-version.sh)"
-# IMAGE_TAG="$(build/scripts/make-version.sh tag)"
+VERSION="$(build/scripts/make-version.sh)"
+IMAGE_TAG="$(build/scripts/make-version.sh tag)"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 DOCKERFILE=${DOCKERFILE_DEFAULT}
