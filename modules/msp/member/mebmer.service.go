@@ -91,6 +91,8 @@ func (m memberService) DeleteMember(ctx context.Context, request *pb.DeleteMembe
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	userId := apis.GetUserID(ctx)
+	deleteReq.IdentityInfo.UserID = userId
 	err = m.p.bdl.DeleteMember(deleteReq)
 	if err != nil {
 		return nil, err
