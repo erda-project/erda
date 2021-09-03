@@ -33,7 +33,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210901113044-1130cdf38f06
-	github.com/erda-project/erda-proto-go v0.0.0-20210901121708-647027e3a306
+	github.com/erda-project/erda-proto-go v0.0.0-20210903092110-0e5c7079f914
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -169,6 +169,8 @@ require (
 )
 
 replace (
+
+	github.com/erda-project/erda-proto-go => /Users/terminus/go/src/github.com/erda-proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2
 	github.com/influxdata/influxql => github.com/erda-project/influxql v1.1.0-ex
@@ -203,6 +205,4 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.21.2
 	k8s.io/mount-utils => k8s.io/mount-utils v0.21.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.21.2
-
-	github.com/erda-project/erda-proto-go => /Users/terminus/go/src/github.com/erda-proto-go
 )
