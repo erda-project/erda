@@ -1933,10 +1933,30 @@ func (topology *provider) translation(r *http.Request, params translation) inter
 }
 
 // db/cache
-func (topology *provider) dbTransaction(r *http.Request, params translation) interface{} {
-	if params.Layer != "db" && params.Layer != "cache" {
+func (topology *provider) middlewareTransaction(r *http.Request, params translation) interface{} {
+	if params.Layer != "db" && params.Layer != "cache" && params.Layer != "mq" {
 		return api.Errors.Internal(errors.New("not supported layer name"))
 	}
+	result, err := topology.middlewareStrategy(params)
+	if err != nil {
+		return api.Errors.Internal(err)
+	}
+	return api.Success(result)
+}
+
+func (topology *provider) middlewareStrategy(params translation) (map[string]interface{}, error) {
+	switch params.Layer {
+	case "db":
+		return topology.dbOrCacheTranslation(params)
+	case "cache":
+		return topology.dbOrCacheTranslation(params)
+	case "mq":
+		return topology.mqTranslation(params)
+	}
+	return nil, errors.New("no support middleware type")
+}
+
+func (topology *provider) dbOrCacheTranslation(params translation) (map[string]interface{}, error) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -1944,7 +1964,6 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 	var orderby string
 	param := make(map[string]interface{})
 	param["terminusKey"] = params.TerminusKey
-	param["filterServiceName"] = params.FilterServiceName
 	param["serviceId"] = params.ServiceId
 	if params.Search != "" {
 		where.WriteString(" AND db_statement::tag=~$field")
@@ -1962,7 +1981,7 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 
 	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
-		"source_service_name::tag=$filterServiceName AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
+		"AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
 		params.Layer, where.String(), orderby)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
@@ -1970,7 +1989,7 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 		param,
 		options)
 	if err != nil {
-		return api.Errors.Internal(err)
+		return nil, err
 	}
 
 	result := make(map[string]interface{}, 0)
@@ -2005,7 +2024,7 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 			},
 			options)
 		if err != nil {
-			return api.Errors.Internal(err)
+			return nil, err
 		}
 		for _, item := range slowElapsedCount.ResultSet.Rows {
 			itemResult["slow_elapsed_count"] = item[0]
@@ -2013,7 +2032,85 @@ func (topology *provider) dbTransaction(r *http.Request, params translation) int
 		data = append(data, itemResult)
 	}
 	result["data"] = data
-	return api.Success(result)
+	return result, nil
+}
+
+func (topology *provider) mqTranslation(params translation) (map[string]interface{}, error) {
+	options := url.Values{}
+	options.Set("start", strconv.FormatInt(params.Start, 10))
+	options.Set("end", strconv.FormatInt(params.End, 10))
+	var where bytes.Buffer
+	var orderby string
+	param := make(map[string]interface{})
+	param["terminusKey"] = params.TerminusKey
+	param["serviceId"] = params.ServiceId
+	if params.Search != "" {
+		where.WriteString(" AND message_bus_destination::tag=~$field")
+		param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+	}
+
+	// elapsed_mean desc
+	if params.Sort == 0 {
+		orderby = " ORDER BY avg(elapsed_mean::field) DESC"
+	}
+	// error elapsed_count desc
+	if params.Sort == 1 {
+		orderby = " ORDER BY sum(elapsed_count::field) DESC"
+	}
+
+	sql := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
+		"AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s", params.Layer, where.String(), orderby)
+	source, err := topology.metricq.Query(
+		metricq.InfluxQL,
+		sql,
+		param,
+		options)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]interface{}, 0)
+	cols := []map[string]interface{}{
+		{"_key": "tags.message_bus_destination", "flag": "tag|groupby", "key": "topic"},
+		{"_key": "tags.span_kind", "flag": "tag", "key": "type"},
+		{"_key": "tags.component", "flag": "tag", "key": "component"},
+		{"_key": "tags.host", "flag": "tag", "key": "host"},
+		{"_key": "", "flag": "field|func|agg", "key": "call_count"},
+		{"_key": "", "flag": "field|func|agg", "key": "avg_elapsed"},
+		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
+	}
+	result["cols"] = cols
+	data := make([]map[string]interface{}, 0)
+	for _, r := range source.ResultSet.Rows {
+		itemResult := make(map[string]interface{})
+		itemResult["topic"] = r[0]
+		itemResult["type"] = r[1]
+		itemResult["component"] = r[2]
+		itemResult["host"] = r[3]
+		itemResult["call_count"] = r[4]
+		itemResult["avg_elapsed"] = r[5]
+		sql := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
+			"AND message_bus_destination::tag=$field AND source_terminus_key::tag=$terminusKey", params.Layer)
+		slowElapsedCount, err := topology.metricq.Query(
+			metricq.InfluxQL,
+			sql,
+			map[string]interface{}{
+				"field":       conv.ToString(r[0]),
+				"terminusKey": params.TerminusKey,
+				"serviceId":   params.ServiceId,
+			},
+			options)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range slowElapsedCount.ResultSet.Rows {
+			itemResult["slow_elapsed_count"] = item[0]
+		}
+		data = append(data, itemResult)
+	}
+	result["data"] = data
+	return result, nil
 }
 
 func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
