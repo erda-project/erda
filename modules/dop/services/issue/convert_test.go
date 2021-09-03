@@ -34,6 +34,8 @@ func TestIssue_getIssueExportDataI18n(t *testing.T) {
 	defer m.Unpatch()
 
 	svc := New(WithBundle(bdl))
-	strs := svc.getIssueExportDataI18n("testKey", "test")
-	assert.Equal(t, strs, []string{"test"})
+	content := ",a,b,c"
+	expected := []string{"", "a", "b", "c"}
+	strs := svc.getIssueExportDataI18n("testKey", content)
+	assert.Equal(t, strs, expected)
 }
