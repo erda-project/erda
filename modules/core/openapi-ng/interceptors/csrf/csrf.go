@@ -28,6 +28,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/random"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/openapi-ng/common"
 	"github.com/erda-project/erda/modules/core/openapi-ng/interceptors"
@@ -63,6 +64,7 @@ func GetToken(ctx context.Context) string {
 
 // +provider
 type provider struct {
+	Log       logs.Logger
 	Cfg       *config
 	generator *tokenGenerator
 	extractor csrfTokenExtractor
@@ -148,8 +150,8 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 				if !p.generator.valid(token, clientToken, r) {
-					rw.WriteHeader(http.StatusForbidden)
-					common.WriteError(errors.New("invalid csrf token"), rw)
+					p.Log.Warnf("invalid csrf token: %s", token)
+					p.setCSRFCookie(rw, r, "")
 					return
 				}
 			}
@@ -159,26 +161,15 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 			token = p.generator.gen(r)
 		}
 
-		// Set CSRF cookie
-		cookie := new(http.Cookie)
-		cookie.Name = p.Cfg.CookieName
-		cookie.Value = token
-		if p.Cfg.CookiePath != "" {
-			cookie.Path = p.Cfg.CookiePath
-		}
-		if p.Cfg.CookieDomain != "" {
-			cookie.Domain = p.Cfg.CookieDomain
-		}
-		cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
-		cookie.Secure = p.Cfg.CookieSecure
-		cookie.HttpOnly = p.Cfg.CookieHTTPOnly
-		http.SetCookie(rw, cookie)
-
 		// Store token in the context
 		r = r.WithContext(context.WithValue(r.Context(), contextKey{}, token))
 
 		// Protect clients from caching the response
 		rw.Header().Add(echo.HeaderVary, echo.HeaderCookie)
+
+		// Set CSRF cookie
+		p.setCSRFCookie(rw, r, token)
+
 		h(rw, r)
 	}
 }
@@ -202,6 +193,26 @@ var tokenGenerators = map[string]func(*config, []string) (*tokenGenerator, error
 			},
 		}, nil
 	},
+}
+
+// setCSRFCookie set CSRF cookie
+func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token string) {
+	if token == "" {
+		token = p.generator.gen(r)
+	}
+	cookie := new(http.Cookie)
+	cookie.Name = p.Cfg.CookieName
+	cookie.Value = token
+	if p.Cfg.CookiePath != "" {
+		cookie.Path = p.Cfg.CookiePath
+	}
+	if p.Cfg.CookieDomain != "" {
+		cookie.Domain = p.Cfg.CookieDomain
+	}
+	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
+	cookie.Secure = p.Cfg.CookieSecure
+	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
+	http.SetCookie(rw, cookie)
 }
 
 // csrfTokenFromForm returns a `csrfTokenExtractor` that extracts token from the
