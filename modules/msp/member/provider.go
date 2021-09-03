@@ -16,7 +16,7 @@ package member
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/msp/apm/member/pb"
+	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
 )

@@ -16,11 +16,10 @@ package member
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-proto-go/msp/apm/member/pb"
+	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"strconv"
 )
 
 type memberService struct {
@@ -28,39 +27,58 @@ type memberService struct {
 }
 
 func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemberRolesRequest) (*pb.ListMemberRolesResponse, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	roleReq := apistructs.ListScopeManagersByScopeIDRequest{}
-	err = json.Unmarshal(data, &roleReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	orgId := apis.GetOrgID(ctx)
-	orgID, err := strconv.ParseInt(orgId, 10, 64)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	roleList, err := m.p.bdl.ListMemberRoles(roleReq, orgID)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	result := &pb.ListMemberRolesResponse{
+	//data, err := json.Marshal(request)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//roleReq := apistructs.ListScopeManagersByScopeIDRequest{}
+	//err = json.Unmarshal(data, &roleReq)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//orgId := apis.GetOrgID(ctx)
+	//orgID, err := strconv.ParseInt(orgId, 10, 64)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//roleList, err := m.p.bdl.ListMemberRoles(roleReq, orgID)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//result := &pb.ListMemberRolesResponse{
+	//	Data: &pb.RoleList{
+	//		List: make([]*pb.RoleInfo, 0),
+	//	},
+	//}
+	//data, err = json.Marshal(roleList.List)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//err = json.Unmarshal(data, &result.Data.List)
+	//if err != nil {
+	//	return nil, errors.NewInternalServerError(err)
+	//}
+	//result.Data.Total = int64(roleList.Total)
+	//return result, nil
+	return &pb.ListMemberRolesResponse{
 		Data: &pb.RoleList{
-			List: make([]*pb.RoleInfo, 0),
+			List: []*pb.RoleInfo{
+				{
+					Role: "Owner",
+					Name: "项目所有者",
+				},
+				{
+					Role: "Lead",
+					Name: "研发主管",
+				},
+				{
+					Role: "Dev",
+					Name: "开发工程师",
+				},
+			},
+			Total: 3,
 		},
-	}
-	data, err = json.Marshal(roleList.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	err = json.Unmarshal(data, &result.Data.List)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	result.Data.Total = int64(roleList.Total)
-	return result, nil
+	}, nil
 }
 
 func (m memberService) DeleteMember(ctx context.Context, request *pb.DeleteMemberRequest) (*pb.DeleteMemberResponse, error) {
