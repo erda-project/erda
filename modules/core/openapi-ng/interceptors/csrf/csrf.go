@@ -43,7 +43,7 @@ type config struct {
 	CookieDomain      string        `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
 	CookiePath        string        `file:"cookie_path" default:"/" desc:"path of the CSRF cookie. optional."`
 	CookieMaxAge      time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the CSRF cookie. optional."`
-	CookieHTTPOnly    bool          `file:"cookie_http_only" desc:"indicates if CSRF cookie is HTTP only. optional."`
+	CookieHTTPOnly    bool          `file:"cookie_http_only" default:"true" desc:"indicates if CSRF cookie is HTTP only. optional."`
 }
 
 type (
@@ -220,8 +220,9 @@ func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token 
 		cookie.Domain = p.Cfg.CookieDomain
 	}
 	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
-	cookie.Secure = r.URL.Scheme == "https"
+	cookie.Secure = p.getScheme(r) == "https"
 	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
+	fmt.Println("===---", cookie.Secure, p.getScheme(r), p.getScheme(r) == "https")
 	http.SetCookie(rw, cookie)
 	return token
 }
@@ -256,6 +257,30 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 		}
 		return token, nil
 	}
+}
+
+func (p *provider) getScheme(r *http.Request) string {
+	// get from standard header first
+	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"), r.URL.Scheme)
+	if len(proto) > 0 {
+		return proto
+	}
+	return "https"
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if len(s) > 0 {
+			list := strings.Split(s, ",")
+			for _, item := range list {
+				v := strings.ToLower(strings.TrimSpace(item))
+				if len(v) > 0 {
+					return v
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func init() {
