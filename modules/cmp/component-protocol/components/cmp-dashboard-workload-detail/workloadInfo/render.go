@@ -21,10 +21,10 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	cputil2 "github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
+	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -41,7 +41,7 @@ func (i *ComponentWorkloadInfo) Render(ctx context.Context, component *cptype.Co
 	if err := i.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen workloadInfo component state, %v", err)
 	}
-	if err := i.SetComponentValue(); err != nil {
+	if err := i.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set workloadInfo component value, %v", err)
 	}
 	return nil
@@ -50,7 +50,7 @@ func (i *ComponentWorkloadInfo) Render(ctx context.Context, component *cptype.Co
 func (i *ComponentWorkloadInfo) InitComponent(ctx context.Context) {
 	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	i.bdl = bdl
-	sdk := cputil2.SDK(ctx)
+	sdk := cputil.SDK(ctx)
 	i.sdk = sdk
 }
 
@@ -70,8 +70,8 @@ func (i *ComponentWorkloadInfo) GenComponentState(component *cptype.Component) e
 	return nil
 }
 
-func (i *ComponentWorkloadInfo) SetComponentValue() error {
-	kind, namespace, name, err := cputil.ParseWorkloadID(i.State.WorkloadID)
+func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
+	kind, namespace, name, err := cmpcputil.ParseWorkloadID(i.State.WorkloadID)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (i *ComponentWorkloadInfo) SetComponentValue() error {
 		return err
 	}
 
-	age, images, err := cputil.GetWorkloadAgeAndImage(obj)
+	age, images, err := cmpcputil.GetWorkloadAgeAndImage(obj)
 	if err != nil {
 		return err
 	}
@@ -118,26 +118,26 @@ func (i *ComponentWorkloadInfo) SetComponentValue() error {
 	i.Props.ColumnNum = 4
 	i.Props.Fields = []Field{
 		{
-			Label:    "Namespace",
+			Label:    cputil.I18n(ctx, "namespace"),
 			ValueKey: "namespace",
 		},
 		{
-			Label:    "Age",
+			Label:    cputil.I18n(ctx, "age"),
 			ValueKey: "age",
 		},
 		{
-			Label:      "Images",
+			Label:      cputil.I18n(ctx, "images"),
 			ValueKey:   "images",
 			RenderType: "copyText",
 		},
 		{
-			Label:      "Labels",
+			Label:      cputil.I18n(ctx, "labels"),
 			ValueKey:   "labels",
 			RenderType: "tagsRow",
 			SpaceNum:   2,
 		},
 		{
-			Label:      "Annotations",
+			Label:      cputil.I18n(ctx, "annotations"),
 			ValueKey:   "annotations",
 			RenderType: "tagsRow",
 			SpaceNum:   2,

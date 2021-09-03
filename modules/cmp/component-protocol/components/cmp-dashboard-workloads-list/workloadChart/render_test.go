@@ -24,7 +24,28 @@ import (
 func TestComponentWorkloadChart_GenComponentState(t *testing.T) {
 	component := &cptype.Component{
 		State: map[string]interface{}{
-			"clusterName": "test",
+			"values": Values{
+				DeploymentsCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				DaemonSetCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				StatefulSetCount: Count{
+					Active: 1,
+					Error:  1,
+				},
+				JobCount: Count{
+					Active:    1,
+					Succeeded: 1,
+					Failed:    1,
+				},
+				CronJobCount: Count{
+					Active: 1,
+				},
+			},
 		},
 	}
 	src, err := json.Marshal(component.State)

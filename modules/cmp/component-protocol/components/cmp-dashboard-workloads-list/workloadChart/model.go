@@ -15,16 +15,11 @@
 package workloadChart
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentWorkloadChart struct {
 	base.DefaultProvider
-	bdl *bundle.Bundle
-	sdk *cptype.SDK
 
 	Type  string `json:"type,omitempty"`
 	State State  `json:"state,omitempty"`
@@ -32,7 +27,22 @@ type ComponentWorkloadChart struct {
 }
 
 type State struct {
-	ClusterName string `json:"clusterName,omitempty"`
+	Values Values `json:"values,omitempty"`
+}
+
+type Values struct {
+	DeploymentsCount Count `json:"deploymentsCount,omitempty"`
+	DaemonSetCount   Count `json:"daemonSetCount,omitempty"`
+	StatefulSetCount Count `json:"statefulSetCount,omitempty"`
+	JobCount         Count `json:"jobCount,omitempty"`
+	CronJobCount     Count `json:"cronJobCount,omitempty"`
+}
+
+type Count struct {
+	Active    int `json:"active"`
+	Error     int `json:"error"`
+	Succeeded int `json:"succeeded"`
+	Failed    int `json:"failed"`
 }
 
 type Props struct {

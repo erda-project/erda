@@ -26,15 +26,7 @@ components:
 rendering:
   __DefaultRendering__:
     - name: page
-    - name: workloadTitle
-      state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
     - name: filter
-      state:
-        - name: "clusterName"
-          value: "{{ __InParams__.clusterName }}"
-    - name: workloadChart
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
@@ -42,8 +34,24 @@ rendering:
       state:
         - name: "clusterName"
           value: "{{ __InParams__.clusterName }}"
+    - name: workloadTitle
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+    - name: workloadChart
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
   filter:
     - name: workloadTable
       state:
         - name: "values"
           value: "{{ filter.values }}"
+    - name: workloadTitle
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+    - name: workloadChart
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
