@@ -259,14 +259,29 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 }
 
 func (p *provider) getScheme(r *http.Request) string {
+	// get from standard header first
+	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"))
+	if proto != "" {
+		return proto
+	}
+	// get from referer
 	referer := r.Header.Get("Referer")
-	scheme := "http"
+	scheme := "https"
 	if u, err := url.Parse(referer); err == nil && len(u.Scheme) > 0 {
 		scheme = u.Scheme
 	} else if len(r.URL.Scheme) > 0 {
 		scheme = r.URL.Scheme
 	}
 	return scheme
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func init() {
