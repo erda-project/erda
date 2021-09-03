@@ -222,6 +222,7 @@ func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token 
 	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
 	cookie.Secure = p.getScheme(r) == "https"
 	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
+	fmt.Println("===---", cookie.Secure, p.getScheme(r), p.getScheme(r) == "https")
 	http.SetCookie(rw, cookie)
 	return token
 }
@@ -260,25 +261,23 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 
 func (p *provider) getScheme(r *http.Request) string {
 	// get from standard header first
-	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"))
-	if proto != "" {
+	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"), r.URL.Scheme)
+	if len(proto) > 0 {
 		return proto
 	}
-	// get from referer
-	referer := r.Header.Get("Referer")
-	scheme := "https"
-	if u, err := url.Parse(referer); err == nil && len(u.Scheme) > 0 {
-		scheme = u.Scheme
-	} else if len(r.URL.Scheme) > 0 {
-		scheme = r.URL.Scheme
-	}
-	return scheme
+	return "https"
 }
 
 func firstNonEmpty(ss ...string) string {
 	for _, s := range ss {
-		if s != "" {
-			return s
+		if len(s) > 0 {
+			list := strings.Split(s, ",")
+			for _, item := range list {
+				v := strings.ToLower(strings.TrimSpace(item))
+				if len(v) > 0 {
+					return v
+				}
+			}
 		}
 	}
 	return ""
