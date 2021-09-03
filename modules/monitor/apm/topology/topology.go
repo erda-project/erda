@@ -1981,7 +1981,7 @@ func (topology *provider) dbOrCacheTranslation(params translation) (map[string]i
 
 	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
-		"AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
+		"source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
 		params.Layer, where.String(), orderby)
 	source, err := topology.metricq.Query(
 		metricq.InfluxQL,
@@ -2057,15 +2057,19 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 	if params.Sort == 1 {
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
-
-	sql := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
+	// producer
+	sqlProducer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
-		"AND source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s", params.Layer, where.String(), orderby)
-	source, err := topology.metricq.Query(
-		metricq.InfluxQL,
-		sql,
-		param,
-		options)
+		"span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
+	// consumer
+	sqlConsumer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE target_service_id::tag=$serviceId AND "+
+		"span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
+
+	producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
+
+	consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
+
 	if err != nil {
 		return nil, err
 	}
@@ -2081,8 +2085,19 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
 	}
 	result["cols"] = cols
+	data, err := topology.handleMQTranslationResponse(params, producer, options)
+	dataConsumer, err := topology.handleMQTranslationResponse(params, consumer, options)
+	data = append(data, dataConsumer...)
+	if err != nil {
+		return nil, err
+	}
+	result["data"] = data
+	return result, nil
+}
+
+func (topology *provider) handleMQTranslationResponse(params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
 	data := make([]map[string]interface{}, 0)
-	for _, r := range source.ResultSet.Rows {
+	for _, r := range result.ResultSet.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["topic"] = r[0]
 		itemResult["type"] = r[1]
@@ -2090,27 +2105,31 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 		itemResult["host"] = r[3]
 		itemResult["call_count"] = r[4]
 		itemResult["avg_elapsed"] = r[5]
-		sql := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
-			"AND message_bus_destination::tag=$field AND source_terminus_key::tag=$terminusKey", params.Layer)
-		slowElapsedCount, err := topology.metricq.Query(
-			metricq.InfluxQL,
-			sql,
-			map[string]interface{}{
-				"field":       conv.ToString(r[0]),
-				"terminusKey": params.TerminusKey,
-				"serviceId":   params.ServiceId,
-			},
-			options)
+		sqlProducer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
+			"AND message_bus_destination::tag=$field AND span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey", params.Layer)
+		sqlConsumer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
+			"AND message_bus_destination::tag=$field AND span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey", params.Layer)
+
+		paramsM := map[string]interface{}{
+			"field":       conv.ToString(r[0]),
+			"terminusKey": params.TerminusKey,
+			"serviceId":   params.ServiceId,
+		}
+		slowCount := 0
+		slowElapsedCountProducer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, paramsM, options)
+		slowElapsedCountConsumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, paramsM, options)
 		if err != nil {
 			return nil, err
 		}
-		for _, item := range slowElapsedCount.ResultSet.Rows {
-			itemResult["slow_elapsed_count"] = item[0]
-		}
+		cCount := slowElapsedCountProducer.ResultSet.Rows[0][0].(float64)
+		pCount := slowElapsedCountConsumer.ResultSet.Rows[0][0].(float64)
+		slowCount = int(cCount + pCount)
+
+		itemResult["slow_elapsed_count"] = slowCount
+
 		data = append(data, itemResult)
 	}
-	result["data"] = data
-	return result, nil
+	return data, nil
 }
 
 func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
