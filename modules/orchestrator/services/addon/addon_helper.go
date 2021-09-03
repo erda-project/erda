@@ -14,7 +14,10 @@
 
 package addon
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // IsEncryptedValueByKey Determine whether it is an encrypted field by key
 func IsEncryptedValueByKey(key string) bool {
@@ -24,4 +27,14 @@ func IsEncryptedValueByKey(key string) bool {
 // IsEncryptedValueByValue Determine whether it is an encrypted field by value
 func IsEncryptedValueByValue(value string) bool {
 	return strings.Contains(value, ErdaEncryptedValue)
+}
+
+// GetAddonConfig return unmarshal config
+func GetAddonConfig(cfgStr string) (map[string]interface{}, error) {
+	cfg := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }

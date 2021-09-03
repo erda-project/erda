@@ -1059,8 +1059,8 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 		return err
 	}
 
-	oldconfig := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(instance.Config), &oldconfig); err != nil {
+	oldConfig, err := GetAddonConfig(instance.Config)
+	if err != nil {
 		return err
 	}
 
@@ -1076,7 +1076,7 @@ func (a *Addon) UpdateCustom(userID, addonID string, orgID uint64, configReq *ma
 		}
 		// ============= end ===============
 		if strings.Contains(strings.ToLower(k), "pass") || strings.Contains(strings.ToLower(k), "secret") {
-			oldV, ok := (oldconfig)[k]
+			oldV, ok := (oldConfig)[k]
 			// the encrypted value has not changed
 			if ok && IsEncryptedValueByValue(v.(string)) {
 				(*configReq)[k] = oldV
