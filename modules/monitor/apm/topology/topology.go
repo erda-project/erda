@@ -2178,7 +2178,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	options.Set("end", strconv.FormatInt(params.End, 10))
 	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),round_float(if(lt(end_time::field-start_time::field,0),0,end_time::field-start_time::field)/1000000,2) "+
 		"FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey "+
-		"AND (http_paths::field=$operation OR dubbo_methods::field=$operation OR db_statements::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
+		"AND (http_paths::field=$operation OR dubbo_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
 	details, err := topology.metricq.Query(metricq.InfluxQL,
 		sql,
 		map[string]interface{}{
