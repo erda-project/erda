@@ -82,6 +82,8 @@ var (
 	ErrUpdatePipelineQueue  = err("ErrUpdatePipelineQueue", "更新流水线队列失败")
 	ErrDeletePipelineQueue  = err("ErrDeletePipelineQueue", "删除流水线队列失败")
 
+	ErrrProcessPipelineDefinition = err("ErrrProcessPipelineDefinition", "处理流水线定义失败")
+
 	ErrQueryBuildArtifact    = err("ErrQueryBuildArtifact", "查询构建产物失败")
 	ErrRegisterBuildArtifact = err("ErrRegisterBuildArtifact", "注册构建产物失败")
 	ErrDeleteBuildArtifact   = err("ErrDeleteBuildArtifact", "删除构建产物失败")

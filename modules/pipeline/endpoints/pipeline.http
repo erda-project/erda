@@ -1,13 +1,32 @@
-## page label
+### pipeline definitions save
+POST http://localhost:3082/api/pipeline-definitions/actions/process
+User-ID: 2
+Content-Type: application/json
+Internal-Client: true
+
+{
+    "versionLock": 4,
+    "pipelineSource":"autotest",
+    "pipelineYmlName":"479",
+    "pipelineYml":"version: \"1.1\"\nstages:\n  - stage:\n      - git-checkout:\n          alias: git-checkout3\n          description: 代码仓库克隆\n  - stage:\n      - custom-script:\n          alias: custom-script\n          description: 运行自定义命令\n          version: \"1.0\"\n          commands:\n            - sleep 120s\n  - stage:\n      - java:\n          alias: java-demo\n          description: 针对 java 工程的编译打包任务，产出可运行镜像\n          params:\n            build_type: maven\n            container_type: spring-boot\n            target: ./target/docker-java-app-example.jar\n            workdir: ${git-checkout}\n          caches:\n            - path: /root/.m2/repository\n  - stage:\n      - release:\n          alias: release\n          description: 用于打包完成时，向dicehub 提交完整可部署的dice.yml。用户若没在pipeline.yml里定义该action，CI会自动在pipeline.yml里插入该action\n          params:\n            dice_yml: ${git-checkout}/dice.yml\n            image:\n              java-demo: ${java-demo:OUTPUT:image}\n  - stage:\n      - dice:\n          alias: dice\n          description: 用于 dice 平台部署应用服务\n          params:\n            release_id: ${release:OUTPUT:releaseID}\n"
+}
+
+### pipeline definitions version
+GET http://localhost:3082/api/pipeline-definitions/actions/version?pipelineSource=autotest&pipelineYmlName=479
+User-ID: 2
+Content-Type: application/json
+Internal-Client: true
+
+### page label
 GET http://localhost:3081/api/pipelines-labels?pipelineSource=cdp-dev&pipelineYmlName=28&targetIds=3260&targetIds=3261&unMatchKeys=123
 User-ID: 2
-ontent-Type: application/json
+Content-Type: application/json
 Internal-Client: true
 
 ### label batch create
 POST http://localhost:3081/api/pipelines-labels/actions/batch-insert-labels
 User-ID: 2
-ontent-Type: application/json
+Content-Type: application/json
 Internal-Client: true
 
 {
