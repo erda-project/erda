@@ -52,7 +52,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	router.Add("", "/api/openapi/logincb", p.LoginCallback)
 	router.Add("", "/logincb", p.LoginCallback)
 	router.Add(http.MethodPost, "/api/openapi/logout", p.Logout)
-	router.Add(http.MethodPost, "logout", p.Logout)
+	router.Add(http.MethodPost, "/logout", p.Logout)
 	p.addUserInfoAPI(router)
 	return nil
 }

@@ -1,6 +1,6 @@
 http-server:
   addr: ":9529"
-  reloadable: false
+  reloadable: ${OPENAPI_DEV_MODE:false}
 health:
 
 redis:
@@ -24,6 +24,7 @@ openapi-interceptor-csrf:
   allow_valid_referer: true
   cookie_name: "OPENAPI-CSRF-TOKEN"
   cookie_domain: "${CSRF_COOKIE_DOMAIN}"
+  cookie_path: "/"
   cookie_max_age: "12h"
   token_lookup: "header:OPENAPI-CSRF-TOKEN"
 openapi-interceptor-filter-client-header:
@@ -74,6 +75,21 @@ openapi-v1-routes:
         scenarios:
           - demo
           - yetAnotherDemo
+      - addr: cmp:9028
+        scenarios:
+          - cmp-dashboard-events-list
+          - cmp-dashboard-workloads-list
+          - cmp-dashboard-workload-detail
+
+etcd:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+openapi-dynamic-routes:
+  _enable: ${OPENAPI_DEV_MODE:false}
 
 # for test
 openapi-example:
@@ -87,3 +103,8 @@ erda-discover:
   urls:
     example: "http://localhost:8080"
     erda.example: "http://localhost:8080"
+
+http-server@admin:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  addr: ":9432"
+  reloadable: ${OPENAPI_DEV_MODE:false}

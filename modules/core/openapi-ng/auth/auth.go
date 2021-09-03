@@ -85,6 +85,10 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 		r.Header.Del(httputil.UserHeader)
 		r.Header.Del(httputil.OrgHeader)
 		opts := opts(r)
+		if disable, _ := opts.Get("NoCheck").(bool); disable {
+			h(rw, r)
+			return
+		}
 		for _, auther := range p.authers {
 			if ok, data := auther.Match(r, opts); ok {
 				ok, req, err := auther.Check(r, data, opts)
@@ -98,10 +102,6 @@ func (p *provider) Interceptor(h http.HandlerFunc, opts func(r *http.Request) Op
 				}
 				break
 			}
-		}
-		if disable, _ := opts.Get("NoCheck").(bool); disable {
-			h(rw, r)
-			return
 		}
 		http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}

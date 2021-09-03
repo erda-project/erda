@@ -42,7 +42,7 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 		return nil, err
 	}
 
-	if err := s.createPipelineGraph(p); err != nil {
+	if err := s.CreatePipelineGraph(p); err != nil {
 		logrus.Errorf("failed to create pipeline graph, pipelineID: %d, err: %v", p.ID, err)
 		return nil, err
 	}
@@ -176,6 +176,14 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	}
 	p.Extra.InternalClient = req.InternalClient
 	p.Snapshot.IdentityInfo = req.IdentityInfo
+
+	// namespace
+	// if upper layer customize namespace, use custom namespace
+	// default namespace is pipeline controlled
+	if req.Namespace != "" {
+		p.Extra.Namespace = req.Namespace
+		p.Extra.NotPipelineControlledNs = true
+	}
 
 	// 挂载配置
 	p.Extra.StorageConfig.EnableNFS = true

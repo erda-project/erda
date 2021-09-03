@@ -44,7 +44,7 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		if err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
-		if err = s.createPipelineGraph(p); err != nil {
+		if err = s.CreatePipelineGraph(p); err != nil {
 			return nil, apierrors.ErrBatchCreatePipeline.InternalError(err)
 		}
 

@@ -16,6 +16,7 @@ package dbclient
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
@@ -67,6 +68,12 @@ func canDelete(p spec.Pipeline) (bool, string) {
 	}
 	// 终态后需要判断 complete gc
 	if p.Status.IsEndStatus() {
+		if p.TimeEnd != nil && p.Extra.GC.DatabaseGC.Finished.TTLSecond != nil {
+			ok := p.TimeEnd.Before(time.Now().Add(-time.Duration(int64(*p.Extra.GC.DatabaseGC.Finished.TTLSecond)) * time.Second))
+			if ok {
+				return true, ""
+			}
+		}
 		if !p.Extra.CompleteReconcilerGC {
 			return false, fmt.Sprintf("waiting gc")
 		}

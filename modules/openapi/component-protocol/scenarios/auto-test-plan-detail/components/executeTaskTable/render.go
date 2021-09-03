@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
 )
 
 type ExecuteTaskTable struct {
@@ -191,7 +192,7 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 
 func getProps() map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "id",
+		"rowKey": "key",
 		"scroll": map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
@@ -293,6 +294,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 			}
 			if task.Labels == nil || len(task.Labels) == 0 {
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -384,6 +386,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					path = ""
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -418,6 +421,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					}
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{
@@ -449,6 +453,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					}
 				}
 				list := map[string]interface{}{
+					"key":               component_key.GetKey(task.ID),
 					"id":                task.ID,
 					"snippetPipelineID": task.SnippetPipelineID,
 					"operate": map[string]interface{}{

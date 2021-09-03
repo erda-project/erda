@@ -14,7 +14,11 @@
 
 package openapi
 
-import transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+import (
+	"context"
+
+	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
+)
 
 // Interface .
 type Interface interface {
@@ -30,5 +34,5 @@ type RouteSource interface {
 
 // RouteSourceWatcher .
 type RouteSourceWatcher interface {
-	Watch() chan RouteSource
+	Watch(ctx context.Context) <-chan RouteSource
 }

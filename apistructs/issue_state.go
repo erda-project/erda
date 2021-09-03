@@ -101,7 +101,9 @@ type IssueStateCreateRequest struct {
 
 // 获取项目下状态请求
 type IssueStatesGetRequest struct {
-	ProjectID uint64 `json:"projectID"`
+	ProjectID    uint64             `json:"projectID"`
+	IssueType    IssueType          `json:"issueTypes"`
+	StateBelongs []IssueStateBelong `json:"stateBelongs"`
 	IdentityInfo
 }
 
