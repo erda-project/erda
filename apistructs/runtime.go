@@ -137,6 +137,11 @@ type RuntimeDeleteResponse struct {
 	Data RuntimeDTO `json:"data"`
 }
 
+type RuntimeDeployResponse struct {
+	Header
+	Data RuntimeDeployDTO `json:"data"`
+}
+
 type PageInfo struct {
 	// 页码
 	PageNO int `query:"pageNo"`

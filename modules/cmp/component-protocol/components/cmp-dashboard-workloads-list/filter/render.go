@@ -54,7 +54,7 @@ func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Componen
 	if err := f.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
-	if err := f.SetComponentValue(); err != nil {
+	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
 	}
 	if err := f.EncodeURLQuery(); err != nil {
@@ -104,7 +104,7 @@ func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
 	return nil
 }
 
-func (f *ComponentFilter) SetComponentValue() error {
+func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	userID := f.sdk.Identity.UserID
 	orgID := f.sdk.Identity.OrgID
 
@@ -122,39 +122,39 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "dev",
-		Value: "dev",
+		Label: cputil.I18n(ctx, "workspace-dev"),
+		Value: "workspace-dev",
 	}
 	testNs := Option{
-		Label: "test",
-		Value: "test",
+		Label: cputil.I18n(ctx, "workspace-test"),
+		Value: "workspace-test",
 	}
 	stagingNs := Option{
-		Label: "staging",
-		Value: "staging",
+		Label: cputil.I18n(ctx, "workspace-staging"),
+		Value: "workspace-staging",
 	}
 	productionNs := Option{
-		Label: "production",
-		Value: "production",
+		Label: cputil.I18n(ctx, "workspace-production"),
+		Value: "workspace-production",
 	}
 	addonNs := Option{
-		Label: "addons",
+		Label: cputil.I18n(ctx, "addons"),
 		Value: "addons",
 	}
 	pipelineNs := Option{
-		Label: "pipelines",
+		Label: cputil.I18n(ctx, "pipelines"),
 		Value: "pipelines",
 	}
 	defaultNs := Option{
-		Label: "default",
+		Label: cputil.I18n(ctx, "default"),
 		Value: "default",
 	}
 	systemNs := Option{
-		Label: "system",
+		Label: cputil.I18n(ctx, "system"),
 		Value: "system",
 	}
 	otherNs := Option{
-		Label: "others",
+		Label: cputil.I18n(ctx, "others"),
 		Value: "others",
 	}
 
@@ -167,7 +167,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
 			displayName, err := f.getDisplayName(name)
 			if err == nil {
-				option.Label = displayName
+				option.Label = fmt.Sprintf("%s (%s: %s)", name, cputil.I18n(ctx, "project"), displayName)
 				switch suf {
 				case "-dev":
 					devNs.Children = append(devNs.Children, option)
@@ -203,7 +203,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 	f.State.Conditions = nil
 	namespaceCond := Condition{
 		Key:   "namespace",
-		Label: "Namespace",
+		Label: cputil.I18n(ctx, "namespace"),
 		Type:  "select",
 		Fixed: true,
 	}
@@ -219,15 +219,15 @@ func (f *ComponentFilter) SetComponentValue() error {
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:         "search",
-		Label:       "Search",
-		Placeholder: "input workload id",
+		Label:       cputil.I18n(ctx, "search"),
+		Placeholder: cputil.I18n(ctx, "searchPlaceHolder"),
 		Type:        "input",
 		Fixed:       true,
 	})
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:   "status",
-		Label: "Status",
+		Label: cputil.I18n(ctx, "status"),
 		Type:  "select",
 		Fixed: true,
 		Options: []Option{
@@ -240,7 +240,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 				Value: WorkloadError,
 			},
 			{
-				Label: "Succeed",
+				Label: "Succeeded",
 				Value: WorkloadSucceed,
 			},
 			{
@@ -252,7 +252,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:   "kind",
-		Label: "Workload Type",
+		Label: cputil.I18n(ctx, "workloadKind"),
 		Type:  "select",
 		Fixed: true,
 		Options: []Option{

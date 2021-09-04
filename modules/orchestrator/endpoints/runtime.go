@@ -192,7 +192,6 @@ func (e *Endpoints) RedeployRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrDeployRuntime.InvalidParameter("runtimeID: " + v).ToResp(), nil
 	}
-	// TODO: the response should be apistructs.Runtime
 	data, err := e.runtime.RedeployPipeline(operator, orgID, runtimeID)
 	if err != nil {
 		return errorresp.ErrResp(err)

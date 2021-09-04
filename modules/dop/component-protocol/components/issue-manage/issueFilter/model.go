@@ -16,18 +16,21 @@ package issueFilter
 
 import (
 	"context"
+	"strings"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
-	sdk *cptype.SDK
-	bdl *bundle.Bundle
+	sdk           *cptype.SDK
+	bdl           *bundle.Bundle
+	issueStateSvc *issuestate.IssueState
 	filter.CommonFilter
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
@@ -39,6 +42,7 @@ type FrontendConditions struct {
 	IterationIDs       []int64                       `json:"iterationIDs,omitempty"`
 	Title              string                        `json:"title,omitempty"`
 	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
+	States             []int64                       `json:"states,omitempty"`
 	LabelIDs           []uint64                      `json:"labelIDs,omitempty"`
 	Priorities         []apistructs.IssuePriority    `json:"priorities,omitempty"`
 	Severities         []apistructs.IssueSeverity    `json:"severities,omitempty"`
@@ -51,7 +55,7 @@ type FrontendConditions struct {
 	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
 }
 
-func generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
+func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
 	conditionProps := []filter.PropCondition{
 		{
 			Key:         PropConditionKeyIterationIDs,
@@ -242,8 +246,15 @@ func generateFrontendConditionProps(ctx context.Context, fixedIssueType string, 
 
 	v, ok := state.IssueViewGroupChildrenValue["kanban"]
 	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
+		statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+			ProjectID: f.InParams.ProjectID,
+		})
+		if err != nil {
+			return nil
+		}
+
 		status := filter.PropCondition{
-			Key:         PropConditionKeyStateBelongs,
+			Key:         PropConditionKeyStates,
 			Label:       cputil.I18n(ctx, "state"),
 			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
@@ -252,24 +263,22 @@ func generateFrontendConditionProps(ctx context.Context, fixedIssueType string, 
 			Type:        filter.PropConditionTypeSelect,
 			Placeholder: "",
 			Options: func() []filter.PropConditionOption {
-				open := filter.PropConditionOption{Label: cputil.I18n(ctx, "open"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
-				reopen := filter.PropConditionOption{Label: cputil.I18n(ctx, "reopen"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resloved"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
-				wontfix := filter.PropConditionOption{Label: cputil.I18n(ctx, "wontfix"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
-				closed := filter.PropConditionOption{Label: cputil.I18n(ctx, "closed"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
-				working := filter.PropConditionOption{Label: cputil.I18n(ctx, "working"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
-				done := filter.PropConditionOption{Label: cputil.I18n(ctx, "done"), Value: apistructs.IssueStateBelongDone, Icon: ""}
+				// open := filter.PropConditionOption{Label: cputil.I18n(ctx, "open"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
+				// reopen := filter.PropConditionOption{Label: cputil.I18n(ctx, "reopen"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
+				// resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resolved"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
+				// wontfix := filter.PropConditionOption{Label: cputil.I18n(ctx, "wontfix"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
+				// closed := filter.PropConditionOption{Label: cputil.I18n(ctx, "closed"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
+				// working := filter.PropConditionOption{Label: cputil.I18n(ctx, "working"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
+				// done := filter.PropConditionOption{Label: cputil.I18n(ctx, "done"), Value: apistructs.IssueStateBelongDone, Icon: ""}
 				switch fixedIssueType {
 				case "ALL":
-					return []filter.PropConditionOption{open, working, done, reopen, resolved, wontfix, closed}
-				case apistructs.IssueTypeEpic.String():
-					return []filter.PropConditionOption{open, working, done}
+					return convertAllConditions(ctx, statesMap)
 				case apistructs.IssueTypeRequirement.String():
-					return []filter.PropConditionOption{open, working, done}
+					return convertConditions(statesMap[apistructs.IssueTypeRequirement])
 				case apistructs.IssueTypeTask.String():
-					return []filter.PropConditionOption{open, working, done}
+					return convertConditions(statesMap[apistructs.IssueTypeTask])
 				case apistructs.IssueTypeBug.String():
-					return []filter.PropConditionOption{open, working, wontfix, reopen, resolved, closed}
+					return convertConditions(statesMap[apistructs.IssueTypeBug])
 				}
 				return nil
 			}(),
@@ -280,10 +289,36 @@ func generateFrontendConditionProps(ctx context.Context, fixedIssueType string, 
 	return conditionProps
 }
 
+func convertConditions(status []apistructs.IssueStatus) []filter.PropConditionOption {
+	options := make([]filter.PropConditionOption, 0, len(status))
+	for _, i := range status {
+		options = append(options, filter.PropConditionOption{
+			Label: i.StateName,
+			Value: i.StateID,
+		})
+	}
+	return options
+}
+
+func convertAllConditions(ctx context.Context, stateMap map[apistructs.IssueType][]apistructs.IssueStatus) []filter.PropConditionOption {
+	options := make([]filter.PropConditionOption, 0, len(stateMap))
+	for i, v := range stateMap {
+		child := convertConditions(v)
+		opt := filter.PropConditionOption{
+			Label:    cputil.I18n(ctx, strings.ToLower(i.String())),
+			Value:    i.String(),
+			Children: child,
+		}
+		options = append(options, opt)
+	}
+	return options
+}
+
 var (
 	PropConditionKeyIterationIDs       filter.PropConditionKey = "iterationIDs"
 	PropConditionKeyTitle              filter.PropConditionKey = "title"
 	PropConditionKeyStateBelongs       filter.PropConditionKey = "stateBelongs"
+	PropConditionKeyStates             filter.PropConditionKey = "states"
 	PropConditionKeyLabelIDs           filter.PropConditionKey = "labelIDs"
 	PropConditionKeyPriorities         filter.PropConditionKey = "priorities"
 	PropConditionKeySeverities         filter.PropConditionKey = "severities"

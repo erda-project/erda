@@ -67,7 +67,7 @@ func (t *ComponentEventTable) Render(ctx context.Context, component *cptype.Comp
 	if err := t.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to encode url query for eventTable component, %v", err)
 	}
-	t.SetComponentValue()
+	t.SetComponentValue(ctx)
 	return nil
 }
 
@@ -280,61 +280,61 @@ func (t *ComponentEventTable) RenderList() error {
 	return nil
 }
 
-func (t *ComponentEventTable) SetComponentValue() {
+func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	t.Props = Props{
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		Columns: []Column{
 			{
 				DataIndex: "lastSeen",
-				Title:     "Last Seen",
+				Title:     cputil.I18n(ctx, "lastSeen"),
 				Width:     160,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "type",
-				Title:     "Event Type",
+				Title:     cputil.I18n(ctx, "eventType"),
 				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "reason",
-				Title:     "Reason",
+				Title:     cputil.I18n(ctx, "reason"),
 				Width:     100,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "object",
-				Title:     "Object",
+				Title:     cputil.I18n(ctx, "object"),
 				Width:     150,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "source",
-				Title:     "Source",
+				Title:     cputil.I18n(ctx, "source"),
 				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "message",
-				Title:     "Message",
+				Title:     cputil.I18n(ctx, "message"),
 				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "count",
-				Title:     "Count",
+				Title:     cputil.I18n(ctx, "count"),
 				Width:     80,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "name",
-				Title:     "Name",
+				Title:     cputil.I18n(ctx, "name"),
 				Width:     120,
 				Sorter:    true,
 			},
 			{
 				DataIndex: "namespace",
-				Title:     "Namespace",
+				Title:     cputil.I18n(ctx, "namespace"),
 				Width:     120,
 				Sorter:    true,
 			},

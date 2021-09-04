@@ -28,6 +28,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/random"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/openapi-ng/common"
 	"github.com/erda-project/erda/modules/core/openapi-ng/interceptors"
@@ -42,8 +43,7 @@ type config struct {
 	CookieDomain      string        `file:"cookie_domain" desc:"domain of the CSRF cookie. optional."`
 	CookiePath        string        `file:"cookie_path" default:"/" desc:"path of the CSRF cookie. optional."`
 	CookieMaxAge      time.Duration `file:"cookie_max_age" default:"24h" desc:"max age of the CSRF cookie. optional."`
-	CookieSecure      bool          `file:"cookie_secure" desc:"indicates if CSRF cookie is secure. optional."`
-	CookieHTTPOnly    bool          `file:"cookie_http_only" desc:"indicates if CSRF cookie is HTTP only. optional."`
+	CookieHTTPOnly    bool          `file:"cookie_http_only" default:"true" desc:"indicates if CSRF cookie is HTTP only. optional."`
 }
 
 type (
@@ -63,6 +63,7 @@ func GetToken(ctx context.Context) string {
 
 // +provider
 type provider struct {
+	Log       logs.Logger
 	Cfg       *config
 	generator *tokenGenerator
 	extractor csrfTokenExtractor
@@ -143,42 +144,37 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 				// Validate token only for requests which are not defined as 'safe' by RFC7231
 				clientToken, err := p.extractor(r)
 				if err != nil {
+					// Browsers block frontend JavaScript code from accessing the Set Cookie header,
+					// as required by the Fetch spec, which defines Set-Cookie as a forbidden response-header name
+					// that must be filtered out from any response exposed to frontend code.
+					// see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+					// use "invalid csrf token" prefix to let frontend known need retry
+					err = fmt.Errorf("invalid csrf token: failed to extract token, err: %v", err)
+					p.Log.Warn(err)
+					p.setCSRFCookie(rw, r, "")
 					rw.WriteHeader(http.StatusBadRequest)
 					common.WriteError(err, rw)
 					return
 				}
 				if !p.generator.valid(token, clientToken, r) {
+					err := fmt.Errorf("invalid csrf token: %s", clientToken)
+					p.Log.Warn(err)
+					p.setCSRFCookie(rw, r, "")
 					rw.WriteHeader(http.StatusForbidden)
-					common.WriteError(errors.New("invalid csrf token"), rw)
+					common.WriteError(err, rw)
 					return
 				}
 			}
 		}
-		if len(token) <= 0 {
-			// Generate token
-			token = p.generator.gen(r)
-		}
 
-		// Set CSRF cookie
-		cookie := new(http.Cookie)
-		cookie.Name = p.Cfg.CookieName
-		cookie.Value = token
-		if p.Cfg.CookiePath != "" {
-			cookie.Path = p.Cfg.CookiePath
+		if len(token) <= 0 {
+			// Set CSRF cookie
+			token = p.setCSRFCookie(rw, r, token)
 		}
-		if p.Cfg.CookieDomain != "" {
-			cookie.Domain = p.Cfg.CookieDomain
-		}
-		cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
-		cookie.Secure = p.Cfg.CookieSecure
-		cookie.HttpOnly = p.Cfg.CookieHTTPOnly
-		http.SetCookie(rw, cookie)
 
 		// Store token in the context
 		r = r.WithContext(context.WithValue(r.Context(), contextKey{}, token))
 
-		// Protect clients from caching the response
-		rw.Header().Add(echo.HeaderVary, echo.HeaderCookie)
 		h(rw, r)
 	}
 }
@@ -202,6 +198,33 @@ var tokenGenerators = map[string]func(*config, []string) (*tokenGenerator, error
 			},
 		}, nil
 	},
+}
+
+// setCSRFCookie set CSRF cookie
+func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token string) string {
+	// Protect clients from caching the response
+	rw.Header().Add(echo.HeaderVary, echo.HeaderCookie)
+
+	if token == "" {
+		// Generate token
+		token = p.generator.gen(r)
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = p.Cfg.CookieName
+	cookie.Value = token
+	if p.Cfg.CookiePath != "" {
+		cookie.Path = p.Cfg.CookiePath
+	}
+	if p.Cfg.CookieDomain != "" {
+		cookie.Domain = p.Cfg.CookieDomain
+	}
+	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
+	cookie.Secure = p.getScheme(r) == "https"
+	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
+	fmt.Println("===---", cookie.Secure, p.getScheme(r), p.getScheme(r) == "https")
+	http.SetCookie(rw, cookie)
+	return token
 }
 
 // csrfTokenFromForm returns a `csrfTokenExtractor` that extracts token from the
@@ -234,6 +257,30 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 		}
 		return token, nil
 	}
+}
+
+func (p *provider) getScheme(r *http.Request) string {
+	// get from standard header first
+	proto := firstNonEmpty(r.Header.Get("X-Forwarded-Proto"), r.Header.Get("X-Forwarded-Protocol"), r.URL.Scheme)
+	if len(proto) > 0 {
+		return proto
+	}
+	return "https"
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if len(s) > 0 {
+			list := strings.Split(s, ",")
+			for _, item := range list {
+				v := strings.ToLower(strings.TrimSpace(item))
+				if len(v) > 0 {
+					return v
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func init() {
