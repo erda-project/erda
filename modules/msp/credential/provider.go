@@ -14,7 +14,8 @@
 package credential
 
 import (
-	"fmt"
+	"net/http"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
@@ -22,7 +23,6 @@ import (
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"net/http"
 )
 
 type config struct {
@@ -40,16 +40,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p: p,
 	}
 	if p.Register != nil {
-		pb.RegisterAccessKeyServiceImp(p.Register, p.credentialKeyService, apis.Options(), transport.WithHTTPOptions(
-			transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
-				if resp, ok := data.(*pb.DownloadAccessKeyFileResponse); ok {
-					rw.Write(resp.Data)
-					attachment := fmt.Sprintf(`attachment; filename="accessKey.csv"`)
-					rw.Header().Add("Content-Type", "text/plain")
-					rw.Header().Add("Content-Disposition", attachment)
-				}
-				return encoding.EncodeResponse(rw, r, data)
-			})))
+		pb.RegisterAccessKeyServiceImp(p.Register, p.credentialKeyService, apis.Options(),
+			transport.WithHTTPOptions(
+				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
+					if resp, ok := data.(*apis.Response); ok && resp != nil {
+						if data, ok := resp.Data.(*pb.DownloadAccessKeyFileResponse); ok {
+							resp.Data = data
+						}
+					}
+					rw.Header().Set("Content-Type", "text/plain")
+					return encoding.EncodeResponse(rw, r, data)
+				})))
 	}
 	return nil
 }

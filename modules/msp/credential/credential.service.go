@@ -19,6 +19,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -60,19 +61,6 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 }
 
 func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *pb.DownloadAccessKeyFileRequest) (*pb.DownloadAccessKeyFileResponse, error) {
-	////先生成csv文件
-	//f, err := os.Create("accessKey.csv")
-	//path,err := filepath.Abs(filepath.Dir(f.Name()))
-	////defer os.Remove("accessKey.csv")
-	//if err != nil {
-	//	return nil,err
-	//}
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer f.Close()
-	////防止中文乱码
-	//f.WriteString("\xEF\xBB\xBF")
 	buf := &bytes.Buffer{}
 	w := csv.NewWriter(buf)
 	akRequest := &akpb.GetAccessKeyRequest{
@@ -95,7 +83,10 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 	for k, v := range akMap {
 		fileData = append(fileData, []string{k, fmt.Sprint(v)})
 	}
-	w.WriteAll(fileData)
+	err = w.WriteAll(fileData)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	w.Flush()
 	//返回
 	return &pb.DownloadAccessKeyFileResponse{
