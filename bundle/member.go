@@ -49,6 +49,14 @@ func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (
 }
 
 func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r.List, nil
+}
+
+func (b *Bundle) GetMembers(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -75,7 +83,15 @@ func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Mem
 	if !resp.IsOK() || !r.Success {
 		return nil, toAPIError(resp.StatusCode(), r.Error)
 	}
-	return r.Data.List, nil
+	return &r.Data, nil
+}
+
+func (b *Bundle) ListMembersAndTotal(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // UpdateMemberUserInfo 更新成员的用户信息

@@ -79,6 +79,7 @@ msp.permission:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
+erda.msp.member:
 
 erda.msp.apm.adapter:
   library:

@@ -87,6 +87,26 @@ func (b *Bundle) ScopeRoleAccess(userID string, req *apistructs.ScopeRoleAccessR
 	return &permissionResp.Data, nil
 }
 
+func (b *Bundle) ScopeRoleAccessList(userID string, req *apistructs.ScopeRoleAccessRequest) (*apistructs.PermissionList, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var permissionListResp apistructs.PermissionListResponse
+	resp, err := hc.Post(host).Path("/api/permissions/actions/access").
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).
+		Do().JSON(&permissionListResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !permissionListResp.Success {
+		return nil, toAPIError(resp.StatusCode(), permissionListResp.Error)
+	}
+	return &permissionListResp.Data, nil
+}
+
 // ListScopeRole 获取给定用户所有角色权限
 func (b *Bundle) ListScopeRole(userID, orgID string) (*apistructs.ScopeRoleList, error) {
 	host, err := b.urls.CoreServices()

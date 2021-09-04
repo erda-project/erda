@@ -155,6 +155,11 @@ const (
 
 	// guest
 	RoleGuest = "Guest"
+
+	//msp
+	RoleMspOwner = "Owner"
+	RoleMspLead  = "Lead"
+	RoleMspDev   = "Dev"
 )
 
 // RoleInfo 角色信息

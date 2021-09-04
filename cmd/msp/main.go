@@ -42,6 +42,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/trace"
 	_ "github.com/erda-project/erda/modules/msp/configcenter"
 	_ "github.com/erda-project/erda/modules/msp/instance/permission"
+	_ "github.com/erda-project/erda/modules/msp/member"
 	_ "github.com/erda-project/erda/modules/msp/menu"
 	_ "github.com/erda-project/erda/modules/msp/registercenter"
 	_ "github.com/erda-project/erda/modules/msp/resource"
