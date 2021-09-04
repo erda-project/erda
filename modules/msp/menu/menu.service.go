@@ -40,7 +40,7 @@ type menuService struct {
 
 var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
-// GetMenu api
+//GetMenu api
 func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.GetMenuResponse, error) {
 	// get menu items
 	items, err := s.getMenuItems()
@@ -50,19 +50,21 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	if req.Type == tenantpb.Type_MSP.String() {
 		var mspItems []*pb.MenuItem
 		for _, item := range items {
-			if item.Key == "ServiceGovernance" || item.Key == "AppMonitor" {
-				params := s.composeMSPMenuParams(req)
-				item.Params = params
-				for _, child := range item.Children {
-					if child.Key == "MonitorIntro" {
-						child.Exists = false
-						continue
-					}
-					child.Exists = true
-					child.Params = params
+			params := s.composeMSPMenuParams(req)
+			item.Params = params
+			for _, child := range item.Children {
+				if child.Key == "MonitorIntro" {
+					child.Exists = false
+					continue
 				}
-				mspItems = append(mspItems, item)
+				if child.Key == "ComponentInfo" {
+					child.Exists = false
+					continue
+				}
+				child.Exists = true
+				child.Params = params
 			}
+			mspItems = append(mspItems, item)
 		}
 		items = mspItems
 	}
@@ -84,6 +86,23 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
+			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
+			if item.EnName == "EnvironmentSet" {
+				for _, child := range item.Children {
+					child.Params = item.Params
+					// 反转exists字段，隐藏引导页，显示功能子菜单
+					child.Exists = !child.Exists
+					if child.OnlyK8S && !isK8s {
+						child.Exists = false
+					}
+					if child.OnlyNotK8S && isK8s {
+						child.Exists = false
+					}
+					if child.MustExists {
+						child.Exists = true
+					}
+				}
+			}
 			item.ClusterName = clusterName
 			item.ClusterType = clusterType
 			for _, child := range item.Children {
@@ -274,27 +293,27 @@ func (s *menuService) getEngineConfigs(group, tenantID string) (map[string]map[s
 }
 
 func (s *menuService) adjustMenuParams(items []*pb.MenuItem) []*pb.MenuItem {
-	var overview, monitor, loghub *pb.MenuItem
+	//var overview, monitor, loghub *pb.MenuItem
+	var monitor, loghub *pb.MenuItem
+	setParams := make([]*pb.MenuItem, 0)
 	for _, item := range items {
 		switch item.Key {
-		case "ServiceGovernance":
-			for _, child := range item.Children {
-				if child.Key == "Overview" {
-					overview = child
-				}
-			}
-		case "AppMonitor":
+		case "EnvironmentalOverview", "ServiceObservation", "QueryAnalysis":
+			setParams = append(setParams, item)
+		case "AlarmManagement":
 			monitor = item
 		case "LogAnalyze":
 			loghub = item
 		}
-		if monitor != nil && overview != nil && loghub != nil {
+		if monitor != nil && loghub != nil {
 			break
 		}
 	}
 	if monitor != nil {
-		if overview != nil {
-			overview.Params = monitor.Params
+		for _, item := range setParams {
+			for _, child := range item.Children {
+				child.Params = monitor.Params
+			}
 		}
 		if loghub != nil {
 			if loghub.Params == nil {
