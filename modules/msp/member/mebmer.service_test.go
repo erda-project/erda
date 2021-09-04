@@ -14,16 +14,18 @@
 package member
 
 import (
-	"bou.ke/monkey"
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
+
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/golang/mock/gomock"
-	"reflect"
-	"testing"
 )
 
 ////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
@@ -68,7 +70,7 @@ func Test_memberService_ListMember(t *testing.T) {
 	pro.memberService.p = pro
 	_, err := pro.memberService.ListMember(context.Background(), &pb.ListMemberRequest{
 		ScopeType: "project",
-		ScopeId:   "15",
+		ScopeId:   15,
 		PageNo:    1,
 		PageSize:  1,
 	})
