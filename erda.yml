@@ -231,6 +231,8 @@ services:
       exec:
         cmd: "ls"
   collector:
+    labels:
+      cpu_bound: "true"
     cmd: "/app/collector"
     ports:
       - port: 7076
@@ -633,6 +635,8 @@ services:
         duration: 120
       exec: { }
   streaming:
+    labels:
+      cpu_bound: "true"
     cmd: "/app/streaming"
     ports:
       - port: 7091

@@ -337,7 +337,7 @@ func checkAuditCreateRequest(req *apistructs.Audit) error {
 		return errors.Errorf("invalid request, ScopeType couldn't be empty")
 	}
 	// 事件 scope id 不能为空
-	if req.ScopeID == 0 {
+	if req.ScopeID == 0 && req.ScopeType != apistructs.SysScope {
 		return errors.Errorf("invalid request, ScopeID couldn't be empty")
 	}
 	// 事件模版名不能为空
