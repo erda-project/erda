@@ -781,3 +781,31 @@
   resource: sceneset
   action: OPERATE
 ## Sceneset end #
+
+## msp start ##
+- role: Owner,Lead
+  scope: project
+  resource: member
+  action: CREATE
+- role: Owner,Lead
+  scope: project
+  resource: member
+  action: UPDATE
+- role: Owner,Lead
+  scope: project
+  resource: member
+  action: DELETE
+- role: Owner,Lead
+  scope: project
+  resource: accesskey
+  action: CREATE
+- role: Owner,Lead
+  scope: project
+  resource: accesskey
+  action: DELETE
+- role: Owner,Lead
+  scope: project
+  resource: accesskey
+  action: GET
+
+## msp end ##
