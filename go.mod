@@ -25,13 +25,11 @@ require (
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/cespare/xxhash v1.1.0
 	github.com/confluentinc/confluent-kafka-go v1.5.2
-	github.com/containerd/console v1.0.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20210901113044-1130cdf38f06
 	github.com/erda-project/erda-proto-go v0.0.0-20210904141833-71b995683d21
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
@@ -70,7 +68,6 @@ require (
 	github.com/jinzhu/now v1.1.2
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/json-iterator/go v1.1.11
-	github.com/kr/pty v1.1.8
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
@@ -117,7 +114,6 @@ require (
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
-	github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
 	github.com/tealeg/xlsx/v3 v3.2.4-0.20210615062226-d5ce25722f69
@@ -169,7 +165,6 @@ require (
 )
 
 replace (
-
 	github.com/erda-project/erda-proto-go => /Users/terminus/go/src/github.com/erda-proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2

@@ -26,7 +26,7 @@ func TestComponentWorkloadInfo_GenComponentState(t *testing.T) {
 	component := &cptype.Component{
 		State: map[string]interface{}{
 			"clusterName": "test",
-			"workloadId": "test",
+			"workloadId":  "test",
 		},
 	}
 	src, err := json.Marshal(component.State)

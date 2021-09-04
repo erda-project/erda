@@ -85,6 +85,7 @@ erda.msp.credential:
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
+erda.msp.member:
 
 erda.msp.apm.adapter:
   library:
