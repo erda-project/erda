@@ -384,6 +384,9 @@ func (e *Endpoints) FuzzyQueryNotifiesBySource(ctx context.Context, r *http.Requ
 }
 
 func (e *Endpoints) checkNotifyPermission(r *http.Request, scopeType, scopeID, action string) error {
+	if strings.Contains(scopeType, apistructs.MSPScope) {
+		return nil
+	}
 	userID := r.Header.Get("User-ID")
 	if userID == "" {
 		return errors.New("failed to get permission(User-ID is empty)")
