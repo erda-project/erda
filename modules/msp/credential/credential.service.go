@@ -31,20 +31,19 @@ type accessKeyService struct {
 }
 
 func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.QueryAccessKeysRequest) (*pb.QueryAccessKeysResponse, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	req := &akpb.QueryAccessKeysRequest{}
-	err = json.Unmarshal(data, req)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	req := &akpb.QueryAccessKeysRequest{
+		Status:      request.Status,
+		SubjectType: request.SubjectType,
+		Subject:     request.Subject,
+		AccessKey:   request.AccessKey,
+		PageNo:      request.PageNo,
+		PageSize:    request.PageSize,
 	}
 	accessKeyList, err := a.p.AccessKeyService.QueryAccessKeys(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	data, err = json.Marshal(accessKeyList.Data)
+	data, err := json.Marshal(accessKeyList.Data)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -96,14 +95,10 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 }
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	req := &akpb.CreateAccessKeyRequest{}
-	err = json.Unmarshal(data, req)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	req := &akpb.CreateAccessKeyRequest{
+		SubjectType: request.SubjectType,
+		Subject:     request.Subject,
+		Description: request.Description,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
 	if err != nil {
