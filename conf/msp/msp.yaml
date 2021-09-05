@@ -76,6 +76,12 @@ erda.msp.apm.alert:
 permission:
 
 msp.permission:
+
+grpc-client@erda.core.services.authentication.credentials.accesskey:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services.project-387-dev.svc.cluster.local:9537}"
+erda.core.services.authentication.credentials.accesskey-client:
+erda.msp.credential:
+
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
