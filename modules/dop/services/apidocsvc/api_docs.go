@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
