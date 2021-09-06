@@ -345,14 +345,15 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 		return nil, errors.Errorf("failed to get project, (%v)", err)
 	}
 
+	// TODO We need to turn this check on after adding the delete portal to the UI
 	// check if addon exists
-	addOnListResp, err := p.bdl.ListAddonByProjectID(projectID, project.OrgID)
-	if err != nil {
-		return nil, err
-	}
-	if addOnListResp != nil && len(addOnListResp.Data) > 0 {
-		return nil, errors.Errorf("failed to delete project(there exists addons)")
-	}
+	// addOnListResp, err := p.bdl.ListAddonByProjectID(projectID, project.OrgID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if addOnListResp != nil && len(addOnListResp.Data) > 0 {
+	// 	return nil, errors.Errorf("failed to delete project(there exists addons)")
+	// }
 
 	if err = p.db.DeleteProject(projectID); err != nil {
 		return nil, errors.Errorf("failed to delete project, (%v)", err)
