@@ -55,10 +55,11 @@ type ComponentData map[string]interface{}
 type ComponentOps map[string]interface{}
 
 type Operation struct {
-	Key      string `json:"key"`
-	Value    string `json:"value"`
-	Reload   bool   `json:"reload"`
-	FillMeta string `json:"fillMeta"`
+	Key      string      `json:"key"`
+	Value    string      `json:"value"`
+	Reload   bool        `json:"reload"`
+	FillMeta string      `json:"fillMeta"`
+	Command  interface{} `json:"command"`
 }
 
 type RendingItem struct {
