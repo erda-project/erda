@@ -18,15 +18,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/components/runtime/mock"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/metadata"
 )
 
 func TestService_GetRuntime(t *testing.T) {
