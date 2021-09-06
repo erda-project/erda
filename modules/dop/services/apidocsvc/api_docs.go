@@ -24,21 +24,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/swagger/ddlconv"
-	"github.com/erda-project/erda/pkg/swagger/oas3"
-	"github.com/erda-project/erda/pkg/swagger/oasconv"
-
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/uc"
+	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/swagger/ddlconv"
+	"github.com/erda-project/erda/pkg/swagger/oas3"
+	"github.com/erda-project/erda/pkg/swagger/oasconv"
 )
 
 func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceName, content string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
