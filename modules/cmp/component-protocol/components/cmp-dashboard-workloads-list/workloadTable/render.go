@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -188,7 +188,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDeployment, namespace, name)
-			ageNum, _ := time.ParseDuration(fields[4])
 			items = append(items, Item{
 				ID:     id,
 				Status: status,
@@ -214,7 +213,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Namespace: namespace,
 				Kind:      obj.String("kind"),
 				Age:       fields[4],
-				AgeNum:    ageNum.Nanoseconds(),
 				Ready:     fields[1],
 				UpToDate:  fields[2],
 				Available: fields[3],
@@ -270,7 +268,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SDaemonSet, namespace, name)
-			ageNum, _ := time.ParseDuration(fields[7])
 			items = append(items, Item{
 				ID:     id,
 				Status: status,
@@ -296,7 +293,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Namespace: namespace,
 				Kind:      obj.String("kind"),
 				Age:       fields[7],
-				AgeNum:    ageNum.Nanoseconds(),
 				Ready:     fields[3],
 				UpToDate:  fields[4],
 				Available: fields[5],
@@ -354,7 +350,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SStatefulSet, namespace, name)
-			ageNum, _ := time.ParseDuration(fields[4])
 			items = append(items, Item{
 				ID:     id,
 				Status: status,
@@ -380,7 +375,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Namespace: namespace,
 				Kind:      obj.String("kind"),
 				Age:       fields[2],
-				AgeNum:    ageNum.Nanoseconds(),
 				Ready:     fields[1],
 			})
 		}
@@ -436,7 +430,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SJob, namespace, name)
-			ageNum, _ := time.ParseDuration(fields[3])
 			items = append(items, Item{
 				ID:     id,
 				Status: status,
@@ -462,7 +455,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Namespace:   namespace,
 				Kind:        obj.String("kind"),
 				Age:         fields[3],
-				AgeNum:      ageNum.Nanoseconds(),
 				Completions: fields[1],
 				Duration:    fields[2],
 			})
@@ -513,7 +505,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 			name := fields[0]
 			namespace := obj.String("metadata", "namespace")
 			id := fmt.Sprintf("%s_%s_%s", apistructs.K8SCronJob, namespace, name)
-			ageNum, _ := time.ParseDuration(fields[5])
 			items = append(items, Item{
 				ID:     id,
 				Status: status,
@@ -539,7 +530,6 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				Namespace:    namespace,
 				Kind:         obj.String("kind"),
 				Age:          fields[5],
-				AgeNum:       ageNum.Nanoseconds(),
 				Schedule:     fields[1],
 				LastSchedule: fields[4],
 			})
@@ -607,7 +597,9 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "age":
 				return func(i int, j int) bool {
-					less := items[i].AgeNum < items[j].AgeNum
+					ageI, _ := strfmt.ParseDuration(items[i].Age)
+					ageJ, _ := strfmt.ParseDuration(items[j].Age)
+					less := ageI < ageJ
 					if ascend {
 						return less
 					}
@@ -682,8 +674,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "duration":
 				return func(i int, j int) bool {
-					nI, _ := time.ParseDuration(items[i].Duration)
-					nJ, _ := time.ParseDuration(items[j].Duration)
+					nI, _ := strfmt.ParseDuration(items[i].Duration)
+					nJ, _ := strfmt.ParseDuration(items[j].Duration)
 					less := nI < nJ
 					if ascend {
 						return less
@@ -700,8 +692,8 @@ func (w *ComponentWorkloadTable) RenderTable() error {
 				}
 			case "lastSchedule":
 				return func(i int, j int) bool {
-					nI, _ := time.ParseDuration(items[i].LastSchedule)
-					nJ, _ := time.ParseDuration(items[j].LastSchedule)
+					nI, _ := strfmt.ParseDuration(items[i].LastSchedule)
+					nJ, _ := strfmt.ParseDuration(items[j].LastSchedule)
 					less := nI < nJ
 					if ascend {
 						return less
