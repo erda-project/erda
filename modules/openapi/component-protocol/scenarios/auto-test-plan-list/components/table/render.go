@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -48,7 +49,8 @@ type Operate struct {
 // OperationData 解析OperationData
 type OperationData struct {
 	Meta struct {
-		ID uint64 `json:"id"`
+		ID         uint64 `json:"id"`
+		IsArchived bool   `json:"isArchived"`
 	} `json:"meta"`
 }
 
@@ -68,22 +70,80 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			cond.PageNo = uint64(c.State["pageNo"].(float64))
 		}
 	case "edit":
-		var opreationData OperationData
+		var operationData OperationData
 		odBytes, err := json.Marshal(event.OperationData)
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(odBytes, &opreationData); err != nil {
+		if err := json.Unmarshal(odBytes, &operationData); err != nil {
 			return err
 		}
 		c.State["formModalVisible"] = true
-		c.State["formModalTestPlanID"] = opreationData.Meta.ID
+		c.State["formModalTestPlanID"] = operationData.Meta.ID
 		return nil
+	case "archive":
+		var operationData OperationData
+		odBytes, err := json.Marshal(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(odBytes, &operationData); err != nil {
+			return err
+		}
+		testplan, err := bdl.Bdl.GetTestPlanV2(operationData.Meta.ID)
+		if err != nil {
+			return err
+		}
+		if err := bdl.Bdl.UpdateTestPlanV2(apistructs.TestPlanV2UpdateRequest{
+			Name:         testplan.Data.Name,
+			Desc:         testplan.Data.Desc,
+			SpaceID:      testplan.Data.SpaceID,
+			Owners:       testplan.Data.Owners,
+			IsArchived:   &operationData.Meta.IsArchived,
+			TestPlanID:   testplan.Data.ID,
+			IdentityInfo: apistructs.IdentityInfo{UserID: bdl.Identity.UserID},
+		}); err != nil {
+			return err
+		}
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		project, err := bdl.Bdl.GetProject(projectID)
+		if err != nil {
+			return err
+		}
+		audit := apistructs.Audit{
+			UserID:       cond.UserID,
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			OrgID:        project.OrgID,
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+			TemplateName: apistructs.ArchiveTestplanTemplate,
+			Context: map[string]interface{}{
+				"projectId":    project.ID,
+				"projectName":  project.Name,
+				"testPlanName": testplan.Data.Name,
+			},
+		}
+		if !operationData.Meta.IsArchived {
+			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
+		}
+		if err := bdl.Bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+			return err
+		}
 	}
 
 	// filter带过来的
 	if _, ok := c.State["name"]; ok {
 		cond.Name = c.State["name"].(string)
+	}
+
+	if v, ok := c.State["archive"]; ok && v != nil {
+		var isArchive bool
+		if s := v.(bool); s == true {
+			isArchive = true
+		}
+		cond.IsArchived = &isArchive
 	}
 
 	r, err := bdl.Bdl.PagingTestPlansV2(cond)
@@ -93,7 +153,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	// data
 	l := []TableItem{}
 	for _, data := range r.List {
-		l = append(l, TableItem{
+		item := TableItem{
 			Id:   data.ID,
 			Name: data.Name,
 			Owners: map[string]interface{}{
@@ -104,16 +164,32 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			TestSpace: data.SpaceName,
 			Operate: Operate{
 				RenderType: "tableOperation",
-				Operations: map[string]interface{}{
-					"edit": map[string]interface{}{
-						"key":    "edit",
-						"text":   "编辑",
-						"reload": true,
-						"meta":   map[string]interface{}{"id": data.ID},
-					},
-				},
+				Operations: map[string]interface{}{},
 			},
-		})
+		}
+		if data.IsArchived == true {
+			item.Operate.Operations["archive"] = map[string]interface{}{
+				"key":    "archive",
+				"text":   "取消归档",
+				"reload": true,
+				"meta":   map[string]interface{}{"id": data.ID, "isArchived": false},
+			}
+		} else {
+			item.Operate.Operations["archive"] = map[string]interface{}{
+				"key":    "archive",
+				"text":   "归档",
+				"reload": true,
+				"meta":   map[string]interface{}{"id": data.ID, "isArchived": true},
+			}
+			item.Operate.Operations["edit"] = map[string]interface{}{
+				"key":       "edit",
+				"text":      "编辑",
+				"reload":    true,
+				"meta":      map[string]interface{}{"id": data.ID},
+				"showIndex": 2,
+			}
+		}
+		l = append(l, item)
 	}
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l

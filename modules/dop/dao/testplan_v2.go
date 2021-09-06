@@ -26,12 +26,13 @@ import (
 // TestPlanV2 测试计划V2
 type TestPlanV2 struct {
 	dbengine.BaseModel
-	Name      string
-	Desc      string
-	CreatorID string
-	UpdaterID string
-	ProjectID uint64
-	SpaceID   uint64
+	Name       string
+	Desc       string
+	CreatorID  string
+	UpdaterID  string
+	ProjectID  uint64
+	SpaceID    uint64
+	IsArchived bool
 }
 
 // TableName table name
@@ -64,15 +65,16 @@ type TestPlanV2Join struct {
 // Convert2DTO convert DAO to DTO
 func (tp *TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
 	return &apistructs.TestPlanV2{
-		ID:        tp.ID,
-		Name:      tp.Name,
-		Desc:      tp.Desc,
-		ProjectID: tp.ProjectID,
-		SpaceID:   tp.SpaceID,
-		SpaceName: tp.SpaceName,
-		Creator:   tp.CreatorID,
-		Updater:   tp.UpdaterID,
-		Steps:     []*apistructs.TestPlanV2Step{},
+		ID:         tp.ID,
+		Name:       tp.Name,
+		Desc:       tp.Desc,
+		ProjectID:  tp.ProjectID,
+		SpaceID:    tp.SpaceID,
+		SpaceName:  tp.SpaceName,
+		Creator:    tp.CreatorID,
+		Updater:    tp.UpdaterID,
+		Steps:      []*apistructs.TestPlanV2Step{},
+		IsArchived: tp.IsArchived,
 	}
 }
 
@@ -119,7 +121,7 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 	db := client.Table("dice_autotest_plan").Select("dice_autotest_plan.id, dice_autotest_plan.created_at, "+
 		"dice_autotest_plan.updated_at, dice_autotest_plan.name, dice_autotest_plan.desc, dice_autotest_plan.creator_id, "+
 		"dice_autotest_plan.updater_id, "+"dice_autotest_plan.project_id, dice_autotest_plan.space_id, "+
-		"dice_autotest_space.name as space_name").
+		"dice_autotest_space.name as space_name, "+"dice_autotest_plan.is_archived").
 		Joins("inner join dice_autotest_space on dice_autotest_plan.space_id = dice_autotest_space.id").
 		Where("dice_autotest_plan.project_id = ?", req.ProjectID)
 
@@ -137,6 +139,9 @@ func (client *DBClient) PagingTestPlanV2(req *apistructs.TestPlanV2PagingRequest
 	}
 	if len(req.IDs) != 0 {
 		db = db.Where("dice_autotest_plan.id in (?)", req.IDs)
+	}
+	if req.IsArchived != nil {
+		db = db.Where("is_archived = ?", req.IsArchived)
 	}
 
 	if err := db.Order("created_at DESC").Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&testPlanJoins).Offset(0).Limit(-1).

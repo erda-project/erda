@@ -403,6 +403,10 @@ func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, mo
 		fields["desc"] = req.Desc
 	}
 
+	if req.IsArchived != nil {
+		fields["is_archived"] = *req.IsArchived
+	}
+
 	if len(fields) != 0 {
 		fields["updater_id"] = req.UserID
 	}
