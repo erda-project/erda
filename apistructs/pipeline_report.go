@@ -48,10 +48,11 @@ type PipelineReport struct {
 type PipelineReportType string
 
 var (
-	PipelineReportTypeBasic   PipelineReportType = "basic"
-	PipelineReportTypeAPITest PipelineReportType = "api-test"
-	PipelineReportTypeEvent   PipelineReportType = "event"
-	PipelineReportTypeInspect PipelineReportType = "task-inspect"
+	PipelineReportTypeBasic        PipelineReportType = "basic"
+	PipelineReportTypeAPITest      PipelineReportType = "api-test"
+	PipelineReportTypeEvent        PipelineReportType = "event"
+	PipelineReportTypeInspect      PipelineReportType = "task-inspect"
+	PipelineReportTypeAutotestPlan PipelineReportType = "auto-test-execute-config"
 )
 
 // PipelineReportMeta 流水线报告元数据，前端根据该数据拼装报告详情界面

@@ -25,6 +25,7 @@ erda.core.pipeline.aop:
       pipeline_before_exec:
         - "project"
         - "scene-before"
+        - "testplan-before"
       pipeline_in_queue_precheck_before_pop:
         - "precheck-before-pop"
       pipeline_after_exec:
@@ -48,6 +49,7 @@ erda.core.pipeline.aop:
       task_before_wait:
       task_after_wait:
 
+erda.core.pipeline.aop.plugins.pipeline.testplan-before:
 erda.core.pipeline.aop.plugins.pipeline.project:
 erda.core.pipeline.aop.plugins.pipeline.scene-before:
 erda.core.pipeline.aop.plugins.pipeline.precheck-before-pop:
