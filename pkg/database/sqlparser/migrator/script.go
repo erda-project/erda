@@ -62,24 +62,27 @@ func NewScript(workdir, pathFromRepoRoot string) (*Script, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ReadFile")
 	}
+	return NewScriptFromData(workdir, pathFromRepoRoot, data)
+}
+
+func NewScriptFromData(workdir, pathFromRepoRoot string, data []byte) (s *Script, err error) {
 	data = bytes.TrimLeftFunc(data, func(r rune) bool {
 		return r == ' ' || r == '\n' || r == '\t' || r == '\r'
 	})
-
+	s = &Script{
+		Name:      pathFromRepoRoot,
+		Rawtext:   data,
+		Reversing: nil,
+		Nodes:     nil,
+		Pending:   true,
+		Record:    nil,
+		Workdir:   workdir,
+		Type:      "",
+		isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
+			bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
+			bytes.HasPrefix(data, []byte(baseScriptLabel3)),
+	}
 	var (
-		s = &Script{
-			Name:      pathFromRepoRoot,
-			Rawtext:   data,
-			Reversing: nil,
-			Nodes:     nil,
-			Pending:   true,
-			Record:    nil,
-			Workdir:   workdir,
-			Type:      "",
-			isBase: bytes.HasPrefix(data, []byte(baseScriptLabel)) ||
-				bytes.HasPrefix(data, []byte(baseScriptLabel2)) ||
-				bytes.HasPrefix(data, []byte(baseScriptLabel3)),
-		}
 		warns []error
 		nodes []ast.StmtNode
 	)
