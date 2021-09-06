@@ -74,6 +74,14 @@ func WithEndpoints(endpoints []string) OpOption {
 	}
 }
 
+func getEnvOrDefault(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+
+	return defaultVal
+}
+
 // New creates a etcd store with etcd client, be used to access the etcd cluster.
 func New(ops ...OpOption) (*Store, error) {
 	// apply option
@@ -101,9 +109,9 @@ func New(ops ...OpOption) (*Store, error) {
 	}
 	if url.Scheme == "https" {
 		tlsInfo := transport.TLSInfo{
-			CertFile:      "/certs/etcd-client.pem",
-			KeyFile:       "/certs/etcd-client-key.pem",
-			TrustedCAFile: "/certs/etcd-ca.pem",
+			CertFile:      getEnvOrDefault("ETCD_CERT_FILE", "/certs/etcd-client.pem"),
+			KeyFile:       getEnvOrDefault("ETCD_CERT_KEY_FILE", "/certs/etcd-client-key.pem"),
+			TrustedCAFile: getEnvOrDefault("ETCD_CA_FILE", "/certs/etcd-ca.pem"),
 		}
 		tlsConfig, err = tlsInfo.ClientConfig()
 		if err != nil {

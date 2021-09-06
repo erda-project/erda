@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package runtime
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/orchestrator"
-	_ "github.com/erda-project/erda/modules/orchestrator/components"
+	"github.com/erda-project/erda/apistructs"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/orchestrator/orchestrator.yaml",
-	})
+type BundleService interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error)
+	GetCluster(name string) (*apistructs.ClusterInfo, error)
+	InspectServiceGroupWithTimeout(namespace string, name string) (*apistructs.ServiceGroup, error)
+	GetApp(id uint64) (*apistructs.ApplicationDTO, error)
 }

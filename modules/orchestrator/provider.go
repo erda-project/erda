@@ -15,30 +15,29 @@
 package orchestrator
 
 import (
-	"context"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
-	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 type provider struct {
 	Election election.Interface `autowired:"etcd-election"`
-	server   *httpserver.Server
-	db       *dbclient.DBClient
+	Orm      *gorm.DB           `autowired:"mysql-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	return p.Initialize()
+	return p.Initialize(ctx)
 }
-
-func (p *provider) Run(ctx context.Context) error { return p.serve(ctx) }
 
 func init() {
 	servicehub.Register("orchestrator", &servicehub.Spec{
-		Services:     []string{"orchestrator"},
-		Dependencies: []string{"etcd-election"},
-		Creator:      func() servicehub.Provider { return &provider{} },
+		Services: []string{"orchestrator"},
+		Dependencies: []string{
+			"etcd-election",
+			"http-server",
+			"mysql",
+		},
+		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

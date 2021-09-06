@@ -7,3 +7,17 @@ etcd:
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 etcd-election:
   root_path: erda/component-leader/scheduler
+
+http-server:
+  addr: "${LISTEN_ADDR:0.0.0.0:8081}"
+grpc-server:
+  addr: ":7080"
+service-register:
+
+erda.orchestrator.runtime:
+mysql:
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
