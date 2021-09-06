@@ -1937,26 +1937,27 @@ func (topology *provider) middlewareTransaction(r *http.Request, params translat
 	if params.Layer != "db" && params.Layer != "cache" && params.Layer != "mq" {
 		return api.Errors.Internal(errors.New("not supported layer name"))
 	}
-	result, err := topology.middlewareStrategy(params)
+	lang := api.Language(r)
+	result, err := topology.middlewareStrategy(lang, params)
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
 	return api.Success(result)
 }
 
-func (topology *provider) middlewareStrategy(params translation) (map[string]interface{}, error) {
+func (topology *provider) middlewareStrategy(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	switch params.Layer {
 	case "db":
-		return topology.dbOrCacheTranslation(params)
+		return topology.dbOrCacheTranslation(lang, params)
 	case "cache":
-		return topology.dbOrCacheTranslation(params)
+		return topology.dbOrCacheTranslation(lang, params)
 	case "mq":
-		return topology.mqTranslation(params)
+		return topology.mqTranslation(lang, params)
 	}
 	return nil, errors.New("no support middleware type")
 }
 
-func (topology *provider) dbOrCacheTranslation(params translation) (map[string]interface{}, error) {
+func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2035,7 +2036,7 @@ func (topology *provider) dbOrCacheTranslation(params translation) (map[string]i
 	return result, nil
 }
 
-func (topology *provider) mqTranslation(params translation) (map[string]interface{}, error) {
+func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2095,8 +2096,8 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 	}
 
 	result := make(map[string]interface{}, 0)
-	data, err := topology.handleMQTranslationResponse(params, p, options)
-	dataConsumer, err := topology.handleMQTranslationResponse(params, c, options)
+	data, err := topology.handleMQTranslationResponse(lang, params, p, options)
+	dataConsumer, err := topology.handleMQTranslationResponse(lang, params, c, options)
 	data = append(data, dataConsumer...)
 	if err != nil {
 		return nil, err
@@ -2105,7 +2106,7 @@ func (topology *provider) mqTranslation(params translation) (map[string]interfac
 	return result, nil
 }
 
-func (topology *provider) handleMQTranslationResponse(params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
+func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
 	data := make([]map[string]interface{}, 0)
 	if result.ResultSet == nil {
 		return []map[string]interface{}{}, nil
@@ -2130,17 +2131,20 @@ func (topology *provider) handleMQTranslationResponse(params translation, result
 		cCount := slowElapsedCountProducer.ResultSet.Rows[0][0].(float64)
 		pCount := slowElapsedCountConsumer.ResultSet.Rows[0][0].(float64)
 		slowCount = int(cCount + pCount)
-
-		itemResult := topology.handleResult(r, slowCount)
+		itemResult := topology.handleResult(lang, r, slowCount)
 		data = append(data, itemResult)
 	}
 	return data, nil
 }
 
-func (topology *provider) handleResult(r []interface{}, slowCount int) map[string]interface{} {
+func (topology *provider) handleResult(lang i18n.LanguageCodes, r []interface{}, slowCount int) map[string]interface{} {
 	itemResult := make(map[string]interface{})
 	itemResult["operation"] = r[0]
-	itemResult["type"] = r[1]
+	if lang == nil {
+		itemResult["type"] = r[1]
+	} else {
+		itemResult["type"] = topology.t.Text(lang, r[1].(string))
+	}
 	itemResult["component"] = r[2]
 	itemResult["host"] = r[3]
 	itemResult["call_count"] = r[4]
