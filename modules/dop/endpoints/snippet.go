@@ -93,7 +93,7 @@ func (e *Endpoints) querySnippetYml(ctx context.Context, r *http.Request, vars m
 		return nil, apierrors.ErrGetApp.InternalError(err)
 	}
 
-	commit, err := e.bdl.GetGittarCommit(app.GitRepoAbbrev, branch)
+	commit, err := e.bdl.GetGittarCommit(app.GitRepoAbbrev, branch, identityInfo.UserID)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarCommit.InternalError(err)
 	}
@@ -113,7 +113,7 @@ func (e *Endpoints) querySnippetYml(ctx context.Context, r *http.Request, vars m
 		req.Name = strings.TrimPrefix(req.Name, "/")
 	}
 
-	yml, err := e.bdl.GetGittarFile(repoAbbr, commitID, req.Name, "", "")
+	yml, err := e.bdl.GetGittarFile(repoAbbr, commitID, req.Name, "", "", identityInfo.UserID)
 	if err != nil {
 		return apierrors.ErrGetSnippetYaml.InvalidParameter(err).ToResp(), nil
 	}

@@ -68,7 +68,7 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	}
 
 	// 从 gittar 获取 pipeline.yml
-	strPipelineYml, err := e.pipeline.FetchPipelineYml(req.Content.Repository.URL, refName, apistructs.DefaultPipelineYmlName)
+	strPipelineYml, err := e.pipeline.FetchPipelineYml(req.Content.Repository.URL, refName, apistructs.DefaultPipelineYmlName, req.Content.Pusher.ID)
 	if err != nil {
 		logrus.Errorf("failed to fetch pipeline.yml from gittar, req: %+v, (%+v)", req, err)
 		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil

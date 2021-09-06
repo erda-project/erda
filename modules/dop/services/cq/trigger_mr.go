@@ -47,7 +47,7 @@ func (cq *CQ) TriggerByMR(mr apistructs.MergeRequestInfo) (uint64, error) {
 		AppID:    uint64(mr.AppID),
 		Commit:   mr.SourceSha,
 		Language: LanguageGo, // 当前只支持 dice go
-	})
+	}, mr.AuthorId)
 }
 
 func printMRInfo(mr apistructs.MergeRequestInfo) string {

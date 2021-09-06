@@ -65,7 +65,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 		return nil, apierrors.GetNodeDetail.InvalidParameter(err)
 	}
 
-	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10))
+	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		return nil, apierrors.GetNodeDetail.InternalError(err)
 	}
@@ -261,7 +261,7 @@ func branchHasAPIDoc(orgID uint64, branchInode string) bool {
 	}
 	ft.SetPathFromRepoRoot(apiDocsPathFromRepoRoot)
 	orgIDStr := strconv.FormatUint(orgID, 10)
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, "")
 	if err != nil {
 		return false
 	}

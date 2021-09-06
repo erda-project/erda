@@ -182,7 +182,7 @@ func (e *Endpoints) DeleteFileTreeNode(ctx context.Context, r *http.Request, var
 
 	// TODO: 鉴权
 
-	unifiedNode, err := e.pFileTree.DeleteFileTreeNode(req, orgID)
+	unifiedNode, err := e.pFileTree.DeleteFileTreeNode(req, orgID, identityInfo.UserID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 // GittarLines 获取指定代码行数的参数
@@ -151,7 +152,7 @@ func (b *Bundle) GetGittarLines(lines *GittarLines, userName, passWord string) (
 }
 
 // GetGittarFile 从gittar获取指定文件内容
-func (b *Bundle) GetGittarFile(repoUrl, ref, filePath, userName, passWord string) (string, error) {
+func (b *Bundle) GetGittarFile(repoUrl, ref, filePath, userName, passWord, userID string) (string, error) {
 	var (
 		host string
 		err  error
@@ -181,7 +182,9 @@ func (b *Bundle) GetGittarFile(repoUrl, ref, filePath, userName, passWord string
 	fileResp := apistructs.GittarFileResponse{}
 	reqPath := fmt.Sprintf("%s/blob/%s/%s", URL.Path, ref, filePath)
 
-	resp, err := hc.Get(host).Path(reqPath).Do().JSON(&fileResp)
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Path(reqPath).Do().JSON(&fileResp)
 	if err != nil {
 		return "", apierrors.ErrInvoke.InternalError(err)
 	}
@@ -231,7 +234,7 @@ func (b *Bundle) RegisterGittarHook(r apistructs.GittarRegisterHookRequest) erro
 }
 
 // CreateGittarCommit 创建commit
-func (b *Bundle) CreateGittarCommit(repo string, request apistructs.GittarCreateCommitRequest) (*apistructs.GittarCreateCommitResponse, error) {
+func (b *Bundle) CreateGittarCommit(repo string, request apistructs.GittarCreateCommitRequest, userID string) (*apistructs.GittarCreateCommitResponse, error) {
 	hc := b.hc
 	host, err := b.urls.Gittar()
 	if err != nil {
@@ -239,6 +242,7 @@ func (b *Bundle) CreateGittarCommit(repo string, request apistructs.GittarCreate
 	}
 	var createCommitResp apistructs.GittarCreateCommitResponse
 	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
 		Path("/" + repo + "/commits").JSONBody(request).
 		Do().JSON(&createCommitResp)
 	if err != nil {
@@ -250,8 +254,8 @@ func (b *Bundle) CreateGittarCommit(repo string, request apistructs.GittarCreate
 	return &createCommitResp, nil
 }
 
-// CreateGittarCommit 创建commit
-func (b *Bundle) CreateGittarCommitV2(repo string, request apistructs.GittarCreateCommitRequest, orgID int) (*apistructs.GittarCreateCommitResponse, error) {
+// CreateGittarCommitV2 创建commit
+func (b *Bundle) CreateGittarCommitV2(repo string, request apistructs.GittarCreateCommitRequest, orgID int, userID string) (*apistructs.GittarCreateCommitResponse, error) {
 	hc := b.hc
 	host, err := b.urls.Gittar()
 	if err != nil {
@@ -260,6 +264,7 @@ func (b *Bundle) CreateGittarCommitV2(repo string, request apistructs.GittarCrea
 	var createCommitResp apistructs.GittarCreateCommitResponse
 	resp, err := hc.Post(host).
 		Path("/"+repo+"/commits").
+		Header(httputil.UserHeader, userID).
 		Header("Org-ID", strconv.Itoa(orgID)).
 		JSONBody(request).
 		Do().JSON(&createCommitResp)
@@ -274,7 +279,7 @@ func (b *Bundle) CreateGittarCommitV2(repo string, request apistructs.GittarCrea
 
 // GetGittarCommit 获取commit 历史信息
 // pageNo==pageSize==1
-func (b *Bundle) GetGittarCommit(repo, ref string) (*apistructs.Commit, error) {
+func (b *Bundle) GetGittarCommit(repo, ref, userID string) (*apistructs.Commit, error) {
 	var (
 		host   string
 		err    error
@@ -288,6 +293,7 @@ func (b *Bundle) GetGittarCommit(repo, ref string) (*apistructs.Commit, error) {
 
 	resp, err := hc.Get(host).
 		Path("/"+repo+"/commits/"+ref).
+		Header(httputil.UserHeader, userID).
 		Param("pageNo", "1").
 		Param("pageSize", "1").
 		Do().JSON(&commit)
@@ -305,7 +311,7 @@ func (b *Bundle) GetGittarCommit(repo, ref string) (*apistructs.Commit, error) {
 }
 
 // GetGittarBranches 获取指定应用的所有分支
-func (b *Bundle) GetGittarBranches(repo string) ([]string, error) {
+func (b *Bundle) GetGittarBranches(repo, userID string) ([]string, error) {
 	var (
 		host       string
 		err        error
@@ -318,7 +324,8 @@ func (b *Bundle) GetGittarBranches(repo string) ([]string, error) {
 	}
 
 	resp, err := hc.Get(host).
-		Path(repo + "/branches").
+		Path(repo+"/branches").
+		Header(httputil.UserHeader, userID).
 		Do().JSON(&branchResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -335,7 +342,7 @@ func (b *Bundle) GetGittarBranches(repo string) ([]string, error) {
 }
 
 // GetGittarBranchesV2 获取指定应用的所有分支
-func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames bool) ([]string, error) {
+func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames bool, userID string) ([]string, error) {
 	var (
 		host       string
 		err        error
@@ -350,6 +357,7 @@ func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames 
 	resp, err := hc.Get(host).
 		Path(repo+"/branches").
 		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
 		Param("onlyBranchNames", strconv.FormatBool(onlyBranchNames)).
 		Do().JSON(&branchResp)
 	if err != nil {
@@ -367,7 +375,7 @@ func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames 
 }
 
 // 获取目录的子节点
-func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool) ([]apistructs.TreeEntry, error) {
+func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userID string) ([]apistructs.TreeEntry, error) {
 	var (
 		host     string
 		err      error
@@ -381,6 +389,7 @@ func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool) ([]ap
 
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
 		Path(repo).
 		Param("simple", strconv.FormatBool(simple)).
 		Do().JSON(&treeResp)
@@ -398,7 +407,7 @@ func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool) ([]ap
 }
 
 // 获取文件的内容
-func (b *Bundle) GetGittarBlobNode(repo string, orgID string) (string, error) {
+func (b *Bundle) GetGittarBlobNode(repo, orgID, userID string) (string, error) {
 	var (
 		host     string
 		err      error
@@ -412,6 +421,7 @@ func (b *Bundle) GetGittarBlobNode(repo string, orgID string) (string, error) {
 
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
 		Path(repo).
 		Do().JSON(&blobResp)
 	if err != nil {
@@ -425,7 +435,7 @@ func (b *Bundle) GetGittarBlobNode(repo string, orgID string) (string, error) {
 }
 
 // GetGittarTree 获取目录内容
-func (b *Bundle) GetGittarTree(repo, orgID string) (*apistructs.GittarTreeData, error) {
+func (b *Bundle) GetGittarTree(repo, orgID, userID string) (*apistructs.GittarTreeData, error) {
 	var treeResp apistructs.GittarTreeResponse
 
 	hc := b.hc
@@ -436,6 +446,7 @@ func (b *Bundle) GetGittarTree(repo, orgID string) (*apistructs.GittarTreeData, 
 
 	resp, err := hc.Get(host).
 		Header("Org-ID", orgID).
+		Header(httputil.UserHeader, userID).
 		Path(repo).
 		Do().JSON(&treeResp)
 	if err != nil {
@@ -449,7 +460,7 @@ func (b *Bundle) GetGittarTree(repo, orgID string) (*apistructs.GittarTreeData, 
 }
 
 // GetGittarTags 获取指定应用的所有Tag
-func (b *Bundle) GetGittarTags(repo string) ([]string, error) {
+func (b *Bundle) GetGittarTags(repo, userID string) ([]string, error) {
 	var (
 		host    string
 		err     error
@@ -462,6 +473,7 @@ func (b *Bundle) GetGittarTags(repo string) ([]string, error) {
 	}
 
 	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
 		Path("/" + repo + "/tags").
 		Do().JSON(&tagResp)
 	if err != nil {
@@ -479,7 +491,7 @@ func (b *Bundle) GetGittarTags(repo string) ([]string, error) {
 }
 
 // GetGittarStats 获取仓库概览信息
-func (b *Bundle) GetGittarStats(appID int64) (*apistructs.GittarStatsData, error) {
+func (b *Bundle) GetGittarStats(appID int64, userID string) (*apistructs.GittarStatsData, error) {
 	var (
 		host          string
 		err           error
@@ -492,6 +504,7 @@ func (b *Bundle) GetGittarStats(appID int64) (*apistructs.GittarStatsData, error
 	}
 
 	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
 		Path(fmt.Sprintf("/app-repo/%d/stats/", appID)).
 		Do().JSON(&statsResponse)
 	if err != nil {
@@ -504,7 +517,7 @@ func (b *Bundle) GetGittarStats(appID int64) (*apistructs.GittarStatsData, error
 	return &statsResponse.Data, nil
 }
 
-func (b *Bundle) CreateCheckRun(appID int64, request apistructs.CheckRun) (*apistructs.CheckRun, error) {
+func (b *Bundle) CreateCheckRun(appID int64, request apistructs.CheckRun, userID string) (*apistructs.CheckRun, error) {
 	var (
 		host     string
 		err      error
@@ -517,6 +530,7 @@ func (b *Bundle) CreateCheckRun(appID int64, request apistructs.CheckRun) (*apis
 	}
 
 	resp, err := hc.Post(host).
+		Header(httputil.UserHeader, userID).
 		Path(fmt.Sprintf("/app-repo/%d/check-runs", appID)).JSONBody(request).
 		Do().JSON(&response)
 	if err != nil {
@@ -530,7 +544,7 @@ func (b *Bundle) CreateCheckRun(appID int64, request apistructs.CheckRun) (*apis
 }
 
 // SearchGittarFiles 获取仓库概览信息
-func (b *Bundle) SearchGittarFiles(appID int64, ref string, pattern string, basePath string, depth int64) ([]*apistructs.TreeEntry, error) {
+func (b *Bundle) SearchGittarFiles(appID int64, ref string, pattern string, basePath string, depth int64, userID string) ([]*apistructs.TreeEntry, error) {
 	var (
 		host               string
 		err                error
@@ -544,6 +558,7 @@ func (b *Bundle) SearchGittarFiles(appID int64, ref string, pattern string, base
 
 	resp, err := hc.Get(host).
 		Path(fmt.Sprintf("/app-repo/%d/tree-search", appID)).
+		Header(httputil.UserHeader, userID).
 		Param("ref", ref).
 		Param("pattern", pattern).
 		Param("basePath", basePath).
@@ -560,7 +575,7 @@ func (b *Bundle) SearchGittarFiles(appID int64, ref string, pattern string, base
 }
 
 // CloseMergeRequest 关闭mr
-func (b *Bundle) CloseMergeRequest(appID int64, mrID int) error {
+func (b *Bundle) CloseMergeRequest(appID int64, mrID int, userID string) error {
 	var (
 		host string
 		err  error
@@ -572,6 +587,7 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int) error {
 	}
 
 	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
 		Path(fmt.Sprintf("/app-repo/%d/merge-request/%d/close", appID, mrID)).
 		Do().DiscardBody()
 	if err != nil {
@@ -585,7 +601,7 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int) error {
 }
 
 // GetGittarCompare gittar compare between commits
-func (b *Bundle) GetGittarCompare(after, before string, appID int64) (*apistructs.GittarCompareData, error) {
+func (b *Bundle) GetGittarCompare(after, before string, appID int64, userID string) (*apistructs.GittarCompareData, error) {
 	var (
 		host            string
 		err             error
@@ -598,6 +614,7 @@ func (b *Bundle) GetGittarCompare(after, before string, appID int64) (*apistruct
 	}
 
 	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
 		Path(fmt.Sprintf("/app-repo/%d/compare/%s", appID, fmt.Sprintf("%s...%s", after, before))).
 		Do().JSON(&compareResponse)
 	if err != nil {

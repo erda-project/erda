@@ -126,7 +126,7 @@ func (svc *Service) GetNodeDetail(req *apistructs.APIDocNodeDetailReq) (*apistru
 		return svc.getAPIDocContent(req.OrgID, req.Identity.UserID, req.URIParams.Inode)
 
 	case TreeNameSchemas:
-		return svc.getSchemaContent(req.OrgID, req.URIParams.Inode)
+		return svc.getSchemaContent(req.OrgID, req.Identity.UserID, req.URIParams.Inode)
 
 	default:
 		return nil, apierrors.GetNodeDetail.NotFound()

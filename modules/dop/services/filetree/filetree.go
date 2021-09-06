@@ -136,7 +136,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 
 		// 根据 / 分割判定长度为 2 的时候，代表需要查询分支列表
 		if length == 2 {
-			branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true)
+			branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 			if err != nil {
 				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 			}
@@ -154,7 +154,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 			}
 		} else if length > 3+branchExcessLength {
 			// 长度大于 3 就表达查询子节点了 /projectName/appName/tree/branchName
-			entrys, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true)
+			entrys, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 			if err != nil {
 				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 			}
@@ -241,13 +241,13 @@ func (svc *GittarFileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGet
 	}
 	orgIDStr := strconv.Itoa(int(orgID))
 	// 获取文件内容
-	context, err := svc.bdl.GetGittarBlobNode(gittarPrefixOpenApi+realinode, orgIDStr)
+	context, err := svc.bdl.GetGittarBlobNode(gittarPrefixOpenApi+realinode, orgIDStr, req.UserID)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarFileTreeNode.InternalError(err)
 	}
 
 	// 获取文件commit信息
-	commitMessage, err := svc.bdl.GetGittarTree(gittarPrefixOpenApi+treeRepo, orgIDStr)
+	commitMessage, err := svc.bdl.GetGittarTree(gittarPrefixOpenApi+treeRepo, orgIDStr, req.UserID)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarFileTreeNode.InternalError(err)
 	}
@@ -311,7 +311,7 @@ func getGittarYmlNamesLabels(appID, workspace, branch, ymlName string) string {
 	return fmt.Sprintf("%s/%s/%s/%s", appID, workspace, branch, ymlName)
 }
 
-func (svc *GittarFileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
+func (svc *GittarFileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64, userID string) (*apistructs.UnifiedFileTreeNode, error) {
 	// 参数校验
 	if err := req.BasicValidate(); err != nil {
 		return nil, apierrors.ErrDeleteGittarFileTreeNode.InvalidParameter(err)
@@ -368,7 +368,7 @@ func (svc *GittarFileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNode
 			},
 		},
 	}
-	resp, err := svc.bdl.CreateGittarCommitV2(fmt.Sprintf("wb/%s/%s", app.ProjectName, app.Name), request, int(orgID))
+	resp, err := svc.bdl.CreateGittarCommitV2(fmt.Sprintf("wb/%s/%s", app.ProjectName, app.Name), request, int(orgID), userID)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func (svc *GittarFileTree) FuzzySearchFileTreeNodes(req apistructs.UnifiedFileTr
 	var results []apistructs.UnifiedFileTreeNode
 	// 异步设置值
 	if req.FromPinode == "" {
-		results, err = svc.searchGittarYmlList(apps.List, orgID, projectName, "", "", projectID)
+		results, err = svc.searchGittarYmlList(apps.List, orgID, projectName, "", "", projectID, req.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -434,7 +434,7 @@ func (svc *GittarFileTree) FuzzySearchFileTreeNodes(req apistructs.UnifiedFileTr
 			filterBranch = getBranchStr(string(inodeBytes))
 		}
 
-		results, err = svc.searchGittarYmlList(apps.List, orgID, projectName, filterAppName, filterBranch, projectID)
+		results, err = svc.searchGittarYmlList(apps.List, orgID, projectName, filterAppName, filterBranch, projectID, req.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -562,7 +562,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 	}
 
 	// 创建文件
-	resp, err := svc.bdl.CreateGittarCommitV2(fmt.Sprintf("wb/%s/%s", app.ProjectName, app.Name), request, int(orgID))
+	resp, err := svc.bdl.CreateGittarCommitV2(fmt.Sprintf("wb/%s/%s", app.ProjectName, app.Name), request, int(orgID), req.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -591,6 +591,7 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 		ScopeID: node.ScopeID,
 		Scope:   node.Scope,
 	}
+	treeNodeGetRequest.IdentityInfo = req.IdentityInfo
 	return svc.GetFileTreeNode(treeNodeGetRequest, orgID)
 }
 
@@ -646,7 +647,7 @@ func (svc *GittarFileTree) validateNodeBeforeCreate(req apistructs.UnifiedFileTr
 // filterBranchName 分支名称 没有传递就是查询所有的分支节点内容
 // projectID 项目的id
 func (svc *GittarFileTree) searchGittarYmlList(apps []apistructs.ApplicationDTO, orgID uint64, projectName string,
-	filterAppName string, filterBranchName string, projectID int64) ([]apistructs.UnifiedFileTreeNode, error) {
+	filterAppName string, filterBranchName string, projectID int64, userID string) ([]apistructs.UnifiedFileTreeNode, error) {
 
 	var wait sync.WaitGroup
 	var results []apistructs.UnifiedFileTreeNode
@@ -663,7 +664,7 @@ func (svc *GittarFileTree) searchGittarYmlList(apps []apistructs.ApplicationDTO,
 		go func(app apistructs.ApplicationDTO) {
 			defer wait.Done()
 
-			list, err := svc.searchBranch(app, orgID, projectName, filterBranchName, projectID)
+			list, err := svc.searchBranch(app, orgID, projectName, filterBranchName, projectID, userID)
 			if err != nil {
 				warn = err
 				return
@@ -686,12 +687,12 @@ func (svc *GittarFileTree) searchGittarYmlList(apps []apistructs.ApplicationDTO,
 
 // 根据分支查询
 // branchName 用作过滤
-func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uint64, projectName string, branchName string, projectID int64) ([]apistructs.UnifiedFileTreeNode, error) {
+func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uint64, projectName string, branchName string, projectID int64, userID string) ([]apistructs.UnifiedFileTreeNode, error) {
 	var warn error
 	var results []apistructs.UnifiedFileTreeNode
 	var realPinode = projectName + "/" + app.Name
 	// 查询应用下的分支
-	branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true)
+	branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -712,7 +713,7 @@ func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uin
 		go func(branch string) {
 			defer branchGroupWait.Done()
 
-			list, err := svc.searchYmlContext(app, orgID, projectName, branch, projectID)
+			list, err := svc.searchYmlContext(app, orgID, projectName, branch, projectID, userID)
 			if err != nil {
 				warn = err
 				return
@@ -734,7 +735,7 @@ func (svc *GittarFileTree) searchBranch(app apistructs.ApplicationDTO, orgID uin
 	return results, nil
 }
 
-func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
+func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID uint64, identity apistructs.IdentityInfo) (*apistructs.UnifiedFileTreeNode, error) {
 	// 参数校验
 	pipelineDetail, err := svc.bdl.GetPipeline(pipelineId)
 	if err != nil {
@@ -757,12 +758,13 @@ func (svc *GittarFileTree) GetGittarFileByPipelineId(pipelineId uint64, orgID ui
 
 	var req apistructs.UnifiedFileTreeNodeGetRequest
 	req.Inode = base64Inode
+	req.IdentityInfo = identity
 	return svc.GetFileTreeNode(req, orgID)
 }
 
 // 根据分支下的yml列表，查询所有的内容
 // branch 是分支名称
-func (svc *GittarFileTree) searchYmlContext(app apistructs.ApplicationDTO, orgID uint64, projectName string, branch string, projectID int64) ([]apistructs.UnifiedFileTreeNode, error) {
+func (svc *GittarFileTree) searchYmlContext(app apistructs.ApplicationDTO, orgID uint64, projectName string, branch string, projectID int64, userID string) ([]apistructs.UnifiedFileTreeNode, error) {
 
 	var results []apistructs.UnifiedFileTreeNode
 	var warn error
@@ -772,7 +774,7 @@ func (svc *GittarFileTree) searchYmlContext(app apistructs.ApplicationDTO, orgID
 	list := pipeline.GetPipelineYmlList(apistructs.CICDPipelineYmlListRequest{
 		AppID:  int64(app.ID),
 		Branch: branch,
-	}, svc.bdl)
+	}, svc.bdl, userID)
 
 	if list == nil && len(list) <= 0 {
 		return nil, nil
@@ -785,7 +787,7 @@ func (svc *GittarFileTree) searchYmlContext(app apistructs.ApplicationDTO, orgID
 			defer wait.Done()
 			searchINode := projectName + "/" + app.Name + "/" + gittarEntryBlobType + "/" + branch + "/" + ymlPath
 			// 获取文件内容
-			context, err := svc.bdl.GetGittarBlobNode(gittarPrefixOpenApi+searchINode, strconv.Itoa(int(orgID)))
+			context, err := svc.bdl.GetGittarBlobNode(gittarPrefixOpenApi+searchINode, strconv.Itoa(int(orgID)), userID)
 			if err != nil {
 				warn = err
 				return

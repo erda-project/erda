@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
@@ -269,7 +268,7 @@ func createDefault(ctxBdl protocol.ContextBundle, projectId string, pinode strin
 	req.Type = apistructs.UnifiedFileTreeNodeTypeFile
 	req.Pinode = pinode
 	req.Name = "pipeline.yml"
-	req.UserID = "1"
+	req.UserID = ctxBdl.Identity.UserID
 	return ctxBdl.Bdl.CreateFileTreeNodes(req, orgId)
 }
 
@@ -315,7 +314,7 @@ func (a *ComponentFileTree) handlerDelete(ctxBdl protocol.ContextBundle, inParam
 	req.ScopeID = inParams.ProjectId
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.Inode = key
-	req.UserID = "1"
+	req.UserID = ctxBdl.Identity.UserID
 	_, err = ctxBdl.Bdl.DeleteFileTreeNodes(req, project.OrgID)
 	if err != nil {
 		return fmt.Errorf("delete node fail: %s", err)
@@ -421,7 +420,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
 	req.Pinode = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s", inParams.ProjectId, inParams.AppId)))
-	req.UserID = "1"
+	req.UserID = ctxBdl.Identity.UserID
 	branchSlice, err := ctxBdl.Bdl.ListFileTreeNodes(req, project.OrgID)
 	if err != nil {
 		return nil, err
@@ -447,7 +446,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 			Scope:   apistructs.FileTreeScopeProjectApp,
 			ScopeID: inParams.AppId,
 		}
-		anReq.UserID = "1"
+		anReq.UserID = ctxBdl.Identity.UserID
 		ancestors, err := ctxBdl.Bdl.FindFileTreeNodeAncestors(anReq, project.OrgID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find ancestor nodes, err: %v", err)
@@ -488,13 +487,13 @@ func (a *ComponentFileTree) listBranchSubNodes(branchInode string, ctxBdl protoc
 	// subNodes
 	var subNodes []Data
 	// 将 pipeline.yml 转化为叶子节点
-	childData, err := a.getDefaultChild(ctxBdl.Bdl, inParams, project.OrgID, branchInode)
+	childData, err := a.getDefaultChild(ctxBdl, inParams, project.OrgID, branchInode)
 	if err != nil {
 		return nil, err
 	}
 	subNodes = append(subNodes, childData)
 	// .dice/pipelines 下的 yml 转化为其他叶子节点
-	for _, v := range a.getOtherFolderChild(ctxBdl.Bdl, inParams, project.OrgID, parsedBranchInode) {
+	for _, v := range a.getOtherFolderChild(ctxBdl, inParams, project.OrgID, parsedBranchInode) {
 		if !strings.HasSuffix(v.Title, ".yml") {
 			continue
 		}
@@ -532,16 +531,16 @@ func findSelectedKeysExpandedKeys(fileTreeData []Data, selectedKeys string) ([]s
 	return []string{}, nil
 }
 
-func (a *ComponentFileTree) getOtherFolderChild(bdl *bundle.Bundle, inParams InParams, orgId uint64, parsedBranchInode string) []*Data {
+func (a *ComponentFileTree) getOtherFolderChild(ctxBdl protocol.ContextBundle, inParams InParams, orgId uint64, parsedBranchInode string) []*Data {
 	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	// 查询分支下的 .dice/pipelines 下的 yml 文件
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
-	req.UserID = "1"
+	req.UserID = ctxBdl.Identity.UserID
 	parsedBranchInode += "/.dice/pipelines"
 	req.Pinode = base64.URLEncoding.EncodeToString([]byte(parsedBranchInode))
-	ymls, _ := bdl.ListFileTreeNodes(req, orgId)
+	ymls, _ := ctxBdl.Bdl.ListFileTreeNodes(req, orgId)
 
 	var childSlice = make([]*Data, 0)
 	for _, v := range ymls {
@@ -568,14 +567,14 @@ func (a *ComponentFileTree) getOtherFolderChild(bdl *bundle.Bundle, inParams InP
 	return childSlice
 }
 
-func (a *ComponentFileTree) getDefaultChild(bdl *bundle.Bundle, inParams InParams, orgId uint64, branchInode string) (Data, error) {
+func (a *ComponentFileTree) getDefaultChild(ctxBdl protocol.ContextBundle, inParams InParams, orgId uint64, branchInode string) (Data, error) {
 	// 查询分支下的 pipeline.yml
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
 	req.Pinode = branchInode
-	req.UserID = "1"
-	pipelineYmls, err := bdl.ListFileTreeNodes(req, orgId)
+	req.UserID = ctxBdl.Identity.UserID
+	pipelineYmls, err := ctxBdl.Bdl.ListFileTreeNodes(req, orgId)
 	if err != nil {
 		return Data{}, err
 	}

@@ -56,7 +56,7 @@ func (b *Bundle) GetBranchRules(scopeType apistructs.ScopeType, scopeID uint64) 
 	return fetchResp.Data, nil
 }
 
-func (b *Bundle) GetAllValidBranchWorkspace(appId uint64) ([]apistructs.ValidBranch, error) {
+func (b *Bundle) GetAllValidBranchWorkspace(appId uint64, userID string) ([]apistructs.ValidBranch, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
@@ -66,6 +66,7 @@ func (b *Bundle) GetAllValidBranchWorkspace(appId uint64) ([]apistructs.ValidBra
 	var fetchResp apistructs.PipelineAppAllValidBranchWorkspaceResponse
 	resp, err := hc.Get(host).Path("/api/branch-rules/actions/app-all-valid-branch-workspaces").
 		Param("appId", strconv.FormatUint(appId, 10)).
+		Header(httputil.UserHeader, userID).
 		Header(httputil.InternalHeader, "bundle").Do().JSON(&fetchResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
