@@ -38,7 +38,6 @@ type dao struct {
 
 func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, int64, error) {
 	var objs []AccessKey
-	d.db.LogMode(true)
 	q := d.db.Order("created_at desc")
 	where := make(map[string]interface{})
 	if req.Status != pb.StatusEnum_NOT_SPECIFIED {
