@@ -222,7 +222,6 @@ func (p *provider) setCSRFCookie(rw http.ResponseWriter, r *http.Request, token 
 	cookie.Expires = time.Now().Add(p.Cfg.CookieMaxAge)
 	cookie.Secure = p.getScheme(r) == "https"
 	cookie.HttpOnly = p.Cfg.CookieHTTPOnly
-	fmt.Println("===---", cookie.Secure, p.getScheme(r), p.getScheme(r) == "https")
 	http.SetCookie(rw, cookie)
 	return token
 }
