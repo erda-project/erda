@@ -111,3 +111,10 @@ func TestDeleteAddonUsed(t *testing.T) {
 		t.Fatal("the err is not equal with expected")
 	}
 }
+
+func Test_GetAddonConfig(t *testing.T) {
+	cfgStr := `{"ADDON_HAS_ENCRIPY":"YES","MYSQL_DATABASE":"fake","MYSQL_HOST":"fake","MYSQL_PASSWORD":"fake1","MYSQL_PORT":"fake","MYSQL_USERNAME":"fake"}`
+	cfg, err := GetAddonConfig(cfgStr)
+	assert.NoError(t, err)
+	assert.Equal(t, "fake1", cfg["MYSQL_PASSWORD"].(string))
+}
