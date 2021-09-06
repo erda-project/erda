@@ -14,12 +14,12 @@
 package credential
 
 import (
-	"bou.ke/monkey"
 	"context"
 	"fmt"
 	http1 "net/http"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
