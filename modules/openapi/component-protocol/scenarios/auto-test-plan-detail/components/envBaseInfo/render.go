@@ -116,3 +116,5 @@ func (a *ComponentFileInfo) marshal(c *apistructs.Component) error {
 func RenderCreator() protocol.CompRender {
 	return &ComponentFileInfo{}
 }
+
+// TODO: move the whole scenario to dop later, add i18n
