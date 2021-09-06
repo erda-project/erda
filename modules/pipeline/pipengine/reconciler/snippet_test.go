@@ -28,3 +28,11 @@ func TestParsePipelineOutputRef(t *testing.T) {
 	assert.Equal(t, "Dice 文档", reffedTask)
 	assert.Equal(t, "status", reffedKey)
 }
+
+func TestParsePipelineOutputRefV2(t *testing.T) {
+	reffedTask, reffedKey, err := parsePipelineOutputRefV2("${{ outputs.a.b }}")
+	spew.Dump(reffedTask, reffedKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "a", reffedTask)
+	assert.Equal(t, "b", reffedKey)
+}

@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/loop"
 )
 
 // RunCronPipelineFunc 定时触发时会先创建 pipeline 记录，然后尝试执行；
@@ -186,4 +188,41 @@ func (s *PipelineSvc) UpgradePipelineCron(pc *spec.PipelineCron) error {
 		return err
 	}
 	return nil
+}
+
+func (s *PipelineSvc) DoCrondAbout(ctx context.Context) {
+
+	// 加载定时配置
+	logs, err := s.crondSvc.ReloadCrond(ctx, s.RunCronPipelineFunc)
+	for _, log := range logs {
+		logrus.Info(log)
+	}
+	if err != nil {
+		logrus.Errorf("failed to reload crond from db (%v)", err)
+		return
+	}
+
+	// watch crond
+	go s.crondSvc.ListenCrond(ctx, s.RunCronPipelineFunc)
+
+	// Print a snapshot of a scheduled task regularly
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				_ = loop.New(loop.WithInterval(time.Minute)).Do(
+					func() (bool, error) {
+						for _, log := range s.crondSvc.CrondSnapshot() {
+							logrus.Debug(log)
+						}
+						return false, nil
+					})
+			}
+		}
+	}()
+
+	// 定时补偿
+	go s.ContinueCompensate(ctx)
 }
