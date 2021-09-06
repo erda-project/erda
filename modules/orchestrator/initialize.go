@@ -65,6 +65,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	}
 
 	bdl := bundle.New()
+	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("orchestrator"))
