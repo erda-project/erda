@@ -30,84 +30,103 @@ import (
 )
 
 // Listen watch incoming pipelines which need to be scheduled from etcd.
-func (r *Reconciler) Listen() {
+func (r *Reconciler) Listen(ctx context.Context) {
 	rlog.Infof("start listen")
 	for {
-		_ = r.js.IncludeWatch().Watch(context.Background(), etcdReconcilerWatchPrefix, true, true, true, nil,
-			func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_ = r.js.IncludeWatch().Watch(ctx, etcdReconcilerWatchPrefix, true, true, true, nil,
+				func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
 
-				// async reconcile, non-blocking, so we can watch subsequent incoming pipelines
-				go func() {
-					rlog.Infof("watched a key change, key: %s, changeType: %s", key, t.String())
+					// async reconcile, non-blocking, so we can watch subsequent incoming pipelines
+					go func() {
+						rlog.Infof("watched a key change, key: %s, changeType: %s", key, t.String())
 
-					// parse pipelineID
-					pipelineID, err := parsePipelineIDFromWatchedKey(key)
-					if err != nil {
-						rlog.Errorf("failed to parse pipelineID from watched key, key: %s, err: %v", key, err)
-						return
-					}
-
-					// add into queue
-					popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
-					if err != nil {
-						rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
-						if needRetryIfErr {
-							r.reconcileAgain(pipelineID)
+						// parse pipelineID
+						pipelineID, err := parsePipelineIDFromWatchedKey(key)
+						if err != nil {
+							rlog.Errorf("failed to parse pipelineID from watched key, key: %s, err: %v", key, err)
 							return
 						}
-						// no need retry, treat as failed
-						_ = r.updatePipelineStatus(&spec.Pipeline{
-							PipelineBase: spec.PipelineBase{
-								ID:     pipelineID,
-								Status: apistructs.PipelineStatusFailed,
-							}})
-						return
-					}
-					rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
-					<-popCh
-					rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
-					var p spec.Pipeline
-					_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
-						p, err = r.dbClient.GetPipeline(pipelineID)
+
+						// add into queue
+						popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
 						if err != nil {
-							rlog.PWarnf(pipelineID, "failed to get pipeline, err: %v, will continue until get pipeline", err)
-							return false, err
+							rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
+							if needRetryIfErr {
+								r.reconcileAgain(pipelineID)
+								return
+							}
+							// no need retry, treat as failed
+							_ = r.updatePipelineStatus(&spec.Pipeline{
+								PipelineBase: spec.PipelineBase{
+									ID:     pipelineID,
+									Status: apistructs.PipelineStatusFailed,
+								}})
+							return
 						}
-						return true, nil
-					})
-					if p.Status.IsEndStatus() {
-						rlog.PErrorf(pipelineID, "unable to reconcile end status pipeline")
-						return
-					}
-
-					if err := r.updateStatusBeforeReconcile(p); err != nil {
-						rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
-						return
-					}
-
-					// construct context for pipeline reconciler
-					pCtx := makeContextForPipelineReconcile(pipelineID)
-
-					// reconciler
-					reconcileErr := r.reconcile(pCtx, pipelineID)
-
-					defer func() {
-						r.teardownCurrentReconcile(pCtx, pipelineID)
-						if err := r.updateStatusAfterReconcile(pCtx, pipelineID); err != nil {
-							rlog.PErrorf(pipelineID, "failed to update status after reconcile, err: %v", err)
+						rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
+						<-popCh
+						rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
+						var p spec.Pipeline
+						_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
+							p, err = r.dbClient.GetPipeline(pipelineID)
+							if err != nil {
+								rlog.PWarnf(pipelineID, "failed to get pipeline, err: %v, will continue until get pipeline", err)
+								return false, err
+							}
+							return true, nil
+						})
+						if p.Status.IsEndStatus() {
+							rlog.PErrorf(pipelineID, "unable to reconcile end status pipeline")
+							return
 						}
 
-						// if reconcile failed, put and wait next reconcile
-						if reconcileErr != nil {
-							rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
-							r.reconcileAgain(pipelineID)
+						if err := r.updateStatusBeforeReconcile(p); err != nil {
+							rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
+							return
 						}
+
+						// construct context for pipeline reconciler
+						pCtx := makeContextForPipelineReconcile(pipelineID)
+						go func() {
+							for {
+								select {
+								case <-ctx.Done():
+									pCancel, ok := pCtx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc)
+									if ok {
+										pCancel()
+									}
+									return
+								case <-pCtx.Done():
+									return
+								}
+							}
+						}()
+
+						// reconciler
+						reconcileErr := r.reconcile(pCtx, pipelineID)
+
+						defer func() {
+							r.teardownCurrentReconcile(pCtx, pipelineID)
+							if err := r.updateStatusAfterReconcile(pCtx, pipelineID); err != nil {
+								rlog.PErrorf(pipelineID, "failed to update status after reconcile, err: %v", err)
+							}
+
+							// if reconcile failed, put and wait next reconcile
+							if reconcileErr != nil {
+								rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
+								r.reconcileAgain(pipelineID)
+							}
+						}()
 					}()
-				}()
 
-				return nil
-			},
-		)
+					return nil
+				},
+			)
+		}
 	}
 }
 

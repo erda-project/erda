@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -294,4 +295,31 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		})
 
 	}
+}
+
+func TestReconciler_doWaitGCCompensate(t *testing.T) {
+	var db *dbclient.Client
+
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+		return []spec.Pipeline{}, []uint64{}, 0, 0, nil
+	})
+	defer pm.Unpatch()
+
+	t.Run("TestReconciler_doWaitGCCompensate", func(t *testing.T) {
+		r := &Reconciler{
+			dbClient: db,
+		}
+		r.doWaitGCCompensate(true)
+	})
+}
+
+func TestCompensateGCNamespaces(t *testing.T) {
+	r := &Reconciler{}
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "CompensateGCNamespaces", func(r *Reconciler, ctx context.Context) {
+		return
+	})
+	defer pm1.Unpatch()
+	t.Run("CompensateGCNamespaces", func(t *testing.T) {
+		r.CompensateGCNamespaces(context.Background())
+	})
 }

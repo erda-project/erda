@@ -73,6 +73,6 @@ func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
 		clusterEvent.Action != apistructs.ClusterActionDelete {
 		return errors.Errorf("invalid cluster event action: %s", clusterEvent.Action)
 	}
-	clusterinfo.DispatchClusterEvent(clusterEvent)
+	clusterinfo.DispatchClusterEvent(s.js, clusterEvent)
 	return nil
 }
