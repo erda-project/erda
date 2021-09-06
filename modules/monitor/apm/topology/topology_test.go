@@ -219,6 +219,7 @@ func Test_provider_handleResult(t *testing.T) {
 	type args struct {
 		r         []interface{}
 		slowCount int
+		lang      i18n.LanguageCodes
 	}
 	tests := []struct {
 		name   string
@@ -259,7 +260,7 @@ func Test_provider_handleResult(t *testing.T) {
 				t:                tt.fields.t,
 				cassandraSession: tt.fields.cassandraSession,
 			}
-			if got := topology.handleResult(tt.args.r, tt.args.slowCount); !reflect.DeepEqual(got, tt.want) {
+			if got := topology.handleResult(nil, tt.args.r, tt.args.slowCount); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("handleResult() = %v, want %v", got, tt.want)
 			}
 		})
