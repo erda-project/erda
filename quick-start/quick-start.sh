@@ -155,8 +155,8 @@ EOABORT
 fi
 
 INSTALL_LOCATION="/opt/erda-quickstart"
-ERDA_REPOSITORY="https://github.com/erda-project/erda.git"
-ERDA_VERSION="23936e9"
+ERDA_VERSION="1.2.1"
+ERDA_RELEASE="https://static.erda.cloud/quick-start/$ERDA_VERSION/release.tar.gz"
 
 # shellcheck disable=SC2016
 ohai 'Checking for `sudo` access (which may request your password).'
@@ -168,24 +168,12 @@ if ! [[ -d "${INSTALL_LOCATION}" ]]; then
 fi
 execute_sudo "$CHOWN" "-R" "$USER:$GROUP" "${INSTALL_LOCATION}"
 
-ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
+ohai "Start download Erda[${ERDA_VERSION}] to ${INSTALL_LOCATION}"
 (
   cd "${INSTALL_LOCATION}" >/dev/null || return
 
-  # we do it in four steps to avoid merge errors when reinstalling
-  execute "git" "init" "-q"
-
-  # "git remote add" will fail if the remote is defined in the global config
-  execute "git" "config" "remote.origin.url" "${ERDA_REPOSITORY}"
-  execute "git" "config" "remote.origin.fetch" "+refs/heads/*:refs/remotes/origin/*"
-
-  # ensure we don't munge line endings on checkout
-  execute "git" "config" "core.autocrlf" "false"
-
-  execute "git" "fetch" "--force" "origin"
-  execute "git" "fetch" "--force" "--tags" "origin"
-
-  execute "git" "reset" "--hard" "${ERDA_VERSION}"
+  execute "curl" "-fsSL" "-o" "release.tar.gz" "$ERDA_RELEASE"
+  execute "tar" "zxf" "release.tar.gz"
 
 ) || exit 1
 
