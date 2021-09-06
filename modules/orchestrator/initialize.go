@@ -21,6 +21,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -35,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -42,52 +46,32 @@ import (
 	// "terminus.io/dice/telemetry/promxp"
 )
 
-func (p *provider) serve(ctx context.Context) error {
-	logrus.Infof("serve the service and listen on address: \"%s\"", conf.ListenAddr())
-	logrus.Errorf("[alert] starting orchestrator instance")
-	var err error
-	done := make(chan struct{}, 1)
-
-	go func() {
-		err = p.server.ListenAndServe()
-		done <- struct{}{}
-	}()
-
-	select {
-	case <-ctx.Done():
-	case <-done:
-	}
-
-	_ = p.db.Close()
-	return err
-}
-
 // Initialize 初始化应用启动服务.
-func (p *provider) Initialize() error {
+func (p *provider) Initialize(ctx servicehub.Context) error {
 	conf.Load()
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	// init db
-	var err error
-	p.db, err = dbclient.Open()
-	if err != nil {
-		return err
+	db := &dbclient.DBClient{
+		DBEngine: &dbengine.DBEngine{
+			DB: p.Orm,
+		},
 	}
 
 	// init endpoints
-	ep, err := initEndpoints(p.db)
+	ep, err := initEndpoints(db)
 	if err != nil {
 		return err
 	}
 
 	bdl := bundle.New()
-	server := httpserver.New(conf.ListenAddr())
+	server := httpserver.New(":0")
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("orchestrator"))
 	server.RegisterEndpoint(ep.Routes())
-	p.server = server
+
+	ctx.Service("http-server").(infrahttpserver.Router).Any("/**", server.Router())
 
 	// Limit only one instance of scheduler to do the cron jobs
 	p.Election.OnLeader(func(ctx context.Context) {
