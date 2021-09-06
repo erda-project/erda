@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/i18n"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -33,7 +34,7 @@ type issueStage struct {
 	Value string
 }
 
-func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64) (io.Reader, string, error) {
+func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {
 	// list of  issue stage
 	stages, err := svc.db.GetIssuesStageByOrgID(orgID)
 	if err != nil {
@@ -42,7 +43,7 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 	// get the stageMap
 	stageMap := svc.getStageMap(stages)
 
-	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload, stageMap)
+	table, err := svc.convertIssueToExcelList(issues, properties, projectID, isDownload, stageMap, locale)
 	if err != nil {
 		return nil, "", err
 	}
@@ -94,6 +95,10 @@ func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs
 		}
 	}
 
+	// insert sample issue
+	if isDownload {
+		table = append(table, svc.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportSample))
+	}
 	buf := bytes.NewBuffer([]byte{})
 	if err := excel.ExportExcel(buf, table, tablename); err != nil {
 		return nil, "", err
