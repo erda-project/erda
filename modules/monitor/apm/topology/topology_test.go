@@ -16,21 +16,22 @@ package topology
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
-	"github.com/erda-project/erda/modules/monitor/common/db"
-	"github.com/gocql/gocql"
 	"log"
 	"reflect"
 	"regexp"
 	"strconv"
 	"testing"
 
+	"github.com/gocql/gocql"
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+	"github.com/erda-project/erda/modules/monitor/common/db"
 )
 
 func TestSpliceIndexByTime(t *testing.T) {
