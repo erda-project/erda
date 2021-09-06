@@ -16,7 +16,14 @@ package topology
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
+	"github.com/erda-project/erda/modules/monitor/common/db"
+	"github.com/gocql/gocql"
 	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 	"testing"
@@ -184,6 +191,75 @@ func Test_getDashboardId(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getDashboardId(tt.args.nodeType); got != tt.want {
 				t.Errorf("getDashboardId() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_provider_handleResult(t *testing.T) {
+	itemResult := make(map[string]interface{})
+	itemResult["operation"] = "test-topic"
+	itemResult["type"] = "consumer"
+	itemResult["component"] = "mq"
+	itemResult["host"] = "xxx:8080"
+	itemResult["call_count"] = 10
+	itemResult["avg_elapsed"] = 1000
+	itemResult["slow_elapsed_count"] = 2
+	type fields struct {
+		Cfg              *config
+		Log              logs.Logger
+		db               *db.DB
+		es               *elastic.Client
+		ctx              servicehub.Context
+		metricq          metricq.Queryer
+		t                i18n.Translator
+		cassandraSession *gocql.Session
+	}
+	type args struct {
+		r         []interface{}
+		slowCount int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{"case", fields{
+			Cfg:              nil,
+			Log:              nil,
+			db:               nil,
+			es:               nil,
+			ctx:              nil,
+			metricq:          nil,
+			t:                nil,
+			cassandraSession: nil,
+		}, args{
+			r: []interface{}{
+				"test-topic",
+				"consumer",
+				"mq",
+				"xxx:8080",
+				10,
+				1000,
+			},
+			slowCount: 2,
+		}, itemResult,
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topology := &provider{
+				Cfg:              tt.fields.Cfg,
+				Log:              tt.fields.Log,
+				db:               tt.fields.db,
+				es:               tt.fields.es,
+				ctx:              tt.fields.ctx,
+				metricq:          tt.fields.metricq,
+				t:                tt.fields.t,
+				cassandraSession: tt.fields.cassandraSession,
+			}
+			if got := topology.handleResult(tt.args.r, tt.args.slowCount); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("handleResult() = %v, want %v", got, tt.want)
 			}
 		})
 	}

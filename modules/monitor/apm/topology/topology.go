@@ -2111,13 +2111,6 @@ func (topology *provider) handleMQTranslationResponse(params translation, result
 		return []map[string]interface{}{}, nil
 	}
 	for _, r := range result.ResultSet.Rows {
-		itemResult := make(map[string]interface{})
-		itemResult["operation"] = r[0]
-		itemResult["type"] = r[1]
-		itemResult["component"] = r[2]
-		itemResult["host"] = r[3]
-		itemResult["call_count"] = r[4]
-		itemResult["avg_elapsed"] = r[5]
 		sqlProducer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE source_service_id::tag=$serviceId "+
 			"AND message_bus_destination::tag=$field AND span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey", params.Layer)
 		sqlConsumer := fmt.Sprintf("SELECT sum(elapsed_count::field) FROM application_%s_slow WHERE target_service_id::tag=$serviceId "+
@@ -2138,11 +2131,22 @@ func (topology *provider) handleMQTranslationResponse(params translation, result
 		pCount := slowElapsedCountConsumer.ResultSet.Rows[0][0].(float64)
 		slowCount = int(cCount + pCount)
 
-		itemResult["slow_elapsed_count"] = slowCount
-
+		itemResult := topology.handleResult(r, slowCount)
 		data = append(data, itemResult)
 	}
 	return data, nil
+}
+
+func (topology *provider) handleResult(r []interface{}, slowCount int) map[string]interface{} {
+	itemResult := make(map[string]interface{})
+	itemResult["operation"] = r[0]
+	itemResult["type"] = r[1]
+	itemResult["component"] = r[2]
+	itemResult["host"] = r[3]
+	itemResult["call_count"] = r[4]
+	itemResult["avg_elapsed"] = r[5]
+	itemResult["slow_elapsed_count"] = slowCount
+	return itemResult
 }
 
 func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
