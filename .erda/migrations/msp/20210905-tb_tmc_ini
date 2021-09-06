@@ -1,3 +1,3 @@
 ALTER TABLE `erda_access_key` ADD `scope` varchar(24) NOT NULL;
 
-ALTER TABLE `erda_access_key` ADD `scope_id` varchar(128) not null;
+ALTER TABLE `erda_access_key` ADD `scope_id` varchar(128) NOT NULL;
