@@ -2112,7 +2112,7 @@ func (topology *provider) handleMQTranslationResponse(params translation, result
 	}
 	for _, r := range result.ResultSet.Rows {
 		itemResult := make(map[string]interface{})
-		itemResult["topic"] = r[0]
+		itemResult["operation"] = r[0]
 		itemResult["type"] = r[1]
 		itemResult["component"] = r[2]
 		itemResult["host"] = r[3]
