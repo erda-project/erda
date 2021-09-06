@@ -12,20 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package runtime
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers"
-	_ "github.com/erda-project/erda/modules/orchestrator"
-	_ "github.com/erda-project/erda/modules/orchestrator/components"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/spec"
 )
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/orchestrator/orchestrator.yaml",
-	})
+type DBService interface {
+	GetRuntimeAllowNil(id uint64) (*dbclient.Runtime, error)
+	FindRuntime(id spec.RuntimeUniqueId) (*dbclient.Runtime, error)
+	FindLastDeployment(id uint64) (*dbclient.Deployment, error)
+	FindDomainsByRuntimeId(id uint64) ([]dbclient.RuntimeDomain, error)
 }

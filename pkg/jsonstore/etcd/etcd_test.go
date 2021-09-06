@@ -14,6 +14,22 @@
 
 package etcd
 
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetEnvOrDefault(t *testing.T) {
+	assert := require.New(t)
+	key := "__kEY__"
+	assert.Equal("v", getEnvOrDefault(key, "v"))
+	_ = os.Setenv(key, "v2")
+	assert.Equal("v2", getEnvOrDefault(key, "v"))
+	_ = os.Setenv(key, "")
+}
+
 //import (
 //	"context"
 //	"fmt"
