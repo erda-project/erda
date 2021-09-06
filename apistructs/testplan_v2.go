@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: change name to AutoTestPlan
 // TestPlanV2 testplan
 type TestPlanV2 struct {
 	ID          uint64            `json:"id"`

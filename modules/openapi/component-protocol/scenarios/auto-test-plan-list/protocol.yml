@@ -34,6 +34,7 @@ rendering:
         - name: "addTest"
           value: "{{ addButton.addTest }}"
 # 组件
+#TODO: add i18n
 components:
   autoTestPlan:
     type: "Container"
