@@ -93,7 +93,7 @@ func TestInvoke_WithLogServicePattern_Should_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_tenant_id":  "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id":  "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "",
 		},
 		log:    logger,
@@ -125,7 +125,7 @@ func TestInvoke_WithLogServicePattern_Should_Call_Output(t *testing.T) {
 			"pod_name": "dop-a525e02f6c-55959d6dbf-7sq8q",
 			"pod_namespace": "project-387-test",
 			"terminus_key": "t6f7b240844ad47cd8473c30da36ae5dd",
-			"msp_tenant_id": "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id": "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "true"
 		},
 		"labels":{
@@ -147,7 +147,7 @@ func TestInvoke_WithNoneExistsFilterKey_Should_Not_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_tenant_id":   "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id":   "n4e4d034460114086b2a2b203312f5522",
 			"_not_exist_key_": "",
 		},
 		log:    logger,
@@ -179,7 +179,7 @@ func TestInvoke_WithNoneExistsFilterKey_Should_Not_Call_Output(t *testing.T) {
 			"pod_name": "dop-a525e02f6c-55959d6dbf-7sq8q",
 			"pod_namespace": "project-387-test",
 			"terminus_key": "t6f7b240844ad47cd8473c30da36ae5dd",
-			"msp_tenant_id": "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id": "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "true"
 		},
 		"labels":{
@@ -201,7 +201,7 @@ func TestInvoke_WithNoneMatchFilterKey_Should_Not_Call_Output(t *testing.T) {
 
 	c := &consumer{
 		filters: map[string]string{
-			"msp_tenant_id":  "_not_exists_",
+			"msp_env_id":  "_not_exists_",
 			"msp_log_attach": "",
 		},
 		log:    logger,
@@ -233,7 +233,7 @@ func TestInvoke_WithNoneMatchFilterKey_Should_Not_Call_Output(t *testing.T) {
 			"pod_name": "dop-a525e02f6c-55959d6dbf-7sq8q",
 			"pod_namespace": "project-387-test",
 			"terminus_key": "t6f7b240844ad47cd8473c30da36ae5dd",
-			"msp_tenant_id": "n4e4d034460114086b2a2b203312f5522",
+			"msp_env_id": "n4e4d034460114086b2a2b203312f5522",
 			"msp_log_attach": "true"
 		},
 		"labels":{

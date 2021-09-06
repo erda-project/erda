@@ -54,7 +54,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 		}
 	}
 	if !ok {
-		tagVal, ok = log.Tags["msp_tenant_id"]
+		tagVal, ok = log.Tags["msp_env_id"]
 		if ok {
 			log.Tags["monitor_log_key"] = tagVal
 		}

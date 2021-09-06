@@ -16,7 +16,7 @@ kafka:
 logs-exporter-base:
     filters:
         msp_log_attach: "${LOG_MSP_LOG_ATTACH}"
-        msp_tenant_id: "${LOG_MSP_TENANT_ID}"
+        msp_env_id: "${LOG_MSP_ENV_ID}"
     input:
         topics: "${LOG_KAFKA_TOPICS:spot-container-log}"
         group: "${LOG_KAFKA_GROUP}"
