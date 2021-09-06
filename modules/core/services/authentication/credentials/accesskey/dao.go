@@ -57,7 +57,7 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 	}
 
 	var count int64
-	cres := q.Where(where).Count(&count).Find(&AccessKey{})
+	cres := q.Model(&AccessKey{}).Where(where).Count(&count)
 
 	if req.PageNo > 0 && req.PageSize > 0 {
 		q = q.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize)
