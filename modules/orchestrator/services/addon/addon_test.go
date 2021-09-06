@@ -82,3 +82,38 @@ func TestConcurrentReadWriteAppInfos(t *testing.T) {
 		assert.Equal(t, true, ok)
 	}
 }
+
+func TestDeleteAddonUsed(t *testing.T) {
+	var db *dbclient.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetInstanceRouting",
+		func(*dbclient.DBClient, string) (*dbclient.AddonInstanceRouting, error) {
+			return &dbclient.AddonInstanceRouting{}, nil
+		},
+	)
+
+	addon := Addon{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(&addon), "DeleteTenant",
+		func(*Addon, string, string) error {
+			return nil
+		},
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetAttachmentCountByRoutingInstanceID",
+		func(*dbclient.DBClient, string) (int64, error) {
+			return 1, nil
+		},
+	)
+	defer monkey.UnpatchAll()
+
+	err := addon.Delete("", "")
+	if err.Error() != "addon is being referenced, can't delete" {
+		t.Fatal("the err is not equal with expected")
+	}
+}
+
+func Test_GetAddonConfig(t *testing.T) {
+	cfgStr := `{"ADDON_HAS_ENCRIPY":"YES","MYSQL_DATABASE":"fake","MYSQL_HOST":"fake","MYSQL_PASSWORD":"fake1","MYSQL_PORT":"fake","MYSQL_USERNAME":"fake"}`
+	cfg, err := GetAddonConfig(cfgStr)
+	assert.NoError(t, err)
+	assert.Equal(t, "fake1", cfg["MYSQL_PASSWORD"].(string))
+}
