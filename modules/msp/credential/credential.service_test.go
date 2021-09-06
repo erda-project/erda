@@ -174,8 +174,28 @@ func Test_Init(t *testing.T) {
 	})
 	monkey.Patch(pb.RegisterAccessKeyServiceHandler, func(r http.Router, srv pb.AccessKeyServiceHandler, opts ...http.HandleOption) {})
 	monkey.Patch(pb.RegisterAccessKeyServiceServer, func(s grpc1.ServiceRegistrar, srv pb.AccessKeyServiceServer, opts ...grpc1.HandleOption) {})
+	//monkey.Patch()
+	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
+		Data: &akpb.AccessKeysItem{
+			Id:          "ssss",
+			AccessKey:   "dddd",
+			SecretKey:   "dddd",
+			Status:      0,
+			SubjectType: 0,
+			Subject:     "ccc",
+			Description: "aaa",
+			CreatedAt:   &timestamppb.Timestamp{},
+		},
+	}, nil)
 	err := pro.Init(NewMockContext(ctrl))
 	if err != nil {
 		fmt.Println("should not err")
+	}
+	pro.credentialKeyService.p = pro
+	_, err = pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
+		Id: "ssss",
+	})
+	if err != nil {
+		fmt.Println("should not err2")
 	}
 }
