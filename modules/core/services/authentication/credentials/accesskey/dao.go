@@ -55,7 +55,7 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 		where["access_key"] = req.AccessKey
 	}
 	if req.PageNo > 0 && req.PageSize > 0 {
-		q = q.Offset((req.PageSize - 1) * req.PageNo).Limit(req.PageSize)
+		q = q.Offset((req.PageNo - 1) * req.PageNo).Limit(req.PageSize)
 	}
 
 	res := q.Where(where).Find(&objs)
