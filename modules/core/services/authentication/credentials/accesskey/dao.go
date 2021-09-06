@@ -54,12 +54,8 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 	if req.AccessKey != "" {
 		where["access_key"] = req.AccessKey
 	}
-
-	var count int64
-	cres := q.Model(&AccessKey{}).Where(where).Count(&count)
-
 	if req.PageNo > 0 && req.PageSize > 0 {
-		q = q.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize)
+		q = q.Offset((req.PageSize - 1) * req.PageNo).Limit(req.PageSize)
 	}
 
 	res := q.Where(where).Find(&objs)
@@ -67,6 +63,8 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 		return nil, 0, res.Error
 	}
 
+	var count int64
+	cres := res.Count(&count)
 	if cres.Error != nil {
 		return nil, 0, res.Error
 	}
