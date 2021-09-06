@@ -182,8 +182,10 @@ func mysqlType2OpenapiType(t string) string {
 	if strings.Contains(t, "bool") || t == "tinyint(1)" {
 		return "boolean"
 	}
-	if strings.Contains(t, "int") ||
-		strings.Contains(t, "decimal") ||
+	if strings.Contains(t, "int") {
+		return "integer"
+	}
+	if strings.Contains(t, "decimal") ||
 		strings.Contains(t, "float") ||
 		strings.Contains(t, "double") {
 		return "number"
