@@ -83,9 +83,9 @@ func (s *accessKeyService) CreateAccessKey(ctx context.Context, req *pb.CreateAc
 }
 
 func (s *accessKeyService) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) (*pb.UpdateAccessKeyResponse, error) {
-	return nil, s.p.dao.UpdateAccessKey(ctx, req)
+	return &pb.UpdateAccessKeyResponse{}, s.p.dao.UpdateAccessKey(ctx, req)
 }
 
 func (s *accessKeyService) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
-	return nil, s.p.dao.DeleteAccessKey(ctx, req)
+	return &pb.DeleteAccessKeyResponse{}, s.p.dao.DeleteAccessKey(ctx, req)
 }
