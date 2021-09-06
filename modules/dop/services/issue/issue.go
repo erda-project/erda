@@ -126,6 +126,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 			req.Priority = apistructs.IssuePriorityNormal
 		}
 	}
+	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	// 创建 issue
 	create := dao.Issue{
 		PlanStartedAt:  req.PlanStartedAt,
@@ -147,6 +148,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		External:       req.External,
 		Stage:          req.GetStage(),
 		Owner:          req.Owner,
+		ExpiryStatus:   getExpiryStatus(req.PlanFinishedAt, now),
 	}
 	if err := svc.db.CreateIssue(&create); err != nil {
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
@@ -186,6 +188,25 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
+}
+
+func getExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) dao.ExpireType {
+	if planFinishedAt == nil {
+		return dao.ExpireTypeUndefined
+	}
+	if planFinishedAt.Before(timeBase) {
+		return dao.ExpireTypeExpired
+	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
+		return dao.ExpireTypeExpireIn1Day
+	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
+		return dao.ExpireTypeExpireIn2Days
+	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
+		return dao.ExpireTypeExpireIn7Days
+	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
+		return dao.ExpireTypeExpireIn30Days
+	} else {
+		return dao.ExpireTypeExpireInFuture
+	}
 }
 
 // Paging 分页查询事件
@@ -241,14 +262,14 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	}
 
 	// 该项目下全部的state信息，之后不再查询state  key: stateID value:state
-	stateMap := make(map[int64]dao.IssueState)
+	// stateMap := make(map[int64]dao.IssueState)
 	// 根据主状态过滤
-	if len(req.StateBelongs) > 0 {
-		err := svc.FilterByStateBelong(stateMap, &req)
-		if err != nil {
-			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
-		}
-	}
+	// if len(req.StateBelongs) > 0 {
+	// 	err := svc.FilterByStateBelong(stateMap, &req)
+	// 	if err != nil {
+	// 		return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
+	// 	}
+	// }
 	// 分页
 	issueModels, total, err := svc.db.PagingIssues(req, isLabel || isIssue)
 	if err != nil {
@@ -474,6 +495,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
+	if req.PlanFinishedAt != nil {
+		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+		changedFields["expiry_status"] = getExpiryStatus(req.PlanFinishedAt, now)
+	}
 	// 检查修改的字段合法性
 	if err := svc.checkChangeFields(changedFields); err != nil {
 		return apierrors.ErrUpdateIssue.InvalidParameter(err)
@@ -1417,4 +1442,69 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	}
 
 	return nil
+}
+
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
+	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
+	if err != nil {
+		return nil, err
+	}
+
+	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
+	projectIDs := make([]uint64, 0)
+	for _, i := range stats {
+		if _, ok := projectMap[i.ProjectID]; !ok {
+			projectMap[i.ProjectID] = &apistructs.WorkbenchProjectItem{}
+		}
+		item := projectMap[i.ProjectID]
+		num := int(i.IssueNum)
+		switch i.ExpiryStatus {
+		case dao.ExpireTypeUndefined:
+			item.UnSpecialIssueNum = num
+		case dao.ExpireTypeExpired:
+			item.ExpiredIssueNum = num
+		case dao.ExpireTypeExpireIn1Day:
+			item.ExpiredOneDayNum = num
+		case dao.ExpireTypeExpireIn2Days:
+			item.ExpiredTomorrowNum = num
+		case dao.ExpireTypeExpireIn7Days:
+			item.ExpiredSevenDayNum = num
+		case dao.ExpireTypeExpireIn30Days:
+			item.ExpiredThirtyDayNum = num
+		case dao.ExpireTypeExpireInFuture:
+			item.FeatureDayNum = num
+		}
+	}
+	for i := range projectMap {
+		projectIDs = append(projectIDs, i)
+	}
+
+	pMap, err := svc.bdl.GetProjectsMap(projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range projectMap {
+		if dto, ok := pMap[i]; ok {
+			projectMap[i].ProjectDTO = dto
+			req.ProjectID = dto.ID
+			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
+			if err != nil {
+				return nil, err
+			}
+			issueList := make([]apistructs.Issue, 0, len(issues))
+			for _, v := range issues {
+				issueList = append(issueList, apistructs.Issue{
+					ID:             int64(v.ID),
+					Type:           v.Type,
+					Title:          v.Title,
+					PlanFinishedAt: v.PlanFinishedAt,
+				})
+			}
+			projectMap[i].IssueList = issueList
+			projectMap[i].TotalIssueNum = int(total)
+		}
+	}
+
+	return projectMap, nil
 }

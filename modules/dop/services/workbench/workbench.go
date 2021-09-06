@@ -36,14 +36,7 @@ var (
 	issueThirtyDay   = "thirtyDay"
 	issueFeature     = "feature"
 	expireDays       = []string{issueUnspecified, issueExpired, issueOneDay, issueTomorrow, issueSevenDay, issueThirtyDay, issueFeature}
-	StateBelongs     = []apistructs.IssueStateBelong{
-		apistructs.IssueStateBelongReopen,
-		apistructs.IssueStateBelongWontfix,
-		apistructs.IssueStateBelongResloved,
-		apistructs.IssueStateBelongWorking,
-		apistructs.IssueStateBelongOpen,
-	}
-	IssuePriorities = []apistructs.IssuePriority{
+	IssuePriorities  = []apistructs.IssuePriority{
 		apistructs.IssuePriorityUrgent,
 		apistructs.IssuePriorityHigh,
 		apistructs.IssuePriorityNormal,
@@ -95,7 +88,7 @@ func (w *Workbench) GetUndoneProjectItem(userID string, issueSize int, pro apist
 		PageSize: uint64(issueSize),
 		IssueListRequest: apistructs.IssueListRequest{
 			ProjectID:    uint64(pro.ID),
-			StateBelongs: StateBelongs,
+			StateBelongs: apistructs.StateBelongs,
 			Assignees:    []string{userID},
 			External:     true,
 			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
@@ -154,7 +147,7 @@ func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, i
 					etIssueReq.EndFinishedAt = timeList[idx][1] * 1000
 				}
 			}
-			etIssueReq.StateBelongs = StateBelongs
+			etIssueReq.StateBelongs = apistructs.StateBelongs
 			etIssueReq.External = true
 			etIssueReq.Type = IssueTypes
 			etIssueReq.Assignees = req.Assignees
@@ -192,4 +185,33 @@ func (w *Workbench) SetDiffFinishedIssueNum(req apistructs.IssuePagingRequest, i
 	}
 	wg.Wait()
 	return iErr
+}
+
+func (w *Workbench) GetUndoneProjectItems(req apistructs.WorkbenchRequest, userID string) (*apistructs.WorkbenchResponse, error) {
+	req.IssuePagingRequest = apistructs.IssuePagingRequest{
+		OrgID:    int64(req.OrgID),
+		PageNo:   1,
+		PageSize: uint64(req.IssueSize),
+		IssueListRequest: apistructs.IssueListRequest{
+			StateBelongs: apistructs.StateBelongs,
+			Assignees:    []string{userID},
+			External:     true,
+			OrderBy:      "plan_finished_at asc, FIELD(priority, 'URGENT', 'HIGH', 'NORMAL', 'LOW')",
+			Priority:     IssuePriorities,
+			Type:         IssueTypes,
+			Asc:          true,
+		},
+	}
+	projectMap, err := w.issueSvc.GetIssuesByStates(req)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &apistructs.WorkbenchResponse{}
+	res.Data.TotalProject = len(projectMap)
+	res.Data.List = make([]*apistructs.WorkbenchProjectItem, 0)
+	for _, v := range projectMap {
+		res.Data.List = append(res.Data.List, v)
+	}
+	return res, nil
 }
