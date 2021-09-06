@@ -192,7 +192,7 @@ ohai "Start clone Erda[${ERDA_REPOSITORY}] to ${INSTALL_LOCATION}"
 ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
 
 cd "${INSTALL_LOCATION}/quick-start" || exit 1
-execute "docker-compose" "up" "-d" "mysql" || exit 1
+execute "docker-compose" "up" "-d" "mysql"
 
 echo "waiting for mysql ready"
 sleep 10
@@ -206,18 +206,18 @@ do
   fi
 done
 
-execute "docker-compose" "up" "erda-migration" || exit 1
-execute "docker-compose" "up" "sysctl-init" || exit 1
-execute "docker-compose" "up" "-d" "elasticsearch" || exit 1
-execute "docker-compose" "up" "-d" "cassandra" || exit 1
-execute "docker-compose" "up" "-d" "kafka" || exit 1
-execute "docker-compose" "up" "-d" || exit 1
+execute "docker-compose" "up" "erda-migration"
+execute "docker-compose" "up" "sysctl-init"
+execute "docker-compose" "up" "-d" "elasticsearch"
+execute "docker-compose" "up" "-d" "cassandra"
+execute "docker-compose" "up" "-d" "kafka"
+execute "docker-compose" "up" "-d"
 
 ohai "Setup local hosts"
 (
   exists_in_host="$(grep -n erda.local /etc/hosts)"
   if [ -z "$exists_in_host" ]; then
-    echo "127.0.0.1 erda.local one.erda.local" | execute_sudo "tee" "-a" "/etc/hosts"
+    echo "127.0.0.1 erda.local one.erda.local collector.erda.local openapi.erda.local" | execute_sudo "tee" "-a" "/etc/hosts"
   fi
 ) || exit 1
 
@@ -225,6 +225,6 @@ ohai "Erda has been started successfully using ${INSTALL_LOCATION}/quick-start/d
 
 ohai "Next steps:"
 echo "visit ${tty_underline}http://erda.local${tty_reset} to start your journey on Erda"
-echo "visit ${tty_underline}https://github.com/erda-project/erda/blob/master/docs/guides/quickstart/quickstart-full.md#try-erda${tty_reset} for basic use of Erda"
+echo "visit ${tty_underline}https://docs.erda.cloud/1.2/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
 echo "visit ${tty_underline}https://docs.erda.cloud${tty_reset} for full introduction of Erda"
 echo "goto ${INSTALL_LOCATION}/quick-start/ dir to check and manage the docker-compose resources"
