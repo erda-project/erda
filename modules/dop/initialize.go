@@ -190,7 +190,7 @@ func (p *provider) Initialize() error {
 		err := cron.AddFunc(conf.UpdateIssueExpiryStatusCron(), func() {
 			start := time.Now()
 			if err := ep.DBClient().BatchUpdateIssueExpiryStatus(apistructs.StateBelongs); err != nil {
-				logrus.Error("daily issue expiry status batch update err: %v", err)
+				logrus.Errorf("daily issue expiry status batch update err: %v", err)
 				return
 			}
 			logrus.Infof("daily issue expiry status batch update takes %v", time.Since(start))
