@@ -17,6 +17,7 @@ package autotest_cookie_keep_before
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -65,6 +66,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return nil
 	}
 	// parse Set-Cookie-JSON to Cookie
+	// header key `set-cookie` can have many values
 	var setCookies []string
 	if err := json.Unmarshal([]byte(setCookieJSON), &setCookies); err != nil {
 		return fmt.Errorf("failed to parse Set-Cookie: %s, err: %v", setCookieJSON, err)
@@ -72,9 +74,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	if len(setCookies) == 0 {
 		return nil
 	}
-	setCookie := setCookies[0]
 
-	logrus.Infof("pipelineID: %d, taskID: %d, autotest keep cookie: %v", ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, setCookie)
+	logrus.Infof("pipelineID: %d, taskID: %d, autotest keep cookie: %v", ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, setCookies)
 	// if autoTestAPIConfig is empty
 	// means not use config to run, also need to keep cookie
 	var config apistructs.AutoTestAPIConfig
@@ -87,7 +88,19 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	if config.Header == nil {
 		config.Header = map[string]string{}
 	}
-	config.Header[apitestsv2.HeaderCookie] = setCookie
+	var cookie string
+	for key, value := range config.Header {
+		if strings.EqualFold(key, apitestsv2.HeaderCookie) {
+			cookie = value
+			break
+		}
+	}
+
+	// append or replace multi set-cookie to cookie
+	cookie = appendOrReplaceSetCookiesToCookie(setCookies, cookie)
+
+	// update autotest api global config
+	config.Header[apitestsv2.HeaderCookie] = cookie
 	configJson, err := json.Marshal(&config)
 	if err != nil {
 		rlog.TErrorf(ctx.SDK.Pipeline.ID, ctx.SDK.Task.ID, "failed to marshal AUTOTEST_API_GLOBAL_CONFIG, err: %v", err)
