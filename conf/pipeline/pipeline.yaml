@@ -14,6 +14,19 @@ mysql-xorm:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:test}"
 
+etcd:
+  endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
+  tls:
+    cert_file: "${ETCD_CERT_FILE:/certs/etcd-client.pem}"
+    cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
+    ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
+
+etcd-election@reconciler:
+  root_path: erda/component-leader/pipeline/reconciler
+
+etcd-election@gc:
+  root_path: erda/component-leader/pipeline/gc
+
 erda.core.pipeline.definition:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.

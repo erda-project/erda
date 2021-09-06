@@ -56,7 +56,7 @@ func (r *Reconciler) loadThrottler() error {
 const logPrefixContinueBackupThrottler = "[throttler backup]"
 
 // ContinueBackupThrottler 持续备份 throttler
-func (r *Reconciler) ContinueBackupThrottler() {
+func (r *Reconciler) ContinueBackupThrottler(ctx context.Context) {
 	done := make(chan struct{})
 	errDone := make(chan error)
 
@@ -86,6 +86,8 @@ func (r *Reconciler) ContinueBackupThrottler() {
 		case err := <-errDone:
 			logrus.Errorf("%s: failed to load, wait 10s for next loading, err: %v", logPrefixContinueBackupThrottler, err)
 			time.Sleep(time.Second * 10)
+		case <-ctx.Done():
+			return
 		}
 	}
 }

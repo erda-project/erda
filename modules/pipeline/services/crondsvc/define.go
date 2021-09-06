@@ -25,7 +25,6 @@ import (
 
 type CrondSvc struct {
 	crond    *cron.Cron
-	cronChan chan string
 	mu       *sync.Mutex
 	dbClient *dbclient.Client
 	bdl      *bundle.Bundle
@@ -34,7 +33,6 @@ type CrondSvc struct {
 
 func New(dbClient *dbclient.Client, bdl *bundle.Bundle, js jsonstore.JsonStore) *CrondSvc {
 	d := CrondSvc{}
-	d.cronChan = make(chan string, 10)
 	d.crond = cron.New()
 	d.mu = &sync.Mutex{}
 	d.dbClient = dbClient

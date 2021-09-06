@@ -14,6 +14,17 @@
 
 package pipelinesvc
 
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+)
+
 //import (
 //	"fmt"
 //	"os"
@@ -39,3 +50,29 @@ package pipelinesvc
 //	assert.NoError(t, err)
 //	fmt.Println(clusterInfo)
 //}
+
+func TestClusterHook(t *testing.T) {
+	svc := PipelineSvc{
+		bdl: bundle.New(
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
+			bundle.WithScheduler(),
+		),
+	}
+
+	err := svc.ClusterHook(apistructs.ClusterEvent{
+		Content: apistructs.ClusterInfo{
+			Type: "xxx",
+		},
+	})
+	assert.Equal(t, false, err == nil)
+
+	err = svc.ClusterHook(apistructs.ClusterEvent{
+		Content: apistructs.ClusterInfo{
+			Type: apistructs.K8S,
+		},
+		EventHeader: apistructs.EventHeader{
+			Event: "patch",
+		},
+	})
+	assert.Equal(t, false, err == nil)
+}
