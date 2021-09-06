@@ -288,7 +288,7 @@ func (t *TestPlan) Update(req apistructs.TestPlanUpdateRequest) error {
 			},
 		}
 		if !*req.IsArchived {
-			audit.TemplateName = apistructs.CancelArchiveTestPlanTemplate
+			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
 		}
 		return t.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
 			Audit: audit,

@@ -126,7 +126,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			},
 		}
 		if !operationData.Meta.IsArchived {
-			audit.TemplateName = apistructs.CancelArchiveTestPlanTemplate
+			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
 		}
 		if err := bdl.Bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
 			return err
