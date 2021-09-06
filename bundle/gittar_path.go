@@ -135,7 +135,7 @@ func (t *GittarFileTree) Inode() string {
 	return base64.StdEncoding.EncodeToString([]byte(t.Values.Encode()))
 }
 
-func (b *Bundle) GetGittarTreeNodeInfo(treePath, orgID string) (*apistructs.GittarTreeRspData, error) {
+func (b *Bundle) GetGittarTreeNodeInfo(treePath, orgID, userID string) (*apistructs.GittarTreeRspData, error) {
 	host, err := b.urls.Gittar()
 	if err != nil {
 		return nil, err
@@ -143,7 +143,10 @@ func (b *Bundle) GetGittarTreeNodeInfo(treePath, orgID string) (*apistructs.Gitt
 
 	var response apistructs.BaseResponse
 
-	resp, err := b.hc.Get(host).Header("Org-ID", orgID).Path(treePath).Do().JSON(&response)
+	resp, err := b.hc.Get(host).
+		Header("Org-ID", orgID).
+		Header("User-ID", userID).
+		Path(treePath).Do().JSON(&response)
 	if err != nil {
 		return nil, errors.Wrapf(err, "repo: %s", treePath)
 	}
@@ -159,14 +162,17 @@ func (b *Bundle) GetGittarTreeNodeInfo(treePath, orgID string) (*apistructs.Gitt
 	return &data, nil
 }
 
-func (b *Bundle) GetGittarBlobNodeInfo(blobPath string, orgID string) (*apistructs.GittarBlobRspData, error) {
+func (b *Bundle) GetGittarBlobNodeInfo(blobPath string, orgID, userID string) (*apistructs.GittarBlobRspData, error) {
 	host, err := b.urls.Gittar()
 	if err != nil {
 		return nil, err
 	}
 
 	var response apistructs.BaseResponse
-	resp, err := b.hc.Get(host).Header("Org-ID", orgID).Path(blobPath).Do().JSON(&response)
+	resp, err := b.hc.Get(host).
+		Header("Org-ID", orgID).
+		Header("User-ID", userID).
+		Path(blobPath).Do().JSON(&response)
 	if err != nil {
 		return nil, errors.Wrapf(err, "repo: %s", blobPath)
 	}

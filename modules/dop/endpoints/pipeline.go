@@ -206,12 +206,17 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 
 func (e *Endpoints) pipelineYmlList(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListPipelineYml.NotLogin().ToResp(), nil
+	}
+
 	var req apistructs.CICDPipelineYmlListRequest
-	err := e.queryStringDecoder.Decode(&req, r.URL.Query())
+	err = e.queryStringDecoder.Decode(&req, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrListPipelineYml.InvalidParameter(err).ToResp(), nil
 	}
-	result := pipeline.GetPipelineYmlList(req, e.bdl)
+	result := pipeline.GetPipelineYmlList(req, e.bdl, identityInfo.UserID)
 	return httpserver.OkResp(result)
 }
 
@@ -329,7 +334,7 @@ func (e *Endpoints) branchWorkspaceMap(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID))
+	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID), identityInfo.UserID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -655,14 +660,14 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		AppID:  appID,
 		Branch: gitEvent.Content.SourceBranch,
 	}
-	result := pipeline.GetPipelineYmlList(req, e.bdl)
+	result := pipeline.GetPipelineYmlList(req, e.bdl, gitEvent.Content.AuthorId)
 	find := false
 	for _, each := range result {
 		app, err := e.bdl.GetApp(uint64(appID))
 		if err != nil {
 			return nil, apierrors.ErrGetApp.InternalError(err)
 		}
-		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, gitEvent.Content.SourceBranch, each)
+		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, gitEvent.Content.SourceBranch, each, gitEvent.Content.AuthorId)
 		if err != nil {
 			continue
 		}
@@ -723,7 +728,7 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		}
 		request.Name = gitEvent.Content.SourceBranch + "/" + each
 		request.Status = apistructs.CheckRunStatusInProgress
-		_, err = e.bdl.CreateCheckRun(appID, request)
+		_, err = e.bdl.CreateCheckRun(appID, request, gitEvent.Content.AuthorId)
 		if err != nil {
 			continue
 		}
@@ -755,12 +760,12 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 					request.Result = apistructs.CheckRunResultSuccess
 				}
 				request.Status = apistructs.CheckRunStatusCompleted
-				_, err = e.bdl.CreateCheckRun(appID, request)
+				_, err = e.bdl.CreateCheckRun(appID, request, gitEvent.Content.AuthorId)
 				if err != nil {
 					return true, err
 				}
 				if pipelineResp.Status != apistructs.PipelineStatusSuccess {
-					err := e.bdl.CloseMergeRequest(appID, gitEvent.Content.RepoMergeId)
+					err := e.bdl.CloseMergeRequest(appID, gitEvent.Content.RepoMergeId, gitEvent.Content.MergeUserId)
 					if err != nil {
 						return true, err
 					}

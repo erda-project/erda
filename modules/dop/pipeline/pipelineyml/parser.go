@@ -29,7 +29,7 @@ const (
 
 func ParsePipeline(gittarURL, ref string) (*Pipeline, error) {
 	bdl := bundle.New(bundle.WithGittar())
-	contents, err := bdl.GetGittarFile(gittarURL, ref, GittarFilePath, GittarUserName, GittarPassWord)
+	contents, err := bdl.GetGittarFile(gittarURL, ref, GittarFilePath, GittarUserName, GittarPassWord, "")
 
 	y := New([]byte(contents))
 

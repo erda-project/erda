@@ -17,7 +17,6 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-
 	"net/http"
 	"strconv"
 
@@ -321,7 +320,7 @@ func (e *Endpoints) GetGittarFileByPipelineId(ctx context.Context, r *http.Reque
 		return errorresp.ErrResp(err)
 	}
 
-	_, err = user.GetIdentityInfo(r)
+	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrFuzzySearchGittarFileTreeNodes.NotLogin().ToResp(), nil
 	}
@@ -331,7 +330,7 @@ func (e *Endpoints) GetGittarFileByPipelineId(ctx context.Context, r *http.Reque
 	if err != nil {
 		return apierrors.ErrGetGittarFileTreeNode.MissingParameter("org id").ToResp(), nil
 	}
-	node, err := e.fileTree.GetGittarFileByPipelineId(uint64(pipelineIdInt), orgID)
+	node, err := e.fileTree.GetGittarFileByPipelineId(uint64(pipelineIdInt), orgID, identity)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -429,7 +428,7 @@ func (e *Endpoints) DeleteGittarFileTreeNode(ctx context.Context, r *http.Reques
 
 	// TODO: 鉴权
 
-	unifiedNode, err := e.fileTree.DeleteFileTreeNode(req, orgID)
+	unifiedNode, err := e.fileTree.DeleteFileTreeNode(req, orgID, identityInfo.UserID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

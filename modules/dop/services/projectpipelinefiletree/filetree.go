@@ -178,7 +178,7 @@ func (svc *FileTree) fuzzySearchFileTreeNodes(query apistructs.UnifiedFileTreeNo
 	return result, nil
 }
 
-func (svc *FileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {
+func (svc *FileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64, userID string) (*apistructs.UnifiedFileTreeNode, error) {
 	if err := req.BasicValidate(); err != nil {
 		return nil, apierrors.ErrGetFileTreeNode.InvalidParameter(err)
 	}
@@ -189,13 +189,13 @@ func (svc *FileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDelete
 		return nil, fmt.Errorf("invalid scope: %v", err)
 	}
 
-	return svc.deleteFileTreeNodes(req, orgID)
+	return svc.deleteFileTreeNodes(req, orgID, userID)
 }
 
-func (svc *FileTree) deleteFileTreeNodes(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
+func (svc *FileTree) deleteFileTreeNodes(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64, userID string) (result *apistructs.UnifiedFileTreeNode, err error) {
 	switch req.Scope {
 	case apistructs.FileTreeScopeProjectApp:
-		return svc.gittarFileTreeSvc.DeleteFileTreeNode(req, orgID)
+		return svc.gittarFileTreeSvc.DeleteFileTreeNode(req, orgID, userID)
 	case apistructs.FileTreeScopeProject, apistructs.FileTreeScopeAutoTestPlan, apistructs.FileTreeScopeAutoTestConfigSheet, apistructs.FileTreeScopeAutoTest:
 		return svc.autoTestSvc.DeleteFileTreeNode(req)
 	}
