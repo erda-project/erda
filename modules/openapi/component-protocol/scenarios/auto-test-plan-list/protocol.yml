@@ -75,6 +75,9 @@ components:
           key: "goto"
           target: "project_test_autoTestPlanDetail"
           jumpOut: false
+      changeSort:
+        key: "changeSort"
+        reload: true
     props:
       rowKey: "id"
       columns:
@@ -86,6 +89,14 @@ components:
           dataIndex: "testSpace"
         - title: "负责人"
           dataIndex: "owners"
+        - title: "最近执行通过率"
+          dataIndex: "passRate"
+          width: 180
+          sorter: true
+        - title: "最近执行时间"
+          dataIndex: "executeTime"
+          width: 180
+          sorter: true
         - title: "操作"
           dataIndex: "operate"
           width: 150
