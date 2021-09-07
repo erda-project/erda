@@ -2046,8 +2046,8 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 	param["terminusKey"] = params.TerminusKey
 	param["serviceId"] = params.ServiceId
 	if params.Search != "" {
-		where.WriteString(" AND message_bus_destination::tag=~$field")
-		param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+		where.WriteString(fmt.Sprintf(" message_bus_destination::tag=~/.*%s.*/ AND ", params.Search))
+		//param["field"] = params.Search
 	}
 
 	// elapsed_mean desc
@@ -2059,46 +2059,22 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
 
-	// producer
-	sqlProducer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
-		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
-		"span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
-	// consumer
-	sqlConsumer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
-		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE target_service_id::tag=$serviceId AND "+
-		"span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
-
-	p := &query.ResultSet{}
-	c := &query.ResultSet{}
+	producerCondition := "source_service_id::tag=$serviceId AND span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey"
+	consumerCondition := "target_service_id::tag=$serviceId AND span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey"
 	if params.Type == "producer" {
-		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		p = producer
+		where.WriteString(producerCondition)
 	} else if params.Type == "consumer" {
-		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		c = consumer
+		where.WriteString(consumerCondition)
 	} else {
-		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		p = producer
-		c = consumer
+		where.WriteString(fmt.Sprintf("((%s) OR (%s))", producerCondition, consumerCondition))
 	}
 
+	sql := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE %s GROUP BY message_bus_destination::tag,span_kind::tag %s", params.Layer, where.String(), orderby)
+
+	producer, err := topology.metricq.Query(metricq.InfluxQL, sql, param, options)
 	result := make(map[string]interface{}, 0)
-	data, err := topology.handleMQTranslationResponse(lang, params, p, options)
-	dataConsumer, err := topology.handleMQTranslationResponse(lang, params, c, options)
-	data = append(data, dataConsumer...)
+	data, err := topology.handleMQTranslationResponse(lang, params, producer, options)
 	if err != nil {
 		return nil, err
 	}
