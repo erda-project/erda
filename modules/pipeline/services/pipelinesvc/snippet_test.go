@@ -195,11 +195,14 @@ func Test_getActionDetail(t *testing.T) {
 
 		bdl := &bundle.Bundle{}
 		s.bdl = bdl
-
-		monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetExtensionVersion", func(b *bundle.Bundle, req apistructs.ExtensionVersionGetRequest) (*apistructs.ExtensionVersion, error) {
-			return &apistructs.ExtensionVersion{
-				Spec: data.spec,
-			}, nil
+		monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "SearchExtensions", func(b *bundle.Bundle, req apistructs.ExtensionSearchRequest) (map[string]apistructs.ExtensionVersion, error) {
+			var extensionVersion = map[string]apistructs.ExtensionVersion{}
+			for _, v := range req.Extensions {
+				extensionVersion[v] = apistructs.ExtensionVersion{
+					Spec: data.spec,
+				}
+			}
+			return extensionVersion, nil
 		})
 
 		monkey.Patch(handlerActionOutputsWithJq, func(action *apistructs.PipelineYmlAction, jq string) ([]string, error) {

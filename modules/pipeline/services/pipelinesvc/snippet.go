@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -120,14 +121,22 @@ func (s *PipelineSvc) getActionDetail(config apistructs.SnippetDetailQuery) (*ap
 
 	var detail = &apistructs.SnippetQueryDetail{}
 
-	req := apistructs.ExtensionVersionGetRequest{
-		Name:       config.Name,
-		Version:    config.Labels[apistructs.LabelActionVersion],
+	var actionVersion = extmarketsvc.MakeActionTypeVersion(&pipelineyml.Action{
+		Type:    pipelineyml.ActionType(config.Name),
+		Version: config.Labels[apistructs.LabelActionVersion],
+	})
+	extensionSearchRequest := apistructs.ExtensionSearchRequest{
+		Extensions: []string{actionVersion},
 		YamlFormat: true,
 	}
-	version, err := s.bdl.GetExtensionVersion(req)
+
+	actions, err := s.bdl.SearchExtensions(extensionSearchRequest)
 	if err != nil {
 		return nil, err
+	}
+	version, ok := actions[actionVersion]
+	if !ok {
+		return nil, nil
 	}
 
 	specYml, ok := version.Spec.(string)
