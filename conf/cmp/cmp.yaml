@@ -17,16 +17,63 @@ component-protocol.components.cmp-dashboard-workload-detail.workloadStatus:
 component-protocol.components.cmp-dashboard-workload-detail.workloadTitle:
 
 
-grpc-client@erda.core.monitor.metric:
-  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
-erda.core.monitor.metric-client:
+# component-protocol framework
+# components
+component-protocol.components.cmp-dashboard-nodes.nodeFilter:
+component-protocol.components.cmp-dashboard-nodes.page:
+component-protocol.components.cmp-dashboard-nodes.charts:
+component-protocol.components.cmp-dashboard-nodes.tableTabsContainer:
+component-protocol.components.cmp-dashboard-nodes.addLabelModal:
+component-protocol.components.cmp-dashboard-nodes.tableTabs:
+component-protocol.components.cmp-dashboard-nodes.cpuTable:
+component-protocol.components.cmp-dashboard-nodes.memTable:
+component-protocol.components.cmp-dashboard-nodes.podTable:
+component-protocol.components.cmp-dashboard-nodes.cpuChart:
+component-protocol.components.cmp-dashboard-nodes.memChart:
+component-protocol.components.cmp-dashboard-nodes.podChart:
 
-service-register:
-http-server:
-  addr: ":9028"
-grpc-server:
-  addr: ":9029"
+component-protocol.components.cmp-dashboard-nodeDetail.page:
+component-protocol.components.cmp-dashboard-nodeDetail.header:
+component-protocol.components.cmp-dashboard-nodeDetail.infoMapTable:
+component-protocol.components.cmp-dashboard-nodeDetail.infoTitle:
+component-protocol.components.cmp-dashboard-nodeDetail.infoDetail:
+component-protocol.components.cmp-dashboard-nodeDetail.addLabelModal:
+component-protocol.components.cmp-dashboard-nodeDetail.nodeStatus:
+component-protocol.components.cmp-dashboard-nodeDetail.nodeTitle:
+component-protocol.components.cmp-dashboard-nodeDetail.statusBadge:
+component-protocol.components.cmp-dashboard-nodeDetail.statusTitle:
+
+component-protocol.components.cmp-dashboard-pods.page:
+component-protocol.components.cmp-dashboard-pods.filter:
+component-protocol.components.cmp-dashboard-pods.podTitle:
+component-protocol.components.cmp-dashboard-pods.podDistribution:
+component-protocol.components.cmp-dashboard-pods.tableTabs:
+component-protocol.components.cmp-dashboard-pods.podsTable:
+
+component-protocol.components.cmp-dashboard-podDetail.page:
+component-protocol.components.cmp-dashboard-podDetail.header:
+component-protocol.components.cmp-dashboard-podDetail.podInfoTitle:
+component-protocol.components.cmp-dashboard-podDetail.podInfo:
+component-protocol.components.cmp-dashboard-podDetail.containerTitle:
+component-protocol.components.cmp-dashboard-podDetail.containerTable:
+component-protocol.components.cmp-dashboard-podDetail.eventTitle:
+component-protocol.components.cmp-dashboard-podDetail.eventTable:
+component-protocol.components.cmp-dashboard-podDetail.podTitle:
+component-protocol.components.cmp-dashboard-podDetail.podStatus:
+
 
 i18n:
   files:
     - conf/cmp/i18n/component-protocol.yaml
+
+service-register:
+
+grpc-client@erda.core.monitor.metric:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.metric-client:
+
+http-server:
+  addr: ":9028"
+  allow_cors : true
+#grpc-server:
+#  addr: ":9029"

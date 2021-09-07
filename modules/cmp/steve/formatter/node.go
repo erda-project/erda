@@ -37,9 +37,12 @@ type NodeFormatter struct {
 }
 
 type res struct {
-	CPU    int64
-	Memory int64
-	Pods   int64
+	CPU       int64
+	CPUStr    string
+	Memory    int64
+	MemoryStr string
+	Pods      int64
+	PodsStr   string
 }
 
 type cacheKey struct {
@@ -131,9 +134,11 @@ func (n *NodeFormatter) getNodeAllocatedRes(ctx context.Context, nodeName string
 		}
 	}
 	return &res{
-		CPU:    cpu.MilliValue(),
-		Memory: mem.Value(),
-		Pods:   int64(len(pods.Items)),
+		CPU:       cpu.MilliValue(),
+		CPUStr:    cpu.String(),
+		Memory:    mem.Value(),
+		MemoryStr: mem.String(),
+		Pods:      int64(len(pods.Items)),
 	}, nil
 }
 
@@ -147,8 +152,10 @@ func parseRes(raw *types.RawResource, resType string) *res {
 	parsedPods, _ := resource.ParseQuantity(pods)
 
 	return &res{
-		CPU:    parsedCPU.MilliValue(),
-		Memory: parsedMem.Value(),
-		Pods:   parsedPods.Value(),
+		CPU:       parsedCPU.MilliValue(),
+		Memory:    parsedMem.Value(),
+		Pods:      parsedPods.Value(),
+		CPUStr:    parsedCPU.String(),
+		MemoryStr: parsedMem.String(),
 	}
 }
