@@ -380,7 +380,7 @@ func ValidaUserRepo(c *webcontext.Context, userId string, repo *models.Repo) (*A
 		return nil, err
 	}
 	if !permission.Access {
-		return nil, errors.New(fmt.Sprintf("no permission to access,userID: %s, appID: %d", userId, repo.AppID))
+		return nil, errors.New("no permission to access")
 	}
 	return &AuthResp{
 		Repo:       repo,
