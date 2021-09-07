@@ -146,8 +146,8 @@ erda.core.monitor.metric.index:
   disk_clean:
     enable_index_clean_by_disk: true
     check_interval: "5m"
-    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:85} # 触发磁盘清理的容量占比
-    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:75} # 触发磁盘清理时，尽量清理到的目标容量占比
+    high_disk_usage_percent: ${HIGH_DISK_USAGE_PERCENT:80} # 触发磁盘清理的容量占比
+    low_disk_usage_percent: ${LOW_DISK_USAGE_PERCENT:70} # 触发磁盘清理时，尽量清理到的目标容量占比
     min_indices_store: "10GB" # 磁盘使用率高时，保证 索引最少可以占用的容量
     min_indices_store_percent: ${MIN_INDICES_STORE_PERCENT:10} # 磁盘使用率高时，保证 索引最少可以占用总磁盘总量的百分比
     rollover_body_file: "${CONFIG_PATH}/index.rollover.min.json" # 当没有索引可以删时，先滚动索引，再删除。滚动的条件。

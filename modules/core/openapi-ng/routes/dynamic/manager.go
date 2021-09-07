@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -104,14 +105,45 @@ func (p *provider) setAPIProxy(body APIProxy) interface{} {
 	if err != nil {
 		return httpapi.Errors.InvalidParameter(err)
 	}
-	err = p.saveAPIProxy(&body)
+	err = p.saveAPIProxy(&body, clientv3.NoLease)
 	if err != nil {
 		return httpapi.Errors.Internal(err)
 	}
 	return httpapi.Success("OK")
 }
 
-func (p *provider) saveAPIProxy(a *APIProxy) error {
+func (p *provider) setAPIProxyWithKeepAlive(req *http.Request, body struct {
+	List []*APIProxy `json:"list"`
+}) interface{} {
+	if len(body.List) <= 0 {
+		return httpapi.Errors.InvalidParameter("proxy list is empty")
+	}
+	for _, proxy := range body.List {
+		proxy.Method = strings.TrimSpace(proxy.Method)
+		proxy.Path = formatPath(strings.TrimSpace(proxy.Path))
+		proxy.BackendPath = formatPath(strings.TrimSpace(proxy.BackendPath))
+		if err := proxy.Validate(); err != nil {
+			return httpapi.Errors.InvalidParameter(err)
+		}
+	}
+	ctx := req.Context()
+	leaseID, err := p.grantLeaseID(ctx)
+	if err != nil {
+		return httpapi.Errors.Internal(err)
+	}
+	for _, proxy := range body.List {
+		if err := p.saveAPIProxy(proxy, leaseID); err != nil {
+			return httpapi.Errors.Internal(err)
+		}
+	}
+	err = p.keepAliveLease(ctx, leaseID)
+	if err != nil {
+		return httpapi.Errors.Internal(err)
+	}
+	return httpapi.Success("OK")
+}
+
+func (p *provider) saveAPIProxy(a *APIProxy, leaseID clientv3.LeaseID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), p.Cfg.EtcdRequestTimeout)
 	defer cancel()
 	key := fmt.Sprintf("%s/%s %s", p.Cfg.Prefix, a.Method, a.Path)
@@ -119,7 +151,11 @@ func (p *provider) saveAPIProxy(a *APIProxy) error {
 	if err != nil {
 		return err
 	}
-	_, err = p.Etcd.Put(ctx, key, string(byts))
+	var opts []clientv3.OpOption
+	if leaseID != clientv3.NoLease {
+		opts = append(opts, clientv3.WithLease(leaseID))
+	}
+	_, err = p.Etcd.Put(ctx, key, string(byts), opts...)
 	return err
 }
 
@@ -171,6 +207,42 @@ func (p *provider) getAPIProxies() (list []*APIProxy, err error) {
 		list = append(list, api)
 	}
 	return list, nil
+}
+
+func (p *provider) grantLeaseID(ctx context.Context) (clientv3.LeaseID, error) {
+	resp, err := p.Etcd.Grant(ctx, int64(p.Cfg.KeepAliveTTL.Seconds()))
+	if err != nil {
+		return clientv3.NoLease, err
+	}
+	return resp.ID, nil
+}
+
+func (p *provider) revokeLeaseID(leaseID clientv3.LeaseID) {
+	ctx, cancel := context.WithTimeout(context.Background(), p.Cfg.EtcdRequestTimeout)
+	defer cancel()
+	_, err := p.Etcd.Revoke(ctx, leaseID)
+	if err != nil {
+		p.Log.Error(err)
+	}
+}
+
+func (p *provider) keepAliveLease(ctx context.Context, leaseID clientv3.LeaseID) error {
+	defer p.revokeLeaseID(leaseID)
+	keepAlive, err := p.Etcd.KeepAlive(ctx, leaseID)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		case _, ok := <-keepAlive:
+			// eat messages until keep alive channel closes
+			if !ok {
+				return nil
+			}
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 func formatPath(path string) string {
