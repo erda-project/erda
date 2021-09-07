@@ -1,0 +1,132 @@
+package jaeger
+
+import (
+	"errors"
+	"fmt"
+	"html"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
+	"github.com/apache/thrift/lib/go/thrift"
+
+	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	oap "github.com/erda-project/erda-proto-go/oap/common/pb"
+	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
+	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
+	"github.com/erda-project/oap-plugins-gen-go/jaeger-thrift/jaeger"
+	"github.com/recallsong/go-utils/reflectx"
+)
+
+var (
+	acceptedThriftFormats = map[string]struct{}{
+		"application/x-thrift":                 {},
+		"application/vnd.apache.thrift.binary": {},
+	}
+
+	JAEGER_MSP_ENV_ID        = "msp.env.id"
+	JAEGER_MSP_AK_ID     = "msp.ak.id"
+	JAEGER_MSP_AK_SECRET = "msp.ak.secret"
+)
+
+func ThriftDecoder(r *http.Request, entity interface{}) error {
+	contentType := r.Header.Get("Content-Type")
+	if _, ok := acceptedThriftFormats[contentType]; !ok {
+		return errors.New(fmt.Sprintf("Unsupported content type: %v", html.EscapeString(contentType)))
+	}
+	if spansRequest, ok := entity.(*jaegerpb.PostSpansRequest); ok {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		tdes := thrift.NewTDeserializer()
+		batch := &jaeger.Batch{}
+		if err = tdes.Read(r.Context(), batch, body); err != nil {
+			return err
+		}
+		spansRequest.Spans = thrift2Proto(batch)
+		spansRequest.Principal = &oap.Principal{}
+		extractPrincipal(spansRequest.Principal, batch.Process.Tags)
+	}
+	return nil
+}
+
+func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
+	if batch == nil || batch.Spans == nil || batch.Process == nil {
+		return nil
+	}
+	blen := len(batch.Spans)
+	if blen == 0 {
+		return nil
+	}
+	spans := make([]*tracing.Span, 0)
+	for _, tSpan := range batch.Spans {
+		span := &tracing.Span{
+			TraceID:           extractTraceID(tSpan),
+			SpanID:            reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10)),
+			StratTimeUnixNano: uint64(tSpan.StartTime),
+			EndTimeUnixNano:   uint64(tSpan.StartTime + tSpan.Duration),
+			Name:              tSpan.OperationName,
+		}
+		if tSpan.ParentSpanId != 0 {
+			span.ParentSpanID = reflectx.StringToBytes(strconv.FormatInt(tSpan.SpanId, 10))
+		}
+		span.Attributes = make(map[string]string)
+		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
+		span.Attributes[common.TAG_SERVICE_NAME] = batch.Process.ServiceName
+		extractAttributes(span, batch.Process.Tags)
+		extractAttributes(span, tSpan.Tags)
+		spans = append(spans, span)
+	}
+	return spans
+}
+
+func extractTraceID(tSpan *jaeger.Span) []byte {
+	if tSpan.TraceIdHigh == 0 {
+		return reflectx.StringToBytes(fmt.Sprintf("%016x", tSpan.TraceIdLow))
+	}
+	return reflectx.StringToBytes(fmt.Sprintf("%016x%016x", tSpan.TraceIdHigh, tSpan.TraceIdLow))
+}
+
+func extractPrincipal(principal *oap.Principal, tags []*jaeger.Tag) {
+	if tags != nil {
+		for _, tag := range tags {
+			if tag.Key == common.TAG_MSP_ENV_ID || tag.Key == JAEGER_MSP_ENV_ID {
+				principal.Identity = extractTagValue(tag)
+			}
+			if tag.Key == common.TAG_MSP_AK_ID || tag.Key == JAEGER_MSP_AK_ID {
+				principal.AccessKey = extractTagValue(tag)
+			}
+			if tag.Key == common.TAG_MSP_AK_SECRET || tag.Key == JAEGER_MSP_AK_SECRET {
+				principal.AccessSecret = extractTagValue(tag)
+			}
+		}
+	}
+}
+
+func extractAttributes(span *tracing.Span, tags []*jaeger.Tag) {
+	if tags != nil {
+		for _, tag := range tags {
+			span.Attributes[tag.Key] = extractTagValue(tag)
+		}
+	}
+}
+
+func extractTagValue(tag *jaeger.Tag) string {
+	if tag.IsSetVStr() {
+		return tag.GetVStr()
+	}
+	if tag.IsSetVBinary() {
+		return reflectx.BytesToString(tag.GetVBinary())
+	}
+	if tag.IsSetVBool() {
+		return strconv.FormatBool(tag.GetVBool())
+	}
+	if tag.IsSetVDouble() {
+		return strconv.FormatFloat(tag.GetVDouble(), 'E', -1, 64)
+	}
+	if tag.IsSetVLong() {
+		return strconv.FormatInt(tag.GetVLong(), 10)
+	}
+	return tag.GetVStr()
+}

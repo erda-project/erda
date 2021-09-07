@@ -25,10 +25,13 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 
 	// providers
+	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/core/monitor/collector"
+	_ "github.com/erda-project/erda/modules/oap/collector/receivers/jaeger"
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+
 )
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"

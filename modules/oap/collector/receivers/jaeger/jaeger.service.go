@@ -12,15 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package jaeger
 
-// Span .
-type Span struct {
-	TraceID       string            `json:"trace_id"`
-	StartTime     int64             `json:"start_time"`
-	SpanID        string            `json:"span_id"`
-	ParentSpanID  string            `json:"parent_span_id"`
-	OperationName string            `json:"operation_name"`
-	EndTime       int64             `json:"end_time"`
-	Tags          map[string]string `json:"tags"`
+import (
+	"context"
+	"github.com/erda-project/erda-infra/base/logs"
+	common "github.com/erda-project/erda-proto-go/common/pb"
+	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+)
+
+type jaegerServiceImpl struct {
+	Log logs.Logger
 }
+
+func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
+	// not support media type: application/x-thrift
+	// TODO Temporarily use the original API implementation of echo
+	return &common.VoidResponse{}, nil
+}
+

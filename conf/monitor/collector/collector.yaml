@@ -4,6 +4,11 @@ http-server:
 health:
     path: "/api/health"
 
+service-register:
+
+erda.oap.collector.receiver.jaeger:
+  enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
+
 grpc-client@erda.core.services.authentication.credentials.accesskey:
     addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.authentication.credentials.accesskey-client:
