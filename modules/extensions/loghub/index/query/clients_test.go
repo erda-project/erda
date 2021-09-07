@@ -18,15 +18,13 @@ import (
 	"reflect"
 	"testing"
 
-	db2 "github.com/erda-project/erda/modules/msp/instance/db"
-
 	"bou.ke/monkey"
-
-	"github.com/erda-project/erda/bundle"
-
-	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
 	"github.com/golang/mock/gomock"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/extensions/loghub/index/query/db"
+	db2 "github.com/erda-project/erda/modules/msp/instance/db"
 )
 
 func TestGetLogIndices_WithNoneEmptyOrgId_Should_Return_Indices_With_OrgAlias(t *testing.T) {
