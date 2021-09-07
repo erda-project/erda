@@ -53,6 +53,7 @@ const (
 	IssueEvent                 = "issue"
 	PipelineYmlEvent           = "pipelineYml"
 	GitPushEvent               = "git_push"
+	AutoTestPlanExecuteEvent   = "autoTestPlanExecute"
 )
 
 // Event actions

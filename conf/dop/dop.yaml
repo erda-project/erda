@@ -19,6 +19,8 @@ grpc-client@erda.core.pipeline.definition:
 erda.core.pipeline.definition-client:
 erda.core.pipeline.definition-process-client:
 
+erda.core.dop.autotest.testplan:
+
 # component-protocol framework
 component-protocol:
 # components
