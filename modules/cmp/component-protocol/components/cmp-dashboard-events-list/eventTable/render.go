@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -170,7 +170,7 @@ func (t *ComponentEventTable) RenderList() error {
 			logrus.Errorf("failed to parse count for event %s, %v", fields[9], err)
 			continue
 		}
-		lastSeenTimestamp, err := time.ParseDuration(fields[0])
+		lastSeenTimestamp, err := strfmt.ParseDuration(fields[0])
 		if err != nil {
 			logrus.Errorf("failed to parse timestamp for event %s, %v", fields[9], err)
 			continue

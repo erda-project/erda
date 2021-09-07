@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apistructs
+package envBaseInfoTitle
 
-type MetricsRequest struct {
-	UserID       string
-	OrgID        string
-	ClusterName  string
-	ResourceType string
-	ResourceKind string
-	Names        []string
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/erda-project/erda/apistructs"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+)
+
+type ComponentAction struct{}
+
+func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+	return json.Unmarshal([]byte(`{"title": "基础信息", "level": 3}`), &c.Props)
 }
 
-type MetricsResponse struct {
-	Header
-	Data []MetricsData `json:"data"`
-}
-
-type MetricsData struct {
-	// if qurey pod resource, used means usedPercent. request and total are useless.
-	Used    float64 `json:"used"`
-	Request float64 `json:"request"`
-	Total   float64 `json:"total"`
+func RenderCreator() protocol.CompRender {
+	return &ComponentAction{}
 }

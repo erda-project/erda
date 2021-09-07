@@ -34,11 +34,18 @@ func RenderCreator() protocol.CompRender {
 
 type TableItem struct {
 	//Assignee    map[string]string `json:"assignee"`
-	Id        uint64                 `json:"id"`
-	Name      string                 `json:"name"`
-	Owners    map[string]interface{} `json:"owners"`
-	TestSpace string                 `json:"testSpace"`
-	Operate   Operate                `json:"operate"`
+	Id          uint64                 `json:"id"`
+	Name        string                 `json:"name"`
+	Owners      map[string]interface{} `json:"owners"`
+	TestSpace   string                 `json:"testSpace"`
+	Operate     Operate                `json:"operate"`
+	PassRate    PassRate               `json:"passRate"`
+	ExecuteTime string                 `json:"executeTime"`
+}
+
+type PassRate struct {
+	RenderType string  `json:"renderType"`
+	Value      float64 `json:"value"`
 }
 
 type Operate struct {
@@ -53,6 +60,16 @@ type OperationData struct {
 		IsArchived bool   `json:"isArchived"`
 	} `json:"meta"`
 }
+
+type SortData struct {
+	Field string `json:"field"`
+	Order string `json:"order"`
+}
+
+const (
+	OrderAscend  string = "ascend"
+	OrderDescend string = "descend"
+)
 
 func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
@@ -145,6 +162,11 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		}
 		cond.IsArchived = &isArchive
 	}
+	// orderBy and ASC
+	err = convertSortData(&cond, c)
+	if err != nil {
+		return err
+	}
 
 	r, err := bdl.Bdl.PagingTestPlansV2(cond)
 	if err != nil {
@@ -166,6 +188,11 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{},
 			},
+			PassRate: PassRate{
+				RenderType: "progress",
+				Value:      data.PassRate,
+			},
+			ExecuteTime: data.ExecuteTime.Format("2006-01-02 15:04:05"),
 		}
 		if data.IsArchived == true {
 			item.Operate.Operations["archive"] = map[string]interface{}{
@@ -203,6 +230,36 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	c.State["formModalVisible"] = false
 	c.State["formModalTestPlanID"] = 0
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = r.UserIDs
+	return nil
+}
+
+func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Component) error {
+	if _, ok := c.State["sorterData"]; !ok {
+		return nil
+	}
+	var sortData SortData
+	sortDataByte, err := json.Marshal(c.State["sorterData"])
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(sortDataByte, &sortData)
+	if err != nil {
+		return err
+	}
+
+	if sortData.Field == "passRate" {
+		sortData.Field = "pass_rate"
+	} else if sortData.Field == "executeTime" {
+		sortData.Field = "execute_time"
+	}
+
+	req.OrderBy = sortData.Field
+	if sortData.Order == OrderAscend {
+		req.Asc = true
+	} else if sortData.Order == OrderDescend {
+		req.Asc = false
+	}
+
 	return nil
 }
 
