@@ -2037,6 +2037,19 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 }
 
 func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
+	options, param, sql := topology.composeMqTranslationCondition(params)
+
+	response, err := topology.metricq.Query(metricq.InfluxQL, sql, param, options)
+	result := make(map[string]interface{}, 0)
+	data, err := topology.handleMQTranslationResponse(lang, params, response, options)
+	if err != nil {
+		return nil, err
+	}
+	result["data"] = data
+	return result, nil
+}
+
+func (topology *provider) composeMqTranslationCondition(params translation) (url.Values, map[string]interface{}, string) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2070,15 +2083,7 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 
 	sql := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE %s GROUP BY message_bus_destination::tag,span_kind::tag %s", params.Layer, where.String(), orderby)
-
-	producer, err := topology.metricq.Query(metricq.InfluxQL, sql, param, options)
-	result := make(map[string]interface{}, 0)
-	data, err := topology.handleMQTranslationResponse(lang, params, producer, options)
-	if err != nil {
-		return nil, err
-	}
-	result["data"] = data
-	return result, nil
+	return options, param, sql
 }
 
 func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
