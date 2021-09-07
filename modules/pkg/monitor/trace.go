@@ -24,4 +24,3 @@ type Span struct {
 	EndTime       int64             `json:"end_time"`
 	Tags          map[string]string `json:"tags"`
 }
-
