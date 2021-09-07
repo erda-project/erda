@@ -90,7 +90,7 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 	w.Flush()
 	//返回
 	return &pb.DownloadAccessKeyFileResponse{
-		Data: buf.Bytes(),
+		Content: buf.Bytes(),
 	}, nil
 }
 

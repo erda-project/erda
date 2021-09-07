@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
 
 var (
@@ -91,8 +92,8 @@ func newMockDB() *gorm.DB {
 	// construct
 	rows := sqlmock.NewRows([]string{"id", "access_key", "secret_key", "status", "subject_type", "subject", "description"}).
 		AddRow("aaa", "abc", "edf", 1, 1, "1", "xx")
-	mock.ExpectQuery("SELECT \\* FROM `erda_access_key`.*?").WillReturnRows(rows)
 	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `erda_access_key`.*?").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow(1))
+	mock.ExpectQuery("SELECT \\* FROM `erda_access_key`.*?").WillReturnRows(rows)
 
 	gdb, err := gorm.Open("mysql", sqlDB)
 	if err != nil {
