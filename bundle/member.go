@@ -49,6 +49,14 @@ func (b *Bundle) GetMemberByToken(request *apistructs.GetMemberByTokenRequest) (
 }
 
 func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Member, error) {
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r.List, nil
+}
+
+func (b *Bundle) GetMembers(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -75,7 +83,15 @@ func (b *Bundle) ListMembers(req apistructs.MemberListRequest) ([]apistructs.Mem
 	if !resp.IsOK() || !r.Success {
 		return nil, toAPIError(resp.StatusCode(), r.Error)
 	}
-	return r.Data.List, nil
+	return &r.Data, nil
+}
+
+func (b *Bundle) ListMembersAndTotal(req apistructs.MemberListRequest) (*apistructs.MemberList, error) {
+	r, err := b.GetMembers(req)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // UpdateMemberUserInfo 更新成员的用户信息
@@ -309,6 +325,35 @@ func (b *Bundle) CountMembersWithoutExtraByScope(scopeType string, scopeID uint6
 	if !resp.IsOK() {
 		return 0, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("failed to ListMembersWithoutExtraByScope, status code: %d, body: %v",
+				resp.StatusCode(),
+				memberResp.Error,
+			))
+	}
+
+	return memberResp.Data, nil
+}
+
+// GetMemberByUserAndScope get member by user and scope
+func (b *Bundle) GetMemberByUserAndScope(scopeType apistructs.ScopeType, userID string, scopeID uint64) ([]apistructs.Member, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var memberResp apistructs.GetMemberByUserAndScopeResponse
+	resp, err := hc.Get(host).Path("/api/members/actions/get-by-user-and-scope").
+		Header(httputil.InternalHeader, "bundle").
+		Param("scopeType", string(scopeType)).
+		Param("userID", userID).
+		Param("scopeID", strconv.FormatUint(scopeID, 10)).
+		Do().JSON(&memberResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("failed to GetMemberByUserAndScope, status code: %d, body: %v",
 				resp.StatusCode(),
 				memberResp.Error,
 			))

@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/i18n"
 	"github.com/erda-project/erda/pkg/excel"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -194,9 +195,15 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 	}
 }
 
-func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string) ([][]string, error) {
+func (svc *Issue) getIssueExportDataI18n(locale, i18nKey string) []string {
+	l := svc.bdl.GetLocale(locale)
+	t := l.Get(i18nKey)
+	return strutil.Split(t, ",")
+}
+
+func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, stageMap map[issueStage]string, locale string) ([][]string, error) {
 	// 默认字段列名
-	r := [][]string{{"ID", "标题", "内容", "状态", "创建人", "处理人", "负责人", "任务类型或缺陷引入源", "优先级", "所属迭代", "复杂度", "严重程度", "标签", "类型", "截止时间", "创建时间"}}
+	r := [][]string{svc.getIssueExportDataI18n(locale, i18n.I18nKeyIssueExportTitles)}
 	// 自定义字段列名
 	for _, pro := range property {
 		r[0] = append(r[0], pro.DisplayName)

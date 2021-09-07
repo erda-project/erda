@@ -148,7 +148,8 @@ func (e *Endpoints) ListMemberRoles(ctx context.Context, r *http.Request, vars m
 			}
 		}
 	}
-	if orgID == 0 {
+
+	if orgID == 0 && scopeType != apistructs.SysScope {
 		return nil, errors.Errorf("invalid param, orgId is empty")
 	}
 
@@ -571,4 +572,28 @@ func (e *Endpoints) CountMembersWithoutExtraByScope(ctx context.Context, r *http
 	}
 
 	return httpserver.OkResp(total)
+}
+
+// GetMemberByUserAndScope get member by user and scope
+func (e *Endpoints) GetMemberByUserAndScope(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.GetMemberByUserAndScope.NotLogin().ToResp(), nil
+	}
+
+	var req apistructs.GetMemberByUserAndScopeRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.GetMemberByUserAndScope.InvalidParameter(err).ToResp(), nil
+	}
+
+	members, err := e.member.GetByUserAndScope(req.UserID, req.ScopeType, req.ScopeID)
+	if err != nil {
+		return apierrors.GetMemberByUserAndScope.InternalError(err).ToResp(), nil
+	}
+	membersDto := make([]apistructs.Member, 0, len(members))
+	for _, v := range members {
+		membersDto = append(membersDto, v.Convert2APIDTO())
+	}
+
+	return httpserver.OkResp(membersDto)
 }

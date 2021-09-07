@@ -1,0 +1,57 @@
+version: 0.1
+
+scenario: cmp-dashboard-workloads-list
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - filter
+      - workloadTitle
+      - workloadChart
+      - workloadTable
+
+components:
+  page:
+    type: Container
+  workloadTitle:
+    type: Title
+  filter:
+    type: ContractiveFilter
+  workloadChart:
+    type: Chart
+  workloadTable:
+    type: Table
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: workloadTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: workloadTitle
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+    - name: workloadChart
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+  filter:
+    - name: workloadTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+    - name: workloadTitle
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"
+    - name: workloadChart
+      state:
+        - name: "values"
+          value: "{{ workloadTable.countValues }}"

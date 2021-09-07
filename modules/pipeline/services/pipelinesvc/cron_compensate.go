@@ -51,11 +51,9 @@ func getCronInterruptCompensateInterval(interval int64) time.Duration {
 	return time.Duration(interval) * time.Minute * 2
 }
 
-func (s *PipelineSvc) ContinueCompensate() {
+func (s *PipelineSvc) ContinueCompensate(ctx context.Context) {
 	// 获取分布式锁成功才能执行中断补偿
 	// 若分布式锁丢失，停止补偿，并尝试重新获取分布式锁
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	//lock, err := s.getCompensateLock(cancel)
 	//if err != nil {
@@ -105,20 +103,20 @@ func (s *PipelineSvc) getCompensateLock(cancel func()) (*dlock.DLock, error) {
 			cancel()
 			time.Sleep(waitTimeIfLostDLock)
 			compensateLog.Warn("try to continue compensate again")
-			go s.ContinueCompensate()
+			go s.ContinueCompensate(context.Background())
 		},
 		dlock.WithTTL(30),
 	)
 	if err != nil {
 		compensateLog.Errorf("[alert] failed to get dlock, err: %v", err)
 		time.Sleep(waitTimeIfLostDLock)
-		go s.ContinueCompensate()
+		go s.ContinueCompensate(context.Background())
 		return nil, err
 	}
 	if err := lock.Lock(context.Background()); err != nil {
 		compensateLog.Errorf("[alert] failed to lock dlock, err: %v", err)
 		time.Sleep(waitTimeIfLostDLock)
-		go s.ContinueCompensate()
+		go s.ContinueCompensate(context.Background())
 		return nil, err
 	}
 

@@ -1636,7 +1636,7 @@
       "en": ""
     }
   },
-  "deleteTag":{
+  "deleteTag": {
     "desc": "删除标签",
     "success": {
       "zh": "在应用 [@appName](app) 下删除标签 [@name]",
@@ -1647,7 +1647,7 @@
       "en": ""
     }
   },
-  "deleteBranch":{
+  "deleteBranch": {
     "desc": "删除分支",
     "success": {
       "zh": "在应用 [@appName](app) 下删除分支 [@name]",
@@ -1658,7 +1658,7 @@
       "en": ""
     }
   },
-  "repoLocked":{
+  "repoLocked": {
     "desc": "仓库锁定",
     "success": {
       "zh": "应用 [@appName](app) 的仓库锁定状态变更为 [@isLocked]",
@@ -1762,6 +1762,61 @@
     "success": {
       "zh": "在集群 [@clusterName] 中，通过kubectl控制台执行命令 [@commands]",
       "en": "Run commands in cluster [@clusterName]: [@commands]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "redeployRuntime": {
+    "desc": "服务重启",
+    "success": {
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行重启操作",
+      "en": "in [@projectName](project) / [@appName](app) , redeploy the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "rollbackRuntime": {
+    "desc": "服务回滚",
+    "success": {
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行回滚操作",
+      "en": "in [@projectName](project) / [@appName](app) , rollback the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "deployRuntime": {
+    "desc": "服务部署",
+    "success": {
+      "zh": "在 [@projectName](project) / [@appName](app) 中, 对 [@serviceName] runtime 进行部署操作",
+      "en": "in [@projectName](project) / [@appName](app) , deploy the service [@serviceName]"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "archiveTestPlan": {
+    "desc": "测试计划归档",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对测试计划 [@testPlanName] 进行了归档",
+      "en": "Archive test plan [@testPlanName] in project [@projectName](project)"
+    },
+    "fail": {
+      "zh": "",
+      "en": ""
+    }
+  },
+  "cancelArchiveTestPlan": {
+    "desc": "测试计划取消归档",
+    "success": {
+      "zh": "在 [@projectName](project) 项目中，对测试计划 [@testPlanName] 取消了归档",
+      "en": "Unarchive test plan [@testPlanName] in project [@projectName](project)"
     },
     "fail": {
       "zh": "",

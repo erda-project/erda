@@ -92,9 +92,9 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 }
 
 // 获取应用下的所有.yml文件
-func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.Bundle) []string {
+func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.Bundle, userID string) []string {
 	result := []string{}
-	files, err := bdl.SearchGittarFiles(req.AppID, req.Branch, "pipeline.yml", "", 1)
+	files, err := bdl.SearchGittarFiles(req.AppID, req.Branch, "pipeline.yml", "", 1, userID)
 	if err == nil {
 		for _, file := range files {
 			result = append(result, file.Name)
@@ -102,7 +102,7 @@ func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.B
 	}
 
 	pipelinePath := DicePipelinesGitFolder
-	files, err = bdl.SearchGittarFiles(req.AppID, req.Branch, "*.yml", pipelinePath, 3)
+	files, err = bdl.SearchGittarFiles(req.AppID, req.Branch, "*.yml", pipelinePath, 3, userID)
 	if err == nil {
 		for _, file := range files {
 			result = append(result, pipelinePath+"/"+file.Name)
@@ -113,8 +113,8 @@ func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.B
 }
 
 // FetchPipelineYml 获取pipeline.yml文件
-func (p *Pipeline) FetchPipelineYml(gittarURL, ref, pipelineYmlName string) (string, error) {
-	return p.bdl.GetGittarFile(gittarURL, ref, pipelineYmlName, "", "")
+func (p *Pipeline) FetchPipelineYml(gittarURL, ref, pipelineYmlName, userID string) (string, error) {
+	return p.bdl.GetGittarFile(gittarURL, ref, pipelineYmlName, "", "", userID)
 }
 
 // CreatePipeline 创建pipeline流程
@@ -264,8 +264,8 @@ func (p *Pipeline) AppCombos(appID uint64, req *spec.PipelineCombosReq) ([]apist
 	return result, nil
 }
 
-func (p *Pipeline) AllValidBranchWorkspaces(appID uint64) ([]apistructs.ValidBranch, error) {
-	return p.bdl.GetAllValidBranchWorkspace(appID)
+func (p *Pipeline) AllValidBranchWorkspaces(appID uint64, userID string) ([]apistructs.ValidBranch, error) {
+	return p.bdl.GetAllValidBranchWorkspace(appID, userID)
 }
 
 func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineCreateRequestV2, error) {
@@ -283,7 +283,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	}
 
 	// get newest commit info
-	commit, err := p.bdl.GetGittarCommit(app.GitRepoAbbrev, pv1.Branch)
+	commit, err := p.bdl.GetGittarCommit(app.GitRepoAbbrev, pv1.Branch, pv1.UserID)
 	if err != nil {
 		return nil, apierrors.ErrGetGittarCommit.InternalError(err)
 	}
@@ -311,7 +311,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 
 	strPipelineYml := pv1.PipelineYmlContent
 	if strPipelineYml == "" {
-		strPipelineYml, err = p.FetchPipelineYml(app.GitRepo, pv1.Branch, pipelineYmlName)
+		strPipelineYml, err = p.FetchPipelineYml(app.GitRepo, pv1.Branch, pipelineYmlName, pv1.UserID)
 		if err != nil {
 			return nil, apierrors.ErrGetGittarRepoFile.InternalError(err)
 		}
@@ -345,6 +345,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	if err != nil {
 		return nil, apierrors.ErrMakeConfigNamespace.InternalError(err)
 	}
+	ns = append(ns, utils.MakeUserOrgPipelineCmsNs(pv1.UserID, app.OrgID))
 	pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, ns...)
 
 	// label
@@ -490,12 +491,12 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 	branch := getBranch(req.Content.Ref)
 
 	// get diffs between two commits
-	compare, err := p.bdl.GetGittarCompare(req.Content.After, req.Content.Before, appID)
+	compare, err := p.bdl.GetGittarCompare(req.Content.After, req.Content.Before, appID, req.Content.Pusher.Id)
 	if err != nil {
 		return err
 	}
 	for _, v := range compare.Diff.Files {
-		// is pipeline.yml rename to others,need to delete cron and stop it if cron enable
+		// is pipeline.yml rename to others,need to stop it if cron enable
 		if isPipelineYmlPath(v.OldName) && !isPipelineYmlPath(v.Name) {
 			cron, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
 			if err != nil {
@@ -518,8 +519,8 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 				continue
 			}
 
-			// if type is delete,need to delete cron and stop it if cron enable
-			// if type is rename,need to delete cron and stop it if cron enable
+			// if type is delete,need to stop it if cron enable
+			// if type is rename,need to stop it if cron enable
 			if v.Type == "delete" || v.Type == "rename" {
 				if *cron.Enable {
 					_, err = p.bdl.StopPipelineCron(cron.ID)
@@ -534,7 +535,7 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 			if v.Type == "modified" {
 				// get pipeline yml file content
 				searchINode := appDto.ProjectName + "/" + appDto.Name + "/blob/" + branch + "/" + v.Name
-				pipelineYml, err := p.bdl.GetGittarBlobNode("/wb/"+searchINode, req.OrgID)
+				pipelineYml, err := p.bdl.GetGittarBlobNode("/wb/"+searchINode, req.OrgID, req.Content.Pusher.Id)
 				if err != nil {
 					logrus.Errorf("fail to GetGittarBlobNode,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					continue

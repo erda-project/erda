@@ -117,6 +117,7 @@ var NotFound = "not found"
 const (
 	// sys
 	RoleSysManager = "Manager"
+	RoleSysAuditor = "Auditor"
 
 	// org
 	RoleOrgManager         = "Manager"
@@ -128,6 +129,7 @@ const (
 	RoleOrgReporter        = "Reporter"
 	RoleOrgEdgeAppEngineer = "EdgeOps"
 	RoleOrgGuest           = "Guest"
+	RoleOrgAuditor         = "Auditor"
 
 	// project
 	RoleProjectOwner    = "Owner"
@@ -153,6 +155,11 @@ const (
 
 	// guest
 	RoleGuest = "Guest"
+
+	//msp
+	RoleMspOwner = "Owner"
+	RoleMspLead  = "Lead"
+	RoleMspDev   = "Dev"
 )
 
 // RoleInfo 角色信息
@@ -169,6 +176,7 @@ type RoleInfo struct {
 var AllScopeRoleMap = map[apistructs.ScopeType]map[string]RoleInfo{
 	apistructs.SysScope: {
 		RoleSysManager: {Role: RoleSysManager, IsHide: false, I18nKey: "SysManagerRole", IsManager: true, Level: 0},
+		RoleSysAuditor: {Role: RoleSysAuditor, IsHide: false, I18nKey: "SysAuditorRole", IsManager: false, Level: 1},
 	},
 	apistructs.OrgScope: {
 		RoleOrgManager:         {Role: RoleSysManager, IsHide: false, I18nKey: "OrgManagerRole", IsManager: true, Level: 0},
@@ -181,6 +189,7 @@ var AllScopeRoleMap = map[apistructs.ScopeType]map[string]RoleInfo{
 		RolePublisherManager:   {Role: RolePublisherManager, IsHide: false, I18nKey: "PublisherManagerRole", IsManager: false, Level: 7},
 		RoleOrgEdgeAppEngineer: {Role: RoleOrgEdgeAppEngineer, IsHide: false, I18nKey: "RoleOrgEdgeAppEngineer", IsManager: false, Level: 8},
 		RoleOrgGuest:           {Role: RoleProjectGuest, IsHide: true, I18nKey: "OrgGuestRole", IsManager: false, Level: 9},
+		RoleOrgAuditor:         {Role: RoleOrgAuditor, IsHide: false, I18nKey: "OrgAuditorRole", IsManager: false, Level: 10},
 	},
 	apistructs.ProjectScope: {
 		RoleProjectOwner:    {Role: RoleProjectOwner, IsHide: false, I18nKey: "ProjectOwnerRole", IsManager: true, Level: 0},

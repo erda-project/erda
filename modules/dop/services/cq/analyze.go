@@ -46,13 +46,13 @@ type CQRequest struct {
 }
 
 // Analyze trigger a pipeline to analyze code quality, return pipelineID and error.
-func (cq *CQ) Analyze(req CQRequest) (uint64, error) {
+func (cq *CQ) Analyze(req CQRequest, userID string) (uint64, error) {
 	if req.Language == "" {
 		return 0, fmt.Errorf("no language specified")
 	}
 	switch Language(req.Language) {
 	case LanguageGo:
-		return cq.GenerateCQPipeline4Go(req)
+		return cq.GenerateCQPipeline4Go(req, userID)
 	case "":
 		logrus.Warnf("no language specified, skip analyze")
 	default:
@@ -62,7 +62,7 @@ func (cq *CQ) Analyze(req CQRequest) (uint64, error) {
 }
 
 // GenerateCQPipeline4Go 构造用于 Go 项目代码质量分析的流水线
-func (cq *CQ) GenerateCQPipeline4Go(req CQRequest) (uint64, error) {
+func (cq *CQ) GenerateCQPipeline4Go(req CQRequest, userID string) (uint64, error) {
 	// get clusterName
 	app, _, _, _, clusterName, err := cq.getWorkspaceClusterByAppBranch(req.AppID, req.Commit)
 	if err != nil {
@@ -70,7 +70,7 @@ func (cq *CQ) GenerateCQPipeline4Go(req CQRequest) (uint64, error) {
 	}
 
 	labels := make(map[string]string)
-	commitInfo, err := cq.bdl.GetGittarCommit(app.GitRepoAbbrev, req.Commit)
+	commitInfo, err := cq.bdl.GetGittarCommit(app.GitRepoAbbrev, req.Commit, userID)
 	if err != nil {
 		return 0, err
 	}

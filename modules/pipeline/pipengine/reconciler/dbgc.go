@@ -40,17 +40,26 @@ const (
 // remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
 // these two methods will create a lot of etcd ttl, will cause high load on etcd
 // use fixed gc time, traverse the data in the database every day
-func (r *Reconciler) PipelineDatabaseGC() {
-
+func (r *Reconciler) PipelineDatabaseGC(ctx context.Context) {
 	r.doAnalyzedPipelineDatabaseGC(true)
 	r.doAnalyzedPipelineDatabaseGC(false)
-
 	r.doNotAnalyzedPipelineDatabaseGC(true)
 	r.doNotAnalyzedPipelineDatabaseGC(false)
 
-	time.AfterFunc(24*time.Hour, func() {
-		r.PipelineDatabaseGC()
-	})
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			r.doAnalyzedPipelineDatabaseGC(true)
+			r.doAnalyzedPipelineDatabaseGC(false)
+
+			r.doNotAnalyzedPipelineDatabaseGC(true)
+			r.doNotAnalyzedPipelineDatabaseGC(false)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // query the data in the database according to req paging to perform gc
@@ -61,10 +70,10 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 		req.PageNum = pageNum
 
 		pipelineResults, _, _, _, err := r.dbClient.PageListPipelines(req)
-
+		pageNum += 1
 		if err != nil {
 			logrus.Errorf("doPipelineDatabaseGC failed to compensate pipeline req %v err: %v", req, err)
-			return
+			continue
 		}
 
 		if len(pipelineResults) <= 0 {
@@ -86,11 +95,10 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 			// gc logic
 			if err := r.DoDBGC(p.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive}); err != nil {
 				logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", p.PipelineID, err)
-				return
+				continue
 			}
 		}
 
-		pageNum += 1
 		time.Sleep(time.Second * 10)
 	}
 }

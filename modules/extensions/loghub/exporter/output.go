@@ -63,20 +63,26 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 			data.Tags["monitor_log_key"] = key
 		}
 	}
+	if !ok {
+		key, ok = data.Tags["msp_env_id"]
+	}
+
 	if len(key) <= 2 {
 		return nil
 	}
 
 	// do filter
 	// allow no filter
-	// todo support filter by es index existence
-	for k, v := range c.filters {
-		val, ok := data.Tags[k]
-		if !ok {
-			return nil
-		}
-		if len(v) > 0 && v != reflectx.BytesToString([]byte(val)) {
-			return nil
+	// todo: support filter by es index existence
+	if c.filters != nil {
+		for k, v := range c.filters {
+			val, ok := data.Tags[k]
+			if !ok {
+				return nil
+			}
+			if len(v) > 0 && v != reflectx.BytesToString(val[1:len(val)-1]) {
+				return nil
+			}
 		}
 	}
 

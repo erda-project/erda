@@ -28,13 +28,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -203,12 +206,17 @@ func (e *Endpoints) pipelineList(ctx context.Context, r *http.Request, vars map[
 
 func (e *Endpoints) pipelineYmlList(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrListPipelineYml.NotLogin().ToResp(), nil
+	}
+
 	var req apistructs.CICDPipelineYmlListRequest
-	err := e.queryStringDecoder.Decode(&req, r.URL.Query())
+	err = e.queryStringDecoder.Decode(&req, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrListPipelineYml.InvalidParameter(err).ToResp(), nil
 	}
-	result := pipeline.GetPipelineYmlList(req, e.bdl)
+	result := pipeline.GetPipelineYmlList(req, e.bdl, identityInfo.UserID)
 	return httpserver.OkResp(result)
 }
 
@@ -326,7 +334,7 @@ func (e *Endpoints) branchWorkspaceMap(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID))
+	m, err := e.branchRule.GetAllValidBranchWorkspaces(int64(appID), identityInfo.UserID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -365,10 +373,16 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		return errorresp.ErrResp(err)
 	}
 
+	// update CmsNsConfigs
+	if err = e.updateCmsNsConfigs(identityInfo.UserID, p.OrgID); err != nil {
+		return errorresp.ErrResp(err)
+	}
+
 	if err = e.bdl.RunPipeline(apistructs.PipelineRunRequest{
-		PipelineID:        pipelineID,
-		IdentityInfo:      identityInfo,
-		PipelineRunParams: runRequest.PipelineRunParams,
+		PipelineID:             pipelineID,
+		IdentityInfo:           identityInfo,
+		PipelineRunParams:      runRequest.PipelineRunParams,
+		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
 	}); err != nil {
 		var apiError, ok = err.(*errorresp.APIError)
 		if !ok {
@@ -393,6 +407,29 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 	}
 
 	return httpserver.OkResp(nil)
+}
+
+// updateCmsNsConfigs update CmsNsConfigs
+func (e *Endpoints) updateCmsNsConfigs(userID string, orgID uint64) error {
+	members, err := e.bdl.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	if len(members) <= 0 {
+		return errors.New("the member is not exist")
+	}
+
+	_, err = e.pipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+		&cmspb.CmsNsConfigsUpdateRequest{
+			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
+			PipelineSource: apistructs.PipelineSourceDice.String(),
+			KVs: map[string]*cmspb.PipelineCmsConfigValue{
+				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+		})
+
+	return err
 }
 
 func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -623,14 +660,14 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		AppID:  appID,
 		Branch: gitEvent.Content.SourceBranch,
 	}
-	result := pipeline.GetPipelineYmlList(req, e.bdl)
+	result := pipeline.GetPipelineYmlList(req, e.bdl, gitEvent.Content.AuthorId)
 	find := false
 	for _, each := range result {
 		app, err := e.bdl.GetApp(uint64(appID))
 		if err != nil {
 			return nil, apierrors.ErrGetApp.InternalError(err)
 		}
-		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, gitEvent.Content.SourceBranch, each)
+		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, gitEvent.Content.SourceBranch, each, gitEvent.Content.AuthorId)
 		if err != nil {
 			continue
 		}
@@ -691,7 +728,7 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		}
 		request.Name = gitEvent.Content.SourceBranch + "/" + each
 		request.Status = apistructs.CheckRunStatusInProgress
-		_, err = e.bdl.CreateCheckRun(appID, request)
+		_, err = e.bdl.CreateCheckRun(appID, request, gitEvent.Content.AuthorId)
 		if err != nil {
 			continue
 		}
@@ -723,12 +760,12 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 					request.Result = apistructs.CheckRunResultSuccess
 				}
 				request.Status = apistructs.CheckRunStatusCompleted
-				_, err = e.bdl.CreateCheckRun(appID, request)
+				_, err = e.bdl.CreateCheckRun(appID, request, gitEvent.Content.AuthorId)
 				if err != nil {
 					return true, err
 				}
 				if pipelineResp.Status != apistructs.PipelineStatusSuccess {
-					err := e.bdl.CloseMergeRequest(appID, gitEvent.Content.RepoMergeId)
+					err := e.bdl.CloseMergeRequest(appID, gitEvent.Content.RepoMergeId, gitEvent.Content.MergeUserId)
 					if err != nil {
 						return true, err
 					}

@@ -50,6 +50,8 @@ var (
 	testSumFilename = "erda-go.test.sum"
 )
 
+const testNoTestFilesPackage = true
+
 func init() {
 	home, err := homedir.Dir()
 	if err != nil {
@@ -366,7 +368,7 @@ func recursiveTest(entry *testSumItem, pkgSum map[string]*testSumItem, incoming 
 		return nil
 	}
 	entry.tested = true
-	if entry.info.hasTestFile {
+	if testNoTestFilesPackage || entry.info.hasTestFile {
 		profiles, err := runTest(string([]rune{'.', os.PathSeparator}) + entry.info.path)
 		if err != nil {
 			return err

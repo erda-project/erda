@@ -123,15 +123,21 @@ type SnippetLabel struct {
 	Value string `json:"value"`
 }
 
+type SnippetConfigOrder struct {
+	Source        string        `json:"source,omitempty"`
+	Name          string        `json:"name,omitempty"`
+	SnippetLabels SnippetLabels `json:"labels,omitempty"`
+}
+
 type SnippetLabels []SnippetLabel
 
 func (p SnippetLabels) Len() int           { return len(p) }
 func (p SnippetLabels) Less(i, j int) bool { return p[i].Key > p[j].Key }
 func (p SnippetLabels) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func (snippetConfig *SnippetConfig) ToString() string {
+func (snippetConfig *SnippetConfig) Order() *SnippetConfigOrder {
 	if snippetConfig == nil {
-		return ""
+		return nil
 	}
 
 	var snippetLabels SnippetLabels
@@ -145,15 +151,20 @@ func (snippetConfig *SnippetConfig) ToString() string {
 		sort.Sort(snippetLabels)
 	}
 
-	return jsonparse.JsonOneLine(struct {
-		Source        string        `json:"source,omitempty"`
-		Name          string        `json:"name,omitempty"`
-		SnippetLabels SnippetLabels `json:"labels,omitempty"`
-	}{
+	var order = SnippetConfigOrder{
 		Source:        snippetConfig.Source,
 		Name:          snippetConfig.Name,
 		SnippetLabels: snippetLabels,
-	})
+	}
+	return &order
+}
+
+func (snippetConfig *SnippetConfig) ToString() string {
+	if snippetConfig == nil {
+		return ""
+	}
+
+	return jsonparse.JsonOneLine(snippetConfig.Order())
 }
 
 type BatchSnippetConfigYml struct {

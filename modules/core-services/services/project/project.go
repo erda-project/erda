@@ -335,7 +335,7 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 
 // Delete 删除项目
 func (p *Project) Delete(projectID int64) (*model.Project, error) {
-	// 检查项目下是否有应用，无应用时可删除
+	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
 		return nil, errors.Errorf("failed to delete project(there exists applications)")
 	}
@@ -344,6 +344,16 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 	if err != nil {
 		return nil, errors.Errorf("failed to get project, (%v)", err)
 	}
+
+	// TODO We need to turn this check on after adding the delete portal to the UI
+	// check if addon exists
+	// addOnListResp, err := p.bdl.ListAddonByProjectID(projectID, project.OrgID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if addOnListResp != nil && len(addOnListResp.Data) > 0 {
+	// 	return nil, errors.Errorf("failed to delete project(there exists addons)")
+	// }
 
 	if err = p.db.DeleteProject(projectID); err != nil {
 		return nil, errors.Errorf("failed to delete project, (%v)", err)

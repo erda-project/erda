@@ -106,4 +106,7 @@ const (
 	I18nKeyConfigGlobalDescription = "tp.export.config.global.description"
 
 	I18nKeyProjectName = "tp.export.project.name"
+
+	I18nKeyIssueExportTitles = "IssueExportTitle"
+	I18nKeyIssueExportSample = "IssueExportSample"
 )

@@ -76,9 +76,16 @@ erda.msp.apm.alert:
 permission:
 
 msp.permission:
+
+grpc-client@erda.core.services.authentication.credentials.accesskey:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.services.authentication.credentials.accesskey-client:
+erda.msp.credential:
+
 erda.msp.menu:
 erda.msp.configcenter:
 erda.msp.registercenter:
+erda.msp.member:
 
 erda.msp.apm.adapter:
   library:
@@ -150,6 +157,7 @@ erda.msp.resource.deploy.handlers.jvmprofiler:
 erda.msp.resource.deploy.handlers.loganalytics:
 erda.msp.resource.deploy.handlers.loges:
 erda.msp.resource.deploy.handlers.logexporter:
+erda.msp.resource.deploy.handlers.logservice:
 erda.msp.resource.deploy.handlers.monitor:
   ta_collect_url: "//${COLLECTOR_PUBLIC_ADDR:analytics.terminus.io}/collect"
   ta_static_url: "//${COLLECTOR_PUBLIC_ADDR:static.terminus.io}/ta.js"

@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,15 +29,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-	"github.com/erda-project/erda/pkg/swagger/ddlconv"
-	"github.com/erda-project/erda/pkg/swagger/oas3"
-	"github.com/erda-project/erda/pkg/swagger/oasconv"
-
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/uc"
+	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/swagger/ddlconv"
+	"github.com/erda-project/erda/pkg/swagger/oas3"
+	"github.com/erda-project/erda/pkg/swagger/oasconv"
 )
 
 func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceName, content string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
@@ -56,7 +55,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 
 	// 检查父目录中是否已存在同名文档
 	ft := pft.Clone().SetPathFromRepoRoot(filenameFromRepoRoot)
-	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), orgIDStr); err == nil {
+	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), orgIDStr, userID); err == nil {
 		return nil, apierrors.CreateNode.InvalidParameter("已存在同名文档")
 	}
 
@@ -89,7 +88,7 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 	if err != nil {
 		return apierrors.DeleteNode.InvalidParameter(err)
 	}
-	nodeInfo, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), strconv.FormatUint(orgID, 10))
+	nodeInfo, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		logrus.Errorf("查询文档节点失败, ft: %+v, err: %v", ft, err)
 		return apierrors.DeleteNode.InternalError(errors.Wrap(err, "查询文档节点失败"))
@@ -172,7 +171,7 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 	// 目标名称不能与目录下文件名同名
 	newPath := filepath.Join(apiDocsPathFromRepoRoot, docName)
 	nft := ft.Clone().SetPathFromRepoRoot(newPath) // nft: newFileTree
-	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(nft.TreePath(), strconv.FormatUint(orgID, 10)); err == nil {
+	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(nft.TreePath(), strconv.FormatUint(orgID, 10), userID); err == nil {
 		return nil, apierrors.CreateNode.InvalidParameter("目标名称与其他节点重名")
 	}
 
@@ -272,7 +271,7 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	if dstPinode == ft.Clone().DeletePathFromRepoRoot().Inode() {
 		return nil, apierrors.CopyNode.InvalidParameter("目标分支不得与源分支相同")
 	}
-	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10))
+	blob, err := bdl.Bdl.GetGittarBlobNodeInfo(ft.BlobPath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		return nil, apierrors.CopyNode.InternalError(err)
 	}
@@ -286,16 +285,16 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	return data, nil
 }
 
-// 查询应用下所有的分支, 构成节点列表
+// listBranches lists all branches as nodes
 func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+	// query branches by appID
+	// there is no project-level file tree, so "pinode != 0" is not discussed
 	appIDStr := strconv.FormatUint(appID, 10)
-
-	// 查询 application (由于不存在项目级目录树, 所以不讨论 pinode != 0 的情况)
-	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID))
+	branches, err := svc.branchRuleSvc.GetAllValidBranchWorkspaces(int64(appID), userID)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetAllValidBranchWorkspace"))
 	}
-	// 查询 application 数据构造目录树 node
+	// query application data and make a tree node
 	app, err := bdl.Bdl.GetApp(appID)
 	if err != nil {
 		return nil, apierrors.ListChildrenNodes.InternalError(errors.Wrap(err, "failed to GetApp"))
@@ -308,27 +307,12 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	var (
 		results      []*apistructs.FileTreeNodeRspData
 		isManager, _ = bdl.IsManager(userID, apistructs.AppScope, appID)
-		m            = sync.Map{}
-		w            = sync.WaitGroup{}
 	)
 
 	for _, branch := range branches {
-		branch := branch
-		w.Add(1)
-		go func() {
-			branchInode := ft.Clone().SetBranchName(branch.Name).Inode()
-			hasAPIDoc := branchHasAPIDoc(orgID, branchInode)
-			m.Store(branch, hasAPIDoc)
-			w.Done()
-		}()
-	}
-	w.Wait()
-
-	m.Range(func(key, value interface{}) bool {
-		branch := key.(*apistructs.ValidBranch)
 		readOnly := !isManager && branch.IsProtect
-		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly, "hasDoc": value.(bool)})
-		results = append(results, &apistructs.FileTreeNodeRspData{
+		meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
+		data := &apistructs.FileTreeNodeRspData{
 			Type:      "d",
 			Inode:     ft.Clone().SetBranchName(branch.Name).Inode(),
 			Pinode:    ft.Inode(),
@@ -338,10 +322,9 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 			CreatorID: "",
 			UpdaterID: "",
 			Meta:      meta,
-		})
-
-		return true
-	})
+		}
+		results = append(results, data)
+	}
 
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Name < results[j].Name
@@ -350,21 +333,23 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 	return results, nil
 }
 
-// 查询分支下所有 API 文档
+// listAPIDocs lists all api docs names as nodes
 func (svc *Service) listAPIDocs(orgID uint64, userID, pinode string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	return svc.listServices(orgID, userID, pinode, apiDocsPathFromRepoRoot, func(node apistructs.TreeEntry) bool {
 		return node.Type == "blob" && matchSuffix(node.Name, suffixYaml, suffixYml)
 	})
 }
 
-// 查询分支下所有的 migration 的 service 名称, 即 migration 的目录名
+// listSchemas lists all module's migration schemas names as nodes
 func (svc *Service) listSchemas(orgID uint64, userID, pinode string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	return svc.listServices(orgID, userID, pinode, migrationsPathFromRepoRoot, func(node apistructs.TreeEntry) bool {
 		return node.Type == "tree"
 	})
 }
 
-// 列出目录树的 service 层的节点列表
+// listServices lists services names as nodes.
+// pathFromRepoRoot the path to read from repo root,
+// filter the condition to filter services.
 func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot string, filter func(node apistructs.TreeEntry) bool) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	ft, err := bundle.NewGittarFileTree(pinode)
 	if err != nil {
@@ -379,8 +364,9 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
-	// 查找目录下的文档. 允许错误, 错误则认为目录下没有任何文档
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	// query the docs under the path,
+	// if the error is not nil, it is considered that there is no document here.
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
@@ -388,7 +374,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 		return nil, nil
 	}
 
-	// 文档是否只读: 如果用户是应用管理员, 则
+	// is the doc readonly
 	isManager, _ := bdl.IsManager(userID, apistructs.AppScope, appID)
 	readOnly := !isManager && isBranchProtected(ft.ApplicationID(), ft.BranchName(), svc.branchRuleSvc)
 	meta, _ := json.Marshal(map[string]bool{"readOnly": readOnly})
@@ -487,9 +473,7 @@ func (svc *Service) getAPIDocContent(orgID uint64, userID, inode string) (*apist
 	return data, nil
 }
 
-func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	// todo: 鉴权 谁能查
-
+func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	// 解析路径
 	ft, err := bundle.NewGittarFileTree(inode)
 	if err != nil {
@@ -500,8 +484,8 @@ func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.Fi
 
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
-	// 查找服务目录下所有的子目录, 允许错误和结果数量为 0
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true)
+	// query all files in the directory, allows error or 0 node.
+	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
@@ -509,46 +493,39 @@ func (svc *Service) getSchemaContent(orgID uint64, inode string) (*apistructs.Fi
 		return nil, nil
 	}
 
-	// 按版本编号排序
-	sort.Slice(nodes, func(i, j int) bool {
-		nodeIs := strings.Split(nodes[i].Name, "_")
-		nodeJs := strings.Split(nodes[j].Name, "_")
-		numI, err := strconv.ParseUint(strings.TrimLeft(nodeIs[0], "0"), 10, 64)
-		if err != nil {
-			return false
-		}
-		numJ, err := strconv.ParseUint(strings.TrimLeft(nodeJs[0], "0"), 10, 64)
-		if err != nil {
-			return false
-		}
-		return numI < numJ
-	})
-
-	var openapi, _ = ddlconv.New()
+	// generate the openapi from DDLs
+	var (
+		openapi, _ = ddlconv.New()
+		module     migrator.Module
+	)
 	for _, node := range nodes {
-		// 服务目录名应当以数字开头
-		if c := node.Name[0]; c < '0' || c > '9' {
+		if node.Type != "blob" || filepath.Ext(node.Name) != ".sql" {
 			continue
 		}
 
-		// .dice/migrations/{svc_name} ==> .dice/migrations/{svc_name}/{ver_name}/schema.sql
-		cft := ft.Clone().SetPathFromRepoRoot(filepath.Join(ft.PathFromRepoRoot(), node.Name, "schema.sql"))
-
-		// 查询 schema.sql 的内容
-		nodeInfo, err := bdl.Bdl.GetGittarBlobNodeInfo(cft.BlobPath(), orgIDStr)
+		cft := ft.Clone().SetPathFromRepoRoot(filepath.Join(ft.PathFromRepoRoot(), node.Name))
+		nodeInfo, err := bdl.Bdl.GetGittarBlobNodeInfo(cft.BlobPath(), orgIDStr, userID)
 		if err != nil {
-			logrus.Errorf("failed to GetGittarBlobNodeInfo, blobPath: %s, err: %v", cft.BlobPath(), err)
+			logrus.WithError(err).WithField("blobPath", cft.BlobPath()).Errorln("failed to GetGittarBlobInfo")
 			continue
 		}
+		script, err := migrator.NewScriptFromData("", cft.PathFromRepoRoot(), []byte(nodeInfo.Content))
+		if err != nil {
+			return nil, apierrors.GetNodeDetail.InternalError(
+				errors.Wrapf(err, "failed to read .sql file as SQL script, file path: %s", cft.PathFromRepoRoot()))
+		}
+		module.Scripts = append(module.Scripts, script)
+	}
+	module.Sort()
 
-		if _, err = openapi.WriteString(nodeInfo.Content); err != nil {
+	for _, script := range module.Scripts {
+		if _, err := openapi.Write(script.GetData()); err != nil {
 			logrus.Errorf("failed to WriteString(sql) to openapi, err: %v", err)
 			return nil, apierrors.GetNodeDetail.InternalError(err)
 		}
 	}
 
 	meta, _ := json.Marshal(openapi.Components)
-
 	var data = apistructs.FileTreeNodeRspData{
 		Type:      "f",
 		Inode:     inode,

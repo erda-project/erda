@@ -36,6 +36,19 @@ const (
 )
 
 var AllScope = []string{FileTreeScopeAutoTest, FileTreeScopeAutoTestConfigSheet, FileTreeScopeProjectApp, FileTreeScopeProject, FileTreeScopeAutoTestPlan}
+var pipelineSourceCorrespondScope = map[FileTreeScope]PipelineSource{
+	FileTreeScopeProject:             PipelineSourceProject,
+	FileTreeScopeAutoTestConfigSheet: PipelineSourceConfigSheet,
+	FileTreeScopeProjectApp:          PipelineSourceDice,
+	FileTreeScopeAutoTest:            PipelineSourceAutoTest,
+	FileTreeScopeAutoTestPlan:        PipelineSourceAutoTestPlan,
+}
+
+type FileTreeScope string
+
+func (that FileTreeScope) ToPipelineSource() PipelineSource {
+	return pipelineSourceCorrespondScope[that]
+}
 
 // UnifiedFileTreeNodeType 节点类型
 type UnifiedFileTreeNodeType string

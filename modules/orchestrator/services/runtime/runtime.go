@@ -93,27 +93,27 @@ func WithAddon(a *addon.Addon) Option {
 	}
 }
 
-func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (apistructs.RuntimeReleaseCreatePipelineResponse, error) {
+func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.RuntimeDeployDTO, error) {
 	releaseResp, err := r.bdl.GetRelease(releaseReq.ReleaseID)
 	if err != nil {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
 	app, err := r.bdl.GetApp(releaseReq.ApplicationID)
 	if err != nil {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
 	workspaces := strutil.Split(releaseReq.Workspace, ",", true)
 	commitid := releaseResp.Labels["gitCommitId"]
 	branch := releaseResp.Labels["gitBranch"]
 
 	// check if there is a runtime already being created by release
-	pipelines, err := utils.FindCRBRRunningPipeline(uint64(releaseReq.ApplicationID), workspaces[0],
+	pipelines, err := utils.FindCRBRRunningPipeline(releaseReq.ApplicationID, workspaces[0],
 		fmt.Sprintf("dice-deploy-release-%s", branch), r.bdl)
 	if err != nil {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
 	if len(pipelines) != 0 {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{},
+		return nil,
 			errors.Errorf("There is already a runtime created by releaseID %s, please do not repeat deployment", releaseReq.ReleaseID)
 	}
 
@@ -122,7 +122,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 	if err != nil {
 		errstr := fmt.Sprintf("failed to marshal pipelineyml: %v", err)
 		logrus.Errorf(errstr)
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
 	detail := apistructs.CommitDetail{
 		CommitID: "",
@@ -134,9 +134,9 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
-			return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+			return nil, err
 		}
 		detail = apistructs.CommitDetail{
 			CommitID: commitid,
@@ -150,7 +150,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 	}
 	commitdetail, err := json.Marshal(detail)
 	if err != nil {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
 	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
@@ -172,9 +172,9 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
-		return apistructs.RuntimeReleaseCreatePipelineResponse{}, err
+		return nil, err
 	}
-	return apistructs.RuntimeReleaseCreatePipelineResponse{PipelineID: dto.ID}, nil
+	return convertRuntimeDeployDto(app, releaseResp, dto)
 }
 
 // Create 创建应用实例
@@ -192,7 +192,7 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	if releaseReq.ApplicationID != uint64(releaseResp.ApplicationID) {
 		return nil, errors.Errorf("release does not correspond to the application")
 	}
-	branchWorkspaces, err := r.bdl.GetAllValidBranchWorkspace(releaseReq.ApplicationID)
+	branchWorkspaces, err := r.bdl.GetAllValidBranchWorkspace(releaseReq.ApplicationID, string(operator))
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -389,7 +389,7 @@ func (r *Runtime) StopRuntime(operator user.ID, orgID uint64, runtimeID uint64) 
 	return r.doDeployRuntime(&deployContext)
 }
 
-func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.DeploymentCreateResponsePipelineDTO, error) {
+func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, err
@@ -418,7 +418,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
 			return nil, err
 		}
@@ -463,7 +463,8 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	return &apistructs.DeploymentCreateResponsePipelineDTO{PipelineID: dto.ID}, nil
+
+	return convertRuntimeDeployDto(app, releaseResp, dto)
 }
 
 // Redeploy 重新部署
@@ -767,7 +768,7 @@ func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime)
 	return blocked, nil
 }
 func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
-	*apistructs.DeploymentCreateResponsePipelineDTO, error) {
+	*apistructs.RuntimeDeployDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, err
@@ -836,7 +837,7 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 		Comment:  "",
 	}
 	if commitid != "" {
-		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid)
+		commit, err := r.bdl.GetGittarCommit(app.GitRepoAbbrev, commitid, string(operator))
 		if err != nil {
 			return nil, err
 		}
@@ -875,7 +876,7 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	return &apistructs.DeploymentCreateResponsePipelineDTO{PipelineID: dto.ID}, nil
+	return convertRuntimeDeployDto(app, releaseResp, dto)
 }
 
 func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
@@ -1912,4 +1913,34 @@ func init() {
 
 func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
 	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
+}
+
+func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *apistructs.ReleaseGetResponseData, dto *apistructs.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
+	names, err := getServicesNames(release.Diceyml)
+	if err != nil {
+		return nil, err
+	}
+	return &apistructs.RuntimeDeployDTO{
+		ApplicationID:   app.ID,
+		ApplicationName: app.Name,
+		ProjectID:       app.ProjectID,
+		ProjectName:     app.ProjectName,
+		OrgID:           app.OrgID,
+		OrgName:         app.OrgName,
+		PipelineID:      dto.ID,
+		ServicesNames:   names,
+	}, nil
+}
+
+// getServicesNames get servicesNames by diceYml
+func getServicesNames(diceYml string) ([]string, error) {
+	yml, err := diceyml.New([]byte(diceYml), false)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0)
+	for k := range yml.Obj().Services {
+		names = append(names, k)
+	}
+	return names, nil
 }

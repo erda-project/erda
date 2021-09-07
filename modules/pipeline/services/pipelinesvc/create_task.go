@@ -16,14 +16,13 @@ package pipelinesvc
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/numeral"
@@ -32,9 +31,7 @@ import (
 )
 
 // makeNormalPipelineTask 生成普通流水线任务
-func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedData passedDataWhenCreate) (*spec.PipelineTask, error) {
-	var actionJobDefine = passedData.getActionJobDefine(extmarketsvc.MakeActionTypeVersion(action))
-	var actionJobSpec = passedData.getActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action))
+func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.PipelineStage, action *pipelineyml.Action, passedDataWhenCreate *action_info.PassedDataWhenCreate) *spec.PipelineTask {
 
 	task := &spec.PipelineTask{}
 	task.PipelineID = p.ID
@@ -43,6 +40,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.OpType
 	task.Type = action.Type.String()
 	task.Extra.Namespace = p.Extra.Namespace
+	task.Extra.NotPipelineControlledNs = p.Extra.NotPipelineControlledNs
 	task.Extra.ClusterName = p.ClusterName
 	task.Extra.AllowFailure = false
 	task.Extra.Pause = false
@@ -56,10 +54,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.Extra.Image
 
 	// set executor
-	executorKind, executorName, err := s.judgeTaskExecutor(action, actionJobSpec)
-	if err != nil {
-		return nil, apierrors.ErrCreatePipelineTask.InvalidParameter(err)
-	}
+	executorKind, executorName := s.judgeTaskExecutor(action, passedDataWhenCreate.GetActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action)))
 	task.ExecutorKind = executorKind
 	task.Extra.ExecutorName = executorName
 
@@ -111,16 +106,16 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	}
 
 	// applied resources
-	task.Extra.AppliedResources = calculateNormalTaskResources(action, actionJobDefine)
+	task.Extra.AppliedResources = calculateNormalTaskResources(action, passedDataWhenCreate.GetActionJobDefine(extmarketsvc.MakeActionTypeVersion(action)))
 
-	return task, nil
+	return task
 }
 
 // makeSnippetPipelineTask 生成嵌套流水线任务
 // action: 从 yaml 解析出来的 action 信息
 // p: 当前层的 pipeline，已先于 task 创建好
 // stage: stage 信息，已先于 task 创建好
-func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.PipelineStage, action *pipelineyml.Action) (*spec.PipelineTask, error) {
+func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.PipelineStage, action *pipelineyml.Action) *spec.PipelineTask {
 	var task spec.PipelineTask
 	task.PipelineID = p.ID
 	task.StageID = stage.ID
@@ -130,11 +125,7 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 	task.Status = apistructs.PipelineStatusAnalyzed
 
 	// extra
-	extra, err := s.genSnippetTaskExtra(p, action)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate snippet task extra, pipelineID: %d, actionName: %s, err: %v", p.ID, action.Alias.String(), err)
-	}
-	task.Extra = extra
+	task.Extra = s.genSnippetTaskExtra(p, action)
 
 	// snippet
 	task.IsSnippet = true
@@ -144,12 +135,13 @@ func (s *PipelineSvc) makeSnippetPipelineTask(p *spec.Pipeline, stage *spec.Pipe
 
 	// ext resources set outside after created
 
-	return &task, nil
+	return &task
 }
 
-func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) (spec.PipelineTaskExtra, error) {
+func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.Action) spec.PipelineTaskExtra {
 	var ex spec.PipelineTaskExtra
 	ex.Namespace = p.Extra.Namespace
+	ex.NotPipelineControlledNs = p.Extra.NotPipelineControlledNs
 	ex.ExecutorName = spec.PipelineTaskExecutorNameEmpty
 	ex.ClusterName = p.ClusterName
 	ex.AllowFailure = false
@@ -161,7 +153,7 @@ func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.
 	ex.RuntimeResource = spec.GenDefaultTaskResource()
 	ex.RunAfter = s.calculateTaskRunAfter(action)
 	ex.Action = *action
-	return ex, nil
+	return ex
 }
 
 func (s *PipelineSvc) calculateTaskTimeoutDuration(action *pipelineyml.Action) time.Duration {
@@ -180,17 +172,17 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 }
 
 // judgeTaskExecutor judge task executor by action info
-func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName, error) {
+func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName) {
 	if actionSpec == nil ||
 		actionSpec.Executor == nil ||
 		len(actionSpec.Executor.Kind) <= 0 ||
 		len(actionSpec.Executor.Name) <= 0 ||
 		!spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind).Check() ||
 		!spec.PipelineTaskExecutorName(actionSpec.Executor.Name).Check() {
-		return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault, nil
+		return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault
 	}
 
-	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name), nil
+	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name)
 }
 
 func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *diceyml.Job) apistructs.PipelineAppliedResources {
@@ -202,15 +194,18 @@ func calculateNormalTaskResources(action *pipelineyml.Action, actionDefine *dice
 }
 
 func calculateNormalTaskLimitResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
-	// calculate
-	maxCPU := numeral.MaxFloat64([]float64{
-		actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU,
-		action.Resources.MaxCPU, action.Resources.CPU,
-	})
-	maxMemoryMB := numeral.MaxFloat64([]float64{
-		float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem),
-		float64(action.Resources.Mem),
-	})
+	// Calculate if actionDefine not empty
+	var maxCPU, maxMemoryMB float64
+	if actionDefine != nil {
+		maxCPU = numeral.MaxFloat64([]float64{
+			actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU,
+			action.Resources.MaxCPU, action.Resources.CPU,
+		})
+		maxMemoryMB = numeral.MaxFloat64([]float64{
+			float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem),
+			float64(action.Resources.Mem),
+		})
+	}
 
 	// use default if is empty
 	if maxCPU == 0 {
@@ -227,9 +222,12 @@ func calculateNormalTaskLimitResource(action *pipelineyml.Action, actionDefine *
 }
 
 func calculateNormalTaskRequestResource(action *pipelineyml.Action, actionDefine *diceyml.Job, defaultRes apistructs.PipelineAppliedResource) apistructs.PipelineAppliedResource {
-	// assign from actionDefine
-	requestCPU := numeral.MinFloat64([]float64{actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU}, true)
-	requestMemoryMB := numeral.MinFloat64([]float64{float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem)}, true)
+	// calculate if requestCPU not empty
+	var requestCPU, requestMemoryMB float64
+	if actionDefine != nil {
+		requestCPU = numeral.MinFloat64([]float64{actionDefine.Resources.MaxCPU, actionDefine.Resources.CPU}, true)
+		requestMemoryMB = numeral.MinFloat64([]float64{float64(actionDefine.Resources.MaxMem), float64(actionDefine.Resources.Mem)}, true)
+	}
 
 	// user explicit declaration has the highest priority, overwrite value from actionDefine
 	if c := numeral.MinFloat64([]float64{action.Resources.MaxCPU, action.Resources.CPU}, true); c > 0 {

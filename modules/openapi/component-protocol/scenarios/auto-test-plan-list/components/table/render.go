@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -33,11 +34,18 @@ func RenderCreator() protocol.CompRender {
 
 type TableItem struct {
 	//Assignee    map[string]string `json:"assignee"`
-	Id        uint64                 `json:"id"`
-	Name      string                 `json:"name"`
-	Owners    map[string]interface{} `json:"owners"`
-	TestSpace string                 `json:"testSpace"`
-	Operate   Operate                `json:"operate"`
+	Id          uint64                 `json:"id"`
+	Name        string                 `json:"name"`
+	Owners      map[string]interface{} `json:"owners"`
+	TestSpace   string                 `json:"testSpace"`
+	Operate     Operate                `json:"operate"`
+	PassRate    PassRate               `json:"passRate"`
+	ExecuteTime string                 `json:"executeTime"`
+}
+
+type PassRate struct {
+	RenderType string  `json:"renderType"`
+	Value      float64 `json:"value"`
 }
 
 type Operate struct {
@@ -48,9 +56,20 @@ type Operate struct {
 // OperationData 解析OperationData
 type OperationData struct {
 	Meta struct {
-		ID uint64 `json:"id"`
+		ID         uint64 `json:"id"`
+		IsArchived bool   `json:"isArchived"`
 	} `json:"meta"`
 }
+
+type SortData struct {
+	Field string `json:"field"`
+	Order string `json:"order"`
+}
+
+const (
+	OrderAscend  string = "ascend"
+	OrderDescend string = "descend"
+)
 
 func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
@@ -68,22 +87,85 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			cond.PageNo = uint64(c.State["pageNo"].(float64))
 		}
 	case "edit":
-		var opreationData OperationData
+		var operationData OperationData
 		odBytes, err := json.Marshal(event.OperationData)
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(odBytes, &opreationData); err != nil {
+		if err := json.Unmarshal(odBytes, &operationData); err != nil {
 			return err
 		}
 		c.State["formModalVisible"] = true
-		c.State["formModalTestPlanID"] = opreationData.Meta.ID
+		c.State["formModalTestPlanID"] = operationData.Meta.ID
 		return nil
+	case "archive":
+		var operationData OperationData
+		odBytes, err := json.Marshal(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(odBytes, &operationData); err != nil {
+			return err
+		}
+		testplan, err := bdl.Bdl.GetTestPlanV2(operationData.Meta.ID)
+		if err != nil {
+			return err
+		}
+		if err := bdl.Bdl.UpdateTestPlanV2(apistructs.TestPlanV2UpdateRequest{
+			Name:         testplan.Data.Name,
+			Desc:         testplan.Data.Desc,
+			SpaceID:      testplan.Data.SpaceID,
+			Owners:       testplan.Data.Owners,
+			IsArchived:   &operationData.Meta.IsArchived,
+			TestPlanID:   testplan.Data.ID,
+			IdentityInfo: apistructs.IdentityInfo{UserID: bdl.Identity.UserID},
+		}); err != nil {
+			return err
+		}
+		now := strconv.FormatInt(time.Now().Unix(), 10)
+		project, err := bdl.Bdl.GetProject(projectID)
+		if err != nil {
+			return err
+		}
+		audit := apistructs.Audit{
+			UserID:       cond.UserID,
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			OrgID:        project.OrgID,
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+			TemplateName: apistructs.ArchiveTestplanTemplate,
+			Context: map[string]interface{}{
+				"projectId":    project.ID,
+				"projectName":  project.Name,
+				"testPlanName": testplan.Data.Name,
+			},
+		}
+		if !operationData.Meta.IsArchived {
+			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
+		}
+		if err := bdl.Bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+			return err
+		}
 	}
 
 	// filter带过来的
 	if _, ok := c.State["name"]; ok {
 		cond.Name = c.State["name"].(string)
+	}
+
+	if v, ok := c.State["archive"]; ok && v != nil {
+		var isArchive bool
+		if s := v.(bool); s == true {
+			isArchive = true
+		}
+		cond.IsArchived = &isArchive
+	}
+	// orderBy and ASC
+	err = convertSortData(&cond, c)
+	if err != nil {
+		return err
 	}
 
 	r, err := bdl.Bdl.PagingTestPlansV2(cond)
@@ -93,7 +175,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	// data
 	l := []TableItem{}
 	for _, data := range r.List {
-		l = append(l, TableItem{
+		item := TableItem{
 			Id:   data.ID,
 			Name: data.Name,
 			Owners: map[string]interface{}{
@@ -104,16 +186,37 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			TestSpace: data.SpaceName,
 			Operate: Operate{
 				RenderType: "tableOperation",
-				Operations: map[string]interface{}{
-					"edit": map[string]interface{}{
-						"key":    "edit",
-						"text":   "编辑",
-						"reload": true,
-						"meta":   map[string]interface{}{"id": data.ID},
-					},
-				},
+				Operations: map[string]interface{}{},
 			},
-		})
+			PassRate: PassRate{
+				RenderType: "progress",
+				Value:      data.PassRate,
+			},
+			ExecuteTime: data.ExecuteTime.Format("2006-01-02 15:04:05"),
+		}
+		if data.IsArchived == true {
+			item.Operate.Operations["archive"] = map[string]interface{}{
+				"key":    "archive",
+				"text":   "取消归档",
+				"reload": true,
+				"meta":   map[string]interface{}{"id": data.ID, "isArchived": false},
+			}
+		} else {
+			item.Operate.Operations["archive"] = map[string]interface{}{
+				"key":    "archive",
+				"text":   "归档",
+				"reload": true,
+				"meta":   map[string]interface{}{"id": data.ID, "isArchived": true},
+			}
+			item.Operate.Operations["edit"] = map[string]interface{}{
+				"key":       "edit",
+				"text":      "编辑",
+				"reload":    true,
+				"meta":      map[string]interface{}{"id": data.ID},
+				"showIndex": 2,
+			}
+		}
+		l = append(l, item)
 	}
 	c.Data = map[string]interface{}{}
 	c.Data["list"] = l
@@ -127,6 +230,36 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	c.State["formModalVisible"] = false
 	c.State["formModalTestPlanID"] = 0
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = r.UserIDs
+	return nil
+}
+
+func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Component) error {
+	if _, ok := c.State["sorterData"]; !ok {
+		return nil
+	}
+	var sortData SortData
+	sortDataByte, err := json.Marshal(c.State["sorterData"])
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(sortDataByte, &sortData)
+	if err != nil {
+		return err
+	}
+
+	if sortData.Field == "passRate" {
+		sortData.Field = "pass_rate"
+	} else if sortData.Field == "executeTime" {
+		sortData.Field = "execute_time"
+	}
+
+	req.OrderBy = sortData.Field
+	if sortData.Order == OrderAscend {
+		req.Asc = true
+	} else if sortData.Order == OrderDescend {
+		req.Asc = false
+	}
+
 	return nil
 }
 

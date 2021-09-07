@@ -15,9 +15,24 @@
 package topHead
 
 import (
+	"context"
+	"encoding/json"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
-	base.InitProvider("issue-manage", "topHead")
+	base.InitProviderWithCreator("issue-manage", "topHead",
+		func() servicehub.Provider {
+			return &ComponentAction{}
+		},
+	)
+}
+
+type ComponentAction struct{ base.DefaultProvider }
+
+func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	return json.Unmarshal([]byte(`{"isTopHead": true}`), &c.Props)
 }

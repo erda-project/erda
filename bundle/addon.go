@@ -17,6 +17,7 @@ package bundle
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
@@ -121,6 +122,59 @@ func (b *Bundle) ListAddonByRuntimeID(runtimeID string) (*apistructs.AddonListRe
 	return &data, nil
 }
 
+// ListAddonByProjectID get addons by projectID
+func (b *Bundle) ListAddonByProjectID(projectID, orgID int64) (*apistructs.AddonListResponse, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var data apistructs.AddonListResponse
+	r, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/addons")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, "bundle").
+		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Param("type", "project").
+		Param("value", strconv.FormatInt(projectID, 10)).
+		Do().
+		JSON(&data)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), data.Error)
+	}
+	return &data, nil
+}
+
+// listConfigSheetAddon query the data source of the configuration sheet
+func (b *Bundle) ListConfigSheetAddon(params url.Values, orgID string, userID string) (*apistructs.AddonListResponse, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var data apistructs.AddonListResponse
+	r, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/addons")).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
+		Params(params).
+		Do().
+		JSON(&data)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), data.Error)
+	}
+	return &data, nil
+}
+
 func (b *Bundle) AddonConfigCallback(addonID string, req apistructs.AddonConfigCallBackResponse) (*apistructs.PostAddonConfigCallBackResponse, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
@@ -190,7 +244,7 @@ func (b *Bundle) FindClusterResource(clusterName, orgID string) (*apistructs.Res
 	return &(resp.Data), nil
 }
 
-func (b *Bundle) GetAddon(addonid string) (*apistructs.AddonFetchResponseData, error) {
+func (b *Bundle) GetAddon(addonid string, orgID string, userID string) (*apistructs.AddonFetchResponseData, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
@@ -198,7 +252,10 @@ func (b *Bundle) GetAddon(addonid string) (*apistructs.AddonFetchResponseData, e
 	hc := b.hc
 	var resp apistructs.AddonFetchResponse
 	r, err := hc.Get(host).
-		Path(fmt.Sprintf("/api/addon/%s", addonid)).
+		Path(fmt.Sprintf("/api/addons/%s", addonid)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
 		Do().
 		JSON(&resp)
 	if err != nil {

@@ -121,8 +121,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
 		// gittar
-		"gittar.username":      conf.GitInnerUserName(),
-		"gittar.password":      conf.GitInnerUserPassword(),
 		"gittar.repo":          gittarRepo,
 		"gittar.branch":        p.Labels[apistructs.LabelBranch],
 		"gittar.commit":        p.GetCommitID(),
@@ -135,13 +133,12 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"dice.openapi.addr":       discover.Openapi(),
 
 		// buildpack
-		"bp.repo.prefix":                "", // 兼容用户 pipeline.yml 里写的 ((bp.repo.prefix))
-		"bp.repo.default.version":       "", // 兼容用户 pipeline.yml 里写的 ((bp.repo.default.version))
-		"bp.nexus.url":                  httpclientutil.WrapProto(clusterInfo.Get(apistructs.NEXUS_ADDR)),
-		"bp.nexus.username":             clusterInfo.Get(apistructs.NEXUS_USERNAME),
-		"bp.nexus.password":             clusterInfo.Get(apistructs.NEXUS_PASSWORD),
-		secretKeyDockerArtifactRegistry: httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
-		"bp.docker.cache.registry":      httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
+		"bp.repo.prefix":           "", // Compatible with ((bp.repo.prefix)) written in user pipeline.yml
+		"bp.repo.default.version":  "", // Compatible with ((bp.repo.default.version)) written in user pipeline.yml
+		"bp.nexus.url":             httpclientutil.WrapProto(clusterInfo.Get(apistructs.NEXUS_ADDR)),
+		"bp.nexus.username":        clusterInfo.Get(apistructs.NEXUS_USERNAME),
+		"bp.nexus.password":        clusterInfo.Get(apistructs.NEXUS_PASSWORD),
+		"bp.docker.cache.registry": httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR)),
 
 		// storage
 		"pipeline.storage.url": storageURL,
@@ -153,6 +150,7 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		// others
 		"date.YYYYMMDD": time.Now().Format("20060102"),
 	}
+	r = AddRegistryLabel(r, clusterInfo)
 
 	// 额外加载 labels，项目级别的流水线，对应的项目名称和企业名称是传递过来的
 	if r["dice.org.name"] == "" {
@@ -246,4 +244,12 @@ func (s *PipelineSvc) FetchSecrets(p *spec.Pipeline) (secrets, cmsDiceFiles map[
 	}
 
 	return secrets, cmsDiceFiles, holdOnKeys, encryptSecretKeys, nil
+}
+
+// AddRegistryLabel Support third-party docker registry
+func AddRegistryLabel(r map[string]string, clusterInfo apistructs.ClusterInfoData) map[string]string {
+	r[secretKeyDockerArtifactRegistry] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_ADDR))
+	r[secretKeyDockerArtifactRegistryUsername] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_USERNAME))
+	r[secretKeyDockerArtifactRegistryPassword] = httpclientutil.RmProto(clusterInfo.Get(apistructs.REGISTRY_PASSWORD))
+	return r
 }

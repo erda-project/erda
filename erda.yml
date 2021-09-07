@@ -17,6 +17,7 @@ envs:
   MSP_ADDR: msp:8080
   DOP_ADDR: dop:9527
   CORE_SERVICES_ADDR: core-services:9526
+  OPENAPI_ADDR: openapi:9529
 services:
   action-runner-scheduler:
     cmd: "/app/action-runner-scheduler"
@@ -230,6 +231,8 @@ services:
       exec:
         cmd: "ls"
   collector:
+    labels:
+      cpu_bound: "true"
     cmd: "/app/collector"
     ports:
       - port: 7076
@@ -346,6 +349,9 @@ services:
         mode: "container"
     binds:
       - "${gittar_root:/netdata/dice/gittar}:/repository:rw"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
       replicas: 1
       labels:
@@ -458,6 +464,9 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
         expose: true
+      - port: 9432
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       CREATE_ORG_ENABLED: "false"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
@@ -629,6 +638,8 @@ services:
         duration: 120
       exec: { }
   streaming:
+    labels:
+      cpu_bound: "true"
     cmd: "/app/streaming"
     ports:
       - port: 7091
@@ -668,6 +679,38 @@ services:
     health_check:
       http:
         port: 7091
+        path: "/api/health"
+        duration: 120
+      exec: { }
+  log-service:
+    cmd: "/app/log-service"
+    ports:
+      - port: 7099
+        protocol: "TCP"
+        l4_protocol: "TCP"
+    envs:
+      LOG_SERVICE_INSTANCE_ID: "30563290-f3a8-4f8f-b42b-cc5d3b8ac7c7"
+      LOG_KAFKA_TOPICS: "spot-container-log"
+      LOG_TOPICS: "spot-container-log"
+      LOG_METRICS_GROUP_ID: "spot-log-metrics"
+      #LOGS_ES_URL: ""
+      #LOGS_ES_SECURITY_ENABLE: "false"
+      #LOGS_ES_SECURITY_USERNAME: ""
+      #LOGS_ES_SECURITY_PASSWORD: ""
+    resources:
+      cpu: ${request_cpu:1}
+      mem: ${request_mem:1024}
+      max_cpu: 1.5
+      max_mem: 1024
+      network:
+        mode: "container"
+    deployments:
+      replicas: ${replicas:1}
+      labels:
+        GROUP: "spot-v2"
+    health_check:
+      http:
+        port: 7099
         path: "/api/health"
         duration: 120
       exec: { }

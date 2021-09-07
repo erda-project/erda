@@ -15,6 +15,8 @@
 package reconciler
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -92,5 +94,75 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{
 		PageNum:  1,
 		PageSize: 10,
+	})
+}
+
+func TestMakeDBGCKey(t *testing.T) {
+	pipelineID := uint64(123)
+	gcKey := makeDBGCKey(pipelineID)
+	assert.Equal(t, "/devops/pipeline/dbgc/pipeline/123", gcKey)
+}
+
+func TestMakeDBGCDLockKey(t *testing.T) {
+	pipelineID := uint64(123)
+	lockKey := makeDBGCDLockKey(pipelineID)
+	assert.Equal(t, "/devops/pipeline/dbgc/dlock/123", lockKey)
+}
+
+func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
+	key := "/devops/pipeline/dbgc/pipeline/123"
+	pipelineID, err := getPipelineIDFromDBGCWatchedKey(key)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint64(123), pipelineID)
+
+	key = "/devops/pipeline/dbgc/pipeline/xxx"
+	pipelineID, err = getPipelineIDFromDBGCWatchedKey(key)
+	assert.Equal(t, false, err == nil)
+	assert.Equal(t, uint64(0), pipelineID)
+}
+
+func TestPipelineDatabaseGC(t *testing.T) {
+	var r Reconciler
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *Reconciler, ctx context.Context) {
+		return
+	})
+	defer pm.Unpatch()
+	t.Run("PipelineDatabaseGC", func(t *testing.T) {
+		r.PipelineDatabaseGC(context.Background())
+	})
+}
+
+func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+
+		var dbClient *dbclient.Client
+		var r Reconciler
+		r.dbClient = dbClient
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+			switch req.PageNum {
+			case 1:
+				return nil, nil, 0, 0, fmt.Errorf("error")
+			case 2:
+				return []spec.Pipeline{
+					{
+						PipelineBase: spec.PipelineBase{},
+						PipelineExtra: spec.PipelineExtra{
+							PipelineID: 1,
+						},
+					},
+				}, nil, 0, 0, nil
+			default:
+				return []spec.Pipeline{}, nil, 0, 0, nil
+			}
+		})
+		defer patch.Unpatch()
+
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+			assert.Equal(t, pipelineID, uint64(1))
+			return fmt.Errorf("error")
+		})
+		defer patch1.Unpatch()
+
+		r.doPipelineDatabaseGC(apistructs.PipelinePageListRequest{PageNum: 1})
 	})
 }

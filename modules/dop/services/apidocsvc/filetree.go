@@ -32,7 +32,7 @@ const (
 
 const (
 	apiDocsPathFromRepoRoot    = ".dice/apidocs"
-	migrationsPathFromRepoRoot = ".dice/migrations"
+	migrationsPathFromRepoRoot = ".erda/migrations"
 	suffixYml                  = ".yml"
 	suffixYaml                 = ".yaml"
 )
@@ -90,9 +90,11 @@ func (svc *Service) CopyNode(req *apistructs.APIDocMvCpNodeReq) (*apistructs.Fil
 	}
 }
 
-// 获取子节点列表
+// ListChildren lists all children nodes
+// if the parent node is 0, it lists all branches,
+// else if the TreeName is "api-docs", lists all api docs,  if the TreeName is "schemas", lists schemas.
 func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
-	// 对于 pinode == 0 的情况, 直接列出应用下的分支, 不用管要查找的是 API 文档还是 schema
+	// if pinode==0, list all branches
 	switch {
 	case req.QueryParams.Pinode == "0" && req.QueryParams.Scope == "application":
 		appID, err := strconv.ParseUint(req.QueryParams.ScopeID, 10, 64)
@@ -102,11 +104,10 @@ func (svc *Service) ListChildren(req *apistructs.APIDocListChildrenReq) ([]*apis
 		return svc.listBranches(req.OrgID, appID, req.Identity.UserID)
 
 	case req.QueryParams.Pinode == "0":
-		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope 错误, 本目录树仅支持应用层级, scope: %s", req.QueryParams.Scope))
+		return nil, apierrors.ListChildrenNodes.InvalidParameter(errors.Errorf("scope error, there is no preject-level file tree, scope: %s", req.QueryParams.Scope))
 	}
 
-	// 对于 pinode != 0 的情况, 列出应用下的 "服务"
-	// ps: 目前没有项目级的目录树, 所以不必讨论节点的层级, 直接查叶子节点即可; 以后有项目级目录树后, 需要讨论节点层级
+	// pinode != 0, query docs or schemas
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
 		return svc.listAPIDocs(req.OrgID, req.Identity.UserID, req.QueryParams.Pinode)
@@ -125,7 +126,7 @@ func (svc *Service) GetNodeDetail(req *apistructs.APIDocNodeDetailReq) (*apistru
 		return svc.getAPIDocContent(req.OrgID, req.Identity.UserID, req.URIParams.Inode)
 
 	case TreeNameSchemas:
-		return svc.getSchemaContent(req.OrgID, req.URIParams.Inode)
+		return svc.getSchemaContent(req.OrgID, req.Identity.UserID, req.URIParams.Inode)
 
 	default:
 		return nil, apierrors.GetNodeDetail.NotFound()

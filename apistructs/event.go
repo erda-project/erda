@@ -234,5 +234,11 @@ type GittarPushPayloadEvent struct {
 		Ref    string `json:"ref"`
 		After  string `json:"after"`
 		Before string `json:"before"`
+		Pusher *struct {
+			Id       string `json:"id"`
+			Name     string `json:"name"`
+			NickName string `json:"nickname"`
+			Email    string `json:"email"`
+		} `json:"pusher"`
 	} `json:"content"`
 }

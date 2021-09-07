@@ -15,6 +15,7 @@
 package pipengine
 
 import (
+	"context"
 	"math/rand"
 	"sync"
 	"time"
@@ -33,6 +34,8 @@ type Engine struct {
 	dbClient   *dbclient.Client
 	reconciler *reconciler.Reconciler
 }
+
+const logPrefixContinueLoading = "continue load running pipelines"
 
 var once sync.Once
 var e Engine
@@ -70,14 +73,9 @@ func (engine *Engine) OnceDo(
 	return onceErr
 }
 
-func (engine *Engine) Start() {
-	go engine.reconciler.Listen()
-	go engine.reconciler.ListenGC()
-	go engine.reconciler.PipelineDatabaseGC()
-	//go engine.reconciler.ListenDatabaseGC()
-	//go engine.reconciler.EnsureDatabaseGC()
-	go engine.reconciler.ContinueBackupThrottler()
-	go engine.reconciler.CompensateGCNamespaces()
+func (engine *Engine) StartReconciler(ctx context.Context) {
+	go engine.reconciler.Listen(ctx)
+	go engine.reconciler.ContinueBackupThrottler(ctx)
 
 	// 开始 Listen 后再开始加载已经在处理中的流水线，否则组件还未准备好，包括 eventManger(阻塞)
 	go func() {
@@ -88,6 +86,12 @@ func (engine *Engine) Start() {
 	}()
 }
 
+func (engine *Engine) StartGC(ctx context.Context) {
+	go engine.reconciler.ListenGC(ctx)
+	go engine.reconciler.PipelineDatabaseGC(ctx)
+	go engine.reconciler.CompensateGCNamespaces(ctx)
+}
+
 func (engine *Engine) Send(pipelineID uint64) {
 	engine.reconciler.Add(pipelineID)
 }
@@ -96,7 +100,35 @@ func (engine *Engine) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) 
 	engine.reconciler.WaitDBGC(pipelineID, ttl, needArchive)
 }
 
-const logPrefixContinueLoading = "continue load running pipelines"
+// loadRunningPipelines load running pipeline from db.
+func (engine *Engine) loadRunningPipelines() error {
+	logrus.Infof("%s: begin load running pipelines", logPrefixContinueLoading)
+	pipelineIDs, err := engine.dbClient.ListPipelineIDsByStatuses(apistructs.ReconcilerRunningStatuses()...)
+	if err != nil {
+		return err
+	}
+
+	// send pipeline id by interval time instead of at once
+	total := len(pipelineIDs)
+	intervalSec := time.Duration(conf.InitializeSendRunningIntervalSec())
+	intervalNum := conf.InitializeSendRunningIntervalNum()
+	maxTimes := total / int(intervalNum)
+	for i := 0; i <= maxTimes; i++ {
+		time.Sleep(intervalSec)
+		end := (i + 1) * int(intervalNum)
+		if end > total {
+			end = total
+		}
+		for _, id := range pipelineIDs[i*int(intervalNum) : end] {
+			go func(pipelineID uint64) {
+				engine.Send(pipelineID)
+				logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
+			}(id)
+		}
+	}
+	logrus.Infof("%s: pipengine end load running pipelines", logPrefixContinueLoading)
+	return nil
+}
 
 func (engine *Engine) continueLoadRunningPipelines() {
 	// 多实例，先等待随机时间
@@ -130,40 +162,4 @@ func (engine *Engine) continueLoadRunningPipelines() {
 			time.Sleep(time.Minute * 2)
 		}
 	}
-}
-
-// loadRunningPipelines load running pipeline from db.
-func (engine *Engine) loadRunningPipelines() error {
-	logrus.Infof("%s: begin load running pipelines", logPrefixContinueLoading)
-	pipelineIDs, err := engine.dbClient.ListPipelineIDsByStatuses(apistructs.ReconcilerRunningStatuses()...)
-	if err != nil {
-		return err
-	}
-
-	// send pipeline id by interval time instead of at once
-	total := len(pipelineIDs)
-	intervalSec := time.Duration(conf.InitializeSendRunningIntervalSec())
-	intervalNum := conf.InitializeSendRunningIntervalNum()
-	maxTimes := total / int(intervalNum)
-	for i := 0; i <= maxTimes; i++ {
-		time.Sleep(intervalSec)
-		end := (i + 1) * int(intervalNum)
-		if end > total {
-			end = total
-		}
-		for _, id := range pipelineIDs[i*int(intervalNum) : end] {
-			go func(pipelineID uint64) {
-				engine.Send(pipelineID)
-				logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
-			}(id)
-		}
-	}
-	//for _, id := range pipelineIDs {
-	//	go func(pipelineID uint64) {
-	//		engine.Send(pipelineID)
-	//		logrus.Debugf("%s: load running pipeline success, pipelineID: %d", logPrefixContinueLoading, pipelineID)
-	//	}(id)
-	//}
-	logrus.Infof("%s: pipengine end load running pipelines", logPrefixContinueLoading)
-	return nil
 }

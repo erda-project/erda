@@ -15,26 +15,26 @@
 package clusterinfo
 
 import (
+	"context"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/discover"
+	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
-	ClusterEventListenerLimit = 10
-	ClusterHookApiPath        = "/api/pipeline-clusters/actions/hook"
+	ClusterHookApiPath  = "/api/pipeline-clusters/actions/hook"
+	ClusterEventEtcdKey = "/devops/pipeline/cluster-info/events"
 )
 
 var (
 	bdl               *bundle.Bundle
 	once              sync.Once
-	clusterEventChans []chan apistructs.ClusterEvent
 	manualTriggerChan = make(chan struct{})
 )
 
@@ -49,19 +49,8 @@ func ListAllClusters() ([]apistructs.ClusterInfo, error) {
 }
 
 // DispatchClusterEvent dispatch every cluster event to registered chan
-func DispatchClusterEvent(clusterEvent apistructs.ClusterEvent) {
-	for _, ch := range clusterEventChans {
-		ch <- clusterEvent
-	}
-}
-
-func RegisterClusterEvent() (<-chan apistructs.ClusterEvent, error) {
-	if len(clusterEventChans) >= ClusterEventListenerLimit {
-		return nil, errors.Errorf("number of register cluster event limited, limit num: %d", ClusterEventListenerLimit)
-	}
-	ch := make(chan apistructs.ClusterEvent, 0)
-	clusterEventChans = append(clusterEventChans, ch)
-	return ch, nil
+func DispatchClusterEvent(js jsonstore.JsonStore, clusterEvent apistructs.ClusterEvent) error {
+	return js.Put(context.Background(), ClusterEventEtcdKey, clusterEvent)
 }
 
 // RegisterRefreshChan return channel for manual trigger refresh executor

@@ -17,9 +17,14 @@ package pipelinesvc
 import (
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -249,11 +254,7 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &PipelineSvc{}
-			got, got1, err := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("judgeTaskExecutor() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got, got1 := s.judgeTaskExecutor(tt.args.action, tt.args.actionSpec)
 			if got != tt.want {
 				t.Errorf("judgeTaskExecutor() got = %v, want %v", got, tt.want)
 			}
@@ -262,4 +263,37 @@ func TestPipelineSvc_judgeTaskExecutor(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenSnippetTaskExtra(t *testing.T) {
+	svc := PipelineSvc{
+		bdl: bundle.New(
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
+			bundle.WithScheduler(),
+		),
+	}
+	p := &spec.Pipeline{
+		PipelineBase: spec.PipelineBase{},
+		PipelineExtra: spec.PipelineExtra{
+			Extra: spec.PipelineExtraInfo{
+				Namespace:               "custom-namespace",
+				NotPipelineControlledNs: true,
+			},
+		},
+	}
+	taskExtra := svc.genSnippetTaskExtra(p, &pipelineyml.Action{})
+	assert.Equal(t, true, taskExtra.NotPipelineControlledNs)
+}
+
+func TestCalculateTaskTimeoutDuration(t *testing.T) {
+	svc := PipelineSvc{
+		bdl: bundle.New(
+			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
+			bundle.WithScheduler(),
+		),
+	}
+	duration := svc.calculateTaskTimeoutDuration(&pipelineyml.Action{
+		Timeout: pipelineyml.TimeoutDuration4Forever,
+	})
+	assert.Equal(t, time.Duration(-1), duration)
 }

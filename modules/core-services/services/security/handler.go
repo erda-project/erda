@@ -65,19 +65,12 @@ func (a AdminUserPermissionHandler) CheckProcess(ctx context.Context) Permission
 }
 
 func (a AdminUserPermissionHandler) PermissionListProcess(ctx context.Context) PermissionProcess {
-	if a.Adaptor.GetScopeType(ctx) == apistructs.SysScope {
-		return PermissionProcessMiddleware{RealProcess: DefaultPermissionProcess{}, AfterProcess: func(ctx context.Context, list *apistructs.PermissionList) (*apistructs.PermissionList, error) {
-			if list != nil {
-				list.Access = true
-			}
-			return list, nil
-		}}
-	} else if a.Adaptor.GetScopeType(ctx) == apistructs.AppScope {
+	if a.Adaptor.GetScopeType(ctx) == apistructs.AppScope {
 		return AppPermissionProcess{Adaptor: a.Adaptor}
-	} else {
-		return GetByUserAndScopePermissionProcess{
-			Adaptor: a.Adaptor,
-		}
+	}
+
+	return GetByUserAndScopePermissionProcess{
+		Adaptor: a.Adaptor,
 	}
 }
 

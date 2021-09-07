@@ -192,7 +192,6 @@ func (e *Endpoints) RedeployRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrDeployRuntime.InvalidParameter("runtimeID: " + v).ToResp(), nil
 	}
-	// TODO: the response should be apistructs.Runtime
 	data, err := e.runtime.RedeployPipeline(operator, orgID, runtimeID)
 	if err != nil {
 		return errorresp.ErrResp(err)
@@ -470,7 +469,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		return apierrors.ErrGetAppWorkspaceReleases.InternalError(errors.Errorf("not found cluster for %s", req.Workspace)).ToResp(), nil
 	}
 
-	branches, err := e.bdl.GetAllValidBranchWorkspace(req.AppID)
+	branches, err := e.bdl.GetAllValidBranchWorkspace(req.AppID, string(userID))
 	if err != nil {
 		return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
 	}

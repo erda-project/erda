@@ -32,11 +32,11 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 }
 
 func (p *provider) BuildSubResourceDeployRequest(name string, addon *diceyml.AddOn, req *handlers.ResourceDeployRequest) *handlers.ResourceDeployRequest {
-	deployment, _ := p.LogDeploymentDb.GetByClusterName(req.Az)
+	deployment, _ := p.LogDeploymentDb.GetByClusterName(req.Az, db.LogTypeLogAnalytics)
 	if deployment != nil {
 		// already deployed outside, no need to do further deploy
 		orgId := req.Options["orgId"]
-		orgDeployment, _ := p.LogDeploymentDb.GetByClusterNameAndOrgId(req.Az, orgId)
+		orgDeployment, _ := p.LogDeploymentDb.GetByClusterNameAndOrgId(req.Az, orgId, db.LogTypeLogAnalytics)
 		if orgDeployment == nil {
 			orgDeployment = deployment
 			orgDeployment.ID = 0
@@ -61,10 +61,10 @@ func (p *provider) BuildTmcInstanceConfig(tmcInstance *db.Instance, serviceGroup
 	if len(orgId) == 0 {
 		orgId = "0"
 	}
-	deployment, _ := p.LogDeploymentDb.GetByClusterName(tmcInstance.Az)
+	deployment, _ := p.LogDeploymentDb.GetByClusterName(tmcInstance.Az, db.LogTypeLogAnalytics)
 	if deployment != nil {
 		// already deployed outside, no need to do further deploy
-		orgDeployment, _ := p.LogDeploymentDb.GetByClusterNameAndOrgId(tmcInstance.Az, orgId)
+		orgDeployment, _ := p.LogDeploymentDb.GetByClusterNameAndOrgId(tmcInstance.Az, orgId, db.LogTypeLogAnalytics)
 		if orgDeployment == nil {
 			orgDeployment = deployment
 			orgDeployment.ID = 0
@@ -100,7 +100,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	collector := instanceOptions["MONITOR_LOG_COLLECTOR"]
 	if len(collector) == 0 {
-		dp, _ := p.LogDeploymentDb.GetByClusterName(tmcInstance.Az)
+		dp, _ := p.LogDeploymentDb.GetByClusterName(tmcInstance.Az, db.LogTypeLogAnalytics)
 		if dp != nil {
 			collector = dp.CollectorUrl
 		}
@@ -129,10 +129,10 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 func (p *provider) DeleteTenant(tenant *db.InstanceTenant, tmcInstance *db.Instance, clusterConfig map[string]string) error {
 
-	logInstance, _ := p.LogInstanceDb.GetLatestByLogKey(tenant.ID)
+	logInstance, _ := p.LogInstanceDb.GetLatestByLogKey(tenant.ID, db.LogTypeLogAnalytics)
 	if logInstance != nil && len(logInstance.ClusterName) > 0 {
 		p.LogInstanceDb.Model(logInstance).Update("is_delete", 1)
-		p.deleteIndex(tenant.ID, logInstance.ClusterName)
+		p.deleteIndex(logInstance.OrgId, tenant.ID, logInstance.ClusterName)
 	}
 
 	return p.DefaultDeployHandler.DeleteTenant(tenant, tmcInstance, clusterConfig)
@@ -155,19 +155,20 @@ func (p *provider) createLogDeployment(orgId string, clusterName string, esUrls 
 		Domain:       domain,
 		Created:      time.Now(),
 		Updated:      time.Now(),
+		LogType:      string(db.LogTypeLogAnalytics),
 	}
 
 	p.LogDeploymentDb.Save(&deploy)
 }
 
 func (p *provider) createLogAnalytics(logKey string, clusterName string, options map[string]string) (map[string]string, error) {
-	p.createIndex(clusterName, logKey)
+	p.createIndex(options["orgId"], clusterName, logKey)
 
 	config := map[string]string{
 		"TERMINUS_LOG_KEY": logKey,
 	}
 
-	instance, err := p.LogInstanceDb.GetLatestByLogKey(logKey)
+	instance, err := p.LogInstanceDb.GetLatestByLogKey(logKey, db.LogTypeLogAnalytics)
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +195,7 @@ func (p *provider) createLogAnalytics(logKey string, clusterName string, options
 		Config:          configStr,
 		Created:         time.Now(),
 		Updated:         time.Now(),
+		LogType:         string(db.LogTypeLogAnalytics),
 	}
 	if err := p.InstanceDb.Save(instance).Error; err != nil {
 		return nil, err
@@ -202,10 +204,14 @@ func (p *provider) createLogAnalytics(logKey string, clusterName string, options
 	return config, nil
 }
 
-func (p *provider) createIndex(clusterName string, logKey string) error {
-	logDeployment, err := p.LogDeploymentDb.GetByClusterName(clusterName)
+func (p *provider) createIndex(orgId string, clusterName string, logKey string) error {
+	logDeployment, err := p.LogDeploymentDb.GetByClusterNameAndOrgId(clusterName, orgId, db.LogTypeLogAnalytics)
 	if err != nil {
 		return err
+	}
+
+	if logDeployment == nil {
+		return fmt.Errorf("could not found logDeployment for cluster: %s, orgId: %s", clusterName, orgId)
 	}
 
 	esClient := utils.GetESClientsFromLogAnalytics(logDeployment, logKey)
@@ -215,13 +221,23 @@ func (p *provider) createIndex(clusterName string, logKey string) error {
 
 	indexPrefix := AddonLogIndexPrefix + logKey
 	index := "<" + indexPrefix + "-{now/d{yyyy.ww}}-000001>"
-	return esClient.CreateIndexWithAlias(index, indexPrefix)
+	var orgAlias string
+	if len(orgId) > 0 {
+		orgAlias = AddonLogIndexPrefix + "org-" + orgId
+		esClient.CreateIndexTemplate(indexPrefix, indexPrefix+"-*", orgAlias)
+	}
+
+	return esClient.CreateIndexWithAlias(index, indexPrefix, orgAlias)
 }
 
-func (p *provider) deleteIndex(logKey string, clusterName string) error {
-	logDeployment, err := p.LogDeploymentDb.GetByClusterName(clusterName)
+func (p *provider) deleteIndex(orgId string, logKey string, clusterName string) error {
+	logDeployment, err := p.LogDeploymentDb.GetByClusterNameAndOrgId(clusterName, orgId, db.LogTypeLogAnalytics)
 	if err != nil {
 		return err
+	}
+
+	if logDeployment == nil {
+		return fmt.Errorf("could not found logDeployment for cluster: %s, orgId: %s", clusterName, orgId)
 	}
 
 	esClient := utils.GetESClientsFromLogAnalytics(logDeployment, logKey)

@@ -21,20 +21,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: change name to AutoTestPlan
 // TestPlanV2 testplan
 type TestPlanV2 struct {
-	ID        uint64            `json:"id"`
-	Name      string            `json:"name"`
-	Desc      string            `json:"desc"`
-	ProjectID uint64            `json:"project"`
-	SpaceID   uint64            `json:"spaceID"`
-	SpaceName string            `json:"spaceName"`
-	Creator   string            `json:"creator"`
-	Owners    []string          `json:"owners"`
-	Updater   string            `json:"updater"`
-	Steps     []*TestPlanV2Step `json:"steps"`
-	CreateAt  *time.Time        `json:"createAt"`
-	UpdateAt  *time.Time        `json:"updateAt"`
+	ID          uint64            `json:"id"`
+	Name        string            `json:"name"`
+	Desc        string            `json:"desc"`
+	ProjectID   uint64            `json:"project"`
+	SpaceID     uint64            `json:"spaceID"`
+	SpaceName   string            `json:"spaceName"`
+	Creator     string            `json:"creator"`
+	Owners      []string          `json:"owners"`
+	Updater     string            `json:"updater"`
+	Steps       []*TestPlanV2Step `json:"steps"`
+	CreateAt    *time.Time        `json:"createAt"`
+	UpdateAt    *time.Time        `json:"updateAt"`
+	IsArchived  bool              `json:"isArchived"`
+	PassRate    float64           `json:"passRate"`
+	ExecuteTime *time.Time        `json:"executeTime"`
 }
 
 // TestPlanV2CreateRequest testplan v2 create request
@@ -80,6 +84,7 @@ type TestPlanV2UpdateRequest struct {
 	SpaceID    uint64   `json:"spaceID"`
 	Owners     []string `json:"owners"`
 	TestPlanID uint64   `json:"-"`
+	IsArchived *bool    `json:"isArchived"`
 
 	IdentityInfo
 }
@@ -92,17 +97,22 @@ type TestPlanV2UpdateResponse struct {
 
 // TestPlanV2PagingRequest testplan v2 query request
 type TestPlanV2PagingRequest struct {
-	Name      string   `schema:"name"`
-	Owners    []string `schema:"owners"`
-	Creator   string   `schema:"creator"`
-	Updater   string   `schema:"updater"`
-	SpaceID   uint64   `schema:"spaceID"`
-	ProjectID uint64   `schema:"projectID"`
+	Name       string   `schema:"name"`
+	Owners     []string `schema:"owners"`
+	Creator    string   `schema:"creator"`
+	Updater    string   `schema:"updater"`
+	SpaceID    uint64   `schema:"spaceID"`
+	ProjectID  uint64   `schema:"projectID"`
+	IsArchived *bool    `schema:"isArchived"`
 
 	// +optional default 1
 	PageNo uint64 `schema:"pageNo"`
 	// +optional default 20
 	PageSize uint64 `schema:"pageSize"`
+	// +optional
+	OrderBy string `schema:"orderBy"`
+	// +optional order ascend
+	Asc bool `schema:"asc"`
 	// ids
 	IDs []uint64
 
@@ -114,6 +124,7 @@ func (tpr *TestPlanV2PagingRequest) UrlQueryString() map[string][]string {
 	query["pageNo"] = []string{strconv.FormatInt(int64(tpr.PageNo), 10)}
 	query["pageSize"] = []string{strconv.FormatInt(int64(tpr.PageSize), 10)}
 	query["projectID"] = []string{strconv.FormatInt(int64(tpr.ProjectID), 10)}
+	query["asc"] = []string{strconv.FormatBool(tpr.Asc)}
 	if tpr.Name != "" {
 		query["name"] = []string{tpr.Name}
 	}
@@ -128,6 +139,12 @@ func (tpr *TestPlanV2PagingRequest) UrlQueryString() map[string][]string {
 	}
 	if len(tpr.Owners) != 0 {
 		query["owners"] = tpr.Owners
+	}
+	if tpr.IsArchived != nil {
+		query["isArchived"] = []string{strconv.FormatBool(*tpr.IsArchived)}
+	}
+	if tpr.OrderBy != "" {
+		query["orderBy"] = []string{tpr.OrderBy}
 	}
 
 	return query

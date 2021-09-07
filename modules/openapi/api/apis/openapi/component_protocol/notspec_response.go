@@ -55,9 +55,7 @@ type response struct {
 	UserInfo map[string]apistructs.UserInfo `json:"userInfo,omitempty"`
 }
 
-type renderResponse struct {
-	pb.RenderResponse
-	// {"code":500,"err":"default protocol not exist, scenario: demo1"}
+type cpErrResponse struct {
 	Code int    `json:"code,omitempty"`
 	Err  string `json:"err,omitempty"`
 }
@@ -71,28 +69,30 @@ func wrapErdaStyleResponse(proxyConfig types.ProxyConfig, resp *http.Response) (
 	defer func() {
 		if r := recover(); r != nil {
 			resp.Body = ioutil.NopCloser(bytes.NewReader(content))
-			wErr = fmt.Errorf("%v", r)
+			wErr = fmt.Errorf("err: %v, responseBody: %s", r, string(content))
 		}
 		resp.Header.Set("Content-Type", "application/json")
 	}()
 
-	// decode as renderResponse
-	var renderResp renderResponse
-	// all successful invoke will return json response
-	if err := json.Unmarshal(content, &renderResp); err != nil {
-		panic(err)
-	}
 	// construct erda style response
 	var erdaResp response
 	if resp.StatusCode/100 != 2 {
+		var cpErrResp cpErrResponse
+		if err := json.Unmarshal(content, &cpErrResp); err != nil {
+			panic(err)
+		}
 		erdaResp = response{
 			Success: false,
 			Err: apistructs.ErrorResponse{
-				Code: proxyErrorCode + ": " + strutil.String(renderResp.Code),
-				Msg:  renderResp.Err,
+				Code: proxyErrorCode + ": " + strutil.String(cpErrResp.Code),
+				Msg:  cpErrResp.Err,
 			},
 		}
 	} else {
+		var renderResp pb.RenderResponse
+		if err := json.Unmarshal(content, &renderResp); err != nil {
+			panic(err)
+		}
 		erdaResp = response{
 			Success: true,
 			Data:    &renderResp,

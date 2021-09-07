@@ -40,16 +40,39 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	}
 
 	// do filter
-	if log.Tags == nil || len(p.C.Filters) <= 0 {
+	if log.Tags == nil {
 		return nil
 	}
-	for k, v := range p.C.Filters {
-		val, ok := log.Tags[k]
-		if !ok {
-			return nil
+
+	// 兼容
+	// todo: use processor-pipeline pattern to simple the code
+	tagVal, ok := log.Tags["monitor_log_key"]
+	if !ok {
+		tagVal, ok = log.Tags["terminus_log_key"]
+		if ok {
+			log.Tags["monitor_log_key"] = tagVal
 		}
-		if len(v) > 0 && v != val {
-			return nil
+	}
+	if !ok {
+		tagVal, ok = log.Tags["msp_env_id"]
+		if ok {
+			log.Tags["monitor_log_key"] = tagVal
+		}
+	}
+
+	if len(tagVal) == 0 {
+		return nil
+	}
+
+	if p.C.Filters != nil {
+		for k, v := range p.C.Filters {
+			val, ok := log.Tags[k]
+			if !ok {
+				return nil
+			}
+			if len(v) > 0 && v != val {
+				return nil
+			}
 		}
 	}
 

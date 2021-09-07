@@ -46,6 +46,9 @@ func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) 
 	extensionSearchRequest.YamlFormat = true
 	for _, stage := range graph.Stages {
 		for _, action := range stage {
+			if action.Type == apistructs.ActionTypeSnippet {
+				continue
+			}
 			extensionSearchRequest.Extensions = append(extensionSearchRequest.Extensions, action.Type)
 		}
 	}

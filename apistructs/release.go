@@ -44,6 +44,8 @@ const (
 	ResourceTypeDataSet ResourceType = "data"
 	// ResourceTypeAndroid android类型文件
 	ResourceTypeAndroid ResourceType = "android"
+	// ResourceTypeAndroidAppBundle android aab 类型文件
+	ResourceTypeAndroidAppBundle ResourceType = "aab"
 	// ResourceTypeIOS ios类型文件
 	ResourceTypeIOS ResourceType = "ios"
 	// ResourceTypeMigration 资源类型为migration文件releaseID

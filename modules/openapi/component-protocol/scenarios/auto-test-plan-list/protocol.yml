@@ -25,6 +25,8 @@ rendering:
       state:
         - name: "name"
           value: "{{ filter.name }}"
+        - name: "archive"
+          value: "{{ filter.archive }}"
 
   addButton:
     - name: formModal
@@ -32,6 +34,7 @@ rendering:
         - name: "addTest"
           value: "{{ addButton.addTest }}"
 # 组件
+#TODO: add i18n
 components:
   autoTestPlan:
     type: "Container"
@@ -46,6 +49,16 @@ components:
           fixed: true
           placeholder: "输入计划名按回车键查询"
           type: "input"
+        - key: "archive"
+          label: "归档"
+          emptyText: "全部"
+          fixed: true
+          options:
+            - label: "进行中"
+              value: "inprogress"
+            - label: "已归档"
+              value: "archived"
+          type: "select"
     operations:
       filter:
         key: "filter"
@@ -63,6 +76,9 @@ components:
           key: "goto"
           target: "project_test_autoTestPlanDetail"
           jumpOut: false
+      changeSort:
+        key: "changeSort"
+        reload: true
     props:
       rowKey: "id"
       columns:
@@ -74,6 +90,14 @@ components:
           dataIndex: "testSpace"
         - title: "负责人"
           dataIndex: "owners"
+        - title: "最近执行通过率"
+          dataIndex: "passRate"
+          width: 180
+          sorter: true
+        - title: "最近执行时间"
+          dataIndex: "executeTime"
+          width: 180
+          sorter: true
         - title: "操作"
           dataIndex: "operate"
           width: 150

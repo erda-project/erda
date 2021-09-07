@@ -15,17 +15,17 @@
 package crondsvc
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
-	"github.com/alecthomas/assert"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/cron"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 // Result:
@@ -44,43 +44,73 @@ func TestReloadSpeed(t *testing.T) {
 	time.Sleep(time.Second * 2)
 }
 
-func TestCrondSvc_ListenCrond(t *testing.T) {
+func TestMakePipelineCronName(t *testing.T) {
+	cronID := uint64(123)
+	cronName := makePipelineCronName(cronID)
+	assert.Equal(t, "pipeline-cron[123]", cronName)
+}
 
-	c := CrondSvc{}
-	c.cronChan = make(chan string, 10)
-	var client = &dbclient.Client{}
-	var cr = &cron.Cron{}
+func TestMakeCleanBuildCacheJobName(t *testing.T) {
+	expr := "golang"
+	jobName := makeCleanBuildCacheJobName(expr)
+	assert.Equal(t, "clean-build-cache-image-[golang]", jobName)
+}
 
-	c.dbClient = client
-	c.crond = cr
+func TestCrondSnapshot(t *testing.T) {
+	s := &CrondSvc{
+		crond: &cron.Cron{},
+	}
+	cronSnapthots := s.crondSnapshot()
+	assert.Equal(t, 2, len(cronSnapthots))
+}
 
-	patch := monkey.PatchInstanceMethod(reflect.TypeOf(client), "GetPipelineCron", func(client *dbclient.Client, id interface{}) (cron spec.PipelineCron, err error) {
-		return spec.PipelineCron{ID: 1, Enable: &[]bool{true}[0], CronExpr: "* * * * * *"}, nil
-	})
+func TestParseCronIDFromWatchedKey(t *testing.T) {
+	deleteKey := "/devops/pipeline/cron/delete-123"
+	deleteCronID, err := parseCronIDFromWatchedKey(deleteKey)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint64(123), deleteCronID)
 
-	patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(cr), "Remove", func(cr *cron.Cron, name string) error {
-		assert.Equal(t, name, makePipelineCronName(1), "AddFunc")
+	addKey := "/devops/pipeline/cron/add-456"
+	addCronID, err := parseCronIDFromWatchedKey(addKey)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint64(456), addCronID)
+}
+
+func TestDeletePipelineCrond(t *testing.T) {
+	js := &jsonstore.JsonStoreImpl{}
+	s := &CrondSvc{
+		crond: &cron.Cron{},
+		js:    js,
+	}
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(js), "Put", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string, object interface{}) error {
 		return nil
 	})
+	defer pm.Unpatch()
+	err := s.DeletePipelineCrond(10)
+	assert.Equal(t, nil, err)
+}
 
-	patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(cr), "AddFunc", func(cr *cron.Cron, spec string, cmd func(), names ...string) error {
-		assert.NotZero(t, names)
-		assert.Equal(t, names[0], makePipelineCronName(1), "AddFunc")
+func TestAddIntoPipelineCrond(t *testing.T) {
+	js := &jsonstore.JsonStoreImpl{}
+	s := &CrondSvc{
+		crond: &cron.Cron{},
+		js:    js,
+	}
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(js), "Put", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string, object interface{}) error {
 		return nil
 	})
+	defer pm.Unpatch()
+	err := s.AddIntoPipelineCrond(10)
+	assert.Equal(t, nil, err)
+}
 
-	// todo refactor bad test
-	go c.ListenCrond(func(id uint64) {})
-	time.Sleep(2 * time.Second)
-
-	err := c.AddIntoPipelineCrond(1)
-	assert.NoError(t, err)
-	time.Sleep(2 * time.Second)
-	err = c.DeletePipelineCrond(1)
-	assert.NoError(t, err)
-	time.Sleep(2 * time.Second)
-
-	defer patch.Unpatch()
-	defer patch1.Unpatch()
-	defer patch2.Unpatch()
+func TestListenCrond(t *testing.T) {
+	s := &CrondSvc{}
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(s), "ListenCrond", func(s *CrondSvc, ctx context.Context, pipelineCronFunc func(id uint64)) {
+		return
+	})
+	defer pm1.Unpatch()
+	t.Run("ListenCrond", func(t *testing.T) {
+		s.ListenCrond(context.Background(), func(id uint64) {})
+	})
 }

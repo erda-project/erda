@@ -33,6 +33,9 @@ const (
 // 答疑用户的固定 ID
 const SupportID string = "2020"
 
+//MSP
+const MSPScope string = "msp"
+
 // Publisher 类型
 const (
 	// 移动应用

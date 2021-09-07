@@ -366,15 +366,17 @@ func (client *DBClient) GetMembersByScope(scopeType apistructs.ScopeType, scopeI
 
 // IsSysAdmin 判断用户是否为系统管理员
 func (client *DBClient) IsSysAdmin(userID string) (bool, error) {
-	var member model.Member
-	if err := client.Where("scope_type = ?", apistructs.SysScope).
-		Where("user_id = ?", userID).Find(&member).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return false, nil
-		}
+	var count int
+	db := client.Table("dice_member").Select("*").Joins(joinSQL)
+
+	if err := db.Where("dice_member.scope_type = ?", apistructs.SysScope).
+		Where("resource_value = ?", types.RoleSysManager).
+		Where("resource_key = ?", apistructs.RoleResourceKey).
+		Where("dice_member.user_id = ?", userID).Count(&count).Error; err != nil {
 		return false, err
 	}
-	return true, nil
+
+	return count > 0, nil
 }
 
 // GetOwnerMembersCount 根据scopeID获取项目/应用所有者的数量
