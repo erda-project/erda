@@ -2047,7 +2047,6 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 	param["serviceId"] = params.ServiceId
 	if params.Search != "" {
 		where.WriteString(fmt.Sprintf(" message_bus_destination::tag=~/.*%s.*/ AND ", params.Search))
-		//param["field"] = params.Search
 	}
 
 	// elapsed_mean desc
