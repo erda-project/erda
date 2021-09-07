@@ -16,6 +16,7 @@ package logservice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -104,7 +105,7 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 
 	// create if not exists
 	if instance == nil {
-		err = p.createIndex(options["orgId"], tmcInstance.Az, tenant.ID)
+		err = p.createIndex(options["orgId"], tmcInstance.Az, tenant.TenantGroup)
 		if err != nil {
 			return nil, err
 		}
@@ -149,8 +150,12 @@ func (p *provider) DoApplyTmcInstanceTenant(req *handlers.ResourceDeployRequest,
 func (p *provider) DeleteTenant(tenant *db.InstanceTenant, tmcInstance *db.Instance, clusterConfig map[string]string) error {
 	logInstance, _ := p.LogInstanceDb.GetLatestByLogKey(tenant.ID, db.LogTypeLogService)
 	if logInstance != nil && len(logInstance.ClusterName) > 0 {
+		var instanceConfig = struct {
+			MspEnvID string `json:"MSP_ENV_ID"`
+		}{}
+		json.Unmarshal([]byte(logInstance.Config), &instanceConfig)
 		p.LogInstanceDb.Model(logInstance).Update("is_delete", 1)
-		p.deleteIndex(logInstance.OrgId, tenant.ID, logInstance.ClusterName)
+		p.deleteIndex(logInstance.OrgId, instanceConfig.MspEnvID, logInstance.ClusterName)
 	}
 
 	return p.DefaultDeployHandler.DeleteTenant(tenant, tmcInstance, clusterConfig)
