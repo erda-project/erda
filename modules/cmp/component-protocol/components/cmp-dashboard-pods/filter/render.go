@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Filter
+package filter
 
 import (
 	"context"
@@ -20,8 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erda-project/erda/bundle"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,6 +29,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -41,51 +41,30 @@ func init() {
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
-	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	f.InitComponent(ctx)
-
 	if event.Operation == cptype.InitializeOperation {
-		(*gs)["isFirstFilter"] = true
 		if _, ok := f.sdk.InParams["filter__urlQuery"]; !ok {
 			f.State.Values.Namespace = []string{"default"}
 		}
 	}
-	userID := f.sdk.Identity.UserID
-	orgID := f.sdk.Identity.OrgID
 	if err := f.DecodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to decode url query for filter component, %v", err)
 	}
 	if err := f.GenComponentState(component); err != nil {
 		return fmt.Errorf("failed to gen filter component state, %v", err)
 	}
-	if err := f.SetComponentValue(); err != nil {
+	if err := f.SetComponentValue(ctx); err != nil {
 		return fmt.Errorf("failed to set filter component value, %v", err)
 	}
 	if err := f.EncodeURLQuery(); err != nil {
 		return fmt.Errorf("failed to gen filter component url query, %v", err)
 	}
-	(*gs)["node"] = f.State.Values.Kind
-	(*gs)["status"] = f.State.Values.Status
-	(*gs)["namespace"] = f.State.Values.Namespace
-	(*gs)["Q"] = f.State.Values.Search
-
-	podReq := apistructs.SteveRequest{
-		UserID:      userID,
-		OrgID:       orgID,
-		Type:        apistructs.K8SPod,
-		ClusterName: f.sdk.InParams["clusterName"].(string),
-	}
-
-	data, err := f.bdl.ListSteveResource(&podReq)
-	if err != nil {
-		return err
-	}
-	(*gs)["pods"] = data
 	return nil
 }
 
 func (f *ComponentFilter) InitComponent(ctx context.Context) {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle).(*bundle.Bundle)
+	bdl := ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	f.sdk = sdk
@@ -125,7 +104,7 @@ func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
 	return nil
 }
 
-func (f *ComponentFilter) SetComponentValue() error {
+func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	userID := f.sdk.Identity.UserID
 	orgID := f.sdk.Identity.OrgID
 
@@ -143,39 +122,39 @@ func (f *ComponentFilter) SetComponentValue() error {
 	list := data.Slice("data")
 
 	devNs := Option{
-		Label: "dev",
-		Value: "dev",
+		Label: cputil.I18n(ctx, "workspace-dev"),
+		Value: "workspace-dev",
 	}
 	testNs := Option{
-		Label: "test",
-		Value: "test",
+		Label: cputil.I18n(ctx, "workspace-test"),
+		Value: "workspace-test",
 	}
 	stagingNs := Option{
-		Label: "staging",
-		Value: "staging",
+		Label: cputil.I18n(ctx, "workspace-staging"),
+		Value: "workspace-staging",
 	}
 	productionNs := Option{
-		Label: "production",
-		Value: "production",
+		Label: cputil.I18n(ctx, "workspace-production"),
+		Value: "workspace-production",
 	}
 	addonNs := Option{
-		Label: "addons",
+		Label: cputil.I18n(ctx, "addons"),
 		Value: "addons",
 	}
 	pipelineNs := Option{
-		Label: "pipelines",
+		Label: cputil.I18n(ctx, "pipelines"),
 		Value: "pipelines",
 	}
 	defaultNs := Option{
-		Label: "default",
+		Label: cputil.I18n(ctx, "default"),
 		Value: "default",
 	}
 	systemNs := Option{
-		Label: "system",
+		Label: cputil.I18n(ctx, "system"),
 		Value: "system",
 	}
 	otherNs := Option{
-		Label: "others",
+		Label: cputil.I18n(ctx, "others"),
 		Value: "others",
 	}
 
@@ -188,7 +167,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 		if suf, ok := hasSuffix(name); ok && strings.HasPrefix(name, "project-") {
 			displayName, err := f.getDisplayName(name)
 			if err == nil {
-				option.Label = displayName
+				option.Label = fmt.Sprintf("%s (%s: %s)", name, cputil.I18n(ctx, "project"), displayName)
 				switch suf {
 				case "-dev":
 					devNs.Children = append(devNs.Children, option)
@@ -224,7 +203,7 @@ func (f *ComponentFilter) SetComponentValue() error {
 	f.State.Conditions = nil
 	namespaceCond := Condition{
 		Key:   "namespace",
-		Label: "Namespace",
+		Label: cputil.I18n(ctx, "namespace"),
 		Type:  "select",
 		Fixed: true,
 	}
@@ -239,73 +218,105 @@ func (f *ComponentFilter) SetComponentValue() error {
 	f.State.Conditions = append(f.State.Conditions, namespaceCond)
 
 	f.State.Conditions = append(f.State.Conditions, Condition{
+		Key:   "status",
+		Label: cputil.I18n(ctx, "status"),
+		Type:  "select",
+		Fixed: true,
+		Options: []Option{
+			{
+				Label: "Completed",
+				Value: "Completed",
+			},
+			{
+				Label: "ContainerCreating",
+				Value: "ContainerCreating",
+			},
+			{
+				Label: "CrashLoopBackOff",
+				Value: "CrashLoopBackOff",
+			},
+			{
+				Label: "Error",
+				Value: "Error",
+			},
+			{
+				Label: "Evicted",
+				Value: "Evicted",
+			},
+			{
+				Label: "ImagePullBackOff",
+				Value: "ImagePullBackOff",
+			},
+			{
+				Label: "Pending",
+				Value: "Pending",
+			},
+			{
+				Label: "Running",
+				Value: "Running",
+			},
+			{
+				Label: "Terminating",
+				Value: "Terminating",
+			},
+		},
+	})
+
+	var nodeOptions []Option
+	nodes, err := f.getNodes()
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		nodeOptions = append(nodeOptions, Option{
+			Label: node,
+			Value: node,
+		})
+	}
+	f.State.Conditions = append(f.State.Conditions, Condition{
+		Key:     "node",
+		Label:   "Node",
+		Type:    "select",
+		Fixed:   true,
+		Options: nodeOptions,
+	})
+
+	f.State.Conditions = append(f.State.Conditions, Condition{
 		Key:         "search",
-		Label:       "Search",
-		Placeholder: "input workload id",
+		Label:       cputil.I18n(ctx, "search"),
+		Placeholder: cputil.I18n(ctx, "searchNameOrIP"),
 		Type:        "input",
 		Fixed:       true,
 	})
 
-	f.State.Conditions = append(f.State.Conditions, Condition{
-		Key:   "status",
-		Label: "Status",
-		Type:  "select",
-		Fixed: true,
-		Options: []Option{
-			{
-				Label: "Active",
-				Value: WorkloadActive,
-			},
-			{
-				Label: "Error",
-				Value: WorkloadError,
-			},
-			{
-				Label: "Succeed",
-				Value: WorkloadSucceed,
-			},
-			{
-				Label: "Failed",
-				Value: WorkloadFailed,
-			},
+	f.Operations = map[string]interface{}{
+		"filter": Operation{
+			Key:    "filter",
+			Reload: true,
 		},
-	})
-
-	f.State.Conditions = append(f.State.Conditions, Condition{
-		Key:   "kind",
-		Label: "Workload Type",
-		Type:  "select",
-		Fixed: true,
-		Options: []Option{
-			{
-				Label: "Deployment",
-				Value: DeploymentType,
-			},
-			{
-				Label: "StatefulSet",
-				Value: StatefulSetType,
-			},
-			{
-				Label: "DaemonSet",
-				Value: DaemonSetType,
-			},
-			{
-				Label: "Job",
-				Value: JobType,
-			},
-			{
-				Label: "CronJob",
-				Value: CronJobType,
-			},
-		},
-	})
-
-	f.Operations = make(map[string]interface{})
-	f.Operations["filter"] = Operation{
-		Key:    "filter",
-		Reload: true,
 	}
 	return nil
+}
+
+func (f *ComponentFilter) getNodes() ([]string, error) {
+	userID := f.sdk.Identity.UserID
+	orgID := f.sdk.Identity.OrgID
+	req := apistructs.SteveRequest{
+		UserID:      userID,
+		OrgID:       orgID,
+		Type:        apistructs.K8SNode,
+		ClusterName: f.sdk.InParams["clusterName"].(string),
+	}
+	nodes, err := f.bdl.ListSteveResource(&req)
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	list := nodes.Slice("data")
+	for _, obj := range list {
+		res = append(res, obj.String("metadata", "name"))
+	}
+	return res, nil
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {

@@ -15,11 +15,10 @@
 package cmp_dashboard_pods
 
 import (
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/cpuTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filter"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/memTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/page"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podDistribution"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podTitle"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsTable"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/tableTabs"
 )

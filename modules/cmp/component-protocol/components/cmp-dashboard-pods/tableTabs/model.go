@@ -22,7 +22,7 @@ type TableTabs struct {
 }
 
 type Props struct {
-	TabMenu TabMenu `json:"tabMenu"`
+	TabMenu []TabMenu `json:"tabMenu"`
 }
 
 type Operations struct {

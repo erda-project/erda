@@ -17,17 +17,20 @@ package table
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/rancher/wrangler/pkg/data"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	common "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
-	"github.com/spf13/cast"
-	"strings"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/strutil"
-	v1 "k8s.io/api/core/v1"
 )
 
 type Table struct {
@@ -63,7 +66,7 @@ type State struct {
 	PageNo     int        `json:"pageNo"`
 	PageSize   int        `json:"pageSize"`
 	Total      int        `json:"total"`
-	SorterData SorterData `json:"sorter_data"`
+	SorterData SorterData `json:"sorterData"`
 }
 
 type SorterData struct {
@@ -104,7 +107,7 @@ type Status struct {
 	RenderType  string      `json:"renderType"`
 	Value       string      `json:"value"`
 	StyleConfig StyleConfig `json:"styleConfig"`
-	Tip         string      `json:"tip"`
+	Tip         string      `json:"tip,omitempty"`
 }
 
 type Percent struct {
@@ -164,9 +167,10 @@ type Meta struct {
 }
 
 type RowItem struct {
+	Name        Name         `json:"name"`
 	ID          string       `json:"id"`
 	Status      Status       `json:"status"`
-	NameSpace   string       `json:"nameSpace"`
+	Namespace   string       `json:"namespace"`
 	IP          string       `json:"ip"`
 	Request     string       `json:"request"`
 	UsedPercent Distribution `json:"usedPercent"`
@@ -220,37 +224,26 @@ func (t *Table) SetComponentValue(c *cptype.Component) error {
 }
 
 func (t *Table) GetResourceReq(pod data.Object, resourceKind string, resourceType v1.ResourceName) string {
-	req := 0.0
-	for _, container := range pod.Slice("spec", "containers", "resources") {
-		switch resourceType {
-		case v1.ResourceCPU:
-			req += cast.ToFloat64(container.String(resourceKind, string(v1.ResourceCPU)))
-		case v1.ResourceMemory:
-			mem := container.String("requests", string(v1.ResourceMemory))
-			length := len(mem)
-			switch mem[length-2] {
-			case 'G', 'g':
-				req += cast.ToFloat64(mem[:length-2]) * (1 << 30)
-			case 'M', 'm':
-				req += cast.ToFloat64(mem[:length-2]) * (1 << 20)
-			case 'K', 'k':
-				req += cast.ToFloat64(mem[:length-2]) * (1 << 10)
-			}
-		}
-	}
-	if resourceType == v1.ResourceMemory {
-		if req > 1<<30 {
-			return fmt.Sprintf("%.1f%s", req/(1<<30), "Gi")
-		} else if req > 1<<20 {
-			return fmt.Sprintf("%.1f%s", req/(1<<30), "Mi")
-		} else if req > 1<<10 {
-			return fmt.Sprintf("%.1f%s", req/(1<<30), "Ki")
-		} else {
-			return fmt.Sprintf("%.1f%s", req/(1<<30), "i")
-		}
+	var format resource.Format
+	if resourceType == "cpu" {
+		format = resource.DecimalSI
 	} else {
-		return fmt.Sprintf("%.1fm", req)
+		format = resource.BinarySI
 	}
+	result := resource.NewQuantity(0, format)
+
+	for _, container := range pod.Slice("spec", "containers") {
+		result.Add(*parseResource(container.String("resources", resourceKind, string(resourceType)), format))
+	}
+	return result.String()
+}
+
+func parseResource(str string, format resource.Format) *resource.Quantity {
+	if str == "" {
+		return resource.NewQuantity(0, format)
+	}
+	res, _ := resource.ParseQuantity(str)
+	return &res
 }
 
 func (t *Table) GetRole(labels []string) string {

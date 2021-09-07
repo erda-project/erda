@@ -12,26 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package Filter
+package filter
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+
 	"github.com/erda-project/erda/bundle"
-
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
-
-const (
-	WorkloadActive  = "active"
-	WorkloadError   = "error"
-	WorkloadSucceed = "succeed"
-	WorkloadFailed  = "failed"
-
-	DeploymentType  = "Deployment"
-	DaemonSetType   = "DaemonSet"
-	StatefulSetType = "StatefulSet"
-	JobType         = "Job"
-	CronJobType     = "CronJob"
 )
 
 type ComponentFilter struct {
@@ -70,6 +57,7 @@ type Values struct {
 	Kind      []string `json:"kind,omitempty"`
 	Namespace []string `json:"namespace,omitempty"`
 	Status    []string `json:"status,omitempty"`
+	Node      []string `json:"node,omitempty"`
 	Search    string   `json:"search,omitempty"`
 }
 

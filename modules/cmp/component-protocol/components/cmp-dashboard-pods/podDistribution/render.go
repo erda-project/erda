@@ -3,51 +3,53 @@ package PodDistribution
 import (
 	"context"
 	"fmt"
+	"sort"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/rancher/wrangler/pkg/data"
 )
 
 func (pd *PodDistribution) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	pods := (*gs)["pods"].([]data.Object)
-	pd.SDK = cputil.SDK(ctx)
-	d := Data{Total: len(pods)}
-	cnt := make(map[string]int)
-	for _, pod := range pods {
-		cnt[pod.StringSlice("metadata", "fields")[2]]++
+	total := 0
+	pd.Data.Lists = nil
+	for state, count := range pd.State.Values {
+		total += count
+		pd.Data.Lists = append(pd.Data.Lists, pd.ParsePodStatus(ctx, state, count))
 	}
-	for k, v := range cnt {
-		d.Lists = append(d.Lists, pd.ParsePodStatus(k, v))
-	}
-	c.Data["list"] = d
+	pd.Data.Total = total
+	sort.Slice(pd.Data.Lists, func(i, j int) bool {
+		return pd.Data.Lists[i].Label < pd.Data.Lists[j].Label
+	})
 	return nil
 }
-func (pd *PodDistribution) ParsePodStatus(state string, cnt int) List {
+
+func (pd *PodDistribution) ParsePodStatus(ctx context.Context, state string, cnt int) List {
 	status := List{
-		Label: pd.SDK.I18n(state) + fmt.Sprintf("%d", cnt),
+		Tip:   fmt.Sprintf("%s %d/%d", cputil.I18n(ctx, state), cnt, pd.Data.Total),
 		Value: cnt,
+		Label: fmt.Sprintf("%s %d", cputil.I18n(ctx, state), cnt),
 	}
 	switch state {
 	case "Completed":
-		status.StyleConfig.Color = "steelBlue"
+		status.Color = "steelBlue"
 	case "ContainerCreating":
-		status.StyleConfig.Color = "orange"
+		status.Color = "orange"
 	case "CrashLoopBackOff":
-		status.StyleConfig.Color = "red"
+		status.Color = "red"
 	case "Error":
-		status.StyleConfig.Color = "maroon"
+		status.Color = "maroon"
 	case "Evicted":
-		status.StyleConfig.Color = "darkgoldenrod"
+		status.Color = "darkgoldenrod"
 	case "ImagePullBackOff":
-		status.StyleConfig.Color = "darksalmon"
+		status.Color = "darksalmon"
 	case "Pending":
-		status.StyleConfig.Color = "teal"
+		status.Color = "teal"
 	case "Running":
-		status.StyleConfig.Color = "lightgreen"
+		status.Color = "lightgreen"
 	case "Terminating":
-		status.StyleConfig.Color = "brown"
+		status.Color = "brown"
 	}
 	return status
 }

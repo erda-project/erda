@@ -47,8 +47,7 @@ component-protocol.components.cmp-dashboard-pods.filter:
 component-protocol.components.cmp-dashboard-pods.podTitle:
 component-protocol.components.cmp-dashboard-pods.podDistribution:
 component-protocol.components.cmp-dashboard-pods.tableTabs:
-component-protocol.components.cmp-dashboard-pods.cpuTable:
-component-protocol.components.cmp-dashboard-pods.memTable:
+component-protocol.components.cmp-dashboard-pods.podsTable:
 
 component-protocol.components.cmp-dashboard-podDetail.page:
 component-protocol.components.cmp-dashboard-podDetail.header:
