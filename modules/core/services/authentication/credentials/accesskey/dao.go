@@ -38,7 +38,7 @@ type dao struct {
 
 func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest) ([]AccessKey, int64, error) {
 	var objs []AccessKey
-	q := d.db.Order("created_at desc")
+	q := d.db.Model(&AccessKey{}).Order("created_at desc")
 	where := make(map[string]interface{})
 	if req.Status != pb.StatusEnum_NOT_SPECIFIED {
 		where["status"] = req.Status
@@ -54,17 +54,27 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 	if req.AccessKey != "" {
 		where["access_key"] = req.AccessKey
 	}
+	if req.Scope != "" {
+		where["scope"] = req.Scope
+	}
+	if req.ScopeId != "" {
+		where["scopeId"] = req.ScopeId
+	}
+
+	var count int64
+	cres := q.Where(where).Count(&count)
+	if cres.Error != nil {
+		return nil, 0, cres.Error
+	}
+
 	if req.PageNo > 0 && req.PageSize > 0 {
 		q = q.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize)
 	}
-
 	res := q.Where(where).Find(&objs)
 	if res.Error != nil {
 		return nil, 0, res.Error
 	}
 
-	var count int64
-	cres := res.Count(&count)
 	if cres.Error != nil {
 		return nil, 0, res.Error
 	}
@@ -120,5 +130,7 @@ func toModel(req *pb.CreateAccessKeyRequest) AccessKey {
 		SubjectType: req.SubjectType,
 		Subject:     req.Subject,
 		Description: req.Description,
+		Scope:       req.Scope,
+		ScopeId:     req.ScopeId,
 	}
 }
