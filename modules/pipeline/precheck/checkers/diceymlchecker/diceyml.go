@@ -74,7 +74,7 @@ func checkDiceYmlAndDiceWorkspaceYml(p *spec.Pipeline) error {
 	diceworkspaceymlName = fmt.Sprintf("dice_%s.yml", diceymlworkspace)
 
 	repo := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr)
-	diceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceymlName)
+	diceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceymlName, "")
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func checkDiceYmlAndDiceWorkspaceYml(p *spec.Pipeline) error {
 		return err
 	}
 
-	diceworkspaceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceworkspaceymlName)
+	diceworkspaceymlcontent, err := repo.FetchFile(p.GetCommitID(), diceworkspaceymlName, "")
 	// dice_<workspace>.yml 存在并且有内容
 	if err == nil && len(diceworkspaceymlcontent) > 0 {
 		diceworkspaceYml, err := diceyml.New([]byte(diceworkspaceymlcontent), false)

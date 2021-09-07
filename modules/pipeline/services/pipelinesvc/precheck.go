@@ -33,7 +33,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage) error {
+func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pipeline, stages []spec.PipelineStage, userID string) error {
 	tasks, err := s.MergePipelineYmlTasks(pipelineYml, nil, p, stages, nil)
 	if err != nil {
 		return apierrors.ErrPreCheckPipeline.InternalError(err)
@@ -52,12 +52,15 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 
 	// files
 	if p.CommitDetail.RepoAbbr != "" {
-		diceymlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), "dice.yml")
+		diceymlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).
+			FetchFile(p.GetCommitID(), "dice.yml", userID)
 		if err == nil {
 			itemsForCheck.Files["dice.yml"] = string(diceymlByte)
+		} else {
+			logrus.Errorf("fail to fetchFile from gittar, err: %s", err.Error())
 		}
 	}
-	err = setItemForCheckRealDiceYml(p, &itemsForCheck)
+	err = setItemForCheckRealDiceYml(p, &itemsForCheck, userID)
 	if err != nil {
 		return err
 	}
@@ -138,7 +141,7 @@ func (s *PipelineSvc) PreCheck(pipelineYml *pipelineyml.PipelineYml, p *spec.Pip
 }
 
 // 用户可能在 release 中设置了 dice_development_yml,dice_test_yml,dice_staging_yml,dice_production_yml 等不同环境的 dice.yml, 但是对应的校验也要转化
-func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.ItemsForCheck) error {
+func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.ItemsForCheck, userID string) error {
 	if p == nil {
 		return nil
 	}
@@ -189,7 +192,8 @@ func setItemForCheckRealDiceYml(p *spec.Pipeline, itemForCheck *prechecktype.Ite
 		}
 
 		realDiceYmlName := realDiceYmlSplit[length-1]
-		diceYmlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).FetchFile(p.GetCommitID(), realDiceYmlName)
+		diceYmlByte, err := gittarutil.NewRepo(discover.Gittar(), p.CommitDetail.RepoAbbr).
+			FetchFile(p.GetCommitID(), realDiceYmlName, userID)
 		if err != nil {
 			worn = err
 			return

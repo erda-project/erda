@@ -32,7 +32,7 @@ func (s *PipelineSvc) AllValidBranchWorkspaces(appID uint64) (map[string]string,
 
 	repo := gittarutil.NewRepo(discover.Gittar(), app.GitRepoAbbrev)
 
-	branches, err := repo.Branches()
+	branches, err := repo.Branches("")
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepo.InternalError(err)
 	}
@@ -48,7 +48,7 @@ func (s *PipelineSvc) AllValidBranchWorkspaces(appID uint64) (map[string]string,
 		branchWorkspaces[branch] = ws.String()
 	}
 
-	tags, err := repo.Tags()
+	tags, err := repo.Tags("")
 	if err != nil {
 		return nil, apierrors.ErrGetGittarRepo.InternalError(err)
 	}
