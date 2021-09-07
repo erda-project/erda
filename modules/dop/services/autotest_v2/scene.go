@@ -520,10 +520,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 
 	var apiTestStr = string(specJson)
 	for _, param := range sceneInputs {
-		if (strings.HasPrefix(param.Temp, "[") && strings.HasSuffix(param.Temp, "]")) ||
-			(strings.HasPrefix(param.Temp, "{") && strings.HasSuffix(param.Temp, "}")) {
-			param.Temp = strings.ReplaceAll(param.Temp, "\"", "\\\"")
-		}
+		param.Temp = convertJsonParam(param.Temp)
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Params+"."+param.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 		apiTestStr = strings.ReplaceAll(apiTestStr, expression.OldLeftPlaceholder+expression.Params+"."+param.Name+expression.OldRightPlaceholder, expression.ReplaceRandomParams(param.Temp))
 	}
@@ -536,6 +533,7 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 				return nil, fmt.Errorf("failed to unmarshal apiConfig, err: %v", err)
 			}
 			for _, item := range apiConfig.Global {
+				item.Value = convertJsonParam(item.Value)
 				apiTestStr = strings.ReplaceAll(apiTestStr, expression.LeftPlaceholder+" "+expression.Configs+"."+apistructs.PipelineSourceAutoTest.String()+"."+item.Name+" "+expression.RightPlaceholder, expression.ReplaceRandomParams(item.Value))
 			}
 		}
@@ -990,6 +988,14 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 
 func replacePreSceneValue(value string, replaceIdMap map[uint64]uint64) string {
 	return replacePreStepValue(value, replaceIdMap)
+}
+
+func convertJsonParam(value string) string {
+	if (strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]")) ||
+		(strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}")) {
+		return strings.ReplaceAll(value, "\"", "\\\"")
+	}
+	return value
 }
 
 func replacePreStepValue(value string, replaceIdMap map[uint64]uint64) string {
