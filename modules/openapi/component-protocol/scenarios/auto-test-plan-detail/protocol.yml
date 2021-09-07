@@ -623,3 +623,4 @@ rendering:
       state:
         - name: "testPlanId"
           value: "{{ fileDetail.testPlanId }}"
+# TODO: move executeInfo.envData to global state
