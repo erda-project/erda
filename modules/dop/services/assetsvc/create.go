@@ -83,6 +83,7 @@ func (svc *Service) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apiAss
 	for _, version := range req.Versions {
 		version.OrgID = req.OrgID
 		version.APIAssetID = req.AssetID
+		version.IdentityInfo = req.IdentityInfo
 		if err := svc.readSpec(&version); err != nil {
 			return "", apierrors.CreateAPIAsset.InvalidParameter(err)
 		}
