@@ -18,8 +18,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -29,8 +29,8 @@ func init() {
 	})
 }
 
-func (p *ComponentPodsTableTitle) Render(ctx context.Context, component *apistructs.Component, _ apistructs.ComponentProtocolScenario,
-	event apistructs.ComponentEvent, _ *apistructs.GlobalStateData) error {
+func (p *ComponentPodsTableTitle) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
+	event cptype.ComponentEvent, _ *cptype.GlobalStateData) error {
 	p.Props.Title = cputil.I18n(ctx, "workloadPods")
 	p.Props.Size = "small"
 	return nil

@@ -14,16 +14,13 @@
 
 package apistructs
 
-import (
-	v1 "k8s.io/api/core/v1"
-)
-
 type MetricsRequest struct {
 	UserID       string
 	OrgID        string
-	ClusterName  string          `json:"cluster_name"`
-	ResourceType v1.ResourceName `json:"resource_type"`
-	HostName     []string        `json:"host_name"`
+	ClusterName  string
+	ResourceType string
+	ResourceKind string
+	Names        []string
 }
 
 type MetricsResponse struct {
@@ -32,6 +29,7 @@ type MetricsResponse struct {
 }
 
 type MetricsData struct {
+	// if qurey pod resource, used means usedPercent. request and total are useless.
 	Used    float64 `json:"used"`
 	Request float64 `json:"request"`
 	Total   float64 `json:"total"`

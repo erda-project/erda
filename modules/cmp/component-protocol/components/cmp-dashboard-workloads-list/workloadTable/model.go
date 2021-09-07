@@ -82,7 +82,6 @@ type Item struct {
 	Namespace    string `json:"namespace,omitempty"`
 	Kind         string `json:"kind,omitempty"`
 	Age          string `json:"age,omitempty"`
-	AgeNum       int64  `json:"ageNum,omitempty"`
 	Ready        string `json:"ready,omitempty"`
 	UpToDate     string `json:"upToDate,omitempty"`
 	Available    string `json:"available,omitempty"`

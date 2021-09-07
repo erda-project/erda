@@ -50,15 +50,15 @@ zh:
 
  # cmp-dashboard-workloads-list.filter
  search: 搜索
- searchPlaceHolder: 搜索工作负载名称
+ workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
 
  # cmp-dashboard-workloads-list.workloadTable
- upToDate: Up-to-Date
- available: Available
- desired: Desired
- current: Current
- completions: Completions
+ upToDate: 已更新
+ available: 可用
+ desired: 期望
+ current: 当前
+ completions: 完成
  jobDuration: 运行时间
  schedule: 运行计划
  lastSchedule: 上次运行时间
@@ -115,7 +115,7 @@ en:
 
  # cmp-dashboard-workloads-list.filter
  search: Search
- searchPlaceHolder: input workload name
+ workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
 
  # cmp-dashboard-workloads-list.workloadTable

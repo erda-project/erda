@@ -43,6 +43,7 @@ require (
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
+	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0

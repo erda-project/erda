@@ -109,10 +109,6 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
-		Label: Label{
-			Show:     true,
-			Position: "insideRight",
-		},
 		Data: []*int{
 			&activeCronJob, &activeJob, &activeDs, &activeSs, &activeDeploy,
 		},
@@ -123,10 +119,6 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
-		Label: Label{
-			Show:     true,
-			Position: "insideRight",
-		},
 		Data: []*int{
 			nil, nil, &errorDs, &errorSs, &errorDeploy,
 		},
@@ -137,10 +129,6 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
-		Label: Label{
-			Show:     true,
-			Position: "insideRight",
-		},
 		Data: []*int{
 			nil, &succeededJob, nil, nil, nil,
 		},
@@ -151,10 +139,6 @@ func (c *ComponentWorkloadChart) SetComponentValue() error {
 		Type:     "bar",
 		Stack:    "count",
 		BarWidth: "50%",
-		Label: Label{
-			Show:     true,
-			Position: "insideRight",
-		},
 		Data: []*int{
 			nil, &failedJob, nil, nil, nil,
 		},
