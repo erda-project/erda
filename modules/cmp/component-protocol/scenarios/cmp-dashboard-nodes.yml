@@ -1,0 +1,86 @@
+scenario: cmp-dashboard-nodes
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - nodeFilter
+      - charts
+      - tableTabsContainer
+      - addLabelModal
+    tableTabsContainer:
+      - tableTabs
+    tableTabs:
+      children:
+        - cpuTable
+        - memTable
+        - podTable
+    charts:
+      - cpuChart
+      - memChart
+      - podChart
+
+components:
+  page:
+    type: Container
+  nodeFilter:
+    type: TiledFilter
+  charts:
+    type: RowContainer
+  tableTabsContainer:
+    type: Container
+  addLabelModal:
+    type: FormModal
+  tableTabs:
+    type: Tabs
+  cpuTable:
+    type: Table
+  memTable:
+    type: Table
+  podTable:
+    type: Table
+  cpuChart:
+    type: Chart
+  memChart:
+    type: Chart
+  podChart:
+    type: Chart
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: tableTabs
+    - name: nodeFilter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "namespace"
+          value: "{{ __InParams__.namespace }}"
+    - name: cpuTable
+    - name: podTable
+    - name: memTable
+    - name: charts
+    - name: cpuChart
+    - name: memChart
+    - name: podChart
+    - name: tableTabsContainer
+    - name: addLabelModal
+
+  filter:
+    - name: page
+    - name: tab
+    - name: nodeFilter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "namespace"
+          value: "{{ __InParams__.namespace }}"
+    - name: cpuTable
+    - name: podTable
+    - name: memTable
+    - name: tableTabsContainer
+    - name: addLabelModal
+    - name: charts
+    - name: cpuChart
+    - name: memChart
+    - name: podChart

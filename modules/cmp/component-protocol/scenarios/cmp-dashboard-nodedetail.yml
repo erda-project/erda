@@ -1,0 +1,60 @@
+scenario: cmp-dashboard-nodeDetail
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - header
+      - containerTitle
+      - containerTable
+      - podInfoTitle
+      - podInfo
+      - eventTable
+      - eventTitle
+      - addLabelModal
+    header:
+      - podTitle
+      - podStatus
+
+components:
+  page:
+    type: Container
+  header:
+    type: RowContainer
+  nodeStatus:
+    type: Badge
+  nodeTitle:
+    type: Title
+  statusTitle:
+    type: Title
+  statusBadge:
+    type: Badge
+  infoTitle:
+    type: Title
+  infoDetail:
+    type: Panel
+  addLabelModal:
+    type: FormModal
+  infoMapTable:
+    type: Table
+
+
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: header
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "namespace"
+          value: "{{ __InParams__.namespace }}"
+    - name: containerTitle
+    - name: containerTable
+    - name: podInfoTitle
+    - name: podInfo
+    - name: eventTable
+    - name: eventTitle
+    - name: podTitle
+    - name: podStatus
+    - name: addLabelModal

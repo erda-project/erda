@@ -75,12 +75,16 @@ openapi-v1-routes:
         scenarios:
           - demo
           - yetAnotherDemo
-      - addr: cmp:9028
+      - app: cmp
+         addr: cmp:9028
         scenarios:
           - cmp-dashboard-events-list
           - cmp-dashboard-workloads-list
           - cmp-dashboard-workload-detail
-
+          - cmp-dashboard-nodes
+          - cmp-dashboard-nodeDetail
+          - cmp-dashboard-pods
+          - cmp-dashboard-podDetail
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"

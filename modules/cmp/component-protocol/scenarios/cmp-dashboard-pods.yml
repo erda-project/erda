@@ -1,0 +1,58 @@
+scenario: cmp-dashboard-pods
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - filter
+      - podTitle
+      - podDistribution
+      - tableTabs
+    tableTabs:
+      - cpuTable
+      - memTable
+
+components:
+  page:
+    type: Container
+  podTitle:
+    type: Title
+  podDistribution:
+    type: LinearDistribution
+  filter:
+    type: ContractiveFilter
+  tableTabs:
+    type: Tabs
+  cpuTable:
+    type: Table
+  memTable:
+    type: Table
+
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "namespace"
+          value: "{{ __InParams__.namespace }}"
+    - name: tableTabs
+    - name: cpuTable
+    - name: memTable
+    - name: podTitle
+    - name: podDistribution
+  filter:
+    - name: page
+    - name: tableTabs
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "namespace"
+          value: "{{ __InParams__.namespace }}"
+    - name: cpuTable
+    - name: memTable
+    - name: podTitle
+    - name: podDistribution
