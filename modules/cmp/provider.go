@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/pkg/discover"
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
@@ -64,6 +65,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				httpclient.WithTimeout(time.Second, time.Second*90),
 				httpclient.WithEnableAutoRetry(false),
 			)),
+		bundle.WithCustom(discover.EnvCMP, "localhost:9027"),
 	))
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	return nil
