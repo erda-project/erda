@@ -41,11 +41,11 @@ var (
 
 func init() {
 	UserGroups = make(map[string]UserGroupInfo)
-	UserGroups["erda-org-manager"] = UserGroupInfo{
+	UserGroups[OrgManagerGroup] = UserGroupInfo{
 		ServiceAccountName:      "erda-org-manager",
 		ServiceAccountNamespace: systemNamespace,
 	}
-	UserGroups["erda-org-support"] = UserGroupInfo{
+	UserGroups[OrgSupportGroup] = UserGroupInfo{
 		ServiceAccountName:      "erda-org-support",
 		ServiceAccountNamespace: systemNamespace,
 	}
@@ -151,7 +151,7 @@ type UserGroupType string
 
 const (
 	OrgManagerGroup = "erda-org-manager"
-	OrgSupportGroup = "erda-support-manager"
+	OrgSupportGroup = "erda-org-support"
 )
 
 type UserGroupInfo struct {
@@ -186,7 +186,7 @@ rules:
   resources:
   - 'pods/exec'
   verbs:
-  - 'create'
+  - '*'
 `
 	ClusterRoleBindingExpression = `
 ---
