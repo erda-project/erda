@@ -16,12 +16,14 @@ package metrics
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/modules/cmp/mock"
 )
@@ -81,5 +83,66 @@ func TestMetricsSearch(t *testing.T) {
 	_, err = mockServer.DoQuery(ctx, key, req3)
 	if err != nil {
 		return
+	}
+}
+
+func TestToInfluxReq(t *testing.T) {
+	clusterName := "terminus-dev"
+	type args struct {
+		req *apistructs.MetricsRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*pb.QueryWithInfluxFormatRequest
+	}{
+		// TODO: Add test cases.
+		{
+			name: "test",
+			args: args{
+				&apistructs.MetricsRequest{
+					UserID:       "1",
+					OrgID:        "2",
+					ClusterName:  "terminus-dev",
+					ResourceType: Memory,
+					ResourceKind: Pod,
+					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
+					Names: []string{"telegraf-app-00e2f41199-z92wc"},
+				},
+			},
+			want: []*pb.QueryWithInfluxFormatRequest{
+				{
+					Statement: PodMemoryUsageSelectStatement,
+					Params:    map[string]*structpb.Value{"pod_name": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
+				},
+			},
+		},
+		{
+			name: "test2",
+			args: args{
+				&apistructs.MetricsRequest{
+					UserID:       "1",
+					OrgID:        "2",
+					ClusterName:  clusterName,
+					ResourceType: Cpu,
+					ResourceKind: Pod,
+					//Names:        []string{"telegraf-app-00e2f41199-z92wc"},
+					Names: []string{"telegraf-app-00e2f41199-z92wc"},
+				},
+			},
+			want: []*pb.QueryWithInfluxFormatRequest{
+				{
+					Statement: PodMemoryUsageSelectStatement,
+					Params:    map[string]*structpb.Value{"cluster_name": structpb.NewStringValue(clusterName), "hostname": structpb.NewStringValue("telegraf-app-00e2f41199-z92wc")},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToInfluxReq(tt.args.req); !reflect.DeepEqual(got, tt.want) {
+
+			}
+		})
 	}
 }

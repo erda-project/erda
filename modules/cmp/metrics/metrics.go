@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -182,60 +181,6 @@ func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRe
 		Data:   data,
 	}
 	return mkResponse(res, nil)
-}
-
-func getTimeRange(unit string, num int, align bool) (start int64, end int64, interval string) {
-	now := time.Now()
-	alignTime := func(interval string) time.Time {
-		if align {
-			ts := now.UnixNano()
-			switch interval {
-			case "24h":
-				const day = 24 * int64(time.Hour)
-				if ts%day != 0 {
-					ts = ts - ts%day + day
-					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
-				}
-			case "1h":
-				const hour = int64(time.Hour)
-				if ts%hour != 0 {
-					ts = ts - ts%hour + hour
-					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
-				}
-			case "1m":
-				const minute = int64(time.Minute)
-				if ts%minute != 0 {
-					ts = ts - ts%minute + minute
-					now = time.Unix(ts/int64(time.Second), ts%int64(time.Second))
-				}
-			}
-		}
-		return now
-	}
-	switch strings.ToLower(unit) {
-	case "year":
-		interval = "24h"
-		now = alignTime(interval)
-		now = now.AddDate(0, 0, 1)
-	case "month":
-		interval = "24h"
-		now = alignTime(interval)
-		start = now.AddDate(0, -1*num, 0).UnixNano() / int64(time.Millisecond)
-	case "week":
-		interval = "24h"
-		now = alignTime(interval)
-		start = now.AddDate(0, 0, -7*num).UnixNano() / int64(time.Millisecond)
-	case "day":
-		interval = "1h"
-		now = alignTime(interval)
-		start = now.AddDate(0, 0, -1*num).UnixNano() / int64(time.Millisecond)
-	default:
-		interval = "1m"
-		now = alignTime(interval)
-		start = now.Add(time.Duration(-1*int64(num)*int64(time.Hour))).UnixNano() / int64(time.Millisecond)
-	}
-	end = now.UnixNano() / int64(time.Millisecond)
-	return
 }
 
 func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequest {
