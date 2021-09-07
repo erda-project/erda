@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type server struct {
@@ -85,7 +86,7 @@ func TestProvider_ProcessPipelineDefinition(t *testing.T) {
 			p := &Provider{
 				ClientDefinitionService: server{},
 			}
-			got, err := p.ProcessPipelineDefinition(context.Background(), tt.args.req)
+			got, err := p.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ProcessPipelineDefinition() error = %v, wantErr %v", err, tt.wantErr)
 				return
