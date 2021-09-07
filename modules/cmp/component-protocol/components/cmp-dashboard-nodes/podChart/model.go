@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memChart
+package podChart
 
 import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/chart"
 )
 
-type MemChart struct {
+type PodChart struct {
 	CtxBdl *bundle.Bundle
 	chart.Chart
 }

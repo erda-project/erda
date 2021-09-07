@@ -43,9 +43,9 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 	ct.Operations = ct.GetTableOperation()
 	ct.CtxBdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	ct.getProps()
-	ct.GetBatchOperation()
 	ct.TableComponent = ct
 	activeKey := (*gs)["activeKey"].(string)
+	// Tab name not equal this component name
 	if activeKey != tableTabs.CPU_TAB {
 		ct.Props["visible"] = false
 		return ct.SetComponentValue(c)
@@ -53,23 +53,9 @@ func (ct *CpuInfoTable) Render(ctx context.Context, c *cptype.Component, s cptyp
 		ct.Props["visible"] = true
 	}
 	if event.Operation != cptype.InitializeOperation {
-		// Tab name not equal this component name
 		switch event.Operation {
-		case common.CMPDashboardChangePageSizeOperationKey:
-			if err = ct.RenderChangePageSize(event.OperationData); err != nil {
-				return err
-			}
-		case common.CMPDashboardChangePageNoOperationKey:
-			if err = ct.RenderChangePageNo(event.OperationData); err != nil {
-				return err
-			}
+		case common.CMPDashboardChangePageSizeOperationKey, common.CMPDashboardChangePageNoOperationKey:
 		case common.CMPDashboardSortByColumnOperationKey:
-			ct.State.PageNo = 1
-		case common.CMPDashboardDeleteNode:
-			err := ct.DeleteNode(ct.State.SelectedRowKeys)
-			if err != nil {
-				return err
-			}
 		case common.CMPDashboardUnfreezeNode:
 			err := ct.UnFreezeNode(ct.State.SelectedRowKeys)
 			if err != nil {
@@ -102,7 +88,7 @@ func (ct *CpuInfoTable) getProps() {
 		"rowKey": "id",
 		"columns": []table.Columns{
 			{DataIndex: "Status", Title: ct.SDK.I18n("status"), Sortable: true, Width: 80, Fixed: "left"},
-			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true},
+			{DataIndex: "Node", Title: ct.SDK.I18n("node"), Sortable: true, Width: 260},
 			{DataIndex: "IP", Title: ct.SDK.I18n("ip"), Sortable: true, Width: 100},
 			{DataIndex: "Role", Title: ct.SDK.I18n("role"), Sortable: true, Width: 120},
 			{DataIndex: "Version", Title: ct.SDK.I18n("version"), Width: 120},
@@ -114,8 +100,8 @@ func (ct *CpuInfoTable) getProps() {
 		"bordered":        true,
 		"selectable":      true,
 		"pageSizeOptions": []string{"10", "20", "50", "100"},
-
-		"scroll": table.Scroll{X: 1200},
+		"batchOperations": []string{"freeze", "unfreeze"},
+		"scroll":          table.Scroll{X: 1200},
 	}
 	ct.Props = props
 }

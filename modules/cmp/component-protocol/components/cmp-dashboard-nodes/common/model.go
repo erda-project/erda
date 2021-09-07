@@ -35,7 +35,6 @@ var (
 	CMPDashboardFilterOperationKey cptype.OperationKey = "filter"
 
 	// Freeze Button
-	CMPDashboardDeleteNode   cptype.OperationKey = "delete"
 	CMPDashboardUnfreezeNode cptype.OperationKey = "unfreeze"
 	CMPDashboardFreezeNode   cptype.OperationKey = "freeze"
 
@@ -46,7 +45,6 @@ var (
 var (
 	NodeNotFoundErr    = errors.New("node not found")
 	ClusterNotFoundErr = errors.New("cluster not found")
-	OperationsEmptyErr = errors.New("operation is empty")
 	NothingToBeDoneErr = errors.New("nothing to be done")
 
 	TypeNotAvailableErr = errors.New("type not available")
