@@ -54,20 +54,20 @@ func TestGetESClientsFromLogAnalyticsByCluster_Should_Success(t *testing.T) {
 		bdl: bundle.New(),
 	}
 
-	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(p.db.LogDeployment), "QueryByOrgIDAndClusters")
-	monkey.PatchInstanceMethod(reflect.TypeOf(p.db.LogDeployment), "QueryByOrgIDAndClusters", func(orgID int64, clusters ...string) ([]*db.LogDeployment, error) {
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogDeployment), "QueryByOrgIDAndClusters", func(orgID int64, clusters ...string) ([]*db.LogDeployment, error) {
 		return []*db.LogDeployment{
 			{LogType: string(db2.LogTypeLogService), ESURL: "http://localhost:9200"},
 		}, nil
 	})
 
-	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(p.db.LogInstanceDB), "GetByLogKey")
-	monkey.PatchInstanceMethod(reflect.TypeOf(p.db.LogInstanceDB), "GetByLogKey", func(logKey string) (*db.LogInstance, error) {
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetByLogKey", func(logKey string) (*db.LogInstance, error) {
 		return &db.LogInstance{LogType: string(db2.LogTypeLogAnalytics), LogKey: "logKey-1", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`}, nil
 	})
 
-	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace")
-	monkey.PatchInstanceMethod(reflect.TypeOf(p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace", func(clusterName, projectId, workspace string) ([]db.LogInstance, error) {
+	defer monkey.UnpatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace")
+	monkey.PatchInstanceMethod(reflect.TypeOf(&p.db.LogInstanceDB), "GetListByClusterAndProjectIdAndWorkspace", func(clusterName, projectId, workspace string) ([]db.LogInstance, error) {
 		return []db.LogInstance{
 			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-3", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
 			{LogType: string(db2.LogTypeLogService), LogKey: "logKey-2", Config: `{"MSP_ENV_ID":"msp_env_id_1"}`},
