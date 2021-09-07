@@ -72,3 +72,9 @@ func Test_resetPageInfo(t *testing.T) {
 		})
 	}
 }
+
+func Test_getPrefixIcon(t *testing.T) {
+	assert.Equal(t, "ISSUE_ICON.issue.abc", getPrefixIcon("abc"))
+	assert.Equal(t, "ISSUE_ICON.issue.123", getPrefixIcon("123"))
+	assert.Equal(t, "ISSUE_ICON.issue.", getPrefixIcon(""))
+}
