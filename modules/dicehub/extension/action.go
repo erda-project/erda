@@ -17,6 +17,7 @@ package extension
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -49,7 +50,44 @@ type Version struct {
 	SwaggerContent []byte // content of swagger.yml
 }
 
-func (s *extensionService) InitExtension(addr string) error {
+func (s *extensionService) pushGitExtensions(gitAddr string) error {
+	dir, err := ioutil.TempDir(os.TempDir(), "*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+
+	// git init
+	// todo only first time clone, other times git pull
+	command := exec.Command("sh", "-c", "git clone "+gitAddr)
+	command.Dir = dir
+	output, err := command.CombinedOutput()
+	if err != nil {
+		logrus.Errorf("git clone extensions address stderr %v", string(output))
+		return err
+	}
+
+	return s.InitExtension(dir, true)
+}
+
+func (s *extensionService) TimedTaskSynchronizationExtensions() {
+	logrus.Infof("start to TimeTaskSynchronizationExtensions")
+
+	if s.p.Cfg.ExtensionSources == "" {
+		return
+	}
+
+	for _, gitAddr := range strings.Split(s.p.Cfg.ExtensionSources, ",") {
+		err := s.pushGitExtensions(gitAddr)
+		if err != nil {
+			logrus.Errorf("error to sync git address %s extension", gitAddr)
+		}
+	}
+
+	logrus.Infof("end to TimeTaskSynchronizationExtensions")
+}
+
+func (s *extensionService) InitExtension(addr string, forceUpdate bool) error {
 	logrus.Infoln("Start init extension")
 
 	// get all extensionVersion in repo
@@ -85,12 +123,11 @@ func (s *extensionService) InitExtension(addr string) error {
 		extensionType := extensionTypeMap[v.Name]
 		extensionType = append(extensionType, specData.Type)
 		extensionTypeMap[v.Name] = extensionType
-
 	}
 
 	// push all actionVersions
 	for _, v := range repo.versions {
-		name, version, err := s.RunExtensionsPush(v, extensionVersionMap, extensionTypeMap)
+		name, version, err := s.RunExtensionsPush(v, extensionVersionMap, extensionTypeMap, forceUpdate)
 		if err == nil {
 			logrus.Infoln("extension create success, name: ", name, ", version: ", version)
 		} else {
@@ -101,7 +138,7 @@ func (s *extensionService) InitExtension(addr string) error {
 }
 
 // RunExtensionsPush push extensions
-func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, extensionTypeMap map[string][]string) (string, string, error) {
+func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, extensionTypeMap map[string][]string, forceUpdate bool) (string, string, error) {
 	version, err := NewVersion(dir)
 	if err != nil {
 		return "", "", err
@@ -119,7 +156,7 @@ func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, ex
 			break
 		}
 	}
-	if !needCreate {
+	if !needCreate && !forceUpdate {
 		return specData.Name, specData.Version, errors.New("extension is existed")
 	}
 
@@ -131,7 +168,7 @@ func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, ex
 		SwaggerYml:  string(version.SwaggerContent),
 		Readme:      string(version.ReadmeContent),
 		Public:      specData.Public,
-		ForceUpdate: false,
+		ForceUpdate: forceUpdate,
 		All:         false,
 		IsDefault:   specData.IsDefault,
 	}

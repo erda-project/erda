@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
+	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
@@ -32,7 +33,9 @@ import (
 )
 
 type config struct {
-	ExtensionMenu map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
+	ExtensionMenu        map[string][]string `file:"extension_menu" env:"EXTENSION_MENU"`
+	ExtensionSources     string              `file:"extension_sources" env:"EXTENSION_SOURCES"`
+	ExtensionSourcesCron string              `file:"extension_sources_cron" env:"EXTENSION_SOURCES_CRON"`
 }
 
 const FilePath = "/app/extensions-init"
@@ -61,11 +64,25 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			))
 	}
 	go func() {
-		err := p.extensionService.InitExtension(FilePath)
+		err := p.extensionService.InitExtension(FilePath, false)
 		if err != nil {
 			panic(err)
 		}
 		logrus.Infoln("End init extension")
+	}()
+
+	go func() {
+		c := cron.New()
+
+		err := c.AddFunc(p.Cfg.ExtensionSourcesCron, func() {
+			go p.extensionService.TimedTaskSynchronizationExtensions()
+		})
+
+		if err != nil {
+			logrus.Errorf("error to add cron task %v", err)
+		} else {
+			c.Start()
+		}
 	}()
 	return nil
 }

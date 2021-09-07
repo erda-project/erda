@@ -23,6 +23,8 @@ erda.core.dicehub.release:
   gc_switch: "${RELEASE_GC_SWITCH:true}"
 
 erda.core.dicehub.extension:
+  extension_sources: "${EXTENSION_SOURCES}"
+  extension_sources_cron: "${EXTENSION_SOURCES_CRON:'0 0 21 * * ?'}"
 #  extension_menu: ${EXTENSION_MENU:{"":""}}
 
 mysql:
