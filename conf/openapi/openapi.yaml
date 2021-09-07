@@ -80,6 +80,10 @@ openapi-v1-routes:
           - cmp-dashboard-events-list
           - cmp-dashboard-workloads-list
           - cmp-dashboard-workload-detail
+          - cmp-dashboard-nodes
+          - cmp-dashboard-nodeDetail
+          - cmp-dashboard-pods
+          - cmp-dashboard-podDetail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}
