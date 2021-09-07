@@ -58,7 +58,7 @@ func (d *dao) QueryAccessKey(ctx context.Context, req *pb.QueryAccessKeysRequest
 		where["scope"] = req.Scope
 	}
 	if req.ScopeId != "" {
-		where["scopeId"] = req.ScopeId
+		where["scope_id"] = req.ScopeId
 	}
 
 	var count int64
