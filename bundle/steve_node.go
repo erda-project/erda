@@ -82,7 +82,7 @@ func (b *Bundle) LabelNode(req *apistructs.SteveRequest, labels map[string]strin
 			"labels": labels,
 		},
 	}
-	req.Obj = metadata
+	req.Obj = &metadata
 	return b.PatchNode(req)
 }
 
@@ -106,7 +106,7 @@ func (b *Bundle) UnlabelNode(req *apistructs.SteveRequest, labels []string) erro
 			"labels": toUnlabel,
 		},
 	}
-	req.Obj = metadata
+	req.Obj = &metadata
 	return b.PatchNode(req)
 }
 
@@ -122,7 +122,7 @@ func (b *Bundle) CordonNode(req *apistructs.SteveRequest) error {
 			"unschedulable": true,
 		},
 	}
-	req.Obj = spec
+	req.Obj = &spec
 	return b.PatchNode(req)
 }
 
@@ -138,6 +138,6 @@ func (b *Bundle) UnCordonNode(req *apistructs.SteveRequest) error {
 			"unschedulable": nil,
 		},
 	}
-	req.Obj = spec
+	req.Obj = &spec
 	return b.PatchNode(req)
 }

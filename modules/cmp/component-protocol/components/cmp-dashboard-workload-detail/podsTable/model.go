@@ -52,6 +52,7 @@ type Data struct {
 }
 
 type Item struct {
+	ID             string  `json:"id,omitempty"`
 	Status         Status  `json:"status,omitempty"`
 	Name           Link    `json:"name,omitempty"`
 	Namespace      string  `json:"namespace,omitempty"`
@@ -63,6 +64,7 @@ type Item struct {
 	MemoryPercent  Percent `json:"memoryPercent,omitempty"`
 	MemoryLimits   string  `json:"memoryLimits,omitempty"`
 	Ready          string  `json:"ready,omitempty"`
+	NodeName       string  `json:"nodeName,omitempty"`
 }
 
 type Status struct {
@@ -108,6 +110,7 @@ type Percent struct {
 type Props struct {
 	PageSizeOptions []string               `json:"pageSizeOptions,omitempty"`
 	Columns         []Column               `json:"columns,omitempty"`
+	RowKey          string                 `json:"rowKey,omitempty"`
 	Operations      map[string]interface{} `json:"operations,omitempty"`
 }
 

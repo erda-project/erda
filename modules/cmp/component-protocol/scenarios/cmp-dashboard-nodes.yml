@@ -1,0 +1,97 @@
+scenario: cmp-dashboard-nodes
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - nodeFilter
+      - charts
+      - tableTabsContainer
+      - addLabelModal
+    tableTabsContainer:
+      - tableTabs
+    tableTabs:
+      children:
+        - cpuTable
+        - memTable
+        - podTable
+    charts:
+      - cpuChart
+      - memChart
+      - podChart
+
+components:
+  page:
+    type: Container
+  nodeFilter:
+    type: TiledFilter
+  charts:
+    type: RowContainer
+  tableTabsContainer:
+    type: Container
+  addLabelModal:
+    type: FormModal
+  tableTabs:
+    type: Tabs
+  cpuTable:
+    type: Table
+  memTable:
+    type: Table
+  podTable:
+    type: Table
+  cpuChart:
+    type: Chart
+  memChart:
+    type: Chart
+  podChart:
+    type: Chart
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: tableTabs
+    - name: nodeFilter
+    - name: cpuTable
+    - name: podTable
+    - name: memTable
+    - name: charts
+    - name: cpuChart
+    - name: memChart
+    - name: podChart
+    - name: tableTabsContainer
+    - name: addLabelModal
+
+  tableTabs:
+    - name: nodeFilter
+    - name: cpuTable
+    - name: podTable
+    - name: memTable
+    - name: addLabelModal
+
+  nodeFilter:
+    - state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: cpuTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: podTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: memTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: charts
+    - name: cpuChart
+    - name: memChart
+    - name: podChart
+

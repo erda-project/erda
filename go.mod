@@ -27,6 +27,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
@@ -45,6 +46,7 @@ require (
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
+	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
@@ -114,6 +116,7 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
+	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/t-tiger/gorm-bulk-insert v1.3.0

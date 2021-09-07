@@ -195,7 +195,40 @@ func (p *ComponentPodsTable) RenderTable() error {
 			memLimits.Add(*parseResource(container.String("resources", "limits", "memory"), resource.BinarySI))
 		}
 
+		req := apistructs.MetricsRequest{
+			UserID:      userID,
+			OrgID:       orgID,
+			ClusterName: p.State.ClusterName,
+			Names:       []string{name},
+		}
+
+		// cpu
+		req.ResourceType = "cpu"
+		usedCPUPercent := 0.0
+		cpuMetrics, err := p.bdl.GetMetrics(req)
+		if err != nil {
+			logrus.Errorf("failed to get cpu metrics for pod %s/%s, %v", namespace, name, err)
+		}
+		if err == nil && len(cpuMetrics) != 0 {
+			usedCPUPercent = cpuMetrics[0].Used
+		}
+		cpuStatus, cpuValue, cpuTip := parseResPercent(usedCPUPercent, cpuLimits, "cpu")
+
+		// mem
+		req.ResourceType = "mem"
+		usedMemPercent := 0.0
+		memMetrics, err := p.bdl.GetMetrics(req)
+		if err != nil {
+			logrus.Errorf("failed to get mem metrics for pod %s/%s, %v", namespace, name, err)
+		}
+		if err == nil && len(memMetrics) != 0 {
+			usedMemPercent = memMetrics[0].Used
+		}
+		memStatus, memValue, memTip := parseResPercent(usedMemPercent, memLimits, "mem")
+
+		id := fmt.Sprintf("%s_%s", namespace, name)
 		items = append(items, Item{
+			ID:     id,
 			Status: status,
 			Name: Link{
 				RenderType: "linkText",
@@ -206,9 +239,8 @@ func (p *ComponentPodsTable) RenderTable() error {
 							Key:    "goto",
 							Target: "cmpClustersPodDetail",
 							State: CommandState{
-								Query: map[string]string{
-									"podName":   name,
-									"namespace": namespace,
+								Params: map[string]string{
+									"podId": id,
 								},
 							},
 							JumpOut: true,
@@ -220,22 +252,23 @@ func (p *ComponentPodsTable) RenderTable() error {
 			Namespace:   namespace,
 			IP:          fields[5],
 			CPURequests: cpuRequests.String(),
-			CPUPercent: Percent{ // TODO
+			CPUPercent: Percent{
 				RenderType: "progress",
-				Value:      "0",
-				Tip:        "0",
-				Status:     "success",
+				Value:      cpuValue,
+				Tip:        cpuTip,
+				Status:     cpuStatus,
 			},
 			CPULimits:      cpuLimits.String(),
 			MemoryRequests: memRequests.String(),
 			MemoryPercent: Percent{
 				RenderType: "progress",
-				Value:      "0",
-				Tip:        "0",
-				Status:     "success",
+				Value:      memValue,
+				Tip:        memTip,
+				Status:     memStatus,
 			},
 			MemoryLimits: memLimits.String(),
 			Ready:        fields[1],
+			NodeName:     fields[6],
 		})
 	}
 
@@ -347,6 +380,14 @@ func (p *ComponentPodsTable) RenderTable() error {
 					}
 					return !less
 				}
+			case "nodeName":
+				return func(i int, j int) bool {
+					less := items[i].NodeName < items[j].NodeName
+					if ascend {
+						return less
+					}
+					return !less
+				}
 			default:
 				return func(i int, j int) bool {
 					return false
@@ -362,15 +403,41 @@ func (p *ComponentPodsTable) RenderTable() error {
 	return nil
 }
 
+func parseResPercent(usedPercent float64, totQty *resource.Quantity, kind string) (string, string, string) {
+	var totRes int64
+	if kind == "cpu" {
+		totRes = totQty.MilliValue()
+	} else {
+		totRes = totQty.Value()
+	}
+	usedRes := int64(float64(totRes) * usedPercent)
+	var usedQty *resource.Quantity
+	if kind == "cpu" {
+		usedQty = resource.NewMilliQuantity(usedRes, resource.DecimalSI)
+	} else {
+		usedQty = resource.NewQuantity(usedRes, resource.BinarySI)
+	}
+	status := ""
+	if usedPercent <= 80 {
+		status = "success"
+	} else if usedPercent < 100 {
+		status = "warning"
+	} else {
+		status = "error"
+	}
+	return status, fmt.Sprintf("%.2f", usedPercent), fmt.Sprintf("%s/%s", usedQty.String(), totQty.String())
+}
+
 func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
+	p.Props.RowKey = "id"
 	p.Props.Columns = []Column{
 		{
 			DataIndex: "status",
 			Title:     cputil.I18n(ctx, "status"),
-			Width:     120,
+			Width:     80,
 			Sorter:    true,
 		},
 		{
@@ -394,13 +461,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "cpuRequests",
 			Title:     cputil.I18n(ctx, "cpuRequests"),
-			Width:     120,
+			Width:     80,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "cpuLimits",
 			Title:     cputil.I18n(ctx, "cpuLimits"),
-			Width:     120,
+			Width:     80,
 			Sorter:    true,
 		},
 		{
@@ -412,13 +479,13 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 		{
 			DataIndex: "memoryRequests",
 			Title:     cputil.I18n(ctx, "memoryRequests"),
-			Width:     120,
+			Width:     80,
 			Sorter:    true,
 		},
 		{
 			DataIndex: "memoryLimits",
 			Title:     cputil.I18n(ctx, "memoryLimits"),
-			Width:     120,
+			Width:     80,
 			Sorter:    true,
 		},
 		{
@@ -431,6 +498,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 			Width:     80,
+			Sorter:    true,
+		},
+		{
+			DataIndex: "nodeName",
+			Title:     cputil.I18n(ctx, "node"),
+			Width:     120,
 			Sorter:    true,
 		},
 	}

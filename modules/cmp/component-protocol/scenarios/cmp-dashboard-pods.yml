@@ -1,0 +1,73 @@
+version: 0.1
+
+scenario: cmp-dashboard-pods
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - filter
+      - podTitle
+      - podDistribution
+      - tableTabs
+    tableTabs:
+      - podsTable
+      - podsTable
+
+components:
+  page:
+    type: Container
+  podTitle:
+    type: Title
+  podDistribution:
+    type: LinearDistribution
+  filter:
+    type: ContractiveFilter
+  tableTabs:
+    type: Tabs
+  podsTable:
+    type: Table
+
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: filter
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+    - name: tableTabs
+    - name: podsTable
+      state:
+        - name: "clusterName"
+          value: "{{ __InParams__.clusterName }}"
+        - name: "values"
+          value: "{{ filter.values }}"
+        - name: "activeKey"
+          value: "{{ tableTabs.activeKey }}"
+    - name: podTitle
+      state:
+        - name: "values"
+          value: "{{ podsTable.countValues }}"
+    - name: podDistribution
+      state:
+        - name: "values"
+          value: "{{ podsTable.countValues }}"
+  tableTabs:
+    - name: podsTable
+      state:
+        - name: "activeKey"
+          value: "{{ tableTabs.activeKey }}"
+  filter:
+    - name: podsTable
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+    - name: podTitle
+      state:
+        - name: "values"
+          value: "{{ podsTable.countValues }}"
+    - name: podDistribution
+      state:
+        - name: "values"
+          value: "{{ podsTable.countValues }}"

@@ -20,14 +20,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/cache"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/ierror"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type ResourceType string
@@ -35,16 +37,45 @@ type ResourceType string
 const (
 	// SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name
 	// usage rate , distribution rate , usage percent of distribution
-	CpuUsageSelectStatement    = `SELECT cpu_cores_usage::field, cpu_request_total::field, n_cpus::tag FROM host_summary WHERE cluster_name::tag=$cluster_name and hostname::tag=$hostname GROUP BY host_ip::tag`
-	MemoryUsageSelectStatement = `SELECT mem_used::field, mem_limit_total::field, mem_total::field  FROM host_summary  WHERE cluster_name::tag=$cluster_name and hostname::tag=$hostname GROUP BY host_ip::tag`
+	NodeCpuUsageSelectStatement    = `SELECT cpu_cores_usage::field, cpu_request_total::field, n_cpus::tag FROM host_summary WHERE cluster_name::tag=$cluster_name AND hostname::tag=$hostname ORDER BY time DESC LIMIT 1`
+	NodeMemoryUsageSelectStatement = `SELECT mem_used::field, mem_limit_total::field, mem_total::field  FROM host_summary  WHERE cluster_name::tag=$cluster_name AND hostname::tag=$hostname  ORDER BY time DESC LIMIT 1`
+	PodCpuUsageSelectStatement     = `SELECT cpu_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
+	PodMemoryUsageSelectStatement  = `SELECT mem_usage_percent::field FROM docker_container_summary WHERE pod_name::tag=$pod_name ORDER BY time DESC LIMIT 1`
+
+	Memory = "memory"
+	Cpu    = "cpu"
+
+	Pod  = "pod"
+	Node = "node"
 )
 
-type MetricsServer interface {
-	DoQuery(context.Context, *apistructs.MetricsRequest) ([]*apistructs.MetricsResponse, error)
-}
+var NilValueError = errors.New("metrics nothing found")
 
 type Metric struct {
 	Metricq pb.MetricServiceServer
+}
+
+type MetricError struct {
+	message  string
+	code     string
+	ctx      context.Context
+	httpCode int
+}
+
+func (m MetricError) Render(locale *i18n.LocaleResource) string {
+	return m.message
+}
+
+func (m MetricError) Code() string {
+	return m.code
+}
+
+func (m MetricError) HttpCode() int {
+	return m.httpCode
+}
+
+func (m MetricError) Ctx() interface{} {
+	return m.ctx
 }
 
 func (m *Metric) query(ctx context.Context, key string, req *pb.QueryWithInfluxFormatRequest) (*pb.QueryWithInfluxFormatResponse, error) {
@@ -90,8 +121,8 @@ func (m *Metric) DoQuery(ctx context.Context, key string, req *pb.QueryWithInflu
 	return resp, nil
 }
 
-// Query query cpu and memory metrics from es database, return immediately if cache hit.
-func (m *Metric) Query(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
+// QueryNodeResource query cpu and memory metrics from es database, return immediately if cache hit.
+func (m *Metric) QueryNodeResource(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
 	var (
 		resp *pb.QueryWithInfluxFormatResponse
 		data []apistructs.MetricsData
@@ -103,9 +134,11 @@ func (m *Metric) Query(ctx context.Context, req *apistructs.MetricsRequest) (htt
 		key := cache.GenerateKey([]string{queryReq.Params["hostname"].String(), req.ClusterName, string(req.ResourceType)})
 		resp, err = m.DoQuery(ctx, key, queryReq)
 		if err != nil {
-			// err occur, try next
-			logrus.Error(err)
+			return httpserver.ErrResp(http.StatusInternalServerError, "Internal Error", err.Error())
 		} else {
+			if resp.Results[0].Series[0].Rows == nil {
+				return httpserver.ErrResp(http.StatusServiceUnavailable, "Internal Error", NilValueError.Error())
+			}
 			d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 			d.Request = resp.Results[0].Series[0].Rows[0].Values[1].GetNumberValue()
 			d.Total = resp.Results[0].Series[0].Rows[0].Values[2].GetNumberValue()
@@ -116,36 +149,82 @@ func (m *Metric) Query(ctx context.Context, req *apistructs.MetricsRequest) (htt
 		Header: apistructs.Header{Success: true},
 		Data:   data,
 	}
-	return mkResponse(res)
+	return mkResponse(res, nil)
+}
+
+func (m *Metric) QueryPodResource(ctx context.Context, req *apistructs.MetricsRequest) (httpserver.Responser, error) {
+	var (
+		resp *pb.QueryWithInfluxFormatResponse
+		data []apistructs.MetricsData
+		err  error
+	)
+
+	reqs := ToInfluxReq(req)
+	for _, queryReq := range reqs {
+		d := apistructs.MetricsData{}
+		key := cache.GenerateKey([]string{queryReq.Params["pod_name"].String(), req.ResourceType})
+		resp, err = m.DoQuery(ctx, key, queryReq)
+		if err != nil {
+			return httpserver.ErrResp(http.StatusInternalServerError, "Internal Error", err.Error())
+		} else {
+			if resp.Results[0].Series[0].Rows == nil {
+				return httpserver.ErrResp(http.StatusServiceUnavailable, "Internal Error", NilValueError.Error())
+			}
+			d.Used = resp.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+			d.Request = 0
+			d.Total = 0
+		}
+		data = append(data, d)
+	}
+	res := &apistructs.MetricsResponse{
+		Header: apistructs.Header{Success: true},
+		Data:   data,
+	}
+	return mkResponse(res, nil)
 }
 
 func ToInfluxReq(req *apistructs.MetricsRequest) []*pb.QueryWithInfluxFormatRequest {
 	queryReqs := make([]*pb.QueryWithInfluxFormatRequest, 0)
-	for _, name := range req.HostName {
+	//start, end, _ := getTimeRange("hour", 1, false)
+	for _, name := range req.Names {
 		queryReq := &pb.QueryWithInfluxFormatRequest{}
-		switch req.ResourceType {
-		case v1.ResourceCPU:
-			queryReq.Statement = CpuUsageSelectStatement
-		case v1.ResourceMemory:
-			queryReq.Statement = MemoryUsageSelectStatement
-		default:
-			return nil
-		}
-
-		queryReq.Start = "before_1m"
-		queryReq.End = "now"
-		queryReq.Params = map[string]*structpb.Value{
-			"cluster_name": structpb.NewStringValue(req.ClusterName),
-			"hostname":     structpb.NewStringValue(name),
+		//queryReq.Start = strconv.FormatInt(start, 10)
+		//queryReq.End = strconv.FormatInt(end, 10)
+		if req.ResourceKind == "node" {
+			switch req.ResourceType {
+			case Cpu:
+				queryReq.Statement = NodeCpuUsageSelectStatement
+			case Memory:
+				queryReq.Statement = NodeMemoryUsageSelectStatement
+			default:
+				return nil
+			}
+			queryReq.Params = map[string]*structpb.Value{
+				"cluster_name": structpb.NewStringValue(req.ClusterName),
+				"hostname":     structpb.NewStringValue(name),
+			}
+		} else {
+			switch req.ResourceType {
+			case Cpu:
+				queryReq.Statement = PodCpuUsageSelectStatement
+			case Memory:
+				queryReq.Statement = PodMemoryUsageSelectStatement
+			default:
+				return nil
+			}
+			queryReq.Params = map[string]*structpb.Value{
+				"pod_name": structpb.NewStringValue(name),
+			}
 		}
 		queryReqs = append(queryReqs, queryReq)
 	}
 	return queryReqs
 }
 
-func mkResponse(content interface{}) (httpserver.Responser, error) {
+func mkResponse(content interface{}, err ierror.IAPIError) (httpserver.Responser, error) {
 	return httpserver.HTTPResponse{
 		Status:  http.StatusOK,
 		Content: content,
+		Error:   err,
 	}, nil
 }

@@ -50,18 +50,95 @@ zh:
 
  # cmp-dashboard-workloads-list.filter
  search: 搜索
- searchPlaceHolder: 搜索工作负载名称
+ workloadSearchPlaceHolder: 搜索工作负载名称
  workloadKind: 工作负载类型
 
  # cmp-dashboard-workloads-list.workloadTable
- upToDate: Up-to-Date
- available: Available
- desired: Desired
- current: Current
- completions: Completions
+ upToDate: 已更新
+ available: 可用
+ desired: 期望
+ current: 当前
+ completions: 完成
  jobDuration: 运行时间
  schedule: 运行计划
  lastSchedule: 上次运行时间
+
+ node-list: 节点列表
+ env: 环境
+ platform: 平台
+ service: 服务
+ job: 任务
+ other: 其他
+ os: 系统
+ nodeIp: IP
+ allocated: 已分配
+ cannot-allocated: 不可分配
+ free-allocate: 剩余分配
+ cpu-analysis: Cpu 分析
+ mem-analysis: 内存分析
+ pod-analysis: Pod 分析
+ nodeInfo: 节点信息
+ nodeStatus: 节点状态
+ survive: 创建时长
+ node: 节点
+ version: 版本
+ label: 标签
+ arch: 架构
+ podNum: pod 数量
+ containerVersion: 容器版本
+ image: 镜像
+ requests: 分配量
+ limits: 限制量
+ usage: 使用率
+ restartTimes: 重启次数
+ category: 分类
+ tag: 标签
+ success: 安全
+ error: 错误
+ danger: 危险
+ containerRuntimeVersion: 容器运行时版本
+ kernelVersion: kernel 版本
+ kubeProxyVersion: kubectl 代理版本
+ kubeletVersion: kubelet 版本
+ machineID: 机器 ID
+ operatingSystem: 操作系统
+ systemUUID: 系统 UUID
+ bootID: 启动 ID
+ osImage: 系统镜像
+ podInfo: Pod信息
+ Completed: 完成
+ ContainerCreating: 容器创建中
+ CrashLoopBackOff: 后台拉起中
+ Error: 错误
+ Evicted: 驱赶
+ ImagePullBackOff: 拉取镜像中
+ Pending: 挂起
+ Running: 运行中
+ Terminating: 已结束
+ memUsed: mem使用率
+ use: mem使用率
+ addLabel: 添加标签
+ nodeDetail: 节点详情
+ distribution: 分配率
+ distributionRate: 分配使用率
+ dev: 开发环境
+ test: 测试环境
+ prod: 生产环境
+ staging: 预发环境
+ stateful: 有状态服务
+ stateless: 无状态服务
+ packjob: 构建
+ mono: 独占
+ cordon: 锁住节点
+ cluster-service: 集群服务
+ drain: 驱逐节点
+ rebootTimes: 重启次数
+ operate: 操作
+ console: 控制台
+ podInspect: 查看容器
+ relative events: 相关日志
+ desc: 注释
+ workload: 工作负载
 
 en:
  # general
@@ -115,7 +192,7 @@ en:
 
  # cmp-dashboard-workloads-list.filter
  search: Search
- searchPlaceHolder: input workload name
+ workloadSearchPlaceHolder: input workload name
  workloadKind: Workload Kind
 
  # cmp-dashboard-workloads-list.workloadTable
@@ -127,3 +204,29 @@ en:
  jobDuration: Duration
  schedule: Schedule
  lastSchedule: LastSchedule
+ node-list: Node List
+ env: Env
+ platform: Platform
+ service: Service
+ job: Job
+ other: Other
+ allocated: Allocated
+ cannot-allocated: Not Allocated
+ free-allocate: Allocatable
+ cpu-analysis: Cpu Ananlysis
+ mem-analysis: Mem Ananlysis
+ pod-analysis: Pod Ananlysis
+ nodeInfo: Node Info
+ nodeStatus: Node Status
+ survive: Survive Duration
+ node: Node
+ version: Version
+ label: Label
+ arch: Architectual
+ containerVersion: Container Version
+ image: Image
+ requests: Requestes
+ limits: Limits
+ usage: Utilization rate
+ restartTimes: Restart Times
+ category: category

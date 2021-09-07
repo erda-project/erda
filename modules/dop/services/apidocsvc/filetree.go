@@ -32,7 +32,7 @@ const (
 
 const (
 	apiDocsPathFromRepoRoot    = ".dice/apidocs"
-	migrationsPathFromRepoRoot = ".dice/migrations"
+	migrationsPathFromRepoRoot = ".erda/migrations"
 	suffixYml                  = ".yml"
 	suffixYaml                 = ".yaml"
 )
