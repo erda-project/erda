@@ -23,13 +23,13 @@ import (
 	"strconv"
 
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/erda-project/oap-plugins-gen-go/jaeger-thrift/jaeger"
 	"github.com/recallsong/go-utils/reflectx"
 
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	oap "github.com/erda-project/erda-proto-go/oap/common/pb"
 	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
-	"github.com/erda-project/oap-plugins-gen-go/jaeger-thrift/jaeger"
 )
 
 var (
