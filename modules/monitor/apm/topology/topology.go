@@ -2037,6 +2037,19 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 }
 
 func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translation) (map[string]interface{}, error) {
+	options, param, sql := topology.composeMqTranslationCondition(params)
+
+	response, err := topology.metricq.Query(metricq.InfluxQL, sql, param, options)
+	result := make(map[string]interface{}, 0)
+	data, err := topology.handleMQTranslationResponse(lang, params, response, options)
+	if err != nil {
+		return nil, err
+	}
+	result["data"] = data
+	return result, nil
+}
+
+func (topology *provider) composeMqTranslationCondition(params translation) (url.Values, map[string]interface{}, string) {
 	options := url.Values{}
 	options.Set("start", strconv.FormatInt(params.Start, 10))
 	options.Set("end", strconv.FormatInt(params.End, 10))
@@ -2046,8 +2059,7 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 	param["terminusKey"] = params.TerminusKey
 	param["serviceId"] = params.ServiceId
 	if params.Search != "" {
-		where.WriteString(" AND message_bus_destination::tag=~$field")
-		param["field"] = map[string]interface{}{"regex": ".*" + params.Search + ".*"}
+		where.WriteString(fmt.Sprintf(" message_bus_destination::tag=~/.*%s.*/ AND ", params.Search))
 	}
 
 	// elapsed_mean desc
@@ -2059,51 +2071,19 @@ func (topology *provider) mqTranslation(lang i18n.LanguageCodes, params translat
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
 
-	// producer
-	sqlProducer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
-		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
-		"span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
-	// consumer
-	sqlConsumer := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
-		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE target_service_id::tag=$serviceId AND "+
-		"span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey %s GROUP BY message_bus_destination::tag %s", params.Layer, where.String(), orderby)
-
-	p := &query.ResultSet{}
-	c := &query.ResultSet{}
+	producerCondition := "source_service_id::tag=$serviceId AND span_kind::tag='producer' AND source_terminus_key::tag=$terminusKey"
+	consumerCondition := "target_service_id::tag=$serviceId AND span_kind::tag='consumer' AND target_terminus_key::tag=$terminusKey"
 	if params.Type == "producer" {
-		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		p = producer
+		where.WriteString(producerCondition)
 	} else if params.Type == "consumer" {
-		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		c = consumer
+		where.WriteString(consumerCondition)
 	} else {
-		producer, err := topology.metricq.Query(metricq.InfluxQL, sqlProducer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		consumer, err := topology.metricq.Query(metricq.InfluxQL, sqlConsumer, param, options)
-		if err != nil {
-			return nil, err
-		}
-		p = producer
-		c = consumer
+		where.WriteString(fmt.Sprintf("((%s) OR (%s))", producerCondition, consumerCondition))
 	}
 
-	result := make(map[string]interface{}, 0)
-	data, err := topology.handleMQTranslationResponse(lang, params, p, options)
-	dataConsumer, err := topology.handleMQTranslationResponse(lang, params, c, options)
-	data = append(data, dataConsumer...)
-	if err != nil {
-		return nil, err
-	}
-	result["data"] = data
-	return result, nil
+	sql := fmt.Sprintf("SELECT message_bus_destination::tag,span_kind::tag,component::tag,host::tag,sum(elapsed_count::field),"+
+		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE %s GROUP BY message_bus_destination::tag,span_kind::tag %s", params.Layer, where.String(), orderby)
+	return options, param, sql
 }
 
 func (topology *provider) handleMQTranslationResponse(lang i18n.LanguageCodes, params translation, result *query.ResultSet, options url.Values) ([]map[string]interface{}, error) {
