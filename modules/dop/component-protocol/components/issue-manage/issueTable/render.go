@@ -104,6 +104,7 @@ type TableItem struct {
 	Priority    Priority `json:"priority"`
 	Progress    Progress `json:"progress,omitempty"`
 	Severity    Severity `json:"severity,omitempty"`
+	Complexity  string   `json:"complexity,omitempty"`
 	State       State    `json:"state"`
 	Title       Title    `json:"title"`
 	Type        string   `json:"type"`
@@ -569,6 +570,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			Type:        string(data.Type),
 			Progress:    progress,
 			Severity:    severity,
+			Complexity:  cputil.I18n(ctx, string(data.Complexity)),
 			Priority: Priority{
 				Value:      cputil.I18n(ctx, strings.ToLower(string(data.Priority))),
 				RenderType: "operationsDropdownMenu",
@@ -678,6 +680,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		progressCol +
 		severityCol +
 		`{
+            "width": 100,
+            "dataIndex": "complexity",
+            "title": "` + cputil.I18n(ctx, "complexity") + `"
+        },
+        {
             "width": 100,
             "dataIndex": "priority",
             "title": "` + cputil.I18n(ctx, "priority") + `"
