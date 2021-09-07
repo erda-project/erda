@@ -38,6 +38,8 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 		AccessKey:   request.AccessKey,
 		PageNo:      request.PageNo,
 		PageSize:    request.PageSize,
+		Scope:       request.Scope,
+		ScopeId:     request.ScopeId,
 	}
 	accessKeyList, err := a.p.AccessKeyService.QueryAccessKeys(ctx, req)
 	if err != nil {
@@ -99,6 +101,8 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
+		Scope:       request.Scope,
+		ScopeId:     request.ScopeId,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
 	if err != nil {
