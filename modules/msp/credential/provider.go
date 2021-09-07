@@ -46,10 +46,18 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
 					if resp, ok := data.(*apis.Response); ok && resp != nil {
 						if data, ok := resp.Data.(*pb.DownloadAccessKeyFileResponse); ok {
-							resp.Data = data
+							rw.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+							rw.Header().Set("Pragma", "no-cache")
+							rw.Header().Set("Expires", "0")
+							rw.Header().Set("charset", "utf-8")
+							rw.Header().Set("Content-Disposition", "attachment;filename=accessKey.csv")
+							rw.Header().Set("Content-Type", "application/octet-stream")
+							fluster := rw.(http.Flusher)
+							rw.Write(data.Content)
+							fluster.Flush()
+							return nil
 						}
 					}
-					rw.Header().Set("Content-Type", "text/plain")
 					return encoding.EncodeResponse(rw, r, data)
 				})))
 	}

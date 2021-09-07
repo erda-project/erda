@@ -21,7 +21,7 @@ import (
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/orchestrator"
-	_ "github.com/erda-project/erda/modules/orchestrator/components"
+	//_ "github.com/erda-project/erda/modules/orchestrator/components"
 )
 
 func main() {

@@ -38,6 +38,41 @@ type menuService struct {
 	version          string
 }
 
+var NotExist = map[string]bool{
+	"LogAnalyze":     true,
+	"APIGateway":     true,
+	"RegisterCenter": true,
+	"ConfigCenter":   true,
+}
+
+type componentInfo struct {
+	cnName string
+	enName string
+}
+
+var ComponentInfo = map[string]*componentInfo{
+	"AlarmManagement": {
+		enName: "AppMonitor",
+		cnName: "应用监控",
+	},
+	"LogAnalyze": {
+		enName: "LogAnalyze",
+		cnName: "日志分析",
+	},
+	"APIGateway": {
+		enName: "APIGateway",
+		cnName: "API网关",
+	},
+	"RegisterCenter": {
+		enName: "RegisterCenter",
+		cnName: "注册中心",
+	},
+	"ConfigCenter": {
+		enName: "ConfigCenter",
+		cnName: "配置中心",
+	},
+}
+
 var splitEDAS = strings.ToLower(os.Getenv("SPLIT_EDAS_CLUSTER_TYPE")) == "true"
 
 //GetMenu api
@@ -50,18 +85,12 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 	if req.Type == tenantpb.Type_MSP.String() {
 		var mspItems []*pb.MenuItem
 		for _, item := range items {
+			if NotExist[item.Key] {
+				continue
+			}
 			params := s.composeMSPMenuParams(req)
 			item.Params = params
 			for _, child := range item.Children {
-				if child.Key == "MonitorIntro" {
-					child.Exists = false
-					continue
-				}
-				if child.Key == "ComponentInfo" {
-					child.Exists = false
-					continue
-				}
-				child.Exists = true
 				child.Params = params
 			}
 			mspItems = append(mspItems, item)
@@ -87,7 +116,8 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 		menuMap := make(map[string]*pb.MenuItem)
 		for _, item := range items {
 			isK8s := clusterInfo.IsK8S() || (!splitEDAS && clusterInfo.IsEDAS())
-			if item.EnName == "EnvironmentSet" {
+			if item.EnName == "EnvironmentSet" || item.EnName == "ServiceObservation" {
+				fmt.Println(item.EnName, isK8s)
 				for _, child := range item.Children {
 					child.Params = item.Params
 					// 反转exists字段，隐藏引导页，显示功能子菜单
@@ -181,14 +211,6 @@ func (s *menuService) composeMSPMenuParams(req *pb.GetMenuRequest) map[string]st
 
 // GetSetting api
 func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest) (*pb.GetSettingResponse, error) {
-	items, err := s.getMenuItems()
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
-	}
-	menuMap := make(map[string]*pb.MenuItem)
-	for _, item := range items {
-		menuMap[item.Key] = item
-	}
 	configs, err := s.getEngineConfigs(req.TenantGroup, req.TenantId)
 	if err != nil {
 		return nil, err
@@ -202,7 +224,7 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 		if len(menuKey) <= 0 {
 			continue
 		}
-		item := menuMap[menuKey]
+		item := ComponentInfo[menuKey]
 		if item == nil {
 			return nil, errors.NewDatabaseError(fmt.Errorf("not found menu by key %q", menuKey))
 		}
@@ -212,8 +234,8 @@ func (s *menuService) GetSetting(ctx context.Context, req *pb.GetSettingRequest)
 		settings = append(settings, &pb.EngineSetting{
 			AddonName: engine,
 			Config:    config,
-			CnName:    item.CnName,
-			EnName:    item.EnName,
+			CnName:    item.cnName,
+			EnName:    item.enName,
 		})
 	}
 	return &pb.GetSettingResponse{Data: settings}, nil

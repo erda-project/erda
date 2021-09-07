@@ -63,7 +63,7 @@ type MetricError struct {
 }
 
 func (m MetricError) Render(locale *i18n.LocaleResource) string {
-	return m.message
+	return locale.Name()
 }
 
 func (m MetricError) Code() string {

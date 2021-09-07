@@ -55,13 +55,13 @@ func Test_provider(t *testing.T) {
 	_, err = f.Write([]byte(specYml))
 	assert.NoError(t, err)
 
-	fc2 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "RunExtensionsPush", func(_ *extensionService, dir string, extensionVersionMap, extensionTypeMap map[string][]string) (string, string, error) {
+	fc2 := monkey.PatchInstanceMethod(reflect.TypeOf(p), "RunExtensionsPush", func(_ *extensionService, dir string, extensionVersionMap, extensionTypeMap map[string][]string, ok bool) (string, string, error) {
 		if dir != dir1 {
 			return "", "", errors.New("path wrong")
 		}
 		return "", "", nil
 	})
 	defer fc2.Unpatch()
-	err = p.InitExtension(FilePath)
+	err = p.InitExtension(FilePath, false)
 	assert.NoError(t, err)
 }
