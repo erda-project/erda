@@ -16,17 +16,23 @@ package credential
 import (
 	"context"
 	"fmt"
+	http1 "net/http"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	grpc1 "github.com/erda-project/erda-infra/pkg/transport/grpc"
+	"github.com/erda-project/erda-infra/pkg/transport/http"
+	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 )
 
 ////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 ////go:generate mockgen -destination=./credential_ak_test.go -package exporter github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
+////go:generate mockgen -destination=./credential_context_test.go -package exporter github.com/erda-project/erda-infra/base/servicehub Context
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -148,5 +154,48 @@ func Test_accessKeyService_DownloadAccessKeyFile(t *testing.T) {
 	})
 	if err != nil {
 		fmt.Println("should not err")
+	}
+}
+
+func Test_Init(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	akService := NewMockAccessKeyServiceServer(ctrl)
+	pro := &provider{
+		Cfg:                  &config{},
+		Register:             NewMockRegister(ctrl),
+		credentialKeyService: &accessKeyService{},
+		AccessKeyService:     akService,
+	}
+	pro.credentialKeyService.p = pro
+	defer monkey.UnpatchAll()
+	monkey.Patch(encoding.EncodeResponse, func(w http1.ResponseWriter, r *http1.Request, out interface{}) error {
+		return nil
+	})
+	monkey.Patch(pb.RegisterAccessKeyServiceHandler, func(r http.Router, srv pb.AccessKeyServiceHandler, opts ...http.HandleOption) {})
+	monkey.Patch(pb.RegisterAccessKeyServiceServer, func(s grpc1.ServiceRegistrar, srv pb.AccessKeyServiceServer, opts ...grpc1.HandleOption) {})
+	//monkey.Patch()
+	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
+		Data: &akpb.AccessKeysItem{
+			Id:          "ssss",
+			AccessKey:   "dddd",
+			SecretKey:   "dddd",
+			Status:      0,
+			SubjectType: 0,
+			Subject:     "ccc",
+			Description: "aaa",
+			CreatedAt:   &timestamppb.Timestamp{},
+		},
+	}, nil)
+	err := pro.Init(NewMockContext(ctrl))
+	if err != nil {
+		fmt.Println("should not err")
+	}
+	pro.credentialKeyService.p = pro
+	_, err = pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
+		Id: "ssss",
+	})
+	if err != nil {
+		fmt.Println("should not err2")
 	}
 }
