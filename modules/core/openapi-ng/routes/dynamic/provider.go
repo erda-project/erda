@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	fserver "github.com/erda-project/erda-infra/providers/remote-forward/server"
 	openapi "github.com/erda-project/erda/modules/core/openapi-ng"
 	auth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
 	"github.com/erda-project/erda/modules/core/openapi-ng/proxy"
@@ -42,15 +43,19 @@ type (
 		Prefix              string        `file:"prefix" default:"/openapi/apis"`
 		EtcdRequestTimeout  time.Duration `file:"etcd_request_timeout" default:"2m"`
 		UseEmbedStaticFiles bool          `file:"use_embed_static_files" default:"true" env:"EMBED_STATIC_FILES"`
+		KeepAliveTTL        time.Duration `file:"keepalive_ttl" default:"1m"`
+		Host                string        `file:"host" env:"POD_IP"`
+		NetInterfaceName    string        `file:"net_interface_name"`
 	}
 	provider struct {
-		Cfg      *config
-		Log      logs.Logger
-		Router   httpserver.Router  `autowired:"http-router@admin"`
-		Etcd     *clientv3.Client   `autowired:"etcd-client"`
-		Discover discover.Interface `autowired:"discover"`
-		proxy    proxy.Proxy
-		ctx      servicehub.Context
+		Cfg           *config
+		Log           logs.Logger
+		Router        httpserver.Router  `autowired:"http-router@admin"`
+		Etcd          *clientv3.Client   `autowired:"etcd-client"`
+		Discover      discover.Interface `autowired:"discover"`
+		ForwardServer fserver.Interface  `autowired:"remote-forward-server"`
+		proxy         proxy.Proxy
+		ctx           servicehub.Context
 	}
 )
 
@@ -59,8 +64,10 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.proxy.Log = p.Log
 	p.proxy.Discover = p.Discover
 	p.Cfg.Prefix = filepath.Clean("/" + p.Cfg.Prefix)
+
 	p.Router.GET("/openapi/apis", p.listAPIProxies)
 	p.Router.PUT("/openapi/apis", p.setAPIProxy)
+	p.Router.PUT("/openapi/apis-batch-keepalive", p.setAPIProxyWithKeepAlive)
 	p.Router.DELETE("/openapi/apis", p.removeAPIProxy)
 	p.Router.GET("/openapi/services", p.listServices)
 	if p.Cfg.UseEmbedStaticFiles {
@@ -68,7 +75,8 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	} else {
 		p.Router.Static("/openapi/static", "modules/core/openapi-ng/routes/dynamic/static")
 	}
-	return nil
+
+	return p.initRemoteForward(ctx)
 }
 
 var _ openapi.RouteSourceWatcher = (*provider)(nil)

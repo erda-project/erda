@@ -467,6 +467,9 @@ services:
       - port: 9432
         protocol: "TCP"
         l4_protocol: "TCP"
+      - port: 9431
+        protocol: "TCP"
+        l4_protocol: "TCP"
     envs:
       CREATE_ORG_ENABLED: "false"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
