@@ -16,6 +16,8 @@ PROJ_PATH := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 BUILD_PATH ?= ${PROJ_PATH}/cmd/${MODULE_PATH}
 APP_NAME ?= $(shell echo ${BUILD_PATH} | sed 's/^\(.*\)[/]//')
 VERSION ?= $(shell build/scripts/make-version.sh)
+# use MAJOR.MINOR as the Erda version to fix broken of buildpack and other unexpceted brokens
+ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
 # build info
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
@@ -26,7 +28,7 @@ COMMIT_ID := $(shell git rev-parse HEAD 2>/dev/null)
 DOCKER_IMAGE ?=
 VERSION_PKG := github.com/erda-project/erda-infra/base/version
 VERSION_OPS := -ldflags "\
-		-X '${VERSION_PKG}.Version=${VERSION}' \
+		-X '${VERSION_PKG}.Version=${ERDA_VERSION}' \
 		-X '${VERSION_PKG}.BuildTime=${BUILD_TIME}' \
         -X '${VERSION_PKG}.CommitID=${COMMIT_ID}' \
         -X '${VERSION_PKG}.GoVersion=${GO_VERSION}' \
@@ -73,6 +75,7 @@ build-version:
 	@echo Arch: ${GOARCH}
 	@echo OS: ${GOOS}
 	@echo Version: ${VERSION}
+	@echo Erda version: ${ERDA_VERSION}
 	@echo BuildTime: ${BUILD_TIME}
 	@echo GoVersion: ${GO_VERSION}
 	@echo CommitID: ${COMMIT_ID}
