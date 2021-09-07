@@ -132,6 +132,8 @@ var (
 	ErrRerunPipeline          = err("ErrRerunPipeline", "重试全流程失败")
 	ErrCreateCheckRun         = err("ErrCreateCheckRun", "创建流水线失败")
 
+	ErrUpdatePipelineDefinition = err("ErrUpdatePipelineDefinition", "修改流水线定义失败")
+
 	ErrFetchConfigNamespace  = err("ErrFetchConfigNamespace", "获取私有配置命名空间失败")
 	ErrMakeConfigNamespace   = err("ErrMakeConfigNamespace", "创建私有配置命名空间失败")
 	ErrGetBranchWorkspaceMap = err("ErrGetBranchWorkspaceMap", "获取分支与环境映射关系失败")

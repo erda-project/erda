@@ -279,7 +279,7 @@ func (svc *GittarFileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGet
 					Name:   snippetConfigName,
 					Source: apistructs.SnippetSourceLocal,
 					Labels: map[string]string{
-						apistructs.LabelGittarYmlPath: getGittarYmlNamesLabels(app.Name, workspace, branch, snippetConfigName[1:]),
+						apistructs.LabelGittarYmlPath: pipeline.GetGittarYmlNamesLabels(app.Name, workspace, branch, snippetConfigName[1:]),
 					},
 				},
 				Type: "snippet",
@@ -304,11 +304,6 @@ func (svc *GittarFileTree) GetWorkspaceByBranch(projectIDStr, branch string) (st
 		return "", err
 	}
 	return wsByBranch.String(), nil
-}
-
-func getGittarYmlNamesLabels(appID, workspace, branch, ymlName string) string {
-
-	return fmt.Sprintf("%s/%s/%s/%s", appID, workspace, branch, ymlName)
 }
 
 func (svc *GittarFileTree) DeleteFileTreeNode(req apistructs.UnifiedFileTreeNodeDeleteRequest, orgID uint64, userID string) (*apistructs.UnifiedFileTreeNode, error) {

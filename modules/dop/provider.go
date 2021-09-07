@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -44,7 +45,8 @@ var scenarioFS embed.FS
 type provider struct {
 	Log logs.Logger
 
-	PipelineCms cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineCms cmspb.CmsServiceServer      `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineDs  definition_client.Processor `autowired:"erda.core.pipeline.definition-process-client"`
 
 	Protocol componentprotocol.Interface
 	Tran     i18n.Translator `translator:"component-protocol"`

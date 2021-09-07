@@ -9,9 +9,8 @@ User-ID: 2
 
 {"id":1,"name": "name1","value":"vv2","temp": "tp2","description": "444","spaceID": 1,"sceneID": 1}
 
-
 ###
-POST http://localhost:3033/api/autotests/scenes/2/actions/add-input
+POST http://localhost:9527/api/autotests/scenes/2/actions/add-input
 Content-Type: application/json
 User-ID: 2
 
