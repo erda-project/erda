@@ -95,6 +95,11 @@ etcd:
 openapi-dynamic-routes:
   _enable: ${OPENAPI_DEV_MODE:false}
 
+remote-forward-server:
+  _enable: ${OPENAPI_DEV_MODE:false}
+  addr: ":9431"
+  token: "${REMOTE_FORWARD_TOKEN}"
+
 # for test
 openapi-example:
 openapi-example-custom:
@@ -112,3 +117,6 @@ http-server@admin:
   _enable: ${OPENAPI_DEV_MODE:false}
   addr: ":9432"
   reloadable: ${OPENAPI_DEV_MODE:false}
+
+
+  
