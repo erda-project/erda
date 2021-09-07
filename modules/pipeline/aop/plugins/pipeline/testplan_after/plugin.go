@@ -76,18 +76,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		allTasks = result.Tasks
 	}
 	// 过滤出 api_test task 以及 snippetTask
-	var apiTestTasks []*spec.PipelineTask
-	var snippetTaskPipelineIDs []uint64
-	for _, task := range allTasks {
-		if task.Type == apistructs.ActionTypeAPITest && task.Extra.Action.Version == "2.0" {
-			apiTestTasks = append(apiTestTasks, task)
-			continue
-		}
-		if task.Type == apistructs.ActionTypeSnippet {
-			snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
-			continue
-		}
-	}
+	apiTestTasks, snippetTaskPipelineIDs := filterPipelineTask(allTasks)
 
 	apiTotalNum := 0
 	apiSuccessNum := 0
@@ -108,16 +97,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 	for pipelineID, reports := range snippetReports {
 		for _, report := range reports {
-			b, err := json.Marshal(report.Meta)
+			meta, err := convertReport(pipelineID, report)
 			if err != nil {
-				logrus.Warnf("failed to marshal api-test report, snippet pipelineID: %d, reportID: %d, err: %v",
-					pipelineID, report.ID, err)
-				continue
-			}
-			var meta ApiReportMeta
-			if err := json.Unmarshal(b, &meta); err != nil {
-				logrus.Warnf("failed to unmarshal api-test report to meta, snippet pipelineID: %d, reportID: %d, err: %v",
-					pipelineID, report.ID, err)
 				continue
 			}
 			apiTotalNum += meta.ApiTotalNum
@@ -129,6 +110,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		TestPlanID:  testPlanID,
 		ExecuteTime: ctx.SDK.Pipeline.ExtraTimeCreated.Format("2006-01-02 15:04:05"),
 	}
+
 	if apiTotalNum == 0 {
 		req.PassRate = 0
 	} else {
@@ -171,4 +153,36 @@ func init() {
 			return &provider{}
 		},
 	})
+}
+
+func filterPipelineTask(allTasks []*spec.PipelineTask) ([]*spec.PipelineTask, []uint64) {
+	var apiTestTasks []*spec.PipelineTask
+	var snippetTaskPipelineIDs []uint64
+	for _, task := range allTasks {
+		if task.Type == apistructs.ActionTypeAPITest && task.Extra.Action.Version == "2.0" {
+			apiTestTasks = append(apiTestTasks, task)
+			continue
+		}
+		if task.Type == apistructs.ActionTypeSnippet {
+			snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
+			continue
+		}
+	}
+	return apiTestTasks, snippetTaskPipelineIDs
+}
+
+func convertReport(pipelineID uint64, report spec.PipelineReport) (ApiReportMeta, error) {
+	b, err := json.Marshal(report.Meta)
+	if err != nil {
+		logrus.Warnf("failed to marshal api-test report, snippet pipelineID: %d, reportID: %d, err: %v",
+			pipelineID, report.ID, err)
+		return ApiReportMeta{}, err
+	}
+	var meta ApiReportMeta
+	if err := json.Unmarshal(b, &meta); err != nil {
+		logrus.Warnf("failed to unmarshal api-test report to meta, snippet pipelineID: %d, reportID: %d, err: %v",
+			pipelineID, report.ID, err)
+		return ApiReportMeta{}, err
+	}
+	return meta, nil
 }

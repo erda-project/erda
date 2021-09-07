@@ -55,16 +55,11 @@ func (s *TestPlanService) UpdateTestPlanByHook(ctx context.Context, req *pb.Test
 
 	fields := make(map[string]interface{}, 0)
 	fields["pass_rate"] = req.Content.PassRate
-	executeTime, err := time.Parse("2006-01-02 15:04:05", req.Content.ExecuteTime)
-	if err != nil {
-		return nil, err
-	}
-	// executeTime is UTC
-	m, err := time.ParseDuration("-8h")
+	executeTime, err := convertUTCTime(req.Content.ExecuteTime)
 	if err != nil {
 		return &pb.TestPlanUpdateByHookResponse{Data: req.Content.TestPlanID}, apierrors.ErrUpdateTestPlan.InternalError(err)
 	}
-	fields["execute_time"] = executeTime.Add(m)
+	fields["execute_time"] = executeTime
 
 	if err := s.db.UpdateTestPlanV2(req.Content.TestPlanID, fields); err != nil {
 		return nil, err
@@ -131,4 +126,17 @@ func (s *TestPlanService) processEvent(req *pb.Content) error {
 		}
 	}
 	return nil
+}
+
+func convertUTCTime(tm string) (time.Time, error) {
+	executeTime, err := time.Parse("2006-01-02 15:04:05", tm)
+	if err != nil {
+		return time.Time{}, err
+	}
+	// executeTime is UTC
+	m, err := time.ParseDuration("-8h")
+	if err != nil {
+		return time.Time{}, err
+	}
+	return executeTime.Add(m), nil
 }

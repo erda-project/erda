@@ -19,6 +19,8 @@ import (
 	reflect "reflect"
 	testing "testing"
 
+	"github.com/alecthomas/assert"
+
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	pb "github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 )
@@ -78,4 +80,12 @@ func Test_TestPlanService_UpdateTestPlanV2ByHook(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_convertTime(t *testing.T) {
+	time, err := convertUTCTime("2020-01-02 04:00:00")
+	assert.NoError(t, err)
+	s := time.Format("2006-01-02 15:04:05")
+	want := "2020-01-01 20:00:00"
+	assert.Equal(t, want, s)
 }
