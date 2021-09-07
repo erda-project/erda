@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -38,6 +39,22 @@ func (t *ComponentWorkloadTitle) Render(ctx context.Context, component *cptype.C
 		return fmt.Errorf("invalid workload id: %s", workloadID)
 	}
 	kind, name := splits[0], splits[2]
-	t.Props.Title = fmt.Sprintf("%s: %s", kind, name)
+	typ := ""
+	switch kind {
+	case string(apistructs.K8SDeployment):
+		typ = "Deployment"
+	case string(apistructs.K8SReplicaSet):
+		typ = "ReplicaSet"
+	case string(apistructs.K8SDaemonSet):
+		typ = "DaemonSet"
+	case string(apistructs.K8SStatefulSet):
+		typ = "StatefulSet"
+	case string(apistructs.K8SJob):
+		typ = "Job"
+	case string(apistructs.K8SCronJob):
+		typ = "CronJob"
+	}
+
+	t.Props.Title = fmt.Sprintf("%s: %s", typ, name)
 	return nil
 }
