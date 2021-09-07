@@ -320,6 +320,38 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: envDrawer
+    - name: envBaseInfoTitle
+    - name: envBaseInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTitle
+    - name: envGlobalInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderTitle
+    - name: envHeaderTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
   executeTaskTable:
     - name: executeInfo
       state:
@@ -397,6 +429,38 @@ rendering:
       state:
         - name: "pipelineId"
           value: "{{ executeHistoryTable.pipelineId }}"
+    - name: envDrawer
+    - name: envBaseInfoTitle
+    - name: envBaseInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTitle
+    - name: envGlobalInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderTitle
+    - name: envHeaderTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
   refreshButton:
     - name: executeHistoryTable
     - name: executeInfo
@@ -497,6 +561,38 @@ rendering:
       state:
         - name: "visible"
           value: "{{ executeTaskBreadcrumb.visible }}"
+    - name: envDrawer
+    - name: envBaseInfoTitle
+    - name: envBaseInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTitle
+    - name: envGlobalInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envGlobalText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderTitle
+    - name: envHeaderTable
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderInfo
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
+    - name: envHeaderText
+      state:
+        - name: "envData"
+          value: "{{ executeInfo.envData }}"
   __DefaultRendering__:
     - name: fileDetail
     - name: fileConfig
@@ -527,3 +623,4 @@ rendering:
       state:
         - name: "testPlanId"
           value: "{{ fileDetail.testPlanId }}"
+# TODO: move executeInfo.envData to global state

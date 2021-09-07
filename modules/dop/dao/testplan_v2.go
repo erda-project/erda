@@ -69,7 +69,7 @@ type TestPlanV2Join struct {
 }
 
 // Convert2DTO convert DAO to DTO
-func (tp *TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
+func (tp TestPlanV2Join) Convert2DTO() *apistructs.TestPlanV2 {
 	return &apistructs.TestPlanV2{
 		ID:          tp.ID,
 		Name:        tp.Name,
