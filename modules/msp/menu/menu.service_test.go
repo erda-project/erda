@@ -25,7 +25,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jinzhu/gorm"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -118,58 +117,44 @@ func Test_menuService_GetMenu(t *testing.T) {
 }
 
 func Test_menuService_GetSetting(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *pb.GetSettingRequest
-	}
-	tests := []struct {
-		name     string
-		service  string
-		config   string
-		args     args
-		wantResp *pb.GetSettingResponse
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-		// 		{
-		// 			"case 1",
-		// 			"erda.msp.menu.MenuService",
-		// 			`
-		// erda.msp.menu:
-		// `,
-		// 			args{
-		// 				context.TODO(),
-		// 				&pb.GetSettingRequest{
-		// 					// TODO: setup fields
-		// 				},
-		// 			},
-		// 			&pb.GetSettingResponse{
-		// 				// TODO: setup fields.
-		// 			},
-		// 			false,
-		// 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hub := servicehub.New()
-			events := hub.Events()
-			go func() {
-				hub.RunWithOptions(&servicehub.RunOptions{Content: tt.config})
-			}()
-			err := <-events.Started()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			srv := hub.Service(tt.service).(pb.MenuServiceServer)
-			got, err := srv.GetSetting(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("menuService.GetSetting() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("menuService.GetSetting() = %v, want %v", got, tt.wantResp)
-			}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	register := NewMockRegister(ctrl)
+	defer monkey.UnpatchAll()
+	monkey.Patch((*menuService).getEngineConfigs, func(_ *menuService, _ string, _ string) (map[string]map[string]string, error) {
+		return map[string]map[string]string{
+			"monitor-collector": {
+				"BOOTSTRAP_SERVERS":     "kafka-1.group-addon-monitor-kafka--sb7a6bfb737be49689fc782c2acd1db51.svc.cluster.local:9092,kafka-2.group-addon-monitor-kafka--sb7a6bfb737be49689fc782c2acd1db51.svc.cluster.local:9092,kafka-3.group-addon-monitor-kafka--sb7a6bfb737be49689fc782c2acd1db51.svc.cluster.local:9092",
+				"MONITOR_LOG_COLLECTOR": "http://zbca863a6cd664fa19f18fc53f35d0275.addon-monitor-collector--zbca863a6cd664fa19f18fc53f35d0275.svc.cluster.local:7076/collect/logs/container",
+			},
+			"registercenter": {
+				"ELASTICJOB_HOST":   "zookeeper.addon-zookeeper--f981d03b3b72e4386830a5b9c826b4014.svc.cluster.local:2181",
+				"NACOS_ADDRESS":     "nacos.addon-nacos--r823ba8ce60a94db68dab45557547ada9.svc.cluster.local:8848",
+				"ZOOKEEPER_ADDRESS": "zookeeper.addon-zookeeper--f981d03b3b72e4386830a5b9c826b4014.svc.cluster.local:2181",
+			},
+		}, nil
+	})
+	var menudb *mdb.MenuConfigDB
+	monkey.PatchInstanceMethod(reflect.TypeOf(menudb), "GetMicroServiceEngineKey",
+		func(_ *mdb.MenuConfigDB, _ string) (string, error) {
+			return "RegisterCenter", nil
 		})
+	pro := &provider{
+		Cfg:         &config{},
+		Log:         logger,
+		Register:    register,
+		DB:          &gorm.DB{},
+		Perm:        nil,
+		MPerm:       nil,
+		menuService: &menuService{},
+		bdl:         &bundle.Bundle{},
+	}
+	pro.menuService.p = pro
+	_, err := pro.menuService.GetSetting(context.Background(), &pb.GetSettingRequest{
+		TenantId: "3bff0d6c179334ff186b0dbdb775174e",
+	})
+	if err != nil {
+		fmt.Println("should not err")
 	}
 }
