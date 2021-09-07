@@ -564,7 +564,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			Type:        string(data.Type),
 			Progress:    progress,
 			Severity:    severity,
-			Complexity: data.Complexity.GetZhName(),
+			Complexity:  data.Complexity.GetZhName(),
 			Priority: Priority{
 				Value:      data.Priority.GetZhName(),
 				RenderType: "operationsDropdownMenu",
