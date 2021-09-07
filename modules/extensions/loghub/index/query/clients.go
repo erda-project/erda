@@ -136,11 +136,21 @@ func (p *provider) getESClientsFromLogAnalyticsByCluster(orgID int64, addon stri
 					p.L.Warnf("fail to get logInstance")
 				}
 				for _, instance := range sameGroupLogInstances {
-					if _, ok := keyCaches[instance.LogKey]; ok {
+					logKey := instance.LogKey
+					if instance.LogType == string(db.LogTypeLogService) {
+						var instanceConfig = struct {
+							MspEnvID string `json:"MSP_ENV_ID"`
+						}{}
+
+						json.Unmarshal([]byte(instance.Config), &instanceConfig)
+						logKey = instanceConfig.MspEnvID
+					}
+
+					if _, ok := keyCaches[logKey]; ok {
 						continue
 					}
-					addons = append(addons, instance.LogKey)
-					keyCaches[instance.LogKey] = true
+					addons = append(addons, logKey)
+					keyCaches[logKey] = true
 				}
 			} else {
 				addons = append(addons, addon)

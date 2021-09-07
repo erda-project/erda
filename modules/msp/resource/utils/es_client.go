@@ -78,6 +78,15 @@ func (c *ESClient) CreateIndexWithAlias(index string, aliases ...string) error {
 		aliasList[alias] = map[string]interface{}{}
 	}
 
+	exists, err := c.IndexExists(index).Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
 	createIndex, err := c.CreateIndex(index).BodyJson(map[string]interface{}{
 		"aliases": aliasList,
 	}).Do(ctx)
