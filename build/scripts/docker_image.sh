@@ -43,14 +43,14 @@ setup_single_module_env() {
     # application name
     APP_NAME="$(echo ${MODULE_PATH} | sed 's/^\(.*\)[/]//')"
 
-    # Dockerfile path and image name  
+    # Dockerfile path and image name
     if [ -f "build/dockerfiles/Dockerfile-${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/Dockerfile-${APP_NAME}"
     elif [ -d "build/dockerfiles/${APP_NAME}" ];then
         DOCKERFILE="build/dockerfiles/${APP_NAME}/Dockerfile"
     fi
     DOCKER_IMAGE=${APP_NAME}:${IMAGE_TAG}
-    
+
     # config file or directory path
     if [ -f "conf/${APP_NAME}.yaml" ];then
         CONFIG_PATH="${APP_NAME}.yaml"
