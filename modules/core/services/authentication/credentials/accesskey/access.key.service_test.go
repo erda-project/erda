@@ -246,7 +246,7 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 			args: args{
 				req: &pb.UpdateAccessKeyRequest{},
 			},
-			want:    nil,
+			want:    &pb.UpdateAccessKeyResponse{},
 			wantErr: false,
 		},
 		{
@@ -257,7 +257,7 @@ func Test_accessKeyService_UpdateAccessKeys(t *testing.T) {
 			args: args{
 				req: &pb.UpdateAccessKeyRequest{},
 			},
-			want:    nil,
+			want:    &pb.UpdateAccessKeyResponse{},
 			wantErr: true,
 		},
 	}
@@ -301,7 +301,7 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 			args: args{
 				req: &pb.DeleteAccessKeyRequest{},
 			},
-			want:    nil,
+			want:    &pb.DeleteAccessKeyResponse{},
 			wantErr: false,
 		},
 		{
@@ -312,7 +312,7 @@ func Test_accessKeyService_DeleteAccessKeys(t *testing.T) {
 			args: args{
 				req: &pb.DeleteAccessKeyRequest{},
 			},
-			want:    nil,
+			want:    &pb.DeleteAccessKeyResponse{},
 			wantErr: true,
 		},
 	}

@@ -42,6 +42,8 @@ func (s *accessKeyService) QueryAccessKeys(ctx context.Context, req *pb.QueryAcc
 			Subject:     obj.Subject,
 			Description: obj.Description,
 			CreatedAt:   timestamppb.New(obj.CreatedAt),
+			Scope:       obj.Scope,
+			ScopeId:     obj.ScopeId,
 		}
 	}
 	return &pb.QueryAccessKeysResponse{Data: res, Total: total}, nil
@@ -79,13 +81,15 @@ func (s *accessKeyService) CreateAccessKey(ctx context.Context, req *pb.CreateAc
 		Subject:     obj.Subject,
 		Description: obj.Description,
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
+		Scope:       obj.Scope,
+		ScopeId:     obj.ScopeId,
 	}}, nil
 }
 
 func (s *accessKeyService) UpdateAccessKey(ctx context.Context, req *pb.UpdateAccessKeyRequest) (*pb.UpdateAccessKeyResponse, error) {
-	return nil, s.p.dao.UpdateAccessKey(ctx, req)
+	return &pb.UpdateAccessKeyResponse{}, s.p.dao.UpdateAccessKey(ctx, req)
 }
 
 func (s *accessKeyService) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
-	return nil, s.p.dao.DeleteAccessKey(ctx, req)
+	return &pb.DeleteAccessKeyResponse{}, s.p.dao.DeleteAccessKey(ctx, req)
 }

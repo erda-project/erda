@@ -26,6 +26,8 @@ import (
 // store secret key pair
 type AccessKey struct {
 	ID          string                         `json:"id" sql:"type:uuid;primary_key;default:uuid_generate_v4()"`
+	Scope       string                         `json:"scope" gorm:"type:varchar(24)"`
+	ScopeId     string                         `json:"scopeId" gorm:"type:varchar(128)"`
 	AccessKey   string                         `json:"accessKey" gorm:"size:24;unique;comment:'Access Key ID'"`
 	SecretKey   string                         `json:"secretKey" gorm:"size:32;unique;comment:'Secret Key'"`
 	Status      pb.StatusEnum_Status           `json:"status" gorm:"comment:'status of access key'"`

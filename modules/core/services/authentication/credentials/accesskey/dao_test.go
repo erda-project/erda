@@ -17,7 +17,12 @@ package accesskey
 import (
 	"context"
 	"fmt"
+	"testing"
 	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jinzhu/gorm"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 )
@@ -77,4 +82,39 @@ func (m *mockDao) DeleteAccessKey(ctx context.Context, req *pb.DeleteAccessKeyRe
 		return _mockErr
 	}
 	return nil
+}
+
+func newMockDB() *gorm.DB {
+	sqlDB, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	// construct
+	rows := sqlmock.NewRows([]string{"id", "access_key", "secret_key", "status", "subject_type", "subject", "description"}).
+		AddRow("aaa", "abc", "edf", 1, 1, "1", "xx")
+	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `erda_access_key`.*?").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow(1))
+	mock.ExpectQuery("SELECT \\* FROM `erda_access_key`.*?").WillReturnRows(rows)
+
+	gdb, err := gorm.Open("mysql", sqlDB)
+	if err != nil {
+		panic(err)
+	}
+	return gdb
+}
+
+func Test_dao_QueryAccessKey(t *testing.T) {
+	d := dao{db: newMockDB()}
+
+	obj, cnt, err := d.QueryAccessKey(context.TODO(), &pb.QueryAccessKeysRequest{
+		Status:      pb.StatusEnum_DISABLED,
+		SubjectType: pb.SubjectTypeEnum_MICRO_SERVICE,
+		AccessKey:   "abc",
+		Subject:     "1",
+		PageNo:      1,
+		PageSize:    2,
+	})
+	ass := assert.New(t)
+	ass.Equal("aaa", obj[0].ID)
+	ass.Equal(int64(1), cnt)
+	ass.Nil(err)
 }
